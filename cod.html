@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.90: Office Door Pocket &amp; AI Stability Pass</title>
+<title>Strikewatch 11.98: Summit Presentation &amp; Inbox Separation Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -13482,6 +13482,53 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   .manager-gold-brand { grid-template-columns:minmax(0,1fr) !important; padding-inline:6px !important; }
   .manager-gold-brand>div>strong { text-align:center; text-overflow:clip; }
 }
+
+
+/* Build 11.98: inbox panel separation and clearer message-reader boundary. */
+.club-mail-column {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(12, 35, 49, .98), rgba(7, 23, 34, .98)),
+    repeating-linear-gradient(135deg, transparent 0 18px, rgba(98, 173, 214, .018) 19px 20px);
+  box-shadow: inset 0 0 0 1px rgba(91, 161, 201, .12);
+}
+.club-mail-column > header {
+  border-bottom-color: rgba(113, 184, 222, .22);
+  background: linear-gradient(180deg, rgba(18, 45, 61, .98), rgba(10, 30, 43, .98));
+}
+.club-mail-list {
+  position: relative;
+  border-top: 1px solid rgba(83, 153, 194, .10);
+  border-bottom: 3px solid rgba(82, 173, 255, .34);
+  background:
+    linear-gradient(180deg, rgba(9, 29, 42, .98), rgba(5, 20, 30, .98)),
+    repeating-linear-gradient(0deg, transparent 0 37px, rgba(255,255,255,.014) 38px);
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.025),
+    inset 0 -10px 22px rgba(1, 8, 13, .26),
+    0 10px 22px rgba(0, 0, 0, .26);
+}
+.club-mail-row { background: rgba(8, 28, 41, .72); }
+.club-mail-row:nth-child(even) { background: rgba(6, 23, 34, .84); }
+.club-mail-row.unread { background: rgba(16, 50, 69, .94); }
+.club-mail-row.active {
+  background: linear-gradient(90deg, rgba(22, 67, 91, .98), rgba(16, 51, 70, .96));
+  box-shadow: inset 4px 0 #52adff, inset 0 -2px #d5aa42;
+}
+.club-mail-reader {
+  border-top: 1px solid rgba(103, 164, 198, .20);
+  background:
+    linear-gradient(180deg, rgba(4, 15, 24, .99), rgba(3, 11, 18, .99)),
+    repeating-linear-gradient(0deg, transparent 0 35px, rgba(255,255,255,.010) 36px);
+  box-shadow: inset 0 12px 26px rgba(0, 0, 0, .18);
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .club-mail-column {
+    border-bottom: 0;
+    box-shadow: inset 0 0 0 1px rgba(91, 161, 201, .13), 0 13px 24px rgba(0,0,0,.28);
+  }
+  .club-mail-reader { border-top: 2px solid rgba(88, 145, 176, .24); }
+}
 </style>
 </head>
 <body>
@@ -14127,9 +14174,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.96';
-  const BUILD_NAME = 'SUMMIT TWO-LEVEL TERMINAL PASS';
-  const BUILD_ID = '11.96.0-20260718';
+  const BUILD_VERSION = '11.98';
+  const BUILD_NAME = 'STAIR-ONLY ACCESS & TACTICAL FLANK PASS';
+  const BUILD_ID = '11.98.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14309,12 +14356,12 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         1: [{ x: 33.5, y: 18.5 }, { x: 33.5, y: 15.5 }, { x: 33.5, y: 12.5 }, { x: 33.5, y: 8.5 }, { x: 33.5, y: 5.5 }]
       },
       zones: [
-        { x1: 1, z1: 4, x2: 10, z2: 20, name: 'WEST STAIRS', short: 'WEST', colour: [0.28, 0.34, 0.39], light: [0.56, 0.78, 0.98] },
-        { x1: 9, z1: 2, x2: 27, z2: 8, name: 'UPPER CATWALK', short: 'CATWALK', colour: [0.31, 0.34, 0.30], light: [0.70, 0.88, 0.44] },
-        { x1: 8, z1: 8, x2: 28, z2: 16, name: 'SKYBRIDGE ATRIUM', short: 'SKYBRIDGE', colour: [0.36, 0.31, 0.28], light: [0.98, 0.68, 0.34] },
-        { x1: 9, z1: 16, x2: 27, z2: 22, name: 'GROUND MAINTENANCE', short: 'MAINT', colour: [0.30, 0.28, 0.35], light: [0.80, 0.52, 0.94] },
-        { x1: 27, z1: 4, x2: 35, z2: 20, name: 'EAST STAIRS', short: 'EAST', colour: [0.26, 0.35, 0.40], light: [0.34, 0.82, 1.00] },
-        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.31, 0.35, 0.37], light: [0.82, 0.88, 0.92] }
+        { x1: 1, z1: 4, x2: 10, z2: 20, name: 'WEST STAIRS', short: 'WEST', colour: [0.31, 0.39, 0.41], light: [0.24, 0.76, 0.80] },
+        { x1: 9, z1: 2, x2: 27, z2: 8, name: 'UPPER CATWALK', short: 'CATWALK', colour: [0.36, 0.43, 0.44], light: [0.30, 0.84, 0.86] },
+        { x1: 8, z1: 8, x2: 28, z2: 16, name: 'SKYBRIDGE ATRIUM', short: 'SKYBRIDGE', colour: [0.38, 0.42, 0.42], light: [0.96, 0.64, 0.28] },
+        { x1: 9, z1: 16, x2: 27, z2: 22, name: 'GROUND MAINTENANCE', short: 'MAINT', colour: [0.28, 0.35, 0.38], light: [0.42, 0.70, 0.76] },
+        { x1: 27, z1: 4, x2: 35, z2: 20, name: 'EAST STAIRS', short: 'EAST', colour: [0.31, 0.39, 0.41], light: [0.96, 0.62, 0.24] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.34, 0.40, 0.42], light: [0.74, 0.86, 0.88] }
       ],
       props: {
         containers: [
@@ -14572,6 +14619,28 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     return lerp(Number(ramp.elevation1) || 0, Number(ramp.elevation2) || 0, t);
   }
 
+  function rampProjectionAt(x, z, ramp) {
+    const x1 = Number(ramp.x1) || 0;
+    const z1 = Number(ramp.z1) || 0;
+    const dx = (Number(ramp.x2) || 0) - x1;
+    const dz = (Number(ramp.z2) || 0) - z1;
+    const lengthSq = dx * dx + dz * dz;
+    if (lengthSq <= 0.0001) return null;
+    const length = Math.sqrt(lengthSq);
+    const rawT = ((Number(x) - x1) * dx + (Number(z) - z1) * dz) / lengthSq;
+    const px = x1 + dx * rawT;
+    const pz = z1 + dz * rawT;
+    const alongX = dx / length;
+    const alongZ = dz / length;
+    return {
+      rawT,
+      t: clamp(rawT, 0, 1),
+      length,
+      longitudinal: rawT * length,
+      lateral: (Number(x) - px) * -alongZ + (Number(z) - pz) * alongX
+    };
+  }
+
   function arenaElevationAt(x, z, arenaId = activeArenaId) {
     const profile = arenaVerticalProfile(arenaId);
     if (!profile) return 0;
@@ -14583,6 +14652,35 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       if (x >= platform.x1 && x <= platform.x2 && z >= platform.z1 && z <= platform.z2) return Number(platform.elevation) || 0;
     }
     return 0;
+  }
+
+  function arenaElevationTransitionAllowed(x1, z1, x2, z2, arenaId = activeArenaId) {
+    const profile = arenaVerticalProfile(arenaId);
+    if (!profile) return true;
+    const elevation1 = arenaElevationAt(x1, z1, arenaId);
+    const elevation2 = arenaElevationAt(x2, z2, arenaId);
+    const elevationDelta = Math.abs(elevation2 - elevation1);
+    if (elevationDelta <= 0.045) return true;
+
+    // A change of floor is legal only while travelling along one authored
+    // staircase/ramp. This prevents operators from entering the side of a
+    // raised platform and being visually lifted onto it by the elevation map.
+    for (const ramp of profile.ramps || []) {
+      const first = rampProjectionAt(x1, z1, ramp);
+      const second = rampProjectionAt(x2, z2, ramp);
+      if (!first || !second) continue;
+      const halfWidth = Math.max(0.12, (Number(ramp.width) || 1) * 0.5);
+      const endpointAllowance = Math.min(0.16, 0.20 / Math.max(0.1, first.length));
+      const firstInside = first.rawT >= -endpointAllowance && first.rawT <= 1 + endpointAllowance && Math.abs(first.lateral) <= halfWidth + 0.025;
+      const secondInside = second.rawT >= -endpointAllowance && second.rawT <= 1 + endpointAllowance && Math.abs(second.lateral) <= halfWidth + 0.025;
+      if (!firstInside || !secondInside) continue;
+      const longitudinalTravel = Math.abs(second.longitudinal - first.longitudinal);
+      const lateralTravel = Math.abs(second.lateral - first.lateral);
+      if (longitudinalTravel < 0.002) continue;
+      if (longitudinalTravel + 0.035 < lateralTravel * 1.12) continue;
+      return true;
+    }
+    return false;
   }
 
   function arenaVerticalSnapshot(arenaId = activeArenaId) {
@@ -15022,6 +15120,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     officeCourtyardCrossings: 0,
     summitLayerRotations: 0,
     summitLayerTraversals: 0,
+    summitIllegalElevationTransitionsBlocked: 0,
+    tacticalFlankRoutes: 0,
     stalemateBreaks: 0,
     targetSwitches: 0,
     closeThreatOverrides: 0,
@@ -15170,11 +15270,16 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     if (distance < 0.00001) return includeDynamicDoors ? canStand(x2, y2, radius) : canStandForNavigation(x2, y2, radius);
     const stepLength = Math.max(0.055, Math.min(0.12, radius * 0.42));
     const steps = Math.max(1, Math.ceil(distance / stepLength));
+    let previousX = x1;
+    let previousY = y1;
     for (let step = 1; step <= steps; step++) {
       const t = step / steps;
       const x = x1 + dx * t;
       const y = y1 + dy * t;
+      if (!arenaElevationTransitionAllowed(previousX, previousY, x, y, activeArenaId)) return false;
       if (includeDynamicDoors ? !canStand(x, y, radius) : !canStandForNavigation(x, y, radius)) return false;
+      previousX = x;
+      previousY = y;
     }
     return true;
   }
@@ -16369,22 +16474,63 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   function segmentHasNavigationClearance(a, b, radius = BOT_RADIUS + 0.085) {
     return canTravelBetweenForNavigation(a.x, a.y, b.x, b.y, radius);
   }
+  function pathSegmentsHaveNavigationClearance(path, radius = NAV_RADIUS) {
+    if (!path || path.length < 2) return true;
+    for (let i = 1; i < path.length; i++) {
+      if (!segmentHasNavigationClearance(path[i - 1], path[i], radius)) return false;
+    }
+    return true;
+  }
   function smoothPath(path) {
     if (!path || path.length < 3) return path || [];
     const result = [path[0]];
     let anchor = 0;
     while (anchor < path.length - 1) {
-      let furthest = anchor + 1;
-      for (let i = path.length - 1; i > anchor + 1; i--) {
+      let furthest = -1;
+      for (let i = path.length - 1; i > anchor; i--) {
         if (segmentHasNavigationClearance(path[anchor], path[i], NAV_RADIUS)) {
           furthest = i;
           break;
         }
       }
+      // A smoothed path must never manufacture a floor transition that the raw
+      // A* route did not contain. If no forward waypoint is directly reachable,
+      // return the original validated route and let the caller preserve every
+      // stair-centre waypoint.
+      if (furthest <= anchor) return path.slice();
       result.push(path[furthest]);
       anchor = furthest;
     }
-    return result;
+    return pathSegmentsHaveNavigationClearance(result, NAV_RADIUS) ? result : path.slice();
+  }
+  function safelySmoothPath(path) {
+    const original = Array.isArray(path) ? path.slice() : [];
+    if (original.length < 2) return original;
+    const smoothed = smoothPath(original);
+    if (pathSegmentsHaveNavigationClearance(smoothed, NAV_RADIUS)) return smoothed;
+    return pathSegmentsHaveNavigationClearance(original, NAV_RADIUS) ? original : [];
+  }
+  function pathCrossesArenaElevation(path, arenaId = activeArenaId, threshold = 0.08) {
+    if (!Array.isArray(path) || path.length < 2 || !arenaVerticalProfile(arenaId)) return false;
+    let minimum = Infinity;
+    let maximum = -Infinity;
+    for (const point of path) {
+      const elevation = arenaElevationAt(point.x, point.y, arenaId);
+      minimum = Math.min(minimum, elevation);
+      maximum = Math.max(maximum, elevation);
+    }
+    return maximum - minimum > threshold;
+  }
+  function prepareNavigationPath(path) {
+    const original = Array.isArray(path) ? path.slice() : [];
+    if (original.length < 2) return original;
+    // Preserve the complete A* stair sequence whenever a route changes floor.
+    // Removing intermediate cell centres can create a visually convincing but
+    // physically invalid diagonal climb up the side of a platform.
+    if (pathCrossesArenaElevation(original)) {
+      return pathSegmentsHaveNavigationClearance(original, NAV_RADIUS) ? original : [];
+    }
+    return safelySmoothPath(original);
   }
   function pathDistance(path, startIndex = 0, fromPoint = null) {
     if (!path || !path.length || startIndex >= path.length) return 0;
@@ -16475,7 +16621,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         } else {
           path[path.length - 1] = { x: goalPoint.x, y: goalPoint.y };
         }
-        return smoothPath(path);
+        return prepareNavigationPath(path);
       }
       closed.add(currentKey);
       const currentG = gScore.get(currentKey) ?? Infinity;
@@ -16719,6 +16865,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.combatApproachTargetOrigin = null;
       this.combatApproachExpires = 0;
       this.combatApproachReason = '';
+      this.combatApproachKind = '';
       this.combatYieldTimer = 0;
       this.combatBlockerKey = '';
       this.combatBlockerType = '';
@@ -16856,6 +17003,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.combatRepositionRequested = false;
       this.repositionCooldown = 0;
       this.flankDirection = Math.random() < 0.5 ? -1 : 1;
+      this.tacticalFlankCooldown = 3.5 + Math.random() * 4.5;
+      this.tacticalFlankAttempts = 0;
       this.wantsSafeReload = false;
       this.safeReloadTimer = 0;
       this.coordinationRepathCooldown = 0;
@@ -17762,9 +17911,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       if (!path) {
         const phase = ((Math.max(0, Number(this.slot) || 0) + this.team * 3) % 8) * (TAU / 8);
         const alternatives = [];
-        for (const radius of [0.42, 0.68, 0.94, 1.20]) {
-          for (let index = 0; index < 8; index++) {
-            const angle = phase + index * TAU / 8;
+        for (const radius of [0.42, 0.68, 0.94, 1.20, 1.55, 1.90, 2.30]) {
+          for (let index = 0; index < 12; index++) {
+            const angle = phase + index * TAU / 12;
             const candidate = nearestWalkablePoint(
               safeGoal.x + Math.cos(angle) * radius,
               safeGoal.y + Math.sin(angle) * radius
@@ -17809,7 +17958,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       }
       if (path && path.length > 1) {
         path[0] = { x: this.x, y: this.y };
-        this.path = smoothPath(path);
+        this.path = prepareNavigationPath(path);
         this.pathIndex = 1;
         this.pathGoal = { x: resolvedGoal.x, y: resolvedGoal.y };
         this.pathRefreshNeeded = false;
@@ -18283,6 +18432,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.exposureTimer = Math.max(0, this.exposureTimer - dt);
       this.combatBurstPause = Math.max(0, this.combatBurstPause - dt);
       this.repositionCooldown = Math.max(0, this.repositionCooldown - dt);
+      this.tacticalFlankCooldown = Math.max(0, (this.tacticalFlankCooldown || 0) - dt);
       this.mapRotationCooldown = Math.max(0, (this.mapRotationCooldown || 0) - dt);
       this.targetSwitchCooldown = Math.max(0, (this.targetSwitchCooldown || 0) - dt);
       this.viewOcclusionTimer = Math.max(0, (this.viewOcclusionTimer || 0) - dt);
@@ -18993,6 +19143,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.combatApproachTargetOrigin = null;
       this.combatApproachExpires = 0;
       this.combatApproachReason = '';
+      this.combatApproachKind = '';
       if (clearSharedPath) {
         this.path = [];
         this.pathIndex = 0;
@@ -19002,8 +19153,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     findCombatApproachRoute(enemy, options = {}) {
       if (!enemy || !enemy.alive) return null;
       const yielding = Boolean(options.yielding);
+      const verticalTransition = Boolean(options.verticalTransition);
+      const tacticalFlank = Boolean(options.tacticalFlank);
       const alternate = Math.max(0, Number(options.alternate) || 0);
       const preferred = this.preferredCombatRange();
+      const enemyElevation = arenaElevationAt(enemy.x, enemy.y);
       const currentDistance = dist(this, enemy);
       const baseBearing = Math.atan2(this.y - enemy.y, this.x - enemy.x);
       const deterministicSide = ((this.slot + this.team + alternate) % 2 === 0 ? -1 : 1) * (this.flankDirection || 1);
@@ -19064,7 +19218,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         const route = findPath(this, goal, this);
         if (!route || route.length < 2) continue;
         const routeLength = pathDistance(route, 1, this);
-        if (!Number.isFinite(routeLength) || routeLength > 24) continue;
+        if (!Number.isFinite(routeLength) || routeLength > (verticalTransition ? 30 : 24)) continue;
+        const goalElevation = arenaElevationAt(goal.x, goal.y);
+        if (verticalTransition && Math.abs(goalElevation - enemyElevation) > 0.12) continue;
         const targetDistance = dist(goal, enemy);
         const visibleAtGoal = hasLineOfSight(goal, enemy);
         let teammatePenalty = 0;
@@ -19090,7 +19246,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
           const rangeFit = -Math.abs(targetDistance - preferred) * 0.72;
           const sightValue = visibleAtGoal ? 1.15 : 0.22;
           score = rangeFit + sightValue + lateral * 1.1 - routeLength * 0.09 - teammatePenalty;
-          if (raw.hotspot) score -= 0.35;
+          if (verticalTransition) score += Math.abs(goalElevation - arenaElevationAt(this.x, this.y)) >= 0.35 ? 1.25 : -1.8;
+          if (tacticalFlank) {
+            if (lateral < 0.62 || routeLength < 3.25) continue;
+            const routeCommitment = clamp((routeLength - 3.25) / 6.5, 0, 1);
+            score += lateral * 1.85 + routeCommitment * 0.72 + (visibleAtGoal ? 0.35 : 0.62);
+            if ((levelZoneAt(goal.x, goal.y)?.short || '') !== (levelZoneAt(this.x, this.y)?.short || '')) score += 0.28;
+          }
+          if (raw.hotspot) score -= tacticalFlank ? 0.05 : 0.35;
         }
         if (score > bestScore) {
           bestScore = score;
@@ -19110,7 +19273,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.combatApproachGoal = { ...route.goal };
       this.combatApproachTargetKey = enemy.name;
       this.combatApproachTargetOrigin = { x: enemy.x, y: enemy.y };
-      this.combatApproachExpires = simulationClock + (route.yielding ? 2.6 : 4.6);
+      this.combatApproachKind = options.tacticalFlank ? 'tactical-flank' : (options.verticalTransition ? 'vertical-transition' : (route.yielding ? 'yield' : 'combat-route'));
+      this.combatApproachExpires = simulationClock + (route.yielding ? 2.6 : (options.verticalTransition ? 7.4 : (options.tacticalFlank ? 6.2 : 4.6)));
       this.combatApproachReason = reason;
       this.path = this.combatApproachPath;
       this.pathIndex = this.combatApproachIndex;
@@ -19123,6 +19287,19 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.flankDirection = route.side || this.flankDirection;
       combatDebug.combatApproachRoutes++;
       if (route.yielding) combatDebug.combatYieldActions++;
+      if (options.tacticalFlank) {
+        combatDebug.tacticalFlankRoutes = (Number(combatDebug.tacticalFlankRoutes) || 0) + 1;
+        this.tacticalFlankAttempts = (Number(this.tacticalFlankAttempts) || 0) + 1;
+        this.tacticalFlankCooldown = 10.5 + Math.random() * 5.5;
+        if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('true_flank_route', this, {
+          target: enemy.name,
+          reason,
+          goal: { x: route.goal.x, y: route.goal.y },
+          nodes: route.path.length,
+          routeLength: Number(pathDistance(route.path, 1, this).toFixed(2)),
+          targetZone: levelZoneAt(route.goal.x, route.goal.y)?.short || null
+        });
+      }
       if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, route.yielding ? 'combat_lane_yield' : 'combat_approach_route', {
         target: enemy.name,
         reason,
@@ -19139,8 +19316,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       if (simulationClock >= this.combatApproachExpires || targetMoved) {
         const reason = targetMoved ? 'refresh moving-target approach' : 'refresh stalled approach route';
         const yielding = this.combatYieldTimer > 0;
+        const approachKind = this.combatApproachKind;
         this.clearCombatApproach();
-        if (!this.beginCombatApproach(enemy, reason, { yielding, alternate: (this.combatRecoveryStage || 0) + 1 })) return false;
+        if (!this.beginCombatApproach(enemy, reason, {
+          yielding,
+          verticalTransition: approachKind === 'vertical-transition',
+          tacticalFlank: approachKind === 'tactical-flank',
+          alternate: (this.combatRecoveryStage || 0) + 1
+        })) return false;
       }
       while (this.combatApproachIndex < this.combatApproachPath.length && dist(this, this.combatApproachPath[this.combatApproachIndex]) < 0.28) {
         this.combatApproachIndex++;
@@ -19530,6 +19713,25 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         return;
       }
 
+      const flankRole = this.playerRole === 'flanker';
+      const flankBias = clamp(Number(this.flankBias) || 0, -0.4, 0.8);
+      const groupPenalty = this.teamPriorityId === 'group' ? 0.28 : (this.teamPriorityId === 'hold' ? 0.18 : 0);
+      const flankTrigger = this.combatRepositionRequested || this.combatBurstCount >= Math.max(1, this.combatBurstTarget - 1) || (force && advantage);
+      const flankChance = clamp((flankRole ? 0.62 : 0.12) + flankBias * 0.36 - groupPenalty, 0.04, 0.78);
+      if (!decisiveContact && flankTrigger && this.tacticalFlankCooldown <= 0 && healthRatio > 0.46 && ammoRatio > 0.20 && d > 3.2 && numbers.friendly >= 2 && Math.random() < flankChance) {
+        if (this.beginCombatApproach(enemy, flankRole ? 'role flank around contact' : 'supporting alternate angle', {
+          tacticalFlank: true,
+          alternate: (this.tacticalFlankAttempts || 0) + this.slot
+        })) {
+          this.combatRepositionRequested = false;
+          this.combatBurstCount = 0;
+          this.combatBurstTarget = 2 + Math.floor(Math.random() * 2);
+          combatDebug.tacticalRepositions++;
+          return;
+        }
+        this.tacticalFlankCooldown = 3.5 + Math.random() * 2.5;
+      }
+
       if (decisiveContact && this.combatRepositionRequested && healthRatio > 0.28 && ammoRatio > 0.16) {
         // In a final duel, do not break a genuine sightline after every short
         // pistol burst. Keep pressure while the opponent is visible, then use
@@ -19843,6 +20045,18 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.lastSeenTimer = 2.35;
       this.rememberHuntEvidence(this.lastSeen, 'visual', 1, enemy.name);
       this.updateCombatStalemate(dt, enemy);
+      const elevationGap = activeArenaId === 'summit'
+        ? Math.abs(arenaElevationAt(this.x, this.y) - arenaElevationAt(enemy.x, enemy.y))
+        : 0;
+      if (elevationGap > 0.34 && !this.combatApproachPath?.length && this.combatRecoveryCooldown <= 0) {
+        this.beginCombatApproach(enemy, arenaElevationAt(enemy.x, enemy.y) > arenaElevationAt(this.x, this.y)
+          ? 'take stairs to higher-floor contact'
+          : 'take stairs to lower-floor contact', {
+          verticalTransition: true,
+          alternate: this.slot + this.combatRecoveryStage
+        });
+      }
+      if (this.followCombatApproach(dt, enemy)) return;
       this.chooseCombatTactic(enemy);
 
       if (this.followCombatApproach(dt, enemy)) return;
@@ -20299,6 +20513,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
 
       const nx = this.x + dx;
       const ny = this.y + dy;
+      const elevationTransitionAllowed = arenaElevationTransitionAllowed(this.x, this.y, nx, ny, activeArenaId);
       if (canTravelBetween(this.x, this.y, nx, ny, BOT_RADIUS)) {
         if (this.isSprinting) this.roundSprintDistance = (this.roundSprintDistance || 0) + Math.hypot(dx, dy);
         this.x = nx;
@@ -20306,6 +20521,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         return true;
       }
 
+      if (activeArenaId === 'summit' && !elevationTransitionAllowed) {
+        combatDebug.summitIllegalElevationTransitionsBlocked = (Number(combatDebug.summitIllegalElevationTransitionsBlocked) || 0) + 1;
+      }
       this.repathTimer = 0;
       this.moveBlocked = true;
       this.pathRefreshNeeded = true;
@@ -20470,9 +20688,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     if (!bot.alive) return compact ? 'DOWN' : 'ELIMINATED';
     if (bot.weaponSwapTimer > 0) return compact ? 'SWAP' : 'SWITCHING WEAPON';
     if (bot.reloadTimer > 0) return compact ? 'RELOAD' : (bot.combatCover ? 'RELOADING IN COVER' : 'RELOADING');
+    if (bot.combatApproachKind === 'tactical-flank') return compact ? 'FLANK' : 'EXECUTING WIDE FLANK';
+    if (bot.combatApproachKind === 'vertical-transition') return compact ? 'STAIRS' : 'USING STAIRS TO CHANGE FLOOR';
     const labels = compact ? {
       cover: 'COVER', hold: 'HOLD', peek: 'PEEK', return: 'BREAK',
-      reload: 'COVER', push: 'PUSH', fallback: 'FALL BACK', reposition: 'FLANK', advance: 'ADVANCE'
+      reload: 'COVER', push: 'PUSH', fallback: 'FALL BACK', reposition: 'REPOSITION', advance: 'ADVANCE'
     } : {
       cover: 'MOVING TO COVER', hold: 'HOLDING ANGLE', peek: 'PEEKING FROM COVER', return: 'BREAKING CONTACT',
       reload: 'PREPARING SAFE RELOAD', push: 'PUSHING ADVANTAGE', fallback: 'DISENGAGING',
@@ -20504,13 +20724,37 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const DIAGNOSTIC_ROLLING_SECONDS = 90;
   const DIAGNOSTIC_MAX_SAMPLES = Math.ceil(DIAGNOSTIC_ROLLING_SECONDS / DIAGNOSTIC_SAMPLE_INTERVAL);
   const DIAGNOSTIC_MAX_EVENTS = 1800;
-  // High-frequency planner counters remain in summary deltas but are not
-  // duplicated as quarter-second events. This preserves the event window for
-  // actual tactical, navigation and combat incidents on long mobile matches.
+  // Counter totals remain authoritative in summary deltas. Their semantic
+  // incidents already have dedicated events (target_changed, path_failed,
+  // combat_recovery_succeeded, summit_layer_rotation, and so on), so duplicating
+  // every counter increment only evicts useful early-round evidence on longer
+  // mobile matches.
   const DIAGNOSTIC_SUMMARY_ONLY_COUNTERS = new Set([
+    'pathFailures',
+    'navigationRecoveries',
     'navigationPlansExecuted',
     'navigationPlanDeferrals',
-    'navigationPathHoldReuses'
+    'navigationPathHoldReuses',
+    'targetSwitches',
+    'closeThreatOverrides',
+    'operatorBlockedShots',
+    'combatStallRecoveries',
+    'combatApproachRoutes',
+    'combatYieldActions',
+    'combatRecoveryEscalations',
+    'combatRecoverySuccesses',
+    'crouchStallRecoveries',
+    'coordinationWaitCommits',
+    'stalemateBreaks',
+    'tacticalRepositions',
+    'officeCourtyardRotations',
+    'officeCourtyardCrossings',
+    'summitLayerRotations',
+    'summitLayerTraversals',
+    'summitIllegalElevationTransitionsBlocked',
+    'tacticalFlankRoutes',
+    'headshots',
+    'criticalHeadshots'
   ]);
   const DIAGNOSTIC_SUMMARY_STORAGE_KEY = 'strikewatchDiagnosticSummariesV1';
   const DIAGNOSTIC_SUMMARY_LIMIT = 10;
@@ -21117,6 +21361,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       officeCourtyardCrossings: Number(combatDebug.officeCourtyardCrossings) || 0,
       summitLayerRotations: Number(combatDebug.summitLayerRotations) || 0,
       summitLayerTraversals: Number(combatDebug.summitLayerTraversals) || 0,
+      summitIllegalElevationTransitionsBlocked: Number(combatDebug.summitIllegalElevationTransitionsBlocked) || 0,
+      tacticalFlankRoutes: Number(combatDebug.tacticalFlankRoutes) || 0,
       headshots: Number(combatDebug.headshotsDealt) || 0,
       criticalHeadshots: Number(combatDebug.criticalHeadshots) || 0
     };
@@ -21133,6 +21379,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       sampleAccumulator: 0,
       samples: [],
       events: [],
+      eventCounts: {},
       previousBots: new Map(),
       aggregates: {},
       zoneAnalytics: {},
@@ -21179,6 +21426,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       actor: diagnosticBotIdentity(bot),
       details: details && typeof details === 'object' ? details : { value: details }
     };
+    state.eventCounts = state.eventCounts || {};
+    state.eventCounts[event.type] = (Number(state.eventCounts[event.type]) || 0) + 1;
     state.events.push(event);
     if (state.events.length > DIAGNOSTIC_MAX_EVENTS) {
       const removed = state.events.length - DIAGNOSTIC_MAX_EVENTS;
@@ -21261,6 +21510,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       pathIndex: Number(bot.pathIndex) || 0,
       combatApproachGoal: bot.combatApproachGoal ? { x: diagnosticRound(bot.combatApproachGoal.x), y: diagnosticRound(bot.combatApproachGoal.y) } : null,
       combatApproachReason: bot.combatApproachReason || null,
+      combatApproachKind: bot.combatApproachKind || null,
       combatRecoveryStage: Number(bot.combatRecoveryStage) || 0,
       combatRecoveryDisplacement: bot.combatRecoveryOrigin ? diagnosticRound(dist(bot, bot.combatRecoveryOrigin)) : 0,
       combatBlocker: bot.combatBlockerKey || null,
@@ -21334,11 +21584,10 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       }
       if (previous.tacticalMode !== current.tacticalMode) {
         aggregate.tacticalChanges++;
-        const tacticalReasonText = String(current.tacticalReason || '').toLowerCase();
-        const flankAction = current.tacticalMode === 'reposition' && ['flank', 'alternate', 'angle', 'route', 'short-range'].some(token => tacticalReasonText.includes(token));
+        const flankAction = current.combatApproachKind === 'tactical-flank' && previous.combatApproachKind !== 'tactical-flank';
         if (flankAction) {
           aggregate.flankRoutes++;
-          diagnosticLogEvent('flank_route', bot, { previousMode: previous.tacticalMode, mode: current.tacticalMode, reason: current.tacticalReason, goal: current.pathGoal });
+          diagnosticLogEvent('flank_route', bot, { previousMode: previous.tacticalMode, mode: current.tacticalMode, reason: current.combatApproachReason || current.tacticalReason, goal: current.pathGoal, verified: true });
         }
         diagnosticLogEvent('tactical_state_changed', bot, {
           previousMode: previous.tacticalMode,
@@ -21556,7 +21805,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       winner: winner === TEAM_BLUE || winner === TEAM_RED ? winner : null,
       score: [blueScore, redScore],
       rounds: roundNumber,
-      eventCounts: diagnosticEventCounts(state.events),
+      eventCounts: Object.keys(state.eventCounts || {}).length ? { ...state.eventCounts } : diagnosticEventCounts(state.events),
       eventOverflowCount: Number(state.eventOverflowCount) || 0,
       counterDeltas,
       performance: diagnosticBuildPerformanceReport(state),
@@ -39123,6 +39372,147 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.disc, colour, glModel, emissive, alpha, 4, 0.08);
   }
 
+  function summitPlatformRailSegments(profile = arenaVerticalProfile()) {
+    if (!profile?.platforms?.length) return [];
+    const ramps = Array.isArray(profile.ramps) ? profile.ramps : [];
+    const segments = [];
+    const splitRange = (start, end, gaps, minimum = 0.34) => {
+      let ranges = [[Math.min(start, end), Math.max(start, end)]];
+      for (const gap of gaps) {
+        const next = [];
+        for (const range of ranges) {
+          if (gap.end <= range[0] || gap.start >= range[1]) { next.push(range); continue; }
+          if (gap.start - range[0] >= minimum) next.push([range[0], Math.max(range[0], gap.start)]);
+          if (range[1] - gap.end >= minimum) next.push([Math.min(range[1], gap.end), range[1]]);
+        }
+        ranges = next;
+      }
+      return ranges.filter(range => range[1] - range[0] >= minimum);
+    };
+    for (const platform of profile.platforms) {
+      const x1 = Number(platform.x1);
+      const x2 = Number(platform.x2);
+      const z1 = Number(platform.z1);
+      const z2 = Number(platform.z2);
+      const elevation = Number(platform.elevation) || 0;
+      const stairMouths = [];
+      for (const ramp of ramps) {
+        const topIsEnd = Math.abs((Number(ramp.elevation2) || 0) - elevation) <= 0.04;
+        const topIsStart = Math.abs((Number(ramp.elevation1) || 0) - elevation) <= 0.04;
+        if (!topIsEnd && !topIsStart) continue;
+        const top = topIsEnd
+          ? { x: Number(ramp.x2), z: Number(ramp.z2) }
+          : { x: Number(ramp.x1), z: Number(ramp.z1) };
+        const half = Math.max(0.62, (Number(ramp.width) || 1) * 0.58 + 0.12);
+        const directionX = Math.abs(Number(ramp.x2) - Number(ramp.x1));
+        const directionZ = Math.abs(Number(ramp.z2) - Number(ramp.z1));
+        stairMouths.push({ id: ramp.id, x: top.x, z: top.z, half, edgeAxis: directionX > directionZ ? 'z' : 'x' });
+      }
+      const edgeDefs = [
+        { edge: 'north', axis: 'x', fixed: z1 + 0.10, start: x1 + 0.20, end: x2 - 0.20, distance: mouth => Math.abs(mouth.z - z1), value: mouth => mouth.x },
+        { edge: 'south', axis: 'x', fixed: z2 - 0.10, start: x1 + 0.20, end: x2 - 0.20, distance: mouth => Math.abs(mouth.z - z2), value: mouth => mouth.x },
+        { edge: 'west', axis: 'z', fixed: x1 + 0.10, start: z1 + 0.20, end: z2 - 0.20, distance: mouth => Math.abs(mouth.x - x1), value: mouth => mouth.z },
+        { edge: 'east', axis: 'z', fixed: x2 - 0.10, start: z1 + 0.20, end: z2 - 0.20, distance: mouth => Math.abs(mouth.x - x2), value: mouth => mouth.z }
+      ];
+      for (const edge of edgeDefs) {
+        const gaps = stairMouths
+          .filter(mouth => mouth.edgeAxis === edge.axis && edge.distance(mouth) <= 0.82 && edge.value(mouth) >= edge.start - 0.3 && edge.value(mouth) <= edge.end + 0.3)
+          .map(mouth => ({ id: mouth.id, start: edge.value(mouth) - mouth.half, end: edge.value(mouth) + mouth.half }));
+        for (const range of splitRange(edge.start, edge.end, gaps)) {
+          const segment = edge.axis === 'x'
+            ? { x1: range[0], z1: edge.fixed, x2: range[1], z2: edge.fixed }
+            : { x1: edge.fixed, z1: range[0], x2: edge.fixed, z2: range[1] };
+          segments.push({ ...segment, platformId: platform.id, edge: edge.edge, elevation, stairGaps: gaps.map(gap => gap.id) });
+        }
+      }
+    }
+    return segments;
+  }
+
+  function drawSummitGuardrailSegment(segment) {
+    const dx = segment.x2 - segment.x1;
+    const dz = segment.z2 - segment.z1;
+    const length = Math.hypot(dx, dz);
+    if (length < 0.30) return;
+    const elevation = Number(segment.elevation) || 0;
+    const topY = elevation + 0.86;
+    const midY = elevation + 0.48;
+    const baseY = elevation + 0.07;
+    const colour = [0.16, 0.38, 0.42];
+    const accent = [0.28, 0.72, 0.76];
+    const a = { x: segment.x1, z: segment.z1 };
+    const b = { x: segment.x2, z: segment.z2 };
+    drawSegment({ ...a, y: topY }, { ...b, y: topY }, 0.026, colour, 0.035, 1, 3, 0.30);
+    drawSegment({ ...a, y: midY }, { ...b, y: midY }, 0.017, accent, 0.045, 0.90, 3, 0.28);
+    drawSegment({ ...a, y: baseY + 0.08 }, { ...b, y: baseY + 0.08 }, 0.020, colour, 0.02, 1, 3, 0.34);
+    const postCount = Math.max(2, Math.ceil(length / 1.25) + 1);
+    const posts = [];
+    for (let index = 0; index < postCount; index++) {
+      const t = postCount === 1 ? 0 : index / (postCount - 1);
+      const post = { x: lerp(a.x, b.x, t), z: lerp(a.z, b.z, t) };
+      posts.push(post);
+      drawSegment({ ...post, y: elevation + 0.04 }, { ...post, y: topY }, 0.021, colour, 0.02, 1, 3, 0.30);
+    }
+    setBlendMode(true);
+    for (let index = 0; index < posts.length - 1; index++) {
+      const p1 = posts[index];
+      const p2 = posts[index + 1];
+      const panelLength = Math.hypot(p2.x - p1.x, p2.z - p1.z);
+      const panelYaw = Math.atan2(p2.z - p1.z, p2.x - p1.x);
+      mat4TRS(glModel, (p1.x + p2.x) * 0.5, elevation + 0.47, (p1.z + p2.z) * 0.5, -panelYaw, 0, 0, panelLength * 0.92, 0.48, 0.018);
+      drawMesh(glMeshes.cube, [0.28, 0.70, 0.74], glModel, 0.10, 0.16, 4, 0.08);
+    }
+    setBlendMode(false);
+  }
+
+  function drawSummitStairRails(ramp) {
+    const x1 = Number(ramp.x1);
+    const z1 = Number(ramp.z1);
+    const x2 = Number(ramp.x2);
+    const z2 = Number(ramp.z2);
+    const elevation1 = Number(ramp.elevation1) || 0;
+    const elevation2 = Number(ramp.elevation2) || 0;
+    const dx = x2 - x1;
+    const dz = z2 - z1;
+    const yaw = Math.atan2(dx, dz);
+    const sideOffset = Math.max(0.55, (Number(ramp.width) || 1) * 0.50 + 0.05);
+    const colour = [0.15, 0.35, 0.39];
+    const highlight = String(ramp.id || '').includes('east') ? [0.92, 0.54, 0.20] : [0.20, 0.68, 0.72];
+    for (const side of [-1, 1]) {
+      const start = localToWorld(x1, z1, yaw, side * sideOffset, 0);
+      const end = localToWorld(x2, z2, yaw, side * sideOffset, 0);
+      drawSegment({ x: start.x, y: elevation1 + 0.84, z: start.z }, { x: end.x, y: elevation2 + 0.84, z: end.z }, 0.024, colour, 0.03, 1, 3, 0.30);
+      drawSegment({ x: start.x, y: elevation1 + 0.42, z: start.z }, { x: end.x, y: elevation2 + 0.42, z: end.z }, 0.015, highlight, 0.06, 0.92, 3, 0.28);
+      drawSegment({ x: start.x, y: elevation1 + 0.13, z: start.z }, { x: end.x, y: elevation2 + 0.13, z: end.z }, 0.028, colour, 0.015, 1, 3, 0.36);
+      for (let index = 0; index <= 5; index++) {
+        const t = index / 5;
+        const centreX = lerp(x1, x2, t);
+        const centreZ = lerp(z1, z2, t);
+        const post = localToWorld(centreX, centreZ, yaw, side * sideOffset, 0);
+        const elevation = lerp(elevation1, elevation2, t);
+        drawSegment({ x: post.x, y: elevation + 0.04, z: post.z }, { x: post.x, y: elevation + 0.84, z: post.z }, 0.019, colour, 0.02, 1, 3, 0.30);
+      }
+    }
+  }
+
+  function summitVisualPresentationSnapshot() {
+    const arena = arenaMeta('summit');
+    const profile = arenaVerticalSnapshot('summit');
+    const railSegments = summitPlatformRailSegments(profile);
+    const stairMouths = new Set();
+    for (const segment of railSegments) for (const gap of segment.stairGaps || []) stairMouths.add(gap);
+    return {
+      theme: arena.theme,
+      floorBase: '#586a70',
+      zoneOverlayBlend: true,
+      platformCount: profile.platforms.length,
+      rampCount: profile.ramps.length,
+      railSegmentCount: railSegments.length,
+      stairMouthGapCount: stairMouths.size,
+      railSegments: railSegments.map(segment => ({ platformId: segment.platformId, edge: segment.edge, length: Number(Math.hypot(segment.x2 - segment.x1, segment.z2 - segment.z1).toFixed(3)), stairGaps: segment.stairGaps.slice() }))
+    };
+  }
+
   function drawArenaVerticalGeometry() {
     const profile = arenaVerticalProfile();
     const summitTheme = activeArenaMeta().theme === 'summit';
@@ -39155,18 +39545,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.55, 0.64, 0.66] : [0.48, 0.59, 0.62]) : (upper ? [0.17, 0.22, 0.24] : [0.22, 0.20, 0.17]), glModel, summitTheme ? 0.025 : 0.015, 1, 3, summitTheme ? 0.72 : 0.42);
       mat4TRS(glModel, x, elevation + 0.012, z, 0, 0, 0, width * 0.98, 0.018, depth * 0.98);
       drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.70, 0.78, 0.79] : [0.64, 0.73, 0.75]) : (upper ? [0.28, 0.34, 0.35] : [0.34, 0.30, 0.24]), glModel, summitTheme ? 0.035 : 0.018, 1, 3, summitTheme ? 0.84 : 0.34);
-      const railY = elevation + 0.68;
-      const railColour = summitTheme ? [0.20, 0.52, 0.56] : [0.20, 0.25, 0.27];
-      for (const edgeZ of [Number(platform.z1) + 0.10, Number(platform.z2) - 0.10]) {
-        drawSegment({ x: Number(platform.x1) + 0.30, y: railY, z: edgeZ }, { x: Number(platform.x2) - 0.30, y: railY, z: edgeZ }, 0.022, railColour, summitTheme ? 0.10 : 0, 0.82, 3, 0.28);
-        if (summitTheme) {
-          setBlendMode(true);
-          mat4TRS(glModel, x, elevation + 0.38, edgeZ, 0, 0, 0, width * 0.92, 0.44, 0.020);
-          drawMesh(glMeshes.cube, [0.30, 0.78, 0.82], glModel, 0.18, 0.16, 4, 0.08);
-          setBlendMode(false);
+      if (!summitTheme) {
+        const railY = elevation + 0.68;
+        const railColour = [0.20, 0.25, 0.27];
+        for (const edgeZ of [Number(platform.z1) + 0.10, Number(platform.z2) - 0.10]) {
+          drawSegment({ x: Number(platform.x1) + 0.30, y: railY, z: edgeZ }, { x: Number(platform.x2) - 0.30, y: railY, z: edgeZ }, 0.022, railColour, 0, 0.82, 3, 0.28);
         }
       }
     }
+    if (summitTheme) for (const segment of summitPlatformRailSegments(profile)) drawSummitGuardrailSegment(segment);
     for (const ramp of profile.ramps || []) {
       const x1 = Number(ramp.x1);
       const z1 = Number(ramp.z1);
@@ -39210,6 +39597,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         mat4TRS(glModel, landing.x, landing.y + 0.012, landing.z, yaw, 0, 0, stairWidth, 0.024, Math.max(0.24, stepDepth * 0.82));
         drawMesh(glMeshes.cube, summitTheme ? [0.58, 0.68, 0.70] : [0.27, 0.31, 0.32], glModel, summitTheme ? 0.022 : 0.012, 1, 3, summitTheme ? 0.72 : 0.34);
       }
+      if (summitTheme) drawSummitStairRails(ramp);
     }
   }
 
@@ -39218,13 +39606,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const officeTheme = arena.theme === 'office';
     const summitTheme = arena.theme === 'summit';
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
-    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : summitTheme ? hexColour('#74858b') : hexColour('#2e3940');
+    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : summitTheme ? hexColour('#586a70') : hexColour('#2e3940');
     const ceilingColour = officeTheme ? hexColour('#d7d9d6') : summitTheme ? hexColour('#d3dde0') : hexColour('#0d151b');
     const wallA = officeTheme ? hexColour('#b8bdc0') : summitTheme ? hexColour('#aebcc1') : hexColour('#5b6d7a');
     const wallB = officeTheme ? hexColour('#8f989e') : summitTheme ? hexColour('#73878f') : hexColour('#465560');
     const trimColour = officeTheme ? hexColour('#3b454c') : summitTheme ? hexColour('#24434a') : hexColour('#162129');
     const hazardColour = officeTheme ? hexColour('#6d8794') : summitTheme ? hexColour('#23b9bd') : hexColour('#c0942f');
-    const lineColour = officeTheme ? hexColour('#3a454d') : summitTheme ? hexColour('#91a5aa') : hexColour('#233037');
+    const lineColour = officeTheme ? hexColour('#3a454d') : summitTheme ? hexColour('#42555a') : hexColour('#233037');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
     drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, officeTheme ? 0.96 : 0.78);
@@ -39275,26 +39663,32 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
     }
 
+    if (summitTheme) setBlendMode(true);
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.020 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.14 : 0.26, 1, officeTheme ? 0.96 : summitTheme ? 0.90 : 0.78);
+      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.006 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : 0.26, 1, officeTheme ? 0.96 : summitTheme ? 0.96 : 0.78);
     }
+    if (summitTheme) setBlendMode(false);
     drawArenaVerticalGeometry();
+    if (summitTheme) setBlendMode(true);
     for (const patch of worldBatches.floorPatches) {
       const colour = officeTheme
         ? (patch.shade === 21 ? [0.13, 0.17, 0.20] : (patch.shade === 9 ? [0.19, 0.23, 0.26] : [0.15, 0.20, 0.23]))
         : summitTheme
-          ? (patch.shade === 21 ? [0.43, 0.54, 0.57] : (patch.shade === 9 ? [0.60, 0.68, 0.69] : [0.50, 0.60, 0.62]))
+          ? (patch.shade === 21 ? [0.40, 0.49, 0.51] : (patch.shade === 9 ? [0.48, 0.57, 0.59] : [0.43, 0.52, 0.54]))
           : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
-      mat4TRS(glModel, patch.x, 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
-      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.008 : 0, officeTheme ? 0.28 : summitTheme ? 0.48 : 0.92, 3, officeTheme ? 0.98 : summitTheme ? 0.82 : 0.48);
+      const patchElevation = summitTheme ? arenaElevationAt(patch.x, patch.z) : 0;
+      mat4TRS(glModel, patch.x, patchElevation + 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
+      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.004 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : 0.92, 3, officeTheme ? 0.98 : summitTheme ? 0.94 : 0.48);
     }
+    if (summitTheme) setBlendMode(false);
     for (const strip of worldBatches.laneStrips) {
       const colour = summitTheme ? (strip.warm ? [0.96, 0.62, 0.22] : [0.16, 0.72, 0.76]) : (strip.warm ? [0.61, 0.39, 0.12] : [0.23, 0.48, 0.64]);
       for (const offset of [-0.13, 0.13]) {
         const p = localToWorld(strip.x, strip.z, strip.yaw, offset, 0);
-        mat4TRS(glModel, p.x, 0.014, p.z, strip.yaw, 0, 0, 0.035, 0.012, 0.62);
-        drawMesh(glMeshes.cube, colour, glModel, 0.025, 0.72, 3, 0.52);
+        const stripElevation = summitTheme ? arenaElevationAt(p.x, p.z) : 0;
+        mat4TRS(glModel, p.x, stripElevation + 0.014, p.z, strip.yaw, 0, 0, summitTheme ? 0.026 : 0.035, 0.012, 0.62);
+        drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.016 : 0.025, summitTheme ? 0.58 : 0.72, 3, summitTheme ? 0.72 : 0.52);
       }
     }
 
@@ -39821,8 +40215,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const line of worldBatches.floorLines) {
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
-      const gridColour = officeTheme ? (line.major ? OFFICE_CARPET_PRESENTATION.seamMajor : OFFICE_CARPET_PRESENTATION.seamMinor) : (line.major ? [0.055, 0.072, 0.078] : lineColour);
-      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : 1, 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : (line.major ? 0.42 : 0.58));
+      const gridColour = officeTheme
+        ? (line.major ? OFFICE_CARPET_PRESENTATION.seamMajor : OFFICE_CARPET_PRESENTATION.seamMinor)
+        : summitTheme
+          ? (line.major ? [0.25, 0.33, 0.35] : lineColour)
+          : (line.major ? [0.055, 0.072, 0.078] : lineColour);
+      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : 1, 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : summitTheme ? 0.92 : (line.major ? 0.42 : 0.58));
     }
     for (const edge of [
       { x: MAP_W * 0.5, z: 0.42, width: MAP_W - 1.1, depth: 0.026 },
@@ -44893,6 +45291,33 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       setActiveArena(previousArena);
       return result;
     },
+    summitPresentationAuditForTest: () => {
+      const previousArena = activeArenaId;
+      try {
+        setActiveArena('summit');
+        const snapshot = typeof summitVisualPresentationSnapshot === 'function'
+          ? summitVisualPresentationSnapshot()
+          : { theme: '', platformCount: 0, rampCount: 0, railSegmentCount: 0, stairMouthGapCount: 0, railSegments: [] };
+        const requiredGaps = new Set((arenaVerticalSnapshot('summit').ramps || []).map(ramp => ramp.id));
+        const observedGaps = new Set();
+        for (const segment of snapshot.railSegments || []) for (const gap of segment.stairGaps || []) observedGaps.add(gap);
+        return {
+          ...snapshot,
+          requiredStairMouths: [...requiredGaps],
+          observedStairMouths: [...observedGaps],
+          ok: snapshot.theme === 'summit'
+            && snapshot.platformCount === 2
+            && snapshot.rampCount === 6
+            && snapshot.railSegmentCount >= 8
+            && snapshot.stairMouthGapCount === 6
+            && [...requiredGaps].every(id => observedGaps.has(id))
+            && (snapshot.railSegments || []).every(segment => segment.length >= 0.34)
+            && snapshot.zoneOverlayBlend === true
+        };
+      } finally {
+        setActiveArena(previousArena);
+      }
+    },
     summitHotspotReachabilityAuditForTest: () => {
       const previousArena = activeArenaId;
       setActiveArena('summit');
@@ -45065,6 +45490,242 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
       return result;
     },
+    summitStairOnlyAccessAuditForTest: () => {
+      const previousArena = activeArenaId;
+      let result;
+      try {
+        setActiveArena('summit');
+        const profile = arenaVerticalSnapshot('summit');
+        const directEdges = [
+          { id: 'gallery-south-edge', a: { x: 14.5, y: 7.55 }, b: { x: 14.5, y: 6.65 } },
+          { id: 'gallery-east-edge', a: { x: 27.55, y: 5.5 }, b: { x: 26.65, y: 5.5 } },
+          { id: 'skybridge-north-edge', a: { x: 17.5, y: 8.55 }, b: { x: 17.5, y: 9.45 } },
+          { id: 'skybridge-south-edge', a: { x: 17.5, y: 15.45 }, b: { x: 17.5, y: 14.55 } },
+          { id: 'skybridge-west-edge', a: { x: 10.55, y: 13.5 }, b: { x: 11.45, y: 13.5 } },
+          { id: 'skybridge-east-edge', a: { x: 25.45, y: 10.0 }, b: { x: 24.55, y: 10.0 } }
+        ].map(edge => ({
+          ...edge,
+          elevationA: Number(arenaElevationAt(edge.a.x, edge.a.y, 'summit').toFixed(3)),
+          elevationB: Number(arenaElevationAt(edge.b.x, edge.b.y, 'summit').toFixed(3)),
+          allowed: canTravelBetweenForNavigation(edge.a.x, edge.a.y, edge.b.x, edge.b.y, BOT_RADIUS)
+        }));
+        const stairs = (profile.ramps || []).map(ramp => {
+          const a = { x: lerp(ramp.x1, ramp.x2, 0.08), y: lerp(ramp.z1, ramp.z2, 0.08) };
+          const b = { x: lerp(ramp.x1, ramp.x2, 0.92), y: lerp(ramp.z1, ramp.z2, 0.92) };
+          const path = findPath(a, b);
+          return {
+            id: ramp.id,
+            allowed: canTravelBetweenForNavigation(a.x, a.y, b.x, b.y, BOT_RADIUS),
+            pathNodes: path?.length || 0,
+            startElevation: Number(arenaElevationAt(a.x, a.y, 'summit').toFixed(3)),
+            endElevation: Number(arenaElevationAt(b.x, b.y, 'summit').toFixed(3)),
+            pathTransitionValid: Boolean(path?.length) && path.every((point, index) => index === 0 || arenaElevationTransitionAllowed(path[index - 1].x, path[index - 1].y, point.x, point.y, 'summit'))
+          };
+        });
+        const groundToUpperPairs = [
+          { id: 'west-to-gallery', start: { x: 5.5, y: 11.5 }, goal: { x: 14.5, y: 5.5 } },
+          { id: 'east-to-gallery', start: { x: 30.5, y: 11.5 }, goal: { x: 21.5, y: 5.5 } },
+          { id: 'west-to-skybridge', start: { x: 5.5, y: 13.5 }, goal: { x: 17.5, y: 12.5 } },
+          { id: 'south-to-skybridge', start: { x: 18.5, y: 19.5 }, goal: { x: 18.5, y: 12.5 } }
+        ].map(pair => {
+          const path = findPath(pair.start, pair.goal);
+          const elevations = (path || []).map(point => arenaElevationAt(point.x, point.y, 'summit'));
+          const transitionValid = Boolean(path?.length) && path.every((point, index) => index === 0 || canTravelBetweenForNavigation(path[index - 1].x, path[index - 1].y, point.x, point.y, BOT_RADIUS));
+          let gradual = false;
+          for (let index = 1; index < (path || []).length && !gradual; index++) {
+            const a = path[index - 1];
+            const b = path[index];
+            const length = Math.hypot(b.x - a.x, b.y - a.y);
+            const samples = Math.max(2, Math.ceil(length / 0.12));
+            for (let sample = 1; sample < samples; sample++) {
+              const ratio = sample / samples;
+              const elevation = arenaElevationAt(lerp(a.x, b.x, ratio), lerp(a.y, b.y, ratio), 'summit');
+              if (elevation > 0.05 && elevation < 0.73) { gradual = true; break; }
+            }
+          }
+          const segments = (path || []).slice(1).map((point, index) => ({
+            from: { x: Number(path[index].x.toFixed(3)), y: Number(path[index].y.toFixed(3)), elevation: Number(arenaElevationAt(path[index].x, path[index].y, 'summit').toFixed(3)) },
+            to: { x: Number(point.x.toFixed(3)), y: Number(point.y.toFixed(3)), elevation: Number(arenaElevationAt(point.x, point.y, 'summit').toFixed(3)) },
+            allowed: canTravelBetweenForNavigation(path[index].x, path[index].y, point.x, point.y, BOT_RADIUS)
+          }));
+          return { id: pair.id, nodes: path?.length || 0, path: (path || []).map(point => ({ x: Number(point.x.toFixed(3)), y: Number(point.y.toFixed(3)) })), elevations: elevations.map(value => Number(value.toFixed(3))), segments, transitionValid, gradual, ok: Boolean(path?.length) && transitionValid && gradual };
+        });
+        result = {
+          directEdges,
+          stairs,
+          groundToUpperPairs,
+          directClimbsBlocked: directEdges.every(edge => !edge.allowed),
+          stairsPassable: stairs.every(stair => stair.allowed && stair.pathNodes > 0 && stair.pathTransitionValid),
+          routesUseStairs: groundToUpperPairs.every(pair => pair.ok),
+          ok: directEdges.every(edge => !edge.allowed) && stairs.every(stair => stair.allowed && stair.pathNodes > 0 && stair.pathTransitionValid) && groundToUpperPairs.every(pair => pair.ok)
+        };
+      } finally {
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
+    summitCrossFloorCombatRouteForTest: () => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousPlan = currentEngagementPlan;
+      const previousRoundEnding = roundEnding;
+      const previousMatchEnding = matchEnding;
+      const previousFreeze = roundFreezeTimer;
+      const previousRoundTime = roundTime;
+      let result;
+      try {
+        setActiveArena('summit');
+        roundEnding = false;
+        matchEnding = false;
+        roundFreezeTimer = 0;
+        roundTime = 82;
+        currentEngagementPlan = (arenaMeta('summit').engagementPlans || []).find(plan => plan.id === 'skybridge') || null;
+        const mover = new Bot(TEAM_BLUE, 0);
+        const enemy = new Bot(TEAM_RED, 0);
+        bots = [mover, enemy];
+        mover.x = 5.5; mover.y = 11.5; mover.lastX = mover.x; mover.lastY = mover.y; mover.alive = true;
+        enemy.x = 18.5; enemy.y = 12.5; enemy.lastX = enemy.x; enemy.lastY = enemy.y; enemy.alive = true;
+        mover.combatApproachPath = [];
+        mover.combatApproachGoal = null;
+        mover.combatApproachKind = '';
+        const started = mover.beginCombatApproach(enemy, 'take stairs to higher-floor contact', { verticalTransition: true, alternate: 1 });
+        const path = mover.combatApproachPath || [];
+        const segmentValid = Boolean(path.length) && path.every((point, index) => index === 0 || canTravelBetweenForNavigation(path[index - 1].x, path[index - 1].y, point.x, point.y, BOT_RADIUS));
+        let gradual = false;
+        let maximumElevation = 0;
+        for (let index = 1; index < path.length; index++) {
+          const a = path[index - 1];
+          const b = path[index];
+          const length = Math.hypot(b.x - a.x, b.y - a.y);
+          const samples = Math.max(2, Math.ceil(length / 0.10));
+          for (let sample = 0; sample <= samples; sample++) {
+            const ratio = sample / samples;
+            const elevation = arenaElevationAt(lerp(a.x, b.x, ratio), lerp(a.y, b.y, ratio), 'summit');
+            maximumElevation = Math.max(maximumElevation, elevation);
+            if (elevation > 0.05 && elevation < 0.73) gradual = true;
+          }
+        }
+        result = {
+          started,
+          kind: mover.combatApproachKind,
+          path: path.map(point => ({ x: Number(point.x.toFixed(3)), y: Number(point.y.toFixed(3)), elevation: Number(arenaElevationAt(point.x, point.y, 'summit').toFixed(3)) })),
+          segmentValid,
+          gradual,
+          maximumElevation: Number(maximumElevation.toFixed(3)),
+          ok: started && mover.combatApproachKind === 'vertical-transition' && segmentValid && gradual && maximumElevation >= 0.73
+        };
+      } finally {
+        bots = previousBots;
+        currentEngagementPlan = previousPlan;
+        roundEnding = previousRoundEnding;
+        matchEnding = previousMatchEnding;
+        roundFreezeTimer = previousFreeze;
+        roundTime = previousRoundTime;
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
+
+    summitTacticalFlankForTest: () => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousPlan = currentEngagementPlan;
+      const previousRoundEnding = roundEnding;
+      const previousMatchEnding = matchEnding;
+      const previousFreeze = roundFreezeTimer;
+      const previousRoundTime = roundTime;
+      const previousClock = simulationClock;
+      const previousFlanks = Number(combatDebug.tacticalFlankRoutes) || 0;
+      let result;
+      try {
+        setActiveArena('summit');
+        roundEnding = false;
+        matchEnding = false;
+        roundFreezeTimer = 0;
+        roundTime = 78;
+        currentEngagementPlan = (arenaMeta('summit').engagementPlans || []).find(plan => plan.id === 'pillar-cross') || null;
+        const flanker = new Bot(TEAM_BLUE, 0);
+        const support = new Bot(TEAM_BLUE, 1);
+        const enemy = new Bot(TEAM_RED, 0);
+        bots = [flanker, support, enemy];
+        flanker.x = 13.5; flanker.y = 12.5; flanker.playerRole = 'flanker'; flanker.flankBias = 0.65; flanker.tacticalFlankCooldown = 0;
+        support.x = 13.2; support.y = 14.2; support.playerRole = 'support';
+        enemy.x = 20.5; enemy.y = 12.5; enemy.playerRole = 'anchor';
+        for (const bot of bots) { bot.alive = true; bot.lastX = bot.x; bot.lastY = bot.y; bot.target = null; bot.lastSeen = null; bot.combatApproachGoal = null; bot.combatApproachPath = []; bot.combatApproachKind = ''; }
+        const started = flanker.beginCombatApproach(enemy, 'role flank around contact', { tacticalFlank: true, alternate: 2 });
+        const path = (flanker.combatApproachPath || []).map(point => ({ x: Number(point.x.toFixed(3)), y: Number(point.y.toFixed(3)), elevation: Number(arenaElevationAt(point.x, point.y, 'summit').toFixed(3)) }));
+        const goal = flanker.combatApproachGoal ? { ...flanker.combatApproachGoal } : null;
+        const enemyBearing = Math.atan2(flanker.y - enemy.y, flanker.x - enemy.x);
+        const goalBearing = goal ? Math.atan2(goal.y - enemy.y, goal.x - enemy.x) : enemyBearing;
+        const lateral = goal ? Math.abs(Math.sin(angleDiff(goalBearing, enemyBearing))) : 0;
+        result = {
+          started,
+          kind: flanker.combatApproachKind,
+          goal,
+          path,
+          pathNodes: path.length,
+          lateral: Number(lateral.toFixed(3)),
+          counterDelta: (Number(combatDebug.tacticalFlankRoutes) || 0) - previousFlanks,
+          ok: started && flanker.combatApproachKind === 'tactical-flank' && path.length >= 2 && lateral >= 0.62 && (Number(combatDebug.tacticalFlankRoutes) || 0) > previousFlanks
+        };
+      } finally {
+        bots = previousBots;
+        currentEngagementPlan = previousPlan;
+        roundEnding = previousRoundEnding;
+        matchEnding = previousMatchEnding;
+        roundFreezeTimer = previousFreeze;
+        roundTime = previousRoundTime;
+        simulationClock = previousClock;
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
+
+    summitLoggedGoalRecoveryForTest: () => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousFrame = navigationPlanningFrame;
+      const previousPlans = navigationPlansUsedThisFrame;
+      const failuresBefore = Number(combatDebug.pathFailures) || 0;
+      let result;
+      try {
+        setActiveArena('summit');
+        const bot = new Bot(TEAM_RED, 2);
+        bots = [bot];
+        bot.alive = true;
+        bot.x = 24.5;
+        bot.y = 12.5;
+        bot.lastX = bot.x;
+        bot.lastY = bot.y;
+        bot.path = [];
+        bot.pathIndex = 0;
+        bot.pathGoal = null;
+        beginNavigationPlanningFrame();
+        const requested = { x: 17.5, y: 9.5 };
+        const started = bot.ensurePath(requested);
+        const resolved = bot.pathGoal ? { ...bot.pathGoal } : null;
+        const path = bot.path || [];
+        const pathValid = Boolean(path.length) && path.every((point, index) => index === 0 || canTravelBetweenForNavigation(path[index - 1].x, path[index - 1].y, point.x, point.y, NAV_RADIUS));
+        result = {
+          requested,
+          directPathAvailable: Boolean(findPath(bot, requested)?.length),
+          started,
+          resolved,
+          resolutionDistance: resolved ? Number(Math.hypot(resolved.x - requested.x, resolved.y - requested.y).toFixed(3)) : null,
+          pathNodes: path.length,
+          pathValid,
+          pathFailureDelta: (Number(combatDebug.pathFailures) || 0) - failuresBefore,
+          ok: started && Boolean(resolved) && path.length > 1 && pathValid && (Number(combatDebug.pathFailures) || 0) === failuresBefore
+        };
+      } finally {
+        bots = previousBots;
+        navigationPlanningFrame = previousFrame;
+        navigationPlansUsedThisFrame = previousPlans;
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
+
     summitStairTraversalSimulationForTest: () => {
       const previousArena = activeArenaId;
       const previousBots = bots;
@@ -45219,6 +45880,47 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       storedSummaries: typeof diagnosticStoredSummaries === 'function' ? diagnosticStoredSummaries() : []
     }),
     diagnosticsExportForTest: () => typeof diagnosticBuildExportPayload === 'function' ? diagnosticBuildExportPayload(matchDiagnostics) : null,
+    diagnosticEventRetentionForTest: () => {
+      const previousDiagnostics = matchDiagnostics;
+      const previousRound = roundNumber;
+      let result;
+      try {
+        roundNumber = 1;
+        matchDiagnostics = {
+          schema: 1,
+          startSimulationTime: simulationClock,
+          events: [],
+          eventCounts: {},
+          eventOverflowCount: 0,
+          aggregates: {},
+          zoneAnalytics: {},
+          completed: false
+        };
+        for (let index = 0; index < DIAGNOSTIC_MAX_EVENTS + 25; index++) diagnosticLogEvent('test_repeated');
+        diagnosticLogEvent('round_started');
+        diagnosticLogEvent('round_finished');
+        const retained = diagnosticEventCounts(matchDiagnostics.events);
+        result = {
+          maximumEvents: DIAGNOSTIC_MAX_EVENTS,
+          retainedEvents: matchDiagnostics.events.length,
+          overflowCount: matchDiagnostics.eventOverflowCount,
+          cumulativeRepeated: matchDiagnostics.eventCounts.test_repeated || 0,
+          retainedRepeated: retained.test_repeated || 0,
+          cumulativeRoundStarted: matchDiagnostics.eventCounts.round_started || 0,
+          cumulativeRoundFinished: matchDiagnostics.eventCounts.round_finished || 0,
+          counterEventsSummaryOnly: ['pathFailures', 'targetSwitches', 'tacticalRepositions', 'summitLayerRotations', 'tacticalFlankRoutes'].every(key => DIAGNOSTIC_SUMMARY_ONLY_COUNTERS.has(key)),
+          ok: matchDiagnostics.events.length === DIAGNOSTIC_MAX_EVENTS
+            && matchDiagnostics.eventOverflowCount === 27
+            && matchDiagnostics.eventCounts.test_repeated === DIAGNOSTIC_MAX_EVENTS + 25
+            && matchDiagnostics.eventCounts.round_started === 1
+            && matchDiagnostics.eventCounts.round_finished === 1
+        };
+      } finally {
+        matchDiagnostics = previousDiagnostics;
+        roundNumber = previousRound;
+      }
+      return result;
+    },
     performanceDiagnosticsForTest: () => typeof diagnosticBuildPerformanceReport === 'function' ? diagnosticBuildPerformanceReport(matchDiagnostics) : null,
     navigationPlannerForTest: () => typeof navigationPlannerSnapshot === 'function' ? navigationPlannerSnapshot() : null,
     rangeCompatibilityForTest: engagementId => typeof clubWeaponRangeCompatibility === 'function' ? clubWeaponRangeCompatibility(engagementId || clubTacticsState().engagementId) : null,
