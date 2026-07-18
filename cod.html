@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.08: Operator Silhouette Pass</title>
+<title>Strikewatch 12.09: Match Intelligence & Motion Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.08';
-  const BUILD_NAME = 'OPERATOR SILHOUETTE PASS';
-  const BUILD_ID = '12.08.0-20260718';
+  const BUILD_VERSION = '12.09';
+  const BUILD_NAME = 'MATCH INTELLIGENCE & MOTION PASS';
+  const BUILD_ID = '12.09.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -15412,7 +15412,35 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   let renderResolutionChanges = 0;
   let renderPerformancePressure = 0;
   let renderPerformanceRecovery = 0;
+  let runtimeQualityPressure = 0;
+  let runtimeQualityRecovery = 0;
+  let runtimeQualityLastChangedAt = 0;
+  const runtimeHardwareConcurrency = Math.max(1, Number(navigator.hardwareConcurrency) || 4);
+  const runtimeDeviceMemoryGb = Number(navigator.deviceMemory) || 0;
+  let runtimeQualityTier = runtimeHardwareConcurrency <= 2 || (runtimeDeviceMemoryGb > 0 && runtimeDeviceMemoryGb <= 2)
+    ? 0
+    : 2;
   let simulationClock = 0;
+
+  function runtimeQualityLabel(tier = runtimeQualityTier) {
+    return ['CONSTRAINED', 'BALANCED', 'FULL'][clamp(Math.round(Number(tier) || 0), 0, 2)];
+  }
+
+  function runtimePerceptionInterval(bot = null) {
+    const combat = Boolean(bot && (bot.target || bot.sightCandidate || bot.lastSeen));
+    const base = runtimeQualityTier <= 0 ? (combat ? 0.085 : 0.125)
+      : runtimeQualityTier === 1 ? (combat ? 0.062 : 0.092)
+        : (combat ? 0.045 : 0.068);
+    const slotJitter = bot ? (Math.max(0, Number(bot.slot) || 0) % 5) * 0.004 : 0;
+    return base + slotJitter;
+  }
+
+  function runtimeOperatorDetailTier(distance = 0) {
+    const d = Math.max(0, Number(distance) || 0);
+    if (runtimeQualityTier <= 0) return d < 5.5 ? 1 : 0;
+    if (runtimeQualityTier === 1) return d < 4.5 ? 2 : (d < 10 ? 1 : 0);
+    return d < 7.5 ? 2 : (d < 15 ? 1 : 0);
+  }
   let soundEvents = [];
   let soundEventSequence = 0;
   let audioContext = null;
@@ -16835,7 +16863,10 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   }
 
   function consumeNavigationPlanSlot(bot = null, urgent = false) {
-    const limit = urgent ? NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME : NAVIGATION_PLAN_BUDGET_PER_FRAME;
+    const quality = typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2;
+    const normalLimit = quality <= 0 ? 1 : NAVIGATION_PLAN_BUDGET_PER_FRAME;
+    const urgentLimit = quality <= 0 ? 2 : (quality === 1 ? 2 : NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME);
+    const limit = urgent ? urgentLimit : normalLimit;
     if (navigationPlansUsedThisFrame >= limit) {
       combatDebug.navigationPlanDeferrals++;
       if (bot) bot.navigationPlanDeferredFrame = navigationPlanningFrame;
@@ -16851,8 +16882,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     return {
       frame: navigationPlanningFrame,
       used: navigationPlansUsedThisFrame,
-      normalBudget: NAVIGATION_PLAN_BUDGET_PER_FRAME,
-      urgentBudget: NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME,
+      normalBudget: (typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0) ? 1 : NAVIGATION_PLAN_BUDGET_PER_FRAME,
+      urgentBudget: (typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0) ? 2 : ((typeof runtimeQualityTier === 'number' && runtimeQualityTier === 1) ? 2 : NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME),
+      qualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
       executed: Number(combatDebug.navigationPlansExecuted) || 0,
       deferred: Number(combatDebug.navigationPlanDeferrals) || 0,
       pathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0,
@@ -17301,6 +17333,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.sightTime = 0;
       this.reactionDelay = 0.18 + Math.random() * 0.24;
       this.targetSwitchCooldown = 0;
+      this.targetCommitUntil = 0;
+      this.perceptionScanTimer = 0.018 + this.slot * 0.009;
+      this.lastPerceptionScanAt = -999;
       this.viewOccluder = null;
       this.viewOccludedPoint = null;
       this.viewOcclusionTimer = 0;
@@ -17352,6 +17387,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.repathTimer = 0;
       this.lastPathPlanAt = -999;
       this.pathHoldUntil = 0;
+      this.pathLeaseUntil = 0;
+      this.pathIntentKey = '';
+      this.navigationGoalCandidateKeys = new Set();
       this.navigationPlanFrame = -1;
       this.navigationPlanDeferredFrame = -1;
       this.stuckTimer = 0;
@@ -17384,6 +17422,11 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.shoulderBlend = this.slot % 2 ? -0.18 : 0.18;
       this.weaponReadyBlend = 0.52;
       this.cornerReadyBlend = 0;
+      this.bodyLeanBlend = 0;
+      this.turnAnticipationBlend = 0;
+      this.footPlantBlend = 0;
+      this.aimStabilityBlend = 0;
+      this.breathingPhase = Math.random() * TAU;
       this.lastCrouchChangeAt = -999;
       this.hitReactionAge = 99;
       this.hitReactionStrength = 0;
@@ -18355,8 +18398,61 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       }
     }
 
+    navigationGoalCrowding(point, minimumSeparation = 0.92) {
+      let penalty = 0;
+      for (const other of bots) {
+        if (!other || other === this || !other.alive || other.team !== this.team) continue;
+        const reserved = other.combatApproachGoal || other.combatCover?.anchor || other.pathGoal || other.coordinationGoal;
+        if (!reserved) continue;
+        const separation = dist(point, reserved);
+        if (separation < minimumSeparation) penalty += (minimumSeparation - separation) * 4.2 + 1;
+        else if (separation < minimumSeparation + 0.8) penalty += (minimumSeparation + 0.8 - separation) * 0.35;
+      }
+      return penalty;
+    }
+    resolveCommittedNavigationGoal(goal, urgent = false) {
+      const requested = nearestWalkablePoint(goal.x, goal.y);
+      const candidates = [{ ...requested, offset: 0 }];
+      const phase = ((this.slot || 0) + this.team * 2) * 0.47;
+      const constrained = typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0;
+      const radii = urgent
+        ? (constrained ? [0.56, 0.98] : [0.48, 0.82, 1.18])
+        : (constrained ? [0.70] : [0.58, 0.96]);
+      const directions = constrained ? 6 : 8;
+      for (const radius of radii) {
+        for (let index = 0; index < directions; index++) {
+          const angle = phase + index * TAU / directions;
+          const point = {
+            x: requested.x + Math.cos(angle) * radius,
+            y: requested.y + Math.sin(angle) * radius
+          };
+          if (canStand(point.x, point.y, BOT_RADIUS + 0.018)) candidates.push({ ...point, offset: radius });
+        }
+      }
+      let best = requested;
+      let bestScore = Infinity;
+      const seen = this.navigationGoalCandidateKeys;
+      seen.clear();
+      for (const candidate of candidates) {
+        const key = `${Math.round(candidate.x * 4)}:${Math.round(candidate.y * 4)}`;
+        if (seen.has(key) || !canStand(candidate.x, candidate.y, BOT_RADIUS + 0.018)) continue;
+        seen.add(key);
+        const displacement = Math.hypot(candidate.x - requested.x, candidate.y - requested.y);
+        const crowding = this.navigationGoalCrowding(candidate, urgent ? 0.86 : 0.96);
+        const localClearance = Math.min(
+          clearanceAlong(candidate.x, candidate.y, 0, 0.72, BOT_RADIUS * 0.78),
+          clearanceAlong(candidate.x, candidate.y, Math.PI / 2, 0.72, BOT_RADIUS * 0.78),
+          clearanceAlong(candidate.x, candidate.y, Math.PI, 0.72, BOT_RADIUS * 0.78),
+          clearanceAlong(candidate.x, candidate.y, -Math.PI / 2, 0.72, BOT_RADIUS * 0.78)
+        );
+        const score = displacement * 0.68 + crowding - localClearance * 0.12;
+        if (score < bestScore) { bestScore = score; best = { x: candidate.x, y: candidate.y }; }
+      }
+      return best;
+    }
     ensurePath(goal) {
-      const safeGoal = nearestWalkablePoint(goal.x, goal.y);
+      const urgentPlan = Boolean(this.lastSeen || this.heardSound || this.combatApproachGoal || this.navigationDetourGoal || isUrgentHuntActive());
+      const safeGoal = this.resolveCommittedNavigationGoal(goal, urgentPlan);
       let resolvedGoal = safeGoal;
       const failedGoalKey = `${Math.round(safeGoal.x * 4) / 4}:${Math.round(safeGoal.y * 4) / 4}`;
       if (this.lastFailedGoalKey === failedGoalKey && simulationClock < this.failedGoalCooldownUntil) {
@@ -18364,7 +18460,6 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         this.repathTimer = Math.max(this.repathTimer, Math.min(0.28, this.failedGoalCooldownUntil - simulationClock));
         return false;
       }
-      const urgentPlan = Boolean(this.lastSeen || this.heardSound || this.combatApproachGoal || this.navigationDetourGoal || isUrgentHuntActive());
       if (typeof consumeNavigationPlanSlot === 'function' && !consumeNavigationPlanSlot(this, urgentPlan)) {
         this.pathRefreshNeeded = true;
         this.repathTimer = Math.max(this.repathTimer, 0.022 + (Math.max(0, Number(this.slot) || 0) % 5) * 0.004);
@@ -18414,7 +18509,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         // rather than on a short repeating timer.
         this.repathTimer = this.lastSeen ? 0.82 + Math.random() * 0.42 : 1.72 + Math.random() * 0.68;
         this.lastPathPlanAt = simulationClock;
-        this.pathHoldUntil = simulationClock + (urgentPlan ? 0.36 : 0.66);
+        this.pathHoldUntil = simulationClock + (urgentPlan ? 0.58 : 0.92);
+        this.pathLeaseUntil = simulationClock + (urgentPlan ? 0.82 : 1.45);
+        this.pathIntentKey = `${Math.round(resolvedGoal.x * 2)}:${Math.round(resolvedGoal.y * 2)}`;
         this.pathFailures = 0;
         this.lastFailedGoalKey = '';
         this.failedGoalCooldownUntil = 0;
@@ -18452,6 +18549,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         }
         this.repathTimer = 0.12 + Math.min(0.28, this.pathFailures * 0.04);
         this.pathHoldUntil = 0;
+        this.pathLeaseUntil = 0;
+        this.pathIntentKey = '';
       }
       return Boolean(path && path.length);
     }
@@ -18639,6 +18738,15 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.upperAimBlend = lerp(this.upperAimBlend, readyTarget, animationBlendFactor(7.2, dt));
       this.runBlend = lerp(this.runBlend, next === 'run' ? 1 : 0, animationBlendFactor(next === 'run' ? 5.4 : 4.2, dt));
       this.walkBlend = lerp(this.walkBlend, moving ? 1 : 0, animationBlendFactor(moving ? 7.0 : 4.8, dt));
+      const leanTarget = clamp((Number(this.strafeBlend) || 0) * 0.095 + (Number(this.turnBlend) || 0) * 0.070 - (Number(this.backpedalBlend) || 0) * 0.025, -0.16, 0.16);
+      const turnTarget = clamp(angleDiff(this.renderAimAngle, this.renderMoveAngle) / 0.72, -1, 1);
+      const plantTarget = moving ? 1 - Math.min(1, Math.abs(Math.sin(this.walkCycle || 0))) : 1;
+      const stabilityTarget = clamp((this.crouched ? 0.34 : 0) + (1 - speedNorm) * 0.72 + (visibleEnemy ? 0.16 : 0), 0, 1);
+      this.bodyLeanBlend = lerp(Number(this.bodyLeanBlend) || 0, leanTarget, animationBlendFactor(moving ? 8.4 : 5.6, dt));
+      this.turnAnticipationBlend = lerp(Number(this.turnAnticipationBlend) || 0, turnTarget, animationBlendFactor(6.8, dt));
+      this.footPlantBlend = lerp(Number(this.footPlantBlend) || 0, plantTarget, animationBlendFactor(10.0, dt));
+      this.aimStabilityBlend = lerp(Number(this.aimStabilityBlend) || 0, stabilityTarget, animationBlendFactor(5.4, dt));
+      this.breathingPhase = (Number(this.breathingPhase) || 0) + dt * (visibleEnemy ? 1.9 : 1.25);
     }
     livingTeamMates() {
       return bots.filter(other => other !== this && other.alive && other.team === this.team);
@@ -18888,6 +18996,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.tacticalFlankCooldown = Math.max(0, (this.tacticalFlankCooldown || 0) - dt);
       this.mapRotationCooldown = Math.max(0, (this.mapRotationCooldown || 0) - dt);
       this.targetSwitchCooldown = Math.max(0, (this.targetSwitchCooldown || 0) - dt);
+      this.perceptionScanTimer = Math.max(0, (this.perceptionScanTimer || 0) - dt);
       this.viewOcclusionTimer = Math.max(0, (this.viewOcclusionTimer || 0) - dt);
       if (this.viewOcclusionTimer <= 0) {
         this.viewOccluder = null;
@@ -18934,7 +19043,12 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       }
       this.processHearing();
       this.updateLateRoundGoal(dt);
-      const visibleEnemy = this.updatePerception(dt);
+      const fullPerceptionScan = this.perceptionScanTimer <= 0;
+      if (fullPerceptionScan) {
+        this.perceptionScanTimer = typeof runtimePerceptionInterval === 'function' ? runtimePerceptionInterval(this) : 0.06;
+        this.lastPerceptionScanAt = simulationClock;
+      }
+      const visibleEnemy = this.updatePerception(dt, fullPerceptionScan);
       const summitOpeningCommit = Boolean(activeArenaId === 'summit' && this.mapRotationOpeningCommit && this.mapRotationGoal);
       const openingThreatDistance = visibleEnemy ? dist(this, visibleEnemy) : Infinity;
       const summitOpeningEmergency = summitOpeningCommit && (
@@ -19427,8 +19541,11 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       const challengerImmediate = this.isImmediateVisibleThreat(challenger);
       const currentImmediate = this.isImmediateVisibleThreat(current);
       if (challengerImmediate && (!currentImmediate || dist(this, challenger) + 0.28 < dist(this, current))) return true;
+      if (simulationClock < (Number(this.targetCommitUntil) || 0)) return false;
       if (this.targetSwitchCooldown > 0) return false;
-      return this.targetPriorityScore(challenger) + 0.78 < this.targetPriorityScore(current);
+      const currentScore = this.targetPriorityScore(current);
+      const challengerScore = this.targetPriorityScore(challenger);
+      return challengerScore + 1.05 < currentScore && challengerScore < currentScore * 0.82;
     }
     commitVisibleTarget(visible, switched = false) {
       if (!visible) return null;
@@ -19441,7 +19558,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.target = visible;
       this.sightCandidate = visible;
       this.sightTime = Math.max(this.sightTime, this.reactionDelay);
-      this.targetSwitchCooldown = switched ? 0.36 : this.targetSwitchCooldown;
+      this.targetSwitchCooldown = switched ? 0.68 : Math.max(this.targetSwitchCooldown, 0.18);
+      this.targetCommitUntil = Math.max(Number(this.targetCommitUntil) || 0, simulationClock + (switched ? 0.92 : 0.64));
       if (switched && previous && previous !== visible) {
         combatDebug.targetSwitches++;
         if (this.isImmediateVisibleThreat(visible)) combatDebug.closeThreatOverrides++;
@@ -19460,10 +19578,15 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       }
       registerCombatContact();
       this.lastPersonalContactAt = simulationClock;
-      this.path = [];
-      this.pathIndex = 0;
-      this.pathGoal = null;
-      this.pathRefreshNeeded = false;
+      const enteringCombat = !previous;
+      const substantialTargetShift = previous && previous !== visible && dist(previous, visible) > 2.2;
+      if (enteringCombat || substantialTargetShift) {
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = false;
+        this.pathLeaseUntil = 0;
+      }
       this.lastSeen = { x: visible.x, y: visible.y };
       this.lastSeenTimer = 2.35;
       this.rememberHuntEvidence(this.lastSeen, 'visual', 1, visible.name);
@@ -19485,7 +19608,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       this.engagementTargetKey = '';
       if (this === bots[spectatorIndex]) muzzle = 0;
     }
-    updatePerception(dt) {
+    updatePerception(dt, fullScan = true) {
       let currentOccluder = null;
       if (this.target && this.target.alive && this.target.team !== this.team) {
         const targetDistance = dist(this, this.target);
@@ -19499,7 +19622,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         }
       }
       const currentVisible = this.target && !currentOccluder && this.canVisuallySee(this.target, FOV * 1.24) ? this.target : null;
-      const bestVisible = this.findVisibleEnemy();
+      const bestVisible = fullScan ? this.findVisibleEnemy() : currentVisible;
 
       if (currentVisible) {
         if (bestVisible && this.shouldSwitchVisibleTarget(currentVisible, bestVisible)) {
@@ -20084,10 +20207,12 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       return best;
     }
     setCombatTactic(mode, reason, timer, commitSeconds = 0.82) {
+      const minimumCommit = ({ hold: 1.18, push: 1.02, fallback: 0.92, reposition: 1.08, cover: 1.28, return: 0.92, reload: 1.12, peek: 0.72 }[mode] || 0.86);
+      const sameIntent = this.tacticalMode === mode && this.lastTacticalReason === reason;
       this.tacticalMode = mode;
       this.lastTacticalReason = reason;
-      this.tacticalModeTimer = Math.max(Number(this.tacticalModeTimer) || 0, Number(timer) || 0);
-      this.tacticalCommitUntil = Math.max(Number(this.tacticalCommitUntil) || 0, simulationClock + Math.max(0, Number(commitSeconds) || 0));
+      this.tacticalModeTimer = Math.max(Number(this.tacticalModeTimer) || 0, Number(timer) || 0, sameIntent ? 0.28 : 0);
+      this.tacticalCommitUntil = Math.max(Number(this.tacticalCommitUntil) || 0, simulationClock + Math.max(minimumCommit, Number(commitSeconds) || 0));
       return mode;
     }
     assignCombatCover(cover, reason) {
@@ -20124,7 +20249,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       if (!force && this.combatApproachPath?.length && this.combatApproachTargetKey === enemy.name && simulationClock < this.combatApproachExpires) return;
       if (!force && this.tacticalDecisionTimer > 0 && !this.combatRepositionRequested) return;
       if (!force && simulationClock < (Number(this.tacticalCommitUntil) || 0) && !critical && !enemyReloading && !this.combatRepositionRequested) return;
-      this.tacticalDecisionTimer = (decisiveContact ? 0.36 + Math.random() * 0.34 : 0.62 + Math.random() * 0.48) * clamp(Number(this.tacticalDecisionMultiplier) || 1, 0.88, 1.12);
+      this.tacticalDecisionTimer = (decisiveContact ? 0.50 + Math.random() * 0.38 : 0.88 + Math.random() * 0.56) * clamp(Number(this.tacticalDecisionMultiplier) || 1, 0.88, 1.12);
 
       const committedCover = this.combatCover && ['cover', 'hold', 'peek', 'return', 'reload'].includes(this.tacticalMode);
       let previousCoverAnchor = null;
@@ -20784,8 +20909,10 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       const pursuitGoal = this.navigationDetourGoal || tacticalGoal;
       const goalShiftDistance = this.pathGoal ? dist(this.pathGoal, pursuitGoal) : Infinity;
       const pathHoldActive = Boolean(this.pathGoal && simulationClock < this.pathHoldUntil);
-      const goalShifted = !this.pathGoal || goalShiftDistance > (pathHoldActive ? 1.35 : 0.62);
-      if (pathHoldActive && goalShiftDistance > 0.62 && goalShiftDistance <= 1.35) combatDebug.navigationPathHoldReuses++;
+      const pathLeaseActive = Boolean(this.pathGoal && simulationClock < (Number(this.pathLeaseUntil) || 0));
+      const shiftThreshold = pathLeaseActive ? 1.72 : (pathHoldActive ? 1.35 : 0.74);
+      const goalShifted = !this.pathGoal || goalShiftDistance > shiftThreshold;
+      if ((pathHoldActive || pathLeaseActive) && goalShiftDistance > 0.62 && goalShiftDistance <= shiftThreshold) combatDebug.navigationPathHoldReuses++;
       const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
       if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
       if (!this.path.length || this.pathIndex >= this.path.length) {
@@ -21271,6 +21398,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       effectiveDpr: diagnosticRound(typeof DPR === 'number' ? DPR : 1, 3),
       resolutionScale: diagnosticRound(typeof renderResolutionScale === 'number' ? renderResolutionScale : 1, 3),
       targetScale: diagnosticRound(typeof renderResolutionTarget === 'number' ? renderResolutionTarget : 1, 3),
+      qualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
+      qualityLabel: typeof runtimeQualityLabel === 'function' ? runtimeQualityLabel() : 'FULL',
       canvasWidth: Number(canvas?.width) || 0,
       canvasHeight: Number(canvas?.height) || 0,
       webglReady: Boolean(typeof glReady !== 'undefined' && glReady)
@@ -21282,7 +21411,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       signature.key, signature.viewportWidth, signature.viewportHeight,
       signature.visualWidth, signature.visualHeight, signature.visualScale,
       signature.nativeDpr, signature.effectiveDpr, signature.resolutionScale,
-      signature.targetScale, signature.canvasWidth, signature.canvasHeight,
+      signature.targetScale, signature.qualityTier, signature.canvasWidth, signature.canvasHeight,
       signature.webglReady ? 1 : 0
     ].join('|');
   }
@@ -21304,6 +21433,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         effectiveDpr: signature.effectiveDpr,
         resolutionScale: signature.resolutionScale,
         targetScale: signature.targetScale,
+        qualityTier: signature.qualityTier,
+        qualityLabel: signature.qualityLabel,
         canvasWidth: signature.canvasWidth,
         canvasHeight: signature.canvasHeight,
         webglReady: signature.webglReady
@@ -42092,12 +42223,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     setBlendMode(false);
   }
 
-  function drawShadow(bot) {
+  function drawShadow(bot, detailTier = 2) {
     setBlendMode(true);
     mat4TRS(glModel, bot.x, 0.009, bot.y, 0, 0, 0, 0.60, 1, 0.38);
     drawMesh(glMeshes.disc, [0.01, 0.012, 0.014], glModel, 0, 0.30);
-    mat4TRS(glModel, bot.x, 0.010, bot.y, 0, 0, 0, 0.42, 1, 0.24);
-    drawMesh(glMeshes.disc, [0.008, 0.010, 0.012], glModel, 0, 0.18);
+    if (detailTier > 0) {
+      mat4TRS(glModel, bot.x, 0.010, bot.y, 0, 0, 0, 0.42, 1, 0.24);
+      drawMesh(glMeshes.disc, [0.008, 0.010, 0.012], glModel, 0, 0.18);
+    }
     setBlendMode(false);
   }
 
@@ -42143,6 +42276,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     healthBarY: 1.94
   });
 
+  const OPERATOR_WEAPON_ESSENTIAL_PARTS = new Set([
+    'slide', 'frame', 'barrel', 'muzzle', 'grip', 'magazine', 'mag-base',
+    'receiver', 'upper-receiver', 'lower-receiver', 'handguard', 'stock', 'butt-pad'
+  ]);
+  const OPERATOR_WEAPON_MINOR_PART_PATTERN = /sight|rail|accent|wear|cut-|port|trigger|panel|strap|tape|light|cap|block/;
+
   function operatorProportionAudit() {
     const p = OPERATOR_PROPORTIONS;
     const totalLeg = p.upperLeg + p.lowerLeg;
@@ -42178,6 +42317,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       gameplayCollisionChanged: false,
       hitDetectionChanged: false,
       additionalBodyDrawCalls: 0,
+      distanceBasedDetailReduction: true,
+      constrainedDeviceDetailTier: true,
       engineMigrationRequired: false
     };
   }
@@ -42193,7 +42334,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return worldPoint(origin.x, origin.y, origin.z, yaw, rx, ry, rz);
   }
 
-  function drawUnifiedCareerWeapon(weapon, origin, yaw, pitch = 0, roll = 0, scale = 1, recoil = 0, hurt = 0, animation = null) {
+  function drawUnifiedCareerWeapon(weapon, origin, yaw, pitch = 0, roll = 0, scale = 1, recoil = 0, hurt = 0, animation = null, detailTier = 2) {
     const parts = careerWeaponVisualParts(weapon || getCareerWeapon('service-p12'));
     const DEG = Math.PI / 180;
     const longGun = careerWeaponUsesSharedLongGunModel(weapon);
@@ -42208,7 +42349,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const magazineTravel = clamp(Number(phases.magazineTravel) || 0, 0, 1);
     const magazineSide = clamp(Number(phases.magazineSide) || 0, 0, 1);
 
+    const detail = clamp(Math.round(Number(detailTier) || 0), 0, 2);
     for (const part of parts) {
+      const partVolume = Math.max(0, Number(part.w) || 0) * Math.max(0, Number(part.h) || 0) * Math.max(0, Number(part.d) || 0);
+      const minorName = OPERATOR_WEAPON_MINOR_PART_PATTERN.test(String(part.className || ''));
+      if (detail <= 0 && !OPERATOR_WEAPON_ESSENTIAL_PARTS.has(part.className)) continue;
+      if (detail === 1 && minorName && partVolume < 90000) continue;
       const fit = careerWeaponPartFitOffset(part, 'world');
       let localX = (part.z + fit.z) * depthScale;
       let localY = -(part.y + fit.y) * verticalPositionScale;
@@ -42440,6 +42586,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const dx = bot.x - cameraBot.x;
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
+    const corpseDistance = Math.hypot(dx, dz);
+    const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(corpseDistance) : 2;
 
     const progress = clamp(bot.deathAnim || ((performance.now() / 1000 - bot.deathTime) * 1.85), 0, 1);
     const impactStrength = clamp(Number(bot.deathImpactStrength) || 0.55, 0.25, 1.25);
@@ -42544,7 +42692,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const goggles = worldPoint(head.x, head.y, head.z, yaw, 0, -0.005, 0.245);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, torsoPitch * 0.45, headRoll, 0.215, 0.065, 0.035);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, visor, glModel, 0.10, 1, 4, 0.20);
-    for (const headsetSide of [-1, 1]) {
+    if (fullDetail) for (const headsetSide of [-1, 1]) {
       const ear = worldPoint(head.x, head.y, head.z, yaw, headsetSide * 0.20, 0.00, 0.02);
       mat4TRS(glModel, ear.x, ear.y, ear.z, yaw, torsoPitch * 0.45, headRoll, 0.055, 0.11, 0.08);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.64);
@@ -42577,7 +42725,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const kneeShell = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.104);
       mat4TRS(glModel, kneeShell.x, kneeShell.y, kneeShell.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.106, 0.070, 0.026);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
-      for (const strapOffset of [-0.050, 0.050]) {
+      if (fullDetail) for (const strapOffset of [-0.050, 0.050]) {
         const strap = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + strapOffset, legPose.knee.z + 0.034);
         mat4TRS(glModel, strap.x, strap.y, strap.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.158, 0.022, 0.052);
         drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
@@ -42630,7 +42778,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         side * lerp(0.05, 0.24, fall),
         0.90,
         0,
-        0
+        0,
+        null,
+        detailTier
       );
     } else {
       const corpseWeaponLength = 0.46;
@@ -42652,8 +42802,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const dx = bot.x - cameraBot.x;
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
+    const operatorDistance = Math.hypot(dx, dz);
+    const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(operatorDistance) : 2;
+    const mediumDetail = detailTier >= 1;
+    const fullDetail = detailTier >= 2;
 
-    drawShadow(bot);
+    drawShadow(bot, detailTier);
 
     const presentedMoveAngle = Number.isFinite(bot.renderMoveAngle) ? bot.renderMoveAngle : (Number.isFinite(bot.pathAngle) ? bot.pathAngle : bot.angle);
     const presentedAimAngle = Number.isFinite(bot.renderAimAngle) ? bot.renderAimAngle : bot.angle;
@@ -42689,6 +42843,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const swapProgress = bot.weaponSwapTimer > 0 ? 1 - bot.weaponSwapTimer / Math.max(0.001, bot.weaponSwapDuration) : 0;
     const swapWave = bot.weaponSwapTimer > 0 ? Math.sin(clamp(swapProgress, 0, 1) * Math.PI) : 0;
     const weaponDrop = reloadPhases.lower * 0.20 + reloadPhases.rack * 0.055 + swapWave * 0.42;
+    const bodyLean = clamp(Number(bot.bodyLeanBlend) || 0, -0.18, 0.18);
+    const turnAnticipation = clamp(Number(bot.turnAnticipationBlend) || 0, -1, 1);
+    const footPlant = clamp(Number(bot.footPlantBlend) || 0, 0, 1);
+    const aimStability = clamp(Number(bot.aimStabilityBlend) || 0, 0, 1);
+    const breath = Math.sin(Number(bot.breathingPhase) || 0) * (0.0035 + (1 - aimStability) * 0.0035);
+    const cornerLean = clamp(Number(bot.cornerReadyBlend) || 0, 0, 1) * shoulderBias * 0.035;
     const palette = getOperatorPalette(bot);
     const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, team, teamSoft, metal } = palette;
 
@@ -42743,9 +42903,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         mat4TRS(glModel, strap.x, strap.y, strap.z, moveYaw, crouch * 0.10, side * 0.025, 0.158, 0.022, 0.052);
         drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
       }
-      const kneeTab = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x + side * 0.066, legPose.knee.y + 0.008, legPose.knee.z + 0.098);
-      mat4TRS(glModel, kneeTab.x, kneeTab.y, kneeTab.z, moveYaw, crouch * 0.10, side * 0.025, 0.020, 0.044, 0.020);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0, 1, 6, 0.84);
+      if (fullDetail) {
+        const kneeTab = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x + side * 0.066, legPose.knee.y + 0.008, legPose.knee.z + 0.098);
+        mat4TRS(glModel, kneeTab.x, kneeTab.y, kneeTab.z, moveYaw, crouch * 0.10, side * 0.025, 0.020, 0.044, 0.020);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0, 1, 6, 0.84);
+      }
 
       const shinGuardA = worldPoint(bot.x, 0, bot.y, moveYaw,
         lerp(legPose.knee.x, legPose.ankle.x, 0.22),
@@ -42761,18 +42923,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.24, 1, 6, 0.84);
       mat4TRS(glModel, foot.x, foot.y, foot.z, footYaw, legPose.footPitch, 0, 0.162, 0.135, 0.300);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
-      const toe = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.026, 0.128);
-      mat4TRS(glModel, toe.x, toe.y, toe.z, footYaw, legPose.footPitch, 0, 0.132, 0.075, 0.112);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, hurt * 0.20, 1, 3, 0.18);
-      const sole = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.071, 0.006);
-      mat4TRS(glModel, sole.x, sole.y, sole.z, footYaw, legPose.footPitch, 0, 0.158, 0.025, 0.285);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, [0.018, 0.023, 0.025], glModel, hurt * 0.10, 1, 6, 0.96);
+      if (mediumDetail) {
+        const toe = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.026, 0.128);
+        mat4TRS(glModel, toe.x, toe.y, toe.z, footYaw, legPose.footPitch, 0, 0.132, 0.075, 0.112);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, hurt * 0.20, 1, 3, 0.18);
+        const sole = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.071, 0.006);
+        mat4TRS(glModel, sole.x, sole.y, sole.z, footYaw, legPose.footPitch, 0, 0.158, 0.025, 0.285);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, [0.018, 0.023, 0.025], glModel, hurt * 0.10, 1, 6, 0.96);
+      }
     }
 
     // Pelvis follows movement; torso independently twists towards the aim angle.
     // Lateral and turning lean now make strafing/backpedalling readable without
     // changing the authoritative collision or aim direction.
-    const locomotionLean = strafe * 0.075 + turn * 0.055;
+    const locomotionLean = bodyLean + strafe * 0.035 + turn * 0.030 + cornerLean;
     mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.pelvisY + bodyBob - stanceDrop * 0.72 - hitCompression * 0.30, bot.y, moveYaw, backpedal * 0.035, locomotionLean + hitLean * 0.28, OPERATOR_PROPORTIONS.pelvisWidth, OPERATOR_PROPORTIONS.pelvisHeight, OPERATOR_PROPORTIONS.pelvisDepth);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
     const beltY = OPERATOR_PROPORTIONS.pelvisY + 0.02 + bodyBob - stanceDrop * 0.72;
@@ -42781,9 +42945,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const buckle = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0, OPERATOR_PROPORTIONS.pelvisY + 0.02 - stanceDrop * 0.72, 0.14);
     mat4TRS(glModel, buckle.x, buckle.y, buckle.z, moveYaw, 0, hitLean * 0.28, 0.075, 0.045, 0.030);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.06 + hurt * 0.30, 1, 3, 0.18);
-    const torsoLean = crouch * 0.08 + run * 0.06 + backpedal * 0.045 - hitWave * 0.055;
-    const torsoRoll = hitLean + locomotionLean * 0.68;
-    mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.torsoY + bodyBob - stanceDrop - hitCompression, bot.y, upperYaw, torsoLean, torsoRoll, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
+    const torsoLean = crouch * 0.08 + run * 0.06 + backpedal * 0.045 - hitWave * 0.055 + Math.abs(turnAnticipation) * 0.012;
+    const torsoRoll = hitLean + locomotionLean * 0.82 + turnAnticipation * 0.018;
+    mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.torsoY + bodyBob + breath - stanceDrop - hitCompression, bot.y, upperYaw, torsoLean, torsoRoll, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
     drawMesh(glMeshes.operatorTorso || glMeshes.roundedBox || glMeshes.cube, armour, glModel, hurt * 0.55, 1, 5, 0.82);
     const frontPlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.175 + crouch * 0.03);
     mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, upperYaw, torsoLean, torsoRoll, 0.39, 0.39, 0.07);
@@ -42791,7 +42955,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY + 0.02 - stanceDrop, -0.20);
     mat4TRS(glModel, backPack.x, backPack.y, backPack.z, upperYaw, torsoLean, torsoRoll, 0.34, 0.44, 0.16);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.4, 1, 5, 0.88);
-    for (const strapSide of [-1, 1]) {
+    if (mediumDetail) for (const strapSide of [-1, 1]) {
       const strap = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.15, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.02);
       mat4TRS(glModel, strap.x, strap.y, strap.z, upperYaw, torsoLean, torsoRoll + strapSide * 0.08, 0.045, 0.42, 0.055);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.25, 1, 5, 0.78);
@@ -42802,7 +42966,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const abdomen = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - 0.115 - stanceDrop * 0.84, 0.15);
     mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, upperYaw, torsoLean, torsoRoll, 0.31, 0.17, 0.06);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.22, 1, 5, 0.72);
-    for (const side of [-1, 0, 1]) {
+    if (mediumDetail) for (const side of [-1, 0, 1]) {
       const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, OPERATOR_PROPORTIONS.pelvisY + 0.12 - stanceDrop * 0.78, 0.185);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, upperYaw, 0, hitLean, 0.105, 0.15, 0.075);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.35, 1, 5, 0.86);
@@ -42855,19 +43019,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.01);
       mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.042, 0.10, 0.10);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
-      const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.025);
-      mat4TRS(glModel, patchStripe.x, patchStripe.y, patchStripe.z, upperYaw, 0, side * 0.15 + hitLean, 0.020, 0.065, 0.02);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, teamSoft, glModel, 0.20, 1, 4, 0.20);
+      if (fullDetail) {
+        const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.025);
+        mat4TRS(glModel, patchStripe.x, patchStripe.y, patchStripe.z, upperYaw, 0, side * 0.15 + hitLean, 0.020, 0.065, 0.02);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, teamSoft, glModel, 0.20, 1, 4, 0.20);
+      }
     }
-    const chestTape = worldPoint(bot.x, bodyBob, bot.y, upperYaw, -0.12, OPERATOR_PROPORTIONS.torsoY + 0.08 - stanceDrop, 0.19);
-    mat4TRS(glModel, chestTape.x, chestTape.y, chestTape.z, upperYaw, torsoLean, torsoRoll, 0.018, 0.11, 0.10);
-    drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.18, 1, 4, 0.24);
+    if (fullDetail) {
+      const chestTape = worldPoint(bot.x, bodyBob, bot.y, upperYaw, -0.12, OPERATOR_PROPORTIONS.torsoY + 0.08 - stanceDrop, 0.19);
+      mat4TRS(glModel, chestTape.x, chestTape.y, chestTape.z, upperYaw, torsoLean, torsoRoll, 0.018, 0.11, 0.10);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.18, 1, 4, 0.24);
+    }
 
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
-    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
-    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035;
-    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50;
+    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob + breath * 0.72 - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
+    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - (1 - footPlant) * run * 0.012;
+    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + bodyLean * 0.24;
     const isSidearm = bot.usingSecondary || bot.weapon?.category === 'pistol' || bot.weapon?.viewmodel === 'P12 SIDEARM';
     for (const side of [-1, 1]) {
       const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * OPERATOR_PROPORTIONS.shoulderHalf, 1.34 - stanceDrop, 0.03);
@@ -42922,7 +43090,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         1,
         recoil,
         hurt,
-        reloadPhases
+        reloadPhases,
+        detailTier
       );
     } else {
       const receiver = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward);
@@ -42987,6 +43156,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       supportsStrafeAndBackpedal: true,
       supportsShoulderSwitching: true,
       supportsCornerWeaponReady: true,
+      supportsTurnAnticipation: true,
+      supportsFootPlantWeighting: true,
+      supportsBreathingAndAimStability: true,
+      distanceBasedOperatorLod: true,
       hitReactionPhases: ['impact', 'compression', 'recover'],
       deathPhases: ['stagger', 'fall', 'settle'],
       reloadSamples,
@@ -44534,6 +44707,47 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return true;
   }
 
+  function updateRuntimeQualityGovernor(frameMs, updateMs, renderMs) {
+    if (appState !== 'match') {
+      runtimeQualityPressure = Math.max(0, runtimeQualityPressure - 2);
+      runtimeQualityRecovery = 0;
+      return false;
+    }
+    const frame = Math.max(0, Number(frameMs) || 0);
+    const updateCost = Math.max(0, Number(updateMs) || 0);
+    const renderCost = Math.max(0, Number(renderMs) || 0);
+    const severe = frame > 42 || updateCost > 16 || renderCost > 21;
+    const stressed = frame > 24 || updateCost > 8.5 || renderCost > 13.5;
+    const healthy = frame < 18.4 && updateCost < 5.8 && renderCost < 8.8;
+    runtimeQualityPressure = severe
+      ? Math.min(120, runtimeQualityPressure + 5)
+      : (stressed ? Math.min(120, runtimeQualityPressure + 1) : Math.max(0, runtimeQualityPressure - 2));
+    runtimeQualityRecovery = healthy ? Math.min(1200, runtimeQualityRecovery + 1) : Math.max(0, runtimeQualityRecovery - 3);
+    const now = performance.now();
+    let changed = false;
+    if (runtimeQualityPressure >= 54 && runtimeQualityTier > 0 && now - runtimeQualityLastChangedAt > 3500) {
+      runtimeQualityTier--;
+      runtimeQualityPressure = 0;
+      runtimeQualityRecovery = 0;
+      runtimeQualityLastChangedAt = now;
+      const targetCap = runtimeQualityTier <= 0 ? 0.84 : 0.94;
+      if (renderResolutionTarget > targetCap) {
+        renderResolutionTarget = targetCap;
+        renderResolutionScale = targetCap;
+        renderResolutionChanges++;
+        resize();
+      }
+      changed = true;
+    } else if (runtimeQualityRecovery >= 780 && runtimeQualityTier < 2 && now - runtimeQualityLastChangedAt > 10000) {
+      runtimeQualityTier++;
+      runtimeQualityRecovery = 0;
+      runtimeQualityPressure = 0;
+      runtimeQualityLastChangedAt = now;
+      changed = true;
+    }
+    return changed;
+  }
+
   function updateAdaptiveRenderResolution(frameMs, renderMs) {
     if (appState !== 'match') {
       renderPerformancePressure = 0;
@@ -44541,7 +44755,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return;
     }
     const portraitWindowed = viewMode === 'windowed' && window.innerHeight >= window.innerWidth;
-    const minimum = portraitWindowed ? 0.72 : 0.80;
+    const minimum = runtimeQualityTier <= 0
+      ? (portraitWindowed ? 0.62 : 0.70)
+      : (runtimeQualityTier === 1 ? (portraitWindowed ? 0.68 : 0.76) : (portraitWindowed ? 0.72 : 0.80));
     const slowFrame = frameMs > 23.5 || renderMs > 17.5;
     const fastFrame = frameMs < 17.8 && renderMs < 11.8;
     renderPerformancePressure = slowFrame ? renderPerformancePressure + 1 : Math.max(0, renderPerformancePressure - 2);
@@ -44581,6 +44797,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (frameMs > 34) runtimePerformance.longFrames++;
     if (intervalMs > 34) runtimePerformance.stutterFrames++;
     if (intervalMs > 50) runtimePerformance.severeFrames++;
+    updateRuntimeQualityGovernor(frameMs, updateMs, renderMs);
     updateAdaptiveRenderResolution(frameMs, renderMs);
     if (typeof diagnosticRecordPerformanceFrame === 'function') diagnosticRecordPerformanceFrame(intervalMs, frameMs, updateMs, renderMs, runtimeLastFrameStages);
   }
@@ -45204,8 +45421,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function snapshotCombatTestBots() {
     const fields = [
-      'x','y','angle','pathAngle','alive','health','cooldown','target','sightCandidate','sightTime','reactionDelay','targetSwitchCooldown','viewOccluder','viewOccludedPoint','viewOcclusionTimer','viewClearDirection','viewClearStart',
-      'lastSeen','lastSeenTimer','heardSound','heardSoundTimer','path','pathIndex','pathGoal','pathRefreshNeeded','repathTimer',
+      'x','y','angle','pathAngle','alive','health','cooldown','target','sightCandidate','sightTime','reactionDelay','targetSwitchCooldown','targetCommitUntil','perceptionScanTimer','lastPerceptionScanAt','viewOccluder','viewOccludedPoint','viewOcclusionTimer','viewClearDirection','viewClearStart',
+      'lastSeen','lastSeenTimer','heardSound','heardSoundTimer','path','pathIndex','pathGoal','pathRefreshNeeded','repathTimer','pathHoldUntil','pathLeaseUntil','pathIntentKey',
       'tacticalEnemyKey','tacticalMode','tacticalModeTimer','tacticalDecisionTimer','lastTacticalReason','combatCover',
       'combatRepositionRequested','combatMobilityTimer','combatBlockedTimer','combatRecoveryCooldown','combatRecoveryStage',
       'combatRecoveryTargetKey','combatRecoveryOrigin','combatRecoveryBestDisplacement','combatRecoveryLastAt','combatApproachPath',
@@ -45213,7 +45430,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       'combatApproachReason','combatYieldTimer','combatBlockerKey','combatBlockerType','engagementIdleTimer','engagementLastShots','engagementLastDamage',
       'engagementTargetKey','crouched','crouchHoldTimer','crouchStationaryTimer','moveVelocity','visualMoveVelocity','locomotionSpeed',
       'moveCommandedThisFrame','moveIntent','moveBlocked','renderMoveAngle','renderAimAngle','forwardBlend','strafeBlend','backpedalBlend',
-      'turnBlend','shoulderBlend','weaponReadyBlend','cornerReadyBlend','lastCrouchChangeAt','hitReactionAge','hitReactionStrength',
+      'turnBlend','shoulderBlend','weaponReadyBlend','cornerReadyBlend','bodyLeanBlend','turnAnticipationBlend','footPlantBlend','aimStabilityBlend','breathingPhase','lastCrouchChangeAt','hitReactionAge','hitReactionStrength',
       'hitReactionVertical','deathImpactStrength','deathPush','coordinationWaitTimer','weapon','coordinationHoldTimer','coordinationActionCooldown',
       'playerRole','teamPriorityId','objective','objectiveAge'
     ];
@@ -48457,6 +48674,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       skippedMenuRenders: runtimePerformance.skippedMenuRenders,
       hudRateHz: 20,
       menuRenderCapHz: 30,
+      qualityTier: runtimeQualityTier,
+      qualityLabel: typeof runtimeQualityLabel === 'function' ? runtimeQualityLabel() : String(runtimeQualityTier),
+      qualityPressure: runtimeQualityPressure,
+      qualityRecovery: runtimeQualityRecovery,
+      hardwareConcurrency: runtimeHardwareConcurrency,
+      deviceMemoryGb: runtimeDeviceMemoryGb || null,
       matchSpeed: matchSpeedMultiplier,
       damageNumbers: damageNumberEffects.length,
       damageNumbersSpawned: combatDebug.damageNumbersSpawned,
@@ -48554,9 +48777,70 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       portrait: window.innerHeight >= window.innerWidth, viewMode, appState, nativeDpr: window.devicePixelRatio || 1,
       effectiveDpr: DPR, resolutionScale: renderResolutionScale, targetScale: renderResolutionTarget,
       changes: renderResolutionChanges, pressure: renderPerformancePressure, recovery: renderPerformanceRecovery,
+      qualityTier: runtimeQualityTier, qualityLabel: typeof runtimeQualityLabel === 'function' ? runtimeQualityLabel() : String(runtimeQualityTier),
+      qualityPressure: runtimeQualityPressure, qualityRecovery: runtimeQualityRecovery,
       frameMs: runtimePerformance.frameMs, renderMs: runtimePerformance.renderMs, updateMs: runtimePerformance.updateMs,
       longFrames: runtimePerformance.longFrames, canvasWidth: canvas.width, canvasHeight: canvas.height
     }),
+    runtimeQualityGovernorForTest: (frameMs = 34, updateMs = 12, renderMs = 16, frames = 70) => {
+      const preserved = {
+        appState, tier: runtimeQualityTier, pressure: runtimeQualityPressure, recovery: runtimeQualityRecovery,
+        changedAt: runtimeQualityLastChangedAt, scale: renderResolutionScale, target: renderResolutionTarget,
+        changes: renderResolutionChanges
+      };
+      const before = { tier: runtimeQualityTier, label: runtimeQualityLabel(), scale: renderResolutionScale, target: renderResolutionTarget };
+      let after;
+      try {
+        appState = 'match';
+        runtimeQualityPressure = 0;
+        runtimeQualityRecovery = 0;
+        runtimeQualityLastChangedAt = -99999;
+        for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) {
+          updateRuntimeQualityGovernor(Number(frameMs) || 0, Number(updateMs) || 0, Number(renderMs) || 0);
+        }
+        after = {
+          tier: runtimeQualityTier, label: runtimeQualityLabel(), scale: renderResolutionScale,
+          target: renderResolutionTarget, pressure: runtimeQualityPressure, recovery: runtimeQualityRecovery
+        };
+      } finally {
+        appState = preserved.appState;
+        runtimeQualityTier = preserved.tier;
+        runtimeQualityPressure = preserved.pressure;
+        runtimeQualityRecovery = preserved.recovery;
+        runtimeQualityLastChangedAt = preserved.changedAt;
+        renderResolutionScale = preserved.scale;
+        renderResolutionTarget = preserved.target;
+        renderResolutionChanges = preserved.changes;
+        resize();
+      }
+      return { before, after, lowered: after.tier < before.tier || after.target < before.target, stateRestored: appState === preserved.appState && runtimeQualityTier === preserved.tier };
+    },
+    runtimeQualityProfileForTest: () => {
+      const preservedTier = runtimeQualityTier;
+      const profiles = [];
+      try {
+        for (let tier = 0; tier <= 2; tier++) {
+          runtimeQualityTier = tier;
+          profiles.push({
+            tier,
+            label: runtimeQualityLabel(),
+            perception: {
+              idle: runtimePerceptionInterval({ slot: 0, target: null, sightCandidate: null, lastSeen: null }),
+              combat: runtimePerceptionInterval({ slot: 0, target: {}, sightCandidate: null, lastSeen: null })
+            },
+            detail: {
+              near: runtimeOperatorDetailTier(3),
+              medium: runtimeOperatorDetailTier(8),
+              far: runtimeOperatorDetailTier(16)
+            },
+            navigation: navigationPlannerSnapshot()
+          });
+        }
+      } finally {
+        runtimeQualityTier = preservedTier;
+      }
+      return { activeTier: preservedTier, profiles };
+    },
     adaptiveResolutionForTest: (frameMs = 30, renderMs = 22, frames = 40) => {
       const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
       for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);
