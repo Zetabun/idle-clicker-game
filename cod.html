@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.20: AR-4 Held-Pose Refinement</title>
+<title>Strikewatch 12.21: Reload Cover & Hit Reactions</title>
 <style>
   :root {
     color-scheme: dark;
@@ -14844,9 +14844,9 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.20';
-  const BUILD_NAME = 'AR-4 HELD-POSE REFINEMENT';
-  const BUILD_ID = '12.20.0-20260719';
+  const BUILD_VERSION = '12.21';
+  const BUILD_NAME = 'RELOAD COVER & HIT REACTIONS';
+  const BUILD_ID = '12.21.0-20260719';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -15971,6 +15971,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
     crouchStallRecoveries: 0,
     coordinationWaitCommits: 0,
     safeReloads: 0,
+    reloadCoverSeeks: 0,
+    reloadCoverArrivals: 0,
+    reloadCoverFallbacks: 0,
+    flinchEvents: 0,
+    flinchCooldownBlocks: 0,
     damageNumbersSpawned: 0,
     damageNumbersExpired: 0,
     criticalHitsDealt: 0,
@@ -18017,6 +18022,12 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       this.hitReactionAge = 99;
       this.hitReactionStrength = 0;
       this.hitReactionVertical = 0;
+      this.flinchTimer = 0;
+      this.flinchDuration = 0;
+      this.flinchCooldown = 0;
+      this.flinchStrength = 0;
+      this.flinchAimOffset = 0;
+      this.flinchAge = 99;
       this.deathImpactStrength = 0;
       this.deathPush = 0;
       this.openingPlanId = currentEngagementPlan?.id || '';
@@ -18099,6 +18110,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       this.tacticalFlankAttempts = 0;
       this.wantsSafeReload = false;
       this.safeReloadTimer = 0;
+      this.reloadCoverRequired = false;
+      this.reloadCoverSeekRegistered = false;
+      this.reloadCoverArrivalRegistered = false;
+      this.reloadCoverFallbackRegistered = false;
+      this.reloadCoverCommitActive = false;
       this.coordinationRepathCooldown = 0;
       this.coordinationGoal = null;
       this.coordinationGoalReason = '';
@@ -19207,6 +19223,93 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       if (crossed(0.69)) this.emitReloadAudioCue('reloadMagazineSeat', 8, 'magazineSeat', this.usingSecondary ? 0.84 : 1.00);
       if (crossed(0.84)) this.emitReloadAudioCue('reloadRack', 16, 'rack', this.reloadStartedEmpty ? 1.04 : 0.90);
     }
+    hasUsableAlternateWeapon() {
+      const primaryId = this.primaryWeapon?.id || this.primaryWeapon?.name || '';
+      const secondaryId = this.secondaryWeapon?.id || this.secondaryWeapon?.name || '';
+      if (!this.hasDedicatedPrimary || !primaryId || !secondaryId || primaryId === secondaryId) return false;
+      return this.usingSecondary ? this.primaryAmmo > 0 : this.secondaryAmmo > 0;
+    }
+    reloadNeedsCover() {
+      return this.reloadTimer > 0 && !this.hasUsableAlternateWeapon();
+    }
+    registerReloadCoverIntent(threat = null) {
+      if (!this.reloadNeedsCover()) {
+        this.reloadCoverRequired = false;
+        return false;
+      }
+      this.reloadCoverRequired = true;
+      const knownThreat = threat || (this.lastSeenTimer > 0 ? this.lastSeen : null);
+      if (!knownThreat) return false;
+      const atCover = Boolean(this.combatCover && dist(this, this.combatCover.anchor) <= 0.46);
+      const exposed = !atCover && hasLineOfSight(this, knownThreat);
+      if (atCover) {
+        this.tacticalMode = 'reload';
+        if (!this.reloadCoverArrivalRegistered) {
+          this.reloadCoverArrivalRegistered = true;
+          combatDebug.reloadCoverArrivals++;
+          if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('reload_cover_reached', this, {
+            weaponId: this.weapon?.id || null,
+            reloadProgress: Math.round((Number(this.reloadProgress) || 0) * 1000) / 1000
+          });
+        }
+        return true;
+      }
+      if (!exposed && simulationClock - (Number(this.lastDamageTime) || -999) > 1.4) return false;
+      this.wantsSafeReload = true;
+      this.tacticalDecisionTimer = 0;
+      this.lastTacticalReason = 'reload without available sidearm';
+      if (!this.reloadCoverSeekRegistered) {
+        this.reloadCoverSeekRegistered = true;
+        combatDebug.reloadCoverSeeks++;
+        if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('reload_cover_seek', this, {
+          weaponId: this.weapon?.id || null,
+          hasUsableAlternate: false,
+          exposed
+        });
+      }
+      return true;
+    }
+    applyCombatFlinch(hit = {}, roll = Math.random()) {
+      if (!this.alive || this.health <= 0) return { triggered: false, reason: 'fatal', chance: 0 };
+      if ((Number(this.flinchCooldown) || 0) > 0) {
+        combatDebug.flinchCooldownBlocks++;
+        return { triggered: false, reason: 'cooldown', chance: 0 };
+      }
+      const appliedDamage = Math.max(0, Number(hit.appliedDamage) || 0);
+      const absorbed = Math.max(0, Number(hit.armourAbsorbed) || 0);
+      const totalImpact = appliedDamage + absorbed * 0.28;
+      const damageRatio = totalImpact / Math.max(1, Number(this.maxHealth) || 100);
+      const resilience = clamp((Number(this.rpgStats?.resilience) || 0) / 10, 0, 1);
+      const armourShare = absorbed / Math.max(1, appliedDamage + absorbed);
+      const critical = Boolean(hit.critical);
+      const headshot = Boolean(hit.headshot);
+      const chance = clamp(0.045 + damageRatio * 1.08 + (critical ? 0.13 : 0) + (headshot ? 0.17 : 0) - resilience * 0.11 - armourShare * 0.075, 0.035, 0.44);
+      if (Number(roll) >= chance) return { triggered: false, reason: 'roll', chance };
+      const strength = clamp(0.24 + damageRatio * 2.0 + (critical ? 0.16 : 0) + (headshot ? 0.18 : 0) - armourShare * 0.08, 0.24, 0.96);
+      const duration = clamp(0.095 + strength * 0.13, 0.11, 0.22);
+      const direction = Number(hit.direction) || Number(this.hitDirection) || 1;
+      this.flinchDuration = duration;
+      this.flinchTimer = Math.max(Number(this.flinchTimer) || 0, duration);
+      this.flinchCooldown = 0.58 + (1 - strength) * 0.24;
+      this.flinchStrength = Math.max(Number(this.flinchStrength) || 0, strength);
+      this.flinchAimOffset = direction * (0.028 + strength * 0.075);
+      this.flinchAge = 0;
+      this.burstShots = 0;
+      this.burstGap = Math.max(Number(this.burstGap) || 0, duration);
+      this.combatBurstPause = Math.max(Number(this.combatBurstPause) || 0, 0.10 + duration * 0.55);
+      this.cooldown = Math.max(Number(this.cooldown) || 0, 0.055 + duration * 0.45);
+      this.aimStabilityBlend = Math.min(Number(this.aimStabilityBlend) || 0, 0.42);
+      combatDebug.flinchEvents++;
+      if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('operator_flinched', this, {
+        chance: Math.round(chance * 1000) / 1000,
+        strength: Math.round(strength * 1000) / 1000,
+        duration: Math.round(duration * 1000) / 1000,
+        appliedDamage: Math.round(appliedDamage * 10) / 10,
+        critical,
+        headshot
+      });
+      return { triggered: true, chance, strength, duration };
+    }
     beginReload() {
       if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
       const reserve = this.currentReserve();
@@ -19217,6 +19320,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       this.reloadProgress = 0;
       this.reloadStartedEmpty = this.magAmmo <= 0;
       this.reloadAudioCueMask = 0;
+      this.reloadCoverRequired = !this.hasUsableAlternateWeapon();
+      this.reloadCoverSeekRegistered = false;
+      this.reloadCoverArrivalRegistered = false;
+      this.reloadCoverFallbackRegistered = false;
+      this.reloadCoverCommitActive = false;
       if (this.wantsSafeReload) combatDebug.safeReloads++;
       this.tacticalMode = this.combatCover ? 'reload' : this.tacticalMode;
       this.burstShots = 0;
@@ -19243,9 +19351,17 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       this.reloadProgress = 0;
       this.wantsSafeReload = false;
       this.safeReloadTimer = 0;
+      this.reloadCoverRequired = false;
+      this.reloadCoverSeekRegistered = false;
+      this.reloadCoverArrivalRegistered = false;
+      this.reloadCoverFallbackRegistered = false;
       if (this.combatCover) {
-        this.tacticalMode = 'hold';
-        this.coverHoldTimer = 0.36 + Math.random() * 0.34;
+        const reachedCover = dist(this, this.combatCover.anchor) <= 0.42;
+        this.reloadCoverCommitActive = !reachedCover;
+        this.tacticalMode = reachedCover ? 'hold' : 'cover';
+        this.coverHoldTimer = reachedCover ? 0.36 + Math.random() * 0.34 : 0;
+      } else {
+        this.reloadCoverCommitActive = false;
       }
       this.reloadStartedEmpty = false;
     }
@@ -19294,6 +19410,7 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
         this.reloadTimer = Math.max(0, this.reloadTimer - dt);
         this.reloadProgress = 1 - this.reloadTimer / Math.max(0.001, this.reloadDuration);
         this.updateReloadAudioCues(previousReloadProgress, this.reloadProgress);
+        if (this.reloadTimer > 0) this.registerReloadCoverIntent(visibleEnemy);
         if (this.reloadTimer <= 0) this.finishReload();
       }
       this.weaponSettleTimer = Math.max(0, (Number(this.weaponSettleTimer) || 0) - dt);
@@ -19772,6 +19889,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       this.hitReactionAge = Math.min(99, (Number(this.hitReactionAge) || 0) + dt);
       this.hitReactionStrength = Math.max(0, (Number(this.hitReactionStrength) || 0) - dt * 1.8);
       this.hitReactionVertical = Math.max(0, (Number(this.hitReactionVertical) || 0) - dt * 2.4);
+      this.flinchTimer = Math.max(0, (Number(this.flinchTimer) || 0) - dt);
+      this.flinchCooldown = Math.max(0, (Number(this.flinchCooldown) || 0) - dt);
+      this.flinchAge = Math.min(99, (Number(this.flinchAge) || 0) + dt);
+      this.flinchStrength = Math.max(0, (Number(this.flinchStrength) || 0) - dt * 2.8);
+      this.flinchAimOffset = lerp(Number(this.flinchAimOffset) || 0, 0, clamp(dt * (this.flinchTimer > 0 ? 4.2 : 11.0), 0, 1));
       this.cooldown -= dt;
       this.burstGap -= dt;
       const hadLastSeen = Boolean(this.lastSeen);
@@ -19873,14 +19995,16 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       this.updateCrouchDecision(dt, visibleEnemy);
       this.updateEngagementProgress(dt, visibleEnemy);
       const continueSummitOpening = Boolean(summitOpeningCommit && !summitOpeningEmergency && this.mapRotationGoal);
-      const spacingMoved = !visibleEnemy && !this.sightCandidate && !continueSummitOpening && this.resolveLocalTeamSpacing(dt, null);
-      const clearedFriendlyView = !spacingMoved && !visibleEnemy && !continueSummitOpening && this.resolveFriendlyViewOcclusion(dt);
-      const coordinationMoved = spacingMoved || clearedFriendlyView || continueSummitOpening ? false : this.updateTeamCoordination(dt, visibleEnemy);
+      const reloadCoverPriority = Boolean((this.reloadTimer > 0 && this.reloadCoverRequired && this.wantsSafeReload) || this.reloadCoverCommitActive);
+      const reloadCoverMoved = !visibleEnemy && reloadCoverPriority && !continueSummitOpening ? this.updateActiveCoverTactic(dt) : false;
+      const spacingMoved = !reloadCoverMoved && !reloadCoverPriority && !visibleEnemy && !this.sightCandidate && !continueSummitOpening && this.resolveLocalTeamSpacing(dt, null);
+      const clearedFriendlyView = !reloadCoverMoved && !spacingMoved && !reloadCoverPriority && !visibleEnemy && !continueSummitOpening && this.resolveFriendlyViewOcclusion(dt);
+      const coordinationMoved = reloadCoverMoved || spacingMoved || clearedFriendlyView || reloadCoverPriority || continueSummitOpening ? false : this.updateTeamCoordination(dt, visibleEnemy);
       if (visibleEnemy && !continueSummitOpening) {
         this.combatMove(dt, visibleEnemy);
-      } else if (!continueSummitOpening && this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
+      } else if (!reloadCoverMoved && !continueSummitOpening && this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
         this.noticeEnemy(dt, this.sightCandidate);
-      } else if (continueSummitOpening || (!spacingMoved && !clearedFriendlyView && !coordinationMoved && !this.updateActiveCoverTactic(dt))) {
+      } else if (!reloadCoverMoved && (continueSummitOpening || (!spacingMoved && !clearedFriendlyView && !coordinationMoved && !this.updateActiveCoverTactic(dt)))) {
         this.navigateMove(dt);
       }
 
@@ -20963,6 +21087,7 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
     }
     clearCombatCover() {
       this.combatCover = null;
+      this.reloadCoverCommitActive = false;
       this.coverHoldTimer = 0;
       this.peekHoldTimer = 0;
       this.exposureTimer = 0;
@@ -21229,9 +21354,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
     }
     aimAtThreat(dt, threat, turnRate = 7.2) {
       if (!threat) return this.angle;
-      const desired = Math.atan2(threat.y - this.y, threat.x - this.x);
-      this.angle += angleDiff(desired, this.angle) * clamp(dt * turnRate, 0, 1);
-      return desired;
+      const trueBearing = Math.atan2(threat.y - this.y, threat.x - this.x);
+      const desired = trueBearing + (Number(this.flinchAimOffset) || 0);
+      const flinchRecovery = this.flinchTimer > 0 ? 0.72 : 1;
+      this.angle += angleDiff(desired, this.angle) * clamp(dt * turnRate * flinchRecovery, 0, 1);
+      return trueBearing;
     }
     sprintReadiness() {
       const baselineFatigue = clamp((Number(this.playerFatigue) || 0) * 0.65 + (Number(this.movementFatigue) || 0), 0, 100);
@@ -21316,7 +21443,7 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       return dist(this, point) <= 0.22;
     }
     fireCombatBurst(enemy, distanceToEnemy, desired, allowFire = true) {
-      if (!allowFire || !enemy || !enemy.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.wantsSafeReload && this.magAmmo <= 0) {
+      if (!allowFire || !enemy || !enemy.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.flinchTimer > 0 || this.wantsSafeReload && this.magAmmo <= 0) {
         this.burstShots = 0;
         this.flash = 0;
         if (this === bots[spectatorIndex]) muzzle = 0;
@@ -21382,6 +21509,15 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
         const arrived = this.moveToCombatPoint(dt, cover.anchor, threat, this.tacticalMode === 'return' ? 0.82 : 0.72);
         if (arrived) {
           this.crouched = true;
+          if (this.reloadCoverRequired) this.registerReloadCoverIntent(threat);
+          if (this.reloadCoverCommitActive) {
+            this.reloadCoverCommitActive = false;
+            if (!this.reloadCoverArrivalRegistered) {
+              this.reloadCoverArrivalRegistered = true;
+              combatDebug.reloadCoverArrivals++;
+              if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('reload_cover_reached', this, { weaponId: this.weapon?.id || null, reloadCompletedEnRoute: true });
+            }
+          }
           if (this.wantsSafeReload || this.reloadTimer > 0) {
             this.tacticalMode = 'reload';
             if (this.reloadTimer <= 0 && (!enemy || !hasLineOfSight(this, enemy))) this.beginReload();
@@ -21455,7 +21591,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
         const threatBearing = Math.atan2(this.lastSeen.y - this.y, this.lastSeen.x - this.x);
         const retreatAngle = threatBearing + Math.PI + this.flankDirection * 0.24;
         this.tacticalMode = 'fallback';
-        this.lastTacticalReason = 'break line of sight for reload';
+        this.lastTacticalReason = this.reloadCoverRequired ? 'reload without available sidearm' : 'break line of sight for reload';
+        if (this.reloadCoverRequired && !this.reloadCoverFallbackRegistered) {
+          this.reloadCoverFallbackRegistered = true;
+          combatDebug.reloadCoverFallbacks++;
+        }
         this.aimAtThreat(dt, this.lastSeen, 6.2);
         this.stepMove(retreatAngle, this.speed * this.moveSkill * 0.76, dt, true);
         return true;
@@ -21494,7 +21634,7 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
         });
       }
       if (this.followCombatApproach(dt, enemy)) return;
-      if (this.resolveLocalTeamSpacing(dt, enemy)) {
+      if (!this.reloadCoverRequired && this.resolveLocalTeamSpacing(dt, enemy)) {
         const spacingAim = this.aimAtThreat(dt, enemy, 7.4);
         this.fireCombatBurst(enemy, dist(this, enemy), spacingAim, this.magAmmo > 0);
         return;
@@ -21859,7 +21999,8 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
     stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide, preservePath = false) {
       const postureSpeed = this.crouched ? 0.54 : 1;
       const sprintMultiplier = this.sprintSpeedMultiplier(moveAngle, moveSpeed);
-      const targetMoveSpeed = moveSpeed * postureSpeed * sprintMultiplier;
+      const flinchMoveScale = 1 - clamp(Number(this.flinchStrength) || 0, 0, 1) * (this.flinchTimer > 0 ? 0.14 : 0);
+      const targetMoveSpeed = moveSpeed * postureSpeed * sprintMultiplier * flinchMoveScale;
       const accelerationRate = targetMoveSpeed > (this.locomotionSpeed || 0) ? 8.8 : 5.8;
       this.locomotionSpeed = lerp(this.locomotionSpeed || 0, targetMoveSpeed, animationBlendFactor(accelerationRate, dt));
       const effectiveMoveSpeed = Math.max(0, this.locomotionSpeed);
@@ -21979,7 +22120,7 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       return false;
     }
     shoot(target, distance) {
-      if (!target || !target.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
+      if (!target || !target.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.flinchTimer > 0) return false;
       if (this.magAmmo <= 0) {
         this.updateWeaponState(0, target);
         return false;
@@ -22102,13 +22243,20 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
         this.stalemateTimer = 0;
         target.stalemateTimer = 0;
         target.hurt = 1;
+        target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
         const reactionDamage = appliedDamage + armourHit.absorbed * 0.28;
         const reactionStrength = clamp(reactionDamage / Math.max(12, target.maxHealth || 100) * 3.6 + (criticalHit ? 0.26 : 0) + (headshotHit ? 0.22 : 0), 0.30, 1.24);
         target.hitReaction = Math.max(target.hitReaction || 0, reactionStrength);
         target.hitReactionStrength = Math.max(target.hitReactionStrength || 0, reactionStrength);
         target.hitReactionVertical = Math.max(target.hitReactionVertical || 0, headshotHit ? 1.0 : (criticalHit ? 0.88 : clamp(appliedDamage / 34, 0.18, 0.72)));
         target.hitReactionAge = 0;
-        target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
+        target.applyCombatFlinch({
+          appliedDamage,
+          armourAbsorbed: armourHit.absorbed,
+          critical: criticalHit,
+          headshot: headshotHit,
+          direction: target.hitDirection
+        });
         emitCosmeticSound('impact', target, target === bots[spectatorIndex] ? 1 : 0.72);
         if (target === bots[spectatorIndex]) {
           shake = Math.min(1, shake + 0.34);
@@ -22146,6 +22294,7 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       'preserve health': 'Breaking contact before taking an unfavourable health trade.',
       'safe reload': 'Moving behind protection before committing to the reload.',
       'break line of sight for reload': 'Creating cover so the weapon can be reloaded safely.',
+      'reload without available sidearm': 'Moving behind protection because no loaded alternate weapon is available during the reload.',
       'clear view around blocker': 'Moving laterally because a team-mate is obscuring the sightline.',
       'resume movement toward contact': 'Resuming the planned approach after the lane became available.',
       'release stationary crouch': 'Leaving an unproductive crouched position to restore movement.',
@@ -22936,7 +23085,12 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       combatRoutePlanDeferrals: counterDelta('combatRoutePlanDeferrals'),
       combatRouteCandidateEvaluations: counterDelta('combatRouteCandidateEvaluations'),
       teamSpacingCorrections: counterDelta('teamSpacingCorrections'),
-      teamLaneSeparations: counterDelta('teamLaneSeparations')
+      teamLaneSeparations: counterDelta('teamLaneSeparations'),
+      reloadCoverSeeks: counterDelta('reloadCoverSeeks'),
+      reloadCoverArrivals: counterDelta('reloadCoverArrivals'),
+      reloadCoverFallbacks: counterDelta('reloadCoverFallbacks'),
+      flinchEvents: counterDelta('flinchEvents'),
+      flinchCooldownBlocks: counterDelta('flinchCooldownBlocks')
     };
   }
 
@@ -22998,6 +23152,11 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
       summitLayerTraversals: Number(combatDebug.summitLayerTraversals) || 0,
       summitIllegalElevationTransitionsBlocked: Number(combatDebug.summitIllegalElevationTransitionsBlocked) || 0,
       tacticalFlankRoutes: Number(combatDebug.tacticalFlankRoutes) || 0,
+      reloadCoverSeeks: Number(combatDebug.reloadCoverSeeks) || 0,
+      reloadCoverArrivals: Number(combatDebug.reloadCoverArrivals) || 0,
+      reloadCoverFallbacks: Number(combatDebug.reloadCoverFallbacks) || 0,
+      flinchEvents: Number(combatDebug.flinchEvents) || 0,
+      flinchCooldownBlocks: Number(combatDebug.flinchCooldownBlocks) || 0,
       headshots: Number(combatDebug.headshotsDealt) || 0,
       criticalHeadshots: Number(combatDebug.criticalHeadshots) || 0
     };
@@ -44971,6 +45130,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const hitWave = clamp(Number(bot.hitReactionStrength) || hurt, 0, 1.25) * Math.sin(clamp(hitAge / 0.34, 0, 1) * Math.PI);
     const hitLean = hitWave * (bot.hitDirection || 1) * 0.20;
     const hitCompression = hitWave * (0.045 + (Number(bot.hitReactionVertical) || 0) * 0.035);
+    const flinchAge = Math.max(0, Number(bot.flinchAge) || 0);
+    const flinchDuration = Math.max(0.001, Number(bot.flinchDuration) || 0.18);
+    const flinchWave = clamp(Number(bot.flinchStrength) || 0, 0, 1) * Math.sin(clamp(flinchAge / flinchDuration, 0, 1) * Math.PI);
     const ready = clamp(bot.upperAimBlend ?? bot.weaponReadyBlend ?? (bot.target || bot.sightCandidate ? 1 : 0.58), 0.32, 1);
     const reloadProgress = bot.reloadTimer > 0 ? clamp(bot.reloadProgress || 0, 0, 1) : 0;
     const reloadPhases = careerWeaponReloadPhases(reloadProgress, bot.reloadTimer > 0, bot.magAmmo <= 0);
@@ -45177,8 +45339,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
     const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob + breath * 0.72 - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
-    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - (1 - footPlant) * run * 0.012;
-    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + bodyLean * 0.24;
+    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - flinchWave * 0.022 - (1 - footPlant) * run * 0.012;
+    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + flinchWave * (bot.hitDirection || 1) * 0.12 + bodyLean * 0.24;
     const activeWeapon = bot.weapon || bot.primaryWeapon;
     const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
     const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
@@ -45485,6 +45647,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const hitAge = Math.max(0, Number(cam.hitReactionAge) || 0);
     const hitWave = hitStrength * Math.sin(clamp(hitAge / 0.34, 0, 1) * Math.PI);
     const hitSide = (Number(cam.hitDirection) || 1) * hitWave;
+    const flinchDuration = Math.max(0.001, Number(cam.flinchDuration) || 0.18);
+    const flinchWave = clamp(Number(cam.flinchStrength) || 0, 0, 1) * Math.sin(clamp((Number(cam.flinchAge) || 0) / flinchDuration, 0, 1) * Math.PI);
     const breathe = Math.sin(time * 1.45) * 0.0035 * (1 - sprint * 0.55);
     const targetBob = Math.sin(step * 0.5) * (0.015 + sprint * 0.010) * motion * (1 - crouch * 0.42);
     const targetLift = Math.abs(Math.sin(step)) * (0.013 + sprint * 0.009) * motion * (1 - crouch * 0.50);
@@ -45516,8 +45680,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const viewmodelVariant = cam.weapon?.modelClass || cam.weapon?.id || '';
     const variantPose = weaponPresentation.viewmodelPose;
 
-    let pitch = -0.045 + kick * 0.122 + breathe + reloadLower * 0.31 + reloadRack * 0.08 + swapWave * 0.36 + hitWave * 0.105 + (profile.pitchBias || 0) + variantPose.pitch;
-    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + viewWeaponState.recoilRoll + reloadLower * 0.48 + reloadRack * 0.12 + swapWave * 0.82 + hitSide * 0.16 + (profile.rollBias || 0) + variantPose.roll;
+    let pitch = -0.045 + kick * 0.122 + breathe + reloadLower * 0.31 + reloadRack * 0.08 + swapWave * 0.36 + hitWave * 0.105 + flinchWave * 0.045 + (profile.pitchBias || 0) + variantPose.pitch;
+    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + viewWeaponState.recoilRoll + reloadLower * 0.48 + reloadRack * 0.12 + swapWave * 0.82 + hitSide * 0.16 + flinchWave * (Number(cam.hitDirection) || 1) * 0.08 + (profile.rollBias || 0) + variantPose.roll;
 
     const forwardX = Math.cos(presentedAngle), forwardZ = Math.sin(presentedAngle);
     const rightX = -forwardZ, rightZ = forwardX;
@@ -47712,7 +47876,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       'engagementTargetKey','crouched','crouchHoldTimer','crouchStationaryTimer','moveVelocity','visualMoveVelocity','locomotionSpeed',
       'moveCommandedThisFrame','moveIntent','moveBlocked','renderMoveAngle','renderAimAngle','forwardBlend','strafeBlend','backpedalBlend',
       'turnBlend','shoulderBlend','weaponReadyBlend','cornerReadyBlend','bodyLeanBlend','turnAnticipationBlend','footPlantBlend','aimStabilityBlend','breathingPhase','lastCrouchChangeAt','hitReactionAge','hitReactionStrength',
-      'hitReactionVertical','deathImpactStrength','deathPush','coordinationWaitTimer','weapon','coordinationHoldTimer','coordinationActionCooldown',
+      'hitReactionVertical','flinchTimer','flinchDuration','flinchCooldown','flinchStrength','flinchAimOffset','flinchAge','reloadCoverRequired','reloadCoverSeekRegistered','reloadCoverArrivalRegistered','reloadCoverFallbackRegistered','reloadCoverCommitActive','deathImpactStrength','deathPush','coordinationWaitTimer','weapon','primaryWeapon','secondaryWeapon','hasDedicatedPrimary','usingSecondary','magAmmo','primaryAmmo','secondaryAmmo','primaryReserve','secondaryReserve','reloadTimer','reloadDuration','reloadProgress','reloadStartedEmpty','reloadAudioCueMask','weaponSwapTimer','weaponSwapDuration','weaponSwapTarget','wantsSafeReload','safeReloadTimer','coordinationHoldTimer','coordinationActionCooldown',
       'playerRole','teamPriorityId','objective','objectiveAge'
     ];
     return bots.map(bot => ({ bot, values: Object.fromEntries(fields.map(field => [field, bot[field]])) }));
@@ -52810,6 +52974,110 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         phases: firstPersonReloadPhases(bot.reloadProgress, started, true),
         reloadCoverage: typeof validateCareerWeaponReloadAudioCoverage === 'function' ? validateCareerWeaponReloadAudioCoverage() : null
       };
+    },
+
+    reloadCoverBehaviourForTest: () => {
+      const snapshot = snapshotCombatTestBots();
+      const counters = {
+        seeks: Number(combatDebug.reloadCoverSeeks) || 0,
+        arrivals: Number(combatDebug.reloadCoverArrivals) || 0,
+        fallbacks: Number(combatDebug.reloadCoverFallbacks) || 0
+      };
+      try {
+        const blue = bots.find(bot => bot.team === TEAM_BLUE);
+        const red = bots.find(bot => bot.team === TEAM_RED);
+        if (!blue || !red) return { ok: false, reason: 'missing operators' };
+        const lane = debugCombatTestLane();
+        if (!lane) return { ok: false, reason: 'no test lane' };
+        blue.x = lane[0].x; blue.y = lane[0].y; blue.angle = Math.atan2(lane[2].y - lane[0].y, lane[2].x - lane[0].x); blue.pathAngle = blue.angle;
+        red.x = lane[2].x; red.y = lane[2].y; red.angle = Math.atan2(lane[0].y - lane[2].y, lane[0].x - lane[2].x); red.pathAngle = red.angle;
+        blue.alive = true; red.alive = true;
+        blue.hasDedicatedPrimary = true;
+        blue.usingSecondary = false;
+        blue.weapon = blue.primaryWeapon;
+        blue.magAmmo = 0; blue.primaryAmmo = 0; blue.primaryReserve = Math.max(1, blue.primaryWeapon.magSize);
+        blue.secondaryAmmo = 0; blue.secondaryReserve = 0;
+        blue.lastSeen = { x: red.x, y: red.y }; blue.lastSeenTimer = 3; blue.lastDamageTime = simulationClock;
+        blue.target = red; blue.sightCandidate = red;
+        blue.clearCombatCover(); blue.wantsSafeReload = false; blue.safeReloadTimer = 0; blue.reloadTimer = 0; blue.weaponSwapTimer = 0;
+        const started = blue.beginReload();
+        blue.updateWeaponState(0.016, red);
+        const noAlternateSnapshot = {
+          reloadTimer: blue.reloadTimer,
+          wantsSafeReload: blue.wantsSafeReload,
+          reloadCoverRequired: blue.reloadCoverRequired
+        };
+        const cover = blue.findCombatCover(red, true);
+        if (cover) blue.assignCombatCover(cover, 'reload without available sidearm');
+        const startDistance = cover ? dist(blue, cover.anchor) : null;
+        let distanceAtReloadFinish = null;
+        let distanceAfterReloadFinish = null;
+        if (cover) {
+          for (let i = 0; i < 12; i++) blue.updateCoverCombat(1 / 60, red);
+          distanceAtReloadFinish = dist(blue, cover.anchor);
+          blue.finishReload();
+          for (let i = 0; i < 120 && dist(blue, cover.anchor) > 0.22; i++) blue.updateCoverCombat(1 / 60, red);
+          distanceAfterReloadFinish = dist(blue, cover.anchor);
+        } else {
+          blue.updateActiveCoverTactic(1 / 60);
+        }
+        const endDistance = cover ? dist(blue, cover.anchor) : null;
+        const continuedAfterReload = !cover || (distanceAfterReloadFinish < distanceAtReloadFinish && blue.reloadCoverCommitActive === false);
+        blue.finishReload();
+        blue.clearCombatCover();
+        blue.wantsSafeReload = false;
+        blue.safeReloadTimer = 0;
+        blue.secondaryWeapon = cloneCareerWeapon('service-p12');
+        blue.secondaryAmmo = 4;
+        blue.magAmmo = 0; blue.primaryAmmo = 0; blue.primaryReserve = Math.max(1, blue.primaryWeapon.magSize);
+        blue.beginReload();
+        blue.updateWeaponState(0.016, red);
+        const loadedAlternateAvoidsForcedCover = !blue.reloadCoverRequired && !blue.wantsSafeReload;
+        return {
+          ok: started && noAlternateSnapshot.reloadCoverRequired && noAlternateSnapshot.wantsSafeReload && (cover ? endDistance < startDistance : blue.tacticalMode === 'fallback') && continuedAfterReload && loadedAlternateAvoidsForcedCover,
+          started,
+          coverFound: Boolean(cover),
+          startDistance,
+          distanceAtReloadFinish,
+          distanceAfterReloadFinish,
+          endDistance,
+          continuedAfterReload,
+          noAlternate: noAlternateSnapshot,
+          loadedAlternateAvoidsForcedCover,
+          counterDelta: {
+            seeks: (Number(combatDebug.reloadCoverSeeks) || 0) - counters.seeks,
+            arrivals: (Number(combatDebug.reloadCoverArrivals) || 0) - counters.arrivals,
+            fallbacks: (Number(combatDebug.reloadCoverFallbacks) || 0) - counters.fallbacks
+          }
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    hitReactionFlinchForTest: () => {
+      const snapshot = snapshotCombatTestBots();
+      const beforeEvents = Number(combatDebug.flinchEvents) || 0;
+      const beforeBlocks = Number(combatDebug.flinchCooldownBlocks) || 0;
+      try {
+        const target = bots.find(bot => bot.team === TEAM_BLUE);
+        const enemy = bots.find(bot => bot.team === TEAM_RED);
+        if (!target || !enemy) return { ok: false, reason: 'missing operator' };
+        target.alive = true; target.health = target.maxHealth;
+        enemy.alive = true; enemy.health = enemy.maxHealth; target.flinchTimer = 0; target.flinchCooldown = 0; target.flinchStrength = 0; target.flinchAimOffset = 0; target.flinchAge = 99; target.hitDirection = 1;
+        const light = target.applyCombatFlinch({ appliedDamage: 4, armourAbsorbed: 12, critical: false, headshot: false, direction: 1 }, 0.99);
+        const strong = target.applyCombatFlinch({ appliedDamage: 26, armourAbsorbed: 0, critical: true, headshot: false, direction: -1 }, 0);
+        const timerAfterStrong = target.flinchTimer;
+        const blocked = target.applyCombatFlinch({ appliedDamage: 40, armourAbsorbed: 0, critical: true, headshot: true, direction: 1 }, 0);
+        const firingBlocked = target.flinchTimer > 0 && target.shoot(enemy, 3) === false;
+        return {
+          ok: !light.triggered && strong.triggered && strong.chance <= 0.44 && timerAfterStrong >= 0.11 && timerAfterStrong <= 0.22 && blocked.reason === 'cooldown' && firingBlocked,
+          light, strong, blocked, timerAfterStrong, firingBlocked,
+          eventDelta: (Number(combatDebug.flinchEvents) || 0) - beforeEvents,
+          cooldownBlockDelta: (Number(combatDebug.flinchCooldownBlocks) || 0) - beforeBlocks
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
     },
 
     forceTacticalScenario: (scenario = 'cover') => {
