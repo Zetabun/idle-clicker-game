@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.21: Reload Cover & Hit Reactions</title>
+<title>Strikewatch 12.22: Supply Depot 3D Weapon Stock</title>
 <style>
   :root {
     color-scheme: dark;
@@ -11435,6 +11435,62 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   gap: 10px;
 }
 .cash-weapon-offer.refined { border-left-color: #d8be61; }
+.cash-weapon-offer.tactical { border-left-color: #5fd2e8; }
+.cash-weapon-visual {
+  position: relative;
+  min-height: 154px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  perspective: 720px;
+  border: 1px solid rgba(109,189,219,.16);
+  background:
+    radial-gradient(circle at 50% 58%, rgba(65,159,202,.16), transparent 48%),
+    linear-gradient(155deg, rgba(3,13,20,.92), rgba(1,6,10,.98));
+}
+.cash-weapon-visual-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .32;
+  background-image:
+    linear-gradient(rgba(82,173,255,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82,173,255,.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+.cash-weapon-visual-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  width: 68%;
+  height: 24px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,.82), rgba(0,0,0,0) 72%);
+  filter: blur(7px);
+}
+.cash-weapon-visual > span:last-child {
+  position: absolute;
+  left: 9px;
+  bottom: 7px;
+  color: rgba(149,205,230,.72);
+  font-size: 5.5px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+.cash-weapon-visual .career-weapon-mini3d.store {
+  width: 100%;
+  height: 150px;
+  overflow: visible;
+}
+.cash-weapon-visual .career-weapon-mini3d.store .career-weapon-rig {
+  left: 50%;
+  top: 48%;
+  transform: translate3d(0, 2px, 0) rotateX(-10deg) rotateY(-28deg) scale(.48);
+}
+.cash-weapon-visual .career-weapon-mini3d.store.ar4-sentinel .career-weapon-rig {
+  transform: translate3d(-5px, 6px, 0) rotateX(-8deg) rotateY(-24deg) scale(.255);
+}
 .cash-weapon-offer > span { color: #8cc9e6; font-size: 7px; font-weight: 950; letter-spacing: .16em; }
 .cash-weapon-offer > strong { color: #eef6fa; font-size: 14px; letter-spacing: .04em; }
 .cash-weapon-offer > p { color: rgba(204,220,228,.76); font-size: 7px; line-height: 1.65; }
@@ -11453,6 +11509,10 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
 }
 @media (max-width: 380px) {
   .gold-store-odds { grid-template-columns: 1fr; }
+  .cash-weapon-visual { min-height: 142px; }
+  .cash-weapon-visual .career-weapon-mini3d.store { height: 138px; }
+  .cash-weapon-visual .career-weapon-mini3d.store .career-weapon-rig { transform: translate3d(0, 3px, 0) rotateX(-10deg) rotateY(-28deg) scale(.42); }
+  .cash-weapon-visual .career-weapon-mini3d.store.ar4-sentinel .career-weapon-rig { transform: translate3d(-3px, 7px, 0) rotateX(-8deg) rotateY(-24deg) scale(.225); }
   .gold-store-crate-card { padding: 11px; }
   .gold-store-crate-copy > strong { font-size: 15px; }
 }
@@ -14844,9 +14904,9 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.21';
-  const BUILD_NAME = 'RELOAD COVER & HIT REACTIONS';
-  const BUILD_ID = '12.21.0-20260719';
+  const BUILD_VERSION = '12.22';
+  const BUILD_NAME = 'SUPPLY DEPOT 3D WEAPON STOCK';
+  const BUILD_ID = '12.22.0-20260719';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -32086,11 +32146,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
 
   const CAREER_CASH_WEAPON_STORE = Object.freeze([
-    { id: 'viper-9', price: 32000, tone: 'refined', strap: 'CASH PURCHASE', detail: 'A compact sidearm for fast entries and flanks. Buying from the depot grants another club-owned copy immediately.' }
+    { id: 'ar4-sentinel', price: 58000, tone: 'tactical', strap: 'TACTICAL PRIMARY', detail: 'A controllable mid-range primary with strong armour penetration. Buying from the depot grants another finite club-owned copy immediately.' },
+    { id: 'viper-9', price: 32000, tone: 'refined', strap: 'REFINED SIDEARM', detail: 'A compact sidearm for fast entries and flanks. Buying from the depot grants another finite club-owned copy immediately.' }
   ]);
 
   function cashStoreWeaponOffer(weaponId) {
     return CAREER_CASH_WEAPON_STORE.find(item => item.id === weaponId) || null;
+  }
+
+  function cashStoreWeaponVisualMarkup(weapon) {
+    if (!weapon) return '';
+    const model = typeof careerWeapon3dMarkup === 'function'
+      ? careerWeapon3dMarkup(weapon, 'store', false, null)
+      : '';
+    return `<div class="cash-weapon-visual ${escapeCareerHtml(weapon.modelClass || weapon.id)}" data-store-weapon-preview="${escapeCareerHtml(weapon.id)}" role="img" aria-label="Three-dimensional render of ${escapeCareerHtml(weapon.name)}"><div class="cash-weapon-visual-grid" aria-hidden="true"></div><div class="cash-weapon-visual-shadow" aria-hidden="true"></div>${model}<span>SHARED 3D LOADOUT MODEL</span></div>`;
   }
 
   function purchaseCareerCashWeapon(weaponId) {
@@ -32106,6 +32175,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     careerState.inventory.push(weapon.id);
     if (typeof careerNormaliseWeaponAssignments === 'function') careerNormaliseWeaponAssignments();
     if (!careerState.selectedWeaponId) careerState.selectedWeaponId = weapon.id;
+    if (typeof teamFinanceTransaction === 'function') teamFinanceTransaction('WEAPON', -offer.price, `Purchased ${weapon.name}`);
     if (typeof saveCareerState === 'function') saveCareerState();
     return { ok: true, weapon, offer, owned: typeof careerWeaponOwnedCount === 'function' ? careerWeaponOwnedCount(weapon.id) : careerState.inventory.filter(item => item === weapon.id).length };
   }
@@ -32208,7 +32278,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const owned = typeof careerWeaponOwnedCount === 'function' ? careerWeaponOwnedCount(weapon.id) : 0;
       const affordable = careerState.created && menuContext !== 'pause' && cashBalance >= offer.price;
       const presentation = typeof careerWeaponPresentation === 'function' ? careerWeaponPresentation(weapon) : { rangeBand: 'SHORT RANGE', recommendedUse: '' };
-      return `<article class="cash-weapon-offer ${escapeCareerHtml(offer.tone || 'standard')}"><span>${escapeCareerHtml(offer.strap || 'CASH PURCHASE')} · ${escapeCareerHtml(String(weapon.slotType || 'sidearm').toUpperCase())}</span><strong>${escapeCareerHtml(weapon.name)}</strong><p>${escapeCareerHtml(weapon.description || offer.detail || '')}</p><div class="cash-weapon-stats"><b>${escapeCareerHtml(presentation.rangeBand)}</b><b>DMG ${weapon.damageMin}–${weapon.damageMax}</b><b>MAG ${weapon.magSize}</b><b>PEN ${weapon.armourPenetration}</b><b>${Math.round((Number(weapon.movementPenalty) || 0) * 100)}% MOVE COST</b></div>${typeof careerWeaponTradeoffMarkup === 'function' ? careerWeaponTradeoffMarkup(weapon) : ''}<small>${escapeCareerHtml(presentation.recommendedUse || '')}</small><div class="cash-weapon-meta"><small>${teamCredits(offer.price)} · OWNED ${owned}</small><button class="primary" data-store-buy-weapon="${escapeCareerHtml(weapon.id)}" ${affordable ? '' : 'disabled'}>BUY ${teamCredits(offer.price)}</button></div></article>`;
+      return `<article class="cash-weapon-offer ${escapeCareerHtml(offer.tone || 'standard')}" data-store-weapon-id="${escapeCareerHtml(weapon.id)}">${cashStoreWeaponVisualMarkup(weapon)}<span>${escapeCareerHtml(offer.strap || 'CASH PURCHASE')} · ${escapeCareerHtml(String(weapon.slotType || 'sidearm').toUpperCase())}</span><strong>${escapeCareerHtml(weapon.name)}</strong><p>${escapeCareerHtml(weapon.description || offer.detail || '')}</p><div class="cash-weapon-stats"><b>${escapeCareerHtml(presentation.rangeBand)}</b><b>DMG ${weapon.damageMin}–${weapon.damageMax}</b><b>MAG ${weapon.magSize}</b><b>PEN ${weapon.armourPenetration}</b><b>${Math.round((Number(weapon.movementPenalty) || 0) * 100)}% MOVE COST</b></div>${typeof careerWeaponTradeoffMarkup === 'function' ? careerWeaponTradeoffMarkup(weapon) : ''}<small>${escapeCareerHtml(presentation.recommendedUse || '')}</small><div class="cash-weapon-meta"><small>${teamCredits(offer.price)} · OWNED ${owned}</small><button class="primary" data-store-buy-weapon="${escapeCareerHtml(weapon.id)}" ${affordable ? '' : 'disabled'}>BUY ${teamCredits(offer.price)}</button></div></article>`;
     }).join('');
     const armourOffers = CAREER_CASH_ARMOUR_STORE.map(id => {
       const armour = typeof getCareerArmour === 'function' ? getCareerArmour(id) : null;
@@ -32238,7 +32308,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       </section>
       <section class="cash-weapon-panel"><div class="career-section-head"><div><span>CLUB CASH OFFERS</span><strong>READY-TO-BUY WEAPON STOCK</strong></div><p>Each purchase creates one finite club copy. Primaries occupy the primary slot; pistols occupy the sidearm slot and remain available for emergency close contact.</p></div><div class="cash-weapon-grid">${cashOffers}</div></section>
       <section class="cash-armour-panel"><div class="career-section-head"><div><span>BALLISTIC PROTECTION</span><strong>ARMOUR STOCK</strong></div><p>Each vest is a separate CR purchase and protects one equipped operator. Integrity carries through the full match and is serviced only between matches; reaching zero destroys the copy permanently.</p></div><div class="armour-store-guide"><span><b>TORSO ONLY</b> Headshots bypass armour.</span><span><b>GRADED PENETRATION</b> Rifles defeat more protection.</span><span><b>WEIGHT MATTERS</b> Heavier rigs slow movement and handling.</span><span><b>BREAK RISK</b> Zero integrity removes the item.</span></div><div class="cash-armour-grid">${armourOffers}</div></section>
-      <section class="ammo-store-panel future-stock"><div class="career-section-head"><div><span>PLANNED INVENTORY</span><strong>AMMUNITION SUPPLY PLACEHOLDER</strong></div><p>Ammunition purchases remain inactive and do not consume Gold Coins or cash.</p></div><div class="ammo-store-grid">${stock}</div><div class="ammo-store-notice"><strong>IMPORTANT</strong><p>Weapon balance, reloads and magazines are unchanged. The active depot purchases are the Field Crate and the new VIPER-9 cash offer above.</p></div></section>`;
+      <section class="ammo-store-panel future-stock"><div class="career-section-head"><div><span>PLANNED INVENTORY</span><strong>AMMUNITION SUPPLY PLACEHOLDER</strong></div><p>Ammunition purchases remain inactive and do not consume Gold Coins or cash.</p></div><div class="ammo-store-grid">${stock}</div><div class="ammo-store-notice"><strong>IMPORTANT</strong><p>Weapon balance, reloads and magazines are unchanged. The active depot purchases are the Field Crate, the AR-4 Sentinel, the Viper-9 Compact and the armour stock above.</p></div></section>`;
   }
 
   function handleDevelopmentClick(event) {
@@ -49471,6 +49541,24 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const before = { credits: Math.round(Number(careerState.credits) || 0), owned: typeof careerWeaponOwnedCount === 'function' ? careerWeaponOwnedCount(String(weaponId || 'viper-9')) : 0 };
       const result = typeof purchaseCareerCashWeapon === 'function' ? purchaseCareerCashWeapon(String(weaponId || 'viper-9')) : { ok: false, reason: 'Cash weapon store unavailable.' };
       return { before, result, after: { credits: Math.round(Number(careerState.credits) || 0), owned: typeof careerWeaponOwnedCount === 'function' ? careerWeaponOwnedCount(String(weaponId || 'viper-9')) : 0 } };
+    },
+    cashWeaponStoreForTest: () => {
+      const offers = (typeof CAREER_CASH_WEAPON_STORE !== 'undefined' ? CAREER_CASH_WEAPON_STORE : []).map(offer => {
+        const weapon = typeof getCareerWeapon === 'function' ? getCareerWeapon(offer.id) : null;
+        return {
+          id: offer.id,
+          price: Number(offer.price) || 0,
+          slotType: weapon?.slotType || null,
+          modelClass: weapon?.modelClass || null,
+          partCount: weapon && typeof careerWeaponVisualParts === 'function' ? careerWeaponVisualParts(weapon).length : 0
+        };
+      });
+      const html = typeof renderAmmunitionStoreTab === 'function' ? renderAmmunitionStoreTab() : '';
+      const requiredIds = ['ar4-sentinel', 'viper-9'];
+      const requiredVisible = requiredIds.every(id => offers.some(offer => offer.id === id) && html.includes(`data-store-weapon-id="${id}"`) && html.includes(`data-store-weapon-preview="${id}"`));
+      const sharedModels = offers.every(offer => offer.partCount > 0 && html.includes(`career-weapon-mini3d ${offer.modelClass} store`));
+      const purchaseButtons = offers.every(offer => html.includes(`data-store-buy-weapon="${offer.id}"`));
+      return { ok: requiredVisible && sharedModels && purchaseButtons, requiredVisible, sharedModels, purchaseButtons, offers };
     },
     claimStoreCrateForTest: () => {
       const before = window.__strikeDebug.goldCoinEconomyForTest();
