@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.29: Guided Recruitment Scroll</title>
+<title>Strikewatch 12.30: Guidance Consolidation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -15517,6 +15517,76 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
 @media (prefers-reduced-motion: reduce) {
   .team-market-list.guide-scroll-arrival { animation: none; }
 }
+
+
+/* Build 12.30 — one authoritative opening guide with optional supporting context. */
+.team-tutorial-card.team-tutorial-optional {
+  display: block;
+  margin-bottom: 10px;
+  padding: 0;
+  overflow: hidden;
+  border-left-width: 3px;
+  border-color: rgba(90, 174, 214, .24);
+  background: rgba(7, 20, 29, .82);
+  box-shadow: none;
+}
+.team-tutorial-optional > summary {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.team-tutorial-optional > summary::-webkit-details-marker { display: none; }
+.team-tutorial-optional > summary > span { min-width: 0; display: grid; gap: 3px; }
+.team-tutorial-optional > summary b { color: #79cde9; font-size: 9px; letter-spacing: .14em; }
+.team-tutorial-optional > summary strong { color: #edf5f8; font-size: 13px; line-height: 1.3; letter-spacing: .035em; }
+.team-tutorial-optional > summary small { color: #8da1aa; font-size: 11px; line-height: 1.4; }
+.team-tutorial-optional > summary > i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(121, 205, 233, .34);
+  border-radius: 50%;
+  color: #8ed9f1;
+  font-size: 18px;
+  font-style: normal;
+  transition: transform .18s ease;
+}
+.team-tutorial-optional[open] > summary { background: rgba(27, 69, 88, .24); }
+.team-tutorial-optional[open] > summary > i { transform: rotate(45deg); }
+.team-tutorial-optional-body {
+  display: grid;
+  gap: 9px;
+  padding: 0 12px 12px;
+  border-top: 1px solid rgba(121, 205, 233, .12);
+}
+.team-tutorial-optional-body > p { margin: 10px 0 0; color: #b8c7ce; font-size: 13px; line-height: 1.55; }
+.team-tutorial-optional-body > aside {
+  padding: 9px 10px;
+  border-left: 2px solid rgba(232, 191, 91, .72);
+  background: rgba(77, 56, 13, .24);
+  color: #dacda9;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.command-centre-hero.guided-journey { grid-template-columns: minmax(0, 1fr); }
+.command-centre-hero.guided-journey > div { max-width: 940px; }
+.foundation-path.foundation-handoff { border-color: rgba(105, 202, 157, .28); }
+.foundation-path.foundation-handoff > header span,
+.foundation-path.foundation-handoff > header > b { color: #77d6aa; }
+@media (max-width: 700px) {
+  .team-tutorial-optional > summary { grid-template-columns: minmax(0, 1fr) 28px; padding: 9px 10px; }
+  .team-tutorial-optional > summary small { font-size: 10px; }
+  .team-tutorial-optional-body { padding-inline: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .team-tutorial-optional > summary > i { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -16266,9 +16336,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.29';
-  const BUILD_NAME = 'GUIDED RECRUITMENT SCROLL';
-  const BUILD_ID = '12.29.0-20260720';
+  const BUILD_VERSION = '12.30';
+  const BUILD_NAME = 'GUIDANCE CONSOLIDATION';
+  const BUILD_ID = '12.30.0-20260720';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -30754,15 +30824,20 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     const stages = {
       1: {
         step: '1 / 6',
-        title: orientationComplete ? 'NOW BUILD YOUR OWN ACTIVE FIVE OPERATORS' : 'YOUR ROLE & THE ROAD TO THE PRO LEAGUE',
-        body: `${orientationComplete ? 'The orientation round showed how autonomous combat works. Now recruit the five operators who will represent your real club, then choose their roles, weapons and tactical plan.' : (orientationSkipped ? 'You skipped the demonstration, but the core rule remains: you manage the club while the operators move, aim and fight for themselves.' : 'You are the manager, not the person holding the weapon. Recruit and equip the squad, choose roles and tactics, then watch five AI-controlled operators execute the plan in first-to-three-round matches.')} Learn from each debrief, improve the club and earn promotion through Division 3, Division 2 and Division 1 to reach the Pro League. Your opening ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} is borrowed capital: ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks.`,
-        route: 'market', cta: 'OPEN RECRUITMENT', foundationGuide: true, gameGuide: true
+        title: 'WHY RECRUITMENT COMES FIRST',
+        body: orientationComplete
+          ? 'The orientation round showed how autonomous combat works. Your next job is to contract the five operators who will represent the club, then shape their roles, weapons and tactical plan.'
+          : orientationSkipped
+            ? 'You skipped the demonstration, but the core rule is unchanged: you manage the club while operators move, aim and fight for themselves. Recruitment creates the five-person team that will execute your decisions.'
+            : 'You manage the club rather than controlling a weapon. Recruitment creates the five-person team that will execute your roles, loadouts and tactical plan.',
+        route: 'market', cta: 'OPEN RECRUITMENT', foundationGuide: true, gameGuide: true,
+        note: `The club begins with ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} of borrowed capital. The full ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks.`
       },
-      2: { step: '2 / 6', title: 'READ A PLAYER BEFORE YOU BUY', body: 'Open a candidate profile and compare ability, potential, attributes, personality, role suitability, medical risk, transfer fee and weekly wage. Better information leads to a more balanced five.', route: 'profile', cta: 'VIEW A PLAYER PROFILE' },
-      3: { step: '3 / 6', title: 'MAKE YOUR FIRST SIGNING', body: 'Choose an affordable operator whose role and attributes help the squad. The transfer fee leaves your cash immediately and the weekly wage becomes a continuing club expense.', route: 'market', cta: 'RETURN TO RECRUITMENT' },
-      4: { step: '4 / 6', title: `BUILD THE REQUIRED FIVE · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'A match requires five contracted operators. These become your active operator line-up: build a mix of entry, support, anchor, flanking and ranged strengths while staying under the wage budget and reserving cash for loan payments.', route: 'market', cta: 'SIGN MORE OPERATORS' },
-      5: { step: '5 / 6', title: 'CHOOSE WHO ACTUALLY DEPLOYS', body: 'The first five names are the active operators who deploy in matches. Reorder the squad, inspect readiness and then use Tactics and Armoury to give every operator a suitable job and loadout.', route: 'operators', cta: 'REVIEW ACTIVE OPERATORS' },
-      6: { step: '6 / 6', title: 'PREPARE, WATCH, THEN LEARN', body: 'Open Match Control, review the opponent, confirm the tactical plan and select the battleground. The match then plays automatically from an operator viewpoint. Afterward, read the tactical debrief, train weaknesses and advance the calendar toward the next fixture.', route: 'play', cta: 'OPEN MATCH CONTROL' }
+      2: { step: '2 / 6', title: 'WHY OPERATOR PROFILES MATTER', body: 'Ability is only one part of a useful signing. Potential, attributes, personality, role suitability, medical risk, fee and weekly wage determine whether the operator fits the active five and the club budget.', route: 'profile', cta: 'VIEW AN OPERATOR PROFILE' },
+      3: { step: '3 / 6', title: 'WHY THE FIRST SIGNING MATTERS', body: 'Choose an affordable operator whose strengths begin to define the team. The transfer fee leaves club cash immediately and the weekly wage becomes a continuing expense.', route: 'market', cta: 'RETURN TO RECRUITMENT' },
+      4: { step: '4 / 6', title: `WHY YOU NEED FIVE OPERATORS · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'A match requires five contracted operators. Build a mix of entry, support, anchor, flanking and ranged strengths while preserving enough wage and cash headroom for the opening weeks.', route: 'market', cta: 'SIGN MORE OPERATORS' },
+      5: { step: '5 / 6', title: 'WHY DEPLOYMENT ORDER MATTERS', body: 'The first five squad positions are the active operators who deploy. Reorder the squad, check readiness and then use Tactics and Team Armoury to give each operator a suitable job and loadout.', route: 'operators', cta: 'REVIEW ACTIVE OPERATORS' },
+      6: { step: '6 / 6', title: 'WHY THE DEBRIEF MATTERS', body: 'The match plays automatically from an operator viewpoint. The report then connects your preparation to what actually happened, so the next training, tactical or loadout change has a clear reason.', route: 'play', cta: 'OPEN MATCH CONTROL' }
     };
     return stages[stage] || null;
   }
@@ -30771,19 +30846,28 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     if (!careerState.created || careerState.tutorial?.completed || careerState.tutorial?.dismissed) return '';
     const item = teamTutorialContent();
     if (!item) return '';
+    const guidance = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
     const loan = typeof clubFinanceLoanState === 'function' ? clubFinanceLoanState() : careerState.financeLoan;
     const gameGuide = item.gameGuide ? `<div class="team-tutorial-game-loop" aria-label="How Strikewatch works">
       <span><b>1</b> RECRUIT</span><span><b>2</b> PREPARE</span><span><b>3</b> WATCH AI MATCH</span><span><b>4</b> IMPROVE</span>
       <p><strong>YOU CONTROL THE CLUB.</strong> Operators control their own movement, aiming and shooting based on your preparation.</p>
     </div>` : '';
-    const foundationGuide = item.foundationGuide ? `<div class="team-tutorial-foundation" aria-label="Topbar shortcut guide">
+    const foundationGuide = item.foundationGuide ? `<div class="team-tutorial-foundation" aria-label="Optional finance and shortcut reference">
       <div class="team-tutorial-loan-facts"><span><b>${Math.round((loan?.principal || TEAM_STARTING_CREDITS) / 1000)}K</b> BORROWED</span><span><b>${Math.round((loan?.totalRepayable || 400000) / 1000)}K</b> TOTAL REPAYMENT</span><span><b>${Math.round((loan?.installment || 40000) / 1000)}K</b> EVERY ${loan?.intervalWeeks || 4} WEEKS</span></div>
       <div class="team-tutorial-shortcuts"><span><b>1</b> INBOX</span><span><b>2</b> CALENDAR</span><span><b>3</b> MATCH</span><span><b>4</b> END DAY</span></div>
     </div>` : '';
+
+    if (guidance) {
+      return `<details class="team-tutorial-card team-tutorial-optional ${item.foundationGuide ? 'foundation-guide' : ''}" aria-label="Optional explanation: ${escapeCareerHtml(item.title)}">
+        <summary><span><b>OPTIONAL CONTEXT</b><strong>${escapeCareerHtml(item.title)}</strong><small>Open this only when you want more detail about the current objective.</small></span><i aria-hidden="true">+</i></summary>
+        <div class="team-tutorial-optional-body"><p>${escapeCareerHtml(item.body)}</p>${item.note ? `<aside>${escapeCareerHtml(item.note)}</aside>` : ''}${gameGuide}${foundationGuide}</div>
+      </details>`;
+    }
+
     return `<section class="team-tutorial-card ${item.foundationGuide ? 'foundation-guide' : ''}" tabindex="-1" aria-label="Manager briefing: ${escapeCareerHtml(item.title)}">
       <div class="team-tutorial-index"><span>CONTEXT</span><strong>GUIDE</strong></div>
-      <div class="team-tutorial-copy"><span>MANAGER INDUCTION</span><strong>${item.title}</strong><p>${item.body}</p>${gameGuide}${foundationGuide}</div>
-      <button class="primary" data-team-route="${item.route}">${item.cta}</button>
+      <div class="team-tutorial-copy"><span>MANAGER INDUCTION</span><strong>${escapeCareerHtml(item.title)}</strong><p>${escapeCareerHtml(item.body)}</p>${item.note ? `<aside>${escapeCareerHtml(item.note)}</aside>` : ''}${gameGuide}${foundationGuide}</div>
+      <button class="primary" data-team-route="${escapeCareerHtml(item.route)}">${escapeCareerHtml(item.cta)}</button>
     </section>`;
   }
 
@@ -31592,7 +31676,8 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         return `<button class="command-directory-route ${escapeCareerHtml(availability.state)}" data-team-route="${escapeCareerHtml(route.id)}" data-command-search="${escapeCareerHtml(search)}" ${availability.state === 'locked' ? 'disabled' : ''}><span><strong>${escapeCareerHtml(route.label)}</strong><small>${escapeCareerHtml(route.hint)}</small>${availability.reason ? `<i>${escapeCareerHtml(availability.reason)}</i>` : ''}</span><em>${escapeCareerHtml(availability.state === 'ready' ? commandFeatureStatus(route.id) : availability.label)}</em></button>`;
       }).join('')}</div></details>`;
     }).join('');
-    const recommendations = commandRecommendedRoutes();
+    const guidance = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
+    const recommendations = guidance ? [] : commandRecommendedRoutes();
     const recent = typeof menuRecentRouteIds === 'function' ? menuRecentRouteIds(5) : [];
     const recentMarkup = recent.length ? `<section class="command-directory-recent"><span>RECENTLY VISITED</span><div>${recent.map(id => { const route = menuRouteDefinition(id); return `<button data-team-route="${escapeCareerHtml(id)}"><strong>${escapeCareerHtml(route?.label || id)}</strong><small>${escapeCareerHtml(route?.sectionLabel || '')}</small></button>`; }).join('')}</div></section>` : '';
     return `<section class="command-directory-panel"><div class="career-section-head"><div><span>COMMAND INDEX</span><strong>FIND ANY CLUB SYSTEM</strong></div><p>Search by feature or purpose, use the recommended shortcuts, or open a section below. Context-only player pages stay attached to the selected player instead of cluttering the main navigation.</p></div>
@@ -31614,6 +31699,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     const actions = teamCommandRecommendedActions(fixture, squad, loan);
     const recent = teamCommandRecentResults();
     const topAction = actions[0];
+    const firstGuide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
     const positionLabel = fixture.user?.played ? teamCommandPositionLabel(fixture.user.position) : '—';
     const fixtureAction = fixture.complete
       ? '<button class="primary" data-team-route="league">REVIEW FINAL TABLE</button>'
@@ -31632,14 +31718,14 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         }).join('')
       : '<div class="command-empty-lineup"><strong>NO ACTIVE OPERATORS SELECTED</strong><p>Recruit operators to populate the matchday readiness view.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>';
     return `${renderTeamTutorialPanel()}${typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : ''}
-      <section class="command-centre-hero ${pauseMenu ? 'live' : ''}">
+      <section class="command-centre-hero ${pauseMenu ? 'live' : ''} ${firstGuide ? 'guided-journey' : ''}">
         <div>
           <span>${pauseMenu ? (matchSimulationPaused ? 'LIVE MATCH PAUSED' : 'LIVE MATCH RUNNING') : 'MANAGER COMMAND CENTRE'}</span>
           <h2>${teamNameLockup(careerState.name)}</h2>
-          <p>${escapeCareerHtml(topAction?.detail || 'Review the club position and choose the next management action.')}</p>
+          <p>${escapeCareerHtml(firstGuide ? 'Use the First Match Guide above as the single next-action path. Optional explanations stay collapsed unless you open them.' : (topAction?.detail || 'Review the club position and choose the next management action.'))}</p>
           <div class="command-hero-meta"><b>${typeof clubCurrentDateLabel === 'function' ? escapeCareerHtml(clubCurrentDateLabel(true)) : `WEEK ${careerState.week}`}</b><b>${positionLabel} IN ${escapeCareerHtml(typeof leagueCompetitionName === 'function' ? leagueCompetitionName() : 'DIVISION')}</b><button class="command-currency-link cash" data-team-route="barracks">${teamCredits(careerState.credits)} CASH</button><button class="command-currency-link gold" data-team-route="gold">${careerGoldCoins(careerState.goldCoins)}</button></div>
         </div>
-        <aside class="${topAction?.priority || 'standard'}"><span>NEXT MANAGER ACTION</span><strong>${escapeCareerHtml(topAction?.label || 'REVIEW CLUB')}</strong><button ${topAction?.leagueAction ? `data-league-action="${escapeCareerHtml(topAction.leagueAction)}"` : `data-team-route="${escapeCareerHtml(topAction?.route || 'calendar')}"`}>${topAction?.leagueAction ? 'START MATCHMAKING' : `OPEN ${escapeCareerHtml((topAction?.route || 'calendar').replace('barracks', 'finances').toUpperCase())}`}</button></aside>
+        ${firstGuide ? '' : `<aside class="${topAction?.priority || 'standard'}"><span>NEXT MANAGER ACTION</span><strong>${escapeCareerHtml(topAction?.label || 'REVIEW CLUB')}</strong><button ${topAction?.leagueAction ? `data-league-action="${escapeCareerHtml(topAction.leagueAction)}"` : `data-team-route="${escapeCareerHtml(topAction?.route || 'calendar')}"`}>${topAction?.leagueAction ? 'START MATCHMAKING' : `OPEN ${escapeCareerHtml((topAction?.route || 'calendar').replace('barracks', 'finances').toUpperCase())}`}</button></aside>`}
       </section>
       ${renderCareerXpProgress()}
       ${typeof renderFoundationPath === 'function' ? renderFoundationPath() : ''}
@@ -41562,6 +41648,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function renderFoundationPath() {
     if (!careerState.created || (careerState.totalMatches >= 2 && Number(careerState.calendar?.absoluteDay) >= 7)) return '';
+    // The nine-step First Match Guide is the only visible opening progress tracker.
+    // The compact Foundation handoff returns only after that guide has finished.
+    if (typeof firstMatchGuidance === 'function' && firstMatchGuidance()) return '';
     const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
     const reportReviewed = Boolean(careerState.lastRound?.reportReviewed);
     const trainingSet = squad.some(player => player.trainingFocus && player.trainingFocus !== 'none');
@@ -41576,7 +41665,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     ];
     const nextIndex = steps.findIndex(step => !step.complete);
     const completeCount = steps.filter(step => step.complete).length;
-    return `<section class="foundation-path"><header><div><span>FOUNDATION PLAN</span><strong>YOUR FIRST CLUB WEEK</strong><p>Only the next useful step is emphasised. Later systems stay visible in grey and unlock as you complete the first-match journey.</p></div><b>${completeCount}/${steps.length}</b></header><div>${steps.map((step, index) => `<button class="${step.complete ? 'complete' : index === nextIndex ? 'current' : 'future'}" data-team-route="${escapeCareerHtml(step.route)}"><i>${step.complete ? '✓' : String(index + 1).padStart(2, '0')}</i><span>${escapeCareerHtml(step.label)}</span><em>${step.complete ? 'DONE' : index === nextIndex ? 'NEXT' : 'LATER'}</em></button>`).join('')}</div></section>`;
+    return `<section class="foundation-path foundation-handoff"><header><div><span>FIRST MATCH GUIDE COMPLETE</span><strong>OPENING WEEK HANDOFF</strong><p>The guided journey is finished. This smaller checklist now hands control back to the normal club priorities.</p></div><b>${completeCount}/${steps.length}</b></header><div>${steps.map((step, index) => `<button class="${step.complete ? 'complete' : index === nextIndex ? 'current' : 'future'}" data-team-route="${escapeCareerHtml(step.route)}"><i>${step.complete ? '✓' : String(index + 1).padStart(2, '0')}</i><span>${escapeCareerHtml(step.label)}</span><em>${step.complete ? 'DONE' : index === nextIndex ? 'NEXT' : 'LATER'}</em></button>`).join('')}</div></section>`;
   }
 
   function firstMatchGuidance() {
@@ -41822,6 +41911,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function renderMenuContextTutorial(route = menuTab) {
     const item = MENU_CONTEXT_TUTORIALS[route];
     if (!item || !careerState.created) return '';
+    // Do not stack a one-time section tutorial on top of the authoritative
+    // First Match Guide. It becomes eligible after the opening journey ends.
+    if (typeof firstMatchGuidance === 'function' && firstMatchGuidance()) return '';
     const tutorial = careerState.tutorial || {};
     if (!tutorial.completed && !tutorial.dismissed) return '';
     if (tutorial.contextSeen?.[route]) return '';
@@ -51685,6 +51777,86 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         scrollChecks,
         savesAdditionalChecklist: false
       };
+    },
+    guidanceConsolidationForTest: () => {
+      const previous = {
+        created: careerState.created,
+        squad: careerState.squad,
+        tutorial: careerState.tutorial,
+        totalMatches: careerState.totalMatches,
+        lastRound: careerState.lastRound,
+        calendar: careerState.calendar,
+        tactics: careerState.tactics ? JSON.parse(JSON.stringify(careerState.tactics)) : careerState.tactics
+      };
+      let opening = {};
+      let handoff = {};
+      try {
+        careerState.created = true;
+        careerState.squad = [];
+        careerState.totalMatches = 0;
+        careerState.lastRound = null;
+        careerState.calendar = { ...(previous.calendar || {}), absoluteDay: 0 };
+        careerState.tutorial = {
+          ...(previous.tutorial || {}),
+          completed: false,
+          dismissed: false,
+          marketViewed: false,
+          profileViewed: false,
+          squadViewed: false,
+          contextSeen: { ...((previous.tutorial || {}).contextSeen || {}) }
+        };
+        opening = {
+          guide: firstMatchGuidance(),
+          foundation: renderFoundationPath(),
+          induction: renderTeamTutorialPanel(),
+          sectionTutorial: renderMenuContextTutorial('reports'),
+          directory: renderCommandFeatureDirectory()
+        };
+
+        careerState.squad = Array.from({ length: TEAM_REQUIRED_STARTERS }, (_, index) => ({
+          id: `GUIDE-${index}`,
+          name: `Guide Operator ${index + 1}`,
+          role: 'support',
+          trainingFocus: index === 0 ? 'aim' : 'none'
+        }));
+        if (typeof clubMatchPrepState === 'function' && typeof clubMatchPlanSignature === 'function') {
+          const prep = clubMatchPrepState();
+          prep.briefingReviewed = true;
+          prep.planConfirmed = true;
+          prep.lineupSignature = clubMatchPlanSignature();
+        }
+        careerState.totalMatches = 1;
+        careerState.lastRound = { reportReviewed: true };
+        careerState.tutorial = {
+          ...careerState.tutorial,
+          marketViewed: true,
+          profileViewed: true,
+          squadViewed: true,
+          completed: true
+        };
+        handoff = {
+          guide: firstMatchGuidance(),
+          foundation: renderFoundationPath()
+        };
+      } finally {
+        careerState.created = previous.created;
+        careerState.squad = previous.squad;
+        careerState.tutorial = previous.tutorial;
+        careerState.totalMatches = previous.totalMatches;
+        careerState.lastRound = previous.lastRound;
+        careerState.calendar = previous.calendar;
+        careerState.tactics = previous.tactics;
+      }
+      const checks = {
+        guideRemainsAuthoritative: opening.guide?.total === 9,
+        foundationHiddenDuringGuide: opening.foundation === '',
+        inductionIsOptionalDisclosure: /<details class="team-tutorial-card team-tutorial-optional/.test(opening.induction) && /OPTIONAL CONTEXT/.test(opening.induction),
+        inductionHasNoCompetingRouteButton: !/data-team-route=/.test(opening.induction),
+        sectionTutorialDelayed: opening.sectionTutorial === '',
+        commandRecommendationsSuppressed: !/command-directory-recommended/.test(opening.directory),
+        handoffAppearsAfterGuide: !handoff.guide && /FIRST MATCH GUIDE COMPLETE/.test(handoff.foundation)
+      };
+      return { ok: Object.values(checks).every(Boolean), checks };
     },
     progressiveInterfaceForTest: () => {
       const phase = overrides => ({
