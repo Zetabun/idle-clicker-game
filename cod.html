@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.28: Guided Demo Orientation</title>
+<title>Strikewatch 12.29: Guided Recruitment Scroll</title>
 <style>
   :root {
     color-scheme: dark;
@@ -15503,6 +15503,20 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
 .team-onboarding-first-demo span { color: #7ed3ef; font-size: 7px; font-weight: 950; letter-spacing: .14em; }
 .team-onboarding-first-demo strong { margin-top: 4px; color: #eef6f8; font-size: 11px; letter-spacing: .055em; }
 .team-onboarding-first-demo p { margin: 5px 0 0; color: #a9bac2; font-size: 10px; line-height: 1.45; }
+
+/* Build 12.29: confirm guided recruitment scrolling without changing layout. */
+.team-market-list.guide-scroll-arrival {
+  animation: guideRecruitmentArrival 1.45s ease-out 1;
+  outline: 2px solid rgba(92, 199, 255, .72);
+  outline-offset: 4px;
+}
+@keyframes guideRecruitmentArrival {
+  0% { outline-color: rgba(92, 199, 255, .92); filter: brightness(1.12); }
+  100% { outline-color: rgba(92, 199, 255, 0); filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .team-market-list.guide-scroll-arrival { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -16252,9 +16266,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.28';
-  const BUILD_NAME = 'GUIDED DEMO ORIENTATION';
-  const BUILD_ID = '12.28.0-20260720';
+  const BUILD_VERSION = '12.29';
+  const BUILD_NAME = 'GUIDED RECRUITMENT SCROLL';
+  const BUILD_ID = '12.29.0-20260720';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -31687,7 +31701,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
       </div>
       <section class="club-pool-control player-pool"><label><span>PLAYER SEARCH POOL</span><select disabled>${typeof clubCurrentPoolOptions === 'function' ? clubCurrentPoolOptions('players') : '<option>DIVISION 3 POOL</option>'}</select></label><p>The recruitment network is restricted to the club's current division. Promotion unlocks the next pool.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>REFRESH · ${teamCredits(TEAM_MARKET_REFRESH_COST)}</button></section>
       <div class="team-market-table-head"><span>PLAYER / ROLE</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div>
-      <section class="team-market-list">${rows.map(player => {
+      <section class="team-market-list" data-guide-target="recruitment-candidates">${rows.map(player => {
         const overall = teamPlayerOverall(player);
         const canAfford = careerState.credits >= player.fee && wageBill + player.wage <= careerState.wageBudget && careerState.squad.length < TEAM_MAX_SQUAD;
         return `<article class="team-market-row">
@@ -31932,7 +31946,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     const route = event.target.closest('[data-team-route]');
     if (route) {
-      setMenuRoute(route.dataset.teamRoute);
+      const targetRoute = route.dataset.teamRoute;
+      const scrollTarget = route.dataset.teamScrollTarget || '';
+      if (scrollTarget === 'recruitment-candidates' && typeof recruitmentState === 'function') {
+        const state = recruitmentState();
+        if (state.view !== 'market') {
+          state.view = 'market';
+          saveCareerState();
+        }
+      }
+      const routed = setMenuRoute(targetRoute);
+      if (routed && scrollTarget && typeof scrollMenuGuideTargetIntoView === 'function') {
+        scrollMenuGuideTargetIntoView(scrollTarget, targetRoute, { behavior: 'smooth' });
+      }
       return true;
     }
     const telemetryPlayer = event.target.closest('[data-team-telemetry-player]');
@@ -38679,7 +38705,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       ? renderRecruitmentShortlist()
       : state.view === 'assignments'
         ? renderRecruitmentAssignments()
-        : `<div class="team-market-table-head"><span>PLAYER / REPORT</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div><section class="team-market-list">${(careerState.market || []).map(renderRecruitmentPlayerRow).join('')}</section>`;
+        : `<div class="team-market-table-head"><span>PLAYER / REPORT</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div><section class="team-market-list" data-guide-target="recruitment-candidates">${(careerState.market || []).map(renderRecruitmentPlayerRow).join('')}</section>`;
     return `${renderTeamTutorialPanel()}${renderClubCalendarStrip()}${renderRecruitmentToolbar(state.view)}
       <div class="menu-hero career-hero team-market-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">RECRUITMENT DEPARTMENT</div><h2>SCOUTING NETWORK // WEEK ${careerState.week}</h2><p>Reports begin as estimates. Shortlist targets, commission role-specific assignments and monitor rival bids before entering a structured negotiation.</p><div class="menu-pill-row"><span class="menu-pill">${(careerState.market || []).length} MARKET PLAYERS</span><span class="menu-pill">${knowledgeAverage}% AVG KNOWLEDGE</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span></div></div><div class="menu-hero-side"><div class="menu-kicker">TRANSFER WINDOW</div><div class="menu-side-operator">${windowState.open ? 'OPEN' : 'CLOSED'}</div><p>${escapeCareerHtml(windowState.phase)} · ${escapeCareerHtml(windowState.detail)}</p></div></div>
       <section class="club-pool-control player-pool"><label><span>PLAYER SEARCH POOL</span><select disabled>${clubCurrentPoolOptions('players')}</select></label><p>${leagueDivisionPoolLabel()} access · Scout quality ${recruitmentScoutQuality()}/100. Promotion unlocks stronger pools.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>REFRESH · ${teamCredits(TEAM_MARKET_REFRESH_COST)}</button></section>
@@ -41563,8 +41589,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const steps = [
       { id: 'recruitment', complete: Boolean(tutorial.marketViewed), route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Meet the available operators. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
       { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT AN OPERATOR PROFILE', detail: 'Compare ability, potential, role fit, medical risk, fee and weekly wage before signing.', action: 'VIEW PROFILE' },
-      { id: 'first-signing', complete: squad.length > 0, route: 'market', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Choose one affordable operator. The transfer fee is paid immediately and wages continue each week.', action: 'RECRUIT OPERATOR' },
-      { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} active operator places are filled. All five are required for deployment.`, action: 'CONTINUE RECRUITING' },
+      { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Choose one affordable operator. The transfer fee is paid immediately and wages continue each week.', action: 'RECRUIT OPERATOR' },
+      { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} active operator places are filled. All five are required for deployment.`, action: 'CONTINUE RECRUITING' },
       { id: 'lineup', complete: Boolean(tutorial.squadViewed), route: 'operators', label: 'REVIEW THE ACTIVE FIVE OPERATORS', detail: 'The first five squad positions deploy. Reorder them and check readiness, roles and equipment.', action: 'OPEN ACTIVE LINE-UP' },
       { id: 'plan', complete: planConfirmed, route: 'tactics', label: 'CONFIRM THE MATCH PLAN', detail: 'Choose operator roles, approach, engagement range and team priority, then lock the plan for the match.', action: 'PREPARE TACTICS' },
       { id: 'match', complete: Number(careerState.totalMatches) > 0, route: 'play', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Watch how well they execute the plan in a first-to-three match.', action: 'OPEN MATCH CONTROL' },
@@ -41704,7 +41730,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       : `data-team-route="${escapeCareerHtml(primary.route)}"`;
     const kicker = guidance ? `NEXT OBJECTIVE · FIRST MATCH GUIDE ${guidance.index + 1}/${guidance.total}` : (primary.kind === 'required' ? 'REQUIRED ACTION' : primary.kind === 'recommended' ? 'RECOMMENDED NEXT' : 'NEXT OPPORTUNITY');
     const progress = guidance ? `<div class="first-match-progress" aria-label="First match guide progress ${guidance.index + 1} of ${guidance.total}"><i style="width:${Math.round(((guidance.index + 1) / guidance.total) * 100)}%"></i></div>` : '';
-    return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" ${actionAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${!guidance && items.length > 1 ? `<details><summary>VIEW PLAN</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(item.kind.toUpperCase())}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
+    const scrollAttribute = guidance?.scrollTarget ? ` data-team-scroll-target="${escapeCareerHtml(guidance.scrollTarget)}"` : '';
+    return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" ${actionAttribute}${scrollAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${!guidance && items.length > 1 ? `<details><summary>VIEW PLAN</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(item.kind.toUpperCase())}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
   }
 
   function renderSectionHub(sectionId) {
@@ -42349,6 +42376,35 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       behavior: options.behavior === 'smooth' ? 'smooth' : 'auto'
     });
     requestAnimationFrame(restoreCommandViewportOrigin);
+    return true;
+  }
+
+  let menuGuideScrollRequest = 0;
+
+  function scrollMenuGuideTargetIntoView(targetId, expectedRoute = menuTab, options = {}) {
+    const targetKey = String(targetId || '').trim();
+    if (!targetKey) return false;
+    const requestId = ++menuGuideScrollRequest;
+    const escapedTarget = targetKey.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const selector = `[data-guide-target="${escapedTarget}"]`;
+    let completed = false;
+    const apply = () => {
+      if (completed || requestId !== menuGuideScrollRequest || (expectedRoute && menuTab !== expectedRoute)) return false;
+      const target = menuContentEl?.querySelector(selector) || null;
+      if (!target) return false;
+      completed = scrollCommandContentTargetIntoView(target, { block: 'start', behavior: options.behavior === 'auto' ? 'auto' : 'smooth' });
+      if (completed) {
+        target.classList.add('guide-scroll-arrival');
+        window.setTimeout(() => {
+          if (target.isConnected) target.classList.remove('guide-scroll-arrival');
+        }, 1600);
+      }
+      return completed;
+    };
+    requestAnimationFrame(() => {
+      if (!apply()) requestAnimationFrame(apply);
+    });
+    window.setTimeout(apply, 180);
     return true;
   }
 
@@ -51590,11 +51646,43 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const validRoute = !guide || Boolean(menuRouteDefinition(guide.route));
       const primarySection = guide ? menuSectionForRoute(guide.route) : '';
       const strip = typeof renderMenuPriorityStrip === 'function' ? renderMenuPriorityStrip() : '';
+      const previous = {
+        created: careerState.created,
+        squad: careerState.squad,
+        tutorial: careerState.tutorial,
+        totalMatches: careerState.totalMatches,
+        lastRound: careerState.lastRound
+      };
+      let recruitmentScroll = { guide: null, strip: '', market: '' };
+      try {
+        careerState.created = true;
+        careerState.squad = [];
+        careerState.totalMatches = 0;
+        careerState.lastRound = null;
+        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: true };
+        recruitmentScroll = {
+          guide: firstMatchGuidance(),
+          strip: renderMenuPriorityStrip(),
+          market: renderTeamMarketTab()
+        };
+      } finally {
+        careerState.created = previous.created;
+        careerState.squad = previous.squad;
+        careerState.tutorial = previous.tutorial;
+        careerState.totalMatches = previous.totalMatches;
+        careerState.lastRound = previous.lastRound;
+      }
+      const scrollChecks = {
+        firstSigningTargetsCandidates: recruitmentScroll.guide?.id === 'first-signing' && recruitmentScroll.guide?.scrollTarget === 'recruitment-candidates',
+        objectiveCarriesScrollTarget: /data-team-scroll-target="recruitment-candidates"/.test(recruitmentScroll.strip),
+        candidateListExposesTarget: /data-guide-target="recruitment-candidates"/.test(recruitmentScroll.market)
+      };
       return {
-        ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && primarySection === guide.section)) && (!guide || /NEXT OBJECTIVE/.test(strip))),
+        ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && primarySection === guide.section)) && (!guide || /NEXT OBJECTIVE/.test(strip)) && Object.values(scrollChecks).every(Boolean)),
         guide: guide ? { ...guide } : null,
         primarySection,
         hasObjectiveStrip: /NEXT OBJECTIVE/.test(strip),
+        scrollChecks,
         savesAdditionalChecklist: false
       };
     },
