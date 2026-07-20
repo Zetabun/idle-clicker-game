@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.32: First Match Payoff</title>
+<title>Strikewatch 12.33: Recruitment Role Clarity</title>
 <style>
   :root {
     color-scheme: dark;
@@ -15511,8 +15511,111 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
 .team-onboarding-first-demo strong { margin-top: 4px; color: #eef6f8; font-size: 11px; letter-spacing: .055em; }
 .team-onboarding-first-demo p { margin: 5px 0 0; color: #a9bac2; font-size: 10px; line-height: 1.45; }
 
+/* Build 12.33: beginner recruitment role guide. */
+.recruitment-candidate-zone { min-width: 0; display: grid; gap: 7px; }
+.recruitment-role-guide {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(94, 191, 236, .26);
+  border-left: 3px solid rgba(96, 204, 247, .72);
+  background: linear-gradient(145deg, rgba(10, 35, 49, .94), rgba(5, 14, 22, .98));
+}
+.recruitment-role-guide > summary {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  background: rgba(35, 91, 116, .12);
+}
+.recruitment-role-guide > summary::-webkit-details-marker { display: none; }
+.recruitment-role-guide > summary > span { min-width: 0; display: grid; gap: 3px; }
+.recruitment-role-guide > summary b { color: #76d4fa; font-size: 9px; letter-spacing: .14em; }
+.recruitment-role-guide > summary strong { color: #f1f7fa; font-size: 14px; line-height: 1.25; letter-spacing: .035em; }
+.recruitment-role-guide > summary small { color: #a6bac4; font-size: 11.5px; line-height: 1.45; }
+.recruitment-role-guide > summary > i {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(100, 205, 248, .34);
+  border-radius: 50%;
+  color: #9be1ff;
+  font-size: 18px;
+  font-style: normal;
+  transition: transform .16s ease;
+}
+.recruitment-role-guide[open] > summary { border-bottom: 1px solid rgba(255,255,255,.08); }
+.recruitment-role-guide[open] > summary > i { transform: rotate(45deg); }
+.recruitment-role-guide.guided { box-shadow: inset 0 0 0 1px rgba(90, 199, 255, .10); }
+.recruitment-role-guide-body { display: grid; gap: 9px; padding: 10px; }
+.recruitment-role-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; }
+.recruitment-role-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(123, 174, 201, .18);
+  background: rgba(4, 13, 20, .76);
+}
+.recruitment-role-card > header { min-width: 0; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; }
+.recruitment-role-card > header > div { min-width: 0; display: grid; gap: 2px; }
+.recruitment-role-card > header span { color: #85d9fa; font-size: 7px; font-weight: 900; letter-spacing: .12em; }
+.recruitment-role-card > header strong { color: #fff; font-size: 12px; letter-spacing: .055em; }
+.recruitment-role-card > p { margin: 0; color: #bccad1; font-size: 11.5px; line-height: 1.48; }
+.recruitment-role-card > small { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 5px; color: #8fa4ae; font-size: 9.5px; line-height: 1.4; }
+.recruitment-role-card > small b { color: #dbeaf0; font-size: 8px; letter-spacing: .08em; }
+.recruitment-role-guide-body > aside {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  padding: 9px 10px;
+  border-left: 2px solid rgba(244, 185, 66, .70);
+  background: rgba(99, 73, 20, .16);
+}
+.recruitment-role-guide-body > aside strong { color: #ffd884; font-size: 9px; letter-spacing: .12em; }
+.recruitment-role-guide-body > aside span { color: #eef6f9; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+.recruitment-role-guide-body > aside p { grid-column: 1 / -1; margin: 2px 0 0; color: #adbdc5; font-size: 10.5px; line-height: 1.45; }
+.recruitment-profile-role-guide { margin: 10px 0; border: 1px solid rgba(96, 190, 232, .24); background: rgba(5, 17, 25, .86); }
+.recruitment-profile-role-guide > header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 10px 11px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.recruitment-profile-role-guide > header > div { display: grid; gap: 3px; }
+.recruitment-profile-role-guide > header span { color: #7bd5f7; font-size: 8px; font-weight: 900; letter-spacing: .13em; }
+.recruitment-profile-role-guide > header strong { color: #f1f7fa; font-size: 13px; }
+.recruitment-profile-role-guide > header p { max-width: 520px; margin: 0; color: #9fb1ba; font-size: 10.5px; line-height: 1.45; }
+.recruitment-profile-role-guide > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 8px; }
+.recruitment-role-card.compact > p { font-size: 11px; }
+.recruitment-role-card.compact > small { font-size: 9px; }
+.team-player-visual.role-marksman .operator-visor, .deployment-role-glyph.role-marksman { --role-accent:#ffd36a; }
+.team-player-visual.role-caller .operator-visor, .deployment-role-glyph.role-caller { --role-accent:#69e0c1; }
+.team-player-visual.role-flex .operator-visor, .deployment-role-glyph.role-flex { --role-accent:#a9bdc8; }
+
+@media (max-width: 700px) {
+  .recruitment-role-guide > summary { padding: 9px 10px; }
+  .recruitment-role-guide > summary strong { font-size: 13px; }
+  .recruitment-role-guide > summary small { font-size: 10.5px; }
+  .recruitment-role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .recruitment-role-card { padding: 9px; }
+  .recruitment-role-card > p { font-size: 11px; }
+  .recruitment-role-card > small { grid-template-columns: 58px minmax(0, 1fr); font-size: 9px; }
+  .recruitment-profile-role-guide > div { grid-template-columns: 1fr; }
+}
+@media (max-width: 390px) {
+  .recruitment-role-grid { grid-template-columns: 1fr; }
+  .recruitment-role-guide-body > aside { grid-template-columns: 1fr; }
+  .recruitment-role-guide-body > aside p { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recruitment-role-guide > summary > i { transition: none; }
+}
+
 /* Build 12.29: confirm guided recruitment scrolling without changing layout. */
-.team-market-list.guide-scroll-arrival {
+.team-market-list.guide-scroll-arrival,
+.recruitment-candidate-zone.guide-scroll-arrival {
   animation: guideRecruitmentArrival 1.45s ease-out 1;
   outline: 2px solid rgba(92, 199, 255, .72);
   outline-offset: 4px;
@@ -15522,7 +15625,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   100% { outline-color: rgba(92, 199, 255, 0); filter: brightness(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .team-market-list.guide-scroll-arrival { animation: none; }
+  .team-market-list.guide-scroll-arrival, .recruitment-candidate-zone.guide-scroll-arrival { animation: none; }
 }
 
 
@@ -16167,7 +16270,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.32 · FIRST MATCH PAYOFF</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.33 · RECRUITMENT ROLE CLARITY</div>
   </div>
 
   <section class="new-player-demo-coach" id="newPlayerDemoCoach" hidden aria-hidden="true">
@@ -16682,9 +16785,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.32';
-  const BUILD_NAME = 'FIRST MATCH PAYOFF';
-  const BUILD_ID = '12.32.0-20260720';
+  const BUILD_VERSION = '12.33';
+  const BUILD_NAME = 'RECRUITMENT ROLE CLARITY';
+  const BUILD_ID = '12.33.0-20260720';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -30658,6 +30761,52 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     { id: 'flex', name: 'FLEX', weights: { marksmanship: 1.00, handling: 1.00, awareness: 1.00, mobility: 1.00, resilience: 1.00, criticalChance: 1.00, criticalDamage: 1.00 }, description: 'A balanced operator able to fill several tactical jobs.' }
   ];
 
+
+  const TEAM_ROLE_BEGINNER_GUIDE = {
+    entry: {
+      job: 'START THE FIGHT',
+      lookFor: 'MOBILITY · HANDLING',
+      caution: 'Often becomes the first operator exposed to danger.',
+      plain: 'Moves into contested space first and creates an opening for the team.'
+    },
+    support: {
+      job: 'FOLLOW AND TRADE',
+      lookFor: 'AWARENESS · HANDLING',
+      caution: 'Loses value when isolated too far from team-mates.',
+      plain: 'Follows the first attacker, helps finish fights and protects a push from collapsing.'
+    },
+    anchor: {
+      job: 'HOLD IMPORTANT GROUND',
+      lookFor: 'RESILIENCE · AWARENESS',
+      caution: 'Usually rotates more slowly when the fight moves elsewhere.',
+      plain: 'Stays on valuable ground, absorbs pressure and makes an area difficult to take.'
+    },
+    flanker: {
+      job: 'ATTACK FROM A NEW ANGLE',
+      lookFor: 'MOBILITY · AWARENESS',
+      caution: 'A wide route can leave the operator temporarily unsupported.',
+      plain: 'Uses an alternate route to reach the side or rear of a fight instead of joining the main push.'
+    },
+    marksman: {
+      job: 'CONTROL LONG SIGHTLINES',
+      lookFor: 'MARKSMANSHIP · AWARENESS',
+      caution: 'Less comfortable when enemies force a close-range fight.',
+      plain: 'Seeks clear ranged angles and punishes enemies who cross open or predictable lanes.'
+    },
+    caller: {
+      job: 'READ AND COORDINATE',
+      lookFor: 'AWARENESS · RESILIENCE',
+      caution: 'May offer less raw attacking power than a specialist attacker.',
+      plain: 'Reads contact information and helps the active five respond to changing situations.'
+    },
+    flex: {
+      job: 'FILL THE MISSING JOB',
+      lookFor: 'BALANCED ATTRIBUTES',
+      caution: 'Versatile rather than dominant in one specialist role.',
+      plain: 'Adapts to several jobs and helps balance an active five that lacks a clear specialist.'
+    }
+  };
+
   const TEAM_FIRST_NAMES = [
     'Alex','Aaron','Ben','Callum','Cameron','Charlie','Daniel','Dylan','Elliot','Ethan','Felix','Finley','George','Harry','Isaac','Jamie','Jay','Jonah','Kai','Kieran','Leo','Lewis','Liam','Logan','Marcus','Mason','Max','Micah','Nathan','Noah','Oliver','Oscar','Owen','Reece','Riley','Rowan','Ryan','Sam','Theo','Toby','Tyler','Zach',
     'Aisha','Amelia','Anya','Brooke','Chloe','Elena','Erin','Freya','Grace','Hannah','Imani','Isla','Jade','Leah','Lena','Maya','Mia','Nadia','Naomi','Nina','Olivia','Priya','Rhea','Ruby','Sara','Sofia','Tara','Zara'
@@ -30700,6 +30849,53 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
 
   function teamRoleById(id) {
     return TEAM_ROLES.find(role => role.id === id) || TEAM_ROLES[TEAM_ROLES.length - 1];
+  }
+
+
+  function teamRoleBeginnerGuide(id) {
+    const role = teamRoleById(id);
+    return TEAM_ROLE_BEGINNER_GUIDE[role.id] || TEAM_ROLE_BEGINNER_GUIDE.flex;
+  }
+
+  function teamRoleGuideGlyphMarkup(roleId) {
+    const role = teamRoleById(roleId);
+    return `<i class="deployment-role-glyph role-${escapeCareerHtml(role.id)}" aria-hidden="true"><b></b><em></em></i>`;
+  }
+
+  function teamRoleGuideCardMarkup(roleId, compact = false) {
+    const role = teamRoleById(roleId);
+    const guide = teamRoleBeginnerGuide(role.id);
+    return `<article class="recruitment-role-card role-${escapeCareerHtml(role.id)} ${compact ? 'compact' : ''}" data-recruitment-role="${escapeCareerHtml(role.id)}">
+      <header>${teamRoleGuideGlyphMarkup(role.id)}<div><span>${escapeCareerHtml(guide.job)}</span><strong>${escapeCareerHtml(role.name)}</strong></div></header>
+      <p>${escapeCareerHtml(guide.plain)}</p>
+      <small><b>LOOK FOR</b>${escapeCareerHtml(guide.lookFor)}</small>
+      <small><b>WATCH FOR</b>${escapeCareerHtml(guide.caution)}</small>
+    </article>`;
+  }
+
+  function recruitmentRoleGuideOpeningStep() {
+    const guide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
+    return Boolean(guide && ['recruitment', 'profile', 'first-signing', 'active-five'].includes(guide.id));
+  }
+
+  function recruitmentRoleGuideMarkup() {
+    const open = recruitmentRoleGuideOpeningStep();
+    return `<details class="recruitment-role-guide ${open ? 'guided' : ''}" ${open ? 'open' : ''}>
+      <summary><span><b>${open ? 'RECRUITMENT TUTORIAL' : 'ROLE REFERENCE'}</b><strong>WHAT DOES EACH OPERATOR ROLE MEAN?</strong><small>Roles guide autonomous positioning and decisions; they are tactical tendencies rather than rigid character classes.</small></span><i aria-hidden="true">+</i></summary>
+      <div class="recruitment-role-guide-body">
+        <div class="recruitment-role-grid">${TEAM_ROLES.map(role => teamRoleGuideCardMarkup(role.id)).join('')}</div>
+        <aside><strong>A SIMPLE FIRST FIVE</strong><span>ENTRY · SUPPORT · ANCHOR · FLANKER · MARKSMAN, SHOT CALLER OR FLEX</span><p>This is a beginner-friendly balance, not a compulsory formation. Duplicate roles can work when their attributes, weapons and tactical plan support the choice.</p></aside>
+      </div>
+    </details>`;
+  }
+
+  function recruitmentProfileRoleGuideMarkup(primaryRoleId, secondaryRoleId) {
+    const primary = teamRoleById(primaryRoleId);
+    const secondary = teamRoleById(secondaryRoleId);
+    return `<section class="recruitment-profile-role-guide">
+      <header><div><span>ROLE EXPLAINED</span><strong>HOW THIS CANDIDATE FITS</strong></div><p>The primary role is their natural tactical identity. The secondary role shows the most suitable alternative job.</p></header>
+      <div>${teamRoleGuideCardMarkup(primary.id, true)}${secondary.id !== primary.id ? teamRoleGuideCardMarkup(secondary.id, true) : ''}</div>
+    </section>`;
   }
 
   function teamCondition(player) {
@@ -31255,9 +31451,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         route: 'market', cta: 'OPEN RECRUITMENT', foundationGuide: true, gameGuide: true,
         note: `The club begins with ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} of borrowed capital. The full ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks.`
       },
-      2: { step: '2 / 6', title: 'WHY OPERATOR PROFILES MATTER', body: 'Ability is only one part of a useful signing. Potential, attributes, personality, role suitability, medical risk, fee and weekly wage determine whether the operator fits the active five and the club budget.', route: 'profile', cta: 'VIEW AN OPERATOR PROFILE' },
-      3: { step: '3 / 6', title: 'WHY THE FIRST SIGNING MATTERS', body: 'Choose an affordable operator whose strengths begin to define the team. The transfer fee leaves club cash immediately and the weekly wage becomes a continuing expense.', route: 'market', cta: 'RETURN TO RECRUITMENT' },
-      4: { step: '4 / 6', title: `WHY YOU NEED FIVE OPERATORS · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'A match requires five contracted operators. Build a mix of entry, support, anchor, flanking and ranged strengths while preserving enough wage and cash headroom for the opening weeks.', route: 'market', cta: 'SIGN MORE OPERATORS' },
+      2: { step: '2 / 6', title: 'WHY OPERATOR PROFILES MATTER', body: 'Start with the role guide: Entry begins fights, Support follows and trades, Anchor holds ground, Flanker attacks from another angle, Marksman controls range, Shot Caller coordinates and Flex fills gaps. Then compare ability, potential, attributes, medical risk, fee and weekly wage.', route: 'profile', cta: 'VIEW AN OPERATOR PROFILE' },
+      3: { step: '3 / 6', title: 'WHY THE FIRST SIGNING MATTERS', body: 'Choose an affordable operator whose role and strengths begin to define the team. Use the role guide to understand the job they will try to perform before committing the immediate transfer fee and continuing weekly wage.', route: 'market', cta: 'RETURN TO RECRUITMENT' },
+      4: { step: '4 / 6', title: `WHY YOU NEED FIVE OPERATORS · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'A match requires five contracted operators. A beginner-friendly group normally mixes an Entry, Support, Anchor and Flanker with a Marksman or Flex, but duplicates are valid when the attributes, weapons and plan make sense. Keep enough wage and cash headroom for the opening weeks.', route: 'market', cta: 'SIGN MORE OPERATORS' },
       5: { step: '5 / 6', title: 'WHY DEPLOYMENT ORDER MATTERS', body: 'The first five squad positions are the active operators who deploy. Reorder the squad, check readiness and then use Tactics and Team Armoury to give each operator a suitable job and loadout.', route: 'operators', cta: 'REVIEW ACTIVE OPERATORS' },
       6: { step: '6 / 6', title: 'WHY THE DEBRIEF MATTERS', body: 'The match plays automatically from an operator viewpoint. The report then connects your preparation to what actually happened, so the next training, tactical or loadout change has a clear reason.', route: 'play', cta: 'OPEN MATCH CONTROL' }
     };
@@ -32208,8 +32404,10 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         <div class="menu-hero-side"><div class="menu-kicker">CURRENT SEARCH LEVEL</div><div class="menu-side-operator">D${typeof leagueDivisionTier === 'function' ? leagueDivisionTier() : 3}</div><p>${typeof leagueDivisionPoolLabel === 'function' ? escapeCareerHtml(leagueDivisionPoolLabel()) : 'DIVISION 3 POOL'} · higher pools require promotion.</p></div>
       </div>
       <section class="club-pool-control player-pool"><label><span>PLAYER SEARCH POOL</span><select disabled>${typeof clubCurrentPoolOptions === 'function' ? clubCurrentPoolOptions('players') : '<option>DIVISION 3 POOL</option>'}</select></label><p>The recruitment network is restricted to the club's current division. Promotion unlocks the next pool.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>REFRESH · ${teamCredits(TEAM_MARKET_REFRESH_COST)}</button></section>
+      <section class="recruitment-candidate-zone" data-guide-target="recruitment-candidates">
+      ${recruitmentRoleGuideMarkup()}
       <div class="team-market-table-head"><span>PLAYER / ROLE</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div>
-      <section class="team-market-list" data-guide-target="recruitment-candidates">${rows.map(player => {
+      <section class="team-market-list">${rows.map(player => {
         const overall = teamPlayerOverall(player);
         const canAfford = careerState.credits >= player.fee && wageBill + player.wage <= careerState.wageBudget && careerState.squad.length < TEAM_MAX_SQUAD;
         return `<article class="team-market-row">
@@ -32220,7 +32418,8 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
           <span><strong>${teamCredits(player.wage)}</strong><small>PER WEEK</small></span>
           <span class="team-market-actions"><button data-team-profile="${player.id}">PROFILE</button><button class="primary" data-transfer-start="${player.id}" ${careerState.squad.length < TEAM_MAX_SQUAD ? '' : 'disabled'}>NEGOTIATE</button></span>
         </article>`;
-      }).join('')}</section>`;
+      }).join('')}</section>
+      </section>`;
   }
 
   function renderTeamSquadTab() {
@@ -32324,6 +32523,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return `${renderTeamTutorialPanel()}
       ${inSquad ? renderTeamPlayerContextBar(player, 'profile') : '<div class="team-page-backbar"><button data-team-route="market">← BACK TO RECRUITMENT</button><span>RECRUITMENT DOSSIER</span></div>'}
       <div class="menu-hero career-hero team-profile-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">PLAYER DOSSIER // ${inSquad ? 'CONTRACTED' : 'RECRUITMENT TARGET'}</div><h2>${escapeCareerHtml(player.name)} ${player.nickname ? `“${escapeCareerHtml(player.nickname)}”` : ''}</h2><p>${role.description}</p><div class="menu-pill-row"><span class="menu-pill">${role.name}</span><span class="menu-pill">SECONDARY ${secondary.name}</span><span class="menu-pill">${escapeCareerHtml(player.nationality)} · AGE ${player.age}</span><span class="menu-pill">${escapeCareerHtml(player.personality)}</span><span class="menu-pill">PLAYER LEVEL ${player.level || 1}</span><span class="menu-pill">${player.unspentPoints || 0} STAT POINTS</span></div></div><div class="menu-hero-side team-profile-rating"><div class="menu-kicker">CURRENT ABILITY</div><div class="menu-side-operator">${overall}</div><p>POTENTIAL ${player.potential} · ${teamPotentialLabel(player)}</p></div></div>
+      ${!inSquad ? recruitmentProfileRoleGuideMarkup(role.id, secondary.id) : ''}
       ${typeof renderPlayerDevelopmentPanel === 'function' ? renderPlayerDevelopmentPanel(player, inSquad) : ''}
       ${inSquad && typeof renderPlayerTelemetryProfileSection === 'function' ? renderPlayerTelemetryProfileSection(player) : ''}
       <div class="team-profile-grid">
@@ -39219,7 +39419,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       ? renderRecruitmentShortlist()
       : state.view === 'assignments'
         ? renderRecruitmentAssignments()
-        : `<div class="team-market-table-head"><span>PLAYER / REPORT</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div><section class="team-market-list" data-guide-target="recruitment-candidates">${(careerState.market || []).map(renderRecruitmentPlayerRow).join('')}</section>`;
+        : `<section class="recruitment-candidate-zone" data-guide-target="recruitment-candidates">${recruitmentRoleGuideMarkup()}<div class="team-market-table-head"><span>PLAYER / REPORT</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div><section class="team-market-list">${(careerState.market || []).map(renderRecruitmentPlayerRow).join('')}</section></section>`;
     return `${renderTeamTutorialPanel()}${renderClubCalendarStrip()}${renderRecruitmentToolbar(state.view)}
       <div class="menu-hero career-hero team-market-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">RECRUITMENT DEPARTMENT</div><h2>SCOUTING NETWORK // WEEK ${careerState.week}</h2><p>Reports begin as estimates. Shortlist targets, commission role-specific assignments and monitor rival bids before entering a structured negotiation.</p><div class="menu-pill-row"><span class="menu-pill">${(careerState.market || []).length} MARKET PLAYERS</span><span class="menu-pill">${knowledgeAverage}% AVG KNOWLEDGE</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span></div></div><div class="menu-hero-side"><div class="menu-kicker">TRANSFER WINDOW</div><div class="menu-side-operator">${windowState.open ? 'OPEN' : 'CLOSED'}</div><p>${escapeCareerHtml(windowState.phase)} · ${escapeCareerHtml(windowState.detail)}</p></div></div>
       <section class="club-pool-control player-pool"><label><span>PLAYER SEARCH POOL</span><select disabled>${clubCurrentPoolOptions('players')}</select></label><p>${leagueDivisionPoolLabel()} access · Scout quality ${recruitmentScoutQuality()}/100. Promotion unlocks stronger pools.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>REFRESH · ${teamCredits(TEAM_MARKET_REFRESH_COST)}</button></section>
@@ -42227,9 +42427,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
     const steps = [
       { id: 'recruitment', complete: Boolean(tutorial.marketViewed), route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Meet the available operators. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
-      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT AN OPERATOR PROFILE', detail: 'Compare ability, potential, role fit, medical risk, fee and weekly wage before signing.', action: 'VIEW PROFILE' },
-      { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Choose one affordable operator. The transfer fee is paid immediately and wages continue each week.', action: 'RECRUIT OPERATOR' },
-      { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} active operator places are filled. All five are required for deployment.`, action: 'CONTINUE RECRUITING' },
+      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT AN OPERATOR PROFILE', detail: 'Use the role guide to understand the candidate’s job, then compare ability, potential, medical risk, fee and weekly wage.', action: 'VIEW PROFILE' },
+      { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Read the role guide, then choose one affordable operator whose job makes sense for the team. The fee is immediate and wages continue each week.', action: 'RECRUIT OPERATOR' },
+      { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} active operator places are filled. Use complementary roles rather than judging every candidate by ability alone.`, action: 'CONTINUE RECRUITING' },
       { id: 'lineup', complete: Boolean(tutorial.squadViewed), route: 'operators', label: 'REVIEW THE ACTIVE FIVE OPERATORS', detail: 'The first five squad positions deploy. Reorder them and check readiness, roles and equipment.', action: 'OPEN ACTIVE LINE-UP' },
       { id: 'plan', complete: planConfirmed, route: 'tactics', label: 'CONFIRM THE MATCH PLAN', detail: 'Choose operator roles, approach, engagement range and team priority, then lock the plan for the match.', action: 'PREPARE TACTICS' },
       { id: 'match', complete: Number(careerState.totalMatches) > 0, route: 'play', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Watch how well they execute the plan in a first-to-three match.', action: 'OPEN MATCH CONTROL' },
@@ -52392,7 +52592,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const scrollChecks = {
         firstSigningTargetsCandidates: recruitmentScroll.guide?.id === 'first-signing' && recruitmentScroll.guide?.scrollTarget === 'recruitment-candidates',
         objectiveCarriesScrollTarget: /data-team-scroll-target="recruitment-candidates"/.test(recruitmentScroll.strip),
-        candidateListExposesTarget: /data-guide-target="recruitment-candidates"/.test(recruitmentScroll.market)
+        candidateListExposesTarget: /data-guide-target="recruitment-candidates"/.test(recruitmentScroll.market),
+        roleGuideIncludedInDestination: /recruitment-candidate-zone[^>]*data-guide-target="recruitment-candidates"[\s\S]*recruitment-role-guide/.test(recruitmentScroll.market)
       };
       return {
         ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && primarySection === guide.section)) && (!guide || /NEXT OBJECTIVE/.test(strip)) && Object.values(scrollChecks).every(Boolean)),
@@ -52402,6 +52603,53 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         scrollChecks,
         savesAdditionalChecklist: false
       };
+    },
+    recruitmentRoleGuideForTest: () => {
+      const previous = {
+        created: careerState.created,
+        squad: careerState.squad,
+        market: careerState.market,
+        tutorial: careerState.tutorial,
+        totalMatches: careerState.totalMatches,
+        lastRound: careerState.lastRound
+      };
+      let marketMarkup = '';
+      let profileMarkup = '';
+      try {
+        careerState.created = true;
+        careerState.squad = [];
+        careerState.totalMatches = 0;
+        careerState.lastRound = null;
+        careerState.market = Array.isArray(previous.market) && previous.market.length ? previous.market : generateTeamMarket(12333);
+        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: true, completed: false, dismissed: false };
+        marketMarkup = renderTeamMarketTab();
+        const first = careerState.market[0];
+        profileMarkup = first ? recruitmentProfileRoleGuideMarkup(first.role, first.secondaryRole) : '';
+      } finally {
+        careerState.created = previous.created;
+        careerState.squad = previous.squad;
+        careerState.market = previous.market;
+        careerState.tutorial = previous.tutorial;
+        careerState.totalMatches = previous.totalMatches;
+        careerState.lastRound = previous.lastRound;
+      }
+      const host = document.createElement('div');
+      host.innerHTML = marketMarkup;
+      const cards = Array.from(host.querySelectorAll('.recruitment-role-card'));
+      const roleIds = cards.map(card => card.getAttribute('data-recruitment-role'));
+      const flanker = cards.find(card => card.getAttribute('data-recruitment-role') === 'flanker');
+      const guide = host.querySelector('.recruitment-role-guide');
+      const destination = host.querySelector('[data-guide-target="recruitment-candidates"]');
+      const checks = {
+        allRolesExplained: TEAM_ROLES.every(role => roleIds.includes(role.id)),
+        guideOpensDuringRecruitment: Boolean(guide?.open),
+        flankerUsesPlainLanguage: Boolean(flanker && /alternate route/i.test(flanker.textContent) && /side or rear/i.test(flanker.textContent)),
+        attributesAndTradeoffsShown: cards.every(card => /LOOK FOR/.test(card.textContent) && /WATCH FOR/.test(card.textContent)),
+        guideInsideCandidateDestination: Boolean(destination?.querySelector('.recruitment-role-guide')),
+        balancedExampleVisible: /A SIMPLE FIRST FIVE/.test(marketMarkup),
+        profileExplainsPrimaryAndSecondary: /HOW THIS CANDIDATE FITS/.test(profileMarkup) && (profileMarkup.match(/recruitment-role-card/g) || []).length >= 1
+      };
+      return { ok: Object.values(checks).every(Boolean), checks, roleIds };
     },
     guidanceConsolidationForTest: () => {
       const previous = {
