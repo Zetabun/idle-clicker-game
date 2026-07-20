@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.44: Operator-Fitted 3D Armour</title>
+<title>Strikewatch 12.46: Tailored Armour Finish</title>
 <style>
   :root {
     color-scheme: dark;
@@ -14236,18 +14236,20 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   display: grid;
   place-items: center;
   overflow: hidden;
-  perspective: 1100px;
+  perspective: 1180px;
 }
 .career-armour-mini3d {
   width: 118px;
   height: 132px;
   margin: 0 auto;
   background:
-    radial-gradient(circle at 50% 44%, rgba(82,173,255,.14), transparent 36%),
-    linear-gradient(90deg, transparent 49.7%, rgba(82,173,255,.09) 50%, transparent 50.3%),
-    linear-gradient(0deg, transparent 49.7%, rgba(82,173,255,.07) 50%, transparent 50.3%),
-    rgba(1,7,11,.20);
-  border: 1px solid rgba(125,181,211,.10);
+    radial-gradient(circle at 50% 38%, rgba(95,188,255,.20), transparent 28%),
+    radial-gradient(circle at 50% 76%, rgba(15,36,48,.42), transparent 42%),
+    linear-gradient(90deg, transparent 49.7%, rgba(82,173,255,.10) 50%, transparent 50.3%),
+    linear-gradient(0deg, transparent 49.7%, rgba(82,173,255,.08) 50%, transparent 50.3%),
+    rgba(1,7,11,.26);
+  border: 1px solid rgba(125,181,211,.12);
+  box-shadow: inset 0 0 24px rgba(82,173,255,.07);
 }
 .career-armour-inspector {
   width: min(100%, 510px);
@@ -14267,11 +14269,12 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   min-height: 270px;
   margin: 0 auto;
   background:
-    radial-gradient(circle at 50% 47%, rgba(82,173,255,.12), transparent 40%),
-    linear-gradient(90deg, transparent 49.8%, rgba(82,173,255,.10) 50%, transparent 50.2%),
+    radial-gradient(circle at 50% 41%, rgba(95,188,255,.18), transparent 36%),
+    radial-gradient(circle at 50% 80%, rgba(12,26,35,.44), transparent 44%),
+    linear-gradient(90deg, transparent 49.8%, rgba(82,173,255,.11) 50%, transparent 50.2%),
     linear-gradient(0deg, transparent 49.8%, rgba(82,173,255,.08) 50%, transparent 50.2%),
     repeating-linear-gradient(90deg, transparent 0 39px, rgba(82,173,255,.03) 40px),
-    rgba(1,7,11,.48);
+    rgba(1,7,11,.56);
   border-top: 1px solid rgba(111,159,190,.16);
   border-bottom: 1px solid rgba(111,159,190,.16);
 }
@@ -14280,21 +14283,21 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
 .career-armour-showcase-caption { position: absolute; pointer-events: none; }
 .career-armour-showcase-grid { inset: 0; }
 .career-armour-showcase-shadow {
-  width: 200px;
-  height: 42px;
-  bottom: 34px;
+  width: 214px;
+  height: 46px;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,0,0,.56), transparent 68%);
-  filter: blur(7px);
+  background: radial-gradient(circle, rgba(0,0,0,.66), transparent 70%);
+  filter: blur(8px);
 }
 .career-armour-showcase-caption {
   left: 0;
   right: 0;
   bottom: 12px;
   text-align: center;
-  color: rgba(159,209,236,.74);
+  color: rgba(159,209,236,.76);
   font-size: 7px;
   font-weight: 950;
   letter-spacing: .18em;
@@ -14317,12 +14320,12 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   height: 28px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,0,0,.48), transparent 70%);
+  background: radial-gradient(circle, rgba(0,0,0,.50), transparent 70%);
   filter: blur(4px);
   pointer-events: none;
 }
 .career-armour-model-system {
-  --viewer-yaw: -22deg;
+  --viewer-yaw: -18deg;
   --viewer-pitch: -11deg;
   --viewer-zoom: 1;
   position: absolute;
@@ -14336,34 +14339,36 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   will-change: transform;
 }
 .career-armour-model-system > .career-weapon-rig {
-  left: 0;
-  top: 0;
+  left: 50%;
+  top: 50%;
   transform: none;
   transition: none;
 }
 .career-armour-operator-body {
-  opacity: .96;
-  filter: saturate(.82) brightness(.82);
+  opacity: .97;
+  filter: saturate(.80) brightness(.78) contrast(1.03);
 }
-.career-armour-weapon-system { filter: drop-shadow(0 9px 12px rgba(0,0,0,.32)); }
+.career-armour-weapon-system {
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.38)) brightness(1.03) saturate(1.04);
+}
 .career-armour-inspector.dragging .career-armour-model-system { transition: none; }
 .career-armour-mini3d .career-armour-model-system {
   top: 48%;
-  transform: translate3d(0, 0, 0) rotateX(-12deg) rotateY(-26deg) scale(.62);
+  transform: translate3d(0, 0, 0) rotateX(-12deg) rotateY(-24deg) scale(.64);
   transition: none;
 }
 .career-armour-showcase .career-armour-model-system {
-  --viewer-yaw: var(--armour-viewer-yaw, -22deg);
+  --viewer-yaw: var(--armour-viewer-yaw, -18deg);
   --viewer-pitch: var(--armour-viewer-pitch, -10deg);
-  --viewer-zoom: var(--armour-viewer-scale, .82);
+  --viewer-zoom: var(--armour-viewer-scale, .84);
   top: 48%;
   transform: translate3d(0, 0, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom));
 }
 .career-armour-showcase .career-armour-rig.with-operator-body { top: 47%; }
 .cash-armour-visual .career-armour-mini3d .career-armour-model-system {
-  --armour-store-scale: .67;
-  animation: careerArmourStoreTurn 8.4s ease-in-out infinite;
-  transform: translate3d(0, 0, 0) rotateX(-10deg) rotateY(-22deg) scale(var(--armour-store-scale));
+  --armour-store-scale: .69;
+  animation: careerArmourStoreTurn 8.8s ease-in-out infinite;
+  transform: translate3d(0, 0, 0) rotateX(-10deg) rotateY(-20deg) scale(var(--armour-store-scale));
   will-change: transform;
 }
 .cash-armour-offer.light .career-armour-model-system { animation-delay: -1.1s; }
@@ -14371,9 +14376,9 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
 .cash-armour-offer.medium .career-armour-model-system { animation-delay: -5.1s; }
 .cash-armour-offer.heavy .career-armour-model-system { animation-delay: -7.0s; }
 @keyframes careerArmourStoreTurn {
-  0%, 100% { transform: translate3d(0, 0, 0) rotateX(-10deg) rotateY(-27deg) scale(var(--armour-store-scale)); }
-  45% { transform: translate3d(0, 0, 0) rotateX(-8deg) rotateY(24deg) scale(var(--armour-store-scale)); }
-  58% { transform: translate3d(0, 0, 0) rotateX(-9deg) rotateY(17deg) scale(var(--armour-store-scale)); }
+  0%, 100% { transform: translate3d(0, 0, 0) rotateX(-10deg) rotateY(-24deg) scale(var(--armour-store-scale)); }
+  45% { transform: translate3d(0, 0, 0) rotateX(-8deg) rotateY(20deg) scale(var(--armour-store-scale)); }
+  58% { transform: translate3d(0, 0, 0) rotateX(-9deg) rotateY(12deg) scale(var(--armour-store-scale)); }
 }
 .armour-rig-label {
   position: absolute;
@@ -14431,6 +14436,40 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
 .career-weapon-cylinder.armour-harness .cylinder-face { background: repeating-linear-gradient(135deg, #2c3840 0 6px, #171f26 6px 11px); }
 .career-weapon-cuboid.armour-olive-accent .face,
 .career-weapon-cylinder.armour-olive-accent .cylinder-face { background: linear-gradient(90deg, #4f7258, #8ec79a); box-shadow: 0 0 10px rgba(129, 205, 152, .16); }
+.career-weapon-cuboid.plate-pocket .face,
+.career-weapon-cylinder.plate-pocket .cylinder-face { background: linear-gradient(145deg, #778995, #455864 46%, #151d23 84%); }
+.career-weapon-cuboid.armour-clip .face,
+.career-weapon-cylinder.armour-clip .cylinder-face { background: linear-gradient(145deg, #9ca8b1, #54616b 45%, #1a2228 84%); }
+.career-weapon-cuboid.armour-rubber .face,
+.career-weapon-cylinder.armour-rubber .cylinder-face { background: linear-gradient(145deg, #495359, #2b343a 48%, #0f1418 84%); }
+.career-weapon-cuboid.armour-cable .face,
+.career-weapon-cylinder.armour-cable .cylinder-face { background: linear-gradient(145deg, #1f2a31, #11191d 52%, #05090c 88%); }
+.career-armour-weapon-system .career-weapon-cuboid.center-plate .face,
+.career-armour-weapon-system .career-weapon-cuboid.side-left .face,
+.career-armour-weapon-system .career-weapon-cuboid.side-right .face,
+.career-armour-weapon-system .career-weapon-cuboid.shoulder-left .face,
+.career-armour-weapon-system .career-weapon-cuboid.shoulder-right .face,
+.career-armour-weapon-system .career-weapon-cuboid.abdomen .face,
+.career-armour-weapon-system .career-weapon-cuboid.groin .face,
+.career-armour-weapon-system .career-weapon-cuboid.neck-guard .face {
+  box-shadow: inset 0 0 0 1px rgba(243,248,251,.10), inset 0 0 16px rgba(255,255,255,.04);
+}
+.career-armour-weapon-system .career-weapon-cuboid.shell-front .face,
+.career-armour-weapon-system .career-weapon-cuboid.shell-back .face,
+.career-armour-weapon-system .career-weapon-cuboid.plate-pocket .face,
+.career-armour-weapon-system .career-weapon-cuboid.pouch-left .face,
+.career-armour-weapon-system .career-weapon-cuboid.pouch-right .face,
+.career-armour-weapon-system .career-weapon-cuboid.side-pocket-left .face,
+.career-armour-weapon-system .career-weapon-cuboid.side-pocket-right .face {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035), inset 0 0 12px rgba(0,0,0,.16);
+}
+.career-armour-weapon-system .career-weapon-cuboid.molle-strip .face,
+.career-armour-weapon-system .career-weapon-cuboid.center-seam .face,
+.career-armour-weapon-system .career-weapon-cuboid.strap-buckle-left .face,
+.career-armour-weapon-system .career-weapon-cuboid.strap-buckle-right .face,
+.career-armour-weapon-system .career-weapon-cuboid.radio-screen .face {
+  box-shadow: 0 0 10px rgba(82,173,255,.14), inset 0 0 0 1px rgba(255,255,255,.05);
+}
 .career-armour-rig.none .career-weapon-cuboid.shell-front .face,
 .career-armour-rig.none .career-weapon-cuboid.shell-back .face,
 .career-armour-rig.none .career-weapon-cuboid.side-left .face,
@@ -14439,7 +14478,10 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
 .career-armour-rig.none .career-weapon-cuboid.buckle .face,
 .career-armour-rig.none .career-weapon-cuboid.center-plate .face,
 .career-armour-rig.none .career-weapon-cuboid.pouch-left .face,
-.career-armour-rig.none .career-weapon-cuboid.pouch-right .face { opacity: .22; filter: saturate(.55); }
+.career-armour-rig.none .career-weapon-cuboid.pouch-right .face,
+.career-armour-rig.none .career-weapon-cuboid.plate-pocket .face,
+.career-armour-rig.none .career-weapon-cuboid.waist-panel-left .face,
+.career-armour-rig.none .career-weapon-cuboid.waist-panel-right .face { opacity: .22; filter: saturate(.55); }
 .career-weapon-cuboid.operator-uniform .face,
 .career-weapon-cylinder.operator-uniform .cylinder-face { background: linear-gradient(145deg, #343f47, #1d2930 48%, #0b1115 84%); }
 .career-weapon-cuboid.operator-uniform-shadow .face,
@@ -17969,9 +18011,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.44';
-  const BUILD_NAME = 'OPERATOR-FITTED 3D ARMOUR';
-  const BUILD_ID = '12.44.0-operator-fitted-armour';
+  const BUILD_VERSION = '12.46';
+  const BUILD_NAME = 'TAILORED ARMOUR FINISH';
+  const BUILD_ID = '12.46.0-tailored-armour-finish';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -28346,13 +28388,19 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
       pouch: 'carrier-shadow',
       buckle: 'armour-buckle-metal',
       accent: 'armour-olive-accent',
+      trim: 'armour-clip',
       radio: 'dark-metal',
+      cable: 'armour-cable',
+      pocketShell: 'plate-pocket',
+      rubber: 'armour-rubber',
       hasShoulderPads: false,
       hasCollar: false,
       hasNeckGuard: false,
       hasRadio: false,
       hasAbdomen: false,
       hasGroin: false,
+      hasUtilityStrips: true,
+      hasWaistPouches: true,
       chestScaleX: 1,
       chestScaleY: 1,
       chestDepth: 1,
@@ -28365,6 +28413,21 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
       plateHeight: 1,
       plateDepth: 1,
       frontLift: 0,
+      topWidth: 0.96,
+      waistWidth: 0.82,
+      backWidth: 0.92,
+      sideAngle: 78,
+      sideForward: 0,
+      strapSpread: 1,
+      strapHeight: 1,
+      yokeWidth: 0.74,
+      yokeDepth: 1,
+      platePocketScale: 1,
+      platePocketHeight: 1,
+      shoulderOffsetX: 1,
+      shoulderOffsetY: 1,
+      shoulderForward: 1,
+      hemDrop: 0,
       fullWrap: false
     };
     switch (armour?.classId) {
@@ -28377,6 +28440,11 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.pouch = 'armour-harness';
         profile.buckle = 'metal-edge';
         profile.accent = 'blue-accent';
+        profile.trim = 'metal-edge';
+        profile.pocketShell = 'armour-harness';
+        profile.rubber = 'armour-harness';
+        profile.hasUtilityStrips = false;
+        profile.hasWaistPouches = false;
         profile.plateScale = 0.46;
         profile.plateHeight = 0.48;
         profile.plateDepth = 0.72;
@@ -28386,6 +28454,14 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.sideDepth = 0.64;
         profile.beltWidth = 0.74;
         profile.pouchScale = 0.58;
+        profile.topWidth = 0.72;
+        profile.waistWidth = 0.60;
+        profile.backWidth = 0.72;
+        profile.sideAngle = 80;
+        profile.strapSpread = 0.90;
+        profile.yokeWidth = 0.54;
+        profile.platePocketScale = 0.56;
+        profile.platePocketHeight = 0.64;
         break;
       case 'light':
         profile.shell = 'scout-weave-fabric';
@@ -28404,6 +28480,14 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.sideDepth = 0.82;
         profile.beltWidth = 0.84;
         profile.pouchScale = 0.80;
+        profile.topWidth = 0.84;
+        profile.waistWidth = 0.72;
+        profile.backWidth = 0.84;
+        profile.sideAngle = 77;
+        profile.strapSpread = 0.96;
+        profile.yokeWidth = 0.66;
+        profile.platePocketScale = 0.82;
+        profile.platePocketHeight = 0.82;
         break;
       case 'medium-flex':
         profile.shell = 'carrier-fabric';
@@ -28424,6 +28508,15 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.sideDepth = 1.00;
         profile.beltWidth = 0.98;
         profile.pouchScale = 0.92;
+        profile.topWidth = 0.98;
+        profile.waistWidth = 0.82;
+        profile.backWidth = 0.92;
+        profile.sideAngle = 75;
+        profile.sideForward = 3;
+        profile.strapSpread = 1.02;
+        profile.yokeWidth = 0.74;
+        profile.platePocketScale = 0.96;
+        profile.platePocketHeight = 0.94;
         break;
       case 'medium':
         profile.shell = 'midnight-fabric';
@@ -28447,6 +28540,16 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.sideDepth = 1.06;
         profile.beltWidth = 1.06;
         profile.pouchScale = 1.00;
+        profile.topWidth = 1.04;
+        profile.waistWidth = 0.90;
+        profile.backWidth = 0.96;
+        profile.sideAngle = 73;
+        profile.sideForward = 5;
+        profile.strapSpread = 1.04;
+        profile.yokeWidth = 0.80;
+        profile.yokeDepth = 1.06;
+        profile.platePocketScale = 1.04;
+        profile.platePocketHeight = 1.04;
         profile.fullWrap = true;
         break;
       case 'heavy':
@@ -28458,6 +28561,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.pouch = 'heavy-shell-shadow';
         profile.buckle = 'plate-steel';
         profile.accent = 'brass';
+        profile.trim = 'plate-steel';
         profile.radio = 'dark-metal';
         profile.hasShoulderPads = true;
         profile.hasCollar = true;
@@ -28477,6 +28581,21 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         profile.beltWidth = 1.24;
         profile.pouchScale = 1.12;
         profile.frontLift = 4;
+        profile.topWidth = 1.12;
+        profile.waistWidth = 0.96;
+        profile.backWidth = 1.02;
+        profile.sideAngle = 70;
+        profile.sideForward = 7;
+        profile.strapSpread = 1.10;
+        profile.strapHeight = 1.05;
+        profile.yokeWidth = 0.86;
+        profile.yokeDepth = 1.12;
+        profile.platePocketScale = 1.10;
+        profile.platePocketHeight = 1.12;
+        profile.shoulderOffsetX = 1.08;
+        profile.shoulderOffsetY = 1.04;
+        profile.shoulderForward = 1.18;
+        profile.hemDrop = 4;
         profile.fullWrap = true;
         break;
       default:
@@ -28497,6 +28616,11 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     const shellHeight = 78 * config.chestScaleY;
     const shellDepth = 30 * config.chestDepth;
     const shellTop = -5 - config.frontLift * 0.2;
+    const upperWidth = shellWidth * config.topWidth;
+    const lowerWidth = shellWidth * config.waistWidth;
+    const backWidth = shellWidth * config.backWidth;
+    const upperHeight = shellHeight * 0.52;
+    const lowerHeight = shellHeight * 0.40;
     const plateWidth = 34 * config.plateScale;
     const plateHeight = 40 * config.plateHeight;
     const plateDepth = 10 * config.plateDepth;
@@ -28508,53 +28632,75 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     const beltWidth = 60 * config.beltWidth;
     const pouchWidth = 16 * config.pouchScale;
     const pouchHeight = 24 * config.pouchScale;
+    const shoulderBaseX = upperWidth * 0.42;
     const harnessOnly = armour.id === 'none';
+    const addMirrored = (leftClass, rightClass, material, x, y, z, w, h, d, rz = 0, rx = 0, ry = 0) => {
+      addRounded(leftClass, material, -x, y, z, w, h, d, -rz, rx, -ry);
+      addRounded(rightClass, material, x, y, z, w, h, d, rz, rx, ry);
+    };
 
-    addRounded('shell-back', config.secondaryShell, 0, shellTop + 2, -20, shellWidth * (harnessOnly ? 0.90 : 0.94), shellHeight * (harnessOnly ? 0.92 : 0.98), shellDepth * (harnessOnly ? 0.58 : 0.94));
-    addRounded('shell-front', config.shell, 0, shellTop, 10 + config.frontLift, shellWidth, shellHeight, shellDepth);
-    addRounded('side-left', config.sidePlate, -(shellWidth / 2) - 6, shellTop + 9, 0, shellDepth * 0.82, sideHeight, sideWidth, 0, 0, -90);
-    addRounded('side-right', config.sidePlate, (shellWidth / 2) + 6, shellTop + 9, 0, shellDepth * 0.82, sideHeight, sideWidth, 0, 0, 90);
-    addRounded('strap-left', config.strap, -19, -46, 0, 14, 38, 12, -16, -2, -9);
-    addRounded('strap-right', config.strap, 19, -46, 0, 14, 38, 12, 16, -2, 9);
-    addRounded('belt', config.strap, 0, 41, 11, beltWidth, 12, 22);
-    addRounded('buckle', config.buckle, 0, 41, 23, 18, 12, 6);
+    addRounded('shell-back upper', config.secondaryShell, 0, shellTop - 14, -18, backWidth, upperHeight, shellDepth * (harnessOnly ? 0.56 : 0.88));
+    addRounded('shell-back lower', config.secondaryShell, 0, shellTop + 22, -16, backWidth * 0.92, lowerHeight, shellDepth * (harnessOnly ? 0.44 : 0.72));
+    addRounded('shell-front upper', config.shell, 0, shellTop - 13, 10 + config.frontLift, upperWidth, upperHeight, shellDepth);
+    addRounded('shell-front lower', config.shell, 0, shellTop + 18, 10 + config.frontLift * 0.6, lowerWidth, lowerHeight, shellDepth * 0.92);
+    addRounded('shell-yoke', config.strap, 0, shellTop - 31, 4, upperWidth * config.yokeWidth, 10, 18 * config.yokeDepth);
+    addMirrored('shell-wrap-left', 'shell-wrap-right', config.secondaryShell, (upperWidth / 2) + 4, shellTop - 3, 5, 13, shellHeight * 0.62, 16, 0, 0, config.sideAngle - 10);
+    addMirrored('side-pocket-left', 'side-pocket-right', config.pocketShell, (upperWidth / 2) + 3, shellTop + 8, 8 + config.sideForward, 16, sideHeight * 0.82, 14, 0, 0, config.sideAngle - 2);
+    addMirrored('side-left outer', 'side-right outer', config.sidePlate, (upperWidth / 2) + 3, shellTop + 9, 10 + config.sideForward, 10, sideHeight * 0.72, sideWidth, 0, 0, config.sideAngle);
+    addMirrored('strap-left', 'strap-right', config.strap, 24 * config.strapSpread, -43, 2, 12, 40 * config.strapHeight, 10, 18, -1, 9);
+    addMirrored('strap-anchor-left', 'strap-anchor-right', config.trim, 23 * config.strapSpread, -56, 2, 10, 7, 8, 6, 0, 9);
+    addMirrored('strap-buckle-left', 'strap-buckle-right', config.buckle, 27 * config.strapSpread, -25, 19, 6, 9, 4, 8);
+    addRounded('belt', config.strap, 0, 41 + config.hemDrop, 11, beltWidth, 12, 20);
+    addRounded('buckle', config.buckle, 0, 41 + config.hemDrop, 22, 17, 10, 6);
 
     if (!harnessOnly) {
-      addRounded('center-plate upper', config.plate, 0, -14, 26, plateWidth, plateHeight, plateDepth);
-      addRounded('center-plate lower', config.plate, 0, 12, 22, plateWidth * 0.86, plateHeight * 0.44, plateDepth * 0.9);
-      addRounded('pouch-left', config.pouch, -21, 14, 29, pouchWidth, pouchHeight, 12);
-      addRounded('pouch-right', config.pouch, 21, 14, 29, pouchWidth, pouchHeight, 12);
-      addRounded('center-seam', config.accent, 0, -6, 31, 4, 54, 4);
-      addRounded('radio-clip-left', config.accent, -28, -11, 26, 6, 12, 4, -8);
-      addRounded('radio-clip-right', config.accent, 28, -11, 26, 6, 12, 4, 8);
+      addRounded('plate-pocket upper', config.pocketShell, 0, -12, 20, plateWidth * (1.18 * config.platePocketScale), plateHeight * (0.78 * config.platePocketHeight), Math.max(10, shellDepth * 0.34));
+      addRounded('center-plate upper', config.plate, 0, -14, 27, plateWidth * 0.90, plateHeight * 0.70, plateDepth);
+      addRounded('plate-pocket lower', config.pocketShell, 0, 14, 19, plateWidth * (0.98 * config.platePocketScale), plateHeight * (0.34 * config.platePocketHeight), Math.max(9, shellDepth * 0.28));
+      addRounded('center-plate lower', config.plate, 0, 12, 22, plateWidth * 0.78, plateHeight * 0.28, plateDepth * 0.9);
+      addRounded('plate-cap', config.trim, 0, -31, 20, plateWidth * 0.60, 7, 6);
+      if (config.hasUtilityStrips) {
+        for (const x of [-16, 0, 16]) addRounded('molle-strip', config.trim, x, 4, 30, 4, 46, 3);
+      }
+      addRounded('center-seam', config.accent, 0, -7, 31, 4, 55, 4);
+      addMirrored('waist-panel-left', 'waist-panel-right', config.pouch, 19, 15, 27, 12, 14, 10, 3);
+      if (config.hasWaistPouches) {
+        addMirrored('pouch-left', 'pouch-right', config.pouch, 22, 20, 29, pouchWidth, pouchHeight, 12);
+        addMirrored('pouch-cap-left', 'pouch-cap-right', config.trim, 22, 8, 34, pouchWidth * 0.88, 6, 3);
+      }
+      addMirrored('radio-clip-left', 'radio-clip-right', config.accent, 28, -11, 26, 6, 12, 4, 8);
     }
     if (config.hasCollar) {
-      addRounded('collar-left', config.strap, -16, -43, 11, 18, 12, 16, -24, 0, -8);
-      addRounded('collar-right', config.strap, 16, -43, 11, 18, 12, 16, 24, 0, 8);
+      addMirrored('collar-left', 'collar-right', config.strap, 16, -41, 11, 20, 12, 15, 24, 0, 11);
+      addRounded('collar-yoke', config.rubber, 0, -40, 6, 18, 10, 12);
     }
     if (config.hasNeckGuard) {
-      addRounded('neck-guard', config.plate, 0, -53, 6, 28, 18, 18, 0, -6, 0);
+      addRounded('neck-guard', config.plate, 0, -52, 6, 30, 18, 18, 0, -6, 0);
     }
     if (config.hasShoulderPads) {
-      addRounded('shoulder-left', config.plate, -41, -34, 17 * config.sideDepth, shoulderWidth, shoulderHeight, shoulderDepth, -18, 0, -18);
-      addRounded('shoulder-right', config.plate, 41, -34, 17 * config.sideDepth, shoulderWidth, shoulderHeight, shoulderDepth, 18, 0, 18);
+      addMirrored('shoulder-shell-left', 'shoulder-shell-right', config.rubber, shoulderBaseX * config.shoulderOffsetX, -31 * config.shoulderOffsetY, 12 * config.shoulderForward, shoulderWidth * 0.82, shoulderHeight, shoulderDepth * 0.88, 12, 0, 16);
+      addMirrored('shoulder-left', 'shoulder-right', config.plate, (shoulderBaseX + 4) * config.shoulderOffsetX, -34 * config.shoulderOffsetY, 17 * config.shoulderForward, shoulderWidth, shoulderHeight, shoulderDepth, 18, 0, 18);
     }
     if (config.hasAbdomen) {
-      addRounded('abdomen', config.plate, 0, 24, 23, 34 * Math.max(0.9, config.plateScale), 14, 10);
+      addRounded('abdomen-shell', config.pocketShell, 0, 24 + config.hemDrop, 20, 36 * Math.max(0.92, config.plateScale), 16, 10);
+      addRounded('abdomen', config.plate, 0, 24 + config.hemDrop, 24, 33 * Math.max(0.92, config.plateScale), 12, 9);
     }
     if (config.hasGroin) {
-      addRounded('groin', config.plate, 0, 58, 16, 26, 22, 10, 0, 8, 0);
+      addRounded('groin-shell', config.pocketShell, 0, 54, 12, 28, 18, 9, 0, 7, 0);
+      addRounded('groin', config.plate, 0, 58, 16, 24, 20, 8, 0, 8, 0);
     }
     if (config.hasRadio) {
-      addRounded('radio-body', config.radio, -(shellWidth / 2) - 3, -7, 20, 12, 32, 10, -8, 0, -10);
-      addCylinder('radio-antenna', config.buckle, -(shellWidth / 2) + 1, -30, 23, 20, 2, 2, 0, 0, 90);
+      const radioX = (upperWidth / 2) + 6;
+      addRounded('radio-body', config.radio, -radioX, -6, 18, 12, 30, 9, -10, 0, -10);
+      addRounded('radio-screen', config.trim, -radioX, -7, 24, 7, 8, 2, -10, 0, -10);
+      addCylinder('radio-antenna', config.buckle, -radioX + 4, -31, 22, 18, 2, 2, 0, 0, 90);
+      addCylinder('radio-cable', config.cable, -15, -43, 18, 32, 3, 3, -10, 0, 28);
     }
     if (config.fullWrap) {
-      addRounded('side-pouch-left', config.pouch, -(shellWidth / 2) - 8, 10, 1, 12, 26, 14, 0, 0, -86);
-      addRounded('side-pouch-right', config.pouch, (shellWidth / 2) + 8, 10, 1, 12, 26, 14, 0, 0, 86);
+      addMirrored('side-pouch-left', 'side-pouch-right', config.pouch, (upperWidth / 2) + 10, 11, 0, 12, 24, 14, 0, 0, 86);
+      addMirrored('side-pouch-cap-left', 'side-pouch-cap-right', config.trim, (upperWidth / 2) + 10, -1, 7, 10, 5, 3, 0, 0, 86);
     }
-    addRounded('hem-left', config.strap, -20, 52, 7, 18, 10, 12, -3);
-    addRounded('hem-right', config.strap, 20, 52, 7, 18, 10, 12, 3);
+    addMirrored('hem-left', 'hem-right', config.strap, 20, 52 + config.hemDrop, 8, 18, 10, 12, 3);
     return parts;
   }
 
@@ -28574,10 +28720,10 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     rounded('operator-helmet', 'operator-helmet', 0, -83, -5, 35, 21, 34);
     rounded('operator-face-wrap', 'operator-uniform-shadow', 0, -72, 14, 25, 10, 8);
     for (const side of [-1, 1]) {
-      rounded(`operator-shoulder-${side < 0 ? 'left' : 'right'}`, 'operator-uniform', side * 37, -28, -5, 22, 27, 25, side * 5, 0, side * 8);
-      cylinder(`operator-upper-arm-${side < 0 ? 'left' : 'right'}`, 'operator-uniform', side * 45, -3, -3, 41, 16, 16, 90 + side * 5, 0, 0);
-      cylinder(`operator-forearm-${side < 0 ? 'left' : 'right'}`, 'operator-uniform-shadow', side * 51, 26, 1, 36, 14, 14, 90 + side * 2, 0, 0);
-      rounded(`operator-glove-${side < 0 ? 'left' : 'right'}`, 'operator-glove', side * 53, 48, 4, 16, 18, 15, side * 2);
+      rounded(`operator-shoulder-${side < 0 ? 'left' : 'right'}`, 'operator-uniform', side * 40, -28, -4, 22, 27, 24, side * 5, 0, side * 10);
+      cylinder(`operator-upper-arm-${side < 0 ? 'left' : 'right'}`, 'operator-uniform', side * 49, -1, -1, 43, 16, 16, 90 + side * 7, 0, 0);
+      cylinder(`operator-forearm-${side < 0 ? 'left' : 'right'}`, 'operator-uniform-shadow', side * 58, 29, 3, 36, 14, 14, 90 + side * 4, 0, 0);
+      rounded(`operator-glove-${side < 0 ? 'left' : 'right'}`, 'operator-glove', side * 62, 51, 7, 16, 18, 15, side * 4);
       cylinder(`operator-thigh-${side < 0 ? 'left' : 'right'}`, 'operator-trouser', side * 16, 85, -5, 47, 21, 21, 90, 0, 0);
       cylinder(`operator-shin-${side < 0 ? 'left' : 'right'}`, 'operator-trouser-shadow', side * 17, 121, -3, 43, 18, 18, 90, 0, 0);
       rounded(`operator-boot-${side < 0 ? 'left' : 'right'}`, 'operator-boot', side * 17, 150, 7, 22, 18, 38);
@@ -51755,31 +51901,31 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         pack: 0.88
       },
       light: {
-        width: 0.34, height: 0.335, depth: 0.050, frontZ: 0.182,
+        width: 0.33, height: 0.33, depth: 0.048, frontZ: 0.182,
         side: false, shoulder: false, collar: false, abdomen: false, groin: false,
         shoulderScale: 0.84, sideWidth: 0.052, sideHeight: 0.22, sideDepth: 0.13,
         collarWidth: 0.11, collarHeight: 0.075, abdomenWidth: 0.28, abdomenHeight: 0.11,
         pack: 0.93
       },
       'medium-flex': {
-        width: 0.39, height: 0.385, depth: 0.072, frontZ: 0.188,
+        width: 0.385, height: 0.38, depth: 0.070, frontZ: 0.188,
         side: true, shoulder: false, collar: true, abdomen: false, groin: false,
         shoulderScale: 0.92, sideWidth: 0.060, sideHeight: 0.245, sideDepth: 0.145,
         collarWidth: 0.12, collarHeight: 0.082, abdomenWidth: 0.31, abdomenHeight: 0.12,
         pack: 1.0
       },
       medium: {
-        width: 0.435, height: 0.425, depth: 0.096, frontZ: 0.194,
+        width: 0.425, height: 0.418, depth: 0.092, frontZ: 0.194,
         side: true, shoulder: true, collar: true, abdomen: true, groin: false,
-        shoulderScale: 1.04, sideWidth: 0.070, sideHeight: 0.275, sideDepth: 0.16,
+        shoulderScale: 1.02, sideWidth: 0.068, sideHeight: 0.270, sideDepth: 0.155,
         collarWidth: 0.135, collarHeight: 0.090, abdomenWidth: 0.34, abdomenHeight: 0.135,
         pack: 1.055
       },
       heavy: {
-        width: 0.505, height: 0.49, depth: 0.142, frontZ: 0.212,
+        width: 0.49, height: 0.478, depth: 0.132, frontZ: 0.210,
         side: true, shoulder: true, collar: true, abdomen: true, groin: true,
-        shoulderScale: 1.34, sideWidth: 0.090, sideHeight: 0.335, sideDepth: 0.205,
-        collarWidth: 0.165, collarHeight: 0.115, abdomenWidth: 0.405, abdomenHeight: 0.165,
+        shoulderScale: 1.20, sideWidth: 0.084, sideHeight: 0.325, sideDepth: 0.190,
+        collarWidth: 0.160, collarHeight: 0.110, abdomenWidth: 0.390, abdomenHeight: 0.160,
         pack: 1.16
       }
     };
@@ -60566,10 +60712,41 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const shared3dPipeline = detailMarkup.includes('career-weapon-rig career-armour-weapon-system') && detailMarkup.includes('career-weapon-cuboid') && detailMarkup.includes('career-weapon-cylinder');
       const operatorFit = detailMarkup.includes('career-armour-operator-body') && ['operator-head', 'operator-torso-upper', 'operator-upper-arm-left', 'operator-thigh-left'].every(token => detailMarkup.includes(token));
       const heavyFeatures = ['neck-guard', 'shoulder-left', 'abdomen', 'groin', 'radio-body'].every(token => detailMarkup.includes(token));
+      let centeredRigs = false;
+      let centeredRigMeasurements = [];
+      const testHost = document.createElement('div');
+      testHost.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:640px;pointer-events:none;opacity:0;';
+      testHost.innerHTML = `<div class="cash-armour-grid">${ids.map(id => `<article class="cash-armour-offer ${getCareerArmour(id).classId}"><div class="cash-armour-visual">${careerArmourVisualMarkup(getCareerArmour(id), 'store')}</div></article>`).join('')}</div><div class="career-armour-detail-preview">${detailMarkup}</div>`;
+      document.body.appendChild(testHost);
+      try {
+        const rigs = [...testHost.querySelectorAll('[data-career-armour-rig]')];
+        centeredRigMeasurements = rigs.map(rig => {
+          const modelSystem = rig.querySelector('.career-armour-model-system');
+          const childRigs = [...rig.querySelectorAll('.career-armour-model-system > .career-weapon-rig')];
+          return childRigs.map(child => {
+            const style = window.getComputedStyle(child);
+            const left = parseFloat(style.left) || 0;
+            const top = parseFloat(style.top) || 0;
+            const parentWidth = modelSystem?.getBoundingClientRect?.().width || 1;
+            const parentHeight = modelSystem?.getBoundingClientRect?.().height || 1;
+            return {
+              className: rig.className,
+              left,
+              top,
+              expectedLeft: parentWidth / 2,
+              expectedTop: parentHeight / 2,
+              centered: Math.abs(left - (parentWidth / 2)) < 0.55 && Math.abs(top - (parentHeight / 2)) < 0.55
+            };
+          });
+        }).flat();
+        centeredRigs = centeredRigMeasurements.length > 0 && centeredRigMeasurements.every(entry => entry.centered);
+      } finally {
+        testHost.remove();
+      }
       const lightWebgl = operatorArmourRenderProfile({ armourProfile: { classId: 'light' }, armourMaxDurability: 70, armourDurability: 70 });
       const heavyWebgl = operatorArmourRenderProfile({ armourProfile: { classId: 'heavy' }, armourMaxDurability: 140, armourDurability: 140 });
       const premiumHeavy = heavyWebgl.width > lightWebgl.width * 1.35 && heavyWebgl.depth > lightWebgl.depth * 2 && heavyWebgl.shoulder && heavyWebgl.collar && heavyWebgl.abdomen && heavyWebgl.groin;
-      return { ok: uniqueClasses && storeModels && interactive && shared3dPipeline && operatorFit && heavyFeatures && premiumHeavy, uniqueClasses, storeModels, interactive, shared3dPipeline, operatorFit, heavyFeatures, premiumHeavy, classes, lightWebgl, heavyWebgl };
+      return { ok: uniqueClasses && storeModels && interactive && shared3dPipeline && operatorFit && heavyFeatures && centeredRigs && premiumHeavy, uniqueClasses, storeModels, interactive, shared3dPipeline, operatorFit, heavyFeatures, centeredRigs, centeredRigMeasurements, premiumHeavy, classes, lightWebgl, heavyWebgl };
     },
     purchaseArmourForTest: armourId => {
       if (!careerState.created) window.__strikeDebug.seedReadabilityCareerForTest(5);
