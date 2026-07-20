@@ -4,10 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
 <meta name="theme-color" content="#070b11" />
+<link rel="icon" href="data:," />
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.27: Progressive Interface Reveal</title>
+<title>Strikewatch 12.28: Guided Demo Orientation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -15364,6 +15365,144 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
   .progressive-section-locked-list { display: none; }
   .progressive-section-gate p { font-size: 8px; }
 }
+
+/* Build 12.28: concept-first onboarding and one-round guided spectator demo. */
+.new-player-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  overflow: auto;
+  background: radial-gradient(circle at 50% 24%, rgba(41, 111, 145, .28), transparent 42%), rgba(2, 7, 11, .94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.new-player-intro-overlay[hidden],
+.new-player-demo-coach[hidden] { display: none !important; }
+.new-player-intro-card {
+  width: min(920px, 100%);
+  border: 1px solid rgba(104, 179, 211, .36);
+  border-top: 3px solid #67c7e9;
+  background: linear-gradient(180deg, rgba(9, 25, 36, .99), rgba(4, 12, 19, .99));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .66);
+}
+.new-player-intro-card > header { padding: 18px 20px 14px; border-bottom: 1px solid rgba(108, 172, 199, .18); }
+.new-player-intro-card > header > span { color: #78cde9; font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+.new-player-intro-card h2 { margin: 5px 0 0; color: #f3f8fa; font-size: clamp(25px, 5vw, 43px); line-height: 1; letter-spacing: .035em; }
+.new-player-intro-card header p { max-width: 760px; margin: 9px 0 0; color: #b6c7cf; font-size: 13px; line-height: 1.55; }
+.new-player-intro-loop { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 16px; }
+.new-player-intro-loop article { min-width: 0; padding: 12px; border: 1px solid rgba(104, 163, 186, .18); background: rgba(255,255,255,.025); }
+.new-player-intro-loop article > span { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid rgba(103, 199, 233, .44); border-radius: 50%; color: #8ed8f0; font-size: 11px; font-weight: 950; }
+.new-player-intro-loop strong { display: block; margin-top: 9px; color: #eef6f8; font-size: 11px; letter-spacing: .06em; }
+.new-player-intro-loop small { display: block; margin-top: 6px; color: #9eb0b8; font-size: 10px; line-height: 1.45; }
+.new-player-intro-rule { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; margin: 0 16px 14px; padding: 11px 13px; border-left: 3px solid #e1b85d; background: rgba(87, 62, 16, .22); }
+.new-player-intro-rule strong { color: #f2ca75; font-size: 9px; letter-spacing: .11em; white-space: nowrap; }
+.new-player-intro-rule span { color: #d9e0e3; font-size: 11px; line-height: 1.4; }
+.new-player-intro-card > footer,
+.new-player-demo-coach-card > footer { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 8px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid rgba(106, 165, 188, .16); }
+.new-player-intro-card button,
+.new-player-demo-coach-card button { min-height: 48px; }
+
+.new-player-demo-coach {
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  display: grid;
+  place-items: end center;
+  padding: 12px max(10px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(1,5,8,.18), transparent 38%, rgba(1,5,8,.72));
+}
+.new-player-demo-coach-card {
+  width: min(760px, 100%);
+  pointer-events: auto;
+  border: 1px solid rgba(104, 196, 229, .42);
+  border-left: 4px solid #69c8e8;
+  background: linear-gradient(180deg, rgba(7, 24, 34, .98), rgba(3, 13, 20, .98));
+  box-shadow: 0 18px 60px rgba(0,0,0,.58);
+}
+.new-player-demo-coach-card > header { padding: 13px 15px 6px; }
+.new-player-demo-coach-card > header span { display: block; color: #79d0ec; font-size: 8px; font-weight: 950; letter-spacing: .15em; }
+.new-player-demo-coach-card > header strong { display: block; margin-top: 5px; color: #f2f8fa; font-size: 16px; letter-spacing: .045em; }
+.new-player-demo-coach-card > p { margin: 0; padding: 0 15px; color: #bac8ce; font-size: 12px; line-height: 1.5; }
+.new-player-demo-focus { margin: 10px 15px 12px; padding: 8px 10px; border-left: 2px solid #e1b85d; background: rgba(92, 64, 14, .22); color: #ead9aa; font-size: 9px; font-weight: 850; line-height: 1.4; letter-spacing: .055em; }
+.new-player-demo-coach[data-stage='3'],
+.new-player-demo-coach[data-stage='4'] { place-items: end start; }
+.new-player-demo-coach[data-stage='3'] .new-player-demo-coach-card,
+.new-player-demo-coach[data-stage='4'] .new-player-demo-coach-card { width: min(520px, calc(100% - 12px)); }
+body[data-new-player-demo='active'] #menuBtn,
+body[data-new-player-demo='active'] #portraitMenuBtn,
+body[data-new-player-demo='active'] #matchSpeedBtn,
+body[data-new-player-demo='active'] #portraitSpeedBtn,
+body[data-new-player-demo='active'] #autoBtn,
+body[data-new-player-demo='active'] #portraitAutoBtn,
+body[data-new-player-demo='active'] #uiToggleBtn { opacity: .28; pointer-events: none; }
+body[data-new-player-demo='active'] .match-objective { border-color: rgba(100, 199, 232, .52); box-shadow: 0 0 0 1px rgba(100, 199, 232, .10); }
+body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 184, 93, .44); }
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .new-player-intro-overlay { place-items: start center; padding: max(8px, env(safe-area-inset-top)) 7px max(8px, env(safe-area-inset-bottom)); }
+  .new-player-intro-card > header { padding: 14px 13px 11px; }
+  .new-player-intro-card h2 { font-size: 27px; }
+  .new-player-intro-card header p { font-size: 12px; }
+  .new-player-intro-loop { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px; gap: 6px; }
+  .new-player-intro-loop article { padding: 9px; }
+  .new-player-intro-loop strong { font-size: 10px; }
+  .new-player-intro-loop small { font-size: 9.5px; }
+  .new-player-intro-rule { grid-template-columns: 1fr; gap: 4px; margin: 0 10px 10px; padding: 9px 10px; }
+  .new-player-intro-rule strong { white-space: normal; }
+  .new-player-intro-card > footer,
+  .new-player-demo-coach-card > footer { grid-template-columns: 1fr; padding: 9px 10px max(9px, env(safe-area-inset-bottom)); }
+  .new-player-demo-coach { padding: max(8px, env(safe-area-inset-top)) 7px max(8px, env(safe-area-inset-bottom)); }
+  .new-player-demo-coach[data-stage='3'],
+  .new-player-demo-coach[data-stage='4'] { place-items: start center; padding-top: max(76px, calc(env(safe-area-inset-top) + 68px)); }
+  .new-player-demo-coach-card,
+  .new-player-demo-coach[data-stage='3'] .new-player-demo-coach-card,
+  .new-player-demo-coach[data-stage='4'] .new-player-demo-coach-card { width: 100%; }
+  .new-player-demo-coach-card > header { padding: 11px 12px 5px; }
+  .new-player-demo-coach-card > header strong { font-size: 14px; }
+  .new-player-demo-coach-card > p { padding: 0 12px; font-size: 11px; }
+  .new-player-demo-focus { margin: 8px 12px 9px; font-size: 8.5px; }
+}
+
+@media (orientation: landscape) and (max-width: 900px) and (max-height: 500px) {
+  .new-player-intro-overlay { place-items: start center; padding: 5px; }
+  .new-player-intro-card { width: min(820px, 100%); }
+  .new-player-intro-card > header { padding: 9px 12px 7px; }
+  .new-player-intro-card h2 { font-size: 22px; }
+  .new-player-intro-card header p { margin-top: 5px; font-size: 10px; line-height: 1.35; }
+  .new-player-intro-loop { padding: 7px 9px; gap: 5px; }
+  .new-player-intro-loop article { padding: 7px; }
+  .new-player-intro-loop article > span { width: 22px; height: 22px; }
+  .new-player-intro-loop strong { margin-top: 5px; font-size: 8.5px; }
+  .new-player-intro-loop small { margin-top: 3px; font-size: 7.5px; line-height: 1.3; }
+  .new-player-intro-rule { margin: 0 9px 7px; padding: 6px 8px; }
+  .new-player-intro-rule span { font-size: 8.5px; }
+  .new-player-intro-card > footer { grid-template-columns: .8fr 1.2fr; padding: 6px 9px; }
+  .new-player-intro-card button { min-height: 44px; }
+  .new-player-demo-coach { place-items: end start; padding: 6px; }
+  .new-player-demo-coach-card { width: min(470px, 62%); }
+  .new-player-demo-coach-card > header { padding: 8px 10px 3px; }
+  .new-player-demo-coach-card > header strong { font-size: 12px; }
+  .new-player-demo-coach-card > p { padding: 0 10px; font-size: 9px; line-height: 1.3; }
+  .new-player-demo-focus { margin: 6px 10px; padding: 5px 7px; font-size: 7px; }
+  .new-player-demo-coach-card > footer { grid-template-columns: .7fr 1.3fr; padding: 6px 8px; }
+  .new-player-demo-coach-card button { min-height: 44px; }
+}
+.team-onboarding-first-demo {
+  margin: 10px 0 12px;
+  padding: 11px 12px;
+  border: 1px solid rgba(101, 196, 229, .28);
+  border-left: 3px solid #69c8e8;
+  background: rgba(35, 92, 116, .12);
+}
+.team-onboarding-first-demo span,
+.team-onboarding-first-demo strong { display: block; }
+.team-onboarding-first-demo span { color: #7ed3ef; font-size: 7px; font-weight: 950; letter-spacing: .14em; }
+.team-onboarding-first-demo strong { margin-top: 4px; color: #eef6f8; font-size: 11px; letter-spacing: .055em; }
+.team-onboarding-first-demo p { margin: 5px 0 0; color: #a9bac2; font-size: 10px; line-height: 1.45; }
 </style>
 </head>
 <body>
@@ -15612,7 +15751,43 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.27 · PROGRESSIVE INTERFACE REVEAL</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.28 · GUIDED DEMO ORIENTATION</div>
+  </div>
+
+  <section class="new-player-demo-coach" id="newPlayerDemoCoach" hidden aria-hidden="true">
+    <div class="new-player-demo-coach-card" role="dialog" aria-labelledby="newPlayerDemoTitle" aria-describedby="newPlayerDemoBody">
+      <header>
+        <span id="newPlayerDemoKicker">GUIDED DEMO ROUND · 1 / 4</span>
+        <strong id="newPlayerDemoTitle">YOU ARE THE MANAGER, NOT THE SHOOTER</strong>
+      </header>
+      <p id="newPlayerDemoBody">You watch the match through one operator's viewpoint. The operators control their own movement, aiming and shooting.</p>
+      <div class="new-player-demo-focus" id="newPlayerDemoFocus" aria-live="polite">LOOK AT THE SPECTATOR NAME, HEALTH, WEAPON AND LIVE INTENTION.</div>
+      <footer>
+        <button type="button" id="newPlayerDemoSkipBtn">SKIP DEMO</button>
+        <button type="button" class="primary" id="newPlayerDemoNextBtn">SHOW THE ROUND GOAL</button>
+      </footer>
+    </div>
+  </section>
+
+  <div class="new-player-intro-overlay" id="newPlayerIntroOverlay" hidden aria-hidden="true">
+    <section class="new-player-intro-card" role="dialog" aria-modal="true" aria-labelledby="newPlayerIntroTitle" aria-describedby="newPlayerIntroBody">
+      <header>
+        <span>NEW MANAGER ORIENTATION</span>
+        <h2 id="newPlayerIntroTitle">WHAT IS STRIKEWATCH?</h2>
+        <p id="newPlayerIntroBody">Strikewatch is a tactical management game. You build and prepare the club; five autonomous operators carry out your decisions in live elimination matches.</p>
+      </header>
+      <div class="new-player-intro-loop" aria-label="Strikewatch concept">
+        <article><span>1</span><strong>RECRUIT &amp; EQUIP</strong><small>Sign operators and give each one a suitable role, weapon and armour setup.</small></article>
+        <article><span>2</span><strong>SET THE PLAN</strong><small>Choose the team's formation, tempo, preferred engagement range and priorities.</small></article>
+        <article><span>3</span><strong>WATCH THEM EXECUTE</strong><small>You spectate. Operators move, aim, take cover, reload and fight for themselves.</small></article>
+        <article><span>4</span><strong>LEARN &amp; IMPROVE</strong><small>Use the debrief to train weaknesses, manage the club and earn promotion to the Pro League.</small></article>
+      </div>
+      <aside class="new-player-intro-rule"><strong>REAL MATCH FORMAT</strong><span>Five operators per team · no respawns during a round · first team to win three rounds wins the match.</span></aside>
+      <footer>
+        <button type="button" id="newPlayerIntroSkipBtn">SKIP DEMO &amp; RECRUIT</button>
+        <button type="button" class="primary" id="newPlayerIntroStartBtn">WATCH A ONE-ROUND DEMO</button>
+      </footer>
+    </section>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -15921,6 +16096,13 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
   const betweenRoundLimitEl = document.getElementById('betweenRoundLimit');
   const betweenRoundKeepBtn = document.getElementById('betweenRoundKeepBtn');
   const betweenRoundApplyBtn = document.getElementById('betweenRoundApplyBtn');
+  const newPlayerDemoCoachEl = document.getElementById('newPlayerDemoCoach');
+  const newPlayerDemoKickerEl = document.getElementById('newPlayerDemoKicker');
+  const newPlayerDemoTitleEl = document.getElementById('newPlayerDemoTitle');
+  const newPlayerDemoBodyEl = document.getElementById('newPlayerDemoBody');
+  const newPlayerDemoFocusEl = document.getElementById('newPlayerDemoFocus');
+  const newPlayerDemoSkipBtn = document.getElementById('newPlayerDemoSkipBtn');
+  const newPlayerDemoNextBtn = document.getElementById('newPlayerDemoNextBtn');
   const sponsorRoundTransitionEl = document.getElementById('sponsorRoundTransition');
   const sponsorRoundLogoEl = document.getElementById('sponsorRoundLogo');
   const sponsorRoundClubEl = document.getElementById('sponsorRoundClub');
@@ -15992,6 +16174,9 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
   const managerDateDayEl = document.getElementById('managerDateDay');
   const managerDateMetaEl = document.getElementById('managerDateMeta');
   const matchmakingOverlayEl = document.getElementById('matchmakingOverlay');
+  const newPlayerIntroOverlayEl = document.getElementById('newPlayerIntroOverlay');
+  const newPlayerIntroSkipBtn = document.getElementById('newPlayerIntroSkipBtn');
+  const newPlayerIntroStartBtn = document.getElementById('newPlayerIntroStartBtn');
   const deploymentSelectionEl = document.getElementById('deploymentSelection');
   const deploymentMapGridEl = document.getElementById('deploymentMapGrid');
   const deploymentRosterEl = document.getElementById('deploymentRoster');
@@ -16067,9 +16252,9 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.27';
-  const BUILD_NAME = 'PROGRESSIVE INTERFACE REVEAL';
-  const BUILD_ID = '12.27.0-20260720';
+  const BUILD_VERSION = '12.28';
+  const BUILD_NAME = 'GUIDED DEMO ORIENTATION';
+  const BUILD_ID = '12.28.0-20260720';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -28692,6 +28877,7 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
     if (typeof resetMenuScroll === 'function') resetMenuScroll();
     requestAnimationFrame(() => {
       if (typeof resetMenuScroll === 'function') resetMenuScroll();
+      if (typeof openNewPlayerIntro === 'function' && openNewPlayerIntro()) return;
       const tutorialCard = menuContentEl?.querySelector('.team-tutorial-card');
       if (tutorialCard && typeof tutorialCard.focus === 'function') tutorialCard.focus({ preventScroll: true });
     });
@@ -29085,10 +29271,11 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
             <div class="team-logo-options" role="radiogroup" aria-label="Choose team emblem">${Object.entries(TEAM_LOGO_DEFS).map(([id, logo]) => `<button type="button" class="${normaliseTeamLogoId(careerDraft.teamIdentity?.logoId) === id ? 'selected' : ''}" data-team-logo="${id}" role="radio" aria-checked="${normaliseTeamLogoId(careerDraft.teamIdentity?.logoId) === id ? 'true' : 'false'}" title="${escapeCareerHtml(logo.label)}">${teamLogoSvg({ logoId: id, logoColor: careerDraft.teamIdentity?.logoColor }, 'team-logo-option-mark')}<span>${escapeCareerHtml(logo.label.split(' ')[0])}</span></button>`).join('')}</div>
             <label class="team-logo-colour"><span>EMBLEM COLOUR</span><input id="careerLogoColorInput" type="color" value="${normaliseTeamLogoColour(careerDraft.teamIdentity?.logoColor)}" aria-label="Choose emblem colour" /><strong>${normaliseTeamLogoColour(careerDraft.teamIdentity?.logoColor).toUpperCase()}</strong></label>
           </div>
-          <button class="primary career-create-btn" data-career-action="create" ${!validTeam || !validManager ? 'disabled' : ''}>CREATE TEAM & BEGIN TUTORIAL</button>
+          <button class="primary career-create-btn" data-career-action="create" ${!validTeam || !validManager ? 'disabled' : ''}>CREATE TEAM & BEGIN ORIENTATION</button>
         </section>
         <section class="team-onboarding-preview">
           <div class="menu-kicker">WHAT HAPPENS AFTER CREATION?</div><h3>THE STRIKEWATCH GAME LOOP</h3>
+          <div class="team-onboarding-first-demo"><span>FIRST: GUIDED MATCH ORIENTATION</span><strong>WATCH ONE DEMO ROUND BEFORE MAKING MANAGEMENT DECISIONS</strong><p>The game briefly takes you into the spectator view and explains the score, no-respawn rule, autonomous operators, tactical plan and live intention labels. The demo does not affect your career record or finances.</p></div>
           <div class="team-onboarding-goal"><div class="team-onboarding-goal-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M10 8h28v12c0 9-5.8 17.1-14 20-8.2-2.9-14-11-14-20z"></path><path d="M18 21l4 4 8-9"></path></svg></div><div><span>LONG-TERM GOAL</span><strong>TAKE A NEW CLUB TO THE PRO LEAGUE</strong><p>Win league fixtures, earn promotion, improve the squad and build a club capable of competing at the top level.</p></div></div>
           <div class="team-onboarding-loop" aria-label="Core game loop">
             <article><div aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19c.6-4 2.4-6 5.5-6s4.9 2 5.5 6M17 7v6M14 10h6"></path></svg></div><span>1</span><strong>RECRUIT</strong><small>Scout the market and sign five operators within your cash and wage limits.</small></article>
@@ -30548,11 +30735,13 @@ body[data-ui-buttons='hidden'] .match-objective, body[data-app-state='menu'] .ma
     const stage = teamTutorialStage();
     const squadCount = (careerState.squad || []).length;
     const loan = typeof clubFinanceLoanState === 'function' ? clubFinanceLoanState() : careerState.financeLoan;
+    const orientationComplete = Boolean(careerState.tutorial?.contextSeen?.['new-player-demo-complete']);
+    const orientationSkipped = Boolean(careerState.tutorial?.contextSeen?.['new-player-demo-skipped']);
     const stages = {
       1: {
         step: '1 / 6',
-        title: 'YOUR ROLE & THE ROAD TO THE PRO LEAGUE',
-        body: `You are the manager, not the person holding the weapon. Recruit and equip the squad, choose roles and tactics, then watch five AI-controlled operators execute the plan in first-to-three-round matches. Learn from each debrief, improve the club and earn promotion through Division 3, Division 2 and Division 1 to reach the Pro League. Your opening ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} is borrowed capital: ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks.`,
+        title: orientationComplete ? 'NOW BUILD YOUR OWN ACTIVE FIVE OPERATORS' : 'YOUR ROLE & THE ROAD TO THE PRO LEAGUE',
+        body: `${orientationComplete ? 'The orientation round showed how autonomous combat works. Now recruit the five operators who will represent your real club, then choose their roles, weapons and tactical plan.' : (orientationSkipped ? 'You skipped the demonstration, but the core rule remains: you manage the club while the operators move, aim and fight for themselves.' : 'You are the manager, not the person holding the weapon. Recruit and equip the squad, choose roles and tactics, then watch five AI-controlled operators execute the plan in first-to-three-round matches.')} Learn from each debrief, improve the club and earn promotion through Division 3, Division 2 and Division 1 to reach the Pro League. Your opening ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} is borrowed capital: ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks.`,
         route: 'market', cta: 'OPEN RECRUITMENT', foundationGuide: true, gameGuide: true
       },
       2: { step: '2 / 6', title: 'READ A PLAYER BEFORE YOU BUY', body: 'Open a candidate profile and compare ability, potential, attributes, personality, role suitability, medical risk, transfer fee and weekly wage. Better information leads to a more balanced five.', route: 'profile', cta: 'VIEW A PLAYER PROFILE' },
@@ -31890,6 +32079,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function currentMatchPresentation() {
+    if (typeof newPlayerDemoState !== 'undefined' && newPlayerDemoState.active) {
+      const userName = normaliseCareerName(careerState.name || 'Your Club') || 'Your Club';
+      return {
+        mode: 'tutorial',
+        competition: 'GUIDED ORIENTATION ROUND',
+        matchday: null,
+        fixtureId: null,
+        blue: { name: userName, short: leagueShortName(userName), side: 'DEMO' },
+        red: { name: 'Training Unit', short: 'TRN', side: 'DEMO' }
+      };
+    }
     if (activeMatchPresentation) return activeMatchPresentation;
     const league = ensureLeagueState();
     if (league?.activeMode) {
@@ -31911,6 +32111,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function matchCompetitionShortLabel() {
     const presentation = currentMatchPresentation();
+    if (presentation.mode === 'tutorial') return 'GUIDED DEMO';
     if (presentation.mode === 'league') return `${leagueDivisionDefinition().short} · MATCHDAY ${presentation.matchday || leagueCurrentMatchday()}`;
     if (presentation.mode === 'exhibition') return 'EXHIBITION MATCH';
     return 'TACTICAL ELIMINATION';
@@ -40170,6 +40371,248 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     message: ''
   };
 
+  const NEW_PLAYER_CONCEPT_KEY = 'new-player-concept';
+  const NEW_PLAYER_DEMO_COMPLETE_KEY = 'new-player-demo-complete';
+  const NEW_PLAYER_DEMO_SKIPPED_KEY = 'new-player-demo-skipped';
+  const NEW_PLAYER_DEMO_COMPLETE_BODY = 'This round was for orientation only: it did not change your record, finances, operator condition or league position. In the real career you will recruit your own five operators, prepare them and play first-to-three matches.';
+  const NEW_PLAYER_DEMO_COMPLETE_FOCUS = 'NEXT: OPEN RECRUITMENT AND BUILD YOUR OWN ACTIVE FIVE OPERATORS.';
+  const newPlayerDemoState = {
+    active: false,
+    paused: false,
+    stage: 0,
+    elapsed: 0,
+    roundFinished: false,
+    winner: null,
+    reason: '',
+    priorArenaId: null
+  };
+
+  const NEW_PLAYER_DEMO_STEPS = [
+    {
+      title: 'YOU ARE THE MANAGER, NOT THE SHOOTER',
+      body: 'You watch the match through one operator\'s viewpoint. The operators control their own movement, aiming and shooting.',
+      focus: 'LOOK AT THE SPECTATOR NAME, HEALTH, WEAPON AND LIVE INTENTION.',
+      action: 'SHOW THE ROUND GOAL',
+      paused: true
+    },
+    {
+      title: 'WIN THE ROUND BY ELIMINATING THE OTHER FIVE',
+      body: 'Each team deploys five operators and there are no respawns during the round. A normal match is first to three round wins; this orientation ends after one round.',
+      focus: 'THE TOP SCOREBOARD SHOWS THE ROUND, ALIVE OPERATORS, SCORE AND CLOCK.',
+      action: 'WATCH THE OPERATORS MOVE',
+      paused: true
+    },
+    {
+      title: 'YOUR PREPARATION SHAPES THEIR DECISIONS',
+      body: 'Roles, weapons, armour and the tactical plan affect where operators move, which fights they seek and how closely they support team-mates. They still react independently to what they can see and hear.',
+      focus: 'THE ROUND OBJECTIVE SUMMARISES THE PLAN YOUR OPERATORS ARE EXECUTING.',
+      action: 'EXPLAIN THE LIVE INTENTION',
+      paused: false
+    },
+    {
+      title: 'THE LIVE INTENTION EXPLAINS WHAT YOU ARE WATCHING',
+      body: 'The intention label changes as the spectated operator advances, holds cover, investigates sound, reloads, switches weapon or engages a visible enemy.',
+      focus: 'USE THE LEFT AND RIGHT SPECTATOR BUTTONS TO FOLLOW ANOTHER LIVING OPERATOR.',
+      action: 'GOT IT · WATCH THE ROUND',
+      paused: false
+    }
+  ];
+
+  function ensureNewPlayerTutorialFlags() {
+    careerState.tutorial = careerState.tutorial && typeof careerState.tutorial === 'object'
+      ? careerState.tutorial
+      : makeDefaultCareerTutorialState();
+    careerState.tutorial.contextSeen = careerState.tutorial.contextSeen && typeof careerState.tutorial.contextSeen === 'object' && !Array.isArray(careerState.tutorial.contextSeen)
+      ? careerState.tutorial.contextSeen
+      : {};
+    return careerState.tutorial.contextSeen;
+  }
+
+  function newPlayerTutorialFlag(key) {
+    return Boolean(careerState.tutorial?.contextSeen?.[key]);
+  }
+
+  function setNewPlayerTutorialFlag(key, value = true) {
+    ensureNewPlayerTutorialFlags()[key] = Boolean(value);
+    saveCareerState();
+  }
+
+  function newPlayerIntroEligible() {
+    return Boolean(
+      careerState.created &&
+      Number(careerState.totalMatches || 0) === 0 &&
+      (careerState.squad || []).length === 0 &&
+      !newPlayerTutorialFlag(NEW_PLAYER_DEMO_COMPLETE_KEY) &&
+      !newPlayerTutorialFlag(NEW_PLAYER_DEMO_SKIPPED_KEY) &&
+      !newPlayerDemoState.active
+    );
+  }
+
+  function openNewPlayerIntro() {
+    if (!newPlayerIntroOverlayEl || !newPlayerIntroEligible() || appState !== 'menu' || menuContext !== 'main') return false;
+    newPlayerIntroOverlayEl.hidden = false;
+    newPlayerIntroOverlayEl.setAttribute('aria-hidden', 'false');
+    document.body.dataset.newPlayerIntro = 'open';
+    newPlayerIntroStartBtn?.focus({ preventScroll: true });
+    return true;
+  }
+
+  function closeNewPlayerIntro(skipped = false) {
+    if (newPlayerIntroOverlayEl) {
+      newPlayerIntroOverlayEl.hidden = true;
+      newPlayerIntroOverlayEl.setAttribute('aria-hidden', 'true');
+    }
+    delete document.body.dataset.newPlayerIntro;
+    setNewPlayerTutorialFlag(NEW_PLAYER_CONCEPT_KEY, true);
+    if (skipped) {
+      setNewPlayerTutorialFlag(NEW_PLAYER_DEMO_SKIPPED_KEY, true);
+      if (typeof setMenuRoute === 'function') setMenuRoute('market');
+      showStatus('OPEN RECRUITMENT AND BUILD YOUR ACTIVE FIVE OPERATORS');
+    }
+  }
+
+  function newPlayerDemoSimulationPaused() {
+    return Boolean(newPlayerDemoState.active && newPlayerDemoState.paused);
+  }
+
+  function renderNewPlayerDemoCoach() {
+    if (!newPlayerDemoCoachEl || !newPlayerDemoState.active) return false;
+    const finalStep = newPlayerDemoState.roundFinished;
+    if (finalStep) {
+      const won = newPlayerDemoState.winner === CAREER_OWNED_TEAM;
+      if (newPlayerDemoKickerEl) newPlayerDemoKickerEl.textContent = 'GUIDED DEMO ROUND · COMPLETE';
+      if (newPlayerDemoTitleEl) newPlayerDemoTitleEl.textContent = won ? 'YOUR DEMO TEAM WON THE ROUND' : 'THE DEMO ROUND IS COMPLETE';
+      if (newPlayerDemoBodyEl) newPlayerDemoBodyEl.textContent = NEW_PLAYER_DEMO_COMPLETE_BODY;
+      if (newPlayerDemoFocusEl) newPlayerDemoFocusEl.textContent = NEW_PLAYER_DEMO_COMPLETE_FOCUS;
+      if (newPlayerDemoNextBtn) newPlayerDemoNextBtn.textContent = 'START RECRUITING OPERATORS';
+    } else {
+      const step = NEW_PLAYER_DEMO_STEPS[clamp(newPlayerDemoState.stage, 0, NEW_PLAYER_DEMO_STEPS.length - 1)];
+      if (newPlayerDemoKickerEl) newPlayerDemoKickerEl.textContent = `GUIDED DEMO ROUND · ${newPlayerDemoState.stage + 1} / ${NEW_PLAYER_DEMO_STEPS.length}`;
+      if (newPlayerDemoTitleEl) newPlayerDemoTitleEl.textContent = step.title;
+      if (newPlayerDemoBodyEl) newPlayerDemoBodyEl.textContent = step.body;
+      if (newPlayerDemoFocusEl) newPlayerDemoFocusEl.textContent = step.focus;
+      if (newPlayerDemoNextBtn) newPlayerDemoNextBtn.textContent = step.action;
+    }
+    newPlayerDemoCoachEl.hidden = false;
+    newPlayerDemoCoachEl.setAttribute('aria-hidden', 'false');
+    newPlayerDemoCoachEl.dataset.stage = finalStep ? 'complete' : String(newPlayerDemoState.stage + 1);
+    return true;
+  }
+
+  function hideNewPlayerDemoCoach() {
+    if (!newPlayerDemoCoachEl) return;
+    newPlayerDemoCoachEl.hidden = true;
+    newPlayerDemoCoachEl.setAttribute('aria-hidden', 'true');
+    delete newPlayerDemoCoachEl.dataset.stage;
+  }
+
+  function startNewPlayerDemoMatch() {
+    if (!newPlayerIntroEligible() || newPlayerDemoState.active) return false;
+    closeNewPlayerIntro(false);
+    newPlayerDemoState.active = true;
+    newPlayerDemoState.paused = true;
+    newPlayerDemoState.stage = 0;
+    newPlayerDemoState.elapsed = 0;
+    newPlayerDemoState.roundFinished = false;
+    newPlayerDemoState.winner = null;
+    newPlayerDemoState.reason = '';
+    newPlayerDemoState.priorArenaId = activeArenaMeta().id;
+    document.body.dataset.newPlayerDemo = 'active';
+    canResumeMatch = false;
+    menuContext = 'main';
+    matchSimulationPaused = false;
+    setMatchSpeed(1, false);
+    setActiveArena('citadel');
+    setAppState('match');
+    stabiliseMatchRenderViewport();
+    createMatch();
+    spectatorIndex = bots.findIndex(bot => bot.team === CAREER_OWNED_TEAM && bot.alive);
+    if (spectatorIndex < 0) spectatorIndex = 0;
+    autoSpectate = false;
+    autoTimer = 999;
+    renderNewPlayerDemoCoach();
+    updateHud();
+    showStatus('GUIDED DEMO · PAUSED');
+    lastTime = performance.now();
+    return true;
+  }
+
+  function advanceNewPlayerDemo() {
+    if (!newPlayerDemoState.active) return false;
+    if (newPlayerDemoState.roundFinished) {
+      completeNewPlayerDemo(false);
+      return true;
+    }
+    if (newPlayerDemoState.stage < NEW_PLAYER_DEMO_STEPS.length - 1) {
+      newPlayerDemoState.stage++;
+      const step = NEW_PLAYER_DEMO_STEPS[newPlayerDemoState.stage];
+      newPlayerDemoState.paused = Boolean(step.paused);
+      renderNewPlayerDemoCoach();
+      showStatus(newPlayerDemoState.paused ? 'GUIDED DEMO · PAUSED' : 'GUIDED DEMO · LIVE');
+      return true;
+    }
+    newPlayerDemoState.paused = false;
+    hideNewPlayerDemoCoach();
+    showStatus('WATCH THE ROUND · OPERATORS ACT AUTONOMOUSLY');
+    return true;
+  }
+
+  function finishNewPlayerDemoRound(winner, reason = '') {
+    if (!newPlayerDemoState.active) return false;
+    newPlayerDemoState.roundFinished = true;
+    newPlayerDemoState.paused = true;
+    newPlayerDemoState.winner = winner;
+    newPlayerDemoState.reason = String(reason || 'Round complete');
+    careerBetweenRounds = false;
+    careerMatchComplete = false;
+    renderNewPlayerDemoCoach();
+    newPlayerDemoNextBtn?.focus({ preventScroll: true });
+    return true;
+  }
+
+  function completeNewPlayerDemo(skipped = false) {
+    if (!newPlayerDemoState.active && !skipped) return false;
+    if (skipped) setNewPlayerTutorialFlag(NEW_PLAYER_DEMO_SKIPPED_KEY, true);
+    else setNewPlayerTutorialFlag(NEW_PLAYER_DEMO_COMPLETE_KEY, true);
+    setNewPlayerTutorialFlag(NEW_PLAYER_CONCEPT_KEY, true);
+    newPlayerDemoState.active = false;
+    newPlayerDemoState.paused = false;
+    newPlayerDemoState.stage = 0;
+    newPlayerDemoState.elapsed = 0;
+    newPlayerDemoState.roundFinished = false;
+    newPlayerDemoState.winner = null;
+    newPlayerDemoState.reason = '';
+    hideNewPlayerDemoCoach();
+    delete document.body.dataset.newPlayerDemo;
+    const returnArena = arenaMeta(careerState?.tactics?.arenaId || newPlayerDemoState.priorArenaId || 'citadel').id;
+    newPlayerDemoState.priorArenaId = null;
+    setActiveArena(returnArena);
+    createMatch();
+    canResumeMatch = false;
+    menuContext = 'main';
+    matchSimulationPaused = false;
+    setAppState('menu');
+    if (typeof setMenuRoute === 'function') setMenuRoute('market', { ignoreProgressiveLock: true });
+    else {
+      menuTab = 'market';
+      updateMenuUI();
+      resetMenuScroll();
+    }
+    showStatus(skipped ? 'DEMO SKIPPED · OPEN RECRUITMENT' : 'DEMO COMPLETE · RECRUIT YOUR ACTIVE FIVE OPERATORS');
+    lastTime = performance.now();
+    return true;
+  }
+
+  function skipNewPlayerDemo() {
+    if (!newPlayerDemoState.active) return false;
+    return completeNewPlayerDemo(true);
+  }
+
+  function updateNewPlayerDemo(dt) {
+    if (!newPlayerDemoState.active || newPlayerDemoState.paused || newPlayerDemoState.roundFinished) return;
+    newPlayerDemoState.elapsed += Math.max(0, Number(dt) || 0);
+  }
+
   function resetBetweenRoundTacticsState() {
     betweenRoundTacticsState.open = false;
     betweenRoundTacticsState.resolved = true;
@@ -40379,7 +40822,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     blueScore = 0;
     redScore = 0;
     roundNumber = 0;
-    matchTarget = REGULATION_TARGET;
+    matchTarget = newPlayerDemoState.active ? 1 : REGULATION_TARGET;
     matchEnding = false;
     matchRestartTimer = 0;
     roundEnding = false;
@@ -40452,7 +40895,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       addSystemFeed(`${matchCompetitionLabel()} · ${blueClub.name} VS ${redClub.name}`);
     }
     addSystemFeed(`ROUND ${roundNumber} — ${currentEngagementPlan?.name || 'DYNAMIC CONTACT'} · NO RESPAWNS`);
-    if (roundNumber === 1) {
+    if (newPlayerDemoState.active) {
+      addSystemFeed('GUIDED ORIENTATION · ONE ROUND ONLY · NO CAREER RESULT');
+      addSystemFeed('WATCH THE LIVE INTENTION TO UNDERSTAND EACH OPERATOR DECISION');
+      showStatus('GUIDED DEMO · PAUSED');
+    } else if (roundNumber === 1) {
       const plan = typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null;
       addSystemFeed(`YOUR FIVE OPERATORS ACT AUTONOMOUSLY · ${plan?.approachName || 'BALANCED'} · ${plan?.engagementName || 'MIXED RANGE'} · ${plan?.priorityName || 'TRADE ELIMINATIONS'}`);
       showStatus('ROUND 1 · OPERATORS EXECUTING YOUR PLAN');
@@ -40501,6 +40948,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     addSystemFeed(title);
 
     if (typeof diagnosticRoundFinished === 'function') diagnosticRoundFinished(winner, reason);
+    if (newPlayerDemoState.active) {
+      finishNewPlayerDemoRound(winner, reason);
+      return;
+    }
     const completedRound = recordCareerRoundResult(winner);
     const winningScore = winner === TEAM_BLUE ? blueScore : redScore;
     if (!isDraw && winningScore >= matchTarget) {
@@ -42608,6 +43059,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function openPauseMenu(requestedPlayerId = null) {
+    if (typeof newPlayerDemoState !== 'undefined' && newPlayerDemoState.active) {
+      renderNewPlayerDemoCoach();
+      showStatus('FINISH OR SKIP THE GUIDED DEMO FIRST');
+      return;
+    }
     ensureAudio();
     menuContext = 'pause';
     canResumeMatch = true;
@@ -42971,6 +43427,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const blueAlive = teamAliveCount(CAREER_OWNED_TEAM);
     const enemyTeam = CAREER_OWNED_TEAM === TEAM_BLUE ? TEAM_RED : TEAM_BLUE;
     const redAlive = teamAliveCount(enemyTeam);
+    if (typeof newPlayerDemoState !== 'undefined' && newPlayerDemoState.active && newPlayerDemoState.roundFinished) return 'DEMO ROUND COMPLETE · CONTINUE TO RECRUITMENT';
     if (matchEnding) return redAlive <= 0 ? 'MATCH WON · REVIEW THE AFTER ACTION REPORT' : 'MATCH COMPLETE · REVIEW THE AFTER ACTION REPORT';
     if (roundEnding) return 'ROUND COMPLETE · REVIEW THE RESULT';
     if (suddenHuntOvertime) return `SUDDEN HUNT · FIND ${redAlive || 1} REMAINING OPPONENT${redAlive === 1 ? '' : 'S'}`;
@@ -42980,6 +43437,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function liveMatchPlanText() {
+    if (typeof newPlayerDemoState !== 'undefined' && newPlayerDemoState.active) {
+      return 'GUIDED ORIENTATION · WATCH HOW AUTONOMOUS OPERATORS MOVE, AIM, TAKE COVER AND ENGAGE';
+    }
     const plan = typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null;
     const opening = currentEngagementPlan?.name || plan?.openingPlanName || 'DYNAMIC OPENING';
     const approach = plan?.approachName || 'BALANCED';
@@ -43049,7 +43509,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     redAliveEl.setAttribute('aria-label', `${redAlive} ${redClub.name} operators alive`);
     if (roundPanelEl) roundPanelEl.title = `${blueClub.name} vs ${redClub.name} · tap to open scoreboard`;
     roundLabelEl.textContent = `ROUND ${Math.max(1, roundNumber)}`;
-    roundTargetEl.textContent = suddenHuntOvertime ? 'SUDDEN HUNT' : `FIRST TO ${matchTarget}`;
+    roundTargetEl.textContent = suddenHuntOvertime
+      ? 'SUDDEN HUNT'
+      : (typeof newPlayerDemoState !== 'undefined' && newPlayerDemoState.active ? 'DEMO · ONE ROUND' : `FIRST TO ${matchTarget}`);
     const matchPoint = Math.max(blueScore, redScore) === matchTarget - 1;
     roundPanelEl.classList.toggle('match-point', matchPoint);
     const m = Math.max(0, Math.floor(roundTime / 60));
@@ -48766,10 +49228,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       updateDamageNumbers(dt);
       if (typeof updateMultiKillBanner === 'function') updateMultiKillBanner(dt);
     });
+    if (typeof updateNewPlayerDemo === 'function') updateNewPlayerDemo(dt);
     const liveMenu = appState === 'menu' && menuContext === 'pause' && canResumeMatch;
     if (appState === 'menu') measureRuntimeStage('menu', () => updateMenu(dt));
     if (appState === 'free-roam') measureRuntimeStage('freeRoam', () => updateFreeRoam(dt));
-    const shouldSimulateMatch = appState === 'match' || (liveMenu && !matchSimulationPaused);
+    const demoPaused = typeof newPlayerDemoSimulationPaused === 'function' && newPlayerDemoSimulationPaused();
+    const shouldSimulateMatch = (appState === 'match' && !demoPaused) || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
       measureRuntimeStage('matchSimulation', () => {
         // One navigation budget spans every fixed simulation substep produced by
@@ -49153,6 +49617,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   });
   if (betweenRoundKeepBtn) betweenRoundKeepBtn.addEventListener('click', () => commitBetweenRoundTactics(false));
   if (betweenRoundApplyBtn) betweenRoundApplyBtn.addEventListener('click', () => commitBetweenRoundTactics(true));
+  if (newPlayerIntroStartBtn) newPlayerIntroStartBtn.addEventListener('click', startNewPlayerDemoMatch);
+  if (newPlayerIntroSkipBtn) newPlayerIntroSkipBtn.addEventListener('click', () => closeNewPlayerIntro(true));
+  if (newPlayerDemoNextBtn) newPlayerDemoNextBtn.addEventListener('click', advanceNewPlayerDemo);
+  if (newPlayerDemoSkipBtn) newPlayerDemoSkipBtn.addEventListener('click', skipNewPlayerDemo);
   if (careerReportOverlayEl) careerReportOverlayEl.addEventListener('click', event => {
     const coaching = event.target.closest?.('[data-coaching-route]');
     if (coaching && typeof openTacticalCoachingRecommendation === 'function') openTacticalCoachingRecommendation(coaching);
@@ -51054,6 +51522,35 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       };
       return { ok: Object.values(checks).every(Boolean), checks, loopCards, buttonHeight, inputHeight, inputFontSize, viewport };
     },
+    newPlayerOrientationForTest: () => {
+      const introText = newPlayerIntroOverlayEl?.textContent.replace(/\s+/g, ' ').trim() || '';
+      const introSteps = newPlayerIntroOverlayEl?.querySelectorAll('.new-player-intro-loop article').length || 0;
+      const demoSteps = Array.isArray(NEW_PLAYER_DEMO_STEPS) ? NEW_PLAYER_DEMO_STEPS.length : 0;
+      const checks = {
+        introExists: Boolean(newPlayerIntroOverlayEl && newPlayerIntroStartBtn && newPlayerIntroSkipBtn),
+        conceptExplained: /tactical management game/i.test(introText) && /autonomous operators/i.test(introText),
+        realFormatExplained: /first team to win three rounds/i.test(introText) && /no respawns/i.test(introText),
+        fourPartLoop: introSteps === 4,
+        demoCoachExists: Boolean(newPlayerDemoCoachEl && newPlayerDemoNextBtn && newPlayerDemoSkipBtn),
+        fourGuidedSteps: demoSteps === 4,
+        oneRoundContract: /orientation ends after one round/i.test(NEW_PLAYER_DEMO_STEPS[1]?.body || ''),
+        nonCareerContract: /did not change your record, finances/i.test(NEW_PLAYER_DEMO_COMPLETE_BODY) && /operator condition or league position/i.test(NEW_PLAYER_DEMO_COMPLETE_BODY),
+        persistenceUsesTutorialContext: Boolean(NEW_PLAYER_CONCEPT_KEY && NEW_PLAYER_DEMO_COMPLETE_KEY && NEW_PLAYER_DEMO_SKIPPED_KEY)
+      };
+      return {
+        ok: Object.values(checks).every(Boolean),
+        checks,
+        introSteps,
+        demoSteps,
+        state: { ...newPlayerDemoState },
+        eligible: newPlayerIntroEligible()
+      };
+    },
+    openNewPlayerIntroForTest: () => ({ ok: openNewPlayerIntro(), hidden: Boolean(newPlayerIntroOverlayEl?.hidden), eligible: newPlayerIntroEligible() }),
+    startNewPlayerDemoForTest: () => ({ ok: startNewPlayerDemoMatch(), state: { ...newPlayerDemoState }, appState, target: matchTarget, score: [blueScore, redScore] }),
+    advanceNewPlayerDemoForTest: () => ({ ok: advanceNewPlayerDemo(), state: { ...newPlayerDemoState }, coachHidden: Boolean(newPlayerDemoCoachEl?.hidden) }),
+    finishNewPlayerDemoForTest: (winner = TEAM_BLUE, reason = 'Test orientation complete') => ({ ok: finishNewPlayerDemoRound(Number(winner), String(reason)), state: { ...newPlayerDemoState } }),
+    completeNewPlayerDemoForTest: (skipped = false) => ({ ok: completeNewPlayerDemo(Boolean(skipped)), state: { ...newPlayerDemoState }, appState, route: menuTab, totals: { matches: careerState.totalMatches, rounds: careerState.totalRounds, wins: careerState.totalWins } }),
     typographyConsistencyForTest: () => {
       const viewport = document.querySelector('meta[name="viewport"]')?.getAttribute('content') || '';
       const styleSample = selector => {
@@ -55736,6 +56233,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   setAppState('menu');
   updateMenuUI();
   updateHud();
+  requestAnimationFrame(() => {
+    if (typeof openNewPlayerIntro === 'function') openNewPlayerIntro();
+  });
   requestAnimationFrame(loop);
 })();
 </script>
