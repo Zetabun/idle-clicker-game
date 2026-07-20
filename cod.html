@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.30: Guidance Consolidation</title>
+<title>Strikewatch 12.32: First Match Payoff</title>
 <style>
   :root {
     color-scheme: dark;
@@ -15455,12 +15455,19 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   .new-player-intro-rule strong { white-space: normal; }
   .new-player-intro-card > footer,
   .new-player-demo-coach-card > footer { grid-template-columns: 1fr; padding: 9px 10px max(9px, env(safe-area-inset-bottom)); }
-  .new-player-demo-coach { padding: max(8px, env(safe-area-inset-top)) 7px max(8px, env(safe-area-inset-bottom)); }
-  .new-player-demo-coach[data-stage='3'],
-  .new-player-demo-coach[data-stage='4'] { place-items: start center; padding-top: max(76px, calc(env(safe-area-inset-top) + 68px)); }
+  .new-player-demo-coach,
+  .new-player-demo-coach[data-stage] {
+    place-items: start center;
+    padding: max(76px, calc(env(safe-area-inset-top) + 68px)) 7px max(8px, env(safe-area-inset-bottom));
+  }
   .new-player-demo-coach-card,
   .new-player-demo-coach[data-stage='3'] .new-player-demo-coach-card,
-  .new-player-demo-coach[data-stage='4'] .new-player-demo-coach-card { width: 100%; }
+  .new-player-demo-coach[data-stage='4'] .new-player-demo-coach-card {
+    width: 100%;
+    max-height: calc(100dvh - 88px - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   .new-player-demo-coach-card > header { padding: 11px 12px 5px; }
   .new-player-demo-coach-card > header strong { font-size: 14px; }
   .new-player-demo-coach-card > p { padding: 0 12px; font-size: 11px; }
@@ -15587,6 +15594,308 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
 @media (prefers-reduced-motion: reduce) {
   .team-tutorial-optional > summary > i { transition: none; }
 }
+
+/* Build 12.32 — first career match presentation, causal match moments and staged payoff. */
+.deployment-operator-row {
+  grid-template-columns: 26px 58px minmax(0, 1fr) minmax(112px, .72fr);
+}
+.deployment-operator-row > .team-player-visual {
+  width: 58px;
+  height: 46px;
+  border-radius: 3px;
+}
+.deployment-operator-row > .team-player-visual .operator-bust {
+  top: 0;
+  transform: translateX(-50%) scale(.78);
+  transform-origin: top center;
+}
+.deployment-operator-row > .team-player-visual > b,
+.deployment-operator-row > .team-player-visual > span { font-size: 5px; }
+.deployment-matchup-brief {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.deployment-matchup-brief article {
+  min-height: 72px;
+  border-left: 3px solid rgba(87, 189, 232, .5);
+}
+.deployment-matchup-brief article.expectation { border-left-color: rgba(238, 191, 82, .72); }
+.deployment-matchup-brief span,
+.deployment-matchup-brief strong,
+.deployment-matchup-brief small { display: block; }
+.deployment-matchup-brief strong { margin-top: 5px; font-size: 11px; white-space: normal; }
+.deployment-matchup-brief small { margin-top: 5px; color: rgba(202, 219, 227, .68); font-size: 7px; line-height: 1.45; }
+.deployment-matchup-brief .league-strength-stars { margin-top: 5px; }
+
+.career-match-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 96;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vw, 30px);
+  background: rgba(1, 7, 12, .9);
+  backdrop-filter: blur(6px);
+}
+.career-match-intro[hidden] { display: none !important; }
+.career-match-intro-card {
+  width: min(930px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  border: 1px solid rgba(91, 190, 231, .42);
+  background: linear-gradient(145deg, rgba(9, 28, 40, .98), rgba(3, 10, 16, .98));
+  box-shadow: inset 4px 0 0 #54b8e4, 0 20px 60px rgba(0, 0, 0, .5);
+}
+.career-match-intro-card > header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(100, 184, 220, .18);
+  text-align: center;
+}
+.career-match-intro-card > header span,
+.career-match-intro-card > header strong,
+.career-match-intro-card > header small { display: block; }
+.career-match-intro-card > header span { color: #78cff2; font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+.career-match-intro-card > header strong { margin-top: 7px; color: #f4f8fb; font-size: clamp(18px, 3vw, 30px); letter-spacing: .08em; }
+.career-match-intro-card > header small { margin-top: 7px; color: rgba(203, 222, 230, .66); font-size: 9px; letter-spacing: .1em; }
+.career-match-intro-versus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 18px;
+}
+.career-match-intro-versus > b {
+  display: grid;
+  place-items: center;
+  color: #efc35c;
+  font-size: 20px;
+  letter-spacing: .12em;
+}
+.career-match-intro-versus > section { min-width: 0; }
+.career-match-intro-versus > section > span,
+.career-match-intro-versus > section > strong { display: block; }
+.career-match-intro-versus > section > span { color: rgba(190, 213, 223, .58); font-size: 7px; font-weight: 950; letter-spacing: .14em; }
+.career-match-intro-versus > section > strong { margin: 5px 0 8px; color: #edf6fa; font-size: 13px; letter-spacing: .06em; }
+.career-match-intro-versus section > div { display: grid; gap: 4px; }
+.career-match-intro-versus article {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 22px;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid rgba(111, 183, 214, .14);
+  background: rgba(4, 15, 22, .64);
+}
+.career-match-intro-versus .red article { border-color: rgba(219, 111, 111, .16); }
+.career-match-intro-versus article .team-player-visual { width: 42px; height: 38px; border-radius: 2px; }
+.career-match-intro-versus article .operator-bust { top: -2px; transform: translateX(-50%) scale(.66); transform-origin: top center; }
+.career-match-intro-versus article .team-player-visual > b,
+.career-match-intro-versus article .team-player-visual > span { display: none; }
+.career-match-intro-versus article > span { min-width: 0; }
+.career-match-intro-versus article strong,
+.career-match-intro-versus article small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.career-match-intro-versus article strong { font-size: 8px; }
+.career-match-intro-versus article small { margin-top: 2px; color: rgba(188, 210, 219, .58); font-size: 6px; }
+.career-match-intro-versus article > b { color: rgba(123, 207, 241, .72); font-size: 7px; }
+.career-match-intro-plan {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0 18px 14px;
+}
+.career-match-intro-plan article { padding: 8px; border: 1px solid rgba(102, 186, 221, .16); background: rgba(9, 27, 38, .64); }
+.career-match-intro-plan span,
+.career-match-intro-plan strong { display: block; }
+.career-match-intro-plan span { color: #72c6e8; font-size: 6px; font-weight: 950; letter-spacing: .12em; }
+.career-match-intro-plan strong { margin-top: 4px; font-size: 8px; }
+.career-match-intro-card > footer { display: flex; justify-content: center; padding: 0 18px 18px; }
+.career-match-intro-card > footer button { min-width: min(340px, 100%); min-height: 48px; }
+
+.career-match-moment {
+  position: absolute;
+  z-index: 48;
+  left: 50%;
+  top: 24%;
+  width: min(510px, calc(100% - 28px));
+  padding: 11px 14px;
+  border: 1px solid rgba(106, 194, 231, .5);
+  border-left: 4px solid #5dc7ed;
+  background: rgba(4, 16, 24, .94);
+  opacity: 0;
+  transform: translate(-50%, -12px);
+  pointer-events: none;
+  text-align: center;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.career-match-moment[hidden] { display: none !important; }
+.career-match-moment.show { opacity: 1; transform: translate(-50%, 0); }
+.career-match-moment span,
+.career-match-moment strong,
+.career-match-moment small { display: block; }
+.career-match-moment span { color: #78d0f2; font-size: 7px; font-weight: 950; letter-spacing: .18em; }
+.career-match-moment strong { margin-top: 4px; color: #f4f8fa; font-size: 17px; letter-spacing: .08em; }
+.career-match-moment small { margin-top: 5px; color: rgba(213, 229, 235, .74); font-size: 8px; line-height: 1.45; letter-spacing: .06em; }
+.career-match-moment.danger { border-color: rgba(238, 102, 102, .62); border-left-color: #ef6868; }
+.career-match-moment.danger span { color: #ff8a8a; }
+.career-match-moment.clutch,
+.career-match-moment.adjustment { border-color: rgba(239, 193, 81, .64); border-left-color: #efc151; }
+.career-match-moment.clutch span,
+.career-match-moment.adjustment span { color: #f4cd72; }
+.career-match-moment.advantage { border-color: rgba(91, 216, 159, .56); border-left-color: #65d9a2; }
+.career-match-moment.advantage span { color: #78e2b2; }
+.career-match-moment.coach { text-align: left; border-color: rgba(91, 190, 231, .58); }
+
+.first-match-outcome { display: grid; gap: 14px; }
+.first-match-outcome-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+.first-match-outcome-progress span {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(121, 171, 194, .14);
+  color: rgba(180, 201, 211, .46);
+  background: rgba(4, 13, 19, .52);
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .1em;
+}
+.first-match-outcome-progress b { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid currentColor; border-radius: 50%; }
+.first-match-outcome-progress span.active { color: #77cfee; border-color: rgba(96, 191, 229, .42); }
+.first-match-outcome-progress span.complete { color: #71d2a1; }
+.first-match-outcome-stage {
+  padding: clamp(14px, 2.5vw, 24px);
+  border: 1px solid rgba(111, 183, 214, .2);
+  background: linear-gradient(145deg, rgba(11, 33, 46, .9), rgba(3, 12, 18, .94));
+}
+.first-match-outcome-stage > span,
+.first-match-outcome-stage > strong { display: block; }
+.first-match-outcome-stage > span { color: #77cfee; font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+.first-match-outcome-stage > strong { margin-top: 7px; color: #f3f7f9; font-size: clamp(17px, 2.8vw, 26px); letter-spacing: .05em; }
+.first-match-outcome-stage > h3 { margin: 14px 0 0; color: #efc661; font-size: clamp(20px, 4vw, 34px); text-align: center; }
+.first-match-outcome-stage > p { margin: 9px 0 0; color: rgba(205, 222, 229, .74); font-size: 12px; line-height: 1.55; }
+.first-match-score-block,
+.first-match-reward-grid,
+.first-match-supporter-deltas,
+.first-match-unlock-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 16px; }
+.first-match-score-block article,
+.first-match-reward-grid article,
+.first-match-supporter-deltas article,
+.first-match-unlock-grid article { min-width: 0; padding: 12px; border: 1px solid rgba(117, 181, 208, .16); background: rgba(3, 12, 18, .58); text-align: center; }
+.first-match-score-block b,
+.first-match-reward-grid b,
+.first-match-supporter-deltas b,
+.first-match-unlock-grid b { display: block; color: #f1cf76; font-size: 18px; }
+.first-match-score-block small,
+.first-match-reward-grid small,
+.first-match-supporter-deltas small,
+.first-match-unlock-grid small,
+.first-match-reward-grid span { display: block; margin-top: 4px; color: rgba(195, 215, 223, .62); font-size: 7px; line-height: 1.4; letter-spacing: .08em; }
+.first-match-operator-grid { display: grid; gap: 6px; margin-top: 15px; }
+.first-match-operator-grid article {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 7px;
+  border: 1px solid rgba(111, 183, 214, .16);
+  background: rgba(3, 12, 18, .58);
+}
+.first-match-operator-grid article.top { border-left: 3px solid #efc661; }
+.first-match-operator-grid .team-player-visual { width: 58px; height: 52px; }
+.first-match-operator-grid article > div:last-child strong,
+.first-match-operator-grid article > div:last-child small,
+.first-match-operator-grid article > div:last-child span { display: block; }
+.first-match-operator-grid article > div:last-child strong { font-size: 11px; }
+.first-match-operator-grid article > div:last-child small { margin-top: 3px; color: #7dcff0; font-size: 7px; }
+.first-match-operator-grid article > div:last-child span { margin-top: 5px; color: rgba(204, 222, 229, .7); font-size: 8px; }
+.first-match-next-action { margin-top: 14px; padding: 14px; border-left: 4px solid #efc661; background: rgba(72, 52, 10, .28); }
+.first-match-next-action span,
+.first-match-next-action strong { display: block; }
+.first-match-next-action span { color: #efca70; font-size: 8px; font-weight: 950; letter-spacing: .14em; }
+.first-match-next-action strong { margin-top: 5px; font-size: 16px; }
+.first-match-next-action p { margin: 7px 0 11px; color: rgba(230, 221, 193, .8); font-size: 11px; line-height: 1.5; }
+.first-match-next-action button { min-height: 42px; }
+
+@media (max-width: 720px) {
+  .deployment-operator-row { grid-template-columns: 22px 48px minmax(0, 1fr); }
+  .deployment-operator-row > .team-player-visual { width: 48px; height: 42px; }
+  .deployment-operator-row > div:last-child { grid-column: 3; }
+  .deployment-matchup-brief { grid-template-columns: 1fr; }
+  .career-match-intro { place-items: start center; padding: 8px; }
+  .career-match-intro-card { max-height: calc(100% - 2px); }
+  .career-match-intro-card > header { padding: 12px 10px 10px; }
+  .career-match-intro-versus { grid-template-columns: 1fr; gap: 7px; padding: 9px 10px; }
+  .career-match-intro-versus > b { height: 20px; font-size: 13px; }
+  .career-match-intro-versus .red { display: block; }
+  .career-match-intro-versus article { grid-template-columns: 34px minmax(0, 1fr) 18px; gap: 5px; padding: 3px 5px; }
+  .career-match-intro-versus article .team-player-visual { width: 34px; height: 30px; }
+  .career-match-intro-versus article .operator-bust { top: -3px; transform: translateX(-50%) scale(.52); }
+  .career-match-intro-plan { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 10px 9px; }
+  .career-match-intro-card > footer { position: sticky; bottom: 0; padding: 9px 10px 10px; background: rgba(3, 12, 18, .96); }
+  .career-match-moment { top: 19%; width: calc(100% - 20px); }
+  .career-match-moment strong { font-size: 14px; }
+  .first-match-outcome-progress { grid-template-columns: 1fr; }
+  .first-match-outcome-progress span { grid-template-columns: 22px minmax(0, 1fr); }
+  .first-match-score-block,
+  .first-match-reward-grid,
+  .first-match-supporter-deltas,
+  .first-match-unlock-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .career-match-intro { padding: 6px; }
+  .career-match-intro-card > header { padding: 8px 12px 6px; }
+  .career-match-intro-card > header strong { font-size: 16px; }
+  .career-match-intro-versus { padding: 7px 10px; }
+  .career-match-intro-versus article { padding: 3px 5px; }
+  .career-match-intro-versus article .team-player-visual { height: 30px; }
+  .career-match-intro-plan { padding: 0 10px 6px; }
+  .career-match-intro-card > footer { padding: 0 10px 8px; }
+  .career-match-intro-card > footer button { min-height: 38px; }
+  .career-match-moment { top: 14%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .career-match-moment { transition: none; }
+}
+
+/* Build 12.32 second-pass: keep the decisive match/reward actions reachable in short viewports. */
+.career-match-intro-card > footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: rgba(3, 12, 18, .97);
+  box-shadow: 0 -10px 22px rgba(0, 0, 0, .28);
+}
+.career-report-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: rgba(3, 9, 14, .98);
+  box-shadow: 0 -10px 24px rgba(0, 0, 0, .32);
+}
+.career-report-action-buttons > button { min-width: 0; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .career-report-actions { padding-block: 7px; }
+  .career-report-actions > span { font-size: 7px; }
+  .career-report-action-buttons { min-width: 0; }
+}
+
+/* Build 12.32 modal correction: the team-versus-team reveal uses the full device canvas, not the small portrait spectator window. */
+.career-match-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
 </style>
 </head>
 <body>
@@ -15655,11 +15964,34 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     <small id="multiKillDetail">PLAYER · BONUS BANKED</small>
   </div>
   <div class="status" id="status" hidden></div>
+  <div class="career-match-moment" id="careerMatchMoment" role="status" aria-live="assertive" aria-atomic="true" hidden>
+    <span id="careerMatchMomentKicker">MATCH MOMENT</span>
+    <strong id="careerMatchMomentTitle">LAST OPERATOR</strong>
+    <small id="careerMatchMomentDetail">1 VS 2 · HOLD YOUR NERVE</small>
+  </div>
   <div class="round-result" id="roundResult" aria-hidden="true">
     <div class="kicker" id="roundResultKicker">ROUND COMPLETE</div>
     <strong id="roundResultTitle">TEAM WINS</strong>
     <span id="roundResultDetail">Opposition eliminated</span>
   </div>
+
+
+  <section class="career-match-intro" id="careerMatchIntro" hidden aria-hidden="true">
+    <div class="career-match-intro-card" role="dialog" aria-modal="true" aria-labelledby="careerMatchIntroTitle">
+      <header>
+        <span id="careerMatchIntroKicker">LEAGUE MATCH · FIRST TO 3</span>
+        <strong id="careerMatchIntroTitle">YOUR CLUB VS OPPOSITION</strong>
+        <small id="careerMatchIntroMap">CITADEL DEPOT · TACTICAL ELIMINATION</small>
+      </header>
+      <div class="career-match-intro-versus">
+        <section class="blue"><span>YOUR ACTIVE FIVE OPERATORS</span><strong id="careerMatchIntroBlueName">YOUR CLUB</strong><div id="careerMatchIntroBlueRoster"></div></section>
+        <b aria-hidden="true">VS</b>
+        <section class="red"><span>OPPOSITION</span><strong id="careerMatchIntroRedName">OPPOSITION</strong><div id="careerMatchIntroRedRoster"></div></section>
+      </div>
+      <div class="career-match-intro-plan" id="careerMatchIntroPlan"></div>
+      <footer><button type="button" class="primary" id="careerMatchIntroStartBtn">BEGIN MATCH</button></footer>
+    </div>
+  </section>
 
   <aside class="sponsor-round-transition" id="sponsorRoundTransition" aria-hidden="true" hidden>
     <div class="sponsor-round-transition-frame">
@@ -15835,7 +16167,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.28 · GUIDED DEMO ORIENTATION</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.32 · FIRST MATCH PAYOFF</div>
   </div>
 
   <section class="new-player-demo-coach" id="newPlayerDemoCoach" hidden aria-hidden="true">
@@ -15886,7 +16218,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
       </header>
       <div class="deployment-selection" id="deploymentSelection" hidden>
         <section class="deployment-map-panel">
-          <div class="deployment-section-head"><span>CHOOSE BATTLEGROUND</span><strong>FINAL DEPLOYMENT SELECTION</strong><small>Your tactical plan remains confirmed. This choice sets the arena for the upcoming session and becomes your saved default.</small></div>
+          <div class="deployment-section-head"><span>PRE-MATCH BRIEFING</span><strong>CHOOSE BATTLEGROUND</strong><small>Your tactical plan remains confirmed. Select the arena, inspect the matchup and review the five autonomous operators who will carry out your instructions.</small></div>
           <div class="deployment-map-grid" id="deploymentMapGrid"></div>
         </section>
         <section class="deployment-summary-panel">
@@ -15896,7 +16228,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         </section>
         <footer class="deployment-actions">
           <button id="deploymentCancelBtn" type="button">RETURN TO COMMAND HQ</button>
-          <button class="primary" id="deploymentConfirmBtn" type="button">CONFIRM DEPLOYMENT & SEARCH</button>
+          <button class="primary" id="deploymentConfirmBtn" type="button">DEPLOY ACTIVE FIVE OPERATORS</button>
         </footer>
       </div>
       <div id="matchmakingSession">
@@ -16171,6 +16503,20 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const roundResultKickerEl = document.getElementById('roundResultKicker');
   const roundResultTitleEl = document.getElementById('roundResultTitle');
   const roundResultDetailEl = document.getElementById('roundResultDetail');
+  const careerMatchMomentEl = document.getElementById('careerMatchMoment');
+  const careerMatchMomentKickerEl = document.getElementById('careerMatchMomentKicker');
+  const careerMatchMomentTitleEl = document.getElementById('careerMatchMomentTitle');
+  const careerMatchMomentDetailEl = document.getElementById('careerMatchMomentDetail');
+  const careerMatchIntroEl = document.getElementById('careerMatchIntro');
+  const careerMatchIntroKickerEl = document.getElementById('careerMatchIntroKicker');
+  const careerMatchIntroTitleEl = document.getElementById('careerMatchIntroTitle');
+  const careerMatchIntroMapEl = document.getElementById('careerMatchIntroMap');
+  const careerMatchIntroBlueNameEl = document.getElementById('careerMatchIntroBlueName');
+  const careerMatchIntroRedNameEl = document.getElementById('careerMatchIntroRedName');
+  const careerMatchIntroBlueRosterEl = document.getElementById('careerMatchIntroBlueRoster');
+  const careerMatchIntroRedRosterEl = document.getElementById('careerMatchIntroRedRoster');
+  const careerMatchIntroPlanEl = document.getElementById('careerMatchIntroPlan');
+  const careerMatchIntroStartBtn = document.getElementById('careerMatchIntroStartBtn');
   const betweenRoundTacticsEl = document.getElementById('betweenRoundTactics');
   const betweenRoundKickerEl = document.getElementById('betweenRoundKicker');
   const betweenRoundScoreEl = document.getElementById('betweenRoundScore');
@@ -16336,9 +16682,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.30';
-  const BUILD_NAME = 'GUIDANCE CONSOLIDATION';
-  const BUILD_ID = '12.30.0-20260720';
+  const BUILD_VERSION = '12.32';
+  const BUILD_NAME = 'FIRST MATCH PAYOFF';
+  const BUILD_ID = '12.32.0-20260720';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -27014,7 +27360,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   let careerReportState = {
     phase: 'idle',
     delay: 0,
-    summary: null
+    summary: null,
+    revealStage: 0,
+    detailed: true
   };
 
   const careerReportOverlayEl = document.getElementById('careerReportOverlay');
@@ -27674,7 +28022,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     careerCrateState.result = null;
     careerMatchStats = makeCareerMatchStats();
     if (typeof resetTeamMatchTracking === 'function') resetTeamMatchTracking();
-    careerReportState = { phase: 'idle', delay: 0, summary: null };
+    careerReportState = { phase: 'idle', delay: 0, summary: null, revealStage: 0, detailed: true };
     if (careerCrateOverlayEl) {
       careerCrateOverlayEl.hidden = true;
       careerCrateOverlayEl.classList.remove('closed', 'opening', 'cycling', 'revealed');
@@ -27764,11 +28112,13 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
       survivalTime: survivalTime / Math.max(1, roundsPlayed * playerDivisor)
     });
     const levelsGained = addCareerXp(xpAward);
+    const firstCareerMatch = Number(careerState.totalMatches || 0) === 0;
 
     careerState.totalMatches++;
     careerState.matchWins += won ? 1 : 0;
     careerState.lastRound = {
       isMatch: true,
+      firstCareerMatch,
       kills, deaths, survived, won, xpAward, levelsGained,
       round: roundNumber,
       roundsPlayed,
@@ -27814,6 +28164,10 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     if (typeof settleLeagueAfterCareerMatch === 'function') {
       careerState.lastRound.league = settleLeagueAfterCareerMatch(winner, careerState.lastRound);
     }
+    if (typeof supporterState === 'function') {
+      const latestReaction = (supporterState().activityHistory || []).find(item => item?.type === 'MATCH');
+      if (latestReaction) careerState.lastRound.supporterReaction = { ...latestReaction, deltas: { ...(latestReaction.deltas || {}) } };
+    }
     if (typeof clubRecordTacticalFamiliarity === 'function') {
       careerState.lastRound.tacticalFamiliarityGain = clubRecordTacticalFamiliarity(careerState.lastRound);
     }
@@ -27824,7 +28178,7 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     saveCareerState();
     if (won) queueCareerCrate(careerState.lastRound);
     else careerCrateState = { phase: 'idle', delay: 0, timer: 0, cycleTimer: 0, displayIndex: 0, result: null, duplicate: false, summary: null, source: 'match', returnRoute: 'loadout' };
-    careerReportState = { phase: 'delay', delay: 1.25, summary: careerState.lastRound };
+    careerReportState = { phase: 'delay', delay: 1.25, summary: careerState.lastRound, revealStage: 0, detailed: !firstCareerMatch };
     return careerState.lastRound;
   }
 
@@ -27941,6 +28295,53 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
       ${typeof diagnosticReportMarkup === 'function' ? diagnosticReportMarkup() : ''}`;
   }
 
+  function firstMatchOutcomeProgress(stage) {
+    const labels = ['RESULT', 'REWARDS', 'OPERATORS', 'SUPPORTERS', 'NEXT STEP'];
+    return `<nav class="first-match-outcome-progress" aria-label="First match outcome progress">${labels.map((label, index) => `<span class="${index <= stage ? 'active' : ''} ${index < stage ? 'complete' : ''}"><b>${index + 1}</b>${label}</span>`).join('')}</nav>`;
+  }
+
+  function firstMatchOutcomeRecommendation(summary) {
+    const recommendation = summary?.tacticalAnalysis?.recommendations?.[0] || null;
+    if (recommendation && typeof recommendation === 'object') return recommendation;
+    return {
+      text: summary?.won ? 'Review the plan that produced this result and retain its strongest elements for the next fixture.' : 'Open Training and address one clearly identified weakness before rebuilding the whole tactical plan.',
+      actionLabel: summary?.won ? 'REVIEW TACTICS' : 'OPEN TRAINING',
+      route: summary?.won ? 'tactics' : 'training',
+      playerId: null,
+      targetId: summary?.won ? null : 'training:team-benefits'
+    };
+  }
+
+  function careerFirstMatchOutcomeMarkup(summary, stage = 0) {
+    const presentation = summary.matchPresentation || currentMatchPresentation();
+    const blueName = summary.blueTeamName || presentation.blue?.name || careerState.name || 'Your Club';
+    const redName = summary.redTeamName || presentation.red?.name || summary.league?.opponentName || 'Opposition';
+    const resultTitle = summary.won ? 'YOUR FIRST CAREER VICTORY' : 'YOUR FIRST CAREER MATCH IS COMPLETE';
+    const resultTone = summary.won ? 'positive' : 'warning';
+    const scoreLine = `${escapeCareerHtml(blueName)} ${summary.blueScore ?? 0} — ${summary.redScore ?? 0} ${escapeCareerHtml(redName)}`;
+    let content = '';
+    if (stage === 0) {
+      content = `<section class="first-match-outcome-stage result ${resultTone}"><span>MATCH RESULT</span><strong>${resultTitle}</strong><h3>${scoreLine}</h3><p>${summary.won ? 'Your recruitment, roles, equipment and tactical plan combined to win a full first-to-three match.' : 'The result is recorded, but the debrief will separate the useful parts of the plan from the clearest weakness.'}</p><div class="first-match-score-block"><article><b>${summary.roundsWon || 0}</b><small>ROUNDS WON</small></article><article><b>${summary.kills || 0}</b><small>ELIMINATIONS</small></article><article><b>${Math.round((Number(summary.accuracy) || 0) * 100)}%</b><small>ACCURACY</small></article><article><b>${summary.grade || careerCombatGrade(summary.score)}</b><small>COMBAT GRADE</small></article></div></section>`;
+    } else if (stage === 1) {
+      content = `<section class="first-match-outcome-stage rewards"><span>REWARDS BANKED</span><strong>THE CLUB MOVES FORWARD</strong><p>These rewards are already saved. They fund recruitment, equipment and long-term development.</p><div class="first-match-reward-grid"><article><small>CREDITS</small><b>+${teamCredits(summary.finance?.income || 0)}</b><span>${escapeCareerHtml(summary.finance?.resultRewardLabel || 'MATCH INCOME')}</span></article><article><small>TEAM XP</small><b>+${Math.round(Number(summary.xpAward) || 0)}</b><span>${summary.levelsGained ? `TEAM LEVEL +${summary.levelsGained}` : 'PROGRESS TOWARD NEXT LEVEL'}</span></article><article><small>GOLD COINS</small><b>+${careerGoldCoins(summary.goldCoinReward?.amount || 0)}</b><span>${escapeCareerHtml(summary.goldCoinReward?.label || 'MATCH AWARD')}</span></article><article><small>SUPPLY DROP</small><b>${summary.rewardEligible ? 'EARNED' : 'NOT EARNED'}</b><span>${summary.rewardEligible ? 'AVAILABLE AFTER THE REPORT' : 'VICTORY REQUIRED FOR A MATCH CRATE'}</span></article></div></section>`;
+    } else if (stage === 2) {
+      const starters = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS).map(player => {
+        const development = (summary.finance?.development || []).find(item => item.playerId === player.id) || {};
+        const match = player.lastMatch || {};
+        return { player, development, match };
+      }).sort((a, b) => (Number(b.match.rating) || 0) - (Number(a.match.rating) || 0));
+      content = `<section class="first-match-outcome-stage operators"><span>OPERATOR IMPACT</span><strong>YOUR ACTIVE FIVE DEVELOPED THROUGH EXPERIENCE</strong><p>Performance ratings describe this match only. XP and level gains are permanent.</p><div class="first-match-operator-grid">${starters.map(({ player, development, match }, index) => `<article class="${index === 0 ? 'top' : ''}">${typeof teamPlayerVisualMarkup === 'function' ? teamPlayerVisualMarkup(player, teamRoleById(player.role)) : ''}<div><strong>${escapeCareerHtml(player.name)}</strong><small>${escapeCareerHtml(teamRoleById(player.role).name)} · ${Number(match.rating || 0).toFixed(1)} RATING</small><span>${match.kills || 0}K / ${match.deaths || 0}D · +${Math.round(Number(development.xp) || 0)} XP${Number(development.levelsGained) > 0 ? ` · LEVEL +${development.levelsGained}` : ''}</span></div></article>`).join('')}</div></section>`;
+    } else if (stage === 3) {
+      const reaction = summary.supporterReaction || null;
+      const deltas = reaction?.deltas || {};
+      content = `<section class="first-match-outcome-stage supporters ${reaction?.tone || 'neutral'}"><span>SUPPORTER REACTION</span><strong>${escapeCareerHtml(reaction?.title || (summary.won ? 'SUPPORTERS WELCOME THE RESULT' : 'SUPPORTERS ASSESS THE PERFORMANCE'))}</strong><p>${escapeCareerHtml(reaction?.detail || (summary.won ? 'The first result gives the new club an immediate platform to build confidence and interest.' : 'Supporters will judge the opening result against the strength of the opposition and the club’s early expectations.'))}</p><div class="first-match-supporter-deltas"><article><small>CONFIDENCE</small><b>${Number(deltas.confidence || reaction?.confidenceDelta || 0) >= 0 ? '+' : ''}${Number(deltas.confidence || reaction?.confidenceDelta || 0)}</b></article><article><small>POPULARITY</small><b>${Number(deltas.popularity || reaction?.popularityDelta || 0) >= 0 ? '+' : ''}${Number(deltas.popularity || reaction?.popularityDelta || 0)}</b></article><article><small>FANBASE</small><b>${Number(deltas.fanbase || reaction?.fanDelta || 0) >= 0 ? '+' : ''}${Number(deltas.fanbase || reaction?.fanDelta || 0)}</b></article></div></section>`;
+    } else {
+      const recommendation = firstMatchOutcomeRecommendation(summary);
+      content = `<section class="first-match-outcome-stage next"><span>NEW SYSTEMS AVAILABLE</span><strong>THE WIDER MANAGEMENT GAME IS OPENING</strong><p>Your first completed match unlocks Team Telemetry, After Action Reports and Supplies. Reviewing this debrief unlocks Training.</p><aside class="first-match-next-action"><span>NEXT MANAGER ACTION</span><strong>${escapeCareerHtml(recommendation.actionLabel || 'OPEN TRAINING')}</strong><p>${escapeCareerHtml(recommendation.text || '')}</p><button type="button" data-coaching-route="${escapeCareerHtml(recommendation.route || 'training')}" ${recommendation.playerId ? `data-coaching-player="${escapeCareerHtml(recommendation.playerId)}"` : ''} ${recommendation.targetId ? `data-coaching-target="${escapeCareerHtml(recommendation.targetId)}"` : ''} data-coaching-label="${escapeCareerHtml(recommendation.actionLabel || 'OPEN TRAINING')}">${escapeCareerHtml(recommendation.actionLabel || 'OPEN TRAINING')} →</button></aside><div class="first-match-unlock-grid"><article><b>TELEMETRY</b><small>SEE HOW THE TEAM EXECUTED</small></article><article><b>REPORTS</b><small>REVIEW MATCH EVIDENCE</small></article><article><b>SUPPLIES</b><small>BUY WEAPONS AND ARMOUR</small></article><article><b>TRAINING</b><small>UNLOCKS AFTER THIS DEBRIEF</small></article></div></section>`;
+    }
+    return `<div class="first-match-outcome">${firstMatchOutcomeProgress(stage)}${content}</div>`;
+  }
+
   function showCareerRoundReport() {
     const summary = careerReportState.summary;
     if (!summary || !careerReportOverlayEl) {
@@ -27951,21 +28352,42 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
     }
     careerReportState.phase = 'visible';
     careerReportOverlayEl.hidden = false;
-    if (careerReportTitleEl) careerReportTitleEl.textContent = summary.won ? 'MISSION SUCCESS' : 'MISSION DEBRIEF';
+    const staged = Boolean(summary.firstCareerMatch && !careerReportState.detailed);
+    if (careerReportTitleEl) careerReportTitleEl.textContent = staged ? 'FIRST MATCH OUTCOME' : (summary.won ? 'MISSION SUCCESS' : 'MISSION DEBRIEF');
     if (careerReportSubtitleEl) {
       const presentation = summary.matchPresentation || currentMatchPresentation();
-      careerReportSubtitleEl.textContent = `${presentation.blue?.name || careerState.name} ${summary.blueScore ?? blueScore} — ${summary.redScore ?? redScore} ${presentation.red?.name || summary.league?.opponentName || 'Opposition'} · TEAM PERFORMANCE`;
+      careerReportSubtitleEl.textContent = staged
+        ? `STEP ${careerReportState.revealStage + 1} OF 5 · RESULT → REWARDS → OPERATORS → SUPPORTERS → NEXT STEP`
+        : `${presentation.blue?.name || careerState.name} ${summary.blueScore ?? blueScore} — ${summary.redScore ?? redScore} ${presentation.red?.name || summary.league?.opponentName || 'Opposition'} · TEAM PERFORMANCE`;
     }
     if (careerReportGradeEl) careerReportGradeEl.textContent = summary.grade || careerCombatGrade(summary.score);
-    if (careerReportScoreEl) careerReportScoreEl.textContent = `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} EFFECTIVENESS`;
-    if (careerReportContentEl) careerReportContentEl.innerHTML = careerReportMarkup(summary, false);
-    if (careerReportXpSummaryEl) careerReportXpSummaryEl.textContent = `${summary.xpAward || 0} TEAM XP · +${teamCredits(summary.finance?.income || 0)} CASH · +${careerGoldCoins(summary.goldCoinReward?.amount || 0)}${summary.rewardEligible ? ' · MATCH CRATE EARNED' : ' · DEFEAT AWARDS PAID'}${summary.levelsGained ? ` · TEAM LEVEL +${summary.levelsGained}` : ''}`;
-    if (careerReportContinueBtn) careerReportContinueBtn.textContent = summary.rewardEligible ? 'CONTINUE TO MATCH REWARD' : 'RETURN TO HQ';
+    if (careerReportScoreEl) careerReportScoreEl.textContent = staged ? `STEP ${careerReportState.revealStage + 1} / 5` : `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} EFFECTIVENESS`;
+    if (careerReportContentEl) careerReportContentEl.innerHTML = staged ? careerFirstMatchOutcomeMarkup(summary, careerReportState.revealStage) : careerReportMarkup(summary, false);
+    if (careerReportXpSummaryEl) careerReportXpSummaryEl.textContent = staged
+      ? ['MATCH RESULT RECORDED', `${summary.xpAward || 0} TEAM XP · +${teamCredits(summary.finance?.income || 0)} CASH`, 'ACTIVE FIVE OPERATOR DEVELOPMENT', 'SUPPORTER RESPONSE RECORDED', 'OPEN THE DETAILED EVIDENCE OR TAKE THE RECOMMENDED ACTION'][careerReportState.revealStage]
+      : `${summary.xpAward || 0} TEAM XP · +${teamCredits(summary.finance?.income || 0)} CASH · +${careerGoldCoins(summary.goldCoinReward?.amount || 0)}${summary.rewardEligible ? ' · MATCH CRATE EARNED' : ' · DEFEAT AWARDS PAID'}${summary.levelsGained ? ` · TEAM LEVEL +${summary.levelsGained}` : ''}`;
+    if (careerReportContinueBtn) careerReportContinueBtn.textContent = staged
+      ? ['SHOW REWARDS', 'SHOW OPERATOR IMPACT', 'SHOW SUPPORTER REACTION', 'SHOW UNLOCKED FEATURES', 'OPEN DETAILED REPORT'][careerReportState.revealStage]
+      : (summary.rewardEligible ? 'CONTINUE TO MATCH REWARD' : 'RETURN TO HQ');
   }
 
   function continueCareerRoundReport() {
     if (careerReportState.phase !== 'visible') return;
+    if (careerReportState.summary?.firstCareerMatch && !careerReportState.detailed) {
+      if (careerReportState.revealStage < 4) {
+        careerReportState.revealStage++;
+        showCareerRoundReport();
+        return;
+      }
+      careerReportState.detailed = true;
+      showCareerRoundReport();
+      return;
+    }
     const rewardEligible = Boolean(careerReportState.summary?.rewardEligible);
+    if (careerState.lastRound && careerReportState.summary === careerState.lastRound && !careerState.lastRound.reportReviewed) {
+      careerState.lastRound.reportReviewed = true;
+      saveCareerState();
+    }
     careerReportState.phase = 'idle';
     if (careerReportOverlayEl) careerReportOverlayEl.hidden = true;
     if (rewardEligible) {
@@ -37247,8 +37669,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     pendingTacticalCoachingTarget = { route, playerId, targetId, label };
     const reportVisible = careerReportState?.phase === 'visible';
     const rewardEligible = Boolean(careerReportState?.summary?.rewardEligible);
+    if (reportVisible && careerState.lastRound && !careerState.lastRound.reportReviewed) {
+      careerState.lastRound.reportReviewed = true;
+      saveCareerState();
+    }
     if (reportVisible && rewardEligible) {
       careerCrateState.returnRoute = route;
+      careerReportState.detailed = true;
+      careerReportState.revealStage = 99;
       continueCareerRoundReport();
       showStatus(`${String(label).toUpperCase()} QUEUED AFTER MATCH REWARD`);
       return true;
@@ -40499,6 +40927,107 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     priorArenaId: null
   };
 
+  const careerMatchMomentState = {
+    queue: [],
+    current: null,
+    timer: 0,
+    seen: new Set(),
+    aliveKey: '',
+    pendingAdjustment: null,
+    firstCareerMatch: false,
+    roundLiveElapsed: 0
+  };
+
+  function resetCareerMatchMoments() {
+    careerMatchMomentState.queue.length = 0;
+    careerMatchMomentState.current = null;
+    careerMatchMomentState.timer = 0;
+    careerMatchMomentState.seen = new Set();
+    careerMatchMomentState.aliveKey = '';
+    careerMatchMomentState.pendingAdjustment = null;
+    careerMatchMomentState.firstCareerMatch = Boolean(!newPlayerDemoState.active && Number(careerState.totalMatches || 0) === 0);
+    careerMatchMomentState.roundLiveElapsed = 0;
+    if (careerMatchMomentEl) {
+      careerMatchMomentEl.hidden = true;
+      careerMatchMomentEl.className = 'career-match-moment';
+    }
+  }
+
+  function showNextCareerMatchMoment() {
+    if (careerMatchMomentState.current || !careerMatchMomentState.queue.length || !careerMatchMomentEl) return false;
+    const moment = careerMatchMomentState.queue.shift();
+    careerMatchMomentState.current = moment;
+    careerMatchMomentState.timer = Math.max(1.8, Number(moment.duration) || 3.1);
+    if (careerMatchMomentKickerEl) careerMatchMomentKickerEl.textContent = moment.kicker || 'MATCH MOMENT';
+    if (careerMatchMomentTitleEl) careerMatchMomentTitleEl.textContent = moment.title || 'TACTICAL UPDATE';
+    if (careerMatchMomentDetailEl) careerMatchMomentDetailEl.textContent = moment.detail || '';
+    careerMatchMomentEl.className = `career-match-moment show ${String(moment.tone || 'neutral').replace(/[^a-z-]/g, '')}`;
+    careerMatchMomentEl.hidden = false;
+    return true;
+  }
+
+  function queueCareerMatchMoment(key, kicker, title, detail, tone = 'neutral', duration = 3.1, priority = false) {
+    if (newPlayerDemoState.active || !careerState.created || careerMatchMomentState.seen.has(key)) return false;
+    careerMatchMomentState.seen.add(key);
+    const item = { key, kicker, title, detail, tone, duration };
+    if (priority) careerMatchMomentState.queue.unshift(item);
+    else careerMatchMomentState.queue.push(item);
+    showNextCareerMatchMoment();
+    return true;
+  }
+
+  function updateCareerMatchMoment(dt) {
+    if (careerMatchMomentState.current) {
+      careerMatchMomentState.timer = Math.max(0, careerMatchMomentState.timer - Math.max(0, Number(dt) || 0));
+      if (careerMatchMomentState.timer <= 0) {
+        careerMatchMomentState.current = null;
+        if (careerMatchMomentEl) careerMatchMomentEl.classList.remove('show');
+        if (!showNextCareerMatchMoment() && careerMatchMomentEl) careerMatchMomentEl.hidden = true;
+      }
+    } else showNextCareerMatchMoment();
+  }
+
+  function firstMatchViewedOperator() {
+    const viewed = bots[spectatorIndex];
+    if (viewed?.team === CAREER_OWNED_TEAM) return viewed;
+    return bots.find(bot => bot.team === CAREER_OWNED_TEAM && bot.alive) || bots.find(bot => bot.team === CAREER_OWNED_TEAM) || null;
+  }
+
+  function updateCareerMatchContextMoments(blueAlive, redAlive, dt) {
+    if (newPlayerDemoState.active || roundEnding || matchEnding || roundFreezeTimer > 0) return;
+    careerMatchMomentState.roundLiveElapsed += Math.max(0, Number(dt) || 0);
+    const ownedAlive = CAREER_OWNED_TEAM === TEAM_BLUE ? blueAlive : redAlive;
+    const oppositionAlive = CAREER_OWNED_TEAM === TEAM_BLUE ? redAlive : blueAlive;
+    const aliveKey = `${roundNumber}:${ownedAlive}:${oppositionAlive}`;
+    if (aliveKey !== careerMatchMomentState.aliveKey) {
+      careerMatchMomentState.aliveKey = aliveKey;
+      if (ownedAlive === 1 && oppositionAlive === 1) {
+        queueCareerMatchMoment(`duel:${roundNumber}`, 'FINAL DUEL', 'CLUTCH OPPORTUNITY', '1 VS 1 · ONE ELIMINATION DECIDES THE ROUND', 'clutch', 3.5, true);
+      } else if (ownedAlive === 1 && oppositionAlive > 1) {
+        queueCareerMatchMoment(`last:${roundNumber}`, 'LAST OPERATOR', `1 VS ${oppositionAlive}`, 'YOUR FINAL OPERATOR MUST SURVIVE AND ELIMINATE THE REMAINING OPPOSITION', 'danger', 3.7, true);
+      } else if (oppositionAlive === 1 && ownedAlive > 1) {
+        queueCareerMatchMoment(`close:${roundNumber}`, 'CLOSE OUT THE ROUND', `${ownedAlive} VS 1`, 'MAINTAIN SEPARATE LANES AND DENY THE LAST OPPOSING OPERATOR A CLUTCH', 'advantage', 3.2, true);
+      }
+    }
+    if (careerMatchMomentState.firstCareerMatch && roundNumber === 1) {
+      const bot = firstMatchViewedOperator();
+      const player = bot?.playerProfileId ? teamPlayerById(bot.playerProfileId) : null;
+      const role = player ? clubMatchRoleForPlayer(player) : teamRoleById(bot?.assignedRole || 'flex');
+      const weapon = bot?.weapon || bot?.primaryWeapon || getCareerWeapon(player ? careerPlayerActiveWeaponId(player) : 'scrap-p12');
+      const presentation = careerWeaponPresentation(weapon);
+      if (careerMatchMomentState.roundLiveElapsed >= 1.2) {
+        queueCareerMatchMoment('first-role', 'ROLE IN ACTION', `${String(role?.name || 'FLEX').toUpperCase()} RESPONSIBILITY`, `${String(bot?.name || player?.name || 'THIS OPERATOR').toUpperCase()} IS CHOOSING POSITION AND CONTACTS THROUGH THE ${String(role?.name || 'FLEX').toUpperCase()} ROLE YOU ASSIGNED.`, 'coach', 4.2);
+      }
+      if (careerMatchMomentState.roundLiveElapsed >= 8.5) {
+        queueCareerMatchMoment('first-range', 'WEAPON RANGE', `${String(presentation.rangeBand || 'ADAPTIVE RANGE').toUpperCase()}`, `${String(weapon?.name || 'THE EQUIPPED WEAPON').toUpperCase()} SHAPES WHICH DISTANCES THIS OPERATOR SEEKS, HOLDS OR TRIES TO CLOSE.`, 'coach', 4.2);
+      }
+      if (careerMatchMomentState.roundLiveElapsed >= 16.0) {
+        const plan = typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null;
+        queueCareerMatchMoment('first-response', 'TACTICAL RESPONSE', 'THE PLAN GUIDES · THE OPERATOR REACTS', `${String(plan?.approachName || 'BALANCED').toUpperCase()} AND ${String(plan?.priorityName || 'TRADE ELIMINATIONS').toUpperCase()} SHAPE THE DECISION, BUT VISIBLE ENEMIES, SOUND AND DANGER CAN CHANGE THE ROUTE.`, 'coach', 4.6);
+      }
+    }
+  }
+
   const NEW_PLAYER_DEMO_STEPS = [
     {
       title: 'YOU ARE THE MANAGER, NOT THE SHOOTER',
@@ -40519,14 +41048,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       body: 'Roles, weapons, armour and the tactical plan affect where operators move, which fights they seek and how closely they support team-mates. They still react independently to what they can see and hear.',
       focus: 'THE ROUND OBJECTIVE SUMMARISES THE PLAN YOUR OPERATORS ARE EXECUTING.',
       action: 'EXPLAIN THE LIVE INTENTION',
-      paused: false
+      paused: true
     },
     {
       title: 'THE LIVE INTENTION EXPLAINS WHAT YOU ARE WATCHING',
       body: 'The intention label changes as the spectated operator advances, holds cover, investigates sound, reloads, switches weapon or engages a visible enemy.',
       focus: 'USE THE LEFT AND RIGHT SPECTATOR BUTTONS TO FOLLOW ANOTHER LIVING OPERATOR.',
-      action: 'GOT IT · WATCH THE ROUND',
-      paused: false
+      action: 'WATCH THE ROUND',
+      paused: true
     }
   ];
 
@@ -40893,6 +41422,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       plan.adjustments = [...(Array.isArray(base.adjustments) ? base.adjustments : []), adjustment].slice(-6);
       careerState.tactics.activeMatchPlan = plan;
       saveCareerState();
+      const adjustmentLabels = changes.map(type => {
+        const from = betweenRoundPlanValue(type, base);
+        const to = betweenRoundPlanValue(type, draft);
+        return `${type.toUpperCase()} ${String(from).toUpperCase()} → ${String(to).toUpperCase()}`;
+      });
+      careerMatchMomentState.pendingAdjustment = adjustmentLabels.join(' · ');
       addSystemFeed(`MANAGER ADJUSTMENT · ${changes.map(type => type.toUpperCase()).join(' + ')}`);
     } else {
       addSystemFeed('MANAGER RETAINS CURRENT PLAN');
@@ -40929,6 +41464,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function createMatch() {
     resetCareerMatchFlow();
     resetBetweenRoundTacticsState();
+    if (typeof resetCareerMatchIntro === 'function') resetCareerMatchIntro();
+    resetCareerMatchMoments();
     if (typeof diagnosticResetMatch === 'function') diagnosticResetMatch();
     bots = [];
     blueScore = 0;
@@ -40978,6 +41515,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     lateRoundMode = false;
     lateRoundStatusShown = false;
     lateRoundDirectorTick = 0;
+    careerMatchMomentState.roundLiveElapsed = 0;
+    careerMatchMomentState.aliveKey = '';
     hideRoundResult();
     if (typeof hideSponsorRoundBumper === 'function') hideSponsorRoundBumper();
     hideStatus();
@@ -41007,6 +41546,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       addSystemFeed(`${matchCompetitionLabel()} · ${blueClub.name} VS ${redClub.name}`);
     }
     addSystemFeed(`ROUND ${roundNumber} — ${currentEngagementPlan?.name || 'DYNAMIC CONTACT'} · NO RESPAWNS`);
+    if (careerMatchMomentState.pendingAdjustment) {
+      const adjustment = careerMatchMomentState.pendingAdjustment;
+      queueCareerMatchMoment(`adjustment:${roundNumber}`, 'MANAGER TACTICAL CHANGE', `ROUND ${roundNumber} PLAN UPDATED`, adjustment, 'adjustment', 4.0, true);
+      careerMatchMomentState.pendingAdjustment = null;
+    }
+    if (blueScore === matchTarget - 1 || redScore === matchTarget - 1) {
+      const ownedScore = CAREER_OWNED_TEAM === TEAM_BLUE ? blueScore : redScore;
+      const opponentScore = CAREER_OWNED_TEAM === TEAM_BLUE ? redScore : blueScore;
+      const title = ownedScore === matchTarget - 1 ? 'MATCH POINT · WIN THIS ROUND' : 'MATCH POINT · MUST RESPOND';
+      queueCareerMatchMoment(`match-point:${roundNumber}`, 'MATCH POINT', title, `${matchScoreLine(blueScore, redScore, true)} · FIRST TO ${matchTarget}`, ownedScore === matchTarget - 1 ? 'advantage' : 'danger', 3.4, true);
+    }
     if (newPlayerDemoState.active) {
       addSystemFeed('GUIDED ORIENTATION · ONE ROUND ONLY · NO CAREER RESULT');
       addSystemFeed('WATCH THE LIVE INTENTION TO UNDERSTAND EACH OPERATOR DECISION');
@@ -41035,7 +41585,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     matchRestartTimer = 0;
     const winnerClub = matchTeamIdentity(winner);
     const title = `${winnerClub.name.toUpperCase()} WINS THE MATCH`;
-    const rewardState = winner === CAREER_OWNED_TEAM ? 'reward drop authorised' : 'no victory crate awarded';
+    const rewardState = winner === CAREER_OWNED_TEAM ? 'victory rewards and debrief authorised' : 'performance rewards and debrief authorised';
     const detail = `${matchScoreLine(blueScore, redScore, true)} · first to ${matchTarget} · ${rewardState}`;
     showRoundResult('MATCH COMPLETE', title, detail);
     showStatus('MATCH COMPLETE');
@@ -42199,7 +42749,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const role = player ? clubMatchRoleForPlayer(player) : teamRoleById('flex');
       const weapon = getCareerWeapon(member.weaponId);
       const presentation = careerWeaponPresentation(weapon);
-      return `<article class="deployment-operator-row"><span>${String(index + 1).padStart(2, '0')}</span><i class="deployment-role-glyph role-${escapeCareerHtml(role.id || 'flex')}" aria-hidden="true"><b></b><em></em></i><div><strong>${escapeCareerHtml(member.name)}</strong><small>${escapeCareerHtml(role.name)} · ${escapeCareerHtml(weapon.name)}</small></div><div><b>${escapeCareerHtml(presentation.rangeBand)}</b><small>${escapeCareerHtml(presentation.recoilLabel)} · ${escapeCareerHtml(presentation.reloadLabel)}</small></div></article>`;
+      const portrait = player && typeof teamPlayerVisualMarkup === 'function'
+        ? teamPlayerVisualMarkup(player, role)
+        : `<i class="deployment-role-glyph role-${escapeCareerHtml(role.id || 'flex')}" aria-hidden="true"><b></b><em></em></i>`;
+      return `<article class="deployment-operator-row"><span>${String(index + 1).padStart(2, '0')}</span>${portrait}<div><strong>${escapeCareerHtml(member.name)}</strong><small>${escapeCareerHtml(role.name)} · ${escapeCareerHtml(weapon.name)}</small></div><div><b>${escapeCareerHtml(presentation.rangeBand)}</b><small>${escapeCareerHtml(presentation.recoilLabel)} · ${escapeCareerHtml(presentation.reloadLabel)}</small></div></article>`;
     }).join('');
   }
 
@@ -42218,6 +42771,67 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       <div class="deployment-lane-grid">${laneRows}</div>
       <div class="deployment-plan-warnings">${warnings}</div>
     </section>`;
+  }
+
+  const careerMatchIntroState = { active: false };
+
+  function careerMatchIntroRosterMarkup(team) {
+    return matchmakingRosterSource(team).map((member, index) => {
+      const player = member.player;
+      const role = player ? (team === TEAM_BLUE ? clubMatchRoleForPlayer(player) : teamRoleById(player.role)) : teamRoleById('flex');
+      const visual = player && typeof teamPlayerVisualMarkup === 'function'
+        ? teamPlayerVisualMarkup(player, role)
+        : `<i class="career-match-intro-role role-${escapeCareerHtml(role.id || 'flex')}" aria-hidden="true"></i>`;
+      return `<article class="career-match-intro-operator">${visual}<span><strong>${escapeCareerHtml(member.name)}</strong><small>${escapeCareerHtml(role.name)} · ${escapeCareerHtml(member.weapon)}</small></span><b>${String(index + 1).padStart(2, '0')}</b></article>`;
+    }).join('');
+  }
+
+  function careerMatchIntroActive() {
+    return Boolean(careerMatchIntroState.active && careerMatchIntroEl && !careerMatchIntroEl.hidden);
+  }
+
+  function showCareerMatchIntro() {
+    if (!careerMatchIntroEl || newPlayerDemoState.active) return false;
+    if (careerMatchIntroEl.parentElement !== document.body) document.body.appendChild(careerMatchIntroEl);
+    const blueClub = matchTeamIdentity(TEAM_BLUE);
+    const redClub = matchTeamIdentity(TEAM_RED);
+    const arena = activeArenaMeta();
+    const plan = typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null;
+    const competition = matchCompetitionLabel();
+    careerMatchIntroState.active = true;
+    careerMatchIntroEl.hidden = false;
+    careerMatchIntroEl.setAttribute('aria-hidden', 'false');
+    if (careerMatchIntroKickerEl) careerMatchIntroKickerEl.textContent = `${competition} · FIRST TO ${matchTarget}`;
+    if (careerMatchIntroTitleEl) careerMatchIntroTitleEl.textContent = `${blueClub.name.toUpperCase()} VS ${redClub.name.toUpperCase()}`;
+    if (careerMatchIntroMapEl) careerMatchIntroMapEl.textContent = `${arena.name.toUpperCase()} · TACTICAL ELIMINATION · NO RESPAWNS`;
+    if (careerMatchIntroBlueNameEl) careerMatchIntroBlueNameEl.textContent = blueClub.name;
+    if (careerMatchIntroRedNameEl) careerMatchIntroRedNameEl.textContent = redClub.name;
+    if (careerMatchIntroBlueRosterEl) careerMatchIntroBlueRosterEl.innerHTML = careerMatchIntroRosterMarkup(TEAM_BLUE);
+    if (careerMatchIntroRedRosterEl) careerMatchIntroRedRosterEl.innerHTML = careerMatchIntroRosterMarkup(TEAM_RED);
+    if (careerMatchIntroPlanEl) careerMatchIntroPlanEl.innerHTML = `<article><span>FORMATION</span><strong>${escapeCareerHtml(plan?.formationName || 'BALANCED')}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan?.approachName || 'BALANCED')}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan?.engagementName || 'MIXED RANGE')}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan?.priorityName || 'TRADE ELIMINATIONS')}</strong></article>`;
+    careerMatchIntroStartBtn?.focus({ preventScroll: true });
+    return true;
+  }
+
+  function dismissCareerMatchIntro() {
+    if (!careerMatchIntroState.active) return false;
+    careerMatchIntroState.active = false;
+    if (careerMatchIntroEl) {
+      careerMatchIntroEl.hidden = true;
+      careerMatchIntroEl.setAttribute('aria-hidden', 'true');
+    }
+    showStatus('ROUND 1 · OPERATORS EXECUTING YOUR PLAN');
+    addSystemFeed('MATCH LIVE · YOUR PREPARATION NOW SHAPES AUTONOMOUS DECISIONS');
+    lastTime = performance.now();
+    return true;
+  }
+
+  function resetCareerMatchIntro() {
+    careerMatchIntroState.active = false;
+    if (careerMatchIntroEl) {
+      careerMatchIntroEl.hidden = true;
+      careerMatchIntroEl.setAttribute('aria-hidden', 'true');
+    }
   }
 
   function renderDeploymentSelection() {
@@ -42246,9 +42860,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         ? `<article class="foundation-parity"><span>OPENING MATCHUP · MATCHDAY ${foundation.matchday || 1}</span><strong>${foundation.adjustmentRequired ? 'FOUNDATION PARITY ACTIVE' : 'NATURALLY BALANCED'}</strong><small>The opening protection ramps from +1 to +3 above your active-operator rating across the first three Division 3 fixtures. Tactics and Plan Fit still matter.</small></article>`
         : '';
       const rangeWarning = typeof tacticalRangeWarningMarkup === 'function' ? tacticalRangeWarningMarkup(plan.engagementId, true) : '';
-      deploymentTacticsEl.innerHTML = `<div class="deployment-tactic-summary"><article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article></div>${rangeWarning}${openingParity}${deploymentTacticalPreviewMarkup(plan, selectedArena)}`;
+      const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+      const opponentClub = typeof leagueActiveOpponentClub === 'function' ? (leagueActiveOpponentClub() || (fixture && typeof leagueClubById === 'function' && typeof leagueFixtureOpponentId === 'function' ? leagueClubById(leagueFixtureOpponentId(fixture)) : null)) : null;
+      const expectation = opponentClub && typeof leagueFixtureExpectationSnapshot === 'function' ? leagueFixtureExpectationSnapshot(fixture, opponentClub) : null;
+      const opponentStars = typeof leagueStrengthStarsMarkup === 'function' && expectation?.opposition ? leagueStrengthStarsMarkup(expectation.opposition.stars, `${opponent.name} team strength`) : '';
+      const matchup = `<section class="deployment-matchup-brief"><article><span>OPPOSITION</span><strong>${escapeCareerHtml(opponent.name)}</strong><small>${escapeCareerHtml(opponent.style || opponent.detail || 'TACTICAL PROFILE')}</small></article><article><span>TEAM STRENGTH</span><strong>${expectation?.opposition?.rating || opponent.rating || '—'}</strong>${opponentStars}<small>${expectation ? `${expectation.winChance}% PUBLIC WIN CHANCE · ±${expectation.uncertainty}%` : 'SCOUTING ESTIMATE'}</small></article><article class="expectation ${escapeCareerHtml(expectation?.tone || 'even')}"><span>SUPPORTER EXPECTATION</span><strong>${escapeCareerHtml(expectation?.headline || 'COMPETE FOR THE WIN')}</strong><small>${escapeCareerHtml(expectation?.label || 'FANS EXPECT A COMPETITIVE MATCH')}${expectation?.expectedScore ? ` · EXPECTED ${escapeCareerHtml(expectation.expectedScore)}` : ''}</small></article><article><span>MATCH FORMAT</span><strong>FIRST TO 3 ROUNDS</strong><small>FIVE VS FIVE · NO RESPAWNS · ${escapeCareerHtml(selectedArena.name)}</small></article></section>`;
+      deploymentTacticsEl.innerHTML = `${matchup}<div class="deployment-tactic-summary"><article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article></div>${rangeWarning}${openingParity}${deploymentTacticalPreviewMarkup(plan, selectedArena)}`;
     }
-    if (deploymentConfirmBtn) deploymentConfirmBtn.textContent = `DEPLOY TO ${selectedArena.short} & SEARCH`;
+    if (deploymentConfirmBtn) deploymentConfirmBtn.textContent = 'DEPLOY ACTIVE FIVE OPERATORS';
   }
 
   function openDeploymentSelection() {
@@ -42373,7 +42992,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     autoTimer = 999;
     queueAudioRecovery(260);
     updateMenuUI();
-    showStatus('MATCH LIVE');
+    if (!showCareerMatchIntro()) showStatus('MATCH LIVE');
     lastTime = performance.now();
   }
 
@@ -49327,6 +49946,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
       const blueAlive = teamAliveCount(TEAM_BLUE);
       const redAlive = teamAliveCount(TEAM_RED);
+      if (typeof updateCareerMatchContextMoments === 'function') updateCareerMatchContextMoments(blueAlive, redAlive, dt);
       const huntNow = isLateRoundHuntActive();
       if (huntNow !== lateRoundMode) {
         lateRoundMode = huntNow;
@@ -49375,13 +49995,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     measureRuntimeStage('effects', () => {
       updateDamageNumbers(dt);
       if (typeof updateMultiKillBanner === 'function') updateMultiKillBanner(dt);
+      if (typeof updateCareerMatchMoment === 'function') updateCareerMatchMoment(dt);
     });
     if (typeof updateNewPlayerDemo === 'function') updateNewPlayerDemo(dt);
     const liveMenu = appState === 'menu' && menuContext === 'pause' && canResumeMatch;
     if (appState === 'menu') measureRuntimeStage('menu', () => updateMenu(dt));
     if (appState === 'free-roam') measureRuntimeStage('freeRoam', () => updateFreeRoam(dt));
     const demoPaused = typeof newPlayerDemoSimulationPaused === 'function' && newPlayerDemoSimulationPaused();
-    const shouldSimulateMatch = (appState === 'match' && !demoPaused) || (liveMenu && !matchSimulationPaused);
+    const introPaused = typeof careerMatchIntroActive === 'function' && careerMatchIntroActive();
+    const shouldSimulateMatch = (appState === 'match' && !demoPaused && !introPaused) || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
       measureRuntimeStage('matchSimulation', () => {
         // One navigation budget spans every fixed simulation substep produced by
@@ -49773,6 +50395,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const coaching = event.target.closest?.('[data-coaching-route]');
     if (coaching && typeof openTacticalCoachingRecommendation === 'function') openTacticalCoachingRecommendation(coaching);
   });
+  if (careerMatchIntroStartBtn) careerMatchIntroStartBtn.addEventListener('click', dismissCareerMatchIntro);
   if (careerReportContinueBtn) careerReportContinueBtn.addEventListener('click', continueCareerRoundReport);
   if (careerReportDiagnosticExportBtn) careerReportDiagnosticExportBtn.addEventListener('click', () => { if (typeof exportLastCompletedMatchDiagnostics === 'function') exportLastCompletedMatchDiagnostics(); });
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
@@ -51681,6 +52304,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         fourPartLoop: introSteps === 4,
         demoCoachExists: Boolean(newPlayerDemoCoachEl && newPlayerDemoNextBtn && newPlayerDemoSkipBtn),
         fourGuidedSteps: demoSteps === 4,
+        allCoachStepsPauseBeforeRound: NEW_PLAYER_DEMO_STEPS.every(step => step?.paused === true),
+        finalActionStartsRound: /watch the round/i.test(NEW_PLAYER_DEMO_STEPS[NEW_PLAYER_DEMO_STEPS.length - 1]?.action || ''),
         oneRoundContract: /orientation ends after one round/i.test(NEW_PLAYER_DEMO_STEPS[1]?.body || ''),
         nonCareerContract: /did not change your record, finances/i.test(NEW_PLAYER_DEMO_COMPLETE_BODY) && /operator condition or league position/i.test(NEW_PLAYER_DEMO_COMPLETE_BODY),
         persistenceUsesTutorialContext: Boolean(NEW_PLAYER_CONCEPT_KEY && NEW_PLAYER_DEMO_COMPLETE_KEY && NEW_PLAYER_DEMO_SKIPPED_KEY)
@@ -51930,6 +52555,174 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       } finally {
         careerState.totalMatches = previousMatches;
       }
+    },
+    firstMatchPayoffForTest: () => {
+      if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);
+      const starters = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+      const recommendationPlayer = starters[0] || null;
+      const syntheticSummary = {
+        firstCareerMatch: true,
+        won: true,
+        blueScore: 3,
+        redScore: 1,
+        roundsWon: 3,
+        roundsPlayed: 4,
+        kills: 7,
+        deaths: 3,
+        survived: true,
+        shotsFired: 54,
+        shotsHit: 23,
+        accuracy: 23 / 54,
+        damageDealt: 720,
+        damageTaken: 390,
+        survivalTime: 138,
+        score: 84,
+        grade: 'A',
+        xpAward: 205,
+        levelsGained: 1,
+        rewardEligible: true,
+        blueTeamName: careerState.name || 'Vanguard Five',
+        redTeamName: 'Iron Vow',
+        matchPresentation: { blue: { name: careerState.name || 'Vanguard Five' }, red: { name: 'Iron Vow' } },
+        finance: {
+          income: 46500,
+          resultRewardLabel: 'FIRST CAREER WIN',
+          development: starters.map((player, index) => ({ playerId: player.id, xp: 38 - index * 3, levelsGained: index === 0 ? 1 : 0 }))
+        },
+        goldCoinReward: { amount: 2, label: 'FIRST CAREER WIN' },
+        supporterReaction: {
+          type: 'MATCH', title: 'SUPPORTERS WELCOME THE OPENING WIN', detail: 'The first result increased confidence in the new club.', tone: 'positive',
+          deltas: { confidence: 4, popularity: 2, loyalty: 1, fanbase: 18 }
+        },
+        tacticalAnalysis: {
+          recommendations: [{ route: 'training', playerId: recommendationPlayer?.id || '', targetId: 'aim', actionLabel: 'TRAIN MARKSMANSHIP', text: 'The clearest next step is improving controlled-range accuracy.' }]
+        }
+      };
+      const previousLastMatches = starters.map(player => player.lastMatch);
+      starters.forEach((player, index) => {
+        player.lastMatch = { rating: Math.max(6.4, 8.7 - index * 0.45), kills: Math.max(0, 3 - Math.floor(index / 2)), deaths: index % 2, won: true };
+      });
+      const stageChecks = [];
+      try {
+        for (let stage = 0; stage < 5; stage++) {
+          const host = document.createElement('div');
+          host.innerHTML = careerFirstMatchOutcomeMarkup(syntheticSummary, stage);
+          stageChecks.push({
+            stage,
+            hasProgress: host.querySelectorAll('.first-match-outcome-progress span').length === 5,
+            hasStage: Boolean(host.querySelector('.first-match-outcome-stage')),
+            hasAction: stage !== 4 || Boolean(host.querySelector('[data-coaching-route]')),
+            text: host.textContent.replace(/\s+/g, ' ').trim().slice(0, 180)
+          });
+        }
+      } finally {
+        starters.forEach((player, index) => { player.lastMatch = previousLastMatches[index]; });
+      }
+      const deploymentHost = document.createElement('div');
+      const previousDeploymentActive = deploymentSelectionState.active;
+      const previousDeploymentArena = deploymentSelectionState.selectedArenaId;
+      let introSnapshot = null;
+      let momentSnapshot = null;
+      try {
+        deploymentSelectionState.active = true;
+        deploymentSelectionState.selectedArenaId = arenaMeta(careerState?.tactics?.arenaId || activeArenaMeta().id).id;
+        renderDeploymentSelection();
+        deploymentHost.innerHTML = `${deploymentRosterEl?.innerHTML || ''}${deploymentTacticsEl?.innerHTML || ''}<button>${deploymentConfirmBtn?.textContent || ''}</button>`;
+        showCareerMatchIntro();
+        introSnapshot = {
+          active: careerMatchIntroActive(),
+          visible: Boolean(careerMatchIntroEl && !careerMatchIntroEl.hidden),
+          blueCount: careerMatchIntroBlueRosterEl?.querySelectorAll('.career-match-intro-operator').length || 0,
+          redCount: careerMatchIntroRedRosterEl?.querySelectorAll('.career-match-intro-operator').length || 0,
+          plan: careerMatchIntroPlanEl?.textContent || ''
+        };
+        resetCareerMatchIntro();
+        queueCareerMatchMoment('debug-first-match-payoff', 'ROLE IN ACTION', 'ENTRY OPERATOR TAKING FIRST CONTACT', 'Debug explanation.', 'coach', 3.1, true);
+        momentSnapshot = {
+          visible: Boolean(careerMatchMomentEl && !careerMatchMomentEl.hidden),
+          title: careerMatchMomentTitleEl?.textContent || '',
+          detail: careerMatchMomentDetailEl?.textContent || ''
+        };
+        resetCareerMatchMoments();
+      } finally {
+        resetCareerMatchIntro();
+        resetCareerMatchMoments();
+        deploymentSelectionState.active = previousDeploymentActive;
+        deploymentSelectionState.selectedArenaId = previousDeploymentArena;
+      }
+      const checks = {
+        fiveStagedOutcomeScreens: stageChecks.length === 5 && stageChecks.every(item => item.hasProgress && item.hasStage && item.hasAction),
+        deploymentMatchupBrief: Boolean(deploymentHost.querySelector('.deployment-matchup-brief')),
+        deploymentFivePortraits: deploymentHost.querySelectorAll('.team-player-visual').length >= TEAM_REQUIRED_STARTERS,
+        explicitDeployCopy: /DEPLOY ACTIVE FIVE OPERATORS/.test(deploymentHost.textContent),
+        introShowsBothTeams: Boolean(introSnapshot?.active && introSnapshot.visible && introSnapshot.blueCount >= TEAM_REQUIRED_STARTERS && introSnapshot.redCount >= TEAM_REQUIRED_STARTERS),
+        introExplainsPlan: Boolean(introSnapshot?.plan),
+        contextualMomentRenders: Boolean(momentSnapshot?.visible && /ENTRY OPERATOR/.test(momentSnapshot.title)),
+        finalStageHasDirectAction: stageChecks[4]?.hasAction === true
+      };
+      return { ok: Object.values(checks).every(Boolean), checks, stages: stageChecks, intro: introSnapshot, moment: momentSnapshot };
+    },
+    showFirstMatchOutcomeForTest: (stage = 0) => {
+      if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);
+      const safeStage = clamp(Math.floor(Number(stage) || 0), 0, 4);
+      const firstPlayer = careerState.squad?.[0] || null;
+      const summary = {
+        firstCareerMatch: true, won: true, blueScore: 3, redScore: 1, roundsWon: 3, roundsPlayed: 4,
+        kills: 7, deaths: 3, survived: true, shotsFired: 54, shotsHit: 23, accuracy: 23 / 54,
+        damageDealt: 720, damageTaken: 390, survivalTime: 138, score: 84, grade: 'A', xpAward: 205,
+        levelsGained: 1, rewardEligible: true, blueTeamName: careerState.name || 'YOUR CLUB', redTeamName: 'IRON VOW',
+        matchPresentation: { blue: { name: careerState.name || 'YOUR CLUB' }, red: { name: 'IRON VOW' } },
+        finance: { income: 46500, resultRewardLabel: 'FIRST CAREER WIN', development: (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS).map((player, index) => ({ playerId: player.id, xp: 38 - index * 3, levelsGained: index === 0 ? 1 : 0 })) },
+        goldCoinReward: { amount: 2, label: 'FIRST CAREER WIN' },
+        supporterReaction: { type: 'MATCH', title: 'SUPPORTERS WELCOME THE OPENING WIN', detail: 'The first result increased confidence in the new club.', tone: 'positive', deltas: { confidence: 4, popularity: 2, loyalty: 1, fanbase: 18 } },
+        tacticalAnalysis: { recommendations: [{ route: 'training', playerId: firstPlayer?.id || '', targetId: 'aim', actionLabel: 'TRAIN MARKSMANSHIP', text: 'The clearest next step is improving controlled-range accuracy.' }] }
+      };
+      (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS).forEach((player, index) => {
+        if (!player.lastMatch) player.lastMatch = { rating: Math.max(6.4, 8.7 - index * .45), kills: Math.max(0, 3 - Math.floor(index / 2)), deaths: index % 2, won: true };
+      });
+      careerState.totalMatches = Math.max(1, Number(careerState.totalMatches) || 0);
+      careerState.lastRound = summary;
+      saveCareerState();
+      careerReportState = { phase: 'visible', delay: 0, summary: careerState.lastRound, revealStage: safeStage, detailed: false };
+      showCareerRoundReport();
+      return {
+        ok: Boolean(careerReportOverlayEl && !careerReportOverlayEl.hidden && careerReportContentEl?.querySelector('.first-match-outcome-stage')),
+        stage: safeStage,
+        title: careerReportTitleEl?.textContent || '',
+        continueLabel: careerReportContinueBtn?.textContent || '',
+        actionCount: careerReportContentEl?.querySelectorAll('[data-coaching-route]').length || 0
+      };
+    },
+    hideFirstMatchOutcomeForTest: () => {
+      careerReportState.phase = 'idle';
+      if (careerReportOverlayEl) careerReportOverlayEl.hidden = true;
+      return { hidden: Boolean(careerReportOverlayEl?.hidden) };
+    },
+    careerReportFlowForTest: () => ({
+      phase: careerReportState.phase,
+      revealStage: careerReportState.revealStage,
+      detailed: Boolean(careerReportState.detailed),
+      reportReviewed: Boolean(careerState.lastRound?.reportReviewed),
+      rewardPhase: careerCrateState.phase,
+      pendingCoaching: pendingTacticalCoachingTarget ? { ...pendingTacticalCoachingTarget } : null,
+      overlayHidden: Boolean(careerReportOverlayEl?.hidden)
+    }),
+    showCareerMatchIntroForTest: () => {
+      const shown = showCareerMatchIntro();
+      return {
+        ok: shown && careerMatchIntroActive(),
+        active: careerMatchIntroActive(),
+        hidden: Boolean(careerMatchIntroEl?.hidden),
+        blueCount: careerMatchIntroBlueRosterEl?.querySelectorAll('.career-match-intro-operator').length || 0,
+        redCount: careerMatchIntroRedRosterEl?.querySelectorAll('.career-match-intro-operator').length || 0,
+        plan: careerMatchIntroPlanEl?.textContent || ''
+      };
+    },
+    dismissCareerMatchIntroForTest: () => ({ ok: dismissCareerMatchIntro(), active: careerMatchIntroActive(), hidden: Boolean(careerMatchIntroEl?.hidden) }),
+    careerMatchMomentForTest: (title = 'LAST OPERATOR', detail = 'One operator remains active.') => {
+      resetCareerMatchMoments();
+      queueCareerMatchMoment(`debug-${Date.now()}`, 'MATCH MOMENT', String(title), String(detail), 'warning', 3.1, true);
+      return { ok: Boolean(careerMatchMomentEl && !careerMatchMomentEl.hidden), title: careerMatchMomentTitleEl?.textContent || '', detail: careerMatchMomentDetailEl?.textContent || '' };
     },
     createTestTeam: (teamName = 'Vanguard Five', managerName = 'Test Manager') => {
       careerDraft.name = normaliseCareerName(teamName);
