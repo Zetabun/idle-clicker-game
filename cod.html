@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.33: Recruitment Role Clarity</title>
+<title>Strikewatch 12.35: Opening Week Command</title>
 <style>
   :root {
     color-scheme: dark;
@@ -15999,6 +15999,285 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   inset: 0;
   z-index: 1200;
 }
+
+/* Build 12.34: recruitment decision support, team needs and candidate comparison. */
+.recruitment-needs-panel,
+.recruitment-comparison-panel,
+.recruitment-signing-update {
+  min-width: 0;
+  border: 1px solid rgba(104, 188, 222, .24);
+  background: linear-gradient(145deg, rgba(9, 28, 40, .96), rgba(3, 11, 18, .97));
+}
+.recruitment-needs-panel > header,
+.recruitment-comparison-panel > header,
+.recruitment-signing-update {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 12px;
+}
+.recruitment-needs-panel > header span,
+.recruitment-comparison-panel > header span,
+.recruitment-signing-update span { display: block; color: #77d6f4; font-size: 8px; font-weight: 950; letter-spacing: .14em; }
+.recruitment-needs-panel > header strong,
+.recruitment-comparison-panel > header strong,
+.recruitment-signing-update strong { display: block; margin-top: 4px; color: #f2f7fa; font-size: 14px; letter-spacing: .04em; }
+.recruitment-needs-panel > header p,
+.recruitment-comparison-panel > header p,
+.recruitment-signing-update p { margin: 5px 0 0; color: #aebfc7; font-size: 11px; line-height: 1.45; }
+.recruitment-needs-panel > header > b { flex: 0 0 auto; padding: 7px 9px; border: 1px solid rgba(244, 185, 66, .34); color: #ffd77c; background: rgba(92, 65, 15, .22); font-size: 8px; letter-spacing: .1em; }
+.recruitment-function-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: rgba(107, 171, 201, .14); }
+.recruitment-function-grid article { min-width: 0; min-height: 76px; padding: 9px; background: rgba(4, 13, 20, .95); border-top: 2px solid rgba(119, 157, 180, .25); }
+.recruitment-function-grid article.covered { border-top-color: #66d6a2; background: rgba(12, 48, 38, .72); }
+.recruitment-function-grid article.partial { border-top-color: #e3b957; background: rgba(53, 40, 13, .58); }
+.recruitment-function-grid article.missing { border-top-color: #d96b72; background: rgba(55, 19, 25, .55); }
+.recruitment-function-grid span,
+.recruitment-function-grid strong,
+.recruitment-function-grid small { display: block; }
+.recruitment-function-grid span { color: #849aa7; font-size: 7px; font-weight: 900; letter-spacing: .1em; }
+.recruitment-function-grid strong { margin-top: 7px; color: #eef6f9; font-size: 10px; }
+.recruitment-function-grid small { margin-top: 5px; color: #91a6b0; font-size: 8px; line-height: 1.35; }
+.recruitment-needs-panel > footer { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(130px, .7fr)); gap: 1px; background: rgba(107, 171, 201, .12); }
+.recruitment-needs-panel > footer > div { min-width: 0; padding: 9px 10px; background: rgba(4, 12, 19, .95); }
+.recruitment-needs-panel > footer span { display: block; color: #8298a5; font-size: 7px; font-weight: 900; letter-spacing: .1em; }
+.recruitment-needs-panel > footer strong { display: block; margin-top: 4px; color: #edf5f8; font-size: 9px; line-height: 1.4; }
+.recruitment-signing-update { border-left: 3px solid #66d6a2; background: rgba(14, 54, 42, .62); }
+.recruitment-signing-update > div { min-width: 0; }
+.recruitment-signing-update > button { flex: 0 0 auto; width: 34px; height: 34px; padding: 0; }
+.recruitment-candidate-impact { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(140px, .55fr); gap: 8px; align-items: stretch; margin: 1px -2px -2px; padding: 8px 9px; border-left: 2px solid rgba(104, 189, 226, .42); background: rgba(7, 22, 31, .82); }
+.recruitment-candidate-impact.positive { border-left-color: #66d6a2; background: rgba(13, 48, 38, .46); }
+.recruitment-candidate-impact.prospect { border-left-color: #d2aef7; background: rgba(49, 29, 66, .42); }
+.recruitment-candidate-impact > div span,
+.recruitment-candidate-impact > aside span { display: block; color: #79cdeb; font-size: 7px; font-weight: 950; letter-spacing: .12em; }
+.recruitment-candidate-impact > div strong,
+.recruitment-candidate-impact > aside strong { display: block; margin-top: 4px; color: #f2f7fa; font-size: 10px; }
+.recruitment-candidate-impact p { margin: 4px 0 0; color: #aebfc7; font-size: 9px; line-height: 1.4; }
+.recruitment-candidate-impact > aside { padding-left: 8px; border-left: 1px solid rgba(126, 179, 204, .16); }
+.recruitment-candidate-impact > aside small { display: block; margin-top: 4px; color: #9eabb2; font-size: 8px; line-height: 1.35; }
+.recruitment-recommendation-badges { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; }
+.recruitment-recommendation-badges b { padding: 4px 6px; border: 1px solid rgba(244, 190, 79, .38); color: #ffdc87; background: rgba(92, 64, 13, .28); font-size: 7px; letter-spacing: .08em; }
+.compare-toggle.active,
+.recruitment-market-row.compared,
+.recruitment-shortlist-card.compared { border-color: rgba(105, 218, 181, .48); }
+.compare-toggle.active { color: #8ce7c5; background: rgba(21, 76, 59, .42); }
+.recruitment-comparison-panel.empty { opacity: .8; }
+.recruitment-comparison-panel > header { border-bottom: 1px solid rgba(107, 171, 201, .14); }
+.recruitment-comparison-panel > header > button { flex: 0 0 auto; min-width: 82px; min-height: 36px; }
+.recruitment-comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; padding: 7px; }
+.recruitment-comparison-grid > article { position: relative; min-width: 0; padding: 11px; border: 1px solid rgba(119, 174, 201, .2); background: rgba(3, 11, 17, .88); }
+.recruitment-comparison-grid > article > button { position: absolute; top: 7px; right: 7px; width: 30px; height: 30px; padding: 0; }
+.recruitment-comparison-grid > article > span { display: block; max-width: calc(100% - 34px); color: #78d0f0; font-size: 7px; font-weight: 900; letter-spacing: .1em; }
+.recruitment-comparison-grid > article > strong { display: block; margin-top: 5px; color: #f3f8fa; font-size: 14px; }
+.recruitment-comparison-grid > article > p { min-height: 42px; margin: 6px 0 9px; color: #aabcc5; font-size: 9px; line-height: 1.45; }
+.recruitment-comparison-grid dl { display: grid; gap: 1px; margin: 0; background: rgba(115, 169, 195, .12); }
+.recruitment-comparison-grid dl > div { min-width: 0; padding: 7px 8px; background: rgba(4, 13, 20, .96); }
+.recruitment-comparison-grid dt { color: #8196a2; font-size: 7px; font-weight: 900; letter-spacing: .09em; }
+.recruitment-comparison-grid dd { margin: 4px 0 0; color: #edf5f8; font-size: 9px; line-height: 1.4; overflow-wrap: anywhere; }
+.recruitment-comparison-grid dd.warning { color: #ff9d9d; }
+.recruitment-shortlist-card footer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.recruitment-shortlist-impact { padding: 7px 8px; border-left: 2px solid rgba(102, 214, 162, .45); background: rgba(15, 47, 38, .35); color: #c3d7cf !important; }
+
+@media (max-width: 920px) {
+  .recruitment-function-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .recruitment-needs-panel > header,
+  .recruitment-comparison-panel > header { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .recruitment-needs-panel > header p,
+  .recruitment-comparison-panel > header p { grid-column: 1 / -1; }
+  .recruitment-needs-panel > footer { grid-template-columns: 1fr 1fr; }
+  .recruitment-needs-panel > footer > div:first-child { grid-column: 1 / -1; }
+  .recruitment-candidate-impact { grid-template-columns: 1fr; }
+  .recruitment-candidate-impact > aside { padding: 7px 0 0; border-left: 0; border-top: 1px solid rgba(126, 179, 204, .16); }
+}
+@media (max-width: 430px) {
+  .recruitment-function-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .recruitment-function-grid article { min-height: 70px; }
+  .recruitment-needs-panel > footer { grid-template-columns: 1fr; }
+  .recruitment-needs-panel > footer > div:first-child { grid-column: auto; }
+  .recruitment-comparison-grid { grid-template-columns: 1fr; }
+  .recruitment-shortlist-card footer { grid-template-columns: 1fr; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .recruitment-function-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .recruitment-function-grid article { min-height: 62px; padding: 7px; }
+  .recruitment-comparison-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+
+/* Build 12.35: opening-week agenda, next-event progression and guided End Day access. */
+.manager-end-day-primary.guided-lock {
+  border-color: rgba(103, 142, 166, .24);
+  background: linear-gradient(180deg, rgba(24, 43, 56, .92), rgba(11, 23, 32, .98));
+  color: rgba(186, 205, 216, .58);
+  cursor: not-allowed;
+  filter: saturate(.55);
+}
+.opening-week-command,
+.opening-week-change-summary {
+  min-width: 0;
+  margin-bottom: 12px;
+  border: 1px solid rgba(108, 178, 217, .22);
+  background: linear-gradient(145deg, rgba(9, 27, 39, .97), rgba(3, 11, 18, .98));
+  box-shadow: inset 0 1px rgba(255,255,255,.04), 0 16px 34px rgba(0,0,0,.18);
+}
+.opening-week-command > header,
+.opening-week-change-summary > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid rgba(115, 167, 197, .16);
+}
+.opening-week-command > header span,
+.opening-week-change-summary > header span,
+.opening-week-agenda-column > header span,
+.opening-week-preparation > header span,
+.opening-week-change-summary > div button span {
+  display: block;
+  color: #7fcbed;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+.opening-week-command > header strong,
+.opening-week-change-summary > header strong {
+  display: block;
+  margin-top: 4px;
+  color: #f3f8fb;
+  font-size: 18px;
+  letter-spacing: .045em;
+}
+.opening-week-command > header p,
+.opening-week-change-summary > header small {
+  display: block;
+  margin: 6px 0 0;
+  color: #9eb3c0;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.opening-week-advance-actions {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 7px;
+}
+.opening-week-advance-actions button { min-height: 44px; }
+.opening-week-agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(105, 155, 186, .12);
+}
+.opening-week-agenda-column { min-width: 0; background: rgba(3, 11, 18, .96); }
+.opening-week-agenda-column > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 12px 13px;
+  border-bottom: 1px solid rgba(112, 162, 193, .14);
+}
+.opening-week-agenda-column > header span { grid-column: 1; }
+.opening-week-agenda-column > header strong { grid-column: 1; color: #edf5f9; font-size: 10px; letter-spacing: .055em; }
+.opening-week-agenda-column > header b { grid-column: 2; grid-row: 1 / span 2; min-width: 30px; text-align: right; color: #dcecf4; font-size: 22px; }
+.opening-week-agenda-column.required > header { border-top: 2px solid rgba(255, 111, 111, .72); }
+.opening-week-agenda-column.recommended > header { border-top: 2px solid rgba(244, 185, 66, .72); }
+.opening-week-agenda-column.optional > header { border-top: 2px solid rgba(96, 204, 247, .62); }
+.opening-week-agenda-column > div { display: grid; gap: 1px; background: rgba(106, 153, 182, .10); }
+.opening-week-agenda-column > div > p { margin: 0; padding: 18px 13px; color: #8198a7; font-size: 9px; line-height: 1.45; background: rgba(3, 11, 18, .96); }
+.opening-week-agenda-column button {
+  min-width: 0;
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 0;
+  background: rgba(6, 17, 25, .96);
+  text-align: left;
+}
+.opening-week-agenda-column button:hover { background: rgba(15, 37, 51, .96); }
+.opening-week-agenda-column button i { color: rgba(133, 177, 202, .62); font-size: 10px; font-style: normal; font-weight: 950; }
+.opening-week-agenda-column button span strong,
+.opening-week-agenda-column button span small { display: block; }
+.opening-week-agenda-column button span strong { color: #edf5f8; font-size: 9px; letter-spacing: .045em; }
+.opening-week-agenda-column button span small { margin-top: 5px; color: #8fa6b4; font-size: 8px; line-height: 1.4; }
+.opening-week-agenda-column button em { color: #78c9ee; font-size: 7px; font-style: normal; font-weight: 950; letter-spacing: .12em; }
+.opening-week-agenda-column button.urgent { box-shadow: inset 3px 0 rgba(255, 103, 103, .72); }
+.opening-week-agenda-column button.important { box-shadow: inset 3px 0 rgba(244, 185, 66, .66); }
+.opening-week-preparation { padding: 14px 15px 16px; }
+.opening-week-preparation > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.opening-week-preparation > header strong,
+.opening-week-preparation > header small { display: block; }
+.opening-week-preparation > header strong { margin-top: 4px; color: #eef6fa; font-size: 13px; letter-spacing: .055em; }
+.opening-week-preparation > header small { margin-top: 5px; color: #8fa6b4; font-size: 8px; line-height: 1.4; }
+.opening-week-preparation > header > b { color: #8ad6f5; font-size: 24px; }
+.opening-week-preparation > i { display: block; height: 5px; margin: 11px 0; overflow: hidden; background: rgba(255,255,255,.07); }
+.opening-week-preparation > i > b { display: block; height: 100%; background: linear-gradient(90deg, #4ea7d6, #7ee2b7); }
+.opening-week-preparation > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.opening-week-preparation > div button {
+  min-width: 0;
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 3px 8px;
+  align-items: center;
+  padding: 9px 10px;
+  text-align: left;
+}
+.opening-week-preparation > div button span { grid-row: 1 / span 2; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid currentColor; font-size: 10px; }
+.opening-week-preparation > div button strong,
+.opening-week-preparation > div button small { display: block; }
+.opening-week-preparation > div button strong { color: #e8f1f5; font-size: 8px; letter-spacing: .045em; }
+.opening-week-preparation > div button small { color: #8da4b2; font-size: 7px; line-height: 1.35; }
+.opening-week-preparation > div button.complete { border-color: rgba(92, 213, 155, .34); color: #75ddb0; background: rgba(16, 59, 44, .24); }
+.opening-week-preparation > div button.warning { border-color: rgba(244, 185, 66, .32); color: #f0c464; background: rgba(75, 53, 16, .24); }
+.opening-week-change-summary > header button { min-width: 38px; min-height: 38px; padding: 0; font-size: 22px; }
+.opening-week-change-summary > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: rgba(104, 154, 184, .12); }
+.opening-week-change-summary > div button { min-width: 0; min-height: 86px; padding: 12px; border: 0; background: rgba(4, 13, 21, .96); text-align: left; }
+.opening-week-change-summary > div button strong,
+.opening-week-change-summary > div button small { display: block; }
+.opening-week-change-summary > div button strong { margin-top: 5px; color: #eff7fa; font-size: 15px; }
+.opening-week-change-summary > div button small { margin-top: 6px; color: #8ea5b3; font-size: 8px; line-height: 1.4; }
+.opening-week-change-summary > div button.positive { box-shadow: inset 3px 0 rgba(92, 213, 155, .68); }
+.opening-week-change-summary > div button.warning { box-shadow: inset 3px 0 rgba(244, 185, 66, .68); }
+.opening-week-change-summary > div button.urgent { box-shadow: inset 3px 0 rgba(255, 103, 103, .72); }
+
+@media (max-width: 760px) {
+  .opening-week-command > header,
+  .opening-week-change-summary > header { grid-template-columns: 1fr; }
+  .opening-week-advance-actions { grid-template-columns: 1fr 1fr; }
+  .opening-week-agenda-grid { grid-template-columns: 1fr; }
+  .opening-week-preparation > div { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 430px) {
+  .opening-week-command > header,
+  .opening-week-change-summary > header { padding: 12px; }
+  .opening-week-command > header strong,
+  .opening-week-change-summary > header strong { font-size: 15px; }
+  .opening-week-advance-actions { grid-template-columns: 1fr; }
+  .opening-week-preparation { padding: 12px; }
+  .opening-week-preparation > div { grid-template-columns: 1fr; }
+  .opening-week-change-summary > div { grid-template-columns: 1fr; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .opening-week-agenda-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); overflow-x: auto; }
+  .opening-week-preparation > div { grid-template-columns: repeat(6, minmax(150px, 1fr)); overflow-x: auto; }
+}
 </style>
 </head>
 <body>
@@ -16785,9 +17064,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.33';
-  const BUILD_NAME = 'RECRUITMENT ROLE CLARITY';
-  const BUILD_ID = '12.33.0-20260720';
+  const BUILD_VERSION = '12.35';
+  const BUILD_NAME = 'OPENING WEEK COMMAND';
+  const BUILD_ID = '12.35.0-20260720';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -31451,9 +31730,9 @@ body[data-new-player-demo='active'] .spectator-intent { border-color: rgba(225, 
         route: 'market', cta: 'OPEN RECRUITMENT', foundationGuide: true, gameGuide: true,
         note: `The club begins with ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} of borrowed capital. The full ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks.`
       },
-      2: { step: '2 / 6', title: 'WHY OPERATOR PROFILES MATTER', body: 'Start with the role guide: Entry begins fights, Support follows and trades, Anchor holds ground, Flanker attacks from another angle, Marksman controls range, Shot Caller coordinates and Flex fills gaps. Then compare ability, potential, attributes, medical risk, fee and weekly wage.', route: 'profile', cta: 'VIEW AN OPERATOR PROFILE' },
-      3: { step: '3 / 6', title: 'WHY THE FIRST SIGNING MATTERS', body: 'Choose an affordable operator whose role and strengths begin to define the team. Use the role guide to understand the job they will try to perform before committing the immediate transfer fee and continuing weekly wage.', route: 'market', cta: 'RETURN TO RECRUITMENT' },
-      4: { step: '4 / 6', title: `WHY YOU NEED FIVE OPERATORS · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'A match requires five contracted operators. A beginner-friendly group normally mixes an Entry, Support, Anchor and Flanker with a Marksman or Flex, but duplicates are valid when the attributes, weapons and plan make sense. Keep enough wage and cash headroom for the opening weeks.', route: 'market', cta: 'SIGN MORE OPERATORS' },
+      2: { step: '2 / 6', title: 'WHY OPERATOR PROFILES MATTER', body: 'Start with the role guide, then use Active Five Needs and What This Operator Adds to see how a candidate changes the team. Compare ability, potential, role attributes, medical risk, fee and weekly wage before deciding.', route: 'profile', cta: 'VIEW AN OPERATOR PROFILE' },
+      3: { step: '3 / 6', title: 'WHY THE FIRST SIGNING MATTERS', body: 'Choose an affordable operator whose strengths begin to cover one of the Active Five needs. Beginner recommendations explain immediate fit, affordability and potential, but they are optional: compare candidates and choose the direction you want for the club.', route: 'market', cta: 'RETURN TO RECRUITMENT' },
+      4: { step: '4 / 6', title: `WHY YOU NEED FIVE OPERATORS · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'A match requires five contracted operators. Watch the needs panel after each signing: aim to cover opening fights, support, holding ground, alternate angles, range and coordination without treating the list as a compulsory formation. Keep enough wage and cash headroom for the opening weeks.', route: 'market', cta: 'SIGN MORE OPERATORS' },
       5: { step: '5 / 6', title: 'WHY DEPLOYMENT ORDER MATTERS', body: 'The first five squad positions are the active operators who deploy. Reorder the squad, check readiness and then use Tactics and Team Armoury to give each operator a suitable job and loadout.', route: 'operators', cta: 'REVIEW ACTIVE OPERATORS' },
       6: { step: '6 / 6', title: 'WHY THE DEBRIEF MATTERS', body: 'The match plays automatically from an operator viewpoint. The report then connects your preparation to what actually happened, so the next training, tactical or loadout change has a clear reason.', route: 'play', cta: 'OPEN MATCH CONTROL' }
     };
@@ -38630,6 +38909,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const SPONSOR_ROUND_BUMPER_TAIL = 0.25;
   const sponsorRoundBumperState = { phase: 'idle', timer: 0, brandId: null, nextRound: 0 };
 
+  const RECRUITMENT_TEAM_FUNCTIONS = Object.freeze([
+    { id: 'opening', label: 'OPENING FIGHTS', short: 'Start fights', roles: ['entry'], attributes: ['mobility','handling'], missing: 'No reliable fight starter' },
+    { id: 'trading', label: 'TRADE & SUPPORT', short: 'Follow and trade', roles: ['support'], attributes: ['awareness','handling'], missing: 'Limited follow-up and trade support' },
+    { id: 'holding', label: 'HOLDING GROUND', short: 'Hold key space', roles: ['anchor'], attributes: ['resilience','awareness'], missing: 'No reliable ground holder' },
+    { id: 'angles', label: 'ALTERNATE ANGLES', short: 'Create side pressure', roles: ['flanker'], attributes: ['mobility','awareness'], missing: 'No natural alternate-route threat' },
+    { id: 'range', label: 'LONG-RANGE CONTROL', short: 'Control sightlines', roles: ['marksman'], attributes: ['marksmanship','awareness'], missing: 'Limited long-range control' },
+    { id: 'coordination', label: 'COORDINATION', short: 'Read and organise', roles: ['caller'], attributes: ['awareness','resilience'], missing: 'No clear in-round coordinator' }
+  ]);
+  let recruitmentComparisonIds = [];
+  let recruitmentLastSigningUpdate = null;
+
   const RECRUITMENT_AGE_BANDS = Object.freeze({
     any: { id: 'any', label: 'ANY AGE', min: 18, max: 36 },
     prospect: { id: 'prospect', label: '18–23', min: 18, max: 23 },
@@ -39351,21 +39641,230 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return `<span class="recruitment-knowledge ${knowledge >= 80 ? 'complete' : knowledge >= 55 ? 'developing' : ''}"><i><b style="width:${knowledge}%"></b></i><small>${knowledge}% KNOWLEDGE</small></span>`;
   }
 
-  function renderRecruitmentPlayerRow(player) {
+  function recruitmentFunctionContribution(player, functionDef) {
+    if (!player || !functionDef) return 0;
+    const primary = String(player.role || 'flex');
+    const secondary = String(player.secondaryRole || 'flex');
+    let score = functionDef.roles.includes(primary) ? 1 : functionDef.roles.includes(secondary) ? 0.58 : 0;
+    if (primary === 'flex') score = Math.max(score, 0.42);
+    else if (secondary === 'flex') score = Math.max(score, 0.24);
+    const values = functionDef.attributes.map(key => Number(player.stats?.[key]) || 0);
+    const average = values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+    if (average >= 7.5) score += 0.22;
+    else if (average >= 6) score += 0.12;
+    return clamp(score, 0, 1.25);
+  }
+
+  function recruitmentCompositionReport(squad = careerState.squad || []) {
+    const players = Array.isArray(squad) ? squad.slice(0, TEAM_REQUIRED_STARTERS) : [];
+    const functions = RECRUITMENT_TEAM_FUNCTIONS.map(item => {
+      const score = players.reduce((sum, player) => sum + recruitmentFunctionContribution(player, item), 0);
+      const state = score >= 0.84 ? 'covered' : score >= 0.34 ? 'partial' : 'missing';
+      return { ...item, score, state };
+    });
+    return {
+      players,
+      functions,
+      covered: functions.filter(item => item.state === 'covered'),
+      partial: functions.filter(item => item.state === 'partial'),
+      missing: functions.filter(item => item.state === 'missing')
+    };
+  }
+
+  function recruitmentEstimatedDecisionValue(value, knowledge, minValue = 0, maxValue = 100) {
+    if (knowledge >= 88) return Number(value) || 0;
+    const range = recruitmentEstimateRange(value, knowledge, minValue, maxValue, true);
+    return (Number(range.low) + Number(range.high)) * 0.5;
+  }
+
+  function recruitmentRelevantRoleAttributes(player, role = teamRoleById(player?.role), knowledge = recruitmentKnowledge(player)) {
+    const guide = teamRoleBeginnerGuide(role.id);
+    const labels = guide.lookFor === 'BALANCED ATTRIBUTES'
+      ? ['MARKSMANSHIP', 'HANDLING', 'AWARENESS', 'MOBILITY', 'RESILIENCE']
+      : guide.lookFor.split(' · ');
+    const keys = { MARKSMANSHIP: 'marksmanship', HANDLING: 'handling', AWARENESS: 'awareness', MOBILITY: 'mobility', RESILIENCE: 'resilience' };
+    return labels.map(label => {
+      const key = keys[label] || label.toLowerCase();
+      return `${label} ${recruitmentNumericDisplay(Number(player?.stats?.[key]) || 0, knowledge, 0, 10)}`;
+    }).join(' · ');
+  }
+
+  function recruitmentCashAfterDisplay(player, knowledge = recruitmentKnowledge(player)) {
+    const cash = Number(careerState.credits) || 0;
+    const fee = Number(player?.fee) || 0;
+    if (knowledge >= 72) return teamCredits(cash - fee);
+    const range = recruitmentEstimateRange(fee, knowledge, 0, Math.max(500000, fee * 2), true);
+    const round = amount => Math.round(amount / 1000) * 1000;
+    const low = round(cash - Number(range.high || 0));
+    const high = round(cash - Number(range.low || 0));
+    return `${teamCredits(low)}–${teamCredits(high)}`;
+  }
+
+  function recruitmentCandidateAssessment(player, squad = careerState.squad || []) {
+    const before = recruitmentCompositionReport(squad);
+    const after = recruitmentCompositionReport([...before.players, player].slice(0, TEAM_REQUIRED_STARTERS));
+    const newlyCovered = after.functions.filter(item => item.state === 'covered' && before.functions.find(previous => previous.id === item.id)?.state !== 'covered');
+    const improved = after.functions.filter(item => {
+      const previous = before.functions.find(entry => entry.id === item.id);
+      return previous && item.score >= previous.score + 0.3 && !newlyCovered.some(covered => covered.id === item.id);
+    });
+    const role = teamRoleById(player.role);
+    const guide = teamRoleBeginnerGuide(role.id);
+    const knowledge = recruitmentKnowledge(player);
+    const overall = teamPlayerOverall(player);
+    const decisionOverall = recruitmentEstimatedDecisionValue(overall, knowledge, 0, 100);
+    const decisionPotential = recruitmentEstimatedDecisionValue(Number(player.potential) || 0, knowledge, 0, 100);
+    const squadAverage = before.players.length ? before.players.reduce((sum, item) => sum + teamPlayerOverall(item), 0) / before.players.length : 0;
+    const potentialGap = Math.max(0, decisionPotential - decisionOverall);
+    const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill();
+    const affordableCash = Number(careerState.credits) >= Number(player.fee || 0);
+    const affordableWage = wageBill + Number(player.wage || 0) <= Number(careerState.wageBudget || 0);
+    const medical = Number(player.injuryVulnerability) || 0;
+    const fit = typeof tacticalPlayerRoleSuitability === 'function' ? tacticalPlayerRoleSuitability(player, role.id) : { score: overall };
+    const roleFit = Math.round(Number(fit?.score) || overall);
+    const decisionRoleFit = recruitmentEstimatedDecisionValue(roleFit, knowledge, 0, 100);
+    let headline = 'STRENGTHENS ROLE DEPTH';
+    let tone = 'neutral';
+    if (newlyCovered.length) { headline = 'FILLS AN IMPORTANT GAP'; tone = 'positive'; }
+    else if (before.players.length && decisionOverall >= squadAverage + 4) { headline = 'RAISES IMMEDIATE QUALITY'; tone = 'positive'; }
+    else if (potentialGap >= 12) { headline = 'DEVELOPMENT PROSPECT'; tone = 'prospect'; }
+    const detail = newlyCovered.length
+      ? `Adds ${newlyCovered.map(item => item.short.toLowerCase()).join(' and ')} to the current active-five plan.`
+      : improved.length
+        ? `Strengthens ${improved.slice(0, 2).map(item => item.short.toLowerCase()).join(' and ')} without forcing a specific formation.`
+        : `${role.name} profile: ${guide.plain}`;
+    const cautions = [];
+    if (!affordableCash) cautions.push('Transfer fee exceeds current cash');
+    if (!affordableWage) cautions.push('Weekly wage exceeds current headroom');
+    if (knowledge >= 75 && medical >= 72) cautions.push('High medical vulnerability');
+    else if (knowledge >= 75 && medical >= 48) cautions.push('Moderate medical vulnerability');
+    else if (knowledge >= 48 && knowledge < 75) cautions.push('Medical assessment remains preliminary');
+    if (!cautions.length) cautions.push(guide.caution);
+    return {
+      player, before, after, newlyCovered, improved, role, guide, knowledge, overall, decisionOverall, decisionPotential, potentialGap,
+      roleFit, decisionRoleFit, roleFitDisplay: recruitmentNumericDisplay(roleFit, knowledge, 0, 100), affordableCash, affordableWage,
+      affordable: affordableCash && affordableWage, medical, headline, tone, detail,
+      caution: cautions.join(' · '), cashAfter: Number(careerState.credits) - Number(player.fee || 0),
+      wageAfter: wageBill + Number(player.wage || 0)
+    };
+  }
+
+  function recruitmentRecommendationMap(players = careerState.market || []) {
+    const candidates = (Array.isArray(players) ? players : []).map(player => {
+      const assessment = recruitmentCandidateAssessment(player);
+      const gapScore = assessment.newlyCovered.length * 34 + assessment.improved.length * 9;
+      const medicalPenalty = assessment.knowledge >= 75 ? (assessment.medical >= 72 ? 13 : assessment.medical >= 48 ? 5 : 0) : 0;
+      return {
+        player,
+        assessment,
+        immediate: gapScore + assessment.decisionOverall * 1.2 + assessment.decisionRoleFit * 0.28 - medicalPenalty,
+        affordable: assessment.affordable ? gapScore + assessment.decisionOverall + assessment.potentialGap * 0.35 - (Number(player.fee) / Math.max(1, Number(careerState.credits))) * 18 : -9999,
+        development: assessment.decisionPotential + assessment.potentialGap * 1.25 - medicalPenalty - (Number(player.fee) / 100000)
+      };
+    });
+    const recommendations = new Map();
+    const used = new Set();
+    const choose = (key, label) => {
+      const ranked = candidates.slice().sort((a, b) => b[key] - a[key]);
+      const choice = ranked.find(item => !used.has(item.player.id)) || ranked[0];
+      if (!choice || choice[key] <= -9000) return;
+      used.add(choice.player.id);
+      const labels = recommendations.get(choice.player.id) || [];
+      labels.push(label);
+      recommendations.set(choice.player.id, labels);
+    };
+    choose('immediate', 'BEST IMMEDIATE FIT');
+    choose('affordable', 'BEST AFFORDABLE OPTION');
+    choose('development', 'BEST DEVELOPMENT PROSPECT');
+    return recommendations;
+  }
+
+  function recruitmentRecommendationBadges(player, recommendationMap) {
+    const labels = recommendationMap?.get(player.id) || [];
+    return labels.length ? `<span class="recruitment-recommendation-badges">${labels.map(label => `<b>${escapeCareerHtml(label)}</b>`).join('')}</span>` : '';
+  }
+
+  function recruitmentCandidateImpactMarkup(player, recommendationMap) {
+    const assessment = recruitmentCandidateAssessment(player);
+    return `<div class="recruitment-candidate-impact ${assessment.tone}">
+      <div><span>WHAT THIS OPERATOR ADDS</span><strong>${escapeCareerHtml(assessment.headline)}</strong><p>${escapeCareerHtml(assessment.detail)}</p></div>
+      <aside><span>ROLE FIT</span><strong>${escapeCareerHtml(assessment.roleFitDisplay)}/100</strong><small>${escapeCareerHtml(assessment.caution)}</small></aside>
+      ${recruitmentRecommendationBadges(player, recommendationMap)}
+    </div>`;
+  }
+
+  function recruitmentSigningUpdateMarkup() {
+    const update = recruitmentLastSigningUpdate;
+    if (!update) return '';
+    return `<section class="recruitment-signing-update ${update.newlyCovered.length ? 'positive' : ''}" aria-live="polite">
+      <div><span>ACTIVE FIVE UPDATE</span><strong>${escapeCareerHtml(update.playerName)} ADDED</strong><p>${escapeCareerHtml(update.detail)}</p></div>
+      <button type="button" data-recruitment-dismiss-update aria-label="Dismiss active five update">×</button>
+    </section>`;
+  }
+
+  function recruitmentNeedsPanelMarkup() {
+    const report = recruitmentCompositionReport();
+    const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill();
+    const places = Math.max(0, TEAM_REQUIRED_STARTERS - report.players.length);
+    const priority = [...report.missing, ...report.partial].slice(0, 3);
+    return `${recruitmentSigningUpdateMarkup()}<section class="recruitment-needs-panel" data-management-target-id="recruitment:needs">
+      <header><div><span>ACTIVE FIVE NEEDS</span><strong>${report.players.length} / ${TEAM_REQUIRED_STARTERS} OPERATORS CONTRACTED</strong><p>Build complementary team functions. Duplicate roles remain valid when attributes, weapons and the tactical plan support them.</p></div><b>${places ? `${places} PLACE${places === 1 ? '' : 'S'} LEFT` : 'ACTIVE FIVE COMPLETE'}</b></header>
+      <div class="recruitment-function-grid">${report.functions.map(item => `<article class="${item.state}"><span>${escapeCareerHtml(item.label)}</span><strong>${item.state === 'covered' ? 'COVERED' : item.state === 'partial' ? 'PARTIAL' : 'MISSING'}</strong><small>${escapeCareerHtml(item.state === 'missing' ? item.missing : item.short)}</small></article>`).join('')}</div>
+      <footer><div><span>PRIORITY NEEDS</span><strong>${priority.length ? priority.map(item => escapeCareerHtml(item.missing)).join(' · ') : 'No major functional gap in the active five'}</strong></div><div><span>TRANSFER CASH</span><strong>${teamCredits(careerState.credits)}</strong></div><div><span>WEEKLY WAGES</span><strong>${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)}</strong></div></footer>
+    </section>`;
+  }
+
+  function recruitmentPruneComparisonIds() {
+    const marketIds = new Set((careerState.market || []).map(player => String(player.id)));
+    recruitmentComparisonIds = recruitmentComparisonIds.filter(id => marketIds.has(String(id))).slice(0, 3);
+    return recruitmentComparisonIds;
+  }
+
+  function recruitmentComparisonPanelMarkup() {
+    recruitmentPruneComparisonIds();
+    const players = recruitmentComparisonIds.map(id => transferMarketPlayer(id)).filter(Boolean);
+    if (!players.length) return `<section class="recruitment-comparison-panel empty"><header><div><span>CANDIDATE COMPARISON</span><strong>COMPARE UP TO THREE OPERATORS</strong><p>Use Compare on candidate or shortlist cards to see role purpose, relevant attributes, medical risk, cost and active-five impact side by side.</p></div></header></section>`;
+    return `<section class="recruitment-comparison-panel"><header><div><span>CANDIDATE COMPARISON</span><strong>${players.length} OF 3 SELECTED</strong><p>Figures respect current scouting knowledge. Team-impact notes update against your contracted operators.</p></div><button type="button" data-recruitment-clear-comparison>CLEAR</button></header><div class="recruitment-comparison-grid">${players.map(player => {
+      const assessment = recruitmentCandidateAssessment(player);
+      const role = teamRoleById(player.role);
+      const guide = teamRoleBeginnerGuide(role.id);
+      const knowledge = recruitmentKnowledge(player);
+      const relevant = recruitmentRelevantRoleAttributes(player, role, knowledge);
+      return `<article><button type="button" data-recruitment-compare="${escapeCareerHtml(player.id)}" aria-label="Remove ${escapeCareerHtml(player.name)} from comparison">×</button><span>${escapeCareerHtml(role.name)} · ${escapeCareerHtml(guide.job)}</span><strong>${escapeCareerHtml(player.name)}</strong><p>${escapeCareerHtml(guide.plain)}</p><dl><div><dt>ABILITY</dt><dd>${recruitmentAbilityDisplay(player)}</dd></div><div><dt>POTENTIAL</dt><dd>${recruitmentAbilityDisplay(player, true)}</dd></div><div><dt>ROLE ATTRIBUTES</dt><dd>${escapeCareerHtml(relevant)}</dd></div><div><dt>MEDICAL RISK</dt><dd>${escapeCareerHtml(recruitmentMedicalDisplay(player))}</dd></div><div><dt>FEE</dt><dd>${escapeCareerHtml(recruitmentMoneyDisplay(player.fee, recruitmentKnowledge(player)))}</dd></div><div><dt>WAGE</dt><dd>${escapeCareerHtml(recruitmentMoneyDisplay(player.wage, recruitmentKnowledge(player)))} / W</dd></div><div><dt>CASH AFTER</dt><dd class="${assessment.affordableCash ? '' : 'warning'}">${escapeCareerHtml(recruitmentCashAfterDisplay(player, knowledge))}</dd></div><div><dt>ACTIVE FIVE CHANGE</dt><dd>${escapeCareerHtml(assessment.detail)}</dd></div></dl></article>`;
+    }).join('')}</div></section>`;
+  }
+
+  function recruitmentRecordSigningUpdate(player, squadBefore = []) {
+    if (!player) return null;
+    const before = recruitmentCompositionReport(squadBefore);
+    const after = recruitmentCompositionReport([...before.players, player].slice(0, TEAM_REQUIRED_STARTERS));
+    const newlyCovered = after.functions.filter(item => item.state === 'covered' && before.functions.find(previous => previous.id === item.id)?.state !== 'covered');
+    const remaining = after.missing[0] || after.partial[0] || null;
+    const detail = newlyCovered.length
+      ? `${newlyCovered.map(item => item.label.toLowerCase()).join(' and ')} ${newlyCovered.length === 1 ? 'is' : 'are'} now covered.${remaining ? ` Consider ${remaining.missing.toLowerCase()} next.` : ' The active five has no major functional gap.'}`
+      : `${teamRoleById(player.role).name} depth improved.${remaining ? ` The clearest remaining need is ${remaining.missing.toLowerCase()}.` : ' The active five has no major functional gap.'}`;
+    recruitmentLastSigningUpdate = { playerId: player.id, playerName: player.name, newlyCovered, detail };
+    recruitmentComparisonIds = recruitmentComparisonIds.filter(id => id !== player.id);
+    return recruitmentLastSigningUpdate;
+  }
+
+  function renderRecruitmentPlayerRow(player, recommendationMap = null) {
     const knowledge = recruitmentKnowledge(player);
     const shortlisted = recruitmentShortlisted(player.id);
+    const compared = recruitmentComparisonIds.includes(String(player.id));
     const role = teamRoleById(player.role);
     const ability = recruitmentAbilityDisplay(player, false);
     const potential = recruitmentAbilityDisplay(player, true);
     const rival = player.rivalBid && Number(player.rivalBid.expiresDay) >= clubCalendarState().absoluteDay ? player.rivalBid : null;
     const windowOpen = recruitmentTransferWindowOpenFor(player);
-    return `<article class="team-market-row recruitment-market-row ${shortlisted ? 'shortlisted' : ''}">
+    return `<article class="team-market-row recruitment-market-row ${shortlisted ? 'shortlisted' : ''} ${compared ? 'compared' : ''}">
       <button class="team-market-player" data-team-profile="${player.id}"><strong>${escapeCareerHtml(player.name)}</strong><small>${role.name} · ${escapeCareerHtml(player.nationality)} · AGE ${player.age}</small>${renderRecruitmentKnowledge(player)}</button>
       <span class="team-market-rating"><strong>${ability}</strong>${recruitmentStarsMarkup(player, false)}<small>${knowledge >= 88 ? 'CONFIRMED ABILITY' : 'ESTIMATED ABILITY'}</small></span>
       <span class="team-market-rating recruitment-potential-rating"><strong>${potential}</strong>${recruitmentStarsMarkup(player, true)}<small>${knowledge >= 88 ? teamPotentialLabel(player) : 'POTENTIAL RANGE'}</small></span>
       <span><strong>${recruitmentMoneyDisplay(player.fee, knowledge)}</strong><small>${rival ? `${escapeCareerHtml(rival.clubName)} BID PENDING` : knowledge >= 72 ? `VALUE ${teamCredits(player.value)}` : 'VALUATION ESTIMATE'}</small></span>
       <span><strong>${recruitmentMoneyDisplay(player.wage, knowledge)}</strong><small>PER WEEK ${windowOpen ? '' : '· FREE AGENTS ONLY'}</small></span>
-      <span class="team-market-actions"><button class="shortlist-toggle ${shortlisted ? 'active' : ''}" data-recruitment-shortlist="${player.id}" aria-pressed="${shortlisted}">${shortlisted ? '★ SHORTLISTED' : '☆ SHORTLIST'}</button><button data-team-profile="${player.id}">REPORT</button><button class="primary" data-transfer-start="${player.id}" ${(careerState.squad || []).length < TEAM_MAX_SQUAD && windowOpen ? '' : 'disabled'}>NEGOTIATE</button></span>
+      <span class="team-market-actions"><button class="shortlist-toggle ${shortlisted ? 'active' : ''}" data-recruitment-shortlist="${player.id}" aria-pressed="${shortlisted}">${shortlisted ? '★ SHORTLISTED' : '☆ SHORTLIST'}</button><button class="compare-toggle ${compared ? 'active' : ''}" data-recruitment-compare="${player.id}" aria-pressed="${compared}">${compared ? '✓ COMPARE' : 'COMPARE'}</button><button data-team-profile="${player.id}">REPORT</button><button class="primary" data-transfer-start="${player.id}" ${(careerState.squad || []).length < TEAM_MAX_SQUAD && windowOpen ? '' : 'disabled'}>NEGOTIATE</button></span>
+      ${recruitmentCandidateImpactMarkup(player, recommendationMap)}
     </article>`;
   }
 
@@ -39381,11 +39880,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function renderRecruitmentShortlist() {
     const players = recruitmentState().shortlistIds.map(id => transferMarketPlayer(id)).filter(Boolean);
-    if (!players.length) return `<section class="recruitment-empty"><strong>SHORTLIST EMPTY</strong><p>Add candidates from the market to monitor their scouting knowledge, rival bids and contract situation.</p><button data-recruitment-view="market">BROWSE MARKET</button></section>`;
-    return `<section class="recruitment-shortlist-grid">${players.map(player => {
+    if (!players.length) return `${recruitmentComparisonPanelMarkup()}<section class="recruitment-empty"><strong>SHORTLIST EMPTY</strong><p>Add candidates from the market to monitor their scouting knowledge, rival bids and contract situation.</p><button data-recruitment-view="market">BROWSE MARKET</button></section>`;
+    const recommendations = recruitmentRecommendationMap(players);
+    return `${recruitmentComparisonPanelMarkup()}<section class="recruitment-shortlist-grid">${players.map(player => {
       const comparison = recruitmentBestComparison(player);
       const knowledge = recruitmentKnowledge(player);
-      return `<article class="recruitment-shortlist-card"><header><div><span>${teamRoleById(player.role).name}</span><strong>${escapeCareerHtml(player.name)}</strong></div><button data-recruitment-shortlist="${player.id}" aria-label="Remove ${escapeCareerHtml(player.name)} from shortlist">×</button></header>${renderRecruitmentKnowledge(player)}<div class="recruitment-shortlist-facts"><div><span>ABILITY</span><strong>${recruitmentAbilityDisplay(player)}</strong></div><div><span>POTENTIAL</span><strong>${recruitmentAbilityDisplay(player, true)}</strong></div><div><span>VALUE</span><strong>${recruitmentMoneyDisplay(player.value, knowledge)}</strong></div><div><span>CONTRACT</span><strong>${knowledge >= 64 ? `${player.contractWeeks} WEEKS` : 'ESTIMATE PENDING'}</strong></div></div><p>${comparison ? `Closest squad comparison: <strong>${escapeCareerHtml(comparison.name)}</strong> (${teamPlayerOverall(comparison)} OVR).` : 'No contracted player available for comparison.'}</p><footer><button data-team-profile="${player.id}">OPEN REPORT</button><button class="primary" data-transfer-start="${player.id}" ${recruitmentTransferWindowOpenFor(player) ? '' : 'disabled'}>NEGOTIATE</button></footer></article>`;
+      const compared = recruitmentComparisonIds.includes(String(player.id));
+      return `<article class="recruitment-shortlist-card ${compared ? 'compared' : ''}"><header><div><span>${teamRoleById(player.role).name}</span><strong>${escapeCareerHtml(player.name)}</strong></div><button data-recruitment-shortlist="${player.id}" aria-label="Remove ${escapeCareerHtml(player.name)} from shortlist">×</button></header>${recruitmentRecommendationBadges(player, recommendations)}${renderRecruitmentKnowledge(player)}<div class="recruitment-shortlist-facts"><div><span>ABILITY</span><strong>${recruitmentAbilityDisplay(player)}</strong></div><div><span>POTENTIAL</span><strong>${recruitmentAbilityDisplay(player, true)}</strong></div><div><span>VALUE</span><strong>${recruitmentMoneyDisplay(player.value, knowledge)}</strong></div><div><span>CONTRACT</span><strong>${knowledge >= 64 ? `${player.contractWeeks} WEEKS` : 'ESTIMATE PENDING'}</strong></div></div><p>${comparison ? `Closest squad comparison: <strong>${escapeCareerHtml(comparison.name)}</strong> (${teamPlayerOverall(comparison)} OVR).` : 'No contracted player available for comparison.'}</p><p class="recruitment-shortlist-impact">${escapeCareerHtml(recruitmentCandidateAssessment(player).detail)}</p><footer><button class="compare-toggle ${compared ? 'active' : ''}" data-recruitment-compare="${player.id}">${compared ? 'REMOVE COMPARISON' : 'COMPARE'}</button><button data-team-profile="${player.id}">OPEN REPORT</button><button class="primary" data-transfer-start="${player.id}" ${recruitmentTransferWindowOpenFor(player) ? '' : 'disabled'}>NEGOTIATE</button></footer></article>`;
     }).join('')}</section>`;
   }
 
@@ -39415,11 +39916,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill();
     const windowState = recruitmentTransferWindowStatus();
     const knowledgeAverage = (careerState.market || []).length ? Math.round((careerState.market || []).reduce((sum, player) => sum + recruitmentKnowledge(player), 0) / careerState.market.length) : 0;
+    const recommendationMap = recruitmentRecommendationMap(careerState.market || []);
     const viewContent = state.view === 'shortlist'
       ? renderRecruitmentShortlist()
       : state.view === 'assignments'
         ? renderRecruitmentAssignments()
-        : `<section class="recruitment-candidate-zone" data-guide-target="recruitment-candidates">${recruitmentRoleGuideMarkup()}<div class="team-market-table-head"><span>PLAYER / REPORT</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div><section class="team-market-list">${(careerState.market || []).map(renderRecruitmentPlayerRow).join('')}</section></section>`;
+        : `<section class="recruitment-candidate-zone" data-guide-target="recruitment-candidates">${recruitmentNeedsPanelMarkup()}${recruitmentRoleGuideMarkup()}${recruitmentComparisonPanelMarkup()}<div class="team-market-table-head"><span>PLAYER / REPORT</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div><section class="team-market-list">${(careerState.market || []).map(player => renderRecruitmentPlayerRow(player, recommendationMap)).join('')}</section></section>`;
     return `${renderTeamTutorialPanel()}${renderClubCalendarStrip()}${renderRecruitmentToolbar(state.view)}
       <div class="menu-hero career-hero team-market-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">RECRUITMENT DEPARTMENT</div><h2>SCOUTING NETWORK // WEEK ${careerState.week}</h2><p>Reports begin as estimates. Shortlist targets, commission role-specific assignments and monitor rival bids before entering a structured negotiation.</p><div class="menu-pill-row"><span class="menu-pill">${(careerState.market || []).length} MARKET PLAYERS</span><span class="menu-pill">${knowledgeAverage}% AVG KNOWLEDGE</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span></div></div><div class="menu-hero-side"><div class="menu-kicker">TRANSFER WINDOW</div><div class="menu-side-operator">${windowState.open ? 'OPEN' : 'CLOSED'}</div><p>${escapeCareerHtml(windowState.phase)} · ${escapeCareerHtml(windowState.detail)}</p></div></div>
       <section class="club-pool-control player-pool"><label><span>PLAYER SEARCH POOL</span><select disabled>${clubCurrentPoolOptions('players')}</select></label><p>${leagueDivisionPoolLabel()} access · Scout quality ${recruitmentScoutQuality()}/100. Promotion unlocks stronger pools.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>REFRESH · ${teamCredits(TEAM_MARKET_REFRESH_COST)}</button></section>
@@ -39604,6 +40106,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const signingBonus = Math.max(0, Number(deal?.signingBonus) || 0);
     if (deal && careerState.credits < Number(deal.offeredFee || 0) + signingBonus) return { ok: false, reason: 'Insufficient credits for the fee and signing bonus.' };
     const snapshot = deal ? { ...deal } : null;
+    const squadBeforeSigning = (careerState.squad || []).slice();
     const result = baseCompleteIncomingTransfer();
     if (!result.ok || !snapshot) return result;
     if (signingBonus > 0) {
@@ -39629,7 +40132,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     recruitmentState().shortlistIds = recruitmentState().shortlistIds.filter(id => id !== result.player.id);
     delete recruitmentState().reports[result.player.id];
     clubAddMail(`${result.player.name} contract commitments`, `${status[0]} status was promised, with ${status[1]} starts expected during the next four weeks. Appearance bonuses are ${teamCredits(result.player.appearanceBonus)} per match.`, 'CONTRACTS', true, 'profile');
+    recruitmentRecordSigningUpdate(result.player, squadBeforeSigning);
     saveCareerState();
+    updateMenuUI();
+    return result;
+  };
+
+  const baseRecruitTeamPlayerDecisionSupport = recruitTeamPlayer;
+  recruitTeamPlayer = function recruitmentDecisionSupportRecruitPlayer(id) {
+    const squadBeforeSigning = (careerState.squad || []).slice();
+    const result = baseRecruitTeamPlayerDecisionSupport(id);
+    if (result?.ok) {
+      recruitmentRecordSigningUpdate(result.player, squadBeforeSigning);
+      updateMenuUI();
+    }
     return result;
   };
 
@@ -39740,6 +40256,32 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   };
 
   function handleRecruitmentCommercialClick(event) {
+    const compare = event.target.closest('[data-recruitment-compare]');
+    if (compare) {
+      const id = String(compare.dataset.recruitmentCompare || '');
+      const index = recruitmentComparisonIds.indexOf(id);
+      if (index >= 0) recruitmentComparisonIds.splice(index, 1);
+      else if (recruitmentComparisonIds.length >= 3) {
+        showManagementBlocked('COMPARISON FULL', 'Remove one of the three selected candidates before adding another.', { returnFocus: compare });
+        return true;
+      } else if (transferMarketPlayer(id)) recruitmentComparisonIds.push(id);
+      showStatus(index >= 0 ? 'REMOVED FROM COMPARISON' : 'ADDED TO COMPARISON');
+      updateMenuUI();
+      return true;
+    }
+    const clearComparison = event.target.closest('[data-recruitment-clear-comparison]');
+    if (clearComparison) {
+      recruitmentComparisonIds = [];
+      updateMenuUI();
+      showStatus('COMPARISON CLEARED');
+      return true;
+    }
+    const dismissUpdate = event.target.closest('[data-recruitment-dismiss-update]');
+    if (dismissUpdate) {
+      recruitmentLastSigningUpdate = null;
+      updateMenuUI();
+      return true;
+    }
     const view = event.target.closest('[data-recruitment-view]');
     if (view) return recruitmentSetView(view.dataset.recruitmentView);
     const shortlist = event.target.closest('[data-recruitment-shortlist]');
@@ -42425,13 +42967,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const reportReviewed = Boolean(careerState.lastRound?.reportReviewed);
     const trainingSet = squad.some(player => player.trainingFocus && player.trainingFocus !== 'none');
     const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+    const firstCareerMatchPlayed = Number(careerState.totalMatches) > 0;
     const steps = [
       { id: 'recruitment', complete: Boolean(tutorial.marketViewed), route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Meet the available operators. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
-      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT AN OPERATOR PROFILE', detail: 'Use the role guide to understand the candidate’s job, then compare ability, potential, medical risk, fee and weekly wage.', action: 'VIEW PROFILE' },
-      { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Read the role guide, then choose one affordable operator whose job makes sense for the team. The fee is immediate and wages continue each week.', action: 'RECRUIT OPERATOR' },
-      { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} active operator places are filled. Use complementary roles rather than judging every candidate by ability alone.`, action: 'CONTINUE RECRUITING' },
+      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT AN OPERATOR PROFILE', detail: 'Read the role guide and What This Operator Adds, then compare ability, potential, medical risk, fee and weekly wage.', action: 'VIEW PROFILE' },
+      { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Use Active Five Needs, optional beginner recommendations and candidate comparison to choose one affordable operator. The fee is immediate and wages continue each week.', action: 'RECRUIT OPERATOR' },
+      { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} active operator places are filled. Check which team functions are covered or still missing before judging the next candidate.`, action: 'CONTINUE RECRUITING' },
       { id: 'lineup', complete: Boolean(tutorial.squadViewed), route: 'operators', label: 'REVIEW THE ACTIVE FIVE OPERATORS', detail: 'The first five squad positions deploy. Reorder them and check readiness, roles and equipment.', action: 'OPEN ACTIVE LINE-UP' },
-      { id: 'plan', complete: planConfirmed, route: 'tactics', label: 'CONFIRM THE MATCH PLAN', detail: 'Choose operator roles, approach, engagement range and team priority, then lock the plan for the match.', action: 'PREPARE TACTICS' },
+      { id: 'plan', complete: planConfirmed || firstCareerMatchPlayed, route: 'tactics', label: 'CONFIRM THE MATCH PLAN', detail: 'Choose operator roles, approach, engagement range and team priority, then lock the plan for the match.', action: 'PREPARE TACTICS' },
       { id: 'match', complete: Number(careerState.totalMatches) > 0, route: 'play', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Watch how well they execute the plan in a first-to-three match.', action: 'OPEN MATCH CONTROL' },
       { id: 'debrief', complete: reportReviewed, route: 'reports', label: 'REVIEW WHAT HAPPENED', detail: 'Read What Worked, Biggest Issue and Next Manager Action before changing the squad or tactics.', action: 'OPEN DEBRIEF' },
       { id: 'training', complete: trainingSet, route: 'training', label: 'SET ONE TRAINING FOCUS', detail: 'Use the debrief recommendation to choose one targeted improvement for an operator.', action: 'OPEN TRAINING' }
@@ -43947,31 +44490,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     syncLiveMenuControls();
     const blockers = careerState.created && typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
     const due = careerState.created && typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue();
+    const tutorialDayRestriction = careerState.created && typeof openingWeekTutorialDayRestriction === 'function' ? openingWeekTutorialDayRestriction() : null;
     if (!pauseMenu && blockers.length && managerStatusTextEl) managerStatusTextEl.textContent = `MUST RESPOND · ${blockers.length} ITEM${blockers.length === 1 ? '' : 'S'}`;
     if (menuEndDayBtn) {
-      const unavailable = pauseMenu || !careerState.created || appState === 'match' || matchmakingState?.active;
+      const unavailable = pauseMenu || !careerState.created || appState === 'match' || matchmakingState?.active || Boolean(tutorialDayRestriction);
       menuEndDayBtn.hidden = pauseMenu;
       menuEndDayBtn.disabled = unavailable;
-      menuEndDayBtn.classList.toggle('matchday', due && !blockers.length);
+      menuEndDayBtn.classList.toggle('matchday', due && !blockers.length && !tutorialDayRestriction);
       menuEndDayBtn.classList.toggle('blocked', !unavailable && blockers.length > 0);
+      menuEndDayBtn.classList.toggle('guided-lock', Boolean(tutorialDayRestriction));
       menuEndDayBtn.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
       const currentDate = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel() : 'Current club day';
       const actionLabel = !careerState.created
         ? 'Create a team to begin the club calendar'
-        : blockers.length
-          ? `End day locked · open Operations overview · ${typeof clubEndDayBlockSummary === 'function' ? clubEndDayBlockSummary() : blockers[0].label}`
-          : `End day · advance from ${currentDate}`;
+        : tutorialDayRestriction
+          ? `${tutorialDayRestriction.title} · ${tutorialDayRestriction.detail}`
+          : blockers.length
+            ? `End day locked · open Operations overview · ${typeof clubEndDayBlockSummary === 'function' ? clubEndDayBlockSummary() : blockers[0].label}`
+            : `End day · advance from ${currentDate}`;
       menuEndDayBtn.setAttribute('aria-label', actionLabel);
       menuEndDayBtn.title = actionLabel;
-      if (managerDateDayEl) managerDateDayEl.textContent = blockers.length ? 'END DAY LOCKED' : 'END DAY';
+      if (managerDateDayEl) managerDateDayEl.textContent = tutorialDayRestriction ? 'END DAY UNAVAILABLE' : blockers.length ? 'END DAY LOCKED' : 'END DAY';
       const compactHeaderDate = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : currentDate;
       if (managerDateMetaEl) managerDateMetaEl.textContent = !careerState.created
         ? 'CREATE TEAM TO BEGIN'
-        : blockers.length
-          ? `${blockers.length} RESPONSE${blockers.length === 1 ? '' : 'S'}`
-          : compactHeaderDate;
+        : tutorialDayRestriction
+          ? 'FOLLOW FIRST MATCH GUIDE'
+          : blockers.length
+            ? `${blockers.length} RESPONSE${blockers.length === 1 ? '' : 'S'}`
+            : compactHeaderDate;
       if (managerEndDayBlockBadgeEl) {
-        managerEndDayBlockBadgeEl.hidden = blockers.length <= 0;
+        managerEndDayBlockBadgeEl.hidden = tutorialDayRestriction || blockers.length <= 0;
         managerEndDayBlockBadgeEl.textContent = blockers.length > 9 ? '9+' : String(blockers.length);
       }
     }
@@ -44500,6 +45049,340 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     updateOwnedOperatorTelemetry();
     syncMatchSpeedControls();
     if (scoreboardOpen) updateScoreboard();
+  }
+
+/*
+ * Strikewatch source module: 55-opening-week.js
+ * Purpose: Opening-week agenda, guided calendar access, next-event progression and day-change summaries.
+ *
+ * This module is presentation/workflow only. It does not change combat, recruitment balance,
+ * save schema 19 or diagnostics schema 1.
+ */
+
+  const OPENING_WEEK_ADVANCE_LIMIT = 21;
+  const OPENING_WEEK_TRAINING_MILESTONES = Object.freeze([25, 50, 75, 100]);
+  let openingWeekAdvanceSummaryState = null;
+  let openingWeekBatchAdvanceActive = false;
+
+  function openingWeekTutorialDayRestriction() {
+    if (!careerState.created || typeof firstMatchGuidance !== 'function') return null;
+    const guide = firstMatchGuidance();
+    if (!guide) return null;
+    const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+    const calendarNeeded = guide.id === 'match' && planConfirmed && Number(days) > 0;
+    if (calendarNeeded) return null;
+    return {
+      active: true,
+      id: guide.id,
+      route: guide.route || 'play',
+      label: guide.action || guide.label || 'CONTINUE THE FIRST MATCH GUIDE',
+      title: 'END DAY IS NOT NEEDED YET',
+      detail: `Complete the current First Match Guide objective first: ${guide.label}. The calendar unlocks automatically when advancing time becomes necessary.`
+    };
+  }
+
+  function openingWeekCurrentOpponent() {
+    const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+    if (!fixture || typeof leagueClubById !== 'function' || typeof leagueFixtureOpponentId !== 'function') return null;
+    return leagueClubById(leagueFixtureOpponentId(fixture));
+  }
+
+  function openingWeekOpponentDepth() {
+    const opponent = openingWeekCurrentOpponent();
+    const report = opponent && typeof oppositionReportForClub === 'function' ? oppositionReportForClub(opponent) : null;
+    return clamp(Math.round(Number(report?.depth) || 0), 0, 100);
+  }
+
+  function openingWeekTrainingSnapshot() {
+    const result = {};
+    for (const player of careerState.squad || []) {
+      const focus = String(player.trainingFocus || 'none');
+      const progress = typeof playerTrainingProgress === 'function' ? playerTrainingProgress(player, focus) : Number(player.trainingProgress?.[focus]) || 0;
+      result[player.id] = {
+        id: player.id,
+        name: player.name,
+        focus,
+        progress: Number(progress.toFixed(1)),
+        stats: Object.fromEntries(Object.keys(CAREER_STAT_DEFS || {}).map(key => [key, Number(player.stats?.[key]) || 0]))
+      };
+    }
+    return result;
+  }
+
+  function openingWeekAssignmentSignature() {
+    return (careerState.recruitment?.assignments || [])
+      .map(item => `${item.id}:${item.status}:${Math.max(0, Number(item.daysRemaining) || 0)}`)
+      .sort()
+      .join('|');
+  }
+
+  function openingWeekTransferSignature() {
+    const state = typeof transferState === 'function' ? transferState() : null;
+    const incoming = state?.activeIncoming ? `${state.activeIncoming.id}:${state.activeIncoming.status}` : 'none';
+    const outgoing = (state?.outgoingOffers || []).map(item => `${item.id}:${item.status}`).sort().join('|');
+    return `${incoming}::${outgoing}`;
+  }
+
+  function openingWeekClubSnapshot() {
+    const starters = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+    const readiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + teamReadinessScore(player), 0) / starters.length) : 0;
+    const fatigue = starters.length ? Math.round(starters.reduce((sum, player) => sum + Math.max(0, Number(player.fatigue) || 0), 0) / starters.length) : 0;
+    const medical = starters.filter(player => typeof playerInjuryActive === 'function' ? playerInjuryActive(player) : Boolean(player.injury?.active)).length;
+    const suitability = typeof clubTacticalSuitabilityReport === 'function' ? clubTacticalSuitabilityReport() : null;
+    const fixture = typeof teamCommandFixtureSnapshot === 'function' ? teamCommandFixtureSnapshot() : null;
+    const reportDepth = openingWeekOpponentDepth();
+    return {
+      absoluteDay: Math.max(0, Number(careerState.calendar?.absoluteDay) || 0),
+      date: typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : `WEEK ${careerState.week}`,
+      week: Math.max(1, Number(careerState.week) || 1),
+      daysUntilFixture: typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null,
+      credits: Math.round(Number(careerState.credits) || 0),
+      readiness,
+      fatigue,
+      medical,
+      lineupCount: starters.length,
+      planFit: Math.round(Number(suitability?.overall) || 0),
+      familiarity: Math.round(Number(suitability?.familiarity?.score) || 0),
+      opponentDepth: reportDepth,
+      winChance: Math.round(Number(fixture?.expectation?.winChance) || 0),
+      training: openingWeekTrainingSnapshot(),
+      blockers: (typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : []).map(item => String(item.id || item.label)).sort(),
+      unreadMailIds: (careerState.mail || []).filter(item => !item.read).map(item => String(item.id)).sort(),
+      assignmentSignature: openingWeekAssignmentSignature(),
+      transferSignature: openingWeekTransferSignature()
+    };
+  }
+
+  function openingWeekMilestone(progress) {
+    const value = Number(progress) || 0;
+    let milestone = 0;
+    for (const threshold of OPENING_WEEK_TRAINING_MILESTONES) if (value >= threshold) milestone = threshold;
+    return milestone;
+  }
+
+  function openingWeekMeaningfulEvent(before, after) {
+    const newBlockers = after.blockers.filter(id => !before.blockers.includes(id));
+    if (newBlockers.length) return { type: 'decision', label: 'A MANAGEMENT DECISION REQUIRES ATTENTION', route: 'play' };
+    if (after.daysUntilFixture === 0 && before.daysUntilFixture !== 0) return { type: 'fixture', label: 'THE NEXT LEAGUE FIXTURE IS READY', route: 'play' };
+    if (after.medical < before.medical) return { type: 'medical', label: 'AN OPERATOR HAS BEEN CLEARED BY MEDICAL STAFF', route: 'training' };
+    if (after.assignmentSignature !== before.assignmentSignature) return { type: 'scouting', label: 'A RECRUITMENT ASSIGNMENT HAS UPDATED', route: 'market' };
+    if (after.transferSignature !== before.transferSignature) return { type: 'transfer', label: 'TRANSFER ACTIVITY HAS UPDATED', route: 'transfers' };
+    if (Math.floor(after.opponentDepth / 20) > Math.floor(before.opponentDepth / 20)) return { type: 'opposition', label: 'OPPOSITION KNOWLEDGE REACHED A NEW LEVEL', route: 'league' };
+    for (const [id, current] of Object.entries(after.training)) {
+      const previous = before.training[id];
+      if (!previous || current.focus === 'none') continue;
+      const statImproved = Object.keys(current.stats).some(key => current.stats[key] > (previous.stats?.[key] || 0));
+      if (statImproved) return { type: 'training', label: `${current.name.toUpperCase()} COMPLETED A TRAINING IMPROVEMENT`, route: 'training' };
+      if (openingWeekMilestone(current.progress) > openingWeekMilestone(previous.progress)) return { type: 'training', label: `${current.name.toUpperCase()} REACHED A TRAINING MILESTONE`, route: 'training' };
+    }
+    return null;
+  }
+
+  function openingWeekSummaryRows(before, after) {
+    const rows = [];
+    const add = (label, value, detail, route, tone = 'neutral') => rows.push({ label, value, detail, route, tone });
+    const readinessDelta = after.readiness - before.readiness;
+    const fatigueDelta = after.fatigue - before.fatigue;
+    const familiarityDelta = after.familiarity - before.familiarity;
+    const depthDelta = after.opponentDepth - before.opponentDepth;
+    if (readinessDelta) add('TEAM READINESS', `${before.readiness} → ${after.readiness}`, `${readinessDelta > 0 ? '+' : ''}${readinessDelta} across the active five.`, 'operators', readinessDelta > 0 ? 'positive' : 'warning');
+    if (fatigueDelta) add('AVERAGE FATIGUE', `${before.fatigue}% → ${after.fatigue}%`, `${fatigueDelta < 0 ? Math.abs(fatigueDelta) + '% recovered' : '+' + fatigueDelta + '% fatigue'}.`, 'training', fatigueDelta < 0 ? 'positive' : 'warning');
+    if (familiarityDelta) add('TACTICAL FAMILIARITY', `${before.familiarity} → ${after.familiarity}`, `${familiarityDelta > 0 ? '+' : ''}${familiarityDelta} plan familiarity.`, 'tactics', familiarityDelta > 0 ? 'positive' : 'neutral');
+    if (depthDelta) add('OPPOSITION KNOWLEDGE', `${before.opponentDepth}% → ${after.opponentDepth}%`, `Scouting depth improved by ${depthDelta}%.`, 'league', 'positive');
+    const trainingChanges = [];
+    for (const [id, current] of Object.entries(after.training)) {
+      const previous = before.training[id];
+      if (!previous || current.focus === 'none') continue;
+      const delta = current.progress - previous.progress;
+      const statImproved = Object.keys(current.stats).find(key => current.stats[key] > (previous.stats?.[key] || 0));
+      if (statImproved) trainingChanges.push(`${current.name}: ${CAREER_STAT_DEFS[statImproved]?.label || statImproved} improved`);
+      else if (Math.abs(delta) >= 0.1) trainingChanges.push(`${current.name}: ${delta > 0 ? '+' : ''}${delta.toFixed(1)} training progress`);
+    }
+    if (trainingChanges.length) add('TRAINING', `${trainingChanges.length} UPDATE${trainingChanges.length === 1 ? '' : 'S'}`, trainingChanges.slice(0, 3).join(' · '), 'training', 'positive');
+    const creditsDelta = after.credits - before.credits;
+    if (creditsDelta) add('CLUB CASH', `${creditsDelta > 0 ? '+' : '−'}${teamCredits(Math.abs(creditsDelta))}`, creditsDelta > 0 ? 'Income was recorded while time advanced.' : 'Wages, repayments or other scheduled costs were processed.', 'barracks', creditsDelta > 0 ? 'positive' : 'warning');
+    const newBlockers = after.blockers.filter(id => !before.blockers.includes(id));
+    if (newBlockers.length) add('ACTION REQUIRED', `${newBlockers.length} ITEM${newBlockers.length === 1 ? '' : 'S'}`, 'Time progression stopped because a management response is now required.', 'play', 'urgent');
+    if (!rows.length) add('CLUB STATUS', 'NO MAJOR CHANGE', 'Routine training, recovery and administration were processed.', 'calendar', 'neutral');
+    return rows;
+  }
+
+  function openingWeekRecordAdvance(before, after, event = null, mode = 'day') {
+    const days = Math.max(0, after.absoluteDay - before.absoluteDay);
+    openingWeekAdvanceSummaryState = {
+      mode,
+      days,
+      before,
+      after,
+      event,
+      rows: openingWeekSummaryRows(before, after),
+      createdAt: Date.now()
+    };
+    return openingWeekAdvanceSummaryState;
+  }
+
+  function openingWeekAdvanceToNextEvent() {
+    const restriction = openingWeekTutorialDayRestriction();
+    if (restriction) {
+      if (typeof showManagementBlocked === 'function') showManagementBlocked(restriction.title, restriction.detail, { route: restriction.route, routeLabel: restriction.label });
+      else showStatus(restriction.title);
+      return false;
+    }
+    if (!careerState.created || appState === 'match' || menuContext === 'pause' || matchmakingState?.active) return false;
+    const initialBlockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    if (initialBlockers.length) {
+      if (typeof showManagementBlocked === 'function') showManagementBlocked('CALENDAR ADVANCE BLOCKED', initialBlockers[0].detail || initialBlockers[0].label, { route: initialBlockers[0].route || 'play', routeLabel: 'OPEN REQUIRED ACTION' });
+      return false;
+    }
+    const before = openingWeekClubSnapshot();
+    let previous = before;
+    let event = null;
+    let advanced = 0;
+    openingWeekBatchAdvanceActive = true;
+    try {
+      while (advanced < OPENING_WEEK_ADVANCE_LIMIT) {
+        if (typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue()) {
+          event = { type: 'fixture', label: 'THE NEXT LEAGUE FIXTURE IS READY', route: 'play' };
+          break;
+        }
+        const ok = advanceCareerDay();
+        if (!ok) break;
+        advanced++;
+        const current = openingWeekClubSnapshot();
+        event = openingWeekMeaningfulEvent(previous, current);
+        previous = current;
+        if (event) break;
+      }
+    } finally {
+      openingWeekBatchAdvanceActive = false;
+    }
+    const after = openingWeekClubSnapshot();
+    if (!advanced) return false;
+    if (!event) event = { type: 'horizon', label: 'PLANNING HORIZON REACHED', route: 'calendar' };
+    openingWeekRecordAdvance(before, after, event, 'event');
+    updateMenuUI();
+    showStatus(`${advanced} DAY${advanced === 1 ? '' : 'S'} ADVANCED · ${event.label}`);
+    return true;
+  }
+
+  const baseAdvanceCareerDayOpeningWeek = advanceCareerDay;
+  advanceCareerDay = function advanceCareerDayOpeningWeek() {
+    const restriction = openingWeekTutorialDayRestriction();
+    if (restriction) {
+      if (typeof showManagementBlocked === 'function') showManagementBlocked(restriction.title, restriction.detail, { route: restriction.route, routeLabel: restriction.label });
+      else showStatus(restriction.title);
+      return false;
+    }
+    const before = openingWeekClubSnapshot();
+    const ok = baseAdvanceCareerDayOpeningWeek();
+    if (!ok) return false;
+    const after = openingWeekClubSnapshot();
+    if (!openingWeekBatchAdvanceActive) {
+      openingWeekRecordAdvance(before, after, openingWeekMeaningfulEvent(before, after), 'day');
+      updateMenuUI();
+    }
+    return true;
+  };
+
+  const baseClubCanEndDayOpeningWeek = clubCanEndDay;
+  clubCanEndDay = function clubCanEndDayOpeningWeek() {
+    return !openingWeekTutorialDayRestriction() && baseClubCanEndDayOpeningWeek();
+  };
+
+  function openingWeekPreparationChecks() {
+    const starters = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+    const medicallyAvailable = starters.filter(player => !(typeof playerInjuryActive === 'function' ? playerInjuryActive(player) : Boolean(player.injury?.active))).length;
+    const trainingActive = starters.filter(player => player.trainingFocus && player.trainingFocus !== 'none').length;
+    const opponentDepth = openingWeekOpponentDepth();
+    const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+    const rangeWarning = typeof clubWeaponRangeCompatibility === 'function' ? clubWeaponRangeCompatibility() : null;
+    return [
+      { label: 'Active Five selected', complete: starters.length >= TEAM_REQUIRED_STARTERS, route: 'operators', detail: `${starters.length} / ${TEAM_REQUIRED_STARTERS} places filled` },
+      { label: 'Operators medically available', complete: medicallyAvailable >= TEAM_REQUIRED_STARTERS, route: 'training', detail: `${medicallyAvailable} / ${TEAM_REQUIRED_STARTERS} cleared` },
+      { label: 'Training programmes active', complete: starters.length >= TEAM_REQUIRED_STARTERS && trainingActive >= TEAM_REQUIRED_STARTERS, route: 'training', detail: `${trainingActive} / ${TEAM_REQUIRED_STARTERS} assigned` },
+      { label: 'Opposition partially scouted', complete: opponentDepth >= 40, route: 'league', detail: `${opponentDepth}% report depth` },
+      { label: 'Tactical plan confirmed', complete: planConfirmed, route: 'tactics', detail: planConfirmed ? 'Plan locked' : 'Confirmation required' },
+      { label: 'Weapons suit selected range', complete: starters.length >= TEAM_REQUIRED_STARTERS && !rangeWarning, route: 'loadout', detail: starters.length < TEAM_REQUIRED_STARTERS ? 'Complete the Active Five first' : rangeWarning ? rangeWarning.title : 'No major range conflict' }
+    ];
+  }
+
+  function openingWeekAgendaGroups() {
+    const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    const starters = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+    const trainingActive = starters.filter(player => player.trainingFocus && player.trainingFocus !== 'none').length;
+    const medical = starters.filter(player => typeof playerInjuryActive === 'function' ? playerInjuryActive(player) : Boolean(player.injury?.active)).length;
+    const reportDepth = openingWeekOpponentDepth();
+    const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+    const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    const groups = { required: [], recommended: [], optional: [] };
+    const add = (group, label, detail, route, tone = 'standard') => groups[group].push({ label, detail, route, tone });
+    for (const blocker of blockers.slice(0, 4)) add('required', blocker.label, blocker.detail, blocker.route || 'play', 'urgent');
+    if (starters.length < TEAM_REQUIRED_STARTERS) add('required', 'COMPLETE THE ACTIVE FIVE', `${TEAM_REQUIRED_STARTERS - starters.length} more operator${TEAM_REQUIRED_STARTERS - starters.length === 1 ? '' : 's'} required before deployment.`, 'market', 'urgent');
+    if (days === 0 && !blockers.some(item => item.id === 'matchday')) add('required', 'PLAY TODAY\'S LEAGUE FIXTURE', 'The scheduled match is due before the club calendar can continue.', 'play', 'urgent');
+    if (!trainingActive && starters.length) add('recommended', 'SET TRAINING PROGRAMMES', 'Daily development only progresses for operators with an active programme.', 'training', 'important');
+    else if (trainingActive < starters.length) add('recommended', 'COMPLETE TRAINING ASSIGNMENTS', `${starters.length - trainingActive} active operator${starters.length - trainingActive === 1 ? '' : 's'} still lack a programme.`, 'training', 'important');
+    if (medical) add('recommended', 'REVIEW FATIGUE & MEDICAL STATUS', `${medical} active operator${medical === 1 ? '' : 's'} carries a medical flag.`, 'training', 'important');
+    if (!planConfirmed && starters.length >= TEAM_REQUIRED_STARTERS) add('recommended', 'CONFIRM THE MATCH PLAN', 'Lock the active five, roles, approach, range and priority before matchmaking.', 'tactics', 'important');
+    if (reportDepth < 40) add('recommended', 'IMPROVE OPPOSITION KNOWLEDGE', `Current report depth is ${reportDepth}%. Employ or review opposition scouting.`, 'league', 'standard');
+    add('optional', 'EXPLORE TRANSFERS', 'Review market opportunities and outgoing interest without delaying the current plan.', 'transfers');
+    add('optional', 'REVIEW CLUB FINANCES', 'Check payroll, the foundation loan and projected cash reserves.', 'barracks');
+    add('optional', 'BUILD THE BACKROOM TEAM', 'Assistant and opposition-scout appointments can improve weekly planning.', 'staff');
+    return groups;
+  }
+
+  function openingWeekAdvanceSummaryMarkup() {
+    const summary = openingWeekAdvanceSummaryState;
+    if (!summary || !summary.days) return '';
+    return `<section class="opening-week-change-summary"><header><div><span>${summary.mode === 'event' ? 'CALENDAR ADVANCE COMPLETE' : 'DAY COMPLETE'}</span><strong>${summary.days} DAY${summary.days === 1 ? '' : 'S'} ADVANCED</strong><small>${escapeCareerHtml(summary.before.date)} → ${escapeCareerHtml(summary.after.date)}${summary.event ? ` · ${escapeCareerHtml(summary.event.label)}` : ''}</small></div><button type="button" data-opening-week-dismiss-summary aria-label="Dismiss day summary">×</button></header><div>${summary.rows.map(row => `<button class="${escapeCareerHtml(row.tone)}" data-team-route="${escapeCareerHtml(row.route)}"><span>${escapeCareerHtml(row.label)}</span><strong>${escapeCareerHtml(row.value)}</strong><small>${escapeCareerHtml(row.detail)}</small></button>`).join('')}</div></section>`;
+  }
+
+  function openingWeekAgendaColumn(title, subtitle, items, className) {
+    return `<section class="opening-week-agenda-column ${className}"><header><span>${escapeCareerHtml(subtitle)}</span><strong>${escapeCareerHtml(title)}</strong><b>${items.length}</b></header><div>${items.length ? items.map((item, index) => `<button class="${escapeCareerHtml(item.tone)}" data-team-route="${escapeCareerHtml(item.route)}"><i>${String(index + 1).padStart(2, '0')}</i><span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></span><em>OPEN</em></button>`).join('') : '<p>Nothing currently requires attention.</p>'}</div></section>`;
+  }
+
+  function openingWeekAgendaMarkup() {
+    const groups = openingWeekAgendaGroups();
+    const checks = openingWeekPreparationChecks();
+    const complete = checks.filter(item => item.complete).length;
+    const restriction = openingWeekTutorialDayRestriction();
+    const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    return `${openingWeekAdvanceSummaryMarkup()}<section class="opening-week-command"><header><div><span>CLUB DAILY AGENDA</span><strong>${days === null ? 'SEASON TRANSITION' : days === 0 ? 'MATCHDAY' : `${days} DAY${days === 1 ? '' : 'S'} TO NEXT FIXTURE`}</strong><p>Required actions block progression. Recommended preparation improves readiness. Optional activity can be explored without losing the main thread.</p></div><div class="opening-week-advance-actions"><button type="button" data-team-route="calendar">OPEN CALENDAR</button><button type="button" class="primary" data-opening-week-advance ${restriction || groups.required.length ? 'disabled' : ''}>${restriction ? 'FOLLOW FIRST MATCH GUIDE' : groups.required.length ? 'RESOLVE REQUIRED ACTIONS' : 'ADVANCE TO NEXT EVENT'}</button></div></header><div class="opening-week-agenda-grid">${openingWeekAgendaColumn('REQUIRED BEFORE PROGRESSION', 'MUST RESPOND', groups.required, 'required')}${openingWeekAgendaColumn('RECOMMENDED PREPARATION', 'BEST NEXT STEPS', groups.recommended, 'recommended')}${openingWeekAgendaColumn('OPTIONAL CLUB ACTIVITY', 'EXPLORE WHEN READY', groups.optional, 'optional')}</div><section class="opening-week-preparation"><header><div><span>FIXTURE PREPARATION</span><strong>MATCH READINESS · ${complete} / ${checks.length}</strong><small>Advice only: deployment remains possible when the fixture is due, but unresolved weaknesses carry risk.</small></div><b>${Math.round(complete / checks.length * 100)}%</b></header><i><b style="width:${Math.round(complete / checks.length * 100)}%"></b></i><div>${checks.map(item => `<button class="${item.complete ? 'complete' : 'warning'}" data-team-route="${escapeCareerHtml(item.route)}"><span>${item.complete ? '✓' : '!'}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></section></section>`;
+  }
+
+  const baseRenderFoundationPathOpeningWeek = renderFoundationPath;
+  renderFoundationPath = function renderOpeningWeekFoundationPath() {
+    if (!careerState.created) return '';
+    if (typeof firstMatchGuidance === 'function' && firstMatchGuidance()) return '';
+    return openingWeekAgendaMarkup();
+  };
+
+  const baseHandleTeamManagementClickOpeningWeek = handleTeamManagementClick;
+  handleTeamManagementClick = function handleTeamManagementClickOpeningWeek(event) {
+    const advance = event.target.closest?.('[data-opening-week-advance]');
+    if (advance) return openingWeekAdvanceToNextEvent();
+    const dismiss = event.target.closest?.('[data-opening-week-dismiss-summary]');
+    if (dismiss) {
+      openingWeekAdvanceSummaryState = null;
+      updateMenuUI();
+      return true;
+    }
+    return baseHandleTeamManagementClickOpeningWeek(event);
+  };
+
+  function openingWeekFlowForTest() {
+    const restriction = openingWeekTutorialDayRestriction();
+    const checks = openingWeekPreparationChecks();
+    const groups = openingWeekAgendaGroups();
+    const markup = openingWeekAgendaMarkup();
+    return {
+      ok: checks.length === 6 && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
+      restriction,
+      checks,
+      groupCounts: Object.fromEntries(Object.entries(groups).map(([key, value]) => [key, value.length])),
+      snapshot: openingWeekClubSnapshot(),
+      summary: openingWeekAdvanceSummaryState ? { ...openingWeekAdvanceSummaryState, rows: openingWeekAdvanceSummaryState.rows.map(item => ({ ...item })) } : null
+    };
   }
 
 /*
@@ -51003,6 +51886,46 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    openingWeekFlowForTest: () => typeof openingWeekFlowForTest === 'function' ? openingWeekFlowForTest() : { ok: false, reason: 'Opening-week module unavailable' },
+    seedFirstMatchCalendarForTest: () => {
+      if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);
+      careerState.tutorial = careerState.tutorial || {};
+      careerState.tutorial.marketViewed = true;
+      careerState.tutorial.profileViewed = true;
+      careerState.tutorial.squadViewed = true;
+      careerState.totalMatches = 0;
+      careerState.lastRound = null;
+      for (const player of (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS)) player.trainingFocus = 'none';
+      if (typeof clubConfirmMatchPlan === 'function') clubConfirmMatchPlan();
+      saveCareerState({ createBackup: false, reason: 'debug first match calendar seed' });
+      menuContext = 'main';
+      menuTab = 'play';
+      setAppState('menu');
+      updateMenuUI();
+      return {
+        guide: typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null,
+        restriction: typeof openingWeekTutorialDayRestriction === 'function' ? openingWeekTutorialDayRestriction() : null,
+        endDayDisabled: Boolean(menuEndDayBtn?.disabled),
+        daysUntilFixture: typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null
+      };
+    },
+    seedOpeningWeekForTest: () => {
+      if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);
+      careerState.tutorial = careerState.tutorial || {};
+      careerState.tutorial.marketViewed = true;
+      careerState.tutorial.profileViewed = true;
+      careerState.tutorial.squadViewed = true;
+      careerState.totalMatches = Math.max(1, Number(careerState.totalMatches) || 0);
+      careerState.lastRound = { ...(careerState.lastRound || {}), reportReviewed: true };
+      for (const player of (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS)) if (!player.trainingFocus || player.trainingFocus === 'none') player.trainingFocus = 'mobility';
+      if (typeof clubConfirmMatchPlan === 'function') clubConfirmMatchPlan();
+      saveCareerState({ createBackup: false, reason: 'debug opening week seed' });
+      menuContext = 'main';
+      menuTab = 'play';
+      setAppState('menu');
+      updateMenuUI();
+      return typeof openingWeekFlowForTest === 'function' ? openingWeekFlowForTest() : null;
+    },
     freeRoamConfigurationForTest: () => ({
       selectedArenaId: freeRoamSelectedArenaId,
       arenaIds: freeRoamArenaIds(),
@@ -52651,6 +53574,56 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       };
       return { ok: Object.values(checks).every(Boolean), checks, roleIds };
     },
+    recruitmentDecisionSupportForTest: () => {
+      const previous = {
+        created: careerState.created,
+        squad: careerState.squad,
+        market: careerState.market,
+        credits: careerState.credits,
+        wageBudget: careerState.wageBudget,
+        tutorial: careerState.tutorial,
+        comparisons: [...recruitmentComparisonIds],
+        signingUpdate: recruitmentLastSigningUpdate
+      };
+      let markup = '';
+      try {
+        careerState.created = true;
+        careerState.credits = 350000;
+        careerState.wageBudget = 32000;
+        const generated = generateTeamMarket(12334);
+        careerState.squad = [
+          { ...generated[0], id: 'DS-ENTRY', role: 'entry', secondaryRole: 'flex', wage: 3500 },
+          { ...generated[1], id: 'DS-SUPPORT', role: 'support', secondaryRole: 'caller', wage: 3400 }
+        ];
+        careerState.market = generated.slice(2);
+        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: true, completed: false, dismissed: false };
+        recruitmentComparisonIds = careerState.market.slice(0, 3).map(player => player.id);
+        recruitmentRecordSigningUpdate(careerState.squad[1], [careerState.squad[0]]);
+        markup = renderTeamMarketTab();
+      } finally {
+        careerState.created = previous.created;
+        careerState.squad = previous.squad;
+        careerState.market = previous.market;
+        careerState.credits = previous.credits;
+        careerState.wageBudget = previous.wageBudget;
+        careerState.tutorial = previous.tutorial;
+        recruitmentComparisonIds = previous.comparisons;
+        recruitmentLastSigningUpdate = previous.signingUpdate;
+      }
+      const host = document.createElement('div');
+      host.innerHTML = markup;
+      const checks = {
+        activeFiveNeedsVisible: /ACTIVE FIVE NEEDS/.test(markup) && /2 \/ 5 OPERATORS CONTRACTED/.test(markup),
+        functionalCoverageVisible: host.querySelectorAll('.recruitment-function-grid article').length === RECRUITMENT_TEAM_FUNCTIONS.length,
+        contextualCandidateAssessment: Boolean(host.querySelector('.recruitment-candidate-impact')) && /WHAT THIS OPERATOR ADDS/.test(markup),
+        threeBeginnerRecommendations: new Set(Array.from(host.querySelectorAll('.recruitment-recommendation-badges b')).map(node => node.textContent.trim())).size === 3,
+        comparisonShowsThree: host.querySelectorAll('.recruitment-comparison-grid > article').length === 3,
+        comparisonIncludesDecisionFacts: /MEDICAL RISK/.test(markup) && /CASH AFTER/.test(markup) && /ACTIVE FIVE CHANGE/.test(markup),
+        postSigningUpdateVisible: /ACTIVE FIVE UPDATE/.test(markup),
+        transientOnly: !Object.prototype.hasOwnProperty.call(recruitmentState(), 'comparisonIds') && !Object.prototype.hasOwnProperty.call(recruitmentState(), 'lastSigningUpdate')
+      };
+      return { ok: Object.values(checks).every(Boolean), checks };
+    },
     guidanceConsolidationForTest: () => {
       const previous = {
         created: careerState.created,
@@ -52727,7 +53700,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         inductionHasNoCompetingRouteButton: !/data-team-route=/.test(opening.induction),
         sectionTutorialDelayed: opening.sectionTutorial === '',
         commandRecommendationsSuppressed: !/command-directory-recommended/.test(opening.directory),
-        handoffAppearsAfterGuide: !handoff.guide && /FIRST MATCH GUIDE COMPLETE/.test(handoff.foundation)
+        openingWeekAgendaAppearsAfterGuide: !handoff.guide && /CLUB DAILY AGENDA/.test(handoff.foundation) && /MATCH READINESS/.test(handoff.foundation)
       };
       return { ok: Object.values(checks).every(Boolean), checks };
     },
