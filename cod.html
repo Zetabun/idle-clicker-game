@@ -9656,13 +9656,13 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 .menu-tab-copy small { margin-top: 2px; font-size: 6.4px; line-height: 1.2; }
 .menu-tab-chevron { font-size: 14px; }
 
-.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:not([hidden]) {
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action[data-tutorial-order]:not([hidden]) {
   z-index: 2;
   opacity: 1;
   animation: managerTutorialPulse 1.8s ease-in-out infinite;
   box-shadow: inset 0 -3px #7ed1ff, 0 0 0 1px rgba(126,209,255,.42), 0 0 18px rgba(86,184,255,.24);
 }
-.menu-shell[data-tutorial-stage='1'] .manager-topbar-action::after {
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action[data-tutorial-order]::after {
   content: attr(data-tutorial-order);
   position: absolute;
   top: 3px;
@@ -9679,9 +9679,13 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   font-weight: 950;
   box-shadow: 0 3px 8px rgba(0,0,0,.32);
 }
-.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:nth-child(2) { animation-delay: .12s; }
-.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:nth-child(3) { animation-delay: .24s; }
-.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:nth-child(4) { animation-delay: .36s; }
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action[data-tutorial-order='2'] { animation-delay: .12s; }
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action[data-tutorial-order='3'] { animation-delay: .24s; }
+.manager-shortcut-mobile { display: none; }
+@media (max-width: 1023px) {
+  .manager-shortcut-desktop { display: none !important; }
+  .manager-shortcut-mobile { display: inline !important; }
+}
 @keyframes managerTutorialPulse {
   0%, 100% { filter: brightness(1); }
   50% { filter: brightness(1.28); }
@@ -9838,7 +9842,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   .team-tutorial-loan-facts { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .menu-shell[data-tutorial-stage='1'] .manager-topbar-action:not([hidden]) { animation: none; }
+  .menu-shell[data-tutorial-stage='1'] .manager-topbar-action[data-tutorial-order]:not([hidden]) { animation: none; }
 }
 
 
@@ -22201,6 +22205,60 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     --viewer-zoom: calc(var(--armour-viewer-scale, 1.42) * .90);
   }
 }
+
+
+/* Build 12.64 — mobile page-help toggle.
+   The contextual current-page bar is now optional on mobile. The topbar question
+   mark is neutral while hidden and gains the existing gold command accent while
+   the help bar is visible. Desktop keeps the dedicated match shortcut. */
+.manager-help-toggle { display: none; }
+.manager-help-glyph {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 800;
+  font-family: Arial, Helvetica, sans-serif;
+}
+@media (max-width: 1023px) {
+  .menu-shell .manager-match-btn { display: none !important; }
+  .menu-shell .manager-help-toggle {
+    display: flex !important;
+    color: #f4f8fb !important;
+    background: rgba(6, 20, 30, .58) !important;
+  }
+  .menu-shell .manager-help-toggle:hover,
+  .menu-shell .manager-help-toggle:focus-visible {
+    color: #fff !important;
+    background: rgba(29, 55, 68, .82) !important;
+  }
+  .menu-shell .manager-help-toggle.active,
+  .menu-shell .manager-help-toggle[aria-pressed='true'] {
+    color: #ffd36a !important;
+    background: linear-gradient(180deg, rgba(87, 69, 29, .56), rgba(47, 39, 24, .72)) !important;
+    box-shadow: inset 0 -3px #f2a94f !important;
+  }
+  .menu-shell .manager-help-toggle.active .manager-topbar-action-label,
+  .menu-shell .manager-help-toggle[aria-pressed='true'] .manager-topbar-action-label {
+    color: #ffe3a2 !important;
+  }
+  .menu-shell .mobile-command-route-bar { display: none !important; }
+  .menu-shell[data-mobile-help='visible'] .mobile-command-route-bar { display: block !important; }
+}
+@media (min-width: 1024px) {
+  .manager-help-toggle { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .manager-help-toggle { transition: none !important; }
+}
+
+/* Build 12.64 second-pass: keep the persistent department labels aligned with
+   the existing mobile typography diagnostic after the topbar control swap. */
+@media (max-width: 1023px) {
+  .menu-shell .menu-tab-copy strong { font-size: 10px !important; }
+}
 </style>
 </head>
 <body>
@@ -22716,6 +22774,10 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
           <span class="manager-topbar-action-label">CALENDAR</span>
           <span class="manager-action-badge manager-calendar-badge" id="managerCalendarBadge" hidden>0</span>
         </button>
+        <button class="manager-topbar-action manager-help-toggle" id="managerHelpToggleBtn" type="button" data-tutorial-order="3" data-tutorial-label="HELP" aria-pressed="false" aria-expanded="false" aria-controls="mobileCommandRouteBar" aria-label="Show page help" title="Show page help">
+          <span class="manager-help-glyph" aria-hidden="true">?</span>
+          <span class="manager-topbar-action-label">HELP</span>
+        </button>
         <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" data-tutorial-order="3" data-tutorial-label="MATCH" hidden aria-label="Open match control" title="Open match control">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
           <span class="manager-topbar-action-label">MATCH</span>
@@ -23000,6 +23062,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const menuBackBtn = document.getElementById('menuBackBtn');
   const menuForwardBtn = document.getElementById('menuForwardBtn');
   const startMatchBtn = document.getElementById('startMatchBtn');
+  const managerHelpToggleBtn = document.getElementById('managerHelpToggleBtn');
   const managerTopbarActionsEl = document.querySelector('.manager-topbar-actions');
   const legacyFreshGameBtn = document.getElementById('freshGameBtn');
   if (legacyFreshGameBtn) legacyFreshGameBtn.remove();
@@ -23108,9 +23171,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.63';
-  const BUILD_NAME = 'MOBILE NAVIGATION CONSOLIDATION';
-  const BUILD_ID = '12.63.0-armoury-3d-preview-optimisation';
+  const BUILD_VERSION = '12.64';
+  const BUILD_NAME = 'MOBILE PAGE HELP TOGGLE';
+  const BUILD_ID = '12.64.0-mobile-page-help-toggle';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -39649,7 +39712,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     </div>` : '';
     const foundationGuide = item.foundationGuide ? `<div class="team-tutorial-foundation" aria-label="Optional economy and shortcut reference">
       ${item.economyGuide ? clubEconomyGuideMarkup(item.economyGuide) : ''}
-      <div class="team-tutorial-shortcuts"><span><b>1</b> INBOX</span><span><b>2</b> CALENDAR</span><span><b>3</b> MATCH</span><span><b>4</b> END DAY</span></div>
+      <div class="team-tutorial-shortcuts"><span><b>1</b> INBOX</span><span><b>2</b> CALENDAR</span><span class="manager-shortcut-desktop"><b>3</b> MATCH</span><span class="manager-shortcut-mobile"><b>3</b> HELP</span><span><b>4</b> END DAY</span></div>
     </div>` : '';
 
     if (guidance) {
@@ -53651,8 +53714,48 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   let mobileNavigationQuery = '';
   let mobileNavigationLastFocus = null;
 
+  const MOBILE_PAGE_HELP_STORAGE_KEY = 'strikewatch.mobilePageHelpVisible';
+  let mobilePageHelpVisible = false;
+  try {
+    mobilePageHelpVisible = localStorage.getItem(MOBILE_PAGE_HELP_STORAGE_KEY) === '1';
+  } catch (error) {
+    mobilePageHelpVisible = false;
+  }
+
   function mobileNavigationEnabled() {
     return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1023px)').matches;
+  }
+
+  function syncMobilePageHelp(options = {}) {
+    const visible = Boolean(mobilePageHelpVisible);
+    if (menuShellEl) menuShellEl.dataset.mobileHelp = visible ? 'visible' : 'hidden';
+    if (mobileCommandRouteBarEl) mobileCommandRouteBarEl.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    if (managerHelpToggleBtn) {
+      managerHelpToggleBtn.classList.toggle('active', visible);
+      managerHelpToggleBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      managerHelpToggleBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
+      const label = visible ? 'Hide page help' : 'Show page help';
+      managerHelpToggleBtn.setAttribute('aria-label', label);
+      managerHelpToggleBtn.title = label;
+    }
+    if (options.persist !== false) {
+      try {
+        localStorage.setItem(MOBILE_PAGE_HELP_STORAGE_KEY, visible ? '1' : '0');
+      } catch (error) {
+        // Storage is an optional convenience; the toggle still works in memory.
+      }
+    }
+    if (options.announce) showStatus(visible ? 'PAGE HELP SHOWN' : 'PAGE HELP HIDDEN');
+    return visible;
+  }
+
+  function setMobilePageHelpVisible(visible, options = {}) {
+    mobilePageHelpVisible = Boolean(visible);
+    return syncMobilePageHelp(options);
+  }
+
+  function toggleMobilePageHelp() {
+    return setMobilePageHelpVisible(!mobilePageHelpVisible, { announce: true });
   }
 
   function mobileNavigationIsOpen() {
@@ -55632,6 +55735,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       startMatchBtn.setAttribute('aria-label', deployLabel);
       startMatchBtn.title = deployLabel;
     }
+    syncMobilePageHelp({ persist: false });
     if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
     if (menuNavigationIndex < 0) resetMenuNavigationHistory(menuTab);
     else syncMenuHistoryControls();
@@ -64110,6 +64214,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
   if (managerCalendarBtn) managerCalendarBtn.addEventListener('click', () => setMenuRoute('calendar'));
   if (managerGoldBtn) managerGoldBtn.addEventListener('click', () => { if (careerState.created) setMenuRoute('gold'); });
+  if (managerHelpToggleBtn) managerHelpToggleBtn.addEventListener('click', toggleMobilePageHelp);
   startMatchBtn.addEventListener('click', startNewMatch);
   resumeBtn.addEventListener('click', resumeMatch);
   if (returnToMatchBtn) returnToMatchBtn.addEventListener('click', resumeMatch);
@@ -70762,6 +70867,35 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return { team: selectedTeam, point, source, confidence };
     },
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
+    mobilePageHelp: () => ({
+      visible: Boolean(mobilePageHelpVisible),
+      shellState: menuShellEl?.dataset.mobileHelp || '',
+      pressed: managerHelpToggleBtn?.getAttribute('aria-pressed') || '',
+      expanded: managerHelpToggleBtn?.getAttribute('aria-expanded') || '',
+      buttonDisplay: managerHelpToggleBtn ? getComputedStyle(managerHelpToggleBtn).display : 'missing',
+      matchButtonDisplay: startMatchBtn ? getComputedStyle(startMatchBtn).display : 'missing',
+      barDisplay: mobileCommandRouteBarEl ? getComputedStyle(mobileCommandRouteBarEl).display : 'missing',
+      barAriaHidden: mobileCommandRouteBarEl?.getAttribute('aria-hidden') || ''
+    }),
+    setMobilePageHelpForTest: visible => setMobilePageHelpVisible(Boolean(visible), { announce: false }),
+    mobilePageHelpForTest: () => {
+      const original = Boolean(mobilePageHelpVisible);
+      setMobilePageHelpVisible(false, { announce: false });
+      const off = window.__strikeDebug.mobilePageHelp();
+      setMobilePageHelpVisible(true, { announce: false });
+      const on = window.__strikeDebug.mobilePageHelp();
+      setMobilePageHelpVisible(original, { announce: false });
+      const mobile = mobileNavigationEnabled();
+      return {
+        ok: mobile
+          ? off.buttonDisplay !== 'none' && off.matchButtonDisplay === 'none' && off.barDisplay === 'none' && off.pressed === 'false' && on.barDisplay !== 'none' && on.pressed === 'true' && on.expanded === 'true' && on.barAriaHidden === 'false'
+          : off.buttonDisplay === 'none' && off.matchButtonDisplay !== 'none' && off.barDisplay === 'none',
+        mobile,
+        off,
+        on,
+        restored: window.__strikeDebug.mobilePageHelp()
+      };
+    },
     advanceMatchForTest: (seconds = 1, fixedDt = 1 / 30) => {
       const total = clamp(Number(seconds) || 0, 0, 240);
       const dt = clamp(Number(fixedDt) || (1 / 30), 1 / 120, 0.1);
@@ -72176,6 +72310,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (buildDescEl) buildDescEl.textContent = activeArenaMeta().tagDescription;
   syncViewMode();
   setUiButtonsHidden(false);
+  syncMobilePageHelp({ persist: false });
   updateAudioButton();
 
   const initialPropAudit = auditLevelPropCollision();
