@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.68: Mobile Onboarding &amp; HUD Clarity</title>
+<title>Strikewatch 12.69: Guided Navigation &amp; Advice Routing</title>
 <style>
   :root {
     color-scheme: dark;
@@ -23136,7 +23136,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.63 · ARMOURY 3D PREVIEW OPTIMISATION</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.69 · GUIDED NAVIGATION &amp; ADVICE ROUTING</div>
   </div>
 
   <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
@@ -23776,9 +23776,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.68';
-  const BUILD_NAME = 'MOBILE ONBOARDING & HUD CLARITY';
-  const BUILD_ID = '12.68.0-mobile-onboarding-hud-clarity';
+  const BUILD_VERSION = '12.69';
+  const BUILD_NAME = 'GUIDED NAVIGATION & ADVICE ROUTING';
+  const BUILD_ID = '12.69.0-guided-navigation-advice-routing';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -38637,7 +38637,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
         <article><span>SIDEARM</span><strong>${escapeCareerHtml(getCareerWeapon(targetSidearmId).name)}</strong><small>Emergency close-range draw and reload option</small></article>
         <article><span>ARMOUR</span><strong>${escapeCareerHtml(targetArmour.name)}</strong><small>Torso protection with match-long integrity</small></article>
       </section>
-      <section class="career-squad-loadout-panel">
+      <section class="career-squad-loadout-panel" data-management-target-id="loadout:squad-overview">
         <div class="career-section-head"><div><span>SQUAD LOADOUT OVERVIEW</span><strong>STARTERS & RESERVES</strong></div><p>Select a player to edit their individual weapon and armour.</p></div>
         <div class="career-armoury-player-grid">${squadLoadoutRows}</div>
       </section>
@@ -41285,7 +41285,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     return `${renderTeamTutorialPanel()}${typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : ''}${typeof renderWorkflowDraftBar === 'function' ? renderWorkflowDraftBar('operators', 'ACTIVE OPERATOR ORDER', 'Move operators freely, then save once the deployment order is correct.') : ''}
       <div class="menu-hero career-hero team-squad-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">FIRST-TEAM MANAGEMENT</div><h2>${teamNameLockup(careerState.name)}<span class="team-heading-suffix">SQUAD</span></h2><p>Reorder operators to control the active five-player line-up. The first five operators deploy in matches, while reserves provide rotation options for fatigue, form and tactical roles.</p><div class="menu-pill-row"><span class="menu-pill">${squad.length} / ${TEAM_MAX_SQUAD} CONTRACTED</span><span class="menu-pill">${starters.length} / ${TEAM_REQUIRED_STARTERS} STARTERS</span><span class="menu-pill">${reserves.length} / ${TEAM_MAX_SQUAD - TEAM_REQUIRED_STARTERS} RESERVES</span><span class="menu-pill">${teamCredits(wageBill)} PAYROLL</span><span class="menu-pill">${teamCredits(careerState.wageBudget - wageBill)} HEADROOM</span></div></div><div class="menu-hero-side"><div class="menu-kicker">LINE-UP STATUS</div><div class="menu-side-operator">${careerSquadReady() ? 'VALID' : 'INCOMPLETE'}</div><p>${careerSquadReady() ? 'Eligible for matchmaking.' : 'Five players required.'}</p></div></div>
       ${typeof renderSquadDynamicsPanel === 'function' ? renderSquadDynamicsPanel() : ''}
-      <section class="team-lineup-panel team-starters-panel"><div class="career-section-head"><div><span>DEPLOYMENT ORDER 1–5</span><strong>ACTIVE FIVE OPERATORS</strong></div><p>These operators deploy into the next match. Use Move Up / Move Down to change selection and order.</p></div><div class="team-squad-grid">${starters.length ? starters.map((player, index) => renderTeamPlayerMini(player, index, true)).join('') : '<div class="team-empty-state"><strong>EMPTY SQUAD</strong><p>Your club currently owns no player contracts.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>'}</div></section>
+      <section class="team-lineup-panel team-starters-panel" data-management-target-id="operators:active-five"><div class="career-section-head"><div><span>DEPLOYMENT ORDER 1–5</span><strong>ACTIVE FIVE OPERATORS</strong></div><p>These operators deploy into the next match. Use Move Up / Move Down to change selection and order.</p></div><div class="team-squad-grid">${starters.length ? starters.map((player, index) => renderTeamPlayerMini(player, index, true)).join('') : '<div class="team-empty-state"><strong>EMPTY SQUAD</strong><p>Your club currently owns no player contracts.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>'}</div></section>
       <section class="team-lineup-panel team-reserves-panel"><div class="career-section-head"><div><span>ROTATION OPTIONS 6–8</span><strong>RESERVES</strong></div><p>Move a reserve upward to place them in the active five.</p></div><div class="team-squad-grid">${reserves.length ? reserves.map((player, reserveIndex) => renderTeamPlayerMini(player, reserveIndex + TEAM_REQUIRED_STARTERS, true)).join('') : '<div class="team-empty-state compact"><strong>NO RESERVES CONTRACTED</strong><p>Recruit up to three additional operators for rotation and tactical depth.</p><button data-team-route="market">BROWSE RECRUITMENT</button></div>'}</div></section>`;
   }
 
@@ -45419,6 +45419,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const revealKeyPlayer = depth >= 82;
     const suggestionLimit = scout ? clamp(Math.floor((Number(scout.tacticalAdvice) + depth / 20) / 3), 1, 3) : 1;
     const suggestions = identity.counters.slice(0, suggestionLimit);
+    const suggestionDestinations = {
+      tactics: { targetId: 'tactics:opponent-preparation', action: 'OPEN MATCH PLAN' },
+      operators: { targetId: 'operators:active-five', action: 'OPEN ACTIVE FIVE' },
+      loadout: { targetId: 'loadout:squad-overview', action: 'OPEN LOADOUTS' }
+    };
     const freshness = report.lastUpdatedDay >= 0 ? Math.max(0, Math.round(Number(clubCalendarState()?.absoluteDay) || 0) - report.lastUpdatedDay) : null;
     return `<section class="opposition-intelligence-panel" data-intelligence-context="${escapeCareerHtml(context)}">
       <header>
@@ -45434,7 +45439,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         <article class="${revealKeyPlayer ? '' : 'locked'}"><span>KEY OPERATOR</span><strong>${revealKeyPlayer ? escapeCareerHtml(keyPlayer?.name || 'UNKNOWN') : 'UNDER REVIEW'}</strong><p>${revealKeyPlayer && keyPlayer ? `${escapeCareerHtml(teamRoleById(keyPlayer.role).name)} · ${teamPlayerOverall(keyPlayer)} CURRENT ABILITY` : 'Individual threat identification requires a comprehensive report.'}</p></article>
         <article><span>REPORT FRESHNESS</span><strong>${freshness === null ? 'PUBLIC BASELINE' : freshness === 0 ? 'UPDATED TODAY' : `${freshness} DAY${freshness === 1 ? '' : 'S'} OLD`}</strong><p>${scout ? `${report.daysObserved} preparation day${report.daysObserved === 1 ? '' : 's'} processed · maximum ${oppositionReportMaximum(scout)}% depth.` : 'Employ an Opposition Scout to develop the report as calendar days pass.'}</p></article>
       </div>
-      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>These are informed choices, not automatic counters or hidden bonuses.</p></div><div>${suggestions.map((item, index) => `<button data-team-route="${escapeCareerHtml(item.route)}"><span>${String(index + 1).padStart(2, '0')}</span><p>${escapeCareerHtml(item.text)}</p><b>REVIEW →</b></button>`).join('')}</div></div>
+      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>These are informed choices, not automatic counters or hidden bonuses.</p></div><div>${suggestions.map((item, index) => {
+        const destination = suggestionDestinations[item.route] || { targetId: '', action: `OPEN ${String(item.route || 'PAGE').toUpperCase()}` };
+        return `<button data-team-route="${escapeCareerHtml(item.route)}"${destination.targetId ? ` data-team-scroll-target="${escapeCareerHtml(destination.targetId)}"` : ''}><span>${String(index + 1).padStart(2, '0')}</span><p>${escapeCareerHtml(item.text)}</p><b>${escapeCareerHtml(destination.action)} →</b></button>`;
+      }).join('')}</div></div>
     </section>`;
   }
 
@@ -47457,8 +47465,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     careerState.selectedPlayerId = player.id;
     selectedTeamPlayerId = player.id;
     saveCareerState();
-    setMenuRoute('transfers');
-    return { ok: true, player };
+    const routed = setMenuRoute('transfers');
+    const targetId = `transfer:${transferState().activeIncoming.id || player.id}`;
+    if (routed && typeof scrollMenuGuideTargetIntoView === 'function') {
+      scrollMenuGuideTargetIntoView(targetId, 'transfers', { behavior: 'smooth', block: 'start' });
+    }
+    return { ok: true, player, targetId };
   }
 
   function adjustIncomingTransfer(field, direction) {
@@ -55648,13 +55660,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (!targetKey) return false;
     const requestId = ++menuGuideScrollRequest;
     const escapedTarget = targetKey.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    const selector = `[data-guide-target="${escapedTarget}"]`;
+    const selectors = [
+      `[data-guide-target="${escapedTarget}"]`,
+      `[data-management-target-id="${escapedTarget}"]`
+    ];
     let completed = false;
     const apply = () => {
       if (completed || requestId !== menuGuideScrollRequest || (expectedRoute && menuTab !== expectedRoute)) return false;
-      const target = menuContentEl?.querySelector(selector) || null;
+      const target = selectors.map(selector => menuContentEl?.querySelector(selector) || null).find(Boolean) || null;
       if (!target) return false;
-      completed = scrollCommandContentTargetIntoView(target, { block: 'start', behavior: options.behavior === 'auto' ? 'auto' : 'smooth' });
+      completed = scrollCommandContentTargetIntoView(target, {
+        block: options.block === 'center' ? 'center' : 'start',
+        behavior: options.behavior === 'auto' ? 'auto' : 'smooth'
+      });
       if (completed) {
         target.classList.add('guide-scroll-arrival');
         window.setTimeout(() => {
