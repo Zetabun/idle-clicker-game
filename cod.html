@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.63: Armoury 3D Preview Optimisation</title>
+<title>Strikewatch 12.65: Mobile Help Icon Alignment</title>
 <style>
   :root {
     color-scheme: dark;
@@ -22225,7 +22225,8 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
 @media (max-width: 1023px) {
   .menu-shell .manager-match-btn { display: none !important; }
   .menu-shell .manager-help-toggle {
-    display: flex !important;
+    display: grid !important;
+    place-items: center;
     color: #f4f8fb !important;
     background: rgba(6, 20, 30, .58) !important;
   }
@@ -22258,6 +22259,21 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
    the existing mobile typography diagnostic after the topbar control swap. */
 @media (max-width: 1023px) {
   .menu-shell .menu-tab-copy strong { font-size: 10px !important; }
+}
+
+
+/* Build 12.65 — mobile Help glyph alignment correction.
+   Keep the topbar cell on the same grid as Inbox and Calendar, and centre the
+   question-mark glyph inside that cell instead of allowing flex-start layout. */
+@media (max-width: 1023px) {
+  .menu-shell .manager-help-toggle {
+    display: grid !important;
+    place-items: center !important;
+  }
+  .menu-shell .manager-help-toggle .manager-help-glyph {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
 }
 </style>
 </head>
@@ -23171,9 +23187,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.64';
-  const BUILD_NAME = 'MOBILE PAGE HELP TOGGLE';
-  const BUILD_ID = '12.64.0-mobile-page-help-toggle';
+  const BUILD_VERSION = '12.65';
+  const BUILD_NAME = 'MOBILE HELP ICON ALIGNMENT';
+  const BUILD_ID = '12.65.0-mobile-help-icon-alignment';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
