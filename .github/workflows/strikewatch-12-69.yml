@@ -1,0 +1,135 @@
+name: Strikewatch 12.69 patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/strikewatch-12-69.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch and validate Build 12.69
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('cod.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          text, count = re.subn(
+              r'<title>Strikewatch 12\.68: Mobile Onboarding &amp; HUD Clarity</title>',
+              '<title>Strikewatch 12.69: Guided Navigation &amp; Opposition Actions</title>',
+              text,
+              count=1,
+          )
+          assert count == 1, f'title replacement count was {count}'
+
+          replacements = {
+              "const BUILD_VERSION = '12.68';": "const BUILD_VERSION = '12.69';",
+              "const BUILD_NAME = 'MOBILE ONBOARDING & HUD CLARITY';": "const BUILD_NAME = 'GUIDED NAVIGATION & OPPOSITION ACTIONS';",
+              "const BUILD_ID = '12.68.0-mobile-onboarding-hud-clarity';": "const BUILD_ID = '12.69.0-guided-navigation-opposition-actions';",
+          }
+          for old, new in replacements.items():
+              assert text.count(old) == 1, f'expected one occurrence of {old!r}'
+              text = text.replace(old, new, 1)
+
+          old_advice = '''      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>These are informed choices, not automatic counters or hidden bonuses.</p></div><div>${suggestions.map((item, index) => `<button data-team-route="${escapeCareerHtml(item.route)}"><span>${String(index + 1).padStart(2, '0')}</span><p>${escapeCareerHtml(item.text)}</p><b>REVIEW →</b></button>`).join('')}</div></div>'''
+          new_advice = '''      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>Each action now opens the management control needed to act on the advice.</p></div><div>${suggestions.map((item, index) => {
+        const route = String(item.route || 'tactics');
+        const actionAttribute = route === 'tactics' ? 'data-matchday-action="review-briefing"' : `data-team-route="${escapeCareerHtml(route)}"`;
+        const actionLabel = route === 'operators' ? 'OPEN SQUAD →' : route === 'loadout' ? 'OPEN ARMOURY →' : 'OPEN MATCH PLAN →';
+        return `<button ${actionAttribute}><span>${String(index + 1).padStart(2, '0')}</span><p>${escapeCareerHtml(item.text)}</p><b>${actionLabel}</b></button>`;
+      }).join('')}</div></div>'''
+          assert text.count(old_advice) == 1, 'opposition advice markup was not found exactly once'
+          text = text.replace(old_advice, new_advice, 1)
+
+          old_transfer = '''    saveCareerState();
+    setMenuRoute('transfers');
+    return { ok: true, player };'''
+          new_transfer = '''    saveCareerState();
+    const negotiationTargetId = `transfer:${transferState().activeIncoming?.id || player.id}`;
+    const onboardingActive = Boolean(typeof firstMatchGuidance === 'function' && firstMatchGuidance());
+    setMenuRoute('transfers');
+    if (onboardingActive) {
+      const scrollToNegotiation = () => {
+        if (menuTab !== 'transfers' || !menuContentEl) return false;
+        const selector = `[data-management-target-id="${String(negotiationTargetId).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
+        const target = menuContentEl.querySelector(selector);
+        if (!target) return false;
+        target.classList.add('management-arrival-target');
+        if (typeof scrollCommandContentTargetIntoView === 'function') scrollCommandContentTargetIntoView(target, { block: 'start', behavior: 'smooth' });
+        else target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        window.setTimeout(() => { if (target.isConnected) target.classList.remove('management-arrival-target'); }, 1600);
+        return true;
+      };
+      requestAnimationFrame(() => {
+        if (!scrollToNegotiation()) requestAnimationFrame(scrollToNegotiation);
+      });
+      window.setTimeout(scrollToNegotiation, 180);
+    }
+    return { ok: true, player };'''
+          assert text.count(old_transfer) == 1, 'incoming negotiation route block was not found exactly once'
+          text = text.replace(old_transfer, new_transfer, 1)
+
+          assert text != original
+          assert "12.69.0-guided-navigation-opposition-actions" in text
+          assert 'data-matchday-action="review-briefing"' in text
+          assert 'OPEN MATCH PLAN →' in text
+          assert 'const negotiationTargetId = `transfer:' in text
+          path.write_text(text, encoding='utf-8')
+          Path('strikewatch-build-12.69.html').write_text(text, encoding='utf-8')
+
+          audit = '''# AUDIT — Build 12.69
+
+## Guided navigation and opposition actions
+
+- Successful **Negotiate** actions during the First Match Journey now open the Transfer Centre and smoothly position the active Incoming Negotiation card beneath the onboarding UI.
+- Normal recruitment outside onboarding retains the existing route behaviour without forced scrolling.
+- Opposition-intelligence recommendations no longer use a generic **Review** action that can route back to the same report.
+- Tactical advice now opens and focuses the opponent-specific match-plan controls.
+- Squad and armoury recommendations use explicit **Open Squad** and **Open Armoury** actions.
+- Build metadata advanced from 12.68 to 12.69.
+
+## Validation
+
+- Exact replacement guards passed.
+- Inline JavaScript syntax check passed with Node.js.
+- The generated standalone matches `cod.html` byte-for-byte.
+- No save-schema, combat-balance or economy changes were introduced.
+'''
+          Path('AUDIT-12.69.md').write_text(audit, encoding='utf-8')
+          PY
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('cod.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
+          assert scripts, 'no inline scripts found'
+          largest = max(scripts, key=len)
+          Path('/tmp/strikewatch-12.69.js').write_text(largest, encoding='utf-8')
+          assert Path('strikewatch-build-12.69.html').read_bytes() == Path('cod.html').read_bytes()
+          print(f'validated {len(html):,} characters and {len(scripts)} inline script block(s)')
+          PY
+          node --check /tmp/strikewatch-12.69.js
+
+      - name: Commit patched build
+        shell: bash
+        run: |
+          rm -f .github/workflows/strikewatch-12-69.yml
+          git config user.name "OpenAI Strikewatch Builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cod.html strikewatch-build-12.69.html AUDIT-12.69.md .github/workflows/strikewatch-12-69.yml
+          git commit -m "Build 12.69: fix guided negotiation and opposition actions [skip actions]"
+          git push origin main
