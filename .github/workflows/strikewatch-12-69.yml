@@ -1,25 +1,29 @@
-name: Strikewatch 12.69 artifact
+name: Strikewatch 12.69 release
 
 on:
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+  issues:
+    types: [opened]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  build:
+  release:
+    if: github.event.issue.title == 'Run Strikewatch Build 12.69'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Patch Build 12.69
+      - name: Patch source and update documentation
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
+          import shutil
 
           source = Path('cod.html')
           text = source.read_text(encoding='utf-8')
@@ -57,12 +61,14 @@ jobs:
     return { ok: true, player };'''
           new_transfer = '''    saveCareerState();
     const negotiationTargetId = `transfer:${transferState().activeIncoming?.id || player.id}`;
-    const onboardingActive = Boolean(typeof firstMatchGuidance === 'function' && firstMatchGuidance());
+    const onboardingGuide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
+    const onboardingActive = Boolean(onboardingGuide && ['recruitment', 'profile', 'first-signing', 'active-five'].includes(onboardingGuide.id));
     setMenuRoute('transfers');
     if (onboardingActive) {
       const scrollToNegotiation = () => {
         if (menuTab !== 'transfers' || !menuContentEl) return false;
-        const target = menuContentEl.querySelector(managementTargetSelector(negotiationTargetId));
+        const selector = `[data-management-target-id="${String(negotiationTargetId).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
+        const target = menuContentEl.querySelector(selector);
         if (!target) return false;
         target.classList.add('management-arrival-target');
         if (typeof scrollCommandContentTargetIntoView === 'function') scrollCommandContentTargetIntoView(target, { block: 'start', behavior: 'smooth' });
@@ -85,9 +91,8 @@ jobs:
           assert 'OPEN MATCH PLAN →' in text
           assert 'const negotiationTargetId = `transfer:' in text
 
+          source.write_text(text, encoding='utf-8')
           Path('strikewatch-build-12.69.html').write_text(text, encoding='utf-8')
-          Path('source-12.69').mkdir(exist_ok=True)
-          Path('source-12.69/index.html').write_text(text, encoding='utf-8')
 
           audit = '''# AUDIT — Build 12.69
 
@@ -104,37 +109,89 @@ jobs:
 
 - Exact replacement guards passed.
 - Inline JavaScript syntax passed Node.js validation.
-- The packaged source `index.html` matches the standalone build byte-for-byte.
+- The packaged source HTML matches the standalone build byte-for-byte.
 - No save-schema, combat-balance or economy changes were introduced.
 '''
           Path('AUDIT-12.69.md').write_text(audit, encoding='utf-8')
-          Path('source-12.69/AUDIT-12.69.md').write_text(audit, encoding='utf-8')
-          Path('source-12.69/README.md').write_text('# Strikewatch Build 12.69 Source\n\nOpen `index.html` directly in a browser. See `AUDIT-12.69.md` for the build changes and validation notes.\n', encoding='utf-8')
+
+          active_docs = [
+              Path('00-READ-FIRST-GPT.md'),
+              Path('README.md'),
+              Path('PROJECT.md'),
+              Path('AGENTS.md'),
+              Path('DOCUMENTATION-INDEX.md'),
+          ]
+          release_note = '''
+
+## Build 12.69 — Guided Navigation & Opposition Actions
+
+- Guided recruitment now scrolls directly to the active Incoming Negotiation card after **Negotiate** is selected during onboarding.
+- Opposition-intelligence recommendations now open the actionable match-plan, squad or armoury screen instead of recursively returning to the report.
+- Standalone and source packages are `strikewatch-build-12.69.html` and `strikewatch-source-12.69.zip`.
+- See `AUDIT-12.69.md` for validation details.
+'''
+          for path in active_docs:
+              if not path.exists():
+                  continue
+              doc = path.read_text(encoding='utf-8')
+              doc = re.sub(r'(?i)(latest|current|active)(\s+build\s*[:—-]?\s*)(?:build\s*)?12\.68', lambda m: f'{m.group(1)}{m.group(2)}12.69', doc, count=1)
+              if 'Build 12.69 — Guided Navigation & Opposition Actions' not in doc:
+                  doc = doc.rstrip() + release_note + '\n'
+              path.write_text(doc, encoding='utf-8')
+
+          handoff = Path('GPT-HANDOFF-PROMPT.txt')
+          if handoff.exists():
+              handoff_text = handoff.read_text(encoding='utf-8')
+              handoff_text = handoff_text.replace('12.68', '12.69', 1)
+              if 'GUIDED NAVIGATION & OPPOSITION ACTIONS' not in handoff_text:
+                  handoff_text = handoff_text.rstrip() + '\n\nBuild 12.69 adds onboarding negotiation auto-scroll and actionable opposition-intelligence links.\n'
+              handoff.write_text(handoff_text, encoding='utf-8')
+
+          package = Path('source-12.69')
+          if package.exists():
+              shutil.rmtree(package)
+          package.mkdir()
+          shutil.copy2('cod.html', package / 'cod.html')
+          shutil.copy2('strikewatch-build-12.69.html', package / 'index.html')
+          for path in active_docs + [Path('AUDIT-12.69.md'), handoff]:
+              if path.exists():
+                  shutil.copy2(path, package / path.name)
+          Path(package / 'SOURCE-README.md').write_text(
+              '# Strikewatch Build 12.69 Source\n\n'
+              'Open `index.html` or `cod.html` directly in a modern browser. Both contain the complete standalone game. '
+              'The active Markdown authority files and Build 12.69 audit are included in this package.\n',
+              encoding='utf-8',
+          )
           PY
 
-      - name: Validate JavaScript and package
+      - name: Validate JavaScript and package source
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          html = Path('strikewatch-build-12.69.html').read_text(encoding='utf-8')
+          html = Path('cod.html').read_text(encoding='utf-8')
           scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
           assert scripts, 'no inline scripts found'
           Path('/tmp/strikewatch-12.69.js').write_text(max(scripts, key=len), encoding='utf-8')
-          assert Path('source-12.69/index.html').read_bytes() == Path('strikewatch-build-12.69.html').read_bytes()
+          assert Path('strikewatch-build-12.69.html').read_bytes() == Path('cod.html').read_bytes()
+          assert Path('source-12.69/index.html').read_bytes() == Path('cod.html').read_bytes()
           print(f'validated {len(html):,} characters and {len(scripts)} inline script block(s)')
           PY
           node --check /tmp/strikewatch-12.69.js
+          rm -f strikewatch-source-12.69.zip
           zip -qr strikewatch-source-12.69.zip source-12.69
+          unzip -t strikewatch-source-12.69.zip
 
-      - name: Upload Build 12.69
-        uses: actions/upload-artifact@v4
-        with:
-          name: strikewatch-12.69
-          path: |
-            strikewatch-build-12.69.html
-            strikewatch-source-12.69.zip
-            AUDIT-12.69.md
-          if-no-files-found: error
-          retention-days: 7
+      - name: Commit Build 12.69 to main
+        shell: bash
+        run: |
+          git config user.name "OpenAI Strikewatch Builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/strikewatch-12-69.yml
+          git add cod.html strikewatch-build-12.69.html strikewatch-source-12.69.zip AUDIT-12.69.md
+          for file in 00-READ-FIRST-GPT.md README.md PROJECT.md AGENTS.md DOCUMENTATION-INDEX.md GPT-HANDOFF-PROMPT.txt; do
+            if [ -f "$file" ]; then git add "$file"; fi
+          done
+          git commit -m "Build 12.69: fix onboarding navigation and opposition actions"
+          git push origin main
