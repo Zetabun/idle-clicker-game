@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.62: Mobile Navigation Consolidation</title>
+<title>Strikewatch 12.63: Armoury 3D Preview Optimisation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -22150,6 +22150,57 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   }
   .mobile-navigation-route > svg { grid-column: 3; grid-row: 1 / span 2; }
 }
+
+/* Build 12.63 — Armoury 3D preview optimisation.
+   The loadout inspector now renders the armour product only. Static inventory
+   thumbnails use a reduced but still full-depth 3D part set and do not reserve
+   compositor layers until the user actively manipulates the inspector. */
+.career-armour-mini3d,
+.career-armour-showcase {
+  contain: layout paint style;
+}
+.career-armour-model-system {
+  transition: none;
+  will-change: auto;
+}
+.career-armour-showcase .career-armour-model-system {
+  top: 50%;
+  transition: transform .12s ease-out;
+}
+.career-armour-inspector.dragging .career-armour-model-system,
+.career-armour-inspector.auto-rotating .career-armour-model-system {
+  will-change: transform;
+}
+.career-armour-rig.product-only {
+  top: 50%;
+  width: 168px;
+  height: 182px;
+}
+.career-armour-rig.product-only .career-armour-ground-shadow {
+  bottom: 20px;
+  width: 116px;
+  height: 30px;
+}
+.career-armour-rig.compact-model .career-armour-weapon-system {
+  filter: brightness(1.02) saturate(1.03);
+}
+.career-armour-inventory-item {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: auto 112px;
+}
+.career-armour-showcase-caption {
+  letter-spacing: .15em;
+}
+@media (max-width: 430px) {
+  .career-armour-rig.product-only {
+    width: 154px;
+    height: 172px;
+  }
+  .career-armour-showcase .career-armour-model-system {
+    --viewer-zoom: calc(var(--armour-viewer-scale, 1.42) * .90);
+  }
+}
 </style>
 </head>
 <body>
@@ -22422,7 +22473,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.62 · MOBILE NAVIGATION CONSOLIDATION</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.63 · ARMOURY 3D PREVIEW OPTIMISATION</div>
   </div>
 
   <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
@@ -23057,9 +23108,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.62';
+  const BUILD_VERSION = '12.63';
   const BUILD_NAME = 'MOBILE NAVIGATION CONSOLIDATION';
-  const BUILD_ID = '12.62.0-mobile-navigation-consolidation';
+  const BUILD_ID = '12.63.0-armoury-3d-preview-optimisation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -33524,8 +33575,10 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     return `${Math.round(armour.protection * 100)}% BASE REDUCTION · ${armour.rating} RATING`;
   }
 
+  const CAREER_ARMOUR_VIEWER_BASE_SCALE = 1.42;
+
   function careerArmourViewerTransform() {
-    return `--armour-viewer-yaw:${careerArmourViewerState.yaw}deg;--armour-viewer-pitch:${careerArmourViewerState.pitch}deg;--armour-viewer-scale:${(1.16 * careerArmourViewerState.zoom).toFixed(4)}`;
+    return `--armour-viewer-yaw:${careerArmourViewerState.yaw}deg;--armour-viewer-pitch:${careerArmourViewerState.pitch}deg;--armour-viewer-scale:${(CAREER_ARMOUR_VIEWER_BASE_SCALE * careerArmourViewerState.zoom).toFixed(4)}`;
   }
 
   function careerArmourModelProfile(armour) {
@@ -33955,6 +34008,32 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     return parts;
   }
 
+  function careerArmourThumbnailParts(armour) {
+    const essentialPatterns = [
+      /^shell-(?:front|back)-(?:core|wing)/,
+      /^shell-yoke$/,
+      /^shoulder-bridge-/,
+      /^cummerbund-(?:left|right)$/,
+      /^side-(?:left|right) outer$/,
+      /^strap-(?:left|right)$/,
+      /^belt$/,
+      /^buckle$/,
+      /^plate-pocket upper$/,
+      /^center-plate upper$/,
+      /^plate-wing-(?:left|right) upper$/,
+      /^rear-plate$/,
+      /^drag-handle$/,
+      /^collar-(?:left|right)$/,
+      /^collar-yoke$/,
+      /^neck-guard$/,
+      /^shoulder-(?:left|right)$/,
+      /^abdomen$/,
+      /^groin$/,
+      /^radio-body$/
+    ];
+    return careerArmour3dParts(armour).filter(part => essentialPatterns.some(pattern => pattern.test(part.className)));
+  }
+
   function careerArmourOperatorBodyParts() {
     const parts = [];
     const add = (className, material, x, y, z, w, h, d, rz = 0, rx = 0, ry = 0, shape = 'box') => {
@@ -34015,12 +34094,20 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     const mode = bodyMode === true ? 'full' : String(bodyMode || '').toLowerCase();
     const showOperator = mode === 'full' || mode === 'detail' || mode === 'operator';
     const showStoreForm = mode === 'store' || mode === 'display';
-    const armourParts = careerArmour3dParts(armour).map(careerWeaponPartMarkup).join('');
+    const compactModel = mode === 'thumbnail' || mode === 'compact';
+    const productOnly = mode === 'product' || mode === 'armour-only';
+    const armourSource = compactModel ? careerArmourThumbnailParts(armour) : careerArmour3dParts(armour);
+    const armourParts = armourSource.map(careerWeaponPartMarkup).join('');
     const bodyParts = showOperator
       ? careerArmourOperatorBodyParts().map(careerWeaponPartMarkup).join('')
       : (showStoreForm ? careerArmourStoreFormParts().map(careerWeaponPartMarkup).join('') : '');
     const bodyClass = showOperator ? 'career-armour-operator-body' : 'career-armour-store-form';
-    const rigModeClass = showOperator ? 'with-operator-body' : (showStoreForm ? 'with-store-form' : '');
+    const rigModeClass = [
+      showOperator ? 'with-operator-body' : '',
+      showStoreForm ? 'with-store-form' : '',
+      compactModel ? 'compact-model' : '',
+      productOnly ? 'product-only' : ''
+    ].filter(Boolean).join(' ');
     return `<div class="career-armour-rig ${escapeCareerHtml(armour.classId)} ${rigModeClass}" data-career-armour-rig${styleAttribute} aria-hidden="true">
       <i class="career-armour-ground-shadow"></i>
       <span class="career-armour-model-system">
@@ -34037,14 +34124,14 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     const context = classToken.toLowerCase();
     const ariaLabel = `${escapeCareerHtml(armour.name)} full-depth three-dimensional armour model`;
     if (context.includes('detail')) {
-      const rig = careerArmourRigMarkup(armour, careerArmourViewerTransform(), 'full');
-      return `<div class="career-armour-inspector ${escapeCareerHtml(armour.classId)} ${escapeCareerHtml(classToken)}" data-career-armour-viewer data-armour-id="${escapeCareerHtml(armour.id)}">
+      const rig = careerArmourRigMarkup(armour, careerArmourViewerTransform(), 'product');
+      return `<div class="career-armour-inspector ${escapeCareerHtml(armour.classId)} ${escapeCareerHtml(classToken)} ${careerArmourViewerState.autoRotate ? 'auto-rotating' : ''}" data-career-armour-viewer data-armour-id="${escapeCareerHtml(armour.id)}">
         <div class="career-armour-showcase career-armour-inspector-stage" role="img" aria-label="Interactive ${ariaLabel}. Drag or swipe to inspect the front, sides and rear.">
           <div class="career-armour-showcase-grid" aria-hidden="true"></div>
           <div class="career-armour-showcase-shadow" aria-hidden="true"></div>
           ${rig}
           <div class="career-inspector-callout"><span>FULL-DEPTH 3D INSPECTION</span><strong>DRAG / SWIPE · FRONT / SIDE / REAR</strong></div>
-          <span class="career-armour-showcase-caption">OPERATOR FIT · COMPLETE 360° MODEL</span>
+          <span class="career-armour-showcase-caption">ARMOUR ONLY · COMPLETE 360° MODEL</span>
         </div>
         <div class="career-inspector-controls career-armour-inspector-controls" aria-label="Armour model controls">
           <button data-career-armour-viewer-action="rotate-left" aria-label="Rotate armour left">ROTATE ◀</button>
@@ -34057,7 +34144,8 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
       </div>`;
     }
     const storeMode = context.includes('store');
-    const rig = careerArmourRigMarkup(armour, '', storeMode ? 'store' : false);
+    const inventoryMode = context.includes('inventory');
+    const rig = careerArmourRigMarkup(armour, '', storeMode ? 'store' : (inventoryMode ? 'thumbnail' : false));
     const storeCaption = storeMode
       ? '<span class="career-armour-store-caption"><b>FULL-DEPTH 3D</b><small>AUTO ORBIT · FRONT / SIDE / REAR</small></span>'
       : '';
@@ -36946,7 +37034,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     for (const rig of rigs) {
       rig.style.setProperty('--armour-viewer-yaw', `${careerArmourViewerState.yaw}deg`);
       rig.style.setProperty('--armour-viewer-pitch', `${careerArmourViewerState.pitch}deg`);
-      rig.style.setProperty('--armour-viewer-scale', String(1.16 * careerArmourViewerState.zoom));
+      rig.style.setProperty('--armour-viewer-scale', String(CAREER_ARMOUR_VIEWER_BASE_SCALE * careerArmourViewerState.zoom));
     }
   }
 
@@ -37011,7 +37099,11 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   }
 
   function updateCareerArmourViewer(dt) {
-    if (!careerArmourViewerState.autoRotate || careerArmourViewerState.dragging || appState !== 'menu' || menuTab !== 'loadout') return;
+    if (!careerArmourViewerState.autoRotate || careerArmourViewerState.dragging || appState !== 'menu' || menuTab !== 'loadout' || document.visibilityState === 'hidden') return;
+    const viewer = menuContentEl?.querySelector('[data-career-armour-viewer]');
+    if (!viewer) return;
+    const bounds = viewer.getBoundingClientRect();
+    if (bounds.bottom <= 0 || bounds.top >= window.innerHeight || bounds.right <= 0 || bounds.left >= window.innerWidth) return;
     careerArmourViewerState.yaw += dt * 18;
     syncCareerArmourViewerTransform();
   }
@@ -70394,6 +70486,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     armour3dPresentationForTest: () => {
       const ids = ['scout-weave', 'response-carrier', 'guardian-plate', 'bastion-heavy'];
       const storeMarkup = ids.map(id => careerArmourVisualMarkup(getCareerArmour(id), 'store')).join('');
+      const inventoryMarkup = ids.map(id => careerArmourVisualMarkup(getCareerArmour(id), 'inventory')).join('');
       const detailMarkup = careerArmourVisualMarkup(getCareerArmour('bastion-heavy'), 'detail');
       const classes = ids.map(id => getCareerArmour(id).classId);
       const uniqueClasses = new Set(classes).size === ids.length;
@@ -70402,37 +70495,35 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const storeCaptions = (storeMarkup.match(/FULL-DEPTH 3D/g) || []).length === ids.length;
       const interactive = detailMarkup.includes('data-career-armour-viewer') && detailMarkup.includes('data-career-armour-viewer-action="rotate-left"') && detailMarkup.includes('data-career-armour-viewer-action="zoom-in"') && detailMarkup.includes('data-career-armour-viewer-action="auto"');
       const shared3dPipeline = detailMarkup.includes('career-weapon-rig career-armour-weapon-system') && detailMarkup.includes('career-weapon-cuboid') && detailMarkup.includes('career-weapon-cylinder');
-      const operatorFit = detailMarkup.includes('career-armour-operator-body') && ['operator-head', 'operator-torso-upper', 'operator-upper-arm-left', 'operator-thigh-left'].every(token => detailMarkup.includes(token));
+      const productOnlyDetail = detailMarkup.includes('product-only') && !detailMarkup.includes('career-armour-operator-body') && !detailMarkup.includes('career-armour-store-form') && detailMarkup.includes('ARMOUR ONLY · COMPLETE 360° MODEL');
+      const compactInventory = (inventoryMarkup.match(/compact-model/g) || []).length === ids.length && !inventoryMarkup.includes('career-armour-operator-body') && !inventoryMarkup.includes('career-armour-store-form');
       const heavyFeatures = ['neck-guard', 'shoulder-left', 'abdomen', 'groin', 'radio-body'].every(token => detailMarkup.includes(token));
       const fullDepthFeatures = ['shell-front-core', 'shell-back-core', 'shoulder-bridge-left', 'cummerbund-left', 'plate-wing-left', 'rear-plate', 'drag-handle'].every(token => storeMarkup.includes(token));
+      const fullPartCounts = ids.map(id => careerArmour3dParts(getCareerArmour(id)).length);
+      const compactPartCounts = ids.map(id => careerArmourThumbnailParts(getCareerArmour(id)).length);
+      const compactReduction = compactPartCounts.every((count, index) => count > 0 && count < fullPartCounts[index] * 0.72);
+      const inventoryIds = ['none', ...ids];
+      const fullInventoryPartCount = inventoryIds.reduce((total, id) => total + careerArmour3dParts(getCareerArmour(id)).length, 0);
+      const compactInventoryPartCount = inventoryIds.reduce((total, id) => total + careerArmourThumbnailParts(getCareerArmour(id)).length, 0);
+      const inventoryPartReduction = fullInventoryPartCount > 0 ? 1 - (compactInventoryPartCount / fullInventoryPartCount) : 0;
+      const inventoryReductionPass = inventoryPartReduction >= 0.55;
+      const fullDetailPartCount = careerArmour3dParts(getCareerArmour('bastion-heavy')).length;
+      const removedOperatorPartCount = careerArmourOperatorBodyParts().length;
+      const detailPartCount = (detailMarkup.match(/career-weapon-(?:cuboid|cylinder)/g) || []).length;
+      const detailReduction = detailPartCount === fullDetailPartCount && removedOperatorPartCount >= 10;
       let centeredRigs = false;
       let centeredRigMeasurements = [];
       let storeStages = [];
-      let armouryOperatorSkin = {
-        present: false,
-        lightNatural: false,
-        backgroundImage: ''
-      };
+      let detailStage = null;
+      let compactStageStyles = [];
+      const armouryOperatorSkin = { present: false, intentionallyOmitted: true, reason: 'Armoury inspection renders the chest piece only.' };
       const testHost = document.createElement('div');
       testHost.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:640px;pointer-events:none;opacity:0;';
-      testHost.innerHTML = `<div class="cash-armour-grid">${ids.map(id => `<article class="cash-armour-offer ${getCareerArmour(id).classId}"><div class="cash-armour-visual">${careerArmourVisualMarkup(getCareerArmour(id), 'store')}</div></article>`).join('')}</div><div class="career-armour-detail-preview">${detailMarkup}</div>`;
+      testHost.innerHTML = `<div class="cash-armour-grid">${ids.map(id => `<article class="cash-armour-offer ${getCareerArmour(id).classId}"><div class="cash-armour-visual">${careerArmourVisualMarkup(getCareerArmour(id), 'store')}</div></article>`).join('')}</div><div class="career-armour-detail-preview">${detailMarkup}</div><div class="career-armour-inventory-list">${ids.map(id => `<button class="career-armour-inventory-item">${careerArmourVisualMarkup(getCareerArmour(id), 'inventory')}</button>`).join('')}</div>`;
       document.body.appendChild(testHost);
       try {
-        const skinFace = testHost.querySelector('.career-armour-detail-preview .operator-skin .face, .career-armour-detail-preview .operator-skin .cylinder-face');
-        if (skinFace) {
-          const skinStyle = window.getComputedStyle(skinFace);
-          const backgroundImage = skinStyle.backgroundImage || skinStyle.background || '';
-          const lightNatural = /rgb\(255, 240, 229\)/.test(backgroundImage)
-            && /rgb\(232, 189, 167\)/.test(backgroundImage)
-            && /rgb\(166, 109, 88\)/.test(backgroundImage);
-          armouryOperatorSkin = {
-            present: true,
-            lightNatural,
-            backgroundImage
-          };
-        }
-        const rigs = [...testHost.querySelectorAll('[data-career-armour-rig]')];
-        centeredRigMeasurements = rigs.map(rig => {
+        const inspectedRigs = [...testHost.querySelectorAll('.cash-armour-grid [data-career-armour-rig], .career-armour-detail-preview [data-career-armour-rig]')];
+        centeredRigMeasurements = inspectedRigs.map(rig => {
           const modelSystem = rig.querySelector('.career-armour-model-system');
           const childRigs = [...rig.querySelectorAll('.career-armour-model-system > .career-weapon-rig')];
           return childRigs.map(child => {
@@ -70452,19 +70543,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             };
           });
         }).flat();
-        centeredRigs = centeredRigMeasurements.length >= ids.length * 2 && centeredRigMeasurements.every(entry => entry.centered);
+        centeredRigs = centeredRigMeasurements.length === ids.length * 2 + 1 && centeredRigMeasurements.every(entry => entry.centered);
         storeStages = [...testHost.querySelectorAll('.cash-armour-visual .career-armour-mini3d.store')].map(stage => {
           const box = stage.getBoundingClientRect();
           const modelSystem = stage.querySelector('.career-armour-model-system');
           const style = modelSystem ? window.getComputedStyle(modelSystem) : null;
           const rigStyles = [...stage.querySelectorAll('.career-armour-model-system > .career-weapon-rig')].map(rig => {
             const rigStyle = window.getComputedStyle(rig);
-            return {
-              className: rig.className,
-              filter: rigStyle.filter,
-              opacity: Number(rigStyle.opacity),
-              transformStyle: rigStyle.transformStyle
-            };
+            return { className: rig.className, filter: rigStyle.filter, opacity: Number(rigStyle.opacity), transformStyle: rigStyle.transformStyle };
           });
           const unflattened = rigStyles.length >= 2 && rigStyles.every(rig => rig.filter === 'none' && rig.opacity === 1 && rig.transformStyle === 'preserve-3d');
           return {
@@ -70478,24 +70564,56 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             rigStyles
           };
         });
+        const detail = testHost.querySelector('.career-armour-detail-preview .career-armour-showcase');
+        const detailModel = detail?.querySelector('.career-armour-model-system');
+        detailStage = detail ? {
+          perspective: window.getComputedStyle(detail).perspective || '',
+          modelWillChange: detailModel ? window.getComputedStyle(detailModel).willChange : '',
+          productOnly: Boolean(detail.querySelector('.career-armour-rig.product-only')),
+          operatorBodies: detail.querySelectorAll('.career-armour-operator-body').length,
+          modelParts: detail.querySelectorAll('.career-weapon-cuboid, .career-weapon-cylinder').length
+        } : null;
+        compactStageStyles = [...testHost.querySelectorAll('.career-armour-inventory-list .career-armour-rig.compact-model')].map(rig => {
+          const model = rig.querySelector('.career-armour-model-system');
+          const armourSystem = rig.querySelector('.career-armour-weapon-system');
+          return {
+            parts: rig.querySelectorAll('.career-weapon-cuboid, .career-weapon-cylinder').length,
+            willChange: model ? window.getComputedStyle(model).willChange : '',
+            filter: armourSystem ? window.getComputedStyle(armourSystem).filter : ''
+          };
+        });
       } finally {
         testHost.remove();
       }
       const largeStoreStages = storeStages.length === ids.length && storeStages.every(stage => stage.largeEnough && stage.fullOrbit && stage.perspective !== 'none');
       const unflattened3d = storeStages.length === ids.length && storeStages.every(stage => stage.unflattened);
+      const staticCompactLayers = compactStageStyles.length === ids.length && compactStageStyles.every(stage => stage.willChange === 'auto' && !stage.filter.includes('drop-shadow'));
+      const detailPerformance = Boolean(detailStage?.productOnly) && detailStage.operatorBodies === 0 && detailStage.modelParts === fullDetailPartCount && detailStage.modelWillChange === 'auto';
       const lightWebgl = operatorArmourRenderProfile({ armourProfile: { classId: 'light' }, armourMaxDurability: 70, armourDurability: 70 });
       const heavyWebgl = operatorArmourRenderProfile({ armourProfile: { classId: 'heavy' }, armourMaxDurability: 140, armourDurability: 140 });
       const premiumHeavy = heavyWebgl.width > lightWebgl.width * 1.35 && heavyWebgl.depth > lightWebgl.depth * 2 && heavyWebgl.shoulder && heavyWebgl.collar && heavyWebgl.abdomen && heavyWebgl.groin;
       const operatorSkinPresentation = operatorSkinPresentationAudit();
       return {
-        ok: uniqueClasses && storeModels && storeForms && storeCaptions && interactive && shared3dPipeline && operatorFit && heavyFeatures && fullDepthFeatures && centeredRigs && largeStoreStages && unflattened3d && premiumHeavy && armouryOperatorSkin.lightNatural && operatorSkinPresentation.allTonesLight,
+        ok: uniqueClasses && storeModels && storeForms && storeCaptions && interactive && shared3dPipeline && productOnlyDetail && compactInventory && compactReduction && inventoryReductionPass && detailReduction && heavyFeatures && fullDepthFeatures && centeredRigs && largeStoreStages && unflattened3d && staticCompactLayers && detailPerformance && premiumHeavy && operatorSkinPresentation.allTonesLight,
         uniqueClasses,
         storeModels,
         storeForms,
         storeCaptions,
         interactive,
         shared3dPipeline,
-        operatorFit,
+        productOnlyDetail,
+        compactInventory,
+        compactReduction,
+        detailReduction,
+        fullPartCounts,
+        compactPartCounts,
+        fullInventoryPartCount,
+        compactInventoryPartCount,
+        inventoryPartReduction,
+        inventoryReductionPass,
+        fullDetailPartCount,
+        removedOperatorPartCount,
+        detailPartCount,
         operatorSkinPresentation,
         armouryOperatorSkin,
         heavyFeatures,
@@ -70504,6 +70622,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         centeredRigMeasurements,
         largeStoreStages,
         unflattened3d,
+        staticCompactLayers,
+        detailPerformance,
+        detailStage,
+        compactStageStyles,
         storeStages,
         premiumHeavy,
         classes,
