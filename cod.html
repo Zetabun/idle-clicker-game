@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.67: Living Press &amp; Player Honours</title>
+<title>Strikewatch 12.68: Mobile Onboarding &amp; HUD Clarity</title>
 <style>
   :root {
     color-scheme: dark;
@@ -22785,6 +22785,85 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   .club-honours-leaders article { grid-template-columns: 25px minmax(0, 1fr); }
   .club-honours-leaders article em { grid-column: 2; justify-self: start; }
 }
+
+/* Build 12.68 — mobile onboarding and live-view clarity corrections. */
+@media (max-width: 1023px) {
+  .menu-shell .manager-mail-badge:not([hidden]) {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 4px 0 !important;
+    line-height: 1 !important;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .menu-shell .manager-mail-badge[hidden] { display: none !important; }
+
+  .recruitment-knowledge {
+    width: min(178px, 100%);
+    gap: 4px;
+  }
+  .recruitment-knowledge i { height: 4px; }
+  .recruitment-knowledge small {
+    color: rgba(220, 235, 242, .78) !important;
+    font-size: var(--mobile-type-micro, 9px) !important;
+    line-height: 1.2 !important;
+    letter-spacing: .055em !important;
+    white-space: normal;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view .round {
+    min-height: 37px;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective {
+    left: 5px !important;
+    right: 5px !important;
+    top: 42px !important;
+    width: auto !important;
+    min-height: 25px;
+    transform: none !important;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+    padding: 3px 8px !important;
+    border-top: 0;
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 8px 17px rgba(0, 0, 0, .2);
+    text-align: left;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > span {
+    display: block;
+    color: #79cfff;
+    font-size: 8px !important;
+    line-height: 1 !important;
+    letter-spacing: .12em !important;
+    white-space: nowrap;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+    letter-spacing: .045em !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > small { display: none !important; }
+  body[data-new-player-demo='active'][data-app-state='match'][data-view-mode='windowed'] .match-objective {
+    border-color: rgba(100, 199, 232, .52);
+  }
+}
+
+@media (orientation: portrait) and (max-width: 360px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective {
+    gap: 5px;
+    padding-inline: 6px !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > span { font-size: 7.5px !important; }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > strong { font-size: 8px !important; }
+}
 </style>
 </head>
 <body>
@@ -23697,9 +23776,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.67';
-  const BUILD_NAME = 'LIVING PRESS & PLAYER HONOURS';
-  const BUILD_ID = '12.67.0-living-press-player-honours';
+  const BUILD_VERSION = '12.68';
+  const BUILD_NAME = 'MOBILE ONBOARDING & HUD CLARITY';
+  const BUILD_ID = '12.68.0-mobile-onboarding-hud-clarity';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -38876,6 +38955,8 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
         button.classList.toggle('selected', selected);
         button.setAttribute('aria-checked', selected ? 'true' : 'false');
       }
+      const preview = menuContentEl?.querySelector('.team-logo-preview > [data-team-logo-preview]');
+      if (preview) preview.outerHTML = teamLogoSvg(careerDraft.teamIdentity, 'team-logo-preview-mark');
       const label = menuContentEl?.querySelector('.team-logo-preview strong');
       if (label) label.textContent = TEAM_LOGO_DEFS[careerDraft.teamIdentity.logoId].label;
       return;
@@ -39549,10 +39630,10 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     return Boolean(guide && ['recruitment', 'profile', 'first-signing', 'active-five'].includes(guide.id));
   }
 
-  function recruitmentRoleGuideMarkup(forceCollapsed = false) {
-    const open = !forceCollapsed && recruitmentRoleGuideOpeningStep();
-    return `<details class="recruitment-role-guide ${open ? 'guided' : ''}" ${open ? 'open' : ''}>
-      <summary><span><b>${open ? 'RECRUITMENT TUTORIAL' : 'ROLE REFERENCE'}</b><strong>WHAT DOES EACH OPERATOR ROLE MEAN?</strong><small>Roles guide autonomous positioning and decisions; they are tactical tendencies rather than rigid character classes.</small></span><i aria-hidden="true">+</i></summary>
+  function recruitmentRoleGuideMarkup(_forceCollapsed = false) {
+    const guided = recruitmentRoleGuideOpeningStep();
+    return `<details class="recruitment-role-guide ${guided ? 'guided' : ''}">
+      <summary><span><b>${guided ? 'RECRUITMENT TUTORIAL' : 'ROLE REFERENCE'}</b><strong>WHAT DOES EACH OPERATOR ROLE MEAN?</strong><small>Roles guide autonomous positioning and decisions; they are tactical tendencies rather than rigid character classes.</small></span><i aria-hidden="true">+</i></summary>
       <div class="recruitment-role-guide-body">
         <div class="recruitment-role-grid">${TEAM_ROLES.map(role => teamRoleGuideCardMarkup(role.id)).join('')}</div>
         <aside><strong>A SIMPLE FIRST FIVE</strong><span>ENTRY · SUPPORT · ANCHOR · FLANKER · MARKSMAN, SHOT CALLER OR FLEX</span><p>This is a beginner-friendly balance, not a compulsory formation. Duplicate roles can work when their attributes, weapons and tactical plan support the choice.</p></aside>
@@ -48682,7 +48763,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function renderRecruitmentKnowledge(player) {
     const knowledge = recruitmentKnowledge(player);
-    return `<span class="recruitment-knowledge ${knowledge >= 80 ? 'complete' : knowledge >= 55 ? 'developing' : ''}"><i><b style="width:${knowledge}%"></b></i><small>${knowledge}% KNOWLEDGE</small></span>`;
+    const explanation = 'Scouting confidence shows how reliable the displayed ability, potential, fee, wage and medical estimates are.';
+    return `<span class="recruitment-knowledge ${knowledge >= 80 ? 'complete' : knowledge >= 55 ? 'developing' : ''}" title="${explanation}" aria-label="${knowledge}% scouting confidence. ${explanation}"><i aria-hidden="true"><b style="width:${knowledge}%"></b></i><small>${knowledge}% SCOUTING CONFIDENCE</small></span>`;
   }
 
   function recruitmentFunctionContribution(player, functionDef) {
@@ -48874,7 +48956,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function recruitmentBeginnerCandidateHeading(shownCount, totalCount) {
     const contracted = Math.min(TEAM_REQUIRED_STARTERS, (careerState.squad || []).length);
-    return `<div class="recruitment-beginner-candidate-head"><div><span>RECOMMENDED FOR YOUR FIRST ACTIVE FIVE</span><strong>CHOOSE THE NEXT OPERATOR</strong><p>These candidates are ranked for current team needs, affordability and role variety. Overall rating is not the only factor.</p></div><aside><strong>${shownCount}</strong><span>OF ${totalCount} SHOWN</span><small>${contracted}/${TEAM_REQUIRED_STARTERS} CONTRACTED</small></aside></div>`;
+    return `<div class="recruitment-beginner-candidate-head"><div><span>RECOMMENDED FOR YOUR FIRST ACTIVE FIVE</span><strong>CHOOSE THE NEXT OPERATOR</strong><p>These candidates are ranked for current team needs, affordability and role variety. The scouting confidence bar shows how reliable each ability, potential, fee, wage and medical estimate is.</p></div><aside><strong>${shownCount}</strong><span>OF ${totalCount} SHOWN</span><small>${contracted}/${TEAM_REQUIRED_STARTERS} CONTRACTED</small></aside></div>`;
   }
 
   function recruitmentCandidateImpactMarkup(player, recommendationMap) {
@@ -49100,7 +49182,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function renderRecruitmentShortlist() {
     const players = recruitmentState().shortlistIds.map(id => transferMarketPlayer(id)).filter(Boolean);
-    if (!players.length) return `${recruitmentComparisonPanelMarkup()}<section class="recruitment-empty"><strong>SHORTLIST EMPTY</strong><p>Add candidates from the market to monitor their scouting knowledge, rival bids and contract situation.</p><button data-recruitment-view="market">BROWSE MARKET</button></section>`;
+    if (!players.length) return `${recruitmentComparisonPanelMarkup()}<section class="recruitment-empty"><strong>SHORTLIST EMPTY</strong><p>Add candidates from the market to monitor their scouting confidence, rival bids and contract situation.</p><button data-recruitment-view="market">BROWSE MARKET</button></section>`;
     const recommendations = recruitmentRecommendationMap(players);
     return `${recruitmentComparisonPanelMarkup()}<section class="recruitment-shortlist-grid">${players.map(player => {
       const comparison = recruitmentBestComparison(player);
@@ -49125,7 +49207,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const assignments = state.assignments.length ? state.assignments.map(assignment => {
       const results = (assignment.resultIds || []).map(id => transferMarketPlayer(id)).filter(Boolean);
       return `<article class="recruitment-assignment-card ${assignment.status}"><header><div><span>${assignment.status === 'active' ? `${assignment.daysRemaining} DAYS REMAINING` : assignment.status.toUpperCase()}</span><strong>${recruitmentAssignmentSummary(assignment)}</strong></div>${assignment.status === 'active' ? `<button data-recruitment-cancel-assignment="${assignment.id}">CANCEL</button>` : ''}</header><i><b style="width:${assignment.status === 'complete' ? 100 : Math.max(8, (RECRUITMENT_ASSIGNMENT_DAYS - assignment.daysRemaining) / RECRUITMENT_ASSIGNMENT_DAYS * 100)}%"></b></i>${results.length ? `<div class="recruitment-assignment-results">${results.map(player => `<button data-team-profile="${player.id}"><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${recruitmentAbilityDisplay(player)} OVR EST.</small></button>`).join('')}</div>` : '<p>The network is observing matching candidates and improving report accuracy each day.</p>'}</article>`;
-    }).join('') : '<div class="recruitment-empty compact"><strong>NO ACTIVE ASSIGNMENTS</strong><p>Create a targeted brief to improve knowledge on matching candidates over three simulated days.</p></div>';
+    }).join('') : '<div class="recruitment-empty compact"><strong>NO ACTIVE ASSIGNMENTS</strong><p>Create a targeted brief to improve scouting confidence on matching candidates over three simulated days.</p></div>';
     const atLimit = state.assignments.filter(item => item.status === 'active').length >= RECRUITMENT_MAX_ASSIGNMENTS;
     return `<section class="recruitment-assignment-builder"><div class="career-section-head"><div><span>RECRUITMENT BRIEF</span><strong>CREATE ASSIGNMENT</strong></div><p>Target a role, age profile and ability level. Better staff produce faster and more accurate reports.</p></div><div class="recruitment-assignment-controls"><label><span>ROLE</span><select data-recruitment-draft="roleId">${roleOptions}</select></label><label><span>AGE</span><select data-recruitment-draft="ageBand">${ageOptions}</select></label><label><span>ABILITY</span><select data-recruitment-draft="abilityBand">${abilityOptions}</select></label><button class="primary" data-recruitment-start-assignment ${atLimit ? 'disabled' : ''}>START ${RECRUITMENT_ASSIGNMENT_DAYS}-DAY SEARCH</button></div></section><section class="recruitment-assignment-list">${assignments}</section>`;
   }
@@ -49155,7 +49237,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const toolbar = focusedBeginner ? '' : renderRecruitmentToolbar(state.view);
     const hero = focusedBeginner
       ? `<div class="menu-hero career-hero team-market-hero recruitment-beginner-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">GUIDED RECRUITMENT</div><h2>BUILD THE FIRST ACTIVE FIVE</h2><p>Ignore the wider scouting network for now. Open one report, compare two recommended operators and negotiate with the candidate who best fits the squad and budget.</p><div class="menu-pill-row"><span class="menu-pill">${displayedPlayers.length} RECOMMENDED</span><span class="menu-pill">${(careerState.squad || []).length} / ${TEAM_REQUIRED_STARTERS} CONTRACTED</span><span class="menu-pill">${teamCredits(careerState.credits)} CLUB CASH</span><span class="menu-pill">${teamCredits(Math.max(0, careerState.wageBudget - wageBill))} WAGE HEADROOM</span></div></div><div class="menu-hero-side"><div class="menu-kicker">CURRENT MILESTONE</div><div class="menu-side-operator">${(careerState.squad || []).length} / ${TEAM_REQUIRED_STARTERS}</div><p>Fill the deployment places, then the guide moves you directly to line-up review and tactics.</p></div></div>`
-      : `<div class="menu-hero career-hero team-market-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">RECRUITMENT DEPARTMENT</div><h2>SCOUTING NETWORK // WEEK ${careerState.week}</h2><p>Reports begin as estimates. Shortlist targets, commission role-specific assignments and monitor rival bids before entering a structured negotiation.</p><div class="menu-pill-row"><span class="menu-pill">${marketPlayers.length} MARKET PLAYERS</span><span class="menu-pill">${knowledgeAverage}% AVG KNOWLEDGE</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span></div></div><div class="menu-hero-side"><div class="menu-kicker">TRANSFER WINDOW</div><div class="menu-side-operator">${windowState.open ? 'OPEN' : 'CLOSED'}</div><p>${escapeCareerHtml(windowState.phase)} · ${escapeCareerHtml(windowState.detail)}</p></div></div>`;
+      : `<div class="menu-hero career-hero team-market-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">RECRUITMENT DEPARTMENT</div><h2>SCOUTING NETWORK // WEEK ${careerState.week}</h2><p>Reports begin as estimates. Scouting confidence shows how reliable the displayed ability, potential, fee, wage and medical information is; assignments improve it over time. Shortlist targets and monitor rival bids before negotiating.</p><div class="menu-pill-row"><span class="menu-pill">${marketPlayers.length} MARKET PLAYERS</span><span class="menu-pill">${knowledgeAverage}% AVG REPORT CONFIDENCE</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span></div></div><div class="menu-hero-side"><div class="menu-kicker">TRANSFER WINDOW</div><div class="menu-side-operator">${windowState.open ? 'OPEN' : 'CLOSED'}</div><p>${escapeCareerHtml(windowState.phase)} · ${escapeCareerHtml(windowState.detail)}</p></div></div>`;
     const advancedControls = focusedBeginner ? '' : `<section class="club-pool-control player-pool"><label><span>PLAYER SEARCH POOL</span><select disabled>${clubCurrentPoolOptions('players')}</select></label><p>${leagueDivisionPoolLabel()} access · Scout quality ${recruitmentScoutQuality()}/100. Promotion unlocks stronger pools. Commissioning a search rotates up to three low-priority listings while protecting shortlisted targets and active negotiations.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>COMMISSION SEARCH · ${teamCredits(TEAM_MARKET_REFRESH_COST)}</button></section>${typeof dynamicMarketPulseMarkup === 'function' ? dynamicMarketPulseMarkup() : ''}`;
     const beginnerPanel = beginnerMode ? recruitmentBeginnerPanelMarkup(displayedPlayers.length, marketPlayers.length) : '';
     if (focusedBeginner) return `${beginnerPanel}${viewContent}`;
@@ -49410,7 +49492,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const estimate = recruitmentEstimateRange(value, knowledge, 0, CAREER_MAX_STAT, true);
       const display = knowledge >= 88 ? String(value) : `${estimate.low}–${estimate.high}`;
       const midpoint = knowledge >= 88 ? value : (estimate.low + estimate.high) / 2;
-      return `<div class="team-attribute-row scouting-estimate ${key.startsWith('critical') ? 'critical-stat' : ''}"><span><strong>${meta.label}</strong><small>${knowledge >= 88 ? meta.affects : 'Scouting estimate · improve report knowledge'}</small></span><i><b style="width:${midpoint * 10}%"></b></i><em>${display}</em></div>`;
+      return `<div class="team-attribute-row scouting-estimate ${key.startsWith('critical') ? 'critical-stat' : ''}"><span><strong>${meta.label}</strong><small>${knowledge >= 88 ? meta.affects : 'Scouting estimate · improve report confidence'}</small></span><i><b style="width:${midpoint * 10}%"></b></i><em>${display}</em></div>`;
     }).join('');
   };
 
@@ -49434,7 +49516,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const originalTraits = (player.traits || []).map(trait => `<span>${escapeCareerHtml(trait)}</span>`).join('');
     const visibleTraits = traits.length ? traits.map(trait => `<span>${escapeCareerHtml(trait)}</span>`).join('') : '<span class="redacted">TRAITS NOT YET IDENTIFIED</span>';
     html = html.replace(originalTraits, visibleTraits);
-    html = html.replace('<div class="team-page-backbar"><button data-team-route="market">← BACK TO RECRUITMENT</button><span>RECRUITMENT DOSSIER</span></div>', `<div class="team-page-backbar"><button data-team-route="market">← BACK TO RECRUITMENT</button><span>SCOUT REPORT · ${knowledge}% KNOWLEDGE</span><button class="shortlist-toggle ${recruitmentShortlisted(player.id) ? 'active' : ''}" data-recruitment-shortlist="${player.id}">${recruitmentShortlisted(player.id) ? '★ SHORTLISTED' : '☆ ADD TO SHORTLIST'}</button></div>`);
+    html = html.replace('<div class="team-page-backbar"><button data-team-route="market">← BACK TO RECRUITMENT</button><span>RECRUITMENT DOSSIER</span></div>', `<div class="team-page-backbar"><button data-team-route="market">← BACK TO RECRUITMENT</button><span>SCOUT REPORT · ${knowledge}% CONFIDENCE</span><button class="shortlist-toggle ${recruitmentShortlisted(player.id) ? 'active' : ''}" data-recruitment-shortlist="${player.id}">${recruitmentShortlisted(player.id) ? '★ SHORTLISTED' : '☆ ADD TO SHORTLIST'}</button></div>`);
     if (typeof dynamicMarketPlayerProfileMarkup === 'function') html += dynamicMarketPlayerProfileMarkup(player);
     return html;
   };
@@ -68429,10 +68511,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const roleIds = cards.map(card => card.getAttribute('data-recruitment-role'));
       const flanker = cards.find(card => card.getAttribute('data-recruitment-role') === 'flanker');
       const guide = host.querySelector('.recruitment-role-guide');
+      const confidence = host.querySelector('.recruitment-knowledge');
       const destination = host.querySelector('[data-guide-target="recruitment-candidates"]');
       const checks = {
         allRolesExplained: TEAM_ROLES.every(role => roleIds.includes(role.id)),
-        guideStartsCollapsedDuringFocusedRecruitment: Boolean(guide && !guide.open),
+        guideStartsCollapsedByDefault: Boolean(guide && !guide.open),
+        scoutingConfidenceIsExplained: Boolean(confidence && /SCOUTING CONFIDENCE/.test(confidence.textContent || '') && /ability, potential, fee, wage and medical estimates/i.test(confidence.getAttribute('title') || '')),
         flankerUsesPlainLanguage: Boolean(flanker && /alternate route/i.test(flanker.textContent) && /side or rear/i.test(flanker.textContent)),
         attributesAndTradeoffsShown: cards.every(card => /LOOK FOR/.test(card.textContent) && /WATCH FOR/.test(card.textContent)),
         candidateDestinationContainsSixRows: (destination?.querySelectorAll('.recruitment-market-row').length || 0) === Math.min(6, recruitmentMarketCount),
