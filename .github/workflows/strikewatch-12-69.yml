@@ -1,6 +1,9 @@
 name: Strikewatch 12.69 artifact
 
 on:
+  push:
+    branches:
+      - openai/**
   pull_request:
     branches: [main]
   workflow_dispatch:
