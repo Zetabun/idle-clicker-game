@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.61: Mobile Readability & UX Pass</title>
+<title>Strikewatch 12.62: Mobile Navigation Consolidation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -21264,6 +21264,892 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     gap: 5px 8px !important;
   }
 }
+
+/* Build 12.62 — mobile navigation consolidation.
+   Mobile now has one persistent department control and one current-page picker.
+   The legacy horizontal route carousel and duplicated in-page directories remain
+   available on desktop only. */
+.mobile-command-route-bar,
+.mobile-navigation-overlay { display: none; }
+.mobile-navigation-overlay[hidden] { display: none !important; }
+
+@media (max-width: 1023px) {
+  body.mobile-navigation-open { overflow: hidden !important; touch-action: none; }
+
+  .menu-shell .menu-subnav-shell { display: none !important; }
+  .menu-shell .mobile-command-route-bar {
+    display: block !important;
+    position: sticky;
+    top: 0;
+    z-index: 34;
+    margin: 0 0 12px;
+    padding: 6px 8px 0;
+    background: linear-gradient(180deg, rgba(5, 17, 26, .98) 70%, rgba(5, 17, 26, .86) 86%, rgba(5, 17, 26, 0));
+  }
+  .menu-shell .mobile-command-route-button {
+    width: 100%;
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px 9px 12px;
+    border: 1px solid #214151;
+    border-left: 3px solid #55d5ff;
+    border-radius: 3px;
+    color: #eef8ff;
+    background: linear-gradient(110deg, #0c2534 0%, #081a25 72%);
+    text-align: left;
+    box-shadow: 0 7px 20px rgba(0, 0, 0, .18);
+  }
+  .menu-shell .mobile-command-route-button:focus-visible {
+    outline: 2px solid #76e5ff;
+    outline-offset: 2px;
+  }
+  .mobile-command-route-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .mobile-command-route-copy small {
+    color: #70d9f8;
+    font-size: 9.5px !important;
+    line-height: 1.1 !important;
+    font-style: normal;
+    font-weight: 900;
+    letter-spacing: .12em;
+  }
+  .mobile-command-route-copy strong {
+    overflow: hidden;
+    color: #f5fbff;
+    font-size: 13px !important;
+    line-height: 1.18 !important;
+    font-weight: 900;
+    letter-spacing: .025em;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-command-route-copy em {
+    overflow: hidden;
+    color: #9bb0bd;
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+    font-style: normal;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-command-route-position {
+    color: #7e95a3;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    font-weight: 900;
+    letter-spacing: .08em;
+    white-space: nowrap;
+  }
+  .mobile-command-route-action {
+    width: 52px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    border-left: 1px solid #254755;
+    color: #75dcff;
+  }
+  .mobile-command-route-action svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+  .mobile-command-route-action b {
+    font-size: 9px !important;
+    line-height: 1 !important;
+    letter-spacing: .08em;
+  }
+
+  /* The section bar is the only persistent primary navigation on portrait. */
+  .menu-shell .menu-layout {
+    display: block !important;
+    grid-template-columns: none !important;
+    padding-bottom: calc(66px + env(safe-area-inset-bottom)) !important;
+  }
+  .menu-shell .menu-sidebar {
+    position: fixed !important;
+    z-index: 180 !important;
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    height: calc(62px + env(safe-area-inset-bottom)) !important;
+    min-height: 0 !important;
+    padding: 5px max(6px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)) !important;
+    border: 0 !important;
+    border-top: 1px solid #264654 !important;
+    background: rgba(5, 18, 27, .985) !important;
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, .3) !important;
+    overflow: visible !important;
+  }
+  .menu-shell .menu-command-mark,
+  .menu-shell .menu-side-actions { display: none !important; }
+  .menu-shell .menu-nav {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: auto !important;
+    gap: 3px !important;
+    width: 100% !important;
+    height: 52px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .menu-shell .menu-tab {
+    position: relative !important;
+    min-width: 0 !important;
+    width: auto !important;
+    min-height: 52px !important;
+    height: 52px !important;
+    display: grid !important;
+    place-items: center !important;
+    align-content: center !important;
+    gap: 1px !important;
+    padding: 5px 2px 4px !important;
+    border: 0 !important;
+    border-radius: 4px !important;
+    background: transparent !important;
+    color: #8398a5 !important;
+    text-align: center !important;
+    opacity: 1 !important;
+  }
+  .menu-shell .menu-tab::before {
+    content: '';
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+  }
+  .menu-shell .menu-tab.active {
+    color: #f4fbff !important;
+    background: #102a38 !important;
+  }
+  .menu-shell .menu-tab.active::before { background: #58d7ff; }
+  .menu-shell .menu-tab.guided-target:not(.active)::before { background: #54d3ba; }
+  .menu-shell .menu-tab-index,
+  .menu-shell .menu-tab-copy small,
+  .menu-shell .menu-tab-chevron { display: none !important; }
+  .menu-shell .menu-tab-copy {
+    display: block !important;
+    min-width: 0 !important;
+  }
+  .menu-shell .menu-tab-copy strong {
+    display: block !important;
+    overflow: hidden;
+    color: inherit !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+    letter-spacing: .045em !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .menu-shell .menu-tab-label-full { display: none !important; }
+  .menu-shell .menu-tab-label-mobile { display: inline !important; }
+  .menu-shell .menu-tab-access {
+    position: static !important;
+    display: block !important;
+    max-width: 100%;
+    margin-top: 3px !important;
+    padding: 1px 3px !important;
+    border: 1px solid #314a56 !important;
+    border-radius: 2px !important;
+    color: #70838e !important;
+    font-size: 8px !important;
+    line-height: 1.05 !important;
+    letter-spacing: .03em !important;
+    white-space: nowrap;
+  }
+  .menu-shell .menu-tab-access[hidden] { display: none !important; }
+  .menu-shell .menu-tab-badge {
+    position: absolute !important;
+    top: 2px !important;
+    right: 6px !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    padding: 0 4px !important;
+    font-size: 8px !important;
+    line-height: 17px !important;
+  }
+  .menu-shell .menu-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Route lists now live in one navigator, so in-page duplicates disappear. */
+  #menuContent .command-directory-panel,
+  #menuContent .section-hub-pages,
+  #menuContent .section-hub-recent { display: none !important; }
+
+  .menu-shell .mobile-navigation-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    color: #eaf7ff;
+    background: #06131c;
+  }
+  .menu-shell .mobile-navigation-drawer {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    display: grid;
+    grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto;
+    overflow: hidden;
+    background:
+      linear-gradient(180deg, rgba(19, 50, 65, .32), transparent 190px),
+      #071721;
+  }
+  .mobile-navigation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: calc(70px + env(safe-area-inset-top));
+    padding: calc(10px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left));
+    border-bottom: 1px solid #284957;
+    background: #0a202c;
+  }
+  .mobile-navigation-header > div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .mobile-navigation-header span,
+  .mobile-navigation-search label span,
+  .mobile-navigation-list-head span {
+    color: #67d5f5;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    font-weight: 900;
+    letter-spacing: .12em;
+  }
+  .mobile-navigation-header strong {
+    color: #f5fbff;
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+    letter-spacing: .035em;
+  }
+  .mobile-navigation-header small {
+    overflow: hidden;
+    color: #94aab7;
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-navigation-close {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #335565;
+    border-radius: 50%;
+    color: #dff7ff;
+    background: #0e2a38;
+  }
+  .mobile-navigation-close svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .mobile-navigation-search {
+    display: grid;
+    gap: 5px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #183341;
+    background: #081b26;
+  }
+  .mobile-navigation-search > div {
+    min-height: 46px;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px 0 11px;
+    border: 1px solid #2c5060;
+    border-radius: 4px;
+    background: #04131b;
+  }
+  .mobile-navigation-search svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: #66ccea;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+  }
+  .mobile-navigation-search input {
+    min-width: 0;
+    width: 100%;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    color: #eefaff;
+    background: transparent;
+    font-size: 13px !important;
+  }
+  .mobile-navigation-search input::placeholder { color: #6d828e; }
+  .mobile-navigation-search button {
+    min-width: 52px;
+    min-height: 36px;
+    border: 0;
+    border-left: 1px solid #264652;
+    color: #6fd8f7;
+    background: transparent;
+    font-size: 9px !important;
+    font-weight: 900;
+  }
+  .mobile-navigation-sections {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 7px 8px;
+    border-bottom: 1px solid #294957;
+    background: #0b202b;
+  }
+  .mobile-navigation-section {
+    position: relative;
+    min-width: 0;
+    min-height: 52px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 3px;
+    padding: 4px 1px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: #8499a5;
+    background: #081821;
+  }
+  .mobile-navigation-section.active {
+    border-color: #3a6b7e;
+    color: #f4fbff;
+    background: #123243;
+    box-shadow: inset 0 -2px #58d8ff;
+  }
+  .mobile-navigation-section > span {
+    color: #607986;
+    font-size: 8.5px !important;
+    line-height: 1 !important;
+    font-weight: 900;
+  }
+  .mobile-navigation-section > strong {
+    overflow: hidden;
+    max-width: 100%;
+    color: inherit;
+    font-size: 9.5px !important;
+    line-height: 1.1 !important;
+    letter-spacing: .025em;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-navigation-section-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+    border-radius: 8px;
+    color: #06131b;
+    background: #6ad9fa;
+    font-size: 7.5px !important;
+    line-height: 16px !important;
+    font-weight: 900;
+  }
+  .mobile-navigation-section-badge.access {
+    border-radius: 2px;
+    color: #92a3ac;
+    background: #20323b;
+  }
+  .mobile-navigation-journey {
+    padding: 8px 10px 0;
+    background: #071721;
+  }
+  .mobile-navigation-journey[hidden] { display: none !important; }
+  .mobile-navigation-journey button {
+    width: 100%;
+    min-height: 62px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    padding: 9px 10px;
+    border: 1px solid #357890;
+    border-left: 3px solid #58d8ff;
+    border-radius: 3px;
+    color: #eaf9ff;
+    background: #0b2938;
+    text-align: left;
+  }
+  .mobile-navigation-journey button span,
+  .mobile-navigation-journey button strong,
+  .mobile-navigation-journey button small { grid-column: 1; }
+  .mobile-navigation-journey button span {
+    color: #6edcfa;
+    font-size: 8.5px !important;
+    line-height: 1.15 !important;
+    font-weight: 900;
+    letter-spacing: .09em;
+  }
+  .mobile-navigation-journey button strong {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+  }
+  .mobile-navigation-journey button small {
+    overflow: hidden;
+    color: #a8bdc8;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-navigation-journey button em {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+    color: #07131b;
+    padding: 8px 9px;
+    border-radius: 3px;
+    background: #64d7f8;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    font-style: normal;
+    font-weight: 900;
+  }
+  .mobile-navigation-list-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid #1e3946;
+    background: #071721;
+  }
+  .mobile-navigation-list-head > div { display: grid; gap: 2px; }
+  .mobile-navigation-list-head strong {
+    color: #eef9ff;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+  .mobile-navigation-list-head > small {
+    max-width: 48%;
+    color: #7f96a3;
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+    text-align: right;
+  }
+  .mobile-navigation-routes {
+    min-height: 0;
+    display: grid;
+    align-content: start;
+    gap: 5px;
+    padding: 7px 8px 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    background: #06141d;
+  }
+  .mobile-navigation-route {
+    position: relative;
+    width: 100%;
+    min-height: 72px;
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto 18px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px;
+    border: 1px solid #1c3947;
+    border-radius: 3px;
+    color: #e7f6fd;
+    background: #091c27;
+    text-align: left;
+  }
+  .mobile-navigation-route.active {
+    border-color: #4ba5c5;
+    border-left: 3px solid #66dafa;
+    background: #102d3d;
+  }
+  .mobile-navigation-route.locked {
+    color: #81929b;
+    background: #09171f;
+    opacity: .72;
+  }
+  .mobile-navigation-route-index {
+    color: #557482;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    font-weight: 900;
+  }
+  .mobile-navigation-route-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .mobile-navigation-route-copy small {
+    color: #5fcbe9;
+    font-size: 8.5px !important;
+    line-height: 1.1 !important;
+    font-weight: 900;
+    letter-spacing: .1em;
+  }
+  .mobile-navigation-route-copy strong {
+    color: inherit;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    font-weight: 900;
+    letter-spacing: .02em;
+  }
+  .mobile-navigation-route-copy em,
+  .mobile-navigation-route-copy i {
+    overflow: hidden;
+    color: #98adb8;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    font-style: normal;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mobile-navigation-route-copy i { color: #b59365; }
+  .mobile-navigation-route-status {
+    max-width: 86px;
+    padding: 4px 5px;
+    border: 1px solid #31505d;
+    border-radius: 2px;
+    color: #8de3fb;
+    font-size: 8px !important;
+    line-height: 1.15 !important;
+    font-weight: 900;
+    letter-spacing: .035em;
+    text-align: center;
+  }
+  .mobile-navigation-route-status.locked { color: #a68b67; border-color: #51483c; }
+  .mobile-navigation-route > svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: #5fcfed;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mobile-navigation-route.locked > svg { opacity: .35; }
+  .mobile-navigation-empty {
+    display: grid;
+    place-items: center;
+    min-height: 150px;
+    padding: 24px;
+    border: 1px dashed #294652;
+    color: #99adb8;
+    text-align: center;
+  }
+  .mobile-navigation-empty strong { color: #e9f8ff; font-size: 13px !important; }
+  .mobile-navigation-empty p { margin: 6px 0 0; font-size: 11px !important; line-height: 1.4 !important; }
+  .mobile-navigation-footer {
+    display: grid;
+    grid-template-columns: minmax(120px, .65fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 12px;
+    padding: 8px max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    border-top: 1px solid #294957;
+    background: #0a202c;
+  }
+  .mobile-navigation-footer > button {
+    min-height: 44px;
+    display: grid;
+    align-content: center;
+    padding: 5px 10px;
+    border: 1px solid #376274;
+    color: #dff8ff;
+    background: #102f3e;
+    text-align: left;
+  }
+  .mobile-navigation-footer > button span { color: #6bcfea; font-size: 8px !important; font-weight: 900; letter-spacing: .08em; }
+  .mobile-navigation-footer > button strong { font-size: 10px !important; line-height: 1.15 !important; }
+  .mobile-navigation-footer > small {
+    color: #78909c;
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+  }
+  .mobile-navigation-session-actions {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  body[data-menu-context='pause'] .mobile-navigation-session-actions { display: grid; }
+  body[data-menu-context='pause'] .mobile-navigation-footer { grid-template-columns: 1fr; }
+  .mobile-navigation-session-actions button {
+    min-height: 44px;
+    border: 1px solid #416476;
+    color: #e8f9ff;
+    background: #102b39;
+    font-size: 9px !important;
+    font-weight: 900;
+  }
+  .mobile-navigation-session-actions button:last-child { border-color: #65464a; color: #ffc2c2; background: #29191d; }
+}
+
+/* Short landscape management mode keeps the same architecture but uses a
+   compact left department rail to preserve vertical working space. */
+@media (orientation: landscape) and (max-width: 1023px) and (max-height: 500px) {
+  .menu-shell .menu-layout {
+    display: grid !important;
+    grid-template-columns: 96px minmax(0, 1fr) !important;
+    padding-bottom: 0 !important;
+  }
+  .menu-shell .menu-sidebar {
+    position: relative !important;
+    z-index: 45 !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    width: 96px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 5px !important;
+    border: 0 !important;
+    border-right: 1px solid #294957 !important;
+    box-shadow: none !important;
+    background: #071923 !important;
+  }
+  .menu-shell .menu-nav {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: repeat(5, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+    gap: 4px !important;
+    height: 100% !important;
+  }
+  .menu-shell .menu-tab {
+    height: auto !important;
+    min-height: 46px !important;
+    padding: 3px 2px !important;
+  }
+  .menu-shell .menu-tab::before {
+    top: 18%;
+    bottom: 18%;
+    left: 0;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+  .menu-shell .menu-tab-copy strong { font-size: 9px !important; }
+  .menu-shell .menu-tab-badge { top: 1px !important; right: 2px !important; }
+  .menu-shell .menu-content {
+    grid-column: 2 !important;
+    min-width: 0 !important;
+  }
+  .menu-shell .mobile-command-route-bar {
+    margin-bottom: 7px;
+    padding: 4px 6px 0;
+  }
+  .menu-shell .mobile-command-route-button {
+    min-height: 51px;
+    padding-block: 5px;
+  }
+  .mobile-command-route-copy em { display: none; }
+  .mobile-navigation-header {
+    min-height: 58px;
+    padding: 7px max(10px, env(safe-area-inset-right)) 7px max(12px, env(safe-area-inset-left));
+  }
+  .mobile-navigation-header strong { font-size: 14px !important; }
+  .mobile-navigation-close { width: 44px; height: 44px; flex-basis: 44px; }
+  .mobile-navigation-drawer {
+    grid-template-columns: 118px minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+  }
+  .mobile-navigation-header,
+  .mobile-navigation-search,
+  .mobile-navigation-journey,
+  .mobile-navigation-footer { grid-column: 1 / -1; }
+  .mobile-navigation-sections {
+    grid-column: 1;
+    grid-row: 3 / 5;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    align-content: stretch;
+    gap: 3px;
+    padding: 6px;
+    border-right: 1px solid #294957;
+    border-bottom: 0;
+  }
+  .mobile-navigation-section { min-height: 42px; }
+  .mobile-navigation-list-head {
+    grid-column: 2;
+    grid-row: 3;
+    padding: 6px 10px;
+  }
+  .mobile-navigation-routes {
+    grid-column: 2;
+    grid-row: 4;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px 7px;
+  }
+  .mobile-navigation-route {
+    min-height: 62px;
+    grid-template-columns: 22px minmax(0, 1fr) 15px;
+    gap: 6px;
+    padding: 6px;
+  }
+  .mobile-navigation-route-status { display: none; }
+  .mobile-navigation-route-copy i { display: none; }
+  .mobile-navigation-footer {
+    grid-template-columns: minmax(130px, .5fr) minmax(0, 1fr);
+    padding-block: 5px;
+  }
+  .mobile-navigation-footer > small { font-size: 8.5px !important; }
+}
+
+/* Build 12.62 narrow-screen and compact-landscape corrections. */
+@media (max-width: 1023px) {
+  .menu-shell .menu-tab { grid-template-columns: 1fr !important; grid-auto-flow: row !important; }
+  .mobile-navigation-section > strong > i { color: inherit; font: inherit; font-style: normal; }
+  .mobile-navigation-section-label-short { display: none; }
+}
+
+@media (max-width: 350px) {
+  .mobile-navigation-section-label-full { display: none; }
+  .mobile-navigation-section-label-short { display: inline; }
+  .mobile-navigation-route {
+    min-height: 82px;
+    grid-template-columns: 22px minmax(0, 1fr) 16px;
+    grid-template-rows: auto auto;
+  }
+  .mobile-navigation-route-index { grid-column: 1; grid-row: 1 / span 2; }
+  .mobile-navigation-route-copy { grid-column: 2; grid-row: 1; }
+  .mobile-navigation-route-status {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    max-width: 100%;
+  }
+  .mobile-navigation-route > svg { grid-column: 3; grid-row: 1 / span 2; }
+}
+
+@media (orientation: landscape) and (max-width: 1023px) and (max-height: 500px) {
+  .menu-shell .mobile-navigation-drawer {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto !important;
+  }
+  .mobile-navigation-header,
+  .mobile-navigation-search,
+  .mobile-navigation-sections,
+  .mobile-navigation-list-head,
+  .mobile-navigation-routes,
+  .mobile-navigation-footer {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+  .mobile-navigation-journey { display: none !important; }
+  .mobile-navigation-search {
+    grid-template-columns: 118px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding-block: 6px;
+  }
+  .mobile-navigation-search > div { min-height: 42px; }
+  .mobile-navigation-search input { height: 40px; font-size: 11px !important; }
+  .mobile-navigation-sections {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-template-rows: 44px !important;
+    gap: 4px;
+    padding: 5px 8px;
+    border-right: 0;
+    border-bottom: 1px solid #294957;
+  }
+  .mobile-navigation-section { min-height: 44px; }
+  .mobile-navigation-list-head { padding: 5px 10px; }
+  .mobile-navigation-routes {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-content: start;
+    gap: 4px;
+    padding: 5px 7px;
+  }
+  .mobile-navigation-route { min-height: 62px; }
+  .mobile-navigation-footer { padding-block: 4px; }
+}
+
+@media (orientation: portrait) and (max-width: 1023px) {
+  .menu-shell .menu-content { padding-bottom: calc(74px + env(safe-area-inset-bottom)) !important; }
+}
+
+@media (max-width: 1023px) {
+  .menu-shell .menu-tab-access,
+  .menu-shell .menu-tab-badge,
+  .mobile-navigation-section-badge,
+  .mobile-navigation-route-status,
+  .mobile-navigation-journey button span,
+  .mobile-navigation-footer > button span {
+    font-size: 9px !important;
+  }
+  .mobile-navigation-section-badge {
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .mobile-navigation-section > span,
+  .mobile-navigation-route-copy small,
+  .mobile-navigation-footer > small {
+    font-size: 9px !important;
+  }
+}
+
+/* Build 12.62 second-pass touch-target correction. */
+@media (max-width: 1023px) {
+  .mobile-navigation-search button { min-height: 44px; }
+}
+@media (orientation: landscape) and (max-width: 1023px) and (max-height: 500px) {
+  .mobile-navigation-search > div { min-height: 46px; }
+  .mobile-navigation-search input { height: 44px; }
+}
+
+/* Build 12.62 compact-landscape lock clarity correction. */
+@media (orientation: landscape) and (max-width: 1023px) and (max-height: 500px) {
+  .mobile-navigation-route {
+    min-height: 88px;
+    grid-template-columns: 22px minmax(0, 1fr) 15px;
+    grid-template-rows: auto auto;
+    align-items: center;
+  }
+  .mobile-navigation-route-index { grid-column: 1; grid-row: 1 / span 2; }
+  .mobile-navigation-route-copy { grid-column: 2; grid-row: 1; }
+  .mobile-navigation-route-copy i {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+  .mobile-navigation-route-status {
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    max-width: 100%;
+  }
+  .mobile-navigation-route > svg { grid-column: 3; grid-row: 1 / span 2; }
+}
 </style>
 </head>
 <body>
@@ -21536,7 +22422,7 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.61 · MOBILE READABILITY & UX PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.62 · MOBILE NAVIGATION CONSOLIDATION</div>
   </div>
 
   <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
@@ -21836,7 +22722,56 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
           <nav class="menu-subnav" id="menuSubnav" aria-label="Section navigation"></nav>
           <button class="menu-subnav-arrow right" id="menuSubnavRight" aria-label="Show more menu items" hidden>›</button>
         </div>
+        <div class="mobile-command-route-bar" id="mobileCommandRouteBar">
+          <button class="mobile-command-route-button" id="mobileNavigationOpenBtn" type="button" aria-expanded="false" aria-controls="mobileNavigationOverlay">
+            <span class="mobile-command-route-copy">
+              <small id="mobileCommandSectionLabel">OPERATIONS</small>
+              <strong id="mobileCommandRouteLabel">COMMAND CENTRE</strong>
+              <em id="mobileCommandRouteHint">Club overview and next actions</em>
+            </span>
+            <span class="mobile-command-route-position" id="mobileCommandRoutePosition">1 OF 6</span>
+            <span class="mobile-command-route-action"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"></path></svg><b>PAGES</b></span>
+          </button>
+        </div>
         <div id="menuContent"></div>
+      </section>
+    </div>
+
+    <div class="mobile-navigation-overlay" id="mobileNavigationOverlay" hidden aria-hidden="true">
+      <section class="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-labelledby="mobileNavigationTitle">
+        <header class="mobile-navigation-header">
+          <div>
+            <span>STRIKEWATCH // CLUB NAVIGATION</span>
+            <strong id="mobileNavigationTitle">CHOOSE A PAGE</strong>
+            <small id="mobileNavigationContext">Operations · Command Centre</small>
+          </div>
+          <button class="mobile-navigation-close" id="mobileNavigationCloseBtn" type="button" aria-label="Close club navigation">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+          </button>
+        </header>
+        <div class="mobile-navigation-search">
+          <label for="mobileNavigationSearch"><span>FIND A CLUB PAGE</span></label>
+          <div>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
+            <input id="mobileNavigationSearch" type="search" placeholder="Search training, squad, finances…" autocomplete="off" />
+            <button id="mobileNavigationSearchClear" type="button" hidden>CLEAR</button>
+          </div>
+        </div>
+        <nav class="mobile-navigation-sections" id="mobileNavigationSections" aria-label="Club sections"></nav>
+        <div class="mobile-navigation-journey" id="mobileNavigationJourney" hidden></div>
+        <div class="mobile-navigation-list-head">
+          <div><span id="mobileNavigationListKicker">OPERATIONS PAGES</span><strong id="mobileNavigationListTitle">6 DESTINATIONS</strong></div>
+          <small>Choose a page. Locked systems show exactly what opens them.</small>
+        </div>
+        <nav class="mobile-navigation-routes" id="mobileNavigationRoutes" aria-label="Available club pages"></nav>
+        <div class="mobile-navigation-footer">
+          <button type="button" data-mobile-nav-route="play"><span>RETURN TO</span><strong>COMMAND CENTRE</strong></button>
+          <div class="mobile-navigation-session-actions">
+            <button type="button" data-mobile-nav-action="resume">RETURN TO MATCH</button>
+            <button type="button" data-mobile-nav-action="exit">EXIT TO MAIN MENU</button>
+          </div>
+          <small>Tap the active department in the persistent bar to reopen this navigator.</small>
+        </div>
       </section>
     </div>
   </div>
@@ -21994,6 +22929,23 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const menuSubnavShellEl = document.getElementById('menuSubnavShell');
   const menuSubnavLeftBtn = document.getElementById('menuSubnavLeft');
   const menuSubnavRightBtn = document.getElementById('menuSubnavRight');
+  const mobileCommandRouteBarEl = document.getElementById('mobileCommandRouteBar');
+  const mobileNavigationOpenBtn = document.getElementById('mobileNavigationOpenBtn');
+  const mobileCommandSectionLabelEl = document.getElementById('mobileCommandSectionLabel');
+  const mobileCommandRouteLabelEl = document.getElementById('mobileCommandRouteLabel');
+  const mobileCommandRouteHintEl = document.getElementById('mobileCommandRouteHint');
+  const mobileCommandRoutePositionEl = document.getElementById('mobileCommandRoutePosition');
+  const mobileNavigationOverlayEl = document.getElementById('mobileNavigationOverlay');
+  const mobileNavigationCloseBtn = document.getElementById('mobileNavigationCloseBtn');
+  const mobileNavigationTitleEl = document.getElementById('mobileNavigationTitle');
+  const mobileNavigationContextEl = document.getElementById('mobileNavigationContext');
+  const mobileNavigationSearchEl = document.getElementById('mobileNavigationSearch');
+  const mobileNavigationSearchClearBtn = document.getElementById('mobileNavigationSearchClear');
+  const mobileNavigationSectionsEl = document.getElementById('mobileNavigationSections');
+  const mobileNavigationJourneyEl = document.getElementById('mobileNavigationJourney');
+  const mobileNavigationListKickerEl = document.getElementById('mobileNavigationListKicker');
+  const mobileNavigationListTitleEl = document.getElementById('mobileNavigationListTitle');
+  const mobileNavigationRoutesEl = document.getElementById('mobileNavigationRoutes');
   const menuBackBtn = document.getElementById('menuBackBtn');
   const menuForwardBtn = document.getElementById('menuForwardBtn');
   const startMatchBtn = document.getElementById('startMatchBtn');
@@ -22105,9 +23057,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.61';
-  const BUILD_NAME = 'MOBILE READABILITY & UX PASS';
-  const BUILD_ID = '12.61.0-mobile-readability-ux-pass';
+  const BUILD_VERSION = '12.62';
+  const BUILD_NAME = 'MOBILE NAVIGATION CONSOLIDATION';
+  const BUILD_ID = '12.62.0-mobile-navigation-consolidation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -52603,6 +53555,145 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return (section.routes || []).filter(route => !route.contextOnly || (includeContextRoute && route.id === menuTab));
   }
 
+  let mobileNavigationSectionId = 'operations';
+  let mobileNavigationQuery = '';
+  let mobileNavigationLastFocus = null;
+
+  function mobileNavigationEnabled() {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1023px)').matches;
+  }
+
+  function mobileNavigationIsOpen() {
+    return Boolean(mobileNavigationOverlayEl && !mobileNavigationOverlayEl.hidden);
+  }
+
+  function mobileNavigationRouteEntries() {
+    const query = String(mobileNavigationQuery || '').trim().toLowerCase();
+    if (!query) {
+      return menuVisibleRoutes(mobileNavigationSectionId, true).map(route => ({
+        ...route,
+        sectionId: mobileNavigationSectionId,
+        sectionLabel: menuSections[mobileNavigationSectionId]?.label || 'OPERATIONS'
+      }));
+    }
+    return Object.entries(menuSections).flatMap(([sectionId, section]) => menuVisibleRoutes(sectionId, true)
+      .map(route => ({ ...route, sectionId, sectionLabel: section.label }))
+      .filter(route => `${route.sectionLabel} ${route.label} ${route.hint}`.toLowerCase().includes(query)));
+  }
+
+  function renderMobileNavigationSections() {
+    if (!mobileNavigationSectionsEl) return;
+    mobileNavigationSectionsEl.innerHTML = Object.entries(menuSections).map(([sectionId, section], index) => {
+      const signal = typeof menuSectionNotification === 'function' ? menuSectionNotification(sectionId) : { count: 0, tone: 'progress' };
+      const access = typeof progressiveSectionAccess === 'function' ? progressiveSectionAccess(sectionId) : { state: 'ready', label: 'OPEN', reason: '' };
+      const current = sectionId === mobileNavigationSectionId;
+      const badge = signal.count > 0
+        ? `<b class="mobile-navigation-section-badge ${escapeCareerHtml(signal.tone || 'progress')}">${signal.count > 99 ? '99+' : signal.count}</b>`
+        : access.state !== 'ready' ? `<b class="mobile-navigation-section-badge access">${escapeCareerHtml(access.state === 'locked' ? 'LOCK' : access.label)}</b>` : '';
+      const compactLabel = { operations: 'OPS', career: 'TEAM', armoury: 'GEAR', supplies: 'SUPPLY', systems: 'CLUB' }[sectionId] || section.label;
+      return `<button type="button" class="mobile-navigation-section ${current ? 'active' : ''} ${escapeCareerHtml(access.state || 'ready')}" data-mobile-nav-section="${escapeCareerHtml(sectionId)}" aria-pressed="${current ? 'true' : 'false'}" title="${escapeCareerHtml(access.state === 'ready' ? section.description : access.reason)}"><span>${String(index + 1).padStart(2, '0')}</span><strong><i class="mobile-navigation-section-label-full">${escapeCareerHtml(section.label)}</i><i class="mobile-navigation-section-label-short">${escapeCareerHtml(compactLabel)}</i></strong>${badge}</button>`;
+    }).join('');
+  }
+
+  function renderMobileNavigationJourney() {
+    if (!mobileNavigationJourneyEl) return;
+    const guidance = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
+    if (!guidance) {
+      mobileNavigationJourneyEl.hidden = true;
+      mobileNavigationJourneyEl.replaceChildren();
+      return;
+    }
+    mobileNavigationJourneyEl.hidden = false;
+    mobileNavigationJourneyEl.innerHTML = `<button type="button" data-mobile-nav-route="${escapeCareerHtml(guidance.route)}"><span>FIRST MATCH JOURNEY · ${guidance.milestoneIndex + 1}/${guidance.milestoneTotal}</span><strong>${escapeCareerHtml(guidance.label)}</strong><small>${escapeCareerHtml(guidance.detail)}</small><em>${escapeCareerHtml(guidance.action || 'OPEN')}</em></button>`;
+  }
+
+  function renderMobileNavigationRoutes() {
+    if (!mobileNavigationRoutesEl) return;
+    const entries = mobileNavigationRouteEntries();
+    const query = String(mobileNavigationQuery || '').trim();
+    const selectedSection = menuSections[mobileNavigationSectionId] || menuSections.operations;
+    if (mobileNavigationListKickerEl) mobileNavigationListKickerEl.textContent = query ? 'SEARCH RESULTS' : `${selectedSection.label} PAGES`;
+    if (mobileNavigationListTitleEl) mobileNavigationListTitleEl.textContent = entries.length ? `${entries.length} DESTINATION${entries.length === 1 ? '' : 'S'}` : 'NO MATCHING PAGES';
+    mobileNavigationRoutesEl.innerHTML = entries.length ? entries.map((route, index) => {
+      const access = typeof progressiveRouteAccess === 'function' ? progressiveRouteAccess(route.id) : { locked: false, unlockLabel: '', reason: '' };
+      const signal = access.locked || typeof menuRouteNotification !== 'function' ? { count: 0, label: '', tone: 'progress' } : menuRouteNotification(route.id);
+      const active = menuTab === route.id;
+      const status = access.locked ? `LOCKED · ${access.unlockLabel || 'PROGRESS REQUIRED'}` : active ? 'CURRENT PAGE' : signal.count ? `${signal.count > 99 ? '99+' : signal.count} ${signal.label}` : 'OPEN';
+      const aria = access.locked ? `${route.label}, locked, ${access.reason}` : `${route.label}, ${route.hint}${active ? ', current page' : ''}`;
+      return `<button type="button" class="mobile-navigation-route ${active ? 'active' : ''} ${access.locked ? 'locked' : ''}" data-mobile-nav-route="${escapeCareerHtml(route.id)}" ${access.locked ? 'disabled' : ''} aria-current="${active ? 'page' : 'false'}" aria-label="${escapeCareerHtml(aria)}"><span class="mobile-navigation-route-index">${String(index + 1).padStart(2, '0')}</span><span class="mobile-navigation-route-copy"><small>${escapeCareerHtml(query ? route.sectionLabel : route.overview ? 'SECTION OVERVIEW' : 'CLUB PAGE')}</small><strong>${escapeCareerHtml(route.label)}</strong><em>${escapeCareerHtml(route.hint)}</em>${access.locked && access.reason ? `<i>${escapeCareerHtml(access.reason)}</i>` : ''}</span><span class="mobile-navigation-route-status ${escapeCareerHtml(access.locked ? 'locked' : signal.tone || 'progress')}">${escapeCareerHtml(status)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg></button>`;
+    }).join('') : `<div class="mobile-navigation-empty"><strong>NO PAGE FOUND</strong><p>Try a broader word such as team, money, match, player or training.</p></div>`;
+  }
+
+  function renderMobileNavigation() {
+    const activeSection = menuSectionForRoute();
+    const section = menuSections[activeSection] || menuSections.operations;
+    const route = menuRouteDefinition(menuTab) || section.routes[0];
+    const visibleRoutes = menuVisibleRoutes(activeSection, true);
+    const routeIndex = Math.max(0, visibleRoutes.findIndex(item => item.id === menuTab));
+    if (!mobileNavigationIsOpen()) mobileNavigationSectionId = activeSection;
+    if (mobileCommandSectionLabelEl) mobileCommandSectionLabelEl.textContent = section.label;
+    if (mobileCommandRouteLabelEl) mobileCommandRouteLabelEl.textContent = menuTabMeta[menuTab]?.title || route.label;
+    if (mobileCommandRouteHintEl) mobileCommandRouteHintEl.textContent = route.hint || section.description;
+    if (mobileCommandRoutePositionEl) mobileCommandRoutePositionEl.textContent = `${routeIndex + 1} OF ${visibleRoutes.length}`;
+    if (mobileNavigationContextEl) mobileNavigationContextEl.textContent = `${section.label} · ${menuTabMeta[menuTab]?.title || route.label}`;
+    if (mobileNavigationOpenBtn) mobileNavigationOpenBtn.setAttribute('aria-label', `Open club navigation. Current page: ${section.label}, ${menuTabMeta[menuTab]?.title || route.label}`);
+    renderMobileNavigationSections();
+    renderMobileNavigationJourney();
+    renderMobileNavigationRoutes();
+  }
+
+  function openMobileNavigation(sectionId = menuSectionForRoute()) {
+    if (!mobileNavigationEnabled() || !mobileNavigationOverlayEl) return false;
+    mobileNavigationSectionId = menuSections[sectionId] ? sectionId : menuSectionForRoute();
+    mobileNavigationQuery = '';
+    if (mobileNavigationSearchEl) mobileNavigationSearchEl.value = '';
+    if (mobileNavigationSearchClearBtn) mobileNavigationSearchClearBtn.hidden = true;
+    mobileNavigationLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : mobileNavigationOpenBtn;
+    mobileNavigationOverlayEl.hidden = false;
+    mobileNavigationOverlayEl.setAttribute('aria-hidden', 'false');
+    mobileNavigationOpenBtn?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('mobile-navigation-open');
+    renderMobileNavigation();
+    requestAnimationFrame(() => {
+      mobileNavigationCloseBtn?.focus({ preventScroll: true });
+      const active = mobileNavigationRoutesEl?.querySelector('.mobile-navigation-route.active');
+      active?.scrollIntoView({ block: 'center', behavior: 'auto' });
+    });
+    return true;
+  }
+
+  function closeMobileNavigation(options = {}) {
+    if (!mobileNavigationOverlayEl || mobileNavigationOverlayEl.hidden) return false;
+    mobileNavigationOverlayEl.hidden = true;
+    mobileNavigationOverlayEl.setAttribute('aria-hidden', 'true');
+    mobileNavigationOpenBtn?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('mobile-navigation-open');
+    mobileNavigationQuery = '';
+    if (mobileNavigationSearchEl) mobileNavigationSearchEl.value = '';
+    if (mobileNavigationSearchClearBtn) mobileNavigationSearchClearBtn.hidden = true;
+    if (options.restoreFocus !== false && mobileNavigationLastFocus?.isConnected) mobileNavigationLastFocus.focus({ preventScroll: true });
+    mobileNavigationLastFocus = null;
+    return true;
+  }
+
+  function selectMobileNavigationSection(sectionId) {
+    if (!menuSections[sectionId]) return false;
+    mobileNavigationSectionId = sectionId;
+    mobileNavigationQuery = '';
+    if (mobileNavigationSearchEl) mobileNavigationSearchEl.value = '';
+    if (mobileNavigationSearchClearBtn) mobileNavigationSearchClearBtn.hidden = true;
+    renderMobileNavigationSections();
+    renderMobileNavigationRoutes();
+    mobileNavigationRoutesEl?.scrollTo({ top: 0, behavior: 'auto' });
+    return true;
+  }
+
+  function updateMobileNavigationSearch(value) {
+    mobileNavigationQuery = String(value || '').trim();
+    if (mobileNavigationSearchClearBtn) mobileNavigationSearchClearBtn.hidden = !mobileNavigationQuery;
+    renderMobileNavigationRoutes();
+  }
+
   function menuInjuryCount() {
     if (!careerState.created || !Array.isArray(careerState.squad)) return 0;
     return careerState.squad.filter(player => typeof playerInjuryActive === 'function' ? playerInjuryActive(player) : Boolean(player?.injury?.active)).length;
@@ -53639,6 +54730,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     if (route !== 'settings') careerWipeConfirmOpen = false;
     menuTab = route;
+    if (mobileNavigationIsOpen() && !options.keepMobileNavigation) closeMobileNavigation({ restoreFocus: false });
     if (route === 'reports' && careerState.lastRound && !careerState.lastRound.reportReviewed) {
       careerState.lastRound.reportReviewed = true;
       saveCareerState();
@@ -54362,6 +55454,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     updateMenuPrimaryBadges();
     renderMenuRouteLocator();
     renderMenuSubnav();
+    renderMobileNavigation();
     const pauseMenu = liveMatchMenuActive();
     document.body.dataset.menuContext = menuContext;
     const menuMeta = menuTabMeta[menuTab] || menuTabMeta.play;
@@ -62935,7 +64028,47 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (menuBackBtn) menuBackBtn.addEventListener('click', () => navigateMenuHistory(-1));
   if (menuForwardBtn) menuForwardBtn.addEventListener('click', () => navigateMenuHistory(1));
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
-  menuTabs.forEach(btn => btn.addEventListener('click', () => setMenuSection(btn.dataset.section || 'operations')));
+  menuTabs.forEach(btn => btn.addEventListener('click', () => {
+    const sectionId = btn.dataset.section || 'operations';
+    if (mobileNavigationEnabled()) {
+      const access = typeof progressiveSectionAccess === 'function' ? progressiveSectionAccess(sectionId) : { state: 'ready' };
+      if (sectionId === menuSectionForRoute() || access.state === 'locked') {
+        openMobileNavigation(sectionId);
+        return;
+      }
+    }
+    setMenuSection(sectionId);
+  }));
+  if (mobileNavigationOpenBtn) mobileNavigationOpenBtn.addEventListener('click', () => openMobileNavigation(menuSectionForRoute()));
+  if (mobileNavigationCloseBtn) mobileNavigationCloseBtn.addEventListener('click', () => closeMobileNavigation());
+  if (mobileNavigationSearchEl) mobileNavigationSearchEl.addEventListener('input', event => updateMobileNavigationSearch(event.target.value));
+  if (mobileNavigationSearchClearBtn) mobileNavigationSearchClearBtn.addEventListener('click', () => {
+    if (mobileNavigationSearchEl) mobileNavigationSearchEl.value = '';
+    updateMobileNavigationSearch('');
+    mobileNavigationSearchEl?.focus({ preventScroll: true });
+  });
+  if (mobileNavigationOverlayEl) {
+    mobileNavigationOverlayEl.addEventListener('click', event => {
+      const sectionButton = event.target.closest?.('[data-mobile-nav-section]');
+      if (sectionButton) { selectMobileNavigationSection(sectionButton.dataset.mobileNavSection); return; }
+      const actionButton = event.target.closest?.('[data-mobile-nav-action]');
+      if (actionButton?.dataset.mobileNavAction === 'resume') { closeMobileNavigation({ restoreFocus: false }); resumeMatch(); return; }
+      if (actionButton?.dataset.mobileNavAction === 'exit') { closeMobileNavigation({ restoreFocus: false }); exitToMainMenu(); return; }
+      const routeButton = event.target.closest?.('[data-mobile-nav-route]');
+      if (routeButton && !routeButton.disabled) setMenuRoute(routeButton.dataset.mobileNavRoute);
+    });
+    mobileNavigationOverlayEl.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); closeMobileNavigation(); return; }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(mobileNavigationOverlayEl.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(node => !node.hidden && node.getClientRects().length);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+  }
+  window.addEventListener('resize', () => { if (!mobileNavigationEnabled()) closeMobileNavigation({ restoreFocus: false }); }, { passive: true });
   if (menuRouteLocatorEl) menuRouteLocatorEl.addEventListener('click', event => { if (typeof handleMenuRouteLocatorClick === 'function') handleMenuRouteLocatorClick(event); });
   if (menuSubnavEl) {
     menuSubnavEl.addEventListener('click', event => {
@@ -63688,6 +64821,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       };
     },
     setMenuRouteForTest: route => { setMenuRoute(String(route || 'play')); return { route: menuTab, section: menuSectionForRoute(), title: menuHeaderTitleEl?.textContent || '', breadcrumb: managerBreadcrumbEl?.textContent || '' }; },
+    forceMenuRouteForTest: route => {
+      const target = String(route || 'play');
+      if (!menuTabMeta[target]) return { ok: false, route: menuTab };
+      menuTab = target;
+      updateMenuUI();
+      resetMenuScroll();
+      return { ok: true, route: menuTab, section: menuSectionForRoute(), title: menuHeaderTitleEl?.textContent || '', breadcrumb: managerBreadcrumbEl?.textContent || '' };
+    },
     menuViewportIntegrityForTest: () => {
       const shellRect = menuShellEl?.getBoundingClientRect() || null;
       const topbarRect = menuShellEl?.querySelector('.manager-topbar')?.getBoundingClientRect() || null;
@@ -66083,6 +67224,32 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       locatorRemoved: !menuRouteLocatorEl || menuRouteLocatorEl.hidden || !menuRouteLocatorEl.textContent?.trim(),
       recent: typeof menuRecentRouteIds === 'function' ? menuRecentRouteIds(5) : []
     }),
+    mobileNavigationForTest: (action = 'snapshot', value = '') => {
+      const command = String(action || 'snapshot');
+      if (command === 'open') openMobileNavigation(String(value || menuSectionForRoute()));
+      else if (command === 'close') closeMobileNavigation({ restoreFocus: false });
+      else if (command === 'section') selectMobileNavigationSection(String(value || menuSectionForRoute()));
+      else if (command === 'search') {
+        if (mobileNavigationSearchEl) mobileNavigationSearchEl.value = String(value || '');
+        updateMobileNavigationSearch(value);
+      }
+      const sectionButtons = Array.from(mobileNavigationSectionsEl?.querySelectorAll('[data-mobile-nav-section]') || []);
+      const routeButtons = Array.from(mobileNavigationRoutesEl?.querySelectorAll('[data-mobile-nav-route]') || []);
+      return {
+        enabled: mobileNavigationEnabled(),
+        open: mobileNavigationIsOpen(),
+        activeRoute: menuTab,
+        activeSection: menuSectionForRoute(),
+        browsedSection: mobileNavigationSectionId,
+        query: mobileNavigationQuery,
+        persistentSections: menuTabs.map(button => button.dataset.section || ''),
+        drawerSections: sectionButtons.map(button => button.dataset.mobileNavSection || ''),
+        drawerRoutes: routeButtons.map(button => ({ route: button.dataset.mobileNavRoute || '', disabled: Boolean(button.disabled), active: button.classList.contains('active') })),
+        legacySubnavVisible: Boolean(menuSubnavShellEl && getComputedStyle(menuSubnavShellEl).display !== 'none'),
+        commandIndexVisible: Boolean(menuContentEl?.querySelector('.command-directory-panel') && getComputedStyle(menuContentEl.querySelector('.command-directory-panel')).display !== 'none'),
+        routeBarVisible: Boolean(mobileCommandRouteBarEl && getComputedStyle(mobileCommandRouteBarEl).display !== 'none')
+      };
+    },
     addFinanceTransactionForTest: (type = 'TEST', amount = 1000, label = 'Test transaction') => {
       const delta = Math.round(Number(amount) || 0);
       careerState.credits += delta;
