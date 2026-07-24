@@ -1,30 +1,28 @@
-name: Strikewatch 12.69 patch
+name: Strikewatch 12.69 artifact
 
 on:
-  push:
+  pull_request:
     branches: [main]
-    paths:
-      - .github/workflows/strikewatch-12-69.yml
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Patch and validate Build 12.69
+
+      - name: Patch Build 12.69
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
 
-          path = Path('cod.html')
-          text = path.read_text(encoding='utf-8')
+          source = Path('cod.html')
+          text = source.read_text(encoding='utf-8')
           original = text
 
           text, count = re.subn(
@@ -45,7 +43,7 @@ jobs:
               text = text.replace(old, new, 1)
 
           old_advice = '''      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>These are informed choices, not automatic counters or hidden bonuses.</p></div><div>${suggestions.map((item, index) => `<button data-team-route="${escapeCareerHtml(item.route)}"><span>${String(index + 1).padStart(2, '0')}</span><p>${escapeCareerHtml(item.text)}</p><b>REVIEW →</b></button>`).join('')}</div></div>'''
-          new_advice = '''      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>Each action now opens the management control needed to act on the advice.</p></div><div>${suggestions.map((item, index) => {
+          new_advice = '''      <div class="opposition-counter-advice"><div class="career-section-head compact"><div><span>MANAGER OPTIONS</span><strong>HOW TO RESPOND</strong></div><p>Each action opens the management control needed to apply the recommendation.</p></div><div>${suggestions.map((item, index) => {
         const route = String(item.route || 'tactics');
         const actionAttribute = route === 'tactics' ? 'data-matchday-action="review-briefing"' : `data-team-route="${escapeCareerHtml(route)}"`;
         const actionLabel = route === 'operators' ? 'OPEN SQUAD →' : route === 'loadout' ? 'OPEN ARMOURY →' : 'OPEN MATCH PLAN →';
@@ -64,8 +62,7 @@ jobs:
     if (onboardingActive) {
       const scrollToNegotiation = () => {
         if (menuTab !== 'transfers' || !menuContentEl) return false;
-        const selector = `[data-management-target-id="${String(negotiationTargetId).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
-        const target = menuContentEl.querySelector(selector);
+        const target = menuContentEl.querySelector(managementTargetSelector(negotiationTargetId));
         if (!target) return false;
         target.classList.add('management-arrival-target');
         if (typeof scrollCommandContentTargetIntoView === 'function') scrollCommandContentTargetIntoView(target, { block: 'start', behavior: 'smooth' });
@@ -87,49 +84,57 @@ jobs:
           assert 'data-matchday-action="review-briefing"' in text
           assert 'OPEN MATCH PLAN →' in text
           assert 'const negotiationTargetId = `transfer:' in text
-          path.write_text(text, encoding='utf-8')
+
           Path('strikewatch-build-12.69.html').write_text(text, encoding='utf-8')
+          Path('source-12.69').mkdir(exist_ok=True)
+          Path('source-12.69/index.html').write_text(text, encoding='utf-8')
 
           audit = '''# AUDIT — Build 12.69
 
 ## Guided navigation and opposition actions
 
-- Successful **Negotiate** actions during the First Match Journey now open the Transfer Centre and smoothly position the active Incoming Negotiation card beneath the onboarding UI.
-- Normal recruitment outside onboarding retains the existing route behaviour without forced scrolling.
-- Opposition-intelligence recommendations no longer use a generic **Review** action that can route back to the same report.
-- Tactical advice now opens and focuses the opponent-specific match-plan controls.
-- Squad and armoury recommendations use explicit **Open Squad** and **Open Armoury** actions.
+- During the First Match Journey, tapping **Negotiate** now opens the Transfer Centre and smoothly positions the active **Incoming Negotiation** card beneath the onboarding panel.
+- Recruitment outside onboarding retains its normal navigation without forced scrolling.
+- Opposition-intelligence recommendations no longer use a generic **Review** action that can return the manager to the same report.
+- Tactical recommendations now open and focus the opponent-specific match-plan controls.
+- Operator and weapon recommendations use explicit **Open Squad** and **Open Armoury** actions.
 - Build metadata advanced from 12.68 to 12.69.
 
 ## Validation
 
 - Exact replacement guards passed.
-- Inline JavaScript syntax check passed with Node.js.
-- The generated standalone matches `cod.html` byte-for-byte.
+- Inline JavaScript syntax passed Node.js validation.
+- The packaged source `index.html` matches the standalone build byte-for-byte.
 - No save-schema, combat-balance or economy changes were introduced.
 '''
           Path('AUDIT-12.69.md').write_text(audit, encoding='utf-8')
+          Path('source-12.69/AUDIT-12.69.md').write_text(audit, encoding='utf-8')
+          Path('source-12.69/README.md').write_text('# Strikewatch Build 12.69 Source\n\nOpen `index.html` directly in a browser. See `AUDIT-12.69.md` for the build changes and validation notes.\n', encoding='utf-8')
           PY
 
+      - name: Validate JavaScript and package
+        shell: bash
+        run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          html = Path('cod.html').read_text(encoding='utf-8')
+          html = Path('strikewatch-build-12.69.html').read_text(encoding='utf-8')
           scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, flags=re.I)
           assert scripts, 'no inline scripts found'
-          largest = max(scripts, key=len)
-          Path('/tmp/strikewatch-12.69.js').write_text(largest, encoding='utf-8')
-          assert Path('strikewatch-build-12.69.html').read_bytes() == Path('cod.html').read_bytes()
+          Path('/tmp/strikewatch-12.69.js').write_text(max(scripts, key=len), encoding='utf-8')
+          assert Path('source-12.69/index.html').read_bytes() == Path('strikewatch-build-12.69.html').read_bytes()
           print(f'validated {len(html):,} characters and {len(scripts)} inline script block(s)')
           PY
           node --check /tmp/strikewatch-12.69.js
+          zip -qr strikewatch-source-12.69.zip source-12.69
 
-      - name: Commit patched build
-        shell: bash
-        run: |
-          rm -f .github/workflows/strikewatch-12-69.yml
-          git config user.name "OpenAI Strikewatch Builder"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add cod.html strikewatch-build-12.69.html AUDIT-12.69.md .github/workflows/strikewatch-12-69.yml
-          git commit -m "Build 12.69: fix guided negotiation and opposition actions [skip actions]"
-          git push origin main
+      - name: Upload Build 12.69
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikewatch-12.69
+          path: |
+            strikewatch-build-12.69.html
+            strikewatch-source-12.69.zip
+            AUDIT-12.69.md
+          if-no-files-found: error
+          retention-days: 7
