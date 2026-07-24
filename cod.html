@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.65: Mobile Help Icon Alignment</title>
+<title>Strikewatch 12.66: Mobile Interface Clarity</title>
 <style>
   :root {
     color-scheme: dark;
@@ -22275,6 +22275,207 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     margin: 0;
   }
 }
+
+/* Build 12.66 — mobile onboarding collapse, recruitment separation and inbox row alignment. */
+.first-match-guide-toggle { display: none; }
+
+/* Candidate cards retain the data-table structure, but each operator now reads as
+   one complete bordered profile instead of visually blending into the next row. */
+.recruitment-candidate-zone .team-market-list { gap: 8px; }
+.recruitment-market-row {
+  overflow: hidden;
+  border-color: rgba(103, 184, 222, .34);
+  border-left: 3px solid rgba(82, 173, 255, .72);
+  border-radius: 4px;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, .20), inset 0 1px rgba(255, 255, 255, .025);
+}
+.recruitment-market-row.shortlisted { border-left-width: 4px; border-left-color: #f1c65b; }
+.recruitment-market-row.compared { border-left-width: 4px; border-left-color: #69dab5; }
+
+@media (max-width: 1023px) {
+  /* Expanded: a clear 44px chevron control sits beside the existing action.
+     Collapsed: that same control becomes the complete one-line summary bar. */
+  .management-priority-strip.first-match-guide {
+    grid-template-columns: minmax(0, 1fr) minmax(94px, auto) 44px;
+  }
+  .management-priority-strip.first-match-guide > .management-priority-action {
+    min-width: 94px;
+  }
+  .management-priority-strip.first-match-guide > .first-match-guide-toggle {
+    display: grid;
+    width: 44px;
+    min-width: 44px !important;
+    height: 44px;
+    min-height: 44px !important;
+    place-items: center;
+    padding: 0 !important;
+    border: 1px solid rgba(111, 194, 229, .36);
+    border-radius: 3px;
+    color: #9edfff;
+    background: rgba(9, 32, 45, .88);
+  }
+  .first-match-guide-summary { display: none; }
+  .first-match-guide-toggle > i {
+    width: 10px;
+    height: 10px;
+    border-top: 2px solid currentColor;
+    border-left: 2px solid currentColor;
+    transform: rotate(45deg) translate(1px, 1px);
+    transform-origin: center;
+  }
+  .management-priority-strip.first-match-guide.is-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-height: 48px;
+    padding: 0;
+  }
+  .management-priority-strip.first-match-guide.is-collapsed > .management-priority-main,
+  .management-priority-strip.first-match-guide.is-collapsed > .management-priority-action {
+    display: none !important;
+  }
+  .management-priority-strip.first-match-guide.is-collapsed > .first-match-guide-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0 !important;
+    height: 48px;
+    min-height: 48px !important;
+    grid-template-columns: minmax(0, 1fr) 22px;
+    gap: 10px;
+    place-items: stretch;
+    align-items: center;
+    padding: 0 12px !important;
+    border: 0;
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(15, 53, 75, .98), rgba(7, 24, 36, .98));
+    text-align: left;
+  }
+  .management-priority-strip.first-match-guide.is-collapsed .first-match-guide-summary {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .first-match-guide-summary b,
+  .first-match-guide-summary strong,
+  .first-match-guide-summary em {
+    min-width: 0;
+    font-style: normal;
+    white-space: nowrap;
+  }
+  .first-match-guide-summary b {
+    color: #84d6fb;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: .09em;
+  }
+  .first-match-guide-summary strong {
+    overflow: hidden;
+    color: #f3f9fc;
+    font-size: 11px;
+    line-height: 1.15;
+    font-weight: 900;
+    text-overflow: ellipsis;
+  }
+  .first-match-guide-summary em {
+    color: #8ea9b7;
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: .06em;
+  }
+  .management-priority-strip.first-match-guide.is-collapsed .first-match-guide-toggle > i {
+    justify-self: center;
+    transform: rotate(225deg) translate(1px, 1px);
+  }
+
+  .recruitment-candidate-zone .team-market-list { gap: 11px; }
+  .recruitment-market-row {
+    border-color: rgba(103, 190, 232, .48);
+    border-left-width: 4px;
+    box-shadow: 0 9px 22px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .03);
+  }
+
+  /* The mobile readability pass increased mail copy without increasing the old
+     fixed 76px row. Let each row own enough height for meta, subject and preview,
+     and keep all content vertically centred within that row. */
+  .club-mail-list {
+    flex: 0 1 216px;
+    max-height: 216px;
+  }
+  .club-mail-row {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 108px;
+    grid-template-columns: 7px 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 12px 10px 12px 8px;
+  }
+  .club-mail-row-copy {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-flow: row;
+    align-content: center;
+    gap: 4px;
+  }
+  .club-mail-row .club-mail-row-copy > * {
+    grid-column: 1 / -1 !important;
+    min-width: 0;
+  }
+  .club-mail-row-meta {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    line-height: 1.2;
+  }
+  .club-mail-row .club-mail-row-copy > strong,
+  .club-mail-row .club-mail-row-copy > small {
+    margin-top: 0;
+  }
+  .club-mail-row .club-mail-row-copy > strong {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .club-mail-row .club-mail-row-copy > small {
+    -webkit-line-clamp: 2;
+  }
+  .club-mail-important,
+  .club-mail-decision-badge {
+    align-self: center;
+  }
+}
+
+@media (max-width: 430px) {
+  .management-priority-strip.first-match-guide {
+    grid-template-columns: minmax(0, 1fr) 94px 44px;
+  }
+  .first-match-guide-summary b { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+  .club-mail-row-meta time { max-width: 76px; }
+}
+
+@media (max-width: 350px) {
+  .management-priority-strip.first-match-guide {
+    grid-template-columns: minmax(0, 1fr) 86px 44px;
+  }
+  .management-priority-strip.first-match-guide > .management-priority-action { min-width: 86px; }
+  .management-priority-strip.first-match-guide.is-collapsed .first-match-guide-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .management-priority-strip.first-match-guide.is-collapsed .first-match-guide-summary b { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .management-priority-strip.first-match-guide.is-collapsed > .management-priority-main,
+  .management-priority-strip.first-match-guide.is-collapsed > .management-priority-action {
+    display: block;
+  }
+}
 </style>
 </head>
 <body>
@@ -23187,9 +23388,9 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.65';
-  const BUILD_NAME = 'MOBILE HELP ICON ALIGNMENT';
-  const BUILD_ID = '12.65.0-mobile-help-icon-alignment';
+  const BUILD_VERSION = '12.66';
+  const BUILD_NAME = 'MOBILE INTERFACE CLARITY';
+  const BUILD_ID = '12.66.0-mobile-interface-clarity';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -53729,6 +53930,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   let mobileNavigationSectionId = 'operations';
   let mobileNavigationQuery = '';
   let mobileNavigationLastFocus = null;
+  let mobileFirstMatchGuideCollapsed = false;
 
   const MOBILE_PAGE_HELP_STORAGE_KEY = 'strikewatch.mobilePageHelpVisible';
   let mobilePageHelpVisible = false;
@@ -53772,6 +53974,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function toggleMobilePageHelp() {
     return setMobilePageHelpVisible(!mobilePageHelpVisible, { announce: true });
+  }
+
+  function syncMobileFirstMatchGuideCollapse(strip = null) {
+    const target = strip || menuContentEl?.querySelector('.management-priority-strip.first-match-guide');
+    if (!target) return mobileFirstMatchGuideCollapsed;
+    const collapsed = Boolean(mobileFirstMatchGuideCollapsed);
+    target.classList.toggle('is-collapsed', collapsed);
+    const toggle = target.querySelector('[data-first-match-guide-toggle]');
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      toggle.setAttribute('aria-label', collapsed ? 'Expand first match guide' : 'Collapse first match guide');
+      toggle.title = collapsed ? 'Expand first match guide' : 'Collapse first match guide';
+    }
+    return collapsed;
+  }
+
+  function setMobileFirstMatchGuideCollapsed(collapsed, options = {}) {
+    mobileFirstMatchGuideCollapsed = Boolean(collapsed);
+    syncMobileFirstMatchGuideCollapse(options.strip || null);
+    if (options.announce) showStatus(mobileFirstMatchGuideCollapsed ? 'FIRST MATCH GUIDE COLLAPSED' : 'FIRST MATCH GUIDE EXPANDED');
+    return mobileFirstMatchGuideCollapsed;
+  }
+
+  function handleMobileFirstMatchGuideClick(event) {
+    const toggle = event.target.closest?.('[data-first-match-guide-toggle]');
+    if (!toggle || !mobileNavigationEnabled()) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    const strip = toggle.closest('.management-priority-strip.first-match-guide');
+    setMobileFirstMatchGuideCollapsed(!mobileFirstMatchGuideCollapsed, { strip, announce: true });
+    return true;
   }
 
   function mobileNavigationIsOpen() {
@@ -54283,7 +54516,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const kicker = guidance ? `FIRST MATCH JOURNEY · ${guidance.milestoneIndex + 1}/${guidance.milestoneTotal} · ${guidance.milestoneLabel}` : (primary.kind === 'required' ? 'REQUIRED ACTION' : primary.kind === 'recommended' ? 'RECOMMENDED NEXT' : 'NEXT OPPORTUNITY');
     const progress = guidance ? `<div class="first-match-progress" aria-label="First match journey progress ${guidance.milestoneIndex + 1} of ${guidance.milestoneTotal}"><i style="width:${Math.round(guidance.journeyProgress * 100)}%"></i></div>${guidance.milestoneStepTotal > 1 ? `<em class="first-match-milestone-step">STEP ${guidance.milestoneStep} OF ${guidance.milestoneStepTotal} IN THIS MILESTONE</em>` : ''}` : '';
     const scrollAttribute = guidance?.scrollTarget ? ` data-team-scroll-target="${escapeCareerHtml(guidance.scrollTarget)}"` : '';
-    return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" ${actionAttribute}${scrollAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${!guidance && items.length > 1 ? `<details><summary>VIEW PLAN</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(item.kind.toUpperCase())}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
+    const guideCollapsed = Boolean(guidance && mobileFirstMatchGuideCollapsed);
+    const guideToggle = guidance ? `<button type="button" class="first-match-guide-toggle" data-first-match-guide-toggle aria-expanded="${guideCollapsed ? 'false' : 'true'}" aria-label="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide" title="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide"><span class="first-match-guide-summary"><b>FIRST MATCH ${guidance.milestoneIndex + 1}/${guidance.milestoneTotal}</b><strong>${escapeCareerHtml(primary.label)}</strong><em>${guidance.milestoneStepTotal > 1 ? `STEP ${guidance.milestoneStep}/${guidance.milestoneStepTotal}` : escapeCareerHtml(guidance.milestoneLabel)}</em></span><i aria-hidden="true"></i></button>` : '';
+    return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''} ${guideCollapsed ? 'is-collapsed' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" class="management-priority-action" ${actionAttribute}${scrollAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${guideToggle}${!guidance && items.length > 1 ? `<details><summary>VIEW PLAN</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(item.kind.toUpperCase())}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
   }
 
   function renderSectionHub(sectionId) {
@@ -64301,6 +64536,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => scrollMenuSubnav(1));
   if (menuContentEl) {
     menuContentEl.addEventListener('click', event => {
+      if (typeof handleMobileFirstMatchGuideClick === 'function' && handleMobileFirstMatchGuideClick(event)) return;
       if (typeof handleFreeRoamConfigurationClick === 'function' && handleFreeRoamConfigurationClick(event)) return;
       if (typeof handleWorkflowIntegrityClick === 'function' && handleWorkflowIntegrityClick(event)) return;
       if (typeof handleCommandIndexClick === 'function' && handleCommandIndexClick(event)) return;
@@ -65008,6 +65244,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       setAppState('menu');
       updateMenuUI();
       return { created: careerState.created, squad: careerState.squad.length, state: window.__strikeDebug.priorityUxForTest() };
+    },
+    seedMobileInterfaceClarityForTest: (squadSize = 0) => {
+      const seeded = window.__strikeDebug.seedReadabilityCareerForTest(squadSize);
+      careerState.market = generateTeamMarket(126600);
+      saveCareerState({ createBackup: false, reason: 'debug mobile interface clarity seed' });
+      updateMenuUI();
+      return { ...seeded, market: careerState.market.length };
     },
     createCareerBackupForTest: () => {
       if (!careerState.created) window.__strikeDebug.seedReadabilityCareerForTest(3);
