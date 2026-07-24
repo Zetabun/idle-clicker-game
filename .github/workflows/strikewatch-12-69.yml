@@ -1,15 +1,16 @@
 name: Strikewatch 12.69 release
 
 on:
-  issues:
-    types: [opened]
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/strikewatch-12-69.yml
 
 permissions:
   contents: write
 
 jobs:
   release:
-    if: github.event.issue.title == 'Run Strikewatch Build 12.69'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
