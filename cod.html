@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.111: Realistic Operator Heads</title>
+<title>Strikewatch 12.112: Visible Version Header</title>
 <style>
   :root {
     color-scheme: dark;
@@ -18593,6 +18593,35 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     justify-content: center;
     padding: 11px 18px;
   }
+  .manager-context-topline {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+  }
+  .manager-context-topline > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .manager-build-version {
+    flex: 0 0 auto;
+    padding: 3px 6px;
+    border: 1px solid rgba(112, 217, 248, .3);
+    border-radius: 3px;
+    color: #8de7ff;
+    background: rgba(7, 27, 39, .72);
+    font-size: 7.5px !important;
+    line-height: 1 !important;
+    letter-spacing: .09em;
+    white-space: nowrap;
+  }
+  .manager-build-version b {
+    color: #f5fbff;
+    font: inherit;
+  }
   .manager-context span { font-size: 8.5px; }
   .manager-context strong {
     margin: 4px 0 3px;
@@ -21354,6 +21383,14 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     font-style: normal;
     font-weight: 900;
     letter-spacing: .12em;
+  }
+  .mobile-command-build-version {
+    color: #f3cb70;
+    white-space: nowrap;
+  }
+  .mobile-command-build-version b {
+    color: #ffe5a8;
+    font: inherit;
   }
   .mobile-command-route-copy strong {
     overflow: hidden;
@@ -28266,7 +28303,7 @@ body[data-app-state='menu'] .menu-content {
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.73 · PLATINUM RECRUITMENT CARDS & CLEAR GOLD RATINGS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.112 · VISIBLE VERSION HEADER</div>
   </div>
 
   <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
@@ -28497,7 +28534,14 @@ body[data-app-state='menu'] .menu-content {
     <header class="manager-topbar">
       <button class="menu-history-btn manager-history-btn manager-history-back" id="menuBackBtn" type="button" disabled aria-label="Go back" title="Go back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg></button>
       <button class="manager-brand manager-balance-brand manager-gold-brand" id="managerGoldBtn" type="button" aria-label="Open Gold Coin account"><svg class="manager-balance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="5.5"></circle><path d="m12 8.4 1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 13.77l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"></path></svg><div><span>GOLD BALANCE</span><strong id="managerOperatorName">0 GC</strong><small id="managerOperatorLevel">CREATE TEAM TO EARN COINS</small></div></button>
-      <div class="manager-context"><span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span><strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong><small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small></div>
+      <div class="manager-context">
+        <div class="manager-context-topline">
+          <span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span>
+          <span class="manager-build-version" aria-label="Current game version">BUILD <b id="managerBuildVersion">12.112</b></span>
+        </div>
+        <strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong>
+        <small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small>
+      </div>
       <div class="manager-topbar-actions" aria-label="Manager shortcuts">
         <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" data-tutorial-order="1" data-tutorial-label="INBOX" aria-label="Open club inbox" title="Open club inbox">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg>
@@ -28580,7 +28624,7 @@ body[data-app-state='menu'] .menu-content {
         <div class="mobile-command-route-bar" id="mobileCommandRouteBar">
           <button class="mobile-command-route-button" id="mobileNavigationOpenBtn" type="button" aria-expanded="false" aria-controls="mobileNavigationOverlay">
             <span class="mobile-command-route-copy">
-              <small id="mobileCommandSectionLabel">OPERATIONS</small>
+              <small><span id="mobileCommandSectionLabel">OPERATIONS</span><span class="mobile-command-build-version" aria-label="Current game version"> · BUILD <b id="mobileCommandBuildVersion">12.112</b></span></small>
               <strong id="mobileCommandRouteLabel">COMMAND CENTRE</strong>
               <em id="mobileCommandRouteHint">Club overview and next actions</em>
             </span>
@@ -28813,6 +28857,7 @@ body[data-app-state='menu'] .menu-content {
   const mobileCommandRouteLabelEl = document.getElementById('mobileCommandRouteLabel');
   const mobileCommandRouteHintEl = document.getElementById('mobileCommandRouteHint');
   const mobileCommandRoutePositionEl = document.getElementById('mobileCommandRoutePosition');
+  const mobileCommandBuildVersionEl = document.getElementById('mobileCommandBuildVersion');
   const mobileNavigationOverlayEl = document.getElementById('mobileNavigationOverlay');
   const mobileNavigationCloseBtn = document.getElementById('mobileNavigationCloseBtn');
   const mobileNavigationTitleEl = document.getElementById('mobileNavigationTitle');
@@ -28844,6 +28889,7 @@ body[data-app-state='menu'] .menu-content {
   const exitToMenuBtn = document.getElementById('exitToMenuBtn');
   const menuTabs = Array.from(document.querySelectorAll('.menu-tab'));
   const managerBreadcrumbEl = document.getElementById('managerBreadcrumb');
+  const managerBuildVersionEl = document.getElementById('managerBuildVersion');
   const managerStatusTextEl = document.getElementById('managerStatusText');
   const managerMailBtn = document.getElementById('managerMailBtn');
   const managerMailBadgeEl = document.getElementById('managerMailBadge');
@@ -28936,14 +28982,17 @@ body[data-app-state='menu'] .menu-content {
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.111';
-  const BUILD_NAME = 'REALISTIC OPERATOR HEADS';
-  const BUILD_ID = '12.111.0-realistic-operator-heads';
+  const BUILD_VERSION = '12.112';
+  const BUILD_NAME = 'VISIBLE VERSION HEADER';
+  const BUILD_ID = '12.112.0-visible-version-header';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
+  document.documentElement.dataset.buildVersion = BUILD_VERSION;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
   const buildStampEl = document.getElementById('buildStamp');
   if (buildStampEl) buildStampEl.textContent = `BUILD ${BUILD_VERSION} · ${BUILD_NAME}`;
+  if (managerBuildVersionEl) managerBuildVersionEl.textContent = BUILD_VERSION;
+  if (mobileCommandBuildVersionEl) mobileCommandBuildVersionEl.textContent = BUILD_VERSION;
 
   const TAU = Math.PI * 2;
   const FOV = Math.PI / 2.55;
@@ -80297,6 +80346,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return { team: selectedTeam, point, source, confidence };
     },
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
+    buildVersionHeaderForTest: () => {
+      const desktopVersion = managerBuildVersionEl?.textContent?.trim() || '';
+      const mobileVersion = mobileCommandBuildVersionEl?.textContent?.trim() || '';
+      return {
+        ok: desktopVersion === BUILD_VERSION
+          && mobileVersion === BUILD_VERSION
+          && document.documentElement.dataset.buildVersion === BUILD_VERSION
+          && window.__STRIKEWATCH_BUILD__ === BUILD_ID,
+        buildVersion: BUILD_VERSION,
+        buildId: BUILD_ID,
+        desktopVersion,
+        mobileVersion,
+        documentVersion: document.documentElement.dataset.buildVersion || ''
+      };
+    },
     mobilePageHelp: () => ({
       visible: Boolean(mobilePageHelpVisible),
       shellState: menuShellEl?.dataset.mobileHelp || '',
