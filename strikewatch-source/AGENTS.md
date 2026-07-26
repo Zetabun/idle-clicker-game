@@ -1,3 +1,15 @@
+STRIKEWATCH BUILD 12.113 DESKTOP VERSION ALIGNMENT CONTRACT
+
+Preserve the Build 12.112 visible-version system while correcting only the desktop badge alignment. The breadcrumb and version badge must remain in one vertically centred desktop topline, and the mobile version must remain inside the existing Help-revealed current-page bar.
+
+BUILD 12.113 INVARIANTS
+- `css/game.css` owns the desktop `.manager-context-topline`, `#managerBreadcrumb` line box and `.manager-build-version` positioning/content alignment.
+- `js/00-core.js` remains the sole runtime build-metadata authority and continues to synchronise the desktop and mobile version labels.
+- `index.html` retains matching title, asset IDs, main-menu build stamp and static desktop/mobile version labels.
+- Do not move the version into the permanent mobile compact header or change the existing `?` Help interaction.
+- Do not change gameplay, navigation, saves, match rendering, performance systems, save schema 19 or diagnostics schema 1.
+- Run metadata parity, desktop badge geometry, mobile label retention, modular/generated/standalone syntax, deterministic build and archive-integrity checks.
+
 STRIKEWATCH BUILD 12.112 VISIBLE VERSION HEADER CONTRACT
 
 GITHUB REPOSITORY PLAN

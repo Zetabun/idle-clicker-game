@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.112';
-  const BUILD_NAME = 'VISIBLE VERSION HEADER';
-  const BUILD_ID = '12.112.0-visible-version-header';
+  const BUILD_VERSION = '12.113';
+  const BUILD_NAME = 'DESKTOP VERSION ALIGNMENT';
+  const BUILD_ID = '12.113.0-desktop-version-alignment';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

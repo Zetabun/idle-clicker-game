@@ -1,3 +1,7 @@
+CURRENT RELEASE: STRIKEWATCH BUILD 12.113 - DESKTOP VERSION ALIGNMENT
+
+Build 12.113 preserves the Build 12.112 visible-version system and corrects the desktop header badge alignment only. Keep `.manager-context-topline` as one vertically centred row, give `#managerBreadcrumb` a stable line box, and keep `.manager-build-version` statically positioned with reset margins/transforms and inline-flex content centring. Retain the mobile version inside the current-page bar revealed by the existing `?` Help control. Build metadata, static labels, generated bundle, standalone output and root `cod.html` must remain in parity. Gameplay, navigation, saves, match rendering, performance systems, save schema 19 and diagnostics schema 1 are unchanged.
+
 STRIKEWATCH BUILD 12.112 VISIBLE VERSION HEADER CONTRACT
 
 Repository plan: root `cod.html` is the deployed GitHub Pages file; `strikewatch-source/` is the complete editable source and documentation authority; root `other/` preserves unrelated games, assets and retired automation. Read every Markdown file under `strikewatch-source/` before editing. Change and build the game there, update the relevant authority documents and current audit, then copy the verified standalone output to root `cod.html` and commit source, documentation and deployment output together. Never treat `other/` as a Strikewatch dependency without an explicit user request.

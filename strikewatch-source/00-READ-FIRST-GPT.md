@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.112: Visible Version Header**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.113: Desktop Version Alignment**.
 
 ## Current release essentials
+
+## Build 12.113 desktop version alignment
+
+Build 12.113 keeps the visible version beside the desktop breadcrumb while making their alignment explicit and cascade-safe. The desktop topline is one vertically centred flex row; the version badge uses static positioning, a reset margin/transform, a predictable line box and an inline-flex content centre so later shared typography rules cannot raise it above the breadcrumb. The mobile version remains inside the existing current-page bar revealed by the `?` Help control. This release changes presentation and release metadata only; gameplay, navigation, operator visuals, match performance, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## GitHub repository working plan
 

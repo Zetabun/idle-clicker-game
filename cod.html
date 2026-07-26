@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.112: Visible Version Header</title>
+<title>Strikewatch 12.113: Desktop Version Alignment</title>
 <style>
   :root {
     color-scheme: dark;
@@ -18593,22 +18593,36 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     justify-content: center;
     padding: 11px 18px;
   }
+  /* Build 12.113: keep the desktop build badge optically and geometrically
+     centred with the breadcrumb despite later shared typography rules. */
   .manager-context-topline {
     min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
+    line-height: 1;
   }
-  .manager-context-topline > span:first-child {
+  .manager-context-topline > #managerBreadcrumb {
+    display: block;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.25;
   }
-  .manager-build-version {
+  .manager-context-topline > .manager-build-version {
+    position: static;
+    inset: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
     flex: 0 0 auto;
-    padding: 3px 6px;
+    box-sizing: border-box;
+    min-height: 18px;
+    margin: 0;
+    padding: 3px 7px;
     border: 1px solid rgba(112, 217, 248, .3);
     border-radius: 3px;
     color: #8de7ff;
@@ -18616,11 +18630,14 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     font-size: 7.5px !important;
     line-height: 1 !important;
     letter-spacing: .09em;
+    transform: none;
     white-space: nowrap;
   }
-  .manager-build-version b {
+  .manager-context-topline > .manager-build-version b {
+    display: inline-block;
     color: #f5fbff;
     font: inherit;
+    line-height: 1;
   }
   .manager-context span { font-size: 8.5px; }
   .manager-context strong {
@@ -28303,7 +28320,7 @@ body[data-app-state='menu'] .menu-content {
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.112 · VISIBLE VERSION HEADER</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.113 · DESKTOP VERSION ALIGNMENT</div>
   </div>
 
   <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
@@ -28537,7 +28554,7 @@ body[data-app-state='menu'] .menu-content {
       <div class="manager-context">
         <div class="manager-context-topline">
           <span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span>
-          <span class="manager-build-version" aria-label="Current game version">BUILD <b id="managerBuildVersion">12.112</b></span>
+          <span class="manager-build-version" aria-label="Current game version">BUILD <b id="managerBuildVersion">12.113</b></span>
         </div>
         <strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong>
         <small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small>
@@ -28624,7 +28641,7 @@ body[data-app-state='menu'] .menu-content {
         <div class="mobile-command-route-bar" id="mobileCommandRouteBar">
           <button class="mobile-command-route-button" id="mobileNavigationOpenBtn" type="button" aria-expanded="false" aria-controls="mobileNavigationOverlay">
             <span class="mobile-command-route-copy">
-              <small><span id="mobileCommandSectionLabel">OPERATIONS</span><span class="mobile-command-build-version" aria-label="Current game version"> · BUILD <b id="mobileCommandBuildVersion">12.112</b></span></small>
+              <small><span id="mobileCommandSectionLabel">OPERATIONS</span><span class="mobile-command-build-version" aria-label="Current game version"> · BUILD <b id="mobileCommandBuildVersion">12.113</b></span></small>
               <strong id="mobileCommandRouteLabel">COMMAND CENTRE</strong>
               <em id="mobileCommandRouteHint">Club overview and next actions</em>
             </span>
@@ -28982,9 +28999,9 @@ body[data-app-state='menu'] .menu-content {
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.112';
-  const BUILD_NAME = 'VISIBLE VERSION HEADER';
-  const BUILD_ID = '12.112.0-visible-version-header';
+  const BUILD_VERSION = '12.113';
+  const BUILD_NAME = 'DESKTOP VERSION ALIGNMENT';
+  const BUILD_ID = '12.113.0-desktop-version-alignment';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

@@ -18581,22 +18581,36 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     justify-content: center;
     padding: 11px 18px;
   }
+  /* Build 12.113: keep the desktop build badge optically and geometrically
+     centred with the breadcrumb despite later shared typography rules. */
   .manager-context-topline {
     min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
+    line-height: 1;
   }
-  .manager-context-topline > span:first-child {
+  .manager-context-topline > #managerBreadcrumb {
+    display: block;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.25;
   }
-  .manager-build-version {
+  .manager-context-topline > .manager-build-version {
+    position: static;
+    inset: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
     flex: 0 0 auto;
-    padding: 3px 6px;
+    box-sizing: border-box;
+    min-height: 18px;
+    margin: 0;
+    padding: 3px 7px;
     border: 1px solid rgba(112, 217, 248, .3);
     border-radius: 3px;
     color: #8de7ff;
@@ -18604,11 +18618,14 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
     font-size: 7.5px !important;
     line-height: 1 !important;
     letter-spacing: .09em;
+    transform: none;
     white-space: nowrap;
   }
-  .manager-build-version b {
+  .manager-context-topline > .manager-build-version b {
+    display: inline-block;
     color: #f5fbff;
     font: inherit;
+    line-height: 1;
   }
   .manager-context span { font-size: 8.5px; }
   .manager-context strong {

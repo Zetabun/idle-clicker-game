@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.112: Visible Version Header**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.113: Desktop Version Alignment**.
 
 ## Current release essentials
+
+## Build 12.113 desktop version alignment
+
+`css/game.css` now treats `.manager-context-topline` as one explicit desktop alignment unit. `#managerBreadcrumb` owns a stable text line box, while `.manager-build-version` resets inherited positioning, margins and transforms, uses `inline-flex` content centring and keeps a fixed minimum line box beside the breadcrumb. The markup order and Build 12.112 runtime synchronisation remain intact, including the mobile Help-revealed version. This is a desktop presentation and release-metadata change only; gameplay, navigation, saves, match rendering, performance systems, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## GitHub repository layout and publishing ownership
 

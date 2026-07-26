@@ -7,6 +7,7 @@
 - Root `other/` contains unrelated games/assets and retired automation, not Strikewatch dependencies.
 - Each playable release commit must include the verified source changes, current Markdown/audit updates and the standalone copied to root `cod.html`.
 
+- `AUDIT-12.113.md` - desktop version badge alignment, mobile-version retention and release verification.
 - `AUDIT-12.112.md` - visible version header: desktop header identity, mobile Help-bar identity and build-metadata enforcement.
 - `AUDIT-12.111.md` - realistic operator heads: anatomical skull planes, fitted helmet, contoured mask, elliptical goggles and regression evidence.
 - `AUDIT-12.110.md` - natural operator silhouettes: procedural anatomy, hand-anchored articulation, shared corpse geometry and regression evidence.
@@ -20,9 +21,9 @@
 
 ## Current release
 
-- **Playable build:** Strikewatch Build 12.112 — Visible Version Header
-- **Source folder:** `strikewatch-source-12.112/`
-- **Standalone release:** `dist/strikewatch-build-12.112.html`
+- **Playable build:** Strikewatch Build 12.113 — Desktop Version Alignment
+- **Source folder:** `strikewatch-source/`
+- **Standalone release:** `dist/strikewatch-build-12.113.html`
 - **Save schema:** 19
 - **Diagnostics schema:** 1
 
@@ -32,8 +33,9 @@
 2. `AGENTS.md` — coding-agent invariants and retained system contracts.
 3. `PROJECT.md` — architecture, ownership boundaries, build workflow and release tree.
 4. `README.md` — developer-facing build and feature overview.
-5. `AUDIT-12.112.md` — implementation and verification record for the current release.
-6. `AUDIT-12.111.md` — retained realistic-operator-head authority.
+5. `AUDIT-12.113.md` — implementation and verification record for the current release.
+6. `AUDIT-12.112.md` — retained visible-version-header authority.
+7. `AUDIT-12.111.md` — retained realistic-operator-head authority.
 7. `AUDIT-12.110.md` — retained natural-operator-silhouette authority.
 8. `AUDIT-12.109.md` — retained Citadel match-performance authority.
 9. `AUDIT-12.108.md` — retained Citadel environment authority.
@@ -62,13 +64,20 @@
 
 `GPT-HANDOFF-PROMPT.txt` mirrors the current release invariants for future coding sessions.
 
-## Current visible version-header authority
+## Current desktop version-alignment authority
+
+- `css/game.css` owns the Build 12.113 desktop correction. From `1024px`, `.manager-context-topline` is a single vertically centred flex row, `#managerBreadcrumb` has a stable text line box and `.manager-build-version` resets positioning, margins and transforms while centring its content with inline flex.
+- `index.html` keeps the badge immediately beside `#managerBreadcrumb`; the markup order and mobile location are unchanged.
+- `js/00-core.js` continues to synchronise both version labels from `BUILD_VERSION`.
+- Build 12.113 changes desktop presentation and release metadata only. Gameplay, navigation, saves, match rendering, performance systems, save schema 19 and diagnostics schema 1 remain unchanged.
+
+## Retained visible version-header authority
 
 - `js/00-core.js` owns the authoritative build metadata and synchronises the desktop `#managerBuildVersion` and mobile `#mobileCommandBuildVersion` labels.
 - `index.html` owns both static labels, the document title, asset query strings and main-menu build stamp. Every numbered playable release must update all of them.
 - `css/game.css` keeps the desktop version in the main management header and the mobile version inside the current-page bar revealed by the existing `?` Help button.
 - `build.py` rejects stale desktop or mobile source labels before generating a bundle or standalone release.
-- Build 12.112 changes interface metadata only. Gameplay, navigation, match presentation, persistence, save schema 19 and diagnostics schema 1 remain unchanged.
+- Build 12.112 established the visible-version system. Gameplay, navigation, match presentation, persistence, save schema 19 and diagnostics schema 1 remain unchanged.
 
 ## Current realistic operator head authority
 

@@ -1,8 +1,12 @@
-# Strikewatch Source 12.112
+# Strikewatch Source 12.113
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.113 desktop version alignment
+
+Build 12.113 vertically centres the desktop version badge with the Operations breadcrumb. The shared topline now has explicit line-box ownership, and the badge uses static positioning plus inline-flex content centring so broad desktop typography rules cannot visually raise it. The mobile `?` Help-panel version stays in its existing location and continues to derive from `BUILD_VERSION`. Gameplay, navigation, operator visuals, match performance, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.112 visible version header
 
