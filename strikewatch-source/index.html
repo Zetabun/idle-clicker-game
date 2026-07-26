@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#070b11" />
+<link rel="icon" href="data:," />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>Strikewatch 12.112: Visible Version Header</title>
+<link rel="stylesheet" href="css/game.css?v=12.112.0-visible-version-header" />
+</head>
+<body>
+<div id="app">
+  <header class="portrait-console-header" aria-label="Portrait spectator controls">
+    <div class="portrait-console-brand">
+      <span>STRIKEWATCH // LIVE LINK</span>
+      <strong>TACTICAL SPECTATOR</strong>
+      <small>Portrait command view</small>
+    </div>
+    <button class="view-mode-btn" id="maximizeViewBtn" aria-label="Maximise the game in landscape view">
+      <span class="view-mode-icon" aria-hidden="true"></span>
+      <span class="view-mode-copy"><strong>FULL VIEW</strong><small>LANDSCAPE</small></span>
+    </button>
+  </header>
+
+  <div class="match-view" id="matchView">
+  <div class="match-stage" id="matchStage">
+  <canvas id="game" aria-label="Automated first-person combat simulation"></canvas>
+
+  <div class="crosshair" id="crosshair" aria-hidden="true">
+    <i class="left"></i><i class="right"></i><i class="top"></i><i class="bottom"></i>
+  </div>
+  <div class="damage-overlay" id="damageOverlay" aria-hidden="true"></div>
+  <div class="damage-numbers" id="damageNumbers" aria-hidden="true"></div>
+  <div class="death-overlay" id="deathOverlay" aria-hidden="true">
+    <div><strong>OPERATOR ELIMINATED</strong><span>Out until the next round</span></div>
+  </div>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="eyebrow">LIVE SPECTATOR</div>
+      <h1>STRIKEWATCH</h1>
+      <div class="sub">Tactical acoustic simulation</div>
+    </div>
+    <div class="round" id="roundPanel" title="Tap to open scoreboard">
+      <div class="round-team left"><span class="team-score blue" id="blueScore">0</span><span class="team-alive blue" id="blueAlive">●●●●●  5</span></div>
+      <div class="round-mid">
+        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 3</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
+        <div class="tap-hint">TAP / TAB FOR SCOREBOARD</div>
+      </div>
+      <div class="round-team right"><span class="team-alive red" id="redAlive">5  ●●●●●</span><span class="team-score red" id="redScore">0</span></div>
+    </div>
+    <div class="hud-actions">
+      <button id="audioBtn">SOUND</button>
+      <button id="menuBtn">MENU</button>
+      <button id="uiToggleBtn" aria-pressed="false">HIDE UI</button>
+    </div>
+  </div>
+
+  <aside class="match-objective" id="matchObjective" aria-live="polite">
+    <span>ROUND OBJECTIVE</span>
+    <strong id="matchObjectiveText">ELIMINATE ALL FIVE OPPOSING OPERATORS</strong>
+    <small id="matchPlanText">YOUR OPERATORS MOVE, AIM AND FIGHT AUTONOMOUSLY</small>
+  </aside>
+
+  <div class="mapTag">
+    <div class="mode">TACTICAL ELIMINATION</div>
+    <div class="name">CITADEL DEPOT</div>
+    <div class="desc">Endgame search protocol active</div>
+  </div>
+
+  <div class="multi-kill-banner" id="multiKillBanner" role="status" aria-live="assertive" aria-atomic="true" hidden>
+    <span id="multiKillKicker">MULTI-KILL</span>
+    <strong id="multiKillTitle">DOUBLE KILL</strong>
+    <small id="multiKillDetail">PLAYER · BONUS BANKED</small>
+  </div>
+  <div class="status" id="status" hidden></div>
+  <div class="round-result" id="roundResult" aria-hidden="true">
+    <div class="kicker" id="roundResultKicker">ROUND COMPLETE</div>
+    <strong id="roundResultTitle">TEAM WINS</strong>
+    <span id="roundResultDetail">Opposition eliminated</span>
+  </div>
+
+
+  <section class="career-match-intro" id="careerMatchIntro" hidden aria-hidden="true">
+    <div class="career-match-intro-card" role="dialog" aria-modal="true" aria-labelledby="careerMatchIntroTitle">
+      <header>
+        <span id="careerMatchIntroKicker">LEAGUE MATCH · FIRST TO 3</span>
+        <strong id="careerMatchIntroTitle">YOUR CLUB VS OPPOSITION</strong>
+        <small id="careerMatchIntroMap">CITADEL DEPOT · TACTICAL ELIMINATION</small>
+      </header>
+      <div class="career-match-intro-versus">
+        <section class="blue"><span>YOUR ACTIVE FIVE OPERATORS</span><strong id="careerMatchIntroBlueName">YOUR CLUB</strong><div id="careerMatchIntroBlueRoster"></div></section>
+        <b aria-hidden="true">VS</b>
+        <section class="red"><span>OPPOSITION</span><strong id="careerMatchIntroRedName">OPPOSITION</strong><div id="careerMatchIntroRedRoster"></div></section>
+      </div>
+      <div class="career-match-intro-plan" id="careerMatchIntroPlan"></div>
+      <footer><button type="button" class="primary" id="careerMatchIntroStartBtn">BEGIN MATCH</button></footer>
+    </div>
+  </section>
+
+  <aside class="sponsor-round-transition" id="sponsorRoundTransition" aria-hidden="true" hidden>
+    <div class="sponsor-round-transition-frame">
+      <span class="sponsor-round-eyebrow">PARTNERS OF <b id="sponsorRoundClub">YOUR CLUB</b></span>
+      <div class="sponsor-round-logo" id="sponsorRoundLogo" aria-hidden="true"></div>
+      <i class="sponsor-round-divider" aria-hidden="true"></i>
+      <strong id="sponsorRoundTitle">ROUND 2 BROADCAST</strong>
+      <small>OFFICIAL MATCH PARTNER</small>
+    </div>
+  </aside>
+
+
+  <section class="between-round-tactics" id="betweenRoundTactics" hidden aria-hidden="true">
+    <div class="between-round-tactics-card" role="dialog" aria-modal="true" aria-labelledby="betweenRoundTacticsTitle">
+      <header>
+        <div>
+          <span id="betweenRoundKicker">ROUND COMPLETE</span>
+          <strong id="betweenRoundTacticsTitle">TACTICAL INTERVENTION</strong>
+          <small id="betweenRoundScore">SCORE 0 — 0</small>
+        </div>
+        <b id="betweenRoundChangeCount">0 / 2 CHANGES</b>
+      </header>
+      <section class="between-round-insight" aria-live="polite">
+        <span>COACHING READ</span>
+        <strong id="betweenRoundInsightTitle">KEEP THE PLAN STABLE</strong>
+        <p id="betweenRoundInsightBody">The opening round did not expose one dominant weakness. Make a limited adjustment only when the evidence supports it.</p>
+      </section>
+      <div class="between-round-diagnosis-grid" id="betweenRoundDiagnosisGrid" aria-label="Round evidence"></div>
+      <section class="between-round-opponent-read" id="betweenRoundOpponentRead" aria-live="polite"></section>
+      <div class="between-round-tactic-groups">
+        <fieldset data-between-round-group="approach">
+          <legend><span>01</span><strong>TEMPO &amp; RISK</strong><small>How readily the team commits</small></legend>
+          <div>
+            <button type="button" data-between-round-type="approach" data-between-round-value="cautious"><strong>CAUTIOUS</strong><small>Earlier cover, lower risk</small></button>
+            <button type="button" data-between-round-type="approach" data-between-round-value="balanced"><strong>BALANCED</strong><small>Keep adaptive tempo</small></button>
+            <button type="button" data-between-round-type="approach" data-between-round-value="aggressive"><strong>AGGRESSIVE</strong><small>Faster pressure, more risk</small></button>
+          </div>
+        </fieldset>
+        <fieldset data-between-round-group="engagement">
+          <legend><span>02</span><strong>ENGAGEMENT RANGE</strong><small>Where the squad seeks contact</small></legend>
+          <div>
+            <button type="button" data-between-round-type="engagement" data-between-round-value="close"><strong>CLOSE</strong><small>Collapse distance quickly</small></button>
+            <button type="button" data-between-round-type="engagement" data-between-round-value="mixed"><strong>MIXED</strong><small>Let loadouts decide</small></button>
+            <button type="button" data-between-round-type="engagement" data-between-round-value="long"><strong>LONG</strong><small>Protect spacing and sightlines</small></button>
+          </div>
+        </fieldset>
+        <fieldset data-between-round-group="priority">
+          <legend><span>03</span><strong>TEAM SHAPE</strong><small>How operators support one another</small></legend>
+          <div class="four">
+            <button type="button" data-between-round-type="priority" data-between-round-value="group"><strong>GROUP</strong><small>Reduce isolation</small></button>
+            <button type="button" data-between-round-type="priority" data-between-round-value="trade"><strong>TRADE</strong><small>React to team-mate losses</small></button>
+            <button type="button" data-between-round-type="priority" data-between-round-value="flank"><strong>FLANK</strong><small>Create a second angle</small></button>
+            <button type="button" data-between-round-type="priority" data-between-round-value="hold"><strong>HOLD</strong><small>Defend useful ground</small></button>
+          </div>
+        </fieldset>
+        <fieldset data-between-round-group="route">
+          <legend><span>04</span><strong>ROUTE &amp; TERRITORY</strong><small>Where the next round opens</small></legend>
+          <div class="four" id="betweenRoundRouteOptions"></div>
+        </fieldset>
+      </div>
+      <p class="between-round-limit" id="betweenRoundLimit">Choose up to two categories. Unchanged instructions retain familiarity and reduce tactical churn.</p>
+      <footer>
+        <button type="button" id="betweenRoundKeepBtn">KEEP CURRENT PLAN</button>
+        <button type="button" class="primary" id="betweenRoundApplyBtn">APPLY &amp; START ROUND</button>
+      </footer>
+    </div>
+  </section>
+
+  <div class="scoreboard-overlay" id="scoreboardOverlay" hidden>
+    <div class="scoreboard-card">
+      <div class="scoreboard-header">
+        <div>
+          <div class="kicker" id="scoreboardCompetition">MATCH SCOREBOARD</div>
+          <strong id="scoreboardTitle">ROUND 1 · 0 — 0</strong>
+          <div class="scoreboard-summary" id="scoreboardSummary">Tap outside the board or press close to return to the match.</div>
+        </div>
+        <button class="scoreboard-close" id="scoreboardCloseBtn">CLOSE</button>
+      </div>
+      <div class="scoreboard-teams">
+        <section class="scoreboard-team blue">
+          <div class="scoreboard-team-head"><span class="scoreboard-club-name" id="scoreboardBlueName">HOME TEAM</span><span id="scoreboardBlueSummary">5 ALIVE</span></div>
+          <div class="scoreboard-cols"><span>PLAYER</span><span>K</span><span>D</span><span>HP</span><span>STATUS</span><span>WEAPON</span></div>
+          <div id="scoreboardBlueRows"></div>
+        </section>
+        <section class="scoreboard-team red">
+          <div class="scoreboard-team-head"><span class="scoreboard-club-name" id="scoreboardRedName">AWAY TEAM</span><span id="scoreboardRedSummary">5 ALIVE</span></div>
+          <div class="scoreboard-cols"><span>PLAYER</span><span>K</span><span>D</span><span>HP</span><span>STATUS</span><span>WEAPON</span></div>
+          <div id="scoreboardRedRows"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="spectator">
+    <div class="spectator-head">
+      <div>
+        <div class="label">SPECTATING</div>
+        <div class="name" id="spectatorName">BLUE 01</div>
+      </div>
+      <div class="health-text" id="healthText">100 HP</div>
+    </div>
+    <div class="meta"><span id="teamText">HOME TEAM</span><span id="kdText">0 K / 0 D</span><span id="weaponText">VX-7</span></div>
+    <div class="spectator-intent"><span>AUTONOMOUS INTENTION</span><strong id="spectatorIntent">MOVING TO ASSIGNED POSITION</strong></div>
+    <div class="health"><i id="healthBar"></i></div>
+    <div class="armour-hud" id="armourHud" hidden><span id="armourText">NO ARMOUR</span><i><b id="armourBar"></b></i></div>
+  </div>
+
+  <aside class="owned-telemetry" id="ownedTelemetry" aria-label="Selected player live telemetry">
+    <div class="owned-telemetry-head">
+      <div><span>LIVE PLAYER LINK</span><strong id="ownedTelemetryName">NO PLAYER</strong></div>
+      <b id="ownedTelemetryStatus">READY</b>
+    </div>
+    <div class="owned-telemetry-grid">
+      <div><span>HEALTH</span><strong id="ownedTelemetryHealth">100 / 100</strong><i><b id="ownedTelemetryHealthBar"></b></i></div>
+      <div><span>ACCURACY</span><strong id="ownedTelemetryAccuracy">0%</strong><i><b id="ownedTelemetryAccuracyBar"></b></i></div>
+      <div><span>DAMAGE</span><strong id="ownedTelemetryDamage">0</strong></div>
+      <div><span>MATCH K / D</span><strong id="ownedTelemetryKd">0 / 0</strong></div>
+    </div>
+    <div class="owned-telemetry-foot"><span id="ownedTelemetryWeapon">P12 SCRAPLINE</span><span id="ownedTelemetryBehaviour">HOLDING</span></div>
+    <section class="owned-decision-panel" aria-label="Current tactical decision">
+      <header><span>WHY THIS OPERATOR IS DOING IT</span><strong id="ownedDecisionAction">SCANNING</strong></header>
+      <p id="ownedDecisionReason">Maintaining awareness while no confirmed target is visible.</p>
+      <div class="owned-decision-grid">
+        <div><span>TARGET</span><strong id="ownedDecisionTarget">NONE</strong></div>
+        <div><span>RANGE</span><strong id="ownedDecisionRange">NO CONTACT</strong></div>
+        <div><span>INSTRUCTION</span><strong id="ownedDecisionInstruction">BALANCED</strong></div>
+        <div><span>ROUTE INTENT</span><strong id="ownedDecisionRoute">HOLD CURRENT LANE</strong></div>
+      </div>
+    </section>
+  </aside>
+
+  <div class="controls">
+    <button id="prevBtn">◀ PREVIOUS</button>
+    <button class="primary" id="autoBtn">AUTO: ON</button>
+    <button id="nextBtn">NEXT ▶</button>
+    <button class="match-speed-btn" id="matchSpeedBtn" aria-pressed="false">SPEED 1×</button>
+  </div>
+
+  <button class="portrait-audio-toggle" id="portraitAudioBtn" type="button" aria-label="Enable match audio" aria-pressed="false" data-muted="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path class="portrait-audio-speaker" d="M4 9.5h4l5-4v13l-5-4H4z"></path>
+      <path class="portrait-audio-waves" d="M16 9c1.2 1.6 1.2 4.4 0 6M19 6.5c2.8 3 2.8 8 0 11"></path>
+      <path class="portrait-audio-muted-mark" d="m16.5 9 5 6m0-6-5 6"></path>
+    </svg>
+  </button>
+  <button class="portrait-diagnostic-export" id="diagnosticExportBtn" type="button" aria-label="Export match diagnostics. Press and hold to toggle the live diagnostic overlay." title="Export diagnostics · hold for live overlay">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"></path></svg>
+  </button>
+  <button class="portrait-minimap-toggle" id="minimapToggleBtn" type="button" aria-label="Open tactical minimap" aria-pressed="false" title="Open tactical minimap">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 6.5 5-2.5 7 2.5 5-2.5v13.5l-5 2.5-7-2.5-5 2.5zM8.5 4v13.5M15.5 6.5V20"></path></svg>
+  </button>
+  <aside class="live-diagnostic-overlay" id="diagnosticOverlay" aria-hidden="true" hidden></aside>
+  <section class="tactical-minimap-panel" id="tacticalMinimapPanel" aria-hidden="true" hidden>
+    <header>
+      <div><span>LIVE TACTICAL MAP</span><strong id="tacticalMinimapTitle">CITADEL DEPOT</strong></div>
+      <button id="tacticalMinimapCloseBtn" type="button" aria-label="Close tactical minimap">×</button>
+    </header>
+    <div class="tactical-minimap-canvas-wrap">
+      <canvas id="tacticalMinimapCanvas" width="360" height="240" aria-label="Top-down tactical map showing both teams"></canvas>
+      <span class="tactical-minimap-north" aria-hidden="true">N</span>
+    </div>
+    <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
+  </section>
+  <section class="free-roam-overlay" id="freeRoamOverlay" hidden aria-hidden="true">
+    <header class="free-roam-header">
+      <div><span>MAP INSPECTION // FREE ROAM</span><strong id="freeRoamMapName">CITADEL DEPOT</strong><small id="freeRoamPosition">X 0.0 · Z 0.0 · GROUND</small></div>
+      <div class="free-roam-header-actions"><button id="freeRoamMapBtn" type="button">MAP</button><button id="freeRoamExportBtn" type="button">EXPORT POSITION</button><button class="danger" id="freeRoamExitBtn" type="button">EXIT</button></div>
+    </header>
+    <div class="free-roam-level-chip" id="freeRoamFloor">GROUND FLOOR</div>
+    <div class="free-roam-mobile-controls" aria-label="Free roam movement controls">
+      <div class="free-roam-move-pad" aria-label="Movement pad">
+        <button type="button" data-free-roam-move="forward" aria-label="Move forward">▲</button>
+        <button type="button" data-free-roam-move="left" aria-label="Move left">◀</button>
+        <button type="button" data-free-roam-move="back" aria-label="Move backward">▼</button>
+        <button type="button" data-free-roam-move="right" aria-label="Move right">▶</button>
+      </div>
+      <div class="free-roam-look-pad" id="freeRoamLookPad" role="application" aria-label="Drag to look around"><span>DRAG TO LOOK</span><small>SWIPE HORIZONTALLY OR VERTICALLY</small></div>
+    </div>
+    <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
+  </section>
+  <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
+  <div class="build-stamp" id="buildStamp">BUILD 12.112 · VISIBLE VERSION HEADER</div>
+  </div>
+
+  <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
+    <header class="match-commentary-label">
+      <span>LIVE COMMENTARY</span>
+      <strong id="matchCommentaryRound">ROUND 1 · STANDBY</strong>
+      <button class="command-pulse-trigger" id="commandPulseBtn" type="button" aria-haspopup="dialog" aria-controls="commandPulsePanel" disabled>COMMAND LOCKED</button>
+    </header>
+    <div class="match-commentary-content" id="matchCommentaryContent">
+      <div class="match-commentary-idle" id="matchCommentaryIdle"><span>TACTICAL LINK</span><strong>Awaiting live round events.</strong></div>
+      <div class="career-match-moment" id="careerMatchMoment" role="status" aria-live="assertive" aria-atomic="true" hidden>
+        <span id="careerMatchMomentKicker">MATCH MOMENT</span>
+        <strong id="careerMatchMomentTitle">LAST OPERATOR</strong>
+        <small id="careerMatchMomentDetail">1 VS 2 · HOLD YOUR NERVE</small>
+      </div>
+      <div class="feed" id="feed" role="status" aria-live="polite" aria-atomic="false" hidden></div>
+    </div>
+  </section>
+  </div>
+
+  <section class="command-pulse-panel" id="commandPulsePanel" role="dialog" aria-modal="false" aria-labelledby="commandPulsePanelTitle" hidden>
+    <header>
+      <div><span>ONE INSTRUCTION THIS ROUND</span><strong id="commandPulsePanelTitle">LIVE COMMAND PULSE</strong><small id="commandPulseStatus">Operators interpret the instruction autonomously.</small></div>
+      <button id="commandPulseCloseBtn" type="button" aria-label="Close live command choices">×</button>
+    </header>
+    <div class="command-pulse-options" id="commandPulseOptions"></div>
+  </section>
+
+  <section class="new-player-demo-coach" id="newPlayerDemoCoach" hidden aria-hidden="true">
+    <div class="new-player-demo-coach-card" role="dialog" aria-labelledby="newPlayerDemoTitle" aria-describedby="newPlayerDemoBody">
+      <header>
+        <span id="newPlayerDemoKicker">GUIDED DEMO ROUND · 1 / 4</span>
+        <strong id="newPlayerDemoTitle">YOU ARE THE MANAGER, NOT THE SHOOTER</strong>
+      </header>
+      <p id="newPlayerDemoBody">You watch the match through one operator's viewpoint. The operators control their own movement, aiming and shooting.</p>
+      <div class="new-player-demo-focus" id="newPlayerDemoFocus" aria-live="polite">LOOK AT THE SPECTATOR NAME, HEALTH, WEAPON AND LIVE INTENTION.</div>
+      <footer>
+        <button type="button" id="newPlayerDemoSkipBtn">SKIP ORIENTATION</button>
+        <button type="button" class="primary" id="newPlayerDemoNextBtn">SHOW THE ROUND GOAL</button>
+      </footer>
+    </div>
+  </section>
+
+  <div class="new-player-intro-overlay" id="newPlayerIntroOverlay" hidden aria-hidden="true">
+    <section class="new-player-intro-card" role="dialog" aria-modal="true" aria-labelledby="newPlayerIntroTitle" aria-describedby="newPlayerIntroBody">
+      <header>
+        <span>NEW MANAGER ORIENTATION</span>
+        <h2 id="newPlayerIntroTitle">WHAT IS STRIKEWATCH?</h2>
+        <p id="newPlayerIntroBody">Strikewatch is a tactical management game. You build and prepare the club; five autonomous operators carry out your decisions in live elimination matches.</p>
+      </header>
+      <div class="new-player-intro-loop" aria-label="Strikewatch concept">
+        <article><span>1</span><strong>RECRUIT &amp; EQUIP</strong><small>Sign operators and give each one a suitable role, weapon and armour setup.</small></article>
+        <article><span>2</span><strong>SET THE PLAN</strong><small>Choose the team's formation, tempo, preferred engagement range and priorities.</small></article>
+        <article><span>3</span><strong>WATCH THEM EXECUTE</strong><small>You spectate. Operators move, aim, take cover, reload and fight for themselves.</small></article>
+        <article><span>4</span><strong>LEARN &amp; IMPROVE</strong><small>Use the debrief to train weaknesses, manage the club and earn promotion to the Pro League.</small></article>
+      </div>
+      <aside class="new-player-intro-rule"><strong>REAL MATCH FORMAT</strong><span>Five operators per team · no respawns during a round · first team to win three rounds wins the match.</span></aside>
+      <footer>
+        <button type="button" id="newPlayerIntroSkipBtn">SKIP DEMO &amp; RECRUIT</button>
+        <button type="button" class="primary" id="newPlayerIntroStartBtn">WATCH A ONE-ROUND DEMO</button>
+      </footer>
+    </section>
+  </div>
+
+  <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
+    <section class="matchmaking-card" role="dialog" aria-modal="true" aria-labelledby="matchmakingTitle">
+      <header class="matchmaking-header">
+        <div>
+          <span class="matchmaking-kicker">STRIKEWATCH NETWORK // RANKED SIMULATION</span>
+          <h2 id="matchmakingTitle">FINDING TACTICAL LOBBY</h2>
+          <p id="matchmakingSubtitle">Searching for a balanced Citadel Depot session.</p>
+        </div>
+        <div class="matchmaking-queue-time"><span>QUEUE TIME</span><strong id="matchmakingQueueTime">00:00</strong><small id="matchmakingRegion">EU WEST · 24 MS</small></div>
+      </header>
+      <div class="deployment-selection" id="deploymentSelection" hidden>
+        <section class="deployment-map-panel">
+          <div class="deployment-section-head"><span>PRE-MATCH BRIEFING</span><strong>CHOOSE BATTLEGROUND</strong><small>Your tactical plan remains confirmed. Select the arena, inspect the matchup and review the five autonomous operators who will carry out your instructions.</small></div>
+          <div class="deployment-map-grid" id="deploymentMapGrid"></div>
+        </section>
+        <section class="deployment-summary-panel">
+          <div class="deployment-section-head"><span>ACTIVE FIVE OPERATORS</span><strong>CONFIRMED DEPLOYMENT</strong><small>These are the five operators who will deploy. They move, aim and fight autonomously according to their roles, equipment and your tactical plan.</small></div>
+          <div class="deployment-roster" id="deploymentRoster"></div>
+          <div class="deployment-tactics" id="deploymentTactics"></div>
+        </section>
+        <footer class="deployment-actions">
+          <button id="deploymentCancelBtn" type="button">RETURN TO COMMAND HQ</button>
+          <button class="primary" id="deploymentConfirmBtn" type="button">DEPLOY ACTIVE FIVE OPERATORS</button>
+        </footer>
+      </div>
+      <div id="matchmakingSession">
+      <div class="matchmaking-body">
+        <section class="matchmaking-search-panel">
+          <div class="matchmaking-radar" aria-hidden="true"><i></i><b></b><span></span></div>
+          <div class="matchmaking-search-copy">
+            <span id="matchmakingPhaseLabel">SEARCHING NETWORK</span>
+            <strong id="matchmakingPhaseDetail">Evaluating available tactical servers</strong>
+            <small id="matchmakingEstimate">ESTIMATED WAIT · UNDER 10 SECONDS</small>
+          </div>
+          <div class="matchmaking-map-card">
+            <div><span>MAP</span><strong id="matchmakingMapName">CITADEL DEPOT</strong></div>
+            <div><span>MODE</span><strong>TACTICAL ELIMINATION</strong></div>
+            <div><span>FORMAT</span><strong>FIRST TO 3</strong></div>
+          </div>
+        </section>
+        <section class="matchmaking-lobby-panel">
+          <div class="matchmaking-lobby-head"><span>PROVISIONAL LOBBY</span><strong id="matchmakingLobbyCode">ALLOCATING…</strong></div>
+          <div class="matchmaking-team-grid">
+            <div class="matchmaking-team blue"><header><span id="matchmakingBlueName">HOME TEAM</span><b id="matchmakingBlueReady">0 / 5 READY</b></header><div id="matchmakingBlueRoster"></div></div>
+            <div class="matchmaking-team red"><header><span id="matchmakingRedName">AWAY TEAM</span><b id="matchmakingRedReady">0 / 5 READY</b></header><div id="matchmakingRedRoster"></div></div>
+          </div>
+        </section>
+      </div>
+      <div class="matchmaking-stages" id="matchmakingStages" aria-label="Matchmaking progress">
+        <div data-matchmaking-stage="0"><i></i><span>QUEUE</span><small>SEARCHING</small></div>
+        <div data-matchmaking-stage="1"><i></i><span>SERVER</span><small>ALLOCATE</small></div>
+        <div data-matchmaking-stage="2"><i></i><span>ROSTER</span><small>SYNC</small></div>
+        <div data-matchmaking-stage="3"><i></i><span>READY</span><small>CHECK</small></div>
+        <div data-matchmaking-stage="4"><i></i><span>DEPLOY</span><small>COUNTDOWN</small></div>
+      </div>
+      <footer class="matchmaking-footer">
+        <div class="matchmaking-progress"><i id="matchmakingProgressBar"></i></div>
+        <strong id="matchmakingCountdown">SEARCHING</strong>
+        <button id="matchmakingCancelBtn">CANCEL SEARCH</button>
+      </footer>
+      </div>
+    </section>
+  </div>
+
+  <div class="career-report-overlay" id="careerReportOverlay" hidden>
+    <section class="career-report-card" role="dialog" aria-modal="true" aria-labelledby="careerReportTitle">
+      <header class="career-report-header">
+        <div><span>AFTER ACTION REPORT</span><h2 id="careerReportTitle">MATCH DEBRIEF</h2><p id="careerReportSubtitle">Owned operator combat analysis</p></div>
+        <div class="career-report-grade"><small>COMBAT GRADE</small><strong id="careerReportGrade">C</strong><span id="careerReportScore">50 EFFECTIVENESS</span></div>
+      </header>
+      <div class="career-report-content" id="careerReportContent"></div>
+      <footer class="career-report-actions">
+        <span id="careerReportXpSummary">0 XP AWARDED</span>
+        <div class="career-report-action-buttons"><button type="button" id="careerReportDiagnosticExportBtn">EXPORT DIAGNOSTICS</button><button class="primary" id="careerReportContinueBtn">CONTINUE TO SUPPLY DROP</button></div>
+      </footer>
+    </section>
+  </div>
+
+  <div class="career-crate-overlay" id="careerCrateOverlay" hidden>
+    <div class="career-crate-card" id="careerCrateStage">
+      <div class="career-crate-kicker" id="careerCrateKicker">MATCH SUPPLY DROP</div>
+      <h2 id="careerCrateTitle">FIELD CRATE READY</h2>
+      <div class="career-crate-display" aria-live="polite">
+        <div class="career-crate-core" id="careerCrateCanvasHome" aria-hidden="true">
+          <canvas class="career-crate-canvas" id="careerCrateCanvas" aria-label="Three-dimensional field crate"></canvas>
+          <div class="career-crate-renderer-fallback" id="careerCrateRendererFallback" hidden>3D REWARD VIEW UNAVAILABLE</div>
+        </div>
+        <div class="career-crate-model" id="careerCrateModel" aria-hidden="true"></div>
+      </div>
+      <div class="career-crate-weapon" id="careerCrateWeapon"></div>
+      <div class="career-crate-stats" id="careerCrateStats"></div>
+      <p class="career-crate-summary" id="careerCrateSummary"></p>
+      <button class="primary" id="careerCrateOpenBtn">OPEN FIELD CRATE</button>
+      <button class="primary" id="careerCrateClaimBtn" hidden>CLAIM & RETURN TO HQ</button>
+    </div>
+  </div>
+
+  <div class="team-note-overlay" id="teamNoteOverlay" hidden aria-hidden="true">
+    <section class="team-note-dialog" role="dialog" aria-modal="true" aria-labelledby="teamNoteTitle" aria-describedby="teamNoteBody">
+      <div class="team-note-quote" id="teamNoteQuote" aria-hidden="true">“</div>
+      <button class="team-note-close" id="teamNoteCloseBtn" aria-label="Close popup">×</button>
+      <span class="team-note-kicker" id="teamNoteKicker">PLAYER COMMENT</span>
+      <h2 id="teamNoteTitle">EXPANDED COMMENT</h2>
+      <p class="team-note-body" id="teamNoteBody"></p>
+      <p class="team-note-footer" id="teamNoteFooter" hidden></p>
+      <div class="team-note-actions" id="teamNoteActions" hidden></div>
+      <span class="team-note-dismiss-hint" id="teamNoteDismissHint">TAP OUTSIDE OR PRESS × TO CLOSE</span>
+    </section>
+  </div>
+
+
+  <section class="portrait-console-dock" aria-label="Portrait match control deck">
+    <div class="portrait-dock-status">
+      <div>
+        <span class="portrait-dock-kicker">ACTIVE CAMERA</span>
+        <strong id="portraitSpectatorName">BLUE 01</strong>
+      </div>
+      <div class="portrait-dock-readout">
+        <span id="portraitTeamText">HOME TEAM</span>
+        <strong id="portraitHealthText">100 HP</strong>
+      </div>
+    </div>
+    <div class="portrait-dock-meta">
+      <span id="portraitWeaponText">VX-7</span>
+      <span id="portraitRoundText">ROUND 1 · 0 — 0</span>
+    </div>
+    <div class="portrait-owned-link" id="portraitOwnedTelemetry">
+      <span>LIVE PLAYER LINK</span>
+      <strong id="portraitOwnedName">SELECTED PLAYER</strong>
+      <em id="portraitOwnedStatus">READY</em>
+      <b id="portraitOwnedMetrics">100 HP · 0 DMG · 0% ACC</b>
+      <small id="portraitOwnedReason">SCANNING · HOLD CURRENT LANE</small>
+    </div>
+    <button class="portrait-command-pulse-btn" id="portraitCommandPulseBtn" type="button" aria-haspopup="dialog" aria-controls="commandPulsePanel" disabled>COMMAND LOCKED</button>
+    <div class="portrait-dock-controls">
+      <button id="portraitPrevBtn" aria-label="Previous living operator"><span aria-hidden="true">◀</span> PREV</button>
+      <button class="primary" id="portraitAutoBtn">AUTO: ON</button>
+      <button id="portraitNextBtn" aria-label="Next living operator">NEXT <span aria-hidden="true">▶</span></button>
+      <button class="match-speed-btn" id="portraitSpeedBtn" aria-pressed="false">SPEED 1×</button>
+      <button class="portrait-menu-btn" id="portraitMenuBtn">MENU</button>
+    </div>
+  </section>
+
+  <button class="restore-view-btn" id="restoreViewBtn" hidden aria-label="Return to portrait spectator view" title="Return to portrait spectator view">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 20h4v-4M4 4l6 6M20 20l-6-6"></path></svg>
+    <span class="restore-view-copy">PORTRAIT</span>
+  </button>
+
+  <section class="landscape-rotation-gate" id="landscapeRotationGate" hidden aria-hidden="true">
+    <div class="landscape-rotation-gate-card" role="status" aria-live="polite">
+      <svg class="landscape-rotation-icon" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="17" y="9" width="30" height="46" rx="5"></rect>
+        <path d="M9 23c-4 8-3 18 3 25M55 23c4 8 3 18-3 25"></path>
+        <path d="m8 20 1 8 7-4M56 20l-1 8-7-4"></path>
+      </svg>
+      <span>LANDSCAPE VIEW READY</span>
+      <strong>ROTATE YOUR PHONE</strong>
+      <p>Turn your phone sideways to enter the full tactical view.</p>
+      <button id="landscapeReturnPortraitBtn" type="button">SWITCH BACK TO PORTRAIT</button>
+    </div>
+  </section>
+
+  <div class="menu-shell" id="menuShell" hidden>
+    <header class="manager-topbar">
+      <button class="menu-history-btn manager-history-btn manager-history-back" id="menuBackBtn" type="button" disabled aria-label="Go back" title="Go back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg></button>
+      <button class="manager-brand manager-balance-brand manager-gold-brand" id="managerGoldBtn" type="button" aria-label="Open Gold Coin account"><svg class="manager-balance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="5.5"></circle><path d="m12 8.4 1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 13.77l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"></path></svg><div><span>GOLD BALANCE</span><strong id="managerOperatorName">0 GC</strong><small id="managerOperatorLevel">CREATE TEAM TO EARN COINS</small></div></button>
+      <div class="manager-context">
+        <div class="manager-context-topline">
+          <span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span>
+          <span class="manager-build-version" aria-label="Current game version">BUILD <b id="managerBuildVersion">12.112</b></span>
+        </div>
+        <strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong>
+        <small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small>
+      </div>
+      <div class="manager-topbar-actions" aria-label="Manager shortcuts">
+        <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" data-tutorial-order="1" data-tutorial-label="INBOX" aria-label="Open club inbox" title="Open club inbox">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg>
+          <span class="manager-topbar-action-label">INBOX</span>
+          <span class="manager-mail-badge" id="managerMailBadge" hidden>0</span>
+        </button>
+        <button class="manager-topbar-action manager-calendar-btn" id="managerCalendarBtn" type="button" data-tutorial-order="2" data-tutorial-label="CALENDAR" disabled aria-label="Open club calendar" title="Open club calendar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
+          <span class="manager-topbar-action-label">CALENDAR</span>
+          <span class="manager-action-badge manager-calendar-badge" id="managerCalendarBadge" hidden>0</span>
+        </button>
+        <button class="manager-topbar-action manager-help-toggle" id="managerHelpToggleBtn" type="button" data-tutorial-order="3" data-tutorial-label="HELP" aria-pressed="false" aria-expanded="false" aria-controls="mobileCommandRouteBar" aria-label="Show page help" title="Show page help">
+          <span class="manager-help-glyph" aria-hidden="true">?</span>
+          <span class="manager-topbar-action-label">HELP</span>
+        </button>
+        <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" data-tutorial-order="3" data-tutorial-label="MATCH" hidden aria-label="Open match control" title="Open match control">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
+          <span class="manager-topbar-action-label">MATCH</span>
+        </button>
+      </div>
+      <div class="manager-profile manager-end-day-slot">
+        <button class="manager-end-day-primary" id="menuEndDayBtn" type="button" data-tutorial-order="4" data-tutorial-label="END DAY" aria-label="Create a team to begin the club calendar" title="Create a team to begin the club calendar" disabled>
+          <span>CLUB CALENDAR</span>
+          <strong id="managerDateDay">END DAY</strong>
+          <small id="managerDateMeta">CREATE TEAM TO BEGIN</small>
+          <span class="manager-action-badge manager-end-day-block-badge" id="managerEndDayBlockBadge" hidden>!</span>
+          <span class="manager-end-day-lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10" width="13" height="10" rx="2"></rect><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10"></path><path d="M12 14v2.5"></path></svg></span>
+        </button>
+      </div>
+      <button class="menu-history-btn manager-history-btn manager-history-forward" id="menuForwardBtn" type="button" disabled aria-label="Go forward" title="Go forward"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"></path></svg></button>
+    </header>
+    <div class="menu-layout">
+      <aside class="menu-sidebar">
+        <div class="menu-command-mark menu-command-mark-mobile">
+          <div class="menu-kicker">STRIKEWATCH // COMMAND NETWORK</div>
+          <div class="menu-title">OPERATIONS DECK</div>
+          <div class="menu-subtitle">Secure tactical control, live operator telemetry and match systems.</div>
+        </div>
+        <div class="menu-command-mark menu-command-mark-desktop">
+          <div class="menu-kicker" id="menuCommandKicker">STRIKEWATCH // MATCH OPERATIONS</div>
+          <div class="menu-title" id="menuCommandTitle">OPERATIONS DECK</div>
+          <div class="menu-subtitle" id="menuCommandSubtitle">Today, competition, messages, telemetry and match review.</div>
+        </div>
+        <div class="menu-club-brand" id="menuClubBrand" aria-label="Active club identity">
+          <div class="menu-club-brand-logo" id="menuClubBrandLogo" aria-hidden="true"></div>
+          <div class="menu-club-brand-copy">
+            <strong id="menuClubBrandName">YOUR CLUB</strong>
+            <small id="menuClubBrandMeta">CLUB NAVIGATION</small>
+          </div>
+        </div>
+        <div class="menu-nav" id="menuNav">
+          <button class="menu-tab active" data-section="operations"><span class="menu-tab-index">01</span><span class="menu-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg></span><span class="menu-tab-copy"><strong><span class="menu-tab-label-full">OPERATIONS</span><span class="menu-tab-label-mobile" aria-hidden="true">OPS</span></strong><small>Calendar, inbox, matches and telemetry</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="career"><span class="menu-tab-index">02</span><span class="menu-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 20v-2.2A4.8 4.8 0 0 1 8.3 13h1.4a4.8 4.8 0 0 1 4.8 4.8V20"></path><circle cx="17" cy="9" r="2.4"></circle><path d="M15.4 14.2h1.9a3.7 3.7 0 0 1 3.7 3.7V20"></path></svg></span><span class="menu-tab-copy"><strong>TEAM</strong><small>Squad, tactics, recruitment and transfers</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="armoury"><span class="menu-tab-index">03</span><span class="menu-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5.2c0 4.9-3.1 8.1-8 9.8-4.9-1.7-8-4.9-8-9.8V6l8-3Z"></path><circle cx="12" cy="11" r="2.6"></circle><path d="M12 6.5v2M12 13.5v2M7.5 11h2M14.5 11h2"></path></svg></span><span class="menu-tab-copy"><strong><span class="menu-tab-label-full">ARMOURY</span><span class="menu-tab-label-mobile" aria-hidden="true">GEAR</span></strong><small>Weapons, comparisons and player loadouts</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="supplies"><span class="menu-tab-index">04</span><span class="menu-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Z"></path><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z"></path><path d="M12 11v10M8 5l8 4"></path></svg></span><span class="menu-tab-copy"><strong><span class="menu-tab-label-full">SUPPLIES</span><span class="menu-tab-label-mobile" aria-hidden="true">SUPPLY</span></strong><small>Field crates, weapons and ammunition</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="systems"><span class="menu-tab-index">05</span><span class="menu-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-4 8 4v13"></path><path d="M8 21v-5h8v5M8 10h2M14 10h2M8 13h2M14 13h2"></path></svg></span><span class="menu-tab-copy"><strong>CLUB</strong><small>Training, staff, finances and commercial</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+        </div>
+        <div class="menu-side-actions">
+          <button id="resumeBtn">RETURN TO MATCH</button>
+          <button id="exitToMenuBtn">EXIT TO MAIN MENU</button>
+        </div>
+      </aside>
+      <section class="menu-content">
+        <div class="menu-header-row menu-history-bar">
+          <div class="menu-header-copy">
+            <div class="menu-badge" id="menuModeBadge">MAIN</div>
+            <strong class="menu-header-title" id="menuHeaderTitle">TACTICAL OPERATIONS</strong>
+          </div>
+          <div class="menu-header-actions">
+            <button class="menu-match-speed-btn" id="menuMatchSpeedBtn" hidden aria-pressed="false" aria-label="Toggle match speed">SPEED 1×</button>
+            <button class="menu-match-pause-btn" id="menuMatchPauseBtn" hidden aria-pressed="false" aria-label="Pause live match">Ⅱ&nbsp; PAUSE</button>
+            <button class="menu-return-btn primary" id="returnToMatchBtn" hidden>RETURN TO MATCH</button>
+          </div>
+        </div>
+        <div class="menu-subnav-shell" id="menuSubnavShell">
+          <button class="menu-subnav-arrow left" id="menuSubnavLeft" aria-label="Show earlier menu items" hidden>‹</button>
+          <nav class="menu-subnav" id="menuSubnav" aria-label="Section navigation"></nav>
+          <button class="menu-subnav-arrow right" id="menuSubnavRight" aria-label="Show more menu items" hidden>›</button>
+        </div>
+        <div class="mobile-command-route-bar" id="mobileCommandRouteBar">
+          <button class="mobile-command-route-button" id="mobileNavigationOpenBtn" type="button" aria-expanded="false" aria-controls="mobileNavigationOverlay">
+            <span class="mobile-command-route-copy">
+              <small><span id="mobileCommandSectionLabel">OPERATIONS</span><span class="mobile-command-build-version" aria-label="Current game version"> · BUILD <b id="mobileCommandBuildVersion">12.112</b></span></small>
+              <strong id="mobileCommandRouteLabel">COMMAND CENTRE</strong>
+              <em id="mobileCommandRouteHint">Club overview and next actions</em>
+            </span>
+            <span class="mobile-command-route-position" id="mobileCommandRoutePosition">1 OF 6</span>
+            <span class="mobile-command-route-action"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"></path></svg><b>PAGES</b></span>
+          </button>
+        </div>
+        <div id="menuContent"></div>
+      </section>
+    </div>
+
+    <div class="mobile-navigation-overlay" id="mobileNavigationOverlay" hidden aria-hidden="true">
+      <section class="mobile-navigation-drawer" role="dialog" aria-modal="true" aria-labelledby="mobileNavigationTitle">
+        <header class="mobile-navigation-header">
+          <div>
+            <span>STRIKEWATCH // CLUB NAVIGATION</span>
+            <strong id="mobileNavigationTitle">CHOOSE A PAGE</strong>
+            <small id="mobileNavigationContext">Operations · Command Centre</small>
+          </div>
+          <button class="mobile-navigation-close" id="mobileNavigationCloseBtn" type="button" aria-label="Close club navigation">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+          </button>
+        </header>
+        <div class="mobile-navigation-search">
+          <label for="mobileNavigationSearch"><span>FIND A CLUB PAGE</span></label>
+          <div>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
+            <input id="mobileNavigationSearch" type="search" placeholder="Search training, squad, finances…" autocomplete="off" />
+            <button id="mobileNavigationSearchClear" type="button" hidden>CLEAR</button>
+          </div>
+        </div>
+        <nav class="mobile-navigation-sections" id="mobileNavigationSections" aria-label="Club sections"></nav>
+        <div class="mobile-navigation-journey" id="mobileNavigationJourney" hidden></div>
+        <div class="mobile-navigation-list-head">
+          <div><span id="mobileNavigationListKicker">OPERATIONS PAGES</span><strong id="mobileNavigationListTitle">6 DESTINATIONS</strong></div>
+          <small>Choose a page. Locked systems show exactly what opens them.</small>
+        </div>
+        <nav class="mobile-navigation-routes" id="mobileNavigationRoutes" aria-label="Available club pages"></nav>
+        <div class="mobile-navigation-footer">
+          <button type="button" data-mobile-nav-route="play"><span>RETURN TO</span><strong>COMMAND CENTRE</strong></button>
+          <div class="mobile-navigation-session-actions">
+            <button type="button" data-mobile-nav-action="resume">RETURN TO MATCH</button>
+            <button type="button" data-mobile-nav-action="exit">EXIT TO MAIN MENU</button>
+          </div>
+          <small>Tap the active department in the persistent bar to reopen this navigator.</small>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="rotate-note" aria-live="polite">
+    <div><strong>Landscape tactical view</strong><span>Rotate your phone for the most natural full-screen controls. Use WINDOWED VIEW to return to portrait.</span></div>
+  </div>
+</div>
+
+<script src="js/strikewatch.dev.js?v=12.112.0-visible-version-header"></script>
+</body>
+</html>
