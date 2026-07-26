@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.114: Live Feed Readability**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.115: Header & Negotiation Readability**.
 
 ## Current release essentials
+
+## Build 12.115 header and negotiation readability
+
+Build 12.115 moves the visible version badge into the independently centred open area of the wide desktop management header while leaving the breadcrumb in its established upper row. Compact desktop retains the inline breadcrumb treatment, and mobile retains the version inside the Help-revealed current-page bar. Mobile negotiation microcopy now has readable type floors across the round/status labels, player scouting summary, negotiation-safety explanation, seller request, editable value labels and step captions. This release changes presentation and release metadata only; negotiation values and decisions, recruitment, gameplay, match presentation, economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.114 live feed readability
 

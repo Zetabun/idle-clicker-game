@@ -1,3 +1,15 @@
+STRIKEWATCH BUILD 12.115 HEADER & NEGOTIATION READABILITY CONTRACT
+
+Preserve the visible-version system and all negotiation behavior while correcting the wide-desktop placement of the build badge and raising compact negotiation typography.
+
+BUILD 12.115 INVARIANTS
+- From `1280px`, the desktop build badge is independently centred in the whole management header's open middle area; the breadcrumb retains its established upper-row position.
+- From `1024px` to `1279px`, keep the build badge inline with the breadcrumb so it cannot collide with the compact header title. Mobile continues to show the version only inside the Help-revealed current-page bar.
+- Compact negotiation round/status labels, scouting captions, safety guidance, request summary, value labels and step captions must remain readable without horizontal page overflow.
+- `js/39-transfers.js` remains the sole authority for negotiation strings, requested/offered values, counter-offers, acceptance and signing.
+- Do not change recruitment calculations, deal values, action controls, gameplay, match presentation, economy, saves, save schema 19 or diagnostics schema 1.
+- Run wide/compact desktop header geometry, compact negotiation typography/overflow, metadata, syntax, deterministic-build and archive-integrity checks.
+
 STRIKEWATCH BUILD 12.114 LIVE FEED READABILITY CONTRACT
 
 Preserve the existing recruitment data and live-match event authorities while improving compact readability and broadcast presentation. The portrait LIVE bug and right-side feed are overlays only; they must not create, suppress or reorder elimination events. Fee and wage estimates must retain both `CR` labels and remain one line on desktop.

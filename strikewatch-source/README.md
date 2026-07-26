@@ -1,8 +1,12 @@
-# Strikewatch Source 12.114
+# Strikewatch Source 12.115
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.115 header and negotiation readability
+
+Build 12.115 independently centres the version badge in the open middle area of wide desktop headers instead of treating it as part of the breadcrumb line. At compact desktop widths the established inline treatment remains, and mobile continues to reveal the version through the `?` Help bar. The incoming-player negotiation screen now raises its smallest compact labels, safety guidance, request summary, editable values and step captions without changing any deal values, controls or signing logic. Gameplay, recruitment calculations, match presentation, economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.114 live feed readability
 

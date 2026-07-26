@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.114: Live Feed Readability</title>
+<title>Strikewatch 12.115: Header & Negotiation Readability</title>
 <style>
   :root {
     color-scheme: dark;
@@ -27585,6 +27585,107 @@ button.primary {
 
 
 /* =====================================================================
+   BUILD 12.115 · HEADER & NEGOTIATION READABILITY
+   On wide desktop screens, keep the breadcrumb in its established upper
+   position while centring the build badge independently in the open header
+   area. On compact screens, raise negotiation microcopy to a readable floor.
+   These rules change presentation only.
+   ===================================================================== */
+@media (min-width: 1280px) {
+  .manager-context-topline::after {
+    content: '';
+    flex: 0 0 68px;
+    width: 68px;
+    height: 1px;
+  }
+  .manager-context-topline > .manager-build-version {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    align-self: auto;
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 820px) {
+  #menuContent .transfer-negotiation-card {
+    padding: 15px;
+  }
+  #menuContent .transfer-negotiation-card header span,
+  #menuContent .transfer-demand-row span,
+  #menuContent .transfer-value-control > span {
+    font-size: 9.5px !important;
+    line-height: 1.3 !important;
+    letter-spacing: .11em;
+  }
+  #menuContent .transfer-negotiation-card header > b {
+    padding: 7px 9px;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+  }
+  #menuContent .transfer-negotiation-card header strong {
+    font-size: 20px !important;
+    line-height: 1.2 !important;
+  }
+  #menuContent .transfer-player-role {
+    font-size: 9.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .transfer-negotiation-card .transfer-player-scouting .scouting-stars > span {
+    font-size: 13px !important;
+  }
+  #menuContent .transfer-negotiation-card .transfer-player-scouting .scouting-stars small {
+    font-size: 8.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .workflow-contract-safety {
+    margin-block: 13px;
+    padding: 13px 14px;
+  }
+  #menuContent .workflow-contract-safety span {
+    font-size: 9.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .workflow-contract-safety strong {
+    margin-top: 6px;
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+  }
+  #menuContent .workflow-contract-safety small {
+    margin-top: 6px;
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+  }
+  #menuContent .transfer-negotiation-card > p {
+    font-size: 11.5px !important;
+    line-height: 1.55 !important;
+  }
+  #menuContent .transfer-demand-row {
+    gap: 7px;
+    padding: 11px 12px;
+  }
+  #menuContent .transfer-demand-row strong {
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+  }
+  #menuContent .transfer-value-control {
+    padding: 13px 12px;
+  }
+  #menuContent .transfer-value-control strong {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+  #menuContent .transfer-value-control small {
+    margin-top: 8px;
+    font-size: 8.75px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+
+/* =====================================================================
    BUILD 12.114 · LIVE FEED READABILITY
    Raise the smallest recruitment/profile copy on compact screens, make the
    portrait spectator view read as a live broadcast, keep desktop currency
@@ -28518,7 +28619,7 @@ body[data-app-state='menu'] .menu-content {
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.114 · LIVE FEED READABILITY</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.115 · HEADER & NEGOTIATION READABILITY</div>
   </div>
 
   <section class="match-commentary-dock" id="matchCommentaryDock" aria-label="Live match commentary">
@@ -28752,7 +28853,7 @@ body[data-app-state='menu'] .menu-content {
       <div class="manager-context">
         <div class="manager-context-topline">
           <span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span>
-          <span class="manager-build-version" aria-label="Current game version">BUILD <b id="managerBuildVersion">12.114</b></span>
+          <span class="manager-build-version" aria-label="Current game version">BUILD <b id="managerBuildVersion">12.115</b></span>
         </div>
         <strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong>
         <small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small>
@@ -28839,7 +28940,7 @@ body[data-app-state='menu'] .menu-content {
         <div class="mobile-command-route-bar" id="mobileCommandRouteBar">
           <button class="mobile-command-route-button" id="mobileNavigationOpenBtn" type="button" aria-expanded="false" aria-controls="mobileNavigationOverlay">
             <span class="mobile-command-route-copy">
-              <small><span id="mobileCommandSectionLabel">OPERATIONS</span><span class="mobile-command-build-version" aria-label="Current game version"> · BUILD <b id="mobileCommandBuildVersion">12.114</b></span></small>
+              <small><span id="mobileCommandSectionLabel">OPERATIONS</span><span class="mobile-command-build-version" aria-label="Current game version"> · BUILD <b id="mobileCommandBuildVersion">12.115</b></span></small>
               <strong id="mobileCommandRouteLabel">COMMAND CENTRE</strong>
               <em id="mobileCommandRouteHint">Club overview and next actions</em>
             </span>
@@ -29197,9 +29298,9 @@ body[data-app-state='menu'] .menu-content {
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.114';
-  const BUILD_NAME = 'LIVE FEED READABILITY';
-  const BUILD_ID = '12.114.0-live-feed-readability';
+  const BUILD_VERSION = '12.115';
+  const BUILD_NAME = 'HEADER & NEGOTIATION READABILITY';
+  const BUILD_ID = '12.115.0-header-negotiation-readability';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

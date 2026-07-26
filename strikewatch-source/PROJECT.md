@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.114: Live Feed Readability**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.115: Header & Negotiation Readability**.
 
 ## Current release essentials
+
+## Build 12.115 header and negotiation readability
+
+`css/game.css` owns the Build 12.115 presentation layer. From `1280px`, `.manager-build-version` is positioned against the relative `.manager-topbar` at the horizontal and vertical centre of the wide header, while a non-visual flex placeholder preserves the established breadcrumb position. The `1024px–1279px` desktop contract remains inline, and the mobile label remains inside `.mobile-command-route-bar`. At `820px` and below, component-scoped rules raise the compact type floors inside `.transfer-negotiation-card`, `.workflow-contract-safety`, `.transfer-demand-row` and `.transfer-value-control`. `js/39-transfers.js` remains the authority for negotiation content, values and actions. Build 12.115 changes no deal calculation, recruitment behavior, gameplay, match presentation, economy, persistence, save schema 19 or diagnostics schema 1.
 
 ## Build 12.114 live feed readability
 
