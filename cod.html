@@ -26035,6 +26035,21 @@ button.primary {
   from { opacity: .35; transform: perspective(800px) rotateY(7deg) translateY(2px); }
   to { opacity: 1; transform: perspective(800px) rotateY(0deg) translateY(0); }
 }
+
+
+/* =====================================================================
+   BUILD 12.84 · PORTRAIT MOBILE BOTTOM CLEARANCE CORRECTION
+   The fixed department bar is already accounted for by the mobile menu-layout
+   bottom padding. A later portrait rule added the same navigation clearance to
+   .menu-content a second time, shortening the inner route scroller by roughly
+   74px and leaving a false blank band above the department bar. Keep only the
+   normal content inset here; menu-layout remains the single nav-clearance owner.
+   ===================================================================== */
+@media (orientation: portrait) and (max-width: 1023px) {
+  .menu-shell .menu-content {
+    padding-bottom: 10px !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -26947,9 +26962,9 @@ button.primary {
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.83';
-  const BUILD_NAME = 'MOBILE RECRUITMENT TOUCH & FLIP RESTORATION';
-  const BUILD_ID = '12.83.0-mobile-recruitment-touch-flip-restoration';
+  const BUILD_VERSION = '12.84';
+  const BUILD_NAME = 'PORTRAIT MOBILE BOTTOM CLEARANCE CORRECTION';
+  const BUILD_ID = '12.84.0-portrait-mobile-bottom-clearance-correction';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
