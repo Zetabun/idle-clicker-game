@@ -1,3 +1,16 @@
+STRIKEWATCH BUILD 12.114 LIVE FEED READABILITY CONTRACT
+
+Preserve the existing recruitment data and live-match event authorities while improving compact readability and broadcast presentation. The portrait LIVE bug and right-side feed are overlays only; they must not create, suppress or reorder elimination events. Fee and wage estimates must retain both `CR` labels and remain one line on desktop.
+
+BUILD 12.114 INVARIANTS
+- `css/game.css` owns compact type floors for technical attributes, dynamic market context, Active Five Needs and the recruitment role guide.
+- `index.html` owns one decorative `.portrait-live-bug`; it is visible only in portrait windowed matches and adds no interactive control.
+- `js/40-match-flow.js` remains the authority for feed content, ordering and lifetime. Build 12.114 changes feed placement and visible row capacity only.
+- Desktop candidate fee and wage values keep their existing strings and both currency labels; presentation must fit them on one line without horizontal overflow.
+- The desktop build badge aligns its text baseline with the breadcrumb. The mobile version remains inside the Help-revealed current-page bar.
+- Do not change recruitment calculations, candidate generation, match events, AI, combat, map geometry/rendering, economy, saves, save schema 19 or diagnostics schema 1.
+- Run compact typography, portrait overlay/feed, desktop currency, version alignment, syntax, deterministic-build and archive-integrity checks.
+
 STRIKEWATCH BUILD 12.113 DESKTOP VERSION ALIGNMENT CONTRACT
 
 Preserve the Build 12.112 visible-version system while correcting only the desktop badge alignment. The breadcrumb and version badge must remain in one vertically centred desktop topline, and the mobile version must remain inside the existing Help-revealed current-page bar.

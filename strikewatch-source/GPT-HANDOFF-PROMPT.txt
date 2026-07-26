@@ -1,4 +1,8 @@
-CURRENT RELEASE: STRIKEWATCH BUILD 12.113 - DESKTOP VERSION ALIGNMENT
+CURRENT RELEASE: STRIKEWATCH BUILD 12.114 - LIVE FEED READABILITY
+
+Build 12.114 raises the compact type floor for operator attributes, live market context, Active Five Needs and the recruitment role guide. Portrait windowed matches show one decorative red LIVE bug at the upper-left and up to three existing feed rows at the upper-right; `js/40-match-flow.js` still owns every feed event, order and lifetime. Desktop recruitment fee and wage estimates retain both CR labels on one line, and the desktop version badge aligns its text baseline with the breadcrumb. Preserve candidate generation and values, recruitment decisions, match events, AI, combat, map rendering, economy, persistence, save schema 19 and diagnostics schema 1. Require responsive typography, portrait overlay/feed, desktop currency-fit, version-alignment, syntax, deterministic-build and archive-integrity checks.
+
+STRIKEWATCH BUILD 12.113 DESKTOP VERSION ALIGNMENT CONTRACT
 
 Build 12.113 preserves the Build 12.112 visible-version system and corrects the desktop header badge alignment only. Keep `.manager-context-topline` as one vertically centred row, give `#managerBreadcrumb` a stable line box, and keep `.manager-build-version` statically positioned with reset margins/transforms and inline-flex content centring. Retain the mobile version inside the current-page bar revealed by the existing `?` Help control. Build metadata, static labels, generated bundle, standalone output and root `cod.html` must remain in parity. Gameplay, navigation, saves, match rendering, performance systems, save schema 19 and diagnostics schema 1 are unchanged.
 

@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.113: Desktop Version Alignment**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.114: Live Feed Readability**.
 
 ## Current release essentials
+
+## Build 12.114 live feed readability
+
+Build 12.114 raises the smallest compact-screen copy in operator attributes, live market context, Active Five Needs and the recruitment role guide. Portrait windowed matches now show a restrained pulsing red **LIVE** bug inside the game image and place up to three existing feed rows at the upper-right like a competitive broadcast. Desktop recruitment fee and wage estimates retain both `CR` labels on one line, while the desktop version badge now aligns its text baseline with the breadcrumb rather than merely centring the two outer boxes. This release changes presentation and release metadata only; candidate values, recruitment logic, match events, AI, combat, map rendering, economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.113 desktop version alignment
 

@@ -1,8 +1,12 @@
-# Strikewatch Source 12.113
+# Strikewatch Source 12.114
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.114 live feed readability
+
+Build 12.114 improves the compact recruitment and operator-profile type hierarchy, adds a portrait-only red **LIVE** broadcast bug, moves up to three existing match-feed rows to the upper-right of the portrait game image and keeps desktop fee/wage estimates on one line with both `CR` labels intact. The desktop build badge now uses text-baseline alignment with the breadcrumb. These are presentation changes only: recruitment values and decisions, elimination events, match simulation, AI, combat, map visuals, economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.113 desktop version alignment
 
