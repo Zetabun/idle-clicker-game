@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.115: Header & Negotiation Readability**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.116: Desktop Header Split**.
 
 ## Current release essentials
+
+## Build 12.116 desktop header split
+
+`css/game.css` owns the Build 12.116 desktop header arrangement. At `1024px` and above, `.manager-context-topline` spans the available `.manager-context` width with `justify-content: space-between`: `#managerBreadcrumb` occupies the upper-left edge and `.manager-build-version` remains a static flex item at the upper-right edge. No absolute positioning or visual placeholder remains. The mobile version stays in `.mobile-command-route-bar`, and the Build 12.115 compact negotiation type floors remain authoritative. Build 12.116 changes no navigation, deal value, negotiation action, gameplay, match presentation, economy, persistence, save schema 19 or diagnostics schema 1.
 
 ## Build 12.115 header and negotiation readability
 

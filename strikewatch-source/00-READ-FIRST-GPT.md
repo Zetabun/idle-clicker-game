@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.115: Header & Negotiation Readability**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.116: Desktop Header Split**.
 
 ## Current release essentials
+
+## Build 12.116 desktop header split
+
+Build 12.116 places the desktop breadcrumb at the upper-left of the available management-header context and the visible build badge at the upper-right immediately before the shortcut controls. This replaces Build 12.115's independently centred wide-screen badge. Mobile keeps the version inside the Help-revealed current-page bar, and Build 12.115's mobile negotiation readability remains unchanged. This release changes desktop presentation and release metadata only; navigation, negotiation behavior, gameplay, match presentation, economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.115 header and negotiation readability
 

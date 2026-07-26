@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.115';
-  const BUILD_NAME = 'HEADER & NEGOTIATION READABILITY';
-  const BUILD_ID = '12.115.0-header-negotiation-readability';
+  const BUILD_VERSION = '12.116';
+  const BUILD_NAME = 'DESKTOP HEADER SPLIT';
+  const BUILD_ID = '12.116.0-desktop-header-split';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

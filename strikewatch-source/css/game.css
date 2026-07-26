@@ -27573,27 +27573,19 @@ button.primary {
 
 
 /* =====================================================================
-   BUILD 12.115 · HEADER & NEGOTIATION READABILITY
-   On wide desktop screens, keep the breadcrumb in its established upper
-   position while centring the build badge independently in the open header
-   area. On compact screens, raise negotiation microcopy to a readable floor.
-   These rules change presentation only.
+   BUILD 12.116 · DESKTOP HEADER SPLIT
+   Place the desktop breadcrumb at the upper-left and the build badge at the
+   upper-right of the available header context. Retain the Build 12.115
+   compact negotiation readability floors below. Presentation only.
    ===================================================================== */
-@media (min-width: 1280px) {
-  .manager-context-topline::after {
-    content: '';
-    flex: 0 0 68px;
-    width: 68px;
-    height: 1px;
+@media (min-width: 1024px) {
+  .manager-context-topline {
+    justify-content: space-between;
   }
   .manager-context-topline > .manager-build-version {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: 2;
-    align-self: auto;
+    position: static;
     margin: 0;
-    transform: translate(-50%, -50%);
+    transform: none;
   }
 }
 

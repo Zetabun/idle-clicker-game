@@ -1,8 +1,12 @@
-# Strikewatch Source 12.115
+# Strikewatch Source 12.116
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.116 desktop header split
+
+Build 12.116 uses the clarified desktop header arrangement: the breadcrumb is flush to the upper-left of the main context and the build badge is flush to the upper-right beside the shortcut area. The compact and wide desktop headers now share that split row. Mobile keeps its Help-revealed version, and the larger mobile negotiation typography from Build 12.115 remains intact. Navigation, negotiation behavior, gameplay, match presentation, economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.115 header and negotiation readability
 

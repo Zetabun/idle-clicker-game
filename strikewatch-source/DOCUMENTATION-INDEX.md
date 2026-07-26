@@ -7,7 +7,8 @@
 - Root `other/` contains unrelated games/assets and retired automation, not Strikewatch dependencies.
 - Each playable release commit must include the verified source changes, current Markdown/audit updates and the standalone copied to root `cod.html`.
 
-- `AUDIT-12.115.md` - wide-desktop header placement and compact negotiation readability verification.
+- `AUDIT-12.116.md` - desktop breadcrumb/build split-row verification.
+- `AUDIT-12.115.md` - retained wide-desktop centre-placement history and compact negotiation readability verification.
 - `AUDIT-12.114.md` - compact readability, portrait broadcast feed, desktop currency fit and version-baseline verification.
 - `AUDIT-12.113.md` - retained desktop version badge alignment, mobile-version retention and release verification.
 - `AUDIT-12.112.md` - visible version header: desktop header identity, mobile Help-bar identity and build-metadata enforcement.
@@ -23,9 +24,9 @@
 
 ## Current release
 
-- **Playable build:** Strikewatch Build 12.115 — Header & Negotiation Readability
+- **Playable build:** Strikewatch Build 12.116 — Desktop Header Split
 - **Source folder:** `strikewatch-source/`
-- **Standalone release:** `dist/strikewatch-build-12.115.html`
+- **Standalone release:** `dist/strikewatch-build-12.116.html`
 - **Save schema:** 19
 - **Diagnostics schema:** 1
 
@@ -35,8 +36,9 @@
 2. `AGENTS.md` — coding-agent invariants and retained system contracts.
 3. `PROJECT.md` — architecture, ownership boundaries, build workflow and release tree.
 4. `README.md` — developer-facing build and feature overview.
-5. `AUDIT-12.115.md` — implementation and verification record for the current release.
-6. `AUDIT-12.114.md` — retained compact readability and portrait feed authority.
+5. `AUDIT-12.116.md` — implementation and verification record for the current release.
+6. `AUDIT-12.115.md` — retained compact negotiation readability and superseded centre-placement history.
+7. `AUDIT-12.114.md` — retained compact readability and portrait feed authority.
 7. `AUDIT-12.113.md` — retained desktop version-alignment authority.
 7. `AUDIT-12.112.md` — retained visible-version-header authority.
 7. `AUDIT-12.111.md` — retained realistic-operator-head authority.
@@ -68,7 +70,14 @@
 
 `GPT-HANDOFF-PROMPT.txt` mirrors the current release invariants for future coding sessions.
 
-## Current header and negotiation readability authority
+## Current desktop header split authority
+
+- From `1024px`, `.manager-context-topline` uses `justify-content: space-between`.
+- `#managerBreadcrumb` remains in normal flow at the upper-left; `.manager-build-version` remains in normal flow at the upper-right immediately before the shortcut controls.
+- Mobile continues to expose its version only through the existing Help-revealed current-page bar.
+- Build 12.116 changes desktop presentation and metadata only.
+
+## Retained header and negotiation readability authority
 
 - `css/game.css` independently centres `.manager-build-version` against `.manager-topbar` from `1280px`, while a non-visual placeholder preserves the breadcrumb's established position.
 - At `1024px–1279px`, the badge remains inline with the breadcrumb. Mobile continues to expose its version only through the existing Help-revealed current-page bar.

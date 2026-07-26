@@ -1,3 +1,15 @@
+STRIKEWATCH BUILD 12.116 DESKTOP HEADER SPLIT CONTRACT
+
+Preserve the visible-version system while using the clarified desktop split-row arrangement.
+
+BUILD 12.116 INVARIANTS
+- From `1024px`, `#managerBreadcrumb` is anchored to the upper-left of `.manager-context-topline` and `.manager-build-version` is anchored to its upper-right edge immediately before the shortcut controls.
+- Keep the badge in normal flex flow. Do not restore the Build 12.115 absolute centre placement or its non-visual placeholder.
+- Mobile continues to show the build only inside the Help-revealed current-page bar.
+- Preserve Build 12.115 compact negotiation typography and every negotiation value/action.
+- Do not change navigation, gameplay, match presentation, economy, saves, save schema 19 or diagnostics schema 1.
+- Run wide/compact desktop edge-alignment and non-overlap checks, mobile metadata retention, syntax, deterministic-build and archive-integrity checks.
+
 STRIKEWATCH BUILD 12.115 HEADER & NEGOTIATION READABILITY CONTRACT
 
 Preserve the visible-version system and all negotiation behavior while correcting the wide-desktop placement of the build badge and raising compact negotiation typography.
