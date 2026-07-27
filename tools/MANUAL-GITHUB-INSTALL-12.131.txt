@@ -1,0 +1,16 @@
+STRIKEWATCH 12.131 MANUAL GITHUB INSTALL
+
+1. Download and extract the supplied ZIP.
+2. Open your local clone of https://github.com/Zetabun/idle-clicker-game.
+3. Copy the included strikewatch-source folder over the repository's existing strikewatch-source folder.
+4. Copy the included cod.html over the root cod.html.
+5. From the repository root run:
+   git status
+   git add strikewatch-source cod.html
+   git commit -m "Build 12.131: Calendar Clarity"
+   git push origin main
+6. Open GitHub Actions / Pages and wait for deployment to complete.
+7. Visit https://zetabun.github.io/idle-clicker-game/cod.html and hard-refresh with Ctrl+F5.
+8. Confirm BUILD 12.131 appears and test enabled, locked and blocked End Day / Next Day states.
+
+Do not copy only cod.html. Source, documentation and the generated artifact should be committed together.
