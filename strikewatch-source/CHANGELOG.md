@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.131 — Calendar Clarity
+
+- Promotes the tactical summary-tag and Active Operator Match Roles alignment fixes into a numbered release.
+- Keeps End Day / Next Day readable with one consistent slate, white and mint colour scheme across enabled, locked, blocked and matchday states.
+- Presentation-only release; save schema, gameplay, calendar progression and match simulation are unchanged.
+- Evidence: `AUDIT-12.131.md`.
+
+
 This file routes historical questions to detailed audits without putting all
 release history into the default GPT context.
 

@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.130';
-  const BUILD_NAME = 'AURORA TERMINAL';
-  const BUILD_ID = '12.130.0-aurora-terminal';
+  const BUILD_VERSION = '12.131';
+  const BUILD_NAME = 'Calendar Clarity';
+  const BUILD_ID = '12.131.0-calendar-clarity';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

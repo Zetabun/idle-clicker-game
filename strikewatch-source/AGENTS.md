@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.131 owns the consolidated tactical clarity presentation and persistent End Day / Next Day contrast. Keep every calendar-control state on the same readable slate surface with white primary copy, mint supporting copy and full opacity; preserve the existing button lock, blocker and progression behaviour. See `AUDIT-12.131.md`.
+
 Build 12.130 owns the Aurora Terminal arena (`aurora`, summit theme, single
 level, four-way symmetric, no doors/stairs/vertical profile). Keep its
 presentation contract, `auroraTerminalAuditForTest()` and the all-arena

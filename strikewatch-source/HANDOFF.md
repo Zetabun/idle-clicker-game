@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.130 — Aurora Terminal**
-- Build ID: `12.130.0-aurora-terminal`
+- Build: **12.131 — Calendar Clarity**
+- Build ID: `12.131.0-calendar-clarity`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.130.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.131.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.131 consolidates the tactical UI clarity fixes into a numbered release and gives the desktop End Day / Next Day control one persistent high-contrast slate treatment across enabled, locked, blocked and matchday states. The button keeps white primary copy, mint calendar/status copy and its orange response badge, preventing inherited disabled-state opacity from making it unreadable. Tactical summary tags and Active Operator Match Roles retain the 12.130 UI hotfix alignment improvements. See `AUDIT-12.131.md`.
 
 Build 12.130 adds the fourth arena, **Aurora Terminal** (`aurora`): a polar
 transit terminal on the existing summit render theme — one bright four-way
