@@ -75,18 +75,23 @@ Performed in this session (static, file-tool inspection):
   `openingWeekTutorialDayRestriction` → `clubEndDayBlockers` /
   `clubCanEndDay` / End Day button enablement in `updateMenuUI`.
 
-Outstanding (this session could not execute commands — the isolated build
-shell was unavailable on this machine). Run before publishing:
+Release execution (via scripted run, logged to `release-log-12.129.txt`):
 
-1. `py -3 build.py` from `strikewatch-source/` (twice; require byte-identical
-   `js/strikewatch.dev.js` and `dist/strikewatch-build-12.129.html`).
-2. Syntax parse of every module, the generated bundle and the standalone
-   inline script (e.g. `node --check`).
-3. Behaviour checks: `openingWeekFlowForTest()` (expects `ok: true` and the
-   new `recruitmentStalled` field), guide walk-through to the first match on
-   a fresh club, matchday launch from the guided Command Centre, End Day
-   release with an unaffordable market, guide non-regression after signing
-   without profile view.
-4. Compact widths 320–430 and desktop 1024+ for the new guided fixture card
+- `py -3 build.py` ran twice; both runs produced byte-identical output —
+  `js/strikewatch.dev.js` SHA256 `97954b98…185c`,
+  `dist/strikewatch-build-12.129.html` SHA256 `4c019800…2a68`.
+- Root `cod.html` copied from the standalone; SHA256 matches exactly.
+- Commit `786b19d` on `main`, pushed to the GitHub remote.
+
+Outstanding (recommended before the next release, not yet executed):
+
+1. Runtime syntax parse (e.g. `node --check`) of the bundle and standalone —
+   the build succeeded and edits were review-verified, but no JS engine parse
+   was run this session.
+2. Behaviour checks in the browser: `openingWeekFlowForTest()` (expects
+   `ok: true` and the new `recruitmentStalled` field), guide walk-through to
+   the first match on a fresh club, matchday launch from the guided Command
+   Centre, End Day release with an unaffordable market, guide non-regression
+   after signing without a profile view.
+3. Compact widths 320–430 and desktop 1024+ for the new guided fixture card
    (existing chrome, no overflow expected).
-5. Copy the verified standalone to root `cod.html` (byte-identical).

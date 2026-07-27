@@ -22,9 +22,9 @@ guided match step launches matchmaking directly on matchday and points to End
 Day while the fixture is days away, the guided Command Centre shows a fixture
 launch card during the match step, and the opening-week day restriction
 releases when no market candidate is affordable so recruitment can never
-dead-lock the calendar. **Generated artifacts are pending: run
-`py -3 build.py` twice and complete the release gate before publishing** —
-see `AUDIT-12.129.md`.
+dead-lock the calendar. Double build verified byte-identical and root
+`cod.html` matches the standalone; in-game behaviour spot-checks remain
+recommended — see `AUDIT-12.129.md`.
 
 Build 12.128 places portrait-windowed match commentary in normal document flow
 between the scoreboard strip and round objective. Match moments, play-by-play
