@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'tools/build_12_131.py'
+      - 'tools/**'
 
 permissions:
   contents: write
@@ -19,7 +19,9 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       - name: Apply release update
-        run: python3 tools/build_12_131.py
+        run: |
+          sed -i "s/const BUILD_NAME = 'Aurora Terminal';/const BUILD_NAME = 'AURORA TERMINAL';/" tools/build_12_131.py
+          python3 tools/build_12_131.py
       - name: First deterministic build
         working-directory: strikewatch-source
         run: |
