@@ -7,6 +7,7 @@
 - Root `other/` contains unrelated games/assets and retired automation, not Strikewatch dependencies.
 - Each playable release commit must include the verified source changes, current Markdown/audit updates and the standalone copied to root `cod.html`.
 
+- `AUDIT-12.119.md` - guided navigation label visibility: pseudo-element geometry isolation, readable compact label sizing and onboarding-route regression verification.
 - `AUDIT-12.118.md` - mobile typography readability: semantic compact type floors, legacy component coverage, narrow-phone containment and portrait match-HUD verification.
 - `AUDIT-12.117.md` - Skyline Offices environment rework: courtyard/ceiling-void alignment, mirrored floorplate, prop and glazing placement, the new decor layer, the strengthened office integrity gate and compact first-run calendar-copy verification.
 - `AUDIT-12.116.md` - desktop breadcrumb/build split-row verification.
@@ -26,9 +27,9 @@
 
 ## Current release
 
-- **Playable build:** Strikewatch Build 12.118 — Mobile Typography Readability Pass
+- **Playable build:** Strikewatch Build 12.119 — Guided Navigation Label Fix
 - **Source folder:** `strikewatch-source/`
-- **Standalone release:** `dist/strikewatch-build-12.118.html`
+- **Standalone release:** `dist/strikewatch-build-12.119.html`
 - **Save schema:** 19
 - **Diagnostics schema:** 1
 
@@ -38,8 +39,9 @@
 2. `AGENTS.md` — coding-agent invariants and retained system contracts.
 3. `PROJECT.md` — architecture, ownership boundaries, build workflow and release tree.
 4. `README.md` — developer-facing build and feature overview.
-5. `AUDIT-12.118.md` — implementation and verification record for the current release.
-6. `AUDIT-12.117.md` — retained Skyline Offices environment authority.
+5. `AUDIT-12.119.md` — implementation and verification record for the current release.
+6. `AUDIT-12.118.md` — retained mobile typography readability authority.
+7. `AUDIT-12.117.md` — retained Skyline Offices environment authority.
 7. `AUDIT-12.116.md` — retained desktop header split authority.
 6. `AUDIT-12.115.md` — retained compact negotiation readability and superseded centre-placement history.
 7. `AUDIT-12.114.md` — retained compact readability and portrait feed authority.

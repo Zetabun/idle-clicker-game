@@ -1,8 +1,19 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.118: Mobile Typography Readability Pass**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.119: Guided Navigation Label Fix**.
 
 ## Current release essentials
+
+## Build 12.119 guided navigation label fix
+
+`css/game.css` now isolates the onboarding badge geometry from the shared
+`.menu-subtab::after` active-route rail. Guided inactive tabs reset inherited
+inset, height and transition values, size the pseudo-element to its `NEXT`
+content and place it above the route copy. Compact layouts retain the 10.5px
+meaningful-microcopy floor, desktop uses an 8px badge instead of the legacy
+5.5px value, and both reserve enough space above the route copy.
+`js/50-ui-menus.js` remains the owner of guided-route state and markup; no
+navigation or onboarding logic changed.
 
 ## Build 12.118 mobile typography readability pass
 

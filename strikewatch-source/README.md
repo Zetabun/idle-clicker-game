@@ -1,8 +1,18 @@
-# Strikewatch Source 12.118
+# Strikewatch Source 12.119
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.119 guided navigation label fix
+
+Build 12.119 restores the onboarding `NEXT` badge on inactive guided
+navigation tabs. Its pseudo-element now clears the shared subtab progress-rail
+geometry, sizes to the label instead of stretching across the card, and sits
+at the upper-right without covering the route title. On compact screens the
+badge uses the existing 10.5px readability floor and the guided tab reserves
+space for it; the desktop badge is also raised from 5.5px to 8px. This is a
+CSS presentation fix only.
 
 ## Build 12.118 mobile typography readability pass
 

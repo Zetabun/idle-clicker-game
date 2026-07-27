@@ -20727,6 +20727,45 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   }
 }
 
+/* =====================================================================
+   BUILD 12.119 · GUIDED NAVIGATION LABEL VISIBILITY FIX
+   The guided NEXT badge reuses ::after on subtabs, so explicitly release
+   the active-route rail's left/bottom/height geometry before drawing it.
+   ===================================================================== */
+.menu-tab.guided-target:not(.active)::after,
+.menu-subtab.guided-target:not(.active)::after {
+  inset: 4px 5px auto auto;
+  z-index: 2;
+  box-sizing: border-box;
+  width: max-content;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 3px 5px;
+  font-size: 8px;
+  line-height: 1.1;
+  white-space: nowrap;
+  transition: none;
+}
+
+.menu-subtab.guided-target:not(.active) {
+  padding-top: 20px;
+}
+
+@media (max-width: 1023px) {
+  .menu-tab.guided-target:not(.active)::after,
+  .menu-subtab.guided-target:not(.active)::after {
+    top: 2px;
+    padding: 2px 5px;
+    font-size: 10.5px;
+    line-height: 1.1;
+  }
+
+  .menu-subtab.guided-target:not(.active) {
+    padding-top: 22px;
+  }
+}
+
 
 /* Build 12.118 follow-up · readable empty and transfer-status surfaces.
    These panels also appear on wide layouts, so their body-copy floor is

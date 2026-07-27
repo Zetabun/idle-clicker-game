@@ -1,8 +1,19 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.118: Mobile Typography Readability Pass**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.119: Guided Navigation Label Fix**.
 
 ## Current release essentials
+
+## Build 12.119 guided navigation label fix
+
+Build 12.119 fixes the onboarding `NEXT` badge on inactive guided navigation
+tabs. The badge shares `::after` with the subtab active-route rail; the guided
+state now explicitly resets the rail's left, bottom, height and transition
+geometry before drawing a compact badge at the upper-right. Compact layouts
+also reserve vertical room and use the established 10.5px mobile readability
+floor, while the desktop badge rises from the legacy 5.5px value to 8px.
+Route highlighting, onboarding state, navigation behavior, gameplay,
+economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.118 mobile typography readability pass
 

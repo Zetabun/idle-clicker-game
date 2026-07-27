@@ -1,3 +1,23 @@
+STRIKEWATCH BUILD 12.119 GUIDED NAVIGATION LABEL FIX CONTRACT
+
+Preserve the separation between guided badges and active-route rails.
+
+BUILD 12.119 INVARIANTS
+- `.menu-subtab::after` remains the active-route rail for ordinary and active
+  tabs.
+- A non-active `.guided-target` may reuse `::after` for `NEXT` only after
+  resetting inherited left, bottom, width/height and transition geometry.
+- The `NEXT` badge must size to its text, remain fully visible at the
+  upper-right and not cover the route title or hint.
+- Compact guided labels use the 10.5px meaningful-microcopy floor and reserve
+  enough internal space for the badge.
+- Do not change `firstMatchGuidance()`, route availability, onboarding
+  completion state, gameplay, economy, persistence, save schema 19 or
+  diagnostics schema 1.
+- Verify guided and ordinary subtabs at desktop, 390px and 320px widths plus
+  modular/generated/standalone syntax, deterministic build and archive
+  integrity.
+
 STRIKEWATCH BUILD 12.118 MOBILE TYPOGRAPHY READABILITY CONTRACT
 
 Preserve the mobile readability floor without changing desktop density or game

@@ -1,4 +1,15 @@
-CURRENT RELEASE: STRIKEWATCH BUILD 12.118 - MOBILE TYPOGRAPHY READABILITY PASS
+CURRENT RELEASE: STRIKEWATCH BUILD 12.119 - GUIDED NAVIGATION LABEL FIX
+
+Build 12.119 separates the guided `NEXT` badge from the active-route rail even
+though both use `.menu-subtab::after`. Keep the explicit inset, width, height
+and transition resets on inactive `.guided-target` tabs so the badge sizes to
+its label and stays at the upper-right instead of becoming a cyan strip across
+the tab. Compact layouts must keep the 10.5px meaningful-microcopy floor and
+reserve space above route copy. Preserve `firstMatchGuidance()`, normal active
+route rails, onboarding state, gameplay, economy, persistence, save schema 19
+and diagnostics schema 1. Require desktop/390px/320px guided-route geometry,
+ordinary-tab regression, syntax, deterministic-build and archive-integrity
+checks.
 
 Build 12.118 makes `css/game.css` the final compact-screen type authority.
 Preserve its 10.5px meaningful-microcopy floor, larger label/body/control
