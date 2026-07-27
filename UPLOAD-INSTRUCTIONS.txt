@@ -1,0 +1,27 @@
+STRIKEWATCH 12.131 - GITHUB WEBSITE UPLOAD PACK
+
+This pack contains only the files changed for Build 12.131.
+Do not delete or replace the whole repository.
+
+1. Open https://github.com/Zetabun/idle-clicker-game and select the main branch.
+2. Click Add file > Upload files.
+3. From this extracted folder, drag BOTH:
+   - cod.html
+   - the strikewatch-source folder
+   into the upload area.
+4. GitHub should preserve the folder paths and show existing files as modified.
+5. Use commit message: Build 12.131: Calendar Clarity
+6. Commit directly to main, or create a branch and merge it if GitHub requires that.
+7. Wait for GitHub Pages, then hard-refresh the live game with Ctrl+F5.
+
+Expected changed paths:
+- cod.html
+- strikewatch-source/AGENTS.md
+- strikewatch-source/AUDIT-12.131.md
+- strikewatch-source/CHANGELOG.md
+- strikewatch-source/HANDOFF.md
+- strikewatch-source/index.html
+- strikewatch-source/js/00-core.js
+- strikewatch-source/js/75-ui-clarity-hotfix.js
+- strikewatch-source/js/strikewatch.dev.js
+- strikewatch-source/dist/strikewatch-build-12.131.html
