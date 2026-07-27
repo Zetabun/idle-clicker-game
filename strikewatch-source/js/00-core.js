@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.118';
-  const BUILD_NAME = 'MOBILE TYPOGRAPHY READABILITY PASS';
-  const BUILD_ID = '12.118.0-mobile-typography-readability-pass';
+  const BUILD_VERSION = '12.119';
+  const BUILD_NAME = 'GUIDED NAVIGATION LABEL FIX';
+  const BUILD_ID = '12.119.0-guided-navigation-label-fix';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
