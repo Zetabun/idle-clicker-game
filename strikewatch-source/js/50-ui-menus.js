@@ -324,6 +324,12 @@
     return mobileFirstMatchGuideCollapsed;
   }
 
+  function collapseMobileFirstMatchGuideAfterAction(source) {
+    if (!mobileNavigationEnabled() || !source?.closest?.('.management-priority-strip.first-match-guide')) return false;
+    setMobileFirstMatchGuideCollapsed(true);
+    return true;
+  }
+
   function handleMobileFirstMatchGuideClick(event) {
     const toggle = event.target.closest?.('[data-first-match-guide-toggle]');
     if (!toggle || !mobileNavigationEnabled()) return false;
@@ -663,6 +669,16 @@
     return `<section class="foundation-path foundation-handoff"><header><div><span>FIRST MATCH GUIDE COMPLETE</span><strong>OPENING WEEK HANDOFF</strong><p>The guided journey is finished. This smaller checklist now hands control back to the normal club priorities.</p></div><b>${completeCount}/${steps.length}</b></header><div>${steps.map((step, index) => `<button class="${step.complete ? 'complete' : index === nextIndex ? 'current' : 'future'}" data-team-route="${escapeCareerHtml(step.route)}"><i>${step.complete ? '✓' : String(index + 1).padStart(2, '0')}</i><span>${escapeCareerHtml(step.label)}</span><em>${step.complete ? 'DONE' : index === nextIndex ? 'NEXT' : 'LATER'}</em></button>`).join('')}</div></section>`;
   }
 
+  function firstMatchRecommendedProfileId() {
+    const market = Array.isArray(careerState.market) ? careerState.market : [];
+    if (!market.length) return null;
+    if (typeof recruitmentRecommendationMap === 'function' && typeof recruitmentBeginnerCandidates === 'function') {
+      const recommended = recruitmentBeginnerCandidates(market, recruitmentRecommendationMap(market), 6);
+      if (recommended.length) return recommended[0].id;
+    }
+    return market[0]?.id || null;
+  }
+
   function firstMatchGuidance() {
     if (!careerState.created) return null;
     const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
@@ -673,7 +689,7 @@
     const firstCareerMatchPlayed = Number(careerState.totalMatches) > 0;
     const steps = [
       { id: 'recruitment', complete: Boolean(tutorial.marketViewed), route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Start with the six recommended candidates. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
-      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT ONE OPERATOR PROFILE', detail: 'Open a report to understand the role, strongest attributes, estimated fee and what the operator would add to your current Active Five.', action: 'VIEW PROFILE' },
+      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', playerId: firstMatchRecommendedProfileId(), label: 'INSPECT ONE OPERATOR PROFILE', detail: 'Open a report to understand the role, strongest attributes, estimated fee and what the operator would add to your current Active Five.', action: 'VIEW PROFILE' },
       { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Select two recommended candidates, read Best Current Fit and Main Trade-off, then negotiate with the one you prefer. The transfer fee leaves Club Cash immediately and the weekly wage uses wage headroom.', action: 'RECRUIT OPERATOR' },
       { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} deployment places are filled. Follow the remaining team needs, compare two candidates at a time and keep enough Club Cash for fees, wages and loan repayments.`, action: 'CONTINUE RECRUITING' },
       { id: 'lineup', complete: Boolean(tutorial.squadViewed), route: 'operators', label: 'REVIEW THE ACTIVE FIVE', detail: 'The first five squad positions deploy. Check readiness, roles and equipment, then reorder the line-up only when needed.', action: 'OPEN ACTIVE LINE-UP' },
@@ -845,9 +861,11 @@
     const items = menuPriorityItems();
     const primary = guidance ? { kind: 'required', ...guidance } : items[0];
     if (!primary) return '';
-    const actionAttribute = primary.leagueAction
-      ? `data-league-action="${escapeCareerHtml(primary.leagueAction)}"`
-      : `data-team-route="${escapeCareerHtml(primary.route)}"`;
+    const actionAttribute = primary.playerId
+      ? `data-team-profile="${escapeCareerHtml(primary.playerId)}"`
+      : primary.leagueAction
+        ? `data-league-action="${escapeCareerHtml(primary.leagueAction)}"`
+        : `data-team-route="${escapeCareerHtml(primary.route)}"`;
     const secondaryCase = value => {
       const text = String(value || '').trim().toLowerCase();
       return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : '';

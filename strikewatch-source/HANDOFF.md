@@ -6,26 +6,26 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.119 — Guided Navigation Label Fix**
-- Build ID: `12.119.0-guided-navigation-label-fix`
+- Build: **12.120 — Mobile Flow & Accessibility Fix**
+- Build ID: `12.120.0-mobile-flow-accessibility-fix`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.119.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.120.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.119 fixes the onboarding `NEXT` badge used by inactive guided
-navigation targets. `.menu-subtab::after` normally draws the active-route
-bottom rail. The guided state reuses that pseudo-element, so it must reset the
-rail geometry before drawing a content-sized badge. Keep the badge at the
-upper-right, keep it clear of the route title and hint, retain the ordinary
-active rail, use 8px on desktop and the 10.5px meaningful-microcopy floor on
-compact screens. See `AUDIT-12.119.md`.
+Build 12.120 completes the compact readability and early recruitment flow:
+meaningful mobile microcopy has a 12px floor, explanatory copy is 14px, emblem
+captions are accessible-only, Compare is present on the compact candidate
+front, and the profile guide selects one of the six visible recommendations.
+Shared management dialogs isolate the background and trap focus. The First
+Match Guide collapses after its compact action, and its End Day restriction is
+reported through the canonical blocker list. See `AUDIT-12.120.md`.
 
-Build 12.118 remains the compact typography authority. Meaningful mobile
-microcopy must not fall below 10.5px. See `AUDIT-12.118.md`.
+Build 12.119 remains the guided `NEXT` badge geometry authority. See
+`AUDIT-12.119.md`.
 
 Build 12.117 remains the Skyline Offices environment authority. See
 `AUDIT-12.117.md` before changing the office map, furniture, doors, ceilings,

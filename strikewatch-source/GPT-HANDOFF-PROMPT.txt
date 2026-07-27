@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.119 — Guided Navigation Label Fix
-Build ID: 12.119.0-guided-navigation-label-fix
+Build 12.120 — Mobile Flow & Accessibility Fix
+Build ID: 12.120.0-mobile-flow-accessibility-fix
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,10 +16,12 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
-`.menu-subtab::after` owns the active-route rail. Inactive guided targets reuse
-it for `NEXT` only after resetting inherited rail geometry. Preserve a
+Compact meaningful copy must stay at least 12px and explanatory copy at least
+14px. Guided profile actions must select a displayed recommendation; compact
+candidate fronts retain Compare; management modals isolate the background and
+trap focus. Preserve the existing guided `NEXT` rail reset and
 content-sized visible badge, route-copy clearance, the ordinary active rail,
-8px desktop text and the 10.5px compact meaningful-microcopy floor.
+8px desktop text and the 12px compact meaningful-microcopy floor.
 
 RELEASE
 Update the smallest relevant authority and current audit, build, parse, run

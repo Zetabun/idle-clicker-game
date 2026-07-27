@@ -56,7 +56,7 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.119 fixes guided `NEXT` badge geometry. Keep the inactive guided badge
-content-sized and clear of route copy while preserving the active subtab rail.
-Desktop badge size is 8px; compact meaningful microcopy remains at least
-10.5px. See `AUDIT-12.119.md`.
+Build 12.120 sets the compact meaningful-copy floor to 12px and explanatory
+copy to 14px. Preserve direct Compare access, recommended-candidate profile
+routing, modal background isolation/focus trapping and the canonical guided
+End Day blocker. See `AUDIT-12.120.md`.

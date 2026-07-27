@@ -29,6 +29,21 @@
     };
   }
 
+  const baseClubEndDayBlockersOpeningWeek = clubEndDayBlockers;
+  clubEndDayBlockers = function clubEndDayBlockersOpeningWeek() {
+    const blockers = baseClubEndDayBlockersOpeningWeek();
+    const restriction = openingWeekTutorialDayRestriction();
+    if (!restriction) return blockers;
+    return [{
+      id: `first-match-guide-${restriction.id}`,
+      route: restriction.route,
+      category: 'FIRST MATCH GUIDE',
+      label: restriction.label,
+      detail: restriction.detail,
+      targetId: `guide:${restriction.id}`
+    }, ...blockers];
+  };
+
   function openingWeekCurrentOpponent() {
     const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
     if (!fixture || typeof leagueClubById !== 'function' || typeof leagueFixtureOpponentId !== 'function') return null;
@@ -321,10 +336,15 @@
     const restriction = openingWeekTutorialDayRestriction();
     const checks = openingWeekPreparationChecks();
     const groups = openingWeekAgendaGroups();
+    const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    const restrictionRepresented = !restriction || blockers.some(item =>
+      item.id === `first-match-guide-${restriction.id}` && item.detail === restriction.detail);
     const markup = openingWeekAgendaMarkup();
     return {
-      ok: checks.length === 6 && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
+      ok: checks.length === 6 && restrictionRepresented && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
       restriction,
+      restrictionRepresented,
+      blockers: blockers.map(item => ({ ...item })),
       checks,
       groupCounts: Object.fromEntries(Object.entries(groups).map(([key, value]) => [key, value.length])),
       snapshot: openingWeekClubSnapshot(),

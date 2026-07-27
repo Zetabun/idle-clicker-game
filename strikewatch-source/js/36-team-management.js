@@ -267,6 +267,7 @@
 
   let selectedTeamPlayerId = null;
   let teamNoteReturnFocusEl = null;
+  const teamNoteBackgroundInertState = new Map();
 
   function teamSeedFromString(value) {
     let hash = 2166136261 >>> 0;
@@ -414,6 +415,68 @@
     return player?.lastMatch?.reflection || defaultPlayerReflection(player);
   }
 
+  function teamNoteBackgroundElements() {
+    const parent = teamNoteOverlayEl?.parentElement;
+    if (!parent) return [];
+    return Array.from(parent.children).filter(element => element !== teamNoteOverlayEl);
+  }
+
+  function setTeamNoteBackgroundIsolated(isolated) {
+    if (isolated) {
+      if (teamNoteBackgroundInertState.size) return true;
+      for (const element of teamNoteBackgroundElements()) {
+        teamNoteBackgroundInertState.set(element, {
+          inert: Boolean(element.inert),
+          inertAttribute: element.hasAttribute('inert')
+        });
+        element.inert = true;
+        element.setAttribute('inert', '');
+      }
+      return teamNoteBackgroundInertState.size > 0;
+    }
+    for (const [element, previous] of teamNoteBackgroundInertState) {
+      if (!element?.isConnected) continue;
+      element.inert = previous.inert;
+      if (previous.inertAttribute) element.setAttribute('inert', '');
+      else element.removeAttribute('inert');
+    }
+    teamNoteBackgroundInertState.clear();
+    return true;
+  }
+
+  function teamNoteFocusableControls() {
+    if (!teamNoteOverlayEl || teamNoteOverlayEl.hidden) return [];
+    return Array.from(teamNoteOverlayEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]'))
+      .filter(element => !element.disabled
+        && element.getAttribute('tabindex') !== '-1'
+        && !element.hidden
+        && element.getClientRects().length > 0);
+  }
+
+  function trapTeamNoteModalFocus(event) {
+    if (String(event?.key || '').toLowerCase() !== 'tab' || !teamNoteOverlayEl || teamNoteOverlayEl.hidden) return false;
+    const controls = teamNoteFocusableControls();
+    if (!controls.length) {
+      event.preventDefault();
+      return true;
+    }
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    const active = document.activeElement;
+    const outside = !teamNoteOverlayEl.contains(active);
+    if (event.shiftKey && (outside || active === first)) {
+      event.preventDefault();
+      last.focus({ preventScroll: true });
+      return true;
+    }
+    if (!event.shiftKey && (outside || active === last)) {
+      event.preventDefault();
+      first.focus({ preventScroll: true });
+      return true;
+    }
+    return false;
+  }
+
   function closeTeamNoteModal({ restoreFocus = true } = {}) {
     if (!teamNoteOverlayEl) return;
     const returnTarget = teamNoteReturnFocusEl;
@@ -429,6 +492,7 @@
     if (teamNoteQuoteEl) teamNoteQuoteEl.textContent = '“';
     if (teamNoteDismissHintEl) teamNoteDismissHintEl.textContent = 'TAP OUTSIDE OR PRESS × TO CLOSE';
     document.body.classList.remove('team-note-open');
+    setTeamNoteBackgroundIsolated(false);
     teamNoteReturnFocusEl = null;
     if (restoreFocus && returnTarget?.isConnected && typeof returnTarget.focus === 'function') {
       requestAnimationFrame(() => {
@@ -460,6 +524,7 @@
     teamNoteOverlayEl.hidden = false;
     teamNoteOverlayEl.setAttribute('aria-hidden', 'false');
     document.body.classList.add('team-note-open');
+    setTeamNoteBackgroundIsolated(true);
     if (teamNoteCloseBtn && typeof teamNoteCloseBtn.focus === 'function') teamNoteCloseBtn.focus({ preventScroll: true });
     return true;
   }
@@ -2214,6 +2279,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (route) {
       const targetRoute = route.dataset.teamRoute;
       const scrollTarget = route.dataset.teamScrollTarget || '';
+      if (typeof collapseMobileFirstMatchGuideAfterAction === 'function') collapseMobileFirstMatchGuideAfterAction(route);
       if (scrollTarget === 'recruitment-candidates' && typeof recruitmentState === 'function') {
         const state = recruitmentState();
         if (state.view !== 'market') {
@@ -2242,6 +2308,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     const profile = event.target.closest('[data-team-profile]');
     if (profile) {
+      if (typeof collapseMobileFirstMatchGuideAfterAction === 'function') collapseMobileFirstMatchGuideAfterAction(profile);
       selectedTeamPlayerId = profile.dataset.teamProfile;
       careerState.selectedPlayerId = selectedTeamPlayerId;
       careerState.tutorial.profileViewed = true;
