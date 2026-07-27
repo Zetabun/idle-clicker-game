@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.129';
-  const BUILD_NAME = 'GUIDED OPENING FLOW';
-  const BUILD_ID = '12.129.0-guided-opening-flow';
+  const BUILD_VERSION = '12.130';
+  const BUILD_NAME = 'AURORA TERMINAL';
+  const BUILD_ID = '12.130.0-aurora-terminal';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -913,6 +913,152 @@
           { x: 18.0, z: 17.5, width: 12.6, depth: 0.16, colour: [0.34, 0.52, 0.60] }
         ]
       }
+    },
+
+    aurora: {
+      id: 'aurora',
+      name: 'AURORA TERMINAL',
+      short: 'AUR',
+      theme: 'summit',
+      ceilingHeight: 3.06,
+      matchmakingBlurb: 'A polar transit terminal under aurora light: twin glass concourses, boarding-lounge pods and a luminous fountain atrium on one bright, fully mirrored level.',
+      tagDescription: 'Icy check-in concourses, lounge pods and a glowing central atrium balance long precision lanes with sheltered close-range rotations.',
+      // The terminal is authored as its north-west quadrant: every row is a
+      // palindrome about x = 18 and the southern half mirrors the northern
+      // half about z = 12, so all four quadrants play identically.
+      preview: {
+        badge: 'AURORA',
+        tags: ['NORTH CONCOURSE', 'CRYO ATRIUM', 'SOUTH CONCOURSE'],
+        bands: [
+          { y1: 1, y2: 6, label: 'NORTH CONCOURSE', colour: [0.55, 0.85, 1.00] },
+          { y1: 6, y2: 18, label: 'CRYO ATRIUM & LOUNGES', colour: [0.45, 0.95, 0.65] },
+          { y1: 18, y2: 23, label: 'SOUTH CONCOURSE', colour: [1.00, 0.72, 0.35] }
+        ],
+        stairs: []
+      },
+      layout: [
+        '111111111111111111111111111111111111',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '100110011001100000000001100110011001',
+        '100110011001100000000001100110011001',
+        '100000000000000000000000000000000001',
+        '100111100111111100001111111001111001',
+        '100100000100000000000000001000001001',
+        '100100000100000000000000001000001001',
+        '100100000000000000000000000000001001',
+        '100111111100000000000000001111111001',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '100111111100000000000000001111111001',
+        '100100000000000000000000000000001001',
+        '100100000100000000000000001000001001',
+        '100100000100000000000000001000001001',
+        '100111100111111100001111111001111001',
+        '100000000000000000000000000000000001',
+        '100110011001100000000001100110011001',
+        '100110011001100000000001100110011001',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '111111111111111111111111111111111111'
+      ],
+      hotspots: [
+        { x: 9.5, y: 1.5 }, { x: 18.0, y: 2.5 }, { x: 26.5, y: 1.5 },
+        { x: 5.5, y: 5.5 }, { x: 30.5, y: 5.5 },
+        { x: 6.5, y: 8.5 }, { x: 29.5, y: 8.5 }, { x: 6.5, y: 15.5 }, { x: 29.5, y: 15.5 },
+        { x: 15.5, y: 9.5 }, { x: 20.5, y: 9.5 }, { x: 15.5, y: 14.5 }, { x: 20.5, y: 14.5 },
+        { x: 18.0, y: 10.5 }, { x: 18.0, y: 13.5 },
+        { x: 10.5, y: 11.5 }, { x: 25.5, y: 12.5 },
+        { x: 9.5, y: 22.5 }, { x: 18.0, y: 21.5 }, { x: 26.5, y: 22.5 }
+      ],
+      engagementPlans: [
+        { id: 'north-concourse', name: 'NORTH CONCOURSE DUEL', zone: 'NORTH', priority: 1.2, blue: [{ x: 9.5, y: 2.5 }, { x: 6.5, y: 1.5 }, { x: 9.5, y: 5.5 }, { x: 13.5, y: 2.5 }, { x: 5.5, y: 4.5 }], red: [{ x: 26.5, y: 2.5 }, { x: 29.5, y: 1.5 }, { x: 26.5, y: 5.5 }, { x: 22.5, y: 2.5 }, { x: 30.5, y: 4.5 }] },
+        { id: 'cryo-atrium', name: 'CRYO ATRIUM CLASH', zone: 'ATRIUM', priority: 1.35, blue: [{ x: 14.5, y: 10.5 }, { x: 13.5, y: 12.5 }, { x: 14.5, y: 13.5 }, { x: 16.5, y: 9.5 }, { x: 16.5, y: 14.5 }], red: [{ x: 21.5, y: 10.5 }, { x: 22.5, y: 12.5 }, { x: 21.5, y: 13.5 }, { x: 19.5, y: 9.5 }, { x: 19.5, y: 14.5 }] },
+        { id: 'south-concourse', name: 'SOUTH CONCOURSE SWEEP', zone: 'SOUTH', priority: 1.2, blue: [{ x: 9.5, y: 21.5 }, { x: 6.5, y: 22.5 }, { x: 9.5, y: 18.5 }, { x: 13.5, y: 21.5 }, { x: 5.5, y: 19.5 }], red: [{ x: 26.5, y: 21.5 }, { x: 29.5, y: 22.5 }, { x: 26.5, y: 18.5 }, { x: 22.5, y: 21.5 }, { x: 30.5, y: 19.5 }] },
+        { id: 'west-lounge', name: 'WEST LOUNGE CONTACT', zone: 'WEST', priority: 0.98, blue: [{ x: 4.5, y: 11.5 }, { x: 6.5, y: 8.5 }, { x: 6.5, y: 15.5 }, { x: 8.5, y: 12.5 }, { x: 10.5, y: 11.5 }], red: [{ x: 12.5, y: 11.5 }, { x: 10.5, y: 9.5 }, { x: 10.5, y: 14.5 }, { x: 13.5, y: 12.5 }, { x: 11.5, y: 9.5 }] },
+        { id: 'east-lounge', name: 'EAST LOUNGE CONTACT', zone: 'EAST', priority: 0.98, blue: [{ x: 23.5, y: 11.5 }, { x: 25.5, y: 9.5 }, { x: 25.5, y: 14.5 }, { x: 22.5, y: 12.5 }, { x: 24.5, y: 9.5 }], red: [{ x: 31.5, y: 11.5 }, { x: 29.5, y: 8.5 }, { x: 29.5, y: 15.5 }, { x: 27.5, y: 12.5 }, { x: 25.5, y: 11.5 }] },
+        { id: 'transit-spine', name: 'TRANSIT SPINE ROTATION', zone: 'TRANSIT', priority: 1.05, blue: [{ x: 7.5, y: 11.5 }, { x: 11.5, y: 12.5 }, { x: 9.5, y: 12.5 }, { x: 5.5, y: 12.5 }, { x: 11.5, y: 11.5 }], red: [{ x: 28.5, y: 12.5 }, { x: 24.5, y: 11.5 }, { x: 26.5, y: 11.5 }, { x: 30.5, y: 11.5 }, { x: 24.5, y: 12.5 }] }
+      ],
+      spawnPoints: {
+        0: [{ x: 2.5, y: 2.5 }, { x: 2.5, y: 7.5 }, { x: 2.5, y: 11.5 }, { x: 2.5, y: 16.5 }, { x: 2.5, y: 21.5 }],
+        1: [{ x: 33.5, y: 21.5 }, { x: 33.5, y: 16.5 }, { x: 33.5, y: 12.5 }, { x: 33.5, y: 7.5 }, { x: 33.5, y: 2.5 }]
+      },
+      zones: [
+        { x1: 1, z1: 1, x2: 35, z2: 6, name: 'NORTH CONCOURSE', short: 'NORTH', colour: [0.36, 0.44, 0.50], light: [0.55, 0.85, 1.00] },
+        { x1: 1, z1: 18, x2: 35, z2: 23, name: 'SOUTH CONCOURSE', short: 'SOUTH', colour: [0.40, 0.42, 0.48], light: [1.00, 0.72, 0.35] },
+        { x1: 1, z1: 6, x2: 12, z2: 18, name: 'WEST LOUNGES', short: 'WEST', colour: [0.34, 0.42, 0.46], light: [0.30, 0.90, 0.85] },
+        { x1: 24, z1: 6, x2: 35, z2: 18, name: 'EAST LOUNGES', short: 'EAST', colour: [0.34, 0.42, 0.46], light: [0.96, 0.62, 0.85] },
+        { x1: 12, z1: 6, x2: 24, z2: 18, name: 'CRYO ATRIUM', short: 'ATRIUM', colour: [0.30, 0.44, 0.44], light: [0.45, 0.95, 0.65] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.36, 0.42, 0.46], light: [0.75, 0.88, 0.95] }
+      ],
+      props: {
+        containers: [
+          // Atrium seating ring: benches face the fountain and planters seal
+          // the ring corners without closing either east-west route.
+          { x: 15.5, y: 10.3, yaw: 0, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 20.5, y: 10.3, yaw: 0, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 15.5, y: 13.7, yaw: Math.PI, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 20.5, y: 13.7, yaw: Math.PI, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 13.5, y: 9.4, yaw: 0, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          { x: 22.5, y: 9.4, yaw: 0, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          { x: 13.5, y: 14.6, yaw: Math.PI, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          { x: 22.5, y: 14.6, yaw: Math.PI, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          // Lounge pods: one sofa per pod against the quiet wall.
+          { x: 6.0, y: 7.6, yaw: 0, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          { x: 30.0, y: 7.6, yaw: 0, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          { x: 6.0, y: 16.4, yaw: Math.PI, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          { x: 30.0, y: 16.4, yaw: Math.PI, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          // Spine cover sits on the exact mirror line so both teams share it.
+          { x: 9.0, y: 12.0, yaw: 0, kind: 'barrier', colour: [0.20, 0.52, 0.56], width: 1.5, depth: 0.44 },
+          { x: 27.0, y: 12.0, yaw: 0, kind: 'barrier', colour: [0.20, 0.52, 0.56], width: 1.5, depth: 0.44 },
+          // Baggage stacks anchor the four concourse corners.
+          { x: 4.0, y: 1.6, yaw: 0, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 },
+          { x: 32.0, y: 1.6, yaw: 0, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 },
+          { x: 4.0, y: 22.4, yaw: Math.PI, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 },
+          { x: 32.0, y: 22.4, yaw: Math.PI, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 }
+        ],
+        machines: [
+          // Check-in desks on the central concourse floors.
+          { x: 15.0, y: 3.5, yaw: 0, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          { x: 21.0, y: 3.5, yaw: 0, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          { x: 15.0, y: 20.5, yaw: Math.PI, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          { x: 21.0, y: 20.5, yaw: Math.PI, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          // Departure boards flank both atrium mouths.
+          { x: 16.5, y: 7.5, yaw: 0, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          { x: 19.5, y: 7.5, yaw: 0, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          { x: 16.5, y: 16.5, yaw: Math.PI, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          { x: 19.5, y: 16.5, yaw: Math.PI, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          // Lounge pod services against the pod walls.
+          { x: 4.6, y: 9.5, yaw: Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 31.4, y: 9.5, yaw: -Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 4.6, y: 14.5, yaw: Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 31.4, y: 14.5, yaw: -Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 5.5, y: 8.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 },
+          { x: 30.5, y: 8.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 },
+          { x: 5.5, y: 15.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 },
+          { x: 30.5, y: 15.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 }
+        ],
+        tanks: [
+          // The cryo fountain is the map centrepiece and the only prop on the
+          // exact map centre; routes stay open on both sides.
+          { x: 18.0, y: 12.0, kind: 'fountain', colour: [0.30, 0.72, 0.80], radius: 0.7 },
+          { x: 11.5, y: 7.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 24.5, y: 7.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 11.5, y: 16.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 24.5, y: 16.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 12.5, y: 10.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 23.5, y: 10.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 12.5, y: 13.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 23.5, y: 13.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 13.5, y: 5.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 },
+          { x: 22.5, y: 5.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 },
+          { x: 13.5, y: 18.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 },
+          { x: 22.5, y: 18.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 }
+        ],
+        doors: [],
+        stairs: []
+      },
+      decor: {}
     }
   });
 
@@ -39585,6 +39731,61 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           && arches.every(check => check.innerLintelAttached && check.landmarkBackingAttached && check.landmarkEmblemAttached)
       };
     }
+    if (arena.id === 'aurora') {
+      // Aurora Terminal is a single-level summit-theme arena: no doors,
+      // stairs or vertical profile. The contract verifies the summit roof
+      // dressing, the zone floor set and that every authored prop footprint
+      // stays clear of masonry.
+      const wallAt = (x, z) => {
+        const cx = Math.floor(x);
+        const cz = Math.floor(z);
+        return cz >= 0 && cz < MAP_H && cx >= 0 && cx < MAP_W && MAP[cz][cx] !== '0';
+      };
+      const propClearance = [
+        ...(LEVEL_PROP_LAYOUT.containers || []).map(prop => ({ group: 'container', prop })),
+        ...(LEVEL_PROP_LAYOUT.machines || []).map(prop => ({ group: 'machine', prop })),
+        ...(LEVEL_PROP_LAYOUT.tanks || []).map(prop => ({ group: 'tank', prop }))
+      ].map(entry => {
+        const prop = entry.prop;
+        const radius = Number(prop.radius) || 0.45;
+        const halfWidth = (Number(prop.width) || (entry.group === 'tank' ? radius * 2.14 : 0.94)) * 0.5;
+        const halfDepth = (Number(prop.depth) || (entry.group === 'tank' ? radius * 2.14 : 0.94)) * 0.5;
+        let clear = true;
+        for (const sx of [-1, 0, 1]) {
+          for (const sz of [-1, 0, 1]) {
+            const sample = propLocalPoint(prop, sx * halfWidth, sz * halfDepth);
+            if (wallAt(sample.x, sample.y)) clear = false;
+          }
+        }
+        return { group: entry.group, kind: prop.kind || entry.group, x: prop.x, z: prop.y, clear };
+      });
+      const summitRibs = worldBatches.beams.filter(beam => beam.summit).length;
+      const fountains = (LEVEL_PROP_LAYOUT.tanks || []).filter(tank => tank.kind === 'fountain');
+      const benches = (LEVEL_PROP_LAYOUT.containers || []).filter(prop => prop.kind === 'bench').length;
+      const planters = (LEVEL_PROP_LAYOUT.containers || []).filter(prop => prop.kind === 'planter').length;
+      const terminals = (LEVEL_PROP_LAYOUT.machines || []).filter(prop => prop.kind === 'terminal').length;
+      return {
+        ...base,
+        theme: arena.theme,
+        summitRibs,
+        zoneFloors: worldBatches.zoneFloors.length,
+        propClearance,
+        fountains: fountains.length,
+        benches,
+        planters,
+        terminals,
+        ok: arena.theme === 'summit'
+          && summitRibs === 5
+          && worldBatches.zoneFloors.length === LEVEL_ZONES.length - 1
+          && propClearance.length > 0 && propClearance.every(check => check.clear)
+          && fountains.length === 1
+          && Math.abs(fountains[0].x - MAP_W * 0.5) <= 0.01 && Math.abs(fountains[0].y - MAP_H * 0.5) <= 0.01
+          && benches === 4 && planters === 4 && terminals === 4
+          && (LEVEL_PROP_LAYOUT.doors || []).length === 0
+          && (LEVEL_PROP_LAYOUT.stairs || []).length === 0
+          && !arenaVerticalProfile()
+      };
+    }
     return { ...base, ok: false, reason: 'No presentation contract for arena.' };
   }
 
@@ -49617,7 +49818,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const previousArena = activeArenaId;
       const arenas = {};
       try {
-        for (const arenaId of ['citadel', 'office', 'dune']) {
+        for (const arenaId of ['citadel', 'office', 'dune', 'aurora']) {
           setActiveArena(arenaId);
           buildWorldBatches();
           arenas[arenaId] = typeof arenaGeometryPresentationSnapshot === 'function'
@@ -50548,6 +50749,78 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       };
     },
     propCollisionBroadphaseForTest: () => auditLevelPropCollisionBroadphase(),
+    auroraTerminalAuditForTest: () => {
+      const previousArena = activeArenaId;
+      let result;
+      try {
+        setActiveArena('aurora');
+        const arena = activeArenaMeta();
+        const layout = arena.layout || [];
+        const rowSymmetry = layout.map((row, index) => ({
+          index,
+          palindromic: row === [...row].reverse().join(''),
+          mirrored: row === layout[layout.length - 1 - index]
+        }));
+        const open = [];
+        for (let y = 0; y < layout.length; y++) {
+          for (let x = 0; x < (layout[y] || '').length; x++) if (layout[y][x] === '0') open.push({ x, y });
+        }
+        const key = (x, y) => `${x}:${y}`;
+        const openSet = new Set(open.map(cell => key(cell.x, cell.y)));
+        const visited = new Set();
+        const queue = open.length ? [open[0]] : [];
+        if (queue.length) visited.add(key(queue[0].x, queue[0].y));
+        while (queue.length) {
+          const cell = queue.shift();
+          for (const next of [
+            { x: cell.x + 1, y: cell.y }, { x: cell.x - 1, y: cell.y },
+            { x: cell.x, y: cell.y + 1 }, { x: cell.x, y: cell.y - 1 }
+          ]) {
+            const nextKey = key(next.x, next.y);
+            if (!openSet.has(nextKey) || visited.has(nextKey)) continue;
+            visited.add(nextKey);
+            queue.push(next);
+          }
+        }
+        const allSpawns = [...(spawnPoints[TEAM_BLUE] || []), ...(spawnPoints[TEAM_RED] || [])];
+        const destinations = [
+          ...(arena.hotspots || []),
+          ...(arena.engagementPlans || []).flatMap(plan => [...(plan.blue || []), ...(plan.red || [])])
+        ];
+        const destinationChecks = destinations.map((goal, index) => {
+          const clear = canStandForNavigation(goal.x, goal.y, BOT_RADIUS);
+          const reachableFromAllSpawns = allSpawns.every(spawn => Boolean(findPath(spawn, goal)?.length));
+          return { index, goal: { x: goal.x, y: goal.y }, clear, reachableFromAllSpawns };
+        });
+        const engagement = window.__strikeDebug.engagementPlanAuditForTest('aurora');
+        const propCollision = auditLevelPropCollision();
+        const geometry = window.__strikeDebug.arenaGeometryIntegrityForTest('aurora');
+        result = {
+          arenaId: arena.id,
+          theme: arena.theme,
+          rowSymmetry,
+          symmetric: rowSymmetry.every(row => row.palindromic && row.mirrored),
+          openCells: open.length,
+          connected: visited.size === openSet.size,
+          spawnCount: allSpawns.length,
+          destinationChecks,
+          destinationsOk: destinationChecks.every(check => check.clear && check.reachableFromAllSpawns),
+          engagementOk: Boolean(engagement?.ok ?? engagement?.plans?.every?.(plan => plan.ok) ?? true),
+          engagement,
+          propCollisionOk: Boolean(propCollision?.ok ?? true),
+          geometryOk: Boolean(geometry?.ok),
+          geometry,
+          ok: rowSymmetry.every(row => row.palindromic && row.mirrored)
+            && visited.size === openSet.size
+            && allSpawns.length === 10
+            && destinationChecks.every(check => check.clear && check.reachableFromAllSpawns)
+            && Boolean(geometry?.ok)
+        };
+      } finally {
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
     duneBastionAuditForTest: () => {
       const previousArena = activeArenaId;
       let result;
@@ -53869,20 +54142,36 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   try {
     const initialQuery = new URLSearchParams(window.location.search);
     operatorPreviewRequested = initialQuery.get('operatorPreview') === '1';
-    if (initialQuery.get('releaseAudit') === '1') {
+    // The audit also honours a `releaseaudit` filename marker because the
+    // Windows shell strips query strings from file:// launches.
+    if (initialQuery.get('releaseAudit') === '1' || /releaseaudit/i.test(String(window.location.pathname || ''))) {
       setTimeout(() => {
         const geometry = window.__strikeDebug.allArenaGeometryIntegrityForTest();
         const citadel = window.__strikeDebug.arenaAuditForTest('citadel');
+        const aurora = window.__strikeDebug.auroraTerminalAuditForTest();
         const state = window.__strikeDebug.stateIntegrityForTest();
         document.body.dataset.releaseAudit = JSON.stringify({
           geometryOk: Boolean(geometry?.ok),
           arenas: Object.fromEntries(Object.entries(geometry?.arenas || {}).map(([id, result]) => [id, Boolean(result?.ok)])),
           citadelRoutesConnected: Boolean(citadel?.routesConnected),
           citadelSpawnsClear: Boolean(citadel?.allSpawnsClear),
+          auroraOk: Boolean(aurora?.ok),
+          auroraSymmetric: Boolean(aurora?.symmetric),
+          auroraConnected: Boolean(aurora?.connected),
+          auroraDestinationsOk: Boolean(aurora?.destinationsOk),
+          auroraGeometryOk: Boolean(aurora?.geometryOk),
+          auroraPropCollisionOk: Boolean(aurora?.propCollisionOk),
           stateOk: Boolean(state?.ok),
           stateIssues: state?.issues || [],
           runtimeFaults: window.__strikeDebug.runtimeFaultsForTest()
         });
+        // The audit runs headless in CI-less environments, so surface the
+        // same payload visibly for screenshot-based verification.
+        const auditPanel = document.createElement('pre');
+        auditPanel.id = 'releaseAuditPanel';
+        auditPanel.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#04141c;color:#9fe8ff;font:12px/1.5 monospace;padding:10px 12px;max-height:45vh;overflow:auto;border:1px solid #2b6a7f;white-space:pre-wrap;';
+        auditPanel.textContent = `RELEASE AUDIT ${BUILD_ID}\n${document.body.dataset.releaseAudit}`;
+        document.body.append(auditPanel);
       }, 0);
     }
     if (initialQuery.get('operatorAudit') === '1') {

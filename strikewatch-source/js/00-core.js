@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.129';
-  const BUILD_NAME = 'GUIDED OPENING FLOW';
-  const BUILD_ID = '12.129.0-guided-opening-flow';
+  const BUILD_VERSION = '12.130';
+  const BUILD_NAME = 'AURORA TERMINAL';
+  const BUILD_ID = '12.130.0-aurora-terminal';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -910,6 +910,152 @@
           { x: 18.0, z: 17.5, width: 12.6, depth: 0.16, colour: [0.34, 0.52, 0.60] }
         ]
       }
+    },
+
+    aurora: {
+      id: 'aurora',
+      name: 'AURORA TERMINAL',
+      short: 'AUR',
+      theme: 'summit',
+      ceilingHeight: 3.06,
+      matchmakingBlurb: 'A polar transit terminal under aurora light: twin glass concourses, boarding-lounge pods and a luminous fountain atrium on one bright, fully mirrored level.',
+      tagDescription: 'Icy check-in concourses, lounge pods and a glowing central atrium balance long precision lanes with sheltered close-range rotations.',
+      // The terminal is authored as its north-west quadrant: every row is a
+      // palindrome about x = 18 and the southern half mirrors the northern
+      // half about z = 12, so all four quadrants play identically.
+      preview: {
+        badge: 'AURORA',
+        tags: ['NORTH CONCOURSE', 'CRYO ATRIUM', 'SOUTH CONCOURSE'],
+        bands: [
+          { y1: 1, y2: 6, label: 'NORTH CONCOURSE', colour: [0.55, 0.85, 1.00] },
+          { y1: 6, y2: 18, label: 'CRYO ATRIUM & LOUNGES', colour: [0.45, 0.95, 0.65] },
+          { y1: 18, y2: 23, label: 'SOUTH CONCOURSE', colour: [1.00, 0.72, 0.35] }
+        ],
+        stairs: []
+      },
+      layout: [
+        '111111111111111111111111111111111111',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '100110011001100000000001100110011001',
+        '100110011001100000000001100110011001',
+        '100000000000000000000000000000000001',
+        '100111100111111100001111111001111001',
+        '100100000100000000000000001000001001',
+        '100100000100000000000000001000001001',
+        '100100000000000000000000000000001001',
+        '100111111100000000000000001111111001',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '100111111100000000000000001111111001',
+        '100100000000000000000000000000001001',
+        '100100000100000000000000001000001001',
+        '100100000100000000000000001000001001',
+        '100111100111111100001111111001111001',
+        '100000000000000000000000000000000001',
+        '100110011001100000000001100110011001',
+        '100110011001100000000001100110011001',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '111111111111111111111111111111111111'
+      ],
+      hotspots: [
+        { x: 9.5, y: 1.5 }, { x: 18.0, y: 2.5 }, { x: 26.5, y: 1.5 },
+        { x: 5.5, y: 5.5 }, { x: 30.5, y: 5.5 },
+        { x: 6.5, y: 8.5 }, { x: 29.5, y: 8.5 }, { x: 6.5, y: 15.5 }, { x: 29.5, y: 15.5 },
+        { x: 15.5, y: 9.5 }, { x: 20.5, y: 9.5 }, { x: 15.5, y: 14.5 }, { x: 20.5, y: 14.5 },
+        { x: 18.0, y: 10.5 }, { x: 18.0, y: 13.5 },
+        { x: 10.5, y: 11.5 }, { x: 25.5, y: 12.5 },
+        { x: 9.5, y: 22.5 }, { x: 18.0, y: 21.5 }, { x: 26.5, y: 22.5 }
+      ],
+      engagementPlans: [
+        { id: 'north-concourse', name: 'NORTH CONCOURSE DUEL', zone: 'NORTH', priority: 1.2, blue: [{ x: 9.5, y: 2.5 }, { x: 6.5, y: 1.5 }, { x: 9.5, y: 5.5 }, { x: 13.5, y: 2.5 }, { x: 5.5, y: 4.5 }], red: [{ x: 26.5, y: 2.5 }, { x: 29.5, y: 1.5 }, { x: 26.5, y: 5.5 }, { x: 22.5, y: 2.5 }, { x: 30.5, y: 4.5 }] },
+        { id: 'cryo-atrium', name: 'CRYO ATRIUM CLASH', zone: 'ATRIUM', priority: 1.35, blue: [{ x: 14.5, y: 10.5 }, { x: 13.5, y: 12.5 }, { x: 14.5, y: 13.5 }, { x: 16.5, y: 9.5 }, { x: 16.5, y: 14.5 }], red: [{ x: 21.5, y: 10.5 }, { x: 22.5, y: 12.5 }, { x: 21.5, y: 13.5 }, { x: 19.5, y: 9.5 }, { x: 19.5, y: 14.5 }] },
+        { id: 'south-concourse', name: 'SOUTH CONCOURSE SWEEP', zone: 'SOUTH', priority: 1.2, blue: [{ x: 9.5, y: 21.5 }, { x: 6.5, y: 22.5 }, { x: 9.5, y: 18.5 }, { x: 13.5, y: 21.5 }, { x: 5.5, y: 19.5 }], red: [{ x: 26.5, y: 21.5 }, { x: 29.5, y: 22.5 }, { x: 26.5, y: 18.5 }, { x: 22.5, y: 21.5 }, { x: 30.5, y: 19.5 }] },
+        { id: 'west-lounge', name: 'WEST LOUNGE CONTACT', zone: 'WEST', priority: 0.98, blue: [{ x: 4.5, y: 11.5 }, { x: 6.5, y: 8.5 }, { x: 6.5, y: 15.5 }, { x: 8.5, y: 12.5 }, { x: 10.5, y: 11.5 }], red: [{ x: 12.5, y: 11.5 }, { x: 10.5, y: 9.5 }, { x: 10.5, y: 14.5 }, { x: 13.5, y: 12.5 }, { x: 11.5, y: 9.5 }] },
+        { id: 'east-lounge', name: 'EAST LOUNGE CONTACT', zone: 'EAST', priority: 0.98, blue: [{ x: 23.5, y: 11.5 }, { x: 25.5, y: 9.5 }, { x: 25.5, y: 14.5 }, { x: 22.5, y: 12.5 }, { x: 24.5, y: 9.5 }], red: [{ x: 31.5, y: 11.5 }, { x: 29.5, y: 8.5 }, { x: 29.5, y: 15.5 }, { x: 27.5, y: 12.5 }, { x: 25.5, y: 11.5 }] },
+        { id: 'transit-spine', name: 'TRANSIT SPINE ROTATION', zone: 'TRANSIT', priority: 1.05, blue: [{ x: 7.5, y: 11.5 }, { x: 11.5, y: 12.5 }, { x: 9.5, y: 12.5 }, { x: 5.5, y: 12.5 }, { x: 11.5, y: 11.5 }], red: [{ x: 28.5, y: 12.5 }, { x: 24.5, y: 11.5 }, { x: 26.5, y: 11.5 }, { x: 30.5, y: 11.5 }, { x: 24.5, y: 12.5 }] }
+      ],
+      spawnPoints: {
+        0: [{ x: 2.5, y: 2.5 }, { x: 2.5, y: 7.5 }, { x: 2.5, y: 11.5 }, { x: 2.5, y: 16.5 }, { x: 2.5, y: 21.5 }],
+        1: [{ x: 33.5, y: 21.5 }, { x: 33.5, y: 16.5 }, { x: 33.5, y: 12.5 }, { x: 33.5, y: 7.5 }, { x: 33.5, y: 2.5 }]
+      },
+      zones: [
+        { x1: 1, z1: 1, x2: 35, z2: 6, name: 'NORTH CONCOURSE', short: 'NORTH', colour: [0.36, 0.44, 0.50], light: [0.55, 0.85, 1.00] },
+        { x1: 1, z1: 18, x2: 35, z2: 23, name: 'SOUTH CONCOURSE', short: 'SOUTH', colour: [0.40, 0.42, 0.48], light: [1.00, 0.72, 0.35] },
+        { x1: 1, z1: 6, x2: 12, z2: 18, name: 'WEST LOUNGES', short: 'WEST', colour: [0.34, 0.42, 0.46], light: [0.30, 0.90, 0.85] },
+        { x1: 24, z1: 6, x2: 35, z2: 18, name: 'EAST LOUNGES', short: 'EAST', colour: [0.34, 0.42, 0.46], light: [0.96, 0.62, 0.85] },
+        { x1: 12, z1: 6, x2: 24, z2: 18, name: 'CRYO ATRIUM', short: 'ATRIUM', colour: [0.30, 0.44, 0.44], light: [0.45, 0.95, 0.65] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.36, 0.42, 0.46], light: [0.75, 0.88, 0.95] }
+      ],
+      props: {
+        containers: [
+          // Atrium seating ring: benches face the fountain and planters seal
+          // the ring corners without closing either east-west route.
+          { x: 15.5, y: 10.3, yaw: 0, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 20.5, y: 10.3, yaw: 0, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 15.5, y: 13.7, yaw: Math.PI, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 20.5, y: 13.7, yaw: Math.PI, kind: 'bench', colour: [0.30, 0.40, 0.46], width: 1.4, depth: 0.42 },
+          { x: 13.5, y: 9.4, yaw: 0, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          { x: 22.5, y: 9.4, yaw: 0, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          { x: 13.5, y: 14.6, yaw: Math.PI, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          { x: 22.5, y: 14.6, yaw: Math.PI, kind: 'planter', colour: [0.30, 0.40, 0.38], width: 1.6, depth: 0.44 },
+          // Lounge pods: one sofa per pod against the quiet wall.
+          { x: 6.0, y: 7.6, yaw: 0, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          { x: 30.0, y: 7.6, yaw: 0, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          { x: 6.0, y: 16.4, yaw: Math.PI, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          { x: 30.0, y: 16.4, yaw: Math.PI, kind: 'sofa', colour: [0.22, 0.38, 0.46], width: 1.6, depth: 0.7 },
+          // Spine cover sits on the exact mirror line so both teams share it.
+          { x: 9.0, y: 12.0, yaw: 0, kind: 'barrier', colour: [0.20, 0.52, 0.56], width: 1.5, depth: 0.44 },
+          { x: 27.0, y: 12.0, yaw: 0, kind: 'barrier', colour: [0.20, 0.52, 0.56], width: 1.5, depth: 0.44 },
+          // Baggage stacks anchor the four concourse corners.
+          { x: 4.0, y: 1.6, yaw: 0, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 },
+          { x: 32.0, y: 1.6, yaw: 0, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 },
+          { x: 4.0, y: 22.4, yaw: Math.PI, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 },
+          { x: 32.0, y: 22.4, yaw: Math.PI, kind: 'crate-stack', colour: [0.36, 0.44, 0.48], width: 0.78, depth: 0.72 }
+        ],
+        machines: [
+          // Check-in desks on the central concourse floors.
+          { x: 15.0, y: 3.5, yaw: 0, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          { x: 21.0, y: 3.5, yaw: 0, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          { x: 15.0, y: 20.5, yaw: Math.PI, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          { x: 21.0, y: 20.5, yaw: Math.PI, kind: 'desk', colour: [0.40, 0.48, 0.52], width: 1.1, depth: 0.62 },
+          // Departure boards flank both atrium mouths.
+          { x: 16.5, y: 7.5, yaw: 0, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          { x: 19.5, y: 7.5, yaw: 0, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          { x: 16.5, y: 16.5, yaw: Math.PI, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          { x: 19.5, y: 16.5, yaw: Math.PI, kind: 'terminal', colour: [0.16, 0.30, 0.34] },
+          // Lounge pod services against the pod walls.
+          { x: 4.6, y: 9.5, yaw: Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 31.4, y: 9.5, yaw: -Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 4.6, y: 14.5, yaw: Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 31.4, y: 14.5, yaw: -Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.34, 0.44], width: 0.9, depth: 0.42 },
+          { x: 5.5, y: 8.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 },
+          { x: 30.5, y: 8.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 },
+          { x: 5.5, y: 15.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 },
+          { x: 30.5, y: 15.5, yaw: 0, kind: 'server-rack', colour: [0.15, 0.21, 0.25], width: 0.8, depth: 0.9 }
+        ],
+        tanks: [
+          // The cryo fountain is the map centrepiece and the only prop on the
+          // exact map centre; routes stay open on both sides.
+          { x: 18.0, y: 12.0, kind: 'fountain', colour: [0.30, 0.72, 0.80], radius: 0.7 },
+          { x: 11.5, y: 7.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 24.5, y: 7.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 11.5, y: 16.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 24.5, y: 16.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.3 },
+          { x: 12.5, y: 10.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 23.5, y: 10.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 12.5, y: 13.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 23.5, y: 13.5, kind: 'plant', colour: [0.26, 0.55, 0.36], radius: 0.28 },
+          { x: 13.5, y: 5.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 },
+          { x: 22.5, y: 5.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 },
+          { x: 13.5, y: 18.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 },
+          { x: 22.5, y: 18.5, kind: 'plant', colour: [0.24, 0.52, 0.34], radius: 0.28 }
+        ],
+        doors: [],
+        stairs: []
+      },
+      decor: {}
     }
   });
 

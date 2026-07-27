@@ -56,6 +56,12 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.130 owns the Aurora Terminal arena (`aurora`, summit theme, single
+level, four-way symmetric, no doors/stairs/vertical profile). Keep its
+presentation contract, `auroraTerminalAuditForTest()` and the all-arena
+geometry gate passing; do not repurpose the `summit` arena-id redirect. See
+`AUDIT-12.130.md`.
+
 Build 12.129 owns the guided opening flow. Keep First Match Guide steps
 forward-only (derived from existing career state, no saved progression
 authority), keep a visible match-launch or End Day action available on the

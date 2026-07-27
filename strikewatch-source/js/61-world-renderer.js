@@ -841,6 +841,61 @@
           && arches.every(check => check.innerLintelAttached && check.landmarkBackingAttached && check.landmarkEmblemAttached)
       };
     }
+    if (arena.id === 'aurora') {
+      // Aurora Terminal is a single-level summit-theme arena: no doors,
+      // stairs or vertical profile. The contract verifies the summit roof
+      // dressing, the zone floor set and that every authored prop footprint
+      // stays clear of masonry.
+      const wallAt = (x, z) => {
+        const cx = Math.floor(x);
+        const cz = Math.floor(z);
+        return cz >= 0 && cz < MAP_H && cx >= 0 && cx < MAP_W && MAP[cz][cx] !== '0';
+      };
+      const propClearance = [
+        ...(LEVEL_PROP_LAYOUT.containers || []).map(prop => ({ group: 'container', prop })),
+        ...(LEVEL_PROP_LAYOUT.machines || []).map(prop => ({ group: 'machine', prop })),
+        ...(LEVEL_PROP_LAYOUT.tanks || []).map(prop => ({ group: 'tank', prop }))
+      ].map(entry => {
+        const prop = entry.prop;
+        const radius = Number(prop.radius) || 0.45;
+        const halfWidth = (Number(prop.width) || (entry.group === 'tank' ? radius * 2.14 : 0.94)) * 0.5;
+        const halfDepth = (Number(prop.depth) || (entry.group === 'tank' ? radius * 2.14 : 0.94)) * 0.5;
+        let clear = true;
+        for (const sx of [-1, 0, 1]) {
+          for (const sz of [-1, 0, 1]) {
+            const sample = propLocalPoint(prop, sx * halfWidth, sz * halfDepth);
+            if (wallAt(sample.x, sample.y)) clear = false;
+          }
+        }
+        return { group: entry.group, kind: prop.kind || entry.group, x: prop.x, z: prop.y, clear };
+      });
+      const summitRibs = worldBatches.beams.filter(beam => beam.summit).length;
+      const fountains = (LEVEL_PROP_LAYOUT.tanks || []).filter(tank => tank.kind === 'fountain');
+      const benches = (LEVEL_PROP_LAYOUT.containers || []).filter(prop => prop.kind === 'bench').length;
+      const planters = (LEVEL_PROP_LAYOUT.containers || []).filter(prop => prop.kind === 'planter').length;
+      const terminals = (LEVEL_PROP_LAYOUT.machines || []).filter(prop => prop.kind === 'terminal').length;
+      return {
+        ...base,
+        theme: arena.theme,
+        summitRibs,
+        zoneFloors: worldBatches.zoneFloors.length,
+        propClearance,
+        fountains: fountains.length,
+        benches,
+        planters,
+        terminals,
+        ok: arena.theme === 'summit'
+          && summitRibs === 5
+          && worldBatches.zoneFloors.length === LEVEL_ZONES.length - 1
+          && propClearance.length > 0 && propClearance.every(check => check.clear)
+          && fountains.length === 1
+          && Math.abs(fountains[0].x - MAP_W * 0.5) <= 0.01 && Math.abs(fountains[0].y - MAP_H * 0.5) <= 0.01
+          && benches === 4 && planters === 4 && terminals === 4
+          && (LEVEL_PROP_LAYOUT.doors || []).length === 0
+          && (LEVEL_PROP_LAYOUT.stairs || []).length === 0
+          && !arenaVerticalProfile()
+      };
+    }
     return { ...base, ok: false, reason: 'No presentation contract for arena.' };
   }
 

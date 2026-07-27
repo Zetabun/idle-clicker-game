@@ -6,15 +6,22 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.129 — Guided Opening Flow**
-- Build ID: `12.129.0-guided-opening-flow`
+- Build: **12.130 — Aurora Terminal**
+- Build ID: `12.130.0-aurora-terminal`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.129.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.130.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.130 adds the fourth arena, **Aurora Terminal** (`aurora`): a polar
+transit terminal on the existing summit render theme — one bright four-way
+symmetric level with twin concourses, lounge pods, a fountain atrium and a
+transit spine. All-arena geometry integrity, the aurora audit hook and the
+boot release audit pass in engine; the `summit`→`dune` redirect is untouched.
+See `AUDIT-12.130.md` before changing this arena.
 
 Build 12.129 streamlines the First Match Guide: guide steps only move forward
 (signings and a confirmed plan satisfy the earlier view-flag steps), the

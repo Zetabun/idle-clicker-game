@@ -4984,7 +4984,7 @@
       const previousArena = activeArenaId;
       const arenas = {};
       try {
-        for (const arenaId of ['citadel', 'office', 'dune']) {
+        for (const arenaId of ['citadel', 'office', 'dune', 'aurora']) {
           setActiveArena(arenaId);
           buildWorldBatches();
           arenas[arenaId] = typeof arenaGeometryPresentationSnapshot === 'function'
@@ -5915,6 +5915,78 @@
       };
     },
     propCollisionBroadphaseForTest: () => auditLevelPropCollisionBroadphase(),
+    auroraTerminalAuditForTest: () => {
+      const previousArena = activeArenaId;
+      let result;
+      try {
+        setActiveArena('aurora');
+        const arena = activeArenaMeta();
+        const layout = arena.layout || [];
+        const rowSymmetry = layout.map((row, index) => ({
+          index,
+          palindromic: row === [...row].reverse().join(''),
+          mirrored: row === layout[layout.length - 1 - index]
+        }));
+        const open = [];
+        for (let y = 0; y < layout.length; y++) {
+          for (let x = 0; x < (layout[y] || '').length; x++) if (layout[y][x] === '0') open.push({ x, y });
+        }
+        const key = (x, y) => `${x}:${y}`;
+        const openSet = new Set(open.map(cell => key(cell.x, cell.y)));
+        const visited = new Set();
+        const queue = open.length ? [open[0]] : [];
+        if (queue.length) visited.add(key(queue[0].x, queue[0].y));
+        while (queue.length) {
+          const cell = queue.shift();
+          for (const next of [
+            { x: cell.x + 1, y: cell.y }, { x: cell.x - 1, y: cell.y },
+            { x: cell.x, y: cell.y + 1 }, { x: cell.x, y: cell.y - 1 }
+          ]) {
+            const nextKey = key(next.x, next.y);
+            if (!openSet.has(nextKey) || visited.has(nextKey)) continue;
+            visited.add(nextKey);
+            queue.push(next);
+          }
+        }
+        const allSpawns = [...(spawnPoints[TEAM_BLUE] || []), ...(spawnPoints[TEAM_RED] || [])];
+        const destinations = [
+          ...(arena.hotspots || []),
+          ...(arena.engagementPlans || []).flatMap(plan => [...(plan.blue || []), ...(plan.red || [])])
+        ];
+        const destinationChecks = destinations.map((goal, index) => {
+          const clear = canStandForNavigation(goal.x, goal.y, BOT_RADIUS);
+          const reachableFromAllSpawns = allSpawns.every(spawn => Boolean(findPath(spawn, goal)?.length));
+          return { index, goal: { x: goal.x, y: goal.y }, clear, reachableFromAllSpawns };
+        });
+        const engagement = window.__strikeDebug.engagementPlanAuditForTest('aurora');
+        const propCollision = auditLevelPropCollision();
+        const geometry = window.__strikeDebug.arenaGeometryIntegrityForTest('aurora');
+        result = {
+          arenaId: arena.id,
+          theme: arena.theme,
+          rowSymmetry,
+          symmetric: rowSymmetry.every(row => row.palindromic && row.mirrored),
+          openCells: open.length,
+          connected: visited.size === openSet.size,
+          spawnCount: allSpawns.length,
+          destinationChecks,
+          destinationsOk: destinationChecks.every(check => check.clear && check.reachableFromAllSpawns),
+          engagementOk: Boolean(engagement?.ok ?? engagement?.plans?.every?.(plan => plan.ok) ?? true),
+          engagement,
+          propCollisionOk: Boolean(propCollision?.ok ?? true),
+          geometryOk: Boolean(geometry?.ok),
+          geometry,
+          ok: rowSymmetry.every(row => row.palindromic && row.mirrored)
+            && visited.size === openSet.size
+            && allSpawns.length === 10
+            && destinationChecks.every(check => check.clear && check.reachableFromAllSpawns)
+            && Boolean(geometry?.ok)
+        };
+      } finally {
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
     duneBastionAuditForTest: () => {
       const previousArena = activeArenaId;
       let result;
@@ -9236,20 +9308,36 @@
   try {
     const initialQuery = new URLSearchParams(window.location.search);
     operatorPreviewRequested = initialQuery.get('operatorPreview') === '1';
-    if (initialQuery.get('releaseAudit') === '1') {
+    // The audit also honours a `releaseaudit` filename marker because the
+    // Windows shell strips query strings from file:// launches.
+    if (initialQuery.get('releaseAudit') === '1' || /releaseaudit/i.test(String(window.location.pathname || ''))) {
       setTimeout(() => {
         const geometry = window.__strikeDebug.allArenaGeometryIntegrityForTest();
         const citadel = window.__strikeDebug.arenaAuditForTest('citadel');
+        const aurora = window.__strikeDebug.auroraTerminalAuditForTest();
         const state = window.__strikeDebug.stateIntegrityForTest();
         document.body.dataset.releaseAudit = JSON.stringify({
           geometryOk: Boolean(geometry?.ok),
           arenas: Object.fromEntries(Object.entries(geometry?.arenas || {}).map(([id, result]) => [id, Boolean(result?.ok)])),
           citadelRoutesConnected: Boolean(citadel?.routesConnected),
           citadelSpawnsClear: Boolean(citadel?.allSpawnsClear),
+          auroraOk: Boolean(aurora?.ok),
+          auroraSymmetric: Boolean(aurora?.symmetric),
+          auroraConnected: Boolean(aurora?.connected),
+          auroraDestinationsOk: Boolean(aurora?.destinationsOk),
+          auroraGeometryOk: Boolean(aurora?.geometryOk),
+          auroraPropCollisionOk: Boolean(aurora?.propCollisionOk),
           stateOk: Boolean(state?.ok),
           stateIssues: state?.issues || [],
           runtimeFaults: window.__strikeDebug.runtimeFaultsForTest()
         });
+        // The audit runs headless in CI-less environments, so surface the
+        // same payload visibly for screenshot-based verification.
+        const auditPanel = document.createElement('pre');
+        auditPanel.id = 'releaseAuditPanel';
+        auditPanel.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#04141c;color:#9fe8ff;font:12px/1.5 monospace;padding:10px 12px;max-height:45vh;overflow:auto;border:1px solid #2b6a7f;white-space:pre-wrap;';
+        auditPanel.textContent = `RELEASE AUDIT ${BUILD_ID}\n${document.body.dataset.releaseAudit}`;
+        document.body.append(auditPanel);
       }, 0);
     }
     if (initialQuery.get('operatorAudit') === '1') {
