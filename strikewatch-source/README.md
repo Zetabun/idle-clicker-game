@@ -1,8 +1,19 @@
-# Strikewatch Source 12.117
+# Strikewatch Source 12.118
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.118 mobile typography readability pass
+
+Build 12.118 removes the remaining hard-to-read mobile microcopy. Recruitment
+cards, inline reports and role guides; full operator dossiers; team telemetry;
+development, training and supplies cards; league tables; Configuration
+appearance controls; persistent navigation; and the portrait live-match HUD
+now use bounded mobile type floors instead of legacy 5–9px values. The pass is
+mobile-only, preserves desktop density, and includes a 320px attribute-grid
+containment correction. Gameplay, recruitment values, simulation, economy,
+persistence, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.117 Skyline Offices environment rework
 
