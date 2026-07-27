@@ -100,10 +100,12 @@
   }
 
   const OFFICE_COURTYARD_ROTATION_LANES = Object.freeze([
-    Object.freeze({ id: 'north-cross', west: Object.freeze({ x: 13.5, y: 11.5 }), east: Object.freeze({ x: 22.5, y: 11.5 }) }),
-    Object.freeze({ id: 'south-cross', west: Object.freeze({ x: 15.5, y: 14.5 }), east: Object.freeze({ x: 20.5, y: 14.5 }) }),
-    Object.freeze({ id: 'north-to-south', west: Object.freeze({ x: 13.5, y: 11.5 }), east: Object.freeze({ x: 20.5, y: 14.5 }) }),
-    Object.freeze({ id: 'south-to-north', west: Object.freeze({ x: 15.5, y: 14.5 }), east: Object.freeze({ x: 22.5, y: 11.5 }) })
+    // The four lanes run between the courtyard's west and east arcades, which
+    // are the four-cell openings at x = 13 and x = 22 spanning z 10-13.
+    Object.freeze({ id: 'north-cross', west: Object.freeze({ x: 13.5, y: 10.5 }), east: Object.freeze({ x: 22.5, y: 10.5 }) }),
+    Object.freeze({ id: 'south-cross', west: Object.freeze({ x: 13.5, y: 13.5 }), east: Object.freeze({ x: 22.5, y: 13.5 }) }),
+    Object.freeze({ id: 'north-to-south', west: Object.freeze({ x: 13.5, y: 10.5 }), east: Object.freeze({ x: 22.5, y: 13.5 }) }),
+    Object.freeze({ id: 'south-to-north', west: Object.freeze({ x: 13.5, y: 13.5 }), east: Object.freeze({ x: 22.5, y: 10.5 }) })
   ]);
 
   function officeCourtyardRotationGeometry() {

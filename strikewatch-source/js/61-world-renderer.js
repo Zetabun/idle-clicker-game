@@ -561,8 +561,127 @@
       };
       const benches = (LEVEL_PROP_LAYOUT.containers || []).filter(prop => prop.kind === 'bench').map((bench, index) => ({ index, x: bench.x, z: bench.y, feet: ARENA_GEOMETRY_PRESENTATION.office.bench.feet, backSupports: ARENA_GEOMETRY_PRESENTATION.office.bench.backSupports }));
       const sofas = (LEVEL_PROP_LAYOUT.containers || []).filter(prop => prop.kind === 'sofa').map((sofa, index) => ({ index, x: sofa.x, z: sofa.y, feet: ARENA_GEOMETRY_PRESENTATION.office.sofa.feet }));
-      const doors = (LEVEL_PROP_LAYOUT.doors || []).map(door => ({ id: door.id, wallTies: 2, threshold: true }));
+      const solidCell = (x, z) => (MAP[Math.floor(z)]?.[Math.floor(x)] || '1') === '1';
+      const doors = (LEVEL_PROP_LAYOUT.doors || []).map(door => {
+        const cellX = Math.floor(door.x);
+        const cellZ = Math.floor(door.y);
+        const horizontal = Math.abs(Math.cos(door.yaw || 0)) >= 0.7;
+        const flankA = horizontal ? solidCell(cellX - 0.5, cellZ + 0.5) : solidCell(cellX + 0.5, cellZ - 0.5);
+        const flankB = horizontal ? solidCell(cellX + 1.5, cellZ + 0.5) : solidCell(cellX + 0.5, cellZ + 1.5);
+        return {
+          id: door.id,
+          wallTies: 2,
+          threshold: true,
+          inOpening: !solidCell(door.x, door.y) && flankA && flankB
+        };
+      });
       const conferenceProp = (LEVEL_PROP_LAYOUT.machines || []).find(prop => prop.kind === 'conference') || null;
+
+      // Every solid prop must clear masonry across its whole authored
+      // footprint. This is the gate that the pre-rework arena failed: desks,
+      // lockers and planters were authored partly inside walls.
+      const propClearance = [];
+      const addClearance = (kind, x, z, halfWidth, halfDepth, yaw) => {
+        const samples = [];
+        for (const xFraction of [-1, -0.5, 0, 0.5, 1]) {
+          for (const zFraction of [-1, -0.5, 0, 0.5, 1]) {
+            const point = localToWorld(x, z, yaw || 0, halfWidth * xFraction, halfDepth * zFraction);
+            samples.push(!solidCell(point.x, point.z));
+          }
+        }
+        propClearance.push({ kind, x, z, samples: samples.length, clear: samples.every(Boolean) });
+      };
+      for (const prop of LEVEL_PROP_LAYOUT.containers || []) {
+        addClearance(prop.kind || 'container', prop.x, prop.y, (Number(prop.width) || 0.94) * 0.5, (Number(prop.depth) || 0.94) * 0.5, prop.yaw);
+      }
+      for (const prop of LEVEL_PROP_LAYOUT.machines || []) {
+        addClearance(prop.kind || 'machine', prop.x, prop.y, (Number(prop.width) || 0.94) * 0.5, (Number(prop.depth) || 0.94) * 0.5, prop.yaw);
+      }
+      for (const prop of LEVEL_PROP_LAYOUT.tanks || []) {
+        const radius = Number(prop.radius) || 0.34;
+        addClearance(prop.kind || 'tank', prop.x, prop.y, radius, radius, 0);
+      }
+
+      // Acoustic baffles hang inside one room, so they must not cross a wall
+      // column and must have an authored suspended ceiling above them.
+      for (const baffle of baffles) {
+        const source = (LEVEL_DECOR_LAYOUT.ceilingBaffles || [])[baffle.index] || {};
+        const halfWidth = (Number(source.width) || 1) * 0.5;
+        let clear = true;
+        for (let x = Math.floor(baffle.x - halfWidth); x < Math.ceil(baffle.x + halfWidth); x++) {
+          if (solidCell(x + 0.5, baffle.z)) clear = false;
+        }
+        baffle.clearOfWalls = clear;
+      }
+
+      // Glazing and displays must sit on a real wall plane: masonry on the
+      // mounting side and open floor on the visible side.
+      for (const band of glass) {
+        const source = (LEVEL_DECOR_LAYOUT.glassBands || [])[band.index] || {};
+        const bandYaw = Number(source.yaw) || 0;
+        const normal = { x: Math.sin(bandYaw), z: Math.cos(bandYaw) };
+        const halfWidth = (Number(source.width) || 1) * 0.5;
+        band.mountedInWall = [-0.85, 0, 0.85].every(fraction => {
+          const point = localToWorld(band.x, band.z, bandYaw, fraction * halfWidth, 0);
+          const behind = solidCell(point.x - normal.x * 0.15, point.z - normal.z * 0.15);
+          const infront = solidCell(point.x + normal.x * 0.15, point.z + normal.z * 0.15);
+          return behind !== infront;
+        });
+      }
+      for (const screen of screens) {
+        const source = (LEVEL_DECOR_LAYOUT.wallScreens || [])[screen.index] || {};
+        const screenYaw = Number(source.yaw) || 0;
+        const normal = { x: Math.sin(screenYaw), z: Math.cos(screenYaw) };
+        screen.x = source.x;
+        screen.z = source.z;
+        screen.backedByWall = solidCell(source.x - normal.x * 0.08, source.z - normal.z * 0.08);
+        screen.facesOpenFloor = !solidCell(source.x + normal.x * 0.08, source.z + normal.z * 0.08);
+      }
+
+      // The courtyard rectangle is also the ceiling void, so it has to match
+      // real open floor and no suspended ceiling may hang across it.
+      const courtyardRect = (LEVEL_DECOR_LAYOUT.courtyards || [])[0] || null;
+      let courtyard = null;
+      if (courtyardRect) {
+        const left = courtyardRect.x - courtyardRect.width * 0.5;
+        const right = courtyardRect.x + courtyardRect.width * 0.5;
+        const top = courtyardRect.z - courtyardRect.depth * 0.5;
+        const bottom = courtyardRect.z + courtyardRect.depth * 0.5;
+        let openCells = 0;
+        let solidCells = 0;
+        for (let z = Math.floor(top); z < Math.ceil(bottom); z++) {
+          for (let x = Math.floor(left); x < Math.ceil(right); x++) {
+            if (solidCell(x + 0.5, z + 0.5)) solidCells++;
+            else openCells++;
+          }
+        }
+        const ceilingOverlaps = (LEVEL_DECOR_LAYOUT.lowCeilings || []).filter(ceiling => (
+          Math.min(ceiling.x + ceiling.width * 0.5, right) - Math.max(ceiling.x - ceiling.width * 0.5, left) > 0.01
+          && Math.min(ceiling.z + ceiling.depth * 0.5, bottom) - Math.max(ceiling.z - ceiling.depth * 0.5, top) > 0.01
+        )).length;
+        courtyard = { left, right, top, bottom, openCells, solidCells, ceilingOverlaps, alignedToOpenFloor: solidCells === 0 && openCells > 0, voidClear: ceilingOverlaps === 0 };
+      }
+
+      const floorMarkings = (LEVEL_DECOR_LAYOUT.floorMarkings || []).map((marking, index) => {
+        let clear = true;
+        for (let z = Math.floor(marking.z - marking.depth * 0.5); z < Math.ceil(marking.z + marking.depth * 0.5); z++) {
+          for (let x = Math.floor(marking.x - marking.width * 0.5); x < Math.ceil(marking.x + marking.width * 0.5); x++) {
+            if (solidCell(x + 0.5, z + 0.5)) clear = false;
+          }
+        }
+        return { index, x: marking.x, z: marking.z, clear };
+      });
+
+      // Layout symmetry: the floorplate is authored as one quadrant, so both
+      // mirrors have to reproduce it exactly.
+      let mirroredX = true;
+      let mirroredZ = true;
+      for (let z = 0; z < MAP_H; z++) {
+        for (let x = 0; x < MAP_W; x++) {
+          if (MAP[z][x] !== MAP[z][MAP_W - 1 - x]) mirroredX = false;
+          if (MAP[z][x] !== MAP[MAP_H - 1 - z][x]) mirroredZ = false;
+        }
+      }
       const sampleOpenRectangle = (x, z, yaw, width, depth) => {
         const samples = [];
         for (const xFraction of [-0.50, -0.25, 0, 0.25, 0.50]) {
@@ -615,13 +734,23 @@
         sofas,
         doors,
         conference,
-        ok: baffles.length === 4 && baffles.every(check => check.hangerCount === 4 && check.mounted)
-          && glass.length === 4 && glass.every(check => check.channels === 2 && check.mullions === 3)
-          && screens.length === 5 && screens.every(check => check.flushMount && check.rails === 2 && check.raceway)
-          && chairCount === 20 && Object.values(chairConnections).every(Boolean)
-          && benches.length === 2 && benches.every(check => check.feet === 4 && check.backSupports === 2)
-          && sofas.length === 2 && sofas.every(check => check.feet === 4)
-          && doors.length === 8 && doors.every(check => check.wallTies === 2 && check.threshold)
+        propClearance,
+        courtyard,
+        floorMarkings,
+        lowCeilings: (LEVEL_DECOR_LAYOUT.lowCeilings || []).length,
+        symmetry: { mirroredX, mirroredZ },
+        ok: baffles.length === 8 && baffles.every(check => check.hangerCount === 4 && check.mounted && check.clearOfWalls && check.ceilingType === 'local')
+          && glass.length === 8 && glass.every(check => check.channels === 2 && check.mullions === 3 && check.mountedInWall)
+          && screens.length === 10 && screens.every(check => check.flushMount && check.rails === 2 && check.raceway && check.backedByWall && check.facesOpenFloor)
+          && chairCount === 38 && Object.values(chairConnections).every(Boolean)
+          && benches.length === 4 && benches.every(check => check.feet === 4 && check.backSupports === 2)
+          && sofas.length === 4 && sofas.every(check => check.feet === 4)
+          && doors.length === 12 && doors.every(check => check.wallTies === 2 && check.threshold && check.inOpening)
+          && propClearance.length > 0 && propClearance.every(check => check.clear)
+          && Boolean(courtyard?.alignedToOpenFloor && courtyard?.voidClear)
+          && floorMarkings.length > 0 && floorMarkings.every(check => check.clear)
+          && (LEVEL_DECOR_LAYOUT.lowCeilings || []).length > 0
+          && mirroredX && mirroredZ
           && conference?.tableInsideOpenGeometry && conference?.chairsInsideOpenGeometry && conference?.colliderAligned
       };
     }
@@ -927,9 +1056,11 @@
     }
 
     if (officeTheme) {
-      worldBatches.lowCeilings.push({ x: 7.0, z: 5.2, width: 10.8, depth: 7.0, height: 2.58, colour: [0.72, 0.75, 0.76] });
-      worldBatches.lowCeilings.push({ x: 29.0, z: 5.2, width: 10.8, depth: 7.0, height: 2.58, colour: [0.72, 0.75, 0.76] });
-      worldBatches.lowCeilings.push({ x: 18.0, z: 18.5, width: 12.0, depth: 7.2, height: 2.62, colour: [0.67, 0.70, 0.72] });
+      // Suspended ceilings are authored per room in the arena data rather than
+      // hard-coded, so no ceiling plane hangs over the open courtyard void or
+      // crosses a partition it does not belong to.
+      for (const ceiling of LEVEL_DECOR_LAYOUT.lowCeilings || []) worldBatches.lowCeilings.push({ ...ceiling });
+      for (const marking of LEVEL_DECOR_LAYOUT.floorMarkings || []) worldBatches.officeFloorMarkings.push({ ...marking });
       for (const rug of LEVEL_DECOR_LAYOUT.rugs || []) worldBatches.officeRugs.push({ ...rug });
       for (const screen of LEVEL_DECOR_LAYOUT.wallScreens || []) worldBatches.officeWallScreens.push({ ...screen });
       for (const glass of LEVEL_DECOR_LAYOUT.glassBands || []) worldBatches.officeGlassBands.push({ ...glass });
@@ -1835,6 +1966,29 @@
         mat4TRS(glModel, courtyard.x, sceneWallHeight * 0.48, courtyard.z, 0, 0, 0, courtyard.width * 0.78, sceneWallHeight * 0.78, courtyard.depth * 0.72);
         drawMesh(glMeshes.cube, [0.50, 0.76, 0.82], glModel, 0.03, 0.04, 4, 0.025);
         setBlendMode(false);
+      }
+      // Painted wayfinding. Each marking is a flush floor decal with a lighter
+      // inner line and end caps, so circulation routes read from across the
+      // floorplate without adding a collider.
+      for (const marking of worldBatches.officeFloorMarkings) {
+        const along = marking.width >= marking.depth;
+        const length = along ? marking.width : marking.depth;
+        mat4TRS(glModel, marking.x, 0.009, marking.z, 0, 0, 0, marking.width, 0.010, marking.depth);
+        drawMesh(glMeshes.cube, marking.colour || [0.34, 0.52, 0.60], glModel, 0.02, 0.40, 3, 0.86);
+        mat4TRS(glModel, marking.x, 0.016, marking.z, 0, 0, 0,
+          along ? marking.width - 0.30 : marking.width * 0.42,
+          0.008,
+          along ? marking.depth * 0.42 : marking.depth - 0.30);
+        drawMesh(glMeshes.cube, [0.62, 0.78, 0.84], glModel, 0.10, 0.22, 3, 0.82);
+        for (const end of [-0.5, 0.5]) {
+          const capX = marking.x + (along ? end * length : 0);
+          const capZ = marking.z + (along ? 0 : end * length);
+          mat4TRS(glModel, capX, 0.017, capZ, 0, 0, 0,
+            along ? 0.10 : marking.width + 0.16,
+            0.009,
+            along ? marking.depth + 0.16 : 0.10);
+          drawMesh(glMeshes.cube, [0.52, 0.68, 0.74], glModel, 0.06, 0.26, 3, 0.84);
+        }
       }
       for (const rug of worldBatches.officeRugs) {
         mat4TRS(glModel, rug.x, 0.012, rug.z, 0, 0, 0, rug.width, 0.014, rug.depth);

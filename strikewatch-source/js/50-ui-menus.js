@@ -2309,7 +2309,7 @@
       if (managerDateDayEl) managerDateDayEl.textContent = tutorialDayRestriction ? '' : blockers.length ? 'END DAY LOCKED' : 'END DAY';
       const compactHeaderDate = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : currentDate;
       if (managerDateMetaEl) managerDateMetaEl.textContent = !careerState.created
-        ? 'CREATE TEAM TO BEGIN'
+        ? 'CREATE TEAM FIRST'
         : tutorialDayRestriction
           ? ''
           : blockers.length

@@ -2271,7 +2271,7 @@
           ok: monotonic && widths[0] >= 0.84 && widths[widths.length - 1] <= 0.008
         };
       });
-      return { count: checks.length, checks, ok: checks.length === 8 && checks.every(check => check.ok) };
+      return { count: checks.length, checks, ok: checks.length === 12 && checks.every(check => check.ok) };
     },
     teamIdentityForTest: (logoId = 'shield', logoColor = '#63c8ef') => {
       const identity = normaliseTeamIdentity({ logoId, logoColor });
@@ -4662,11 +4662,15 @@
         return false;
       };
       const colliderForProp = prop => staticColliders.find(collider => collider.kind === prop.kind && Math.abs(collider.x - prop.x) < 0.001 && Math.abs(collider.y - prop.y) < 0.001) || null;
+      // The reworked floorplate circulates through two full-width corridors,
+      // the two spawn halls, the open-office bay and the conference wing.
       const protectedRoutes = [
-        { id: 'central-east-west-transit', start: { x: 12.5, y: 18.5 }, end: { x: 23.5, y: 18.5 }, requireDirect: true },
-        { id: 'north-open-office-transit', start: { x: 10.5, y: 5.5 }, end: { x: 25.5, y: 5.5 }, requireDirect: true },
-        { id: 'conference-west-approach', start: { x: 12.5, y: 20.5 }, end: { x: 16.5, y: 20.5 }, requireDirect: true },
-        { id: 'conference-east-approach', start: { x: 19.5, y: 20.5 }, end: { x: 23.5, y: 20.5 }, requireDirect: true }
+        { id: 'north-corridor-transit', start: { x: 11.5, y: 6.5 }, end: { x: 24.5, y: 6.5 }, requireDirect: true },
+        { id: 'south-corridor-transit', start: { x: 11.5, y: 17.5 }, end: { x: 24.5, y: 17.5 }, requireDirect: true },
+        { id: 'north-open-office-transit', start: { x: 10.5, y: 2.5 }, end: { x: 25.5, y: 2.5 }, requireDirect: true },
+        { id: 'west-hall-transit', start: { x: 2.5, y: 2.5 }, end: { x: 2.5, y: 21.5 }, requireDirect: true },
+        { id: 'east-hall-transit', start: { x: 33.5, y: 2.5 }, end: { x: 33.5, y: 21.5 }, requireDirect: true },
+        { id: 'conference-transit', start: { x: 10.5, y: 21.5 }, end: { x: 25.5, y: 21.5 }, requireDirect: false }
       ];
       const rotationGeometry = typeof officeCourtyardRotationGeometry === 'function' ? officeCourtyardRotationGeometry() : [];
       for (const lane of rotationGeometry) {
@@ -4759,9 +4763,9 @@
         minimapPresentation,
         minimapLegible,
         ok: Boolean(
-          deskChecks.length === 6
+          deskChecks.length === 12
           && deskChecks.every(check => check.ok)
-          && doorApproaches.length === 8
+          && doorApproaches.length === 12
           && doorApproaches.every(check => check.ok)
           && routeChecks.every(check => check.ok)
           && engagement?.ok
@@ -4774,11 +4778,11 @@
       const clearance = window.__strikeDebug.officeFurnitureClearanceAuditForTest();
       setActiveArena('office');
       const table = (LEVEL_PROP_LAYOUT.machines || []).find(prop => prop.kind === 'conference') || null;
-      const start = { x: 12.5, y: 18.5 };
-      const end = { x: 23.5, y: 18.5 };
+      const start = { x: 11.5, y: 17.5 };
+      const end = { x: 24.5, y: 17.5 };
       const path = findPath(start, end);
       const tableHalfDepth = table ? (Number(table.depth) || 1) * 0.5 : 0;
-      const tableBlocksTransitBand = Boolean(table && Math.abs(Number(table.y) - 18.5) <= tableHalfDepth + BOT_RADIUS + 0.2);
+      const tableBlocksTransitBand = Boolean(table && Math.abs(Number(table.y) - 17.5) <= tableHalfDepth + BOT_RADIUS + 0.2);
       const directBlocked = segmentBlockedByLevelProp(start, end, BOT_RADIUS, false);
       const carpet = typeof officeCarpetPresentationSnapshot === 'function' ? officeCarpetPresentationSnapshot() : null;
       return {

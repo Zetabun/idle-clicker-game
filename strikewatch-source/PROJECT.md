@@ -1,8 +1,12 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.116: Desktop Header Split**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.117: Skyline Offices Environment Rework**.
 
 ## Current release essentials
+
+## Build 12.117 Skyline Offices environment rework
+
+Build 12.117 rebuilds the Skyline Offices environment. `js/00-core.js` owns the reworked arena: the floorplate is authored as its north-west quadrant and mirrored about `x = 18` and `z = 12`, furniture is authored for the west half and mirrored about `x = 18` only, and the `decor.courtyards` rectangle now matches the real open atrium at `x` 14-22, `z` 9-15 exactly, so the ceiling void it drives no longer cuts through room walls. A new `decor.floorMarkings` layer and authored `decor.lowCeilings` replace the three hard-coded office ceiling boxes in `js/61-world-renderer.js`, which also gains `drawOfficeFloorMarking`. The office branch of `arenaGeometryPresentationSnapshot` is now a real gate: it rejects any prop, glass band, wall display, baffle, ceiling, floor marking or door that does not clear masonry, sit on a real wall face or occupy a genuine opening, and it requires layout symmetry in both axes. `js/30-bot-ai.js` retargets `OFFICE_COURTYARD_ROTATION_LANES` at the new atrium arcades, and `js/70-runtime.js` updates the office clearance, walkway and door-pocket audits to the new counts and circulation routes. The tactical minimap and deployment preview needed no change because both already derive from `MAP`, `LEVEL_ZONES`, `LEVEL_DECOR_LAYOUT` and `LEVEL_PROP_LAYOUT`; both were verified against the reworked arena. All new decoration is overhead or painted on the floor, so collision, navigation and line of sight are unchanged. Save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.116 desktop header split
 

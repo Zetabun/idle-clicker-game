@@ -1,3 +1,18 @@
+STRIKEWATCH BUILD 12.117 SKYLINE OFFICES ENVIRONMENT REWORK CONTRACT
+
+Preserve the reworked Skyline Offices floorplate and its geometry gate.
+
+BUILD 12.117 INVARIANTS
+- Skyline Offices is authored as its north-west quadrant in `js/00-core.js` and mirrored about `x = 18` and `z = 12`. Furniture is authored for the west half and mirrored about `x = 18` only. Any layout change must preserve that construction; the integrity gate checks symmetry in both axes.
+- `decor.courtyards` is also the ceiling void used by the office renderer. It must always match real open floor exactly. The authored rectangle is `x` 14-22, `z` 9-15, giving a 48-cell atrium with two-cell north/south portals and four-cell west/east arcades.
+- Suspended ceilings and painted wayfinding are authored data (`decor.lowCeilings`, `decor.floorMarkings`). Do not reintroduce hard-coded office ceiling boxes in `js/61-world-renderer.js`.
+- No office prop, door, decal, glass band, wall display, baffle or ceiling may overlap a wall cell. Glass must sit on a real wall plane, displays must have masonry behind the backing and open floor in front of the face, and every door must occupy a genuine single-cell opening with solid flanks.
+- Office `decor` entries are presentation only. They must never create colliders or affect navigation or line of sight.
+- `arenaGeometryPresentationSnapshot` is the gate for all of the above, including the counts (8 baffles, 8 glass bands, 10 screens, 38 chairs, 4 benches, 4 sofas, 12 doors). Do not relax its office branch to make a change pass.
+- `OFFICE_COURTYARD_ROTATION_LANES` in `js/30-bot-ai.js` must terminate on the west and east atrium arcades.
+- The tactical minimap and deployment preview derive from `MAP`, `LEVEL_ZONES`, `LEVEL_DECOR_LAYOUT` and `LEVEL_PROP_LAYOUT`. They require no per-map maintenance, but verify them after any layout change rather than assuming.
+- Do not change Citadel Depot, Dune Bastion, weapons, bot-AI decisions, match simulation, economy, save schema 19 or diagnostics schema 1.
+
 STRIKEWATCH BUILD 12.116 DESKTOP HEADER SPLIT CONTRACT
 
 Preserve the visible-version system while using the clarified desktop split-row arrangement.
@@ -217,6 +232,7 @@ BUILD 12.80 MOBILE-RECRUITMENT-COMPACT-SUMMARIES INVARIANTS
 # Read This Before Doing Anything
 
 This directory is the authoritative, maintainable source project for **Strikewatch Build 12.85: Onboarding Focus & Saved Mail**.
+
 
 ## Current release essentials
 

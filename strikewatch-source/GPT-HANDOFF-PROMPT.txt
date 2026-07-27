@@ -1,4 +1,12 @@
-CURRENT RELEASE: STRIKEWATCH BUILD 12.116 - DESKTOP HEADER SPLIT
+CURRENT RELEASE: STRIKEWATCH BUILD 12.117 - SKYLINE OFFICES ENVIRONMENT REWORK
+
+Build 12.117 reworks the Skyline Offices arena into a coherent corporate floorplate. The floorplate is authored as its north-west quadrant in `js/00-core.js` and mirrored about `x = 18` and `z = 12`; furniture is authored for the west half and mirrored about `x = 18` only. `decor.courtyards` doubles as the office ceiling void, so it must always match real open floor - the authored atrium is `x` 14-22, `z` 9-15. Authored `decor.lowCeilings` and the new `decor.floorMarkings` layer replace the three hard-coded office ceiling boxes; do not reintroduce them. No office prop, door, decal, glass band, display, baffle or ceiling may overlap a wall cell, and every door must sit in a genuine single-cell opening. The office branch of `arenaGeometryPresentationSnapshot` gates all of this plus layout symmetry and the counts (8 baffles, 8 glass bands, 10 screens, 38 chairs, 4 benches, 4 sofas, 12 doors); keep it passing rather than relaxing it. The tactical minimap and deployment preview are data-driven but should still be verified after layout changes. Preserve Citadel Depot, Dune Bastion, weapons, AI decisions, match simulation, economy, persistence, save schema 19 and diagnostics schema 1.
+
+The Build 12.117 release audit also verifies first-run team creation,
+orientation focus, the skip-demo route and guided recruitment at desktop and
+portrait-mobile sizes. Keep the pre-creation compact calendar microcopy as
+`CREATE TEAM FIRST`; the full accessible name continues to explain that
+creating a team begins the club calendar.
 
 Build 12.116 places the desktop breadcrumb at the upper-left and the visible build badge at the upper-right of `.manager-context-topline`, immediately before the shortcut controls. Keep both items in normal flex flow with `justify-content: space-between`; do not restore Build 12.115's absolute centred badge or placeholder. Mobile retains the Help-revealed version and Build 12.115's compact negotiation typography remains intact. Preserve navigation, negotiation behavior, gameplay, match presentation, economy, persistence, save schema 19 and diagnostics schema 1. Require wide/compact desktop geometry, mobile metadata, syntax, deterministic-build and archive-integrity checks.
 

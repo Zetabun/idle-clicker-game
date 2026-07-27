@@ -7,6 +7,7 @@
 - Root `other/` contains unrelated games/assets and retired automation, not Strikewatch dependencies.
 - Each playable release commit must include the verified source changes, current Markdown/audit updates and the standalone copied to root `cod.html`.
 
+- `AUDIT-12.117.md` - Skyline Offices environment rework: courtyard/ceiling-void alignment, mirrored floorplate, prop and glazing placement, the new decor layer, the strengthened office integrity gate and compact first-run calendar-copy verification.
 - `AUDIT-12.116.md` - desktop breadcrumb/build split-row verification.
 - `AUDIT-12.115.md` - retained wide-desktop centre-placement history and compact negotiation readability verification.
 - `AUDIT-12.114.md` - compact readability, portrait broadcast feed, desktop currency fit and version-baseline verification.
@@ -24,9 +25,9 @@
 
 ## Current release
 
-- **Playable build:** Strikewatch Build 12.116 — Desktop Header Split
+- **Playable build:** Strikewatch Build 12.117 — Skyline Offices Environment Rework
 - **Source folder:** `strikewatch-source/`
-- **Standalone release:** `dist/strikewatch-build-12.116.html`
+- **Standalone release:** `dist/strikewatch-build-12.117.html`
 - **Save schema:** 19
 - **Diagnostics schema:** 1
 
@@ -36,7 +37,8 @@
 2. `AGENTS.md` — coding-agent invariants and retained system contracts.
 3. `PROJECT.md` — architecture, ownership boundaries, build workflow and release tree.
 4. `README.md` — developer-facing build and feature overview.
-5. `AUDIT-12.116.md` — implementation and verification record for the current release.
+5. `AUDIT-12.117.md` — implementation and verification record for the current release.
+6. `AUDIT-12.116.md` — retained desktop header split authority.
 6. `AUDIT-12.115.md` — retained compact negotiation readability and superseded centre-placement history.
 7. `AUDIT-12.114.md` — retained compact readability and portrait feed authority.
 7. `AUDIT-12.113.md` — retained desktop version-alignment authority.
@@ -70,7 +72,18 @@
 
 `GPT-HANDOFF-PROMPT.txt` mirrors the current release invariants for future coding sessions.
 
-## Current desktop header split authority
+## Current Skyline Offices geometry authority
+
+- The office floorplate is authored as its north-west quadrant in `js/00-core.js` and mirrored about `x = 18` and `z = 12`. Furniture is authored for the west half and mirrored about `x = 18` only.
+- `decor.courtyards` doubles as the ceiling void, so it must always match real open floor. The authored rectangle is `x` 14-22, `z` 9-15.
+- `decor.lowCeilings` and `decor.floorMarkings` are authored per room; the office renderer must never hard-code ceiling boxes again.
+- The office branch of `arenaGeometryPresentationSnapshot` is the release gate for all of the above.
+- The tactical minimap and deployment preview derive from arena data and require no per-map maintenance.
+- Before club creation, the compact calendar control uses the bounded visible
+  label `CREATE TEAM FIRST`; its full accessible name remains
+  `Create a team to begin the club calendar`.
+
+## Retained desktop header split authority
 
 - From `1024px`, `.manager-context-topline` uses `justify-content: space-between`.
 - `#managerBreadcrumb` remains in normal flow at the upper-left; `.manager-build-version` remains in normal flow at the upper-right immediately before the shortcut controls.

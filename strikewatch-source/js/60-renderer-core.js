@@ -35,7 +35,7 @@
     floorPatches: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [], hazardZones: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
-    officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [],
+    officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [], officeFloorMarkings: [],
     desertCanopies: [], desertArches: [], desertBanners: [], desertMosaics: [], desertRubble: [], desertTorches: [], desertCrenels: [], desertBackdrop: []
   };
   const STATIC_WORLD_CULLING_ENABLED = (() => {

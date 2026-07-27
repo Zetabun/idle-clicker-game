@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.116';
-  const BUILD_NAME = 'DESKTOP HEADER SPLIT';
-  const BUILD_ID = '12.116.0-desktop-header-split';
+  const BUILD_VERSION = '12.117';
+  const BUILD_NAME = 'SKYLINE OFFICES ENVIRONMENT REWORK';
+  const BUILD_ID = '12.117.0-skyline-offices-environment-rework';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -677,139 +677,237 @@
       name: 'SKYLINE OFFICES',
       short: 'SKY',
       theme: 'office',
-      matchmakingBlurb: 'Corporate offices surrounding a glass courtyard, with mixed sightlines, close rooms and deliberate flank routes.',
-      tagDescription: 'Office wings wrap a central landscaped courtyard with close rooms, long lanes and flanking corridors.',
+      matchmakingBlurb: 'A symmetrical corporate floorplate wrapped around a glazed courtyard, with open-plan lanes, close rooms and ringed flank routes.',
+      tagDescription: 'Reception, open office, break room, server suite and conference wing ring a landscaped central courtyard that is open to the sky.',
+      // The floorplate is authored as its north-west quadrant and mirrored
+      // about x = 18 and z = 12, so both team halves are identical and the
+      // building reads as one coherent office floor. Furniture is authored
+      // for the west half and mirrored about x = 18 only, which keeps the
+      // arena fair while letting the north wing (open office) and the south
+      // wing (conference) be dressed differently.
       layout: [
         '111111111111111111111111111111111111',
-        '100001000000100000000100000010000001',
-        '100001000000100111100100000010000001',
-        '100001000000000000000000000010000001',
-        '100001111011111100111111011110000001',
-        '100000000000000000000000000000000001',
-        '100110111001111000011110011110100001',
-        '100100001001000000000010010000100001',
-        '100100001001001111110010010000100001',
-        '100100001001000000000010010000100001',
-        '100111011001111000011110011101100001',
-        '100000000000000000000000000000000001',
-        '100000000000000000000000000000000001',
-        '100110111001111000011110011110100001',
-        '100100001001000000000010010000100001',
-        '100100001001001111110010010000100001',
-        '100100001001000000000010010000100001',
-        '100111011001111000011110011101100001',
-        '100000000000000000000000000000000001',
-        '100000111101111110011111101111000001',
-        '100000100000000000000000000001000001',
-        '100000100000010011110010000001000001',
-        '100000100000010000000010000001000001',
+        '100010011100000000000000001110010001',
+        '100000011100000000000000001110000001',
+        '100010011100000000000000001110010001',
+        '100010000000100100001001000000010001',
+        '100011011111101111111101111110110001',
+        '100000000010000000000000010000000001',
+        '100000100000000010010000000001000001',
+        '100011101111011110011110111101110001',
+        '100010000000010000000010000000010001',
+        '100000000010000000000000010000000001',
+        '100010000010000000000000010000010001',
+        '100010000010000000000000010000010001',
+        '100000000010000000000000010000000001',
+        '100010000000010000000010000000010001',
+        '100011101111011110011110111101110001',
+        '100000100000000010010000000001000001',
+        '100000000010000000000000010000000001',
+        '100011011111101111111101111110110001',
+        '100010000000100100001001000000010001',
+        '100010011100000000000000001110010001',
+        '100000011100000000000000001110000001',
+        '100010011100000000000000001110010001',
         '111111111111111111111111111111111111'
       ],
       hotspots: [
-        { x: 5.5, y: 5.5 }, { x: 9.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 18.0, y: 5.5 },
-        { x: 18.0, y: 11.5 }, { x: 18.0, y: 12.0 }, { x: 18.0, y: 18.5 }, { x: 21.5, y: 14.5 },
-        { x: 26.5, y: 11.5 }, { x: 30.5, y: 6.5 }, { x: 30.5, y: 18.5 }
+        { x: 5.5, y: 2.5 }, { x: 5.5, y: 21.5 }, { x: 30.5, y: 2.5 }, { x: 30.5, y: 21.5 },
+        { x: 12.5, y: 2.5 }, { x: 12.5, y: 21.5 }, { x: 23.5, y: 2.5 }, { x: 23.5, y: 21.5 },
+        { x: 9.5, y: 6.5 }, { x: 9.5, y: 17.5 }, { x: 26.5, y: 6.5 }, { x: 26.5, y: 17.5 },
+        { x: 16.5, y: 6.5 }, { x: 16.5, y: 17.5 }, { x: 19.5, y: 6.5 }, { x: 19.5, y: 17.5 },
+        { x: 6.0, y: 12.0 }, { x: 30.0, y: 12.0 }, { x: 11.5, y: 11.5 }, { x: 11.5, y: 12.5 },
+        { x: 24.5, y: 11.5 }, { x: 24.5, y: 12.5 }, { x: 15.5, y: 10.5 }, { x: 15.5, y: 13.5 },
+        { x: 20.5, y: 10.5 }, { x: 20.5, y: 13.5 }, { x: 14.5, y: 11.5 }, { x: 14.5, y: 12.5 },
+        { x: 21.5, y: 11.5 }, { x: 21.5, y: 12.5 }
       ],
       engagementPlans: [
-        { id: 'reception', name: 'RECEPTION BREACH', zone: 'RECEPTION', priority: 0.85, blue: [{ x: 5.5, y: 5.5 }, { x: 6.5, y: 5.5 }, { x: 5.5, y: 7.5 }, { x: 7.5, y: 5.5 }, { x: 9.5, y: 5.5 }], red: [{ x: 10.5, y: 5.5 }, { x: 9.5, y: 7.5 }, { x: 11.5, y: 5.5 }, { x: 10.5, y: 9.5 }, { x: 12.5, y: 5.5 }] },
-        { id: 'north-office', name: 'OPEN OFFICE CONTACT', zone: 'OPEN', priority: 1.0, blue: [{ x: 13.5, y: 5.5 }, { x: 15.5, y: 7.5 }, { x: 16.5, y: 5.5 }, { x: 14.5, y: 9.5 }, { x: 17.5, y: 6.5 }], red: [{ x: 22.5, y: 5.5 }, { x: 20.5, y: 7.5 }, { x: 19.5, y: 5.5 }, { x: 19.5, y: 9.5 }, { x: 18.5, y: 6.5 }] },
-        { id: 'courtyard', name: 'COURTYARD CROSSING', zone: 'COURTYARD', priority: 1.65, blue: [{ x: 13.5, y: 11.5 }, { x: 15.5, y: 12.5 }, { x: 20.5, y: 14.5 }, { x: 22.5, y: 11.5 }, { x: 16.5, y: 14.5 }], red: [{ x: 22.5, y: 11.5 }, { x: 22.5, y: 12.5 }, { x: 15.5, y: 14.5 }, { x: 13.5, y: 11.5 }, { x: 19.5, y: 14.5 }] },
-        { id: 'atrium-rotation', name: 'ATRIUM ROTATION', zone: 'COURTYARD', priority: 1.35, blue: [{ x: 11.5, y: 11.5 }, { x: 13.5, y: 12.5 }, { x: 20.5, y: 14.5 }, { x: 22.5, y: 12.5 }, { x: 17.5, y: 14.5 }], red: [{ x: 24.5, y: 11.5 }, { x: 22.5, y: 12.5 }, { x: 15.5, y: 14.5 }, { x: 13.5, y: 12.5 }, { x: 18.5, y: 14.5 }] },
-        { id: 'conference', name: 'CONFERENCE WING CLASH', zone: 'TRANSIT', priority: 1.10, blue: [{ x: 14.5, y: 18.5 }, { x: 15.5, y: 16.5 }, { x: 16.5, y: 18.5 }, { x: 13.5, y: 20.5 }, { x: 16.5, y: 20.5 }], red: [{ x: 21.5, y: 18.5 }, { x: 20.5, y: 16.5 }, { x: 19.5, y: 18.5 }, { x: 22.5, y: 20.5 }, { x: 19.5, y: 20.5 }] },
-        { id: 'executive', name: 'EXECUTIVE WING PUSH', zone: 'EXEC', priority: 0.95, blue: [{ x: 25.5, y: 11.5 }, { x: 26.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 24.5, y: 14.5 }, { x: 27.5, y: 14.5 }], red: [{ x: 30.5, y: 11.5 }, { x: 31.5, y: 9.5 }, { x: 29.5, y: 11.5 }, { x: 31.5, y: 14.5 }, { x: 29.5, y: 14.5 }] },
-        { id: 'break-room', name: 'BREAK ROOM ROTATION', zone: 'BREAK', priority: 0.90, blue: [{ x: 5.5, y: 18.5 }, { x: 6.5, y: 16.5 }, { x: 7.5, y: 18.5 }, { x: 5.5, y: 21.5 }, { x: 8.5, y: 21.5 }], red: [{ x: 11.5, y: 18.5 }, { x: 10.5, y: 16.5 }, { x: 9.5, y: 18.5 }, { x: 12.5, y: 20.5 }, { x: 9.5, y: 20.5 }] }
+        { id: 'reception', name: 'RECEPTION BREACH', zone: 'RECEPTION', priority: 0.9, blue: [{ x: 5.5, y: 2.5 }, { x: 6.5, y: 6.5 }, { x: 6.5, y: 4.5 }, { x: 10.5, y: 2.5 }, { x: 9.5, y: 6.5 }], red: [{ x: 30.5, y: 2.5 }, { x: 29.5, y: 6.5 }, { x: 29.5, y: 4.5 }, { x: 25.5, y: 2.5 }, { x: 26.5, y: 6.5 }] },
+        { id: 'north-office', name: 'OPEN OFFICE CONTACT', zone: 'OPEN', priority: 1.05, blue: [{ x: 12.5, y: 2.5 }, { x: 14.5, y: 4.5 }, { x: 13.5, y: 6.5 }, { x: 16.5, y: 2.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 23.5, y: 2.5 }, { x: 21.5, y: 4.5 }, { x: 22.5, y: 6.5 }, { x: 19.5, y: 2.5 }, { x: 24.5, y: 6.5 }] },
+        { id: 'courtyard', name: 'COURTYARD CROSSING', zone: 'COURTYARD', priority: 1.6, blue: [{ x: 15.5, y: 11.5 }, { x: 15.5, y: 13.5 }, { x: 20.5, y: 11.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 12.0 }], red: [{ x: 20.5, y: 12.5 }, { x: 20.5, y: 10.5 }, { x: 15.5, y: 12.5 }, { x: 14.5, y: 11.5 }, { x: 16.5, y: 12.0 }] },
+        { id: 'atrium-rotation', name: 'ATRIUM ROTATION', zone: 'COURTYARD', priority: 1.35, blue: [{ x: 13.5, y: 10.5 }, { x: 16.5, y: 11.5 }, { x: 20.5, y: 13.5 }, { x: 22.5, y: 12.5 }, { x: 19.5, y: 12.5 }], red: [{ x: 22.5, y: 13.5 }, { x: 19.5, y: 11.5 }, { x: 15.5, y: 13.5 }, { x: 13.5, y: 12.5 }, { x: 16.5, y: 12.5 }] },
+        { id: 'conference', name: 'CONFERENCE WING CLASH', zone: 'CONFERENCE', priority: 1.15, blue: [{ x: 13.5, y: 21.5 }, { x: 14.5, y: 22.5 }, { x: 13.5, y: 17.5 }, { x: 15.5, y: 21.5 }, { x: 11.5, y: 17.5 }], red: [{ x: 22.5, y: 21.5 }, { x: 21.5, y: 22.5 }, { x: 22.5, y: 17.5 }, { x: 20.5, y: 21.5 }, { x: 24.5, y: 17.5 }] },
+        { id: 'server-suite', name: 'SERVER SUITE PUSH', zone: 'SERVER', priority: 1.0, blue: [{ x: 24.5, y: 11.5 }, { x: 24.5, y: 10.5 }, { x: 24.5, y: 13.5 }, { x: 23.5, y: 11.5 }, { x: 23.5, y: 13.5 }], red: [{ x: 29.5, y: 11.5 }, { x: 28.5, y: 9.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }, { x: 27.5, y: 11.5 }] },
+        { id: 'break-room', name: 'BREAK ROOM ROTATION', zone: 'BREAK', priority: 0.95, blue: [{ x: 6.5, y: 11.5 }, { x: 7.5, y: 9.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 11.5 }, { x: 6.5, y: 12.5 }], red: [{ x: 11.5, y: 11.5 }, { x: 12.5, y: 9.5 }, { x: 11.5, y: 13.5 }, { x: 12.5, y: 11.5 }, { x: 12.5, y: 13.5 }] }
       ],
       spawnPoints: {
-        0: [{ x: 2.5, y: 5.5 }, { x: 2.5, y: 9.5 }, { x: 3.0, y: 12.5 }, { x: 2.5, y: 16.5 }, { x: 2.5, y: 20.5 }],
-        1: [{ x: 33.5, y: 18.5 }, { x: 33.0, y: 14.5 }, { x: 33.0, y: 11.5 }, { x: 33.0, y: 8.5 }, { x: 33.5, y: 4.5 }]
+        0: [{ x: 2.5, y: 3.5 }, { x: 2.5, y: 7.5 }, { x: 2.0, y: 12.0 }, { x: 2.5, y: 16.5 }, { x: 2.5, y: 20.5 }],
+        1: [{ x: 33.5, y: 20.5 }, { x: 33.5, y: 16.5 }, { x: 34.0, y: 12.0 }, { x: 33.5, y: 7.5 }, { x: 33.5, y: 3.5 }]
       },
       zones: [
-        { x1: 1, z1: 1, x2: 10, z2: 9, name: 'RECEPTION', short: 'RECEPTION', colour: [0.26, 0.34, 0.40], light: [0.60, 0.82, 0.98] },
-        { x1: 10, z1: 1, x2: 26, z2: 10, name: 'OPEN OFFICE', short: 'OPEN', colour: [0.28, 0.36, 0.34], light: [0.54, 0.82, 0.68] },
-        { x1: 26, z1: 1, x2: 35, z2: 10, name: 'EXECUTIVE WING', short: 'EXEC', colour: [0.36, 0.31, 0.28], light: [0.96, 0.74, 0.46] },
-        { x1: 10, z1: 9, x2: 26, z2: 15, name: 'CENTRAL COURTYARD', short: 'COURTYARD', colour: [0.30, 0.38, 0.32], light: [0.56, 0.92, 0.66] },
-        { x1: 1, z1: 14, x2: 12, z2: 23, name: 'BREAK ROOM', short: 'BREAK', colour: [0.31, 0.28, 0.36], light: [0.78, 0.52, 0.94] },
+        { x1: 1, z1: 1, x2: 11, z2: 8, name: 'RECEPTION', short: 'RECEPTION', colour: [0.26, 0.34, 0.40], light: [0.60, 0.82, 0.98] },
+        { x1: 11, z1: 1, x2: 25, z2: 8, name: 'OPEN OFFICE', short: 'OPEN', colour: [0.28, 0.36, 0.34], light: [0.54, 0.82, 0.68] },
+        { x1: 25, z1: 1, x2: 35, z2: 8, name: 'EXECUTIVE WING', short: 'EXEC', colour: [0.36, 0.31, 0.28], light: [0.96, 0.74, 0.46] },
+        { x1: 13, z1: 8, x2: 23, z2: 16, name: 'CENTRAL COURTYARD', short: 'COURTYARD', colour: [0.30, 0.38, 0.32], light: [0.56, 0.92, 0.66] },
+        { x1: 1, z1: 8, x2: 13, z2: 16, name: 'BREAK ROOM', short: 'BREAK', colour: [0.31, 0.28, 0.36], light: [0.78, 0.52, 0.94] },
+        { x1: 23, z1: 8, x2: 35, z2: 16, name: 'SERVER SUITE', short: 'SERVER', colour: [0.24, 0.30, 0.38], light: [0.52, 0.70, 0.96] },
+        { x1: 1, z1: 16, x2: 35, z2: 23, name: 'CONFERENCE WING', short: 'CONFERENCE', colour: [0.34, 0.30, 0.26], light: [0.92, 0.80, 0.58] },
         { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.32, 0.35, 0.37], light: [0.82, 0.88, 0.92] }
       ],
       props: {
         containers: [
-          { x: 4.2, y: 3.8, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 0.54, depth: 1.12 },
-          { x: 30.8, y: 3.8, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 0.54, depth: 1.12 },
-          { x: 5.2, y: 20.2, yaw: 0, kind: 'sofa', colour: [0.20, 0.34, 0.42], width: 0.62, depth: 1.18 },
-          { x: 30.8, y: 20.2, yaw: 0, kind: 'sofa', colour: [0.35, 0.27, 0.42], width: 0.62, depth: 1.18 },
-          { x: 18.0, y: 3.5, yaw: Math.PI / 2, kind: 'reception', colour: [0.44, 0.35, 0.25], width: 0.84, depth: 0.56 },
-          { x: 15.0, y: 11.4, yaw: 0, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.55, depth: 0.42 },
-          { x: 21.0, y: 12.6, yaw: 0, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.55, depth: 0.42 },
-          { x: 18.0, y: 10.55, yaw: 0, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.45, depth: 0.48 },
-          { x: 18.0, y: 13.45, yaw: 0, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.45, depth: 0.48 },
-          { x: 7.5, y: 22.35, yaw: 0, kind: 'storage-lockers', colour: [0.42, 0.47, 0.50], width: 1.42, depth: 0.42 },
-          { x: 28.5, y: 20.35, yaw: 0, kind: 'low-storage', colour: [0.46, 0.42, 0.36], width: 1.28, depth: 0.42 }
+          { x: 6.4, y: 2.5, yaw: Math.PI / 2, kind: 'reception', colour: [0.44, 0.35, 0.25], width: 0.84, depth: 0.84 },
+          { x: 29.6, y: 2.5, yaw: -Math.PI / 2, kind: 'reception', colour: [0.44, 0.35, 0.25], width: 0.84, depth: 0.84 },
+          { x: 6.3, y: 1.6, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 1.05, depth: 0.48 },
+          { x: 29.7, y: 1.6, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 1.05, depth: 0.48 },
+          { x: 6.3, y: 3.4, yaw: 0, kind: 'low-storage', colour: [0.46, 0.42, 0.36], width: 1.05, depth: 0.48 },
+          { x: 29.7, y: 3.4, yaw: 0, kind: 'low-storage', colour: [0.46, 0.42, 0.36], width: 1.05, depth: 0.48 },
+          { x: 8.7, y: 10.0, yaw: Math.PI / 2, kind: 'storage-lockers', colour: [0.42, 0.47, 0.50], width: 1.42, depth: 0.42 },
+          { x: 27.3, y: 10.0, yaw: -Math.PI / 2, kind: 'storage-lockers', colour: [0.42, 0.47, 0.50], width: 1.42, depth: 0.42 },
+          { x: 6.5, y: 13.6, yaw: Math.PI, kind: 'sofa', colour: [0.20, 0.34, 0.42], width: 1.6, depth: 0.7 },
+          { x: 29.5, y: 13.6, yaw: -Math.PI, kind: 'sofa', colour: [0.20, 0.34, 0.42], width: 1.6, depth: 0.7 },
+          { x: 16.8, y: 10.4, yaw: 0, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.4, depth: 0.42 },
+          { x: 19.2, y: 10.4, yaw: 0, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.4, depth: 0.42 },
+          { x: 16.8, y: 13.6, yaw: Math.PI, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.4, depth: 0.42 },
+          { x: 19.2, y: 13.6, yaw: -Math.PI, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.4, depth: 0.42 },
+          { x: 16.5, y: 9.4, yaw: 0, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.6, depth: 0.44 },
+          { x: 19.5, y: 9.4, yaw: 0, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.6, depth: 0.44 },
+          { x: 16.5, y: 14.6, yaw: Math.PI, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.6, depth: 0.44 },
+          { x: 19.5, y: 14.6, yaw: -Math.PI, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.6, depth: 0.44 },
+          { x: 5.9, y: 20.8, yaw: 0, kind: 'sofa', colour: [0.35, 0.27, 0.42], width: 1.6, depth: 0.78 },
+          { x: 30.1, y: 20.8, yaw: 0, kind: 'sofa', colour: [0.35, 0.27, 0.42], width: 1.6, depth: 0.78 },
+          { x: 6.3, y: 19.6, yaw: 0, kind: 'low-storage', colour: [0.46, 0.42, 0.36], width: 1.05, depth: 0.48 },
+          { x: 29.7, y: 19.6, yaw: 0, kind: 'low-storage', colour: [0.46, 0.42, 0.36], width: 1.05, depth: 0.48 },
+          { x: 6.3, y: 22.4, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 1.05, depth: 0.48 },
+          { x: 29.7, y: 22.4, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 1.05, depth: 0.48 }
         ],
         machines: [
-          { x: 6.0, y: 8.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
-          { x: 11.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
-          { x: 14.1, y: 3.55, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 0.96, depth: 0.58 },
-          { x: 21.9, y: 3.55, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 0.96, depth: 0.58 },
-          { x: 23.2, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
-          { x: 27.5, y: 7.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
-          { x: 18.0, y: 20.40, yaw: Math.PI / 2, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 1.18, depth: 0.72 },
-          { x: 6.0, y: 15.5, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
-          { x: 8.5, y: 20.5, yaw: Math.PI / 2, kind: 'coffee-station', colour: [0.30, 0.28, 0.25], width: 0.78, depth: 0.54 },
-          { x: 27.5, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 },
-          { x: 29.1, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 },
-          { x: 31.0, y: 12.5, yaw: Math.PI / 2, kind: 'copier', colour: [0.52, 0.55, 0.57], width: 0.70, depth: 0.72 },
-          { x: 16.8, y: 2.8, yaw: 0, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.18, depth: 0.60 },
-          { x: 18.0, y: 7.15, yaw: Math.PI / 2, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.08, depth: 0.54 },
-          { x: 1.55, y: 16.5, yaw: Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.30, 0.42], width: 0.52, depth: 0.68 },
-          { x: 10.5, y: 22.35, yaw: 0, kind: 'kitchenette', colour: [0.36, 0.35, 0.33], width: 1.20, depth: 0.48 }
+          { x: 11.6, y: 1.7, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 24.4, y: 1.7, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 11.6, y: 3.3, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 24.4, y: 3.3, yaw: -Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 16.4, y: 1.7, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 19.6, y: 1.7, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 16.4, y: 3.3, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 19.6, y: 3.3, yaw: -Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 13.6, y: 1.65, yaw: 0, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.2, depth: 0.6 },
+          { x: 22.4, y: 1.65, yaw: 0, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.2, depth: 0.6 },
+          { x: 5.5, y: 6.25, yaw: 0, kind: 'vending-machine', colour: [0.18, 0.30, 0.42], width: 0.9, depth: 0.42 },
+          { x: 30.5, y: 6.25, yaw: 0, kind: 'vending-machine', colour: [0.18, 0.30, 0.42], width: 0.9, depth: 0.42 },
+          { x: 15.5, y: 7.75, yaw: 0, kind: 'copier', colour: [0.52, 0.55, 0.57], width: 0.8, depth: 0.42 },
+          { x: 20.5, y: 7.75, yaw: 0, kind: 'copier', colour: [0.52, 0.55, 0.57], width: 0.8, depth: 0.42 },
+          { x: 6.0, y: 9.3, yaw: 0, kind: 'kitchenette', colour: [0.36, 0.35, 0.33], width: 1.4, depth: 0.44 },
+          { x: 30.0, y: 9.3, yaw: 0, kind: 'kitchenette', colour: [0.36, 0.35, 0.33], width: 1.4, depth: 0.44 },
+          { x: 7.5, y: 11.5, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
+          { x: 28.5, y: 11.5, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
+          { x: 8.6, y: 13.4, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
+          { x: 27.4, y: 13.4, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
+          { x: 18.0, y: 20.8, yaw: 0, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 2.2, depth: 1.1 },
+          { x: 11.0, y: 22.2, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 25.0, y: 22.2, yaw: -Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 13.6, y: 22.2, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 22.4, y: 22.2, yaw: -Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.1, depth: 0.62 },
+          { x: 14.4, y: 19.6, yaw: Math.PI / 2, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.8, depth: 0.9 },
+          { x: 21.6, y: 19.6, yaw: -Math.PI / 2, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.8, depth: 0.9 }
         ],
         tanks: [
-          { x: 4.4, y: 11.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.34 },
-          { x: 31.6, y: 11.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.34 },
-          { x: 18.0, y: 19.2, kind: 'plant', colour: [0.24, 0.50, 0.30], radius: 0.36 },
-          { x: 14.1, y: 12.7, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.34 },
-          { x: 21.9, y: 11.3, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.34 },
-          { x: 18.0, y: 12.0, kind: 'fountain', colour: [0.22, 0.58, 0.70], radius: 0.70 }
+          { x: 1.6, y: 6.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.28 },
+          { x: 34.4, y: 6.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.28 },
+          { x: 1.6, y: 17.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.28 },
+          { x: 34.4, y: 17.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.28 },
+          { x: 5.4, y: 11.5, kind: 'plant', colour: [0.24, 0.50, 0.30], radius: 0.3 },
+          { x: 30.6, y: 11.5, kind: 'plant', colour: [0.24, 0.50, 0.30], radius: 0.3 },
+          { x: 11.5, y: 9.5, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 24.5, y: 9.5, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 11.5, y: 14.5, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 24.5, y: 14.5, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 14.7, y: 9.6, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 21.3, y: 9.6, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 14.7, y: 14.4, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 21.3, y: 14.4, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.3 },
+          { x: 18.0, y: 12.0, kind: 'fountain', colour: [0.22, 0.58, 0.70], radius: 0.7 }
         ],
         doors: [
-          { id: 'office-reception-door', x: 5.5, y: 6.5, yaw: 0, colour: [0.74, 0.78, 0.82] },
-          { id: 'office-open-west-door', x: 9.5, y: 4.5, yaw: 0, colour: [0.66, 0.80, 0.84] },
-          { id: 'office-open-east-door', x: 24.5, y: 4.5, yaw: 0, colour: [0.66, 0.80, 0.84] },
-          { id: 'office-executive-door', x: 29.5, y: 6.5, yaw: 0, colour: [0.80, 0.74, 0.64] },
-          { id: 'office-courtyard-north-west', x: 14.5, y: 9.5, yaw: Math.PI / 2, colour: [0.68, 0.82, 0.86] },
-          { id: 'office-courtyard-north-east', x: 19.5, y: 9.5, yaw: Math.PI / 2, colour: [0.68, 0.82, 0.86] },
-          { id: 'office-break-room-door', x: 10.5, y: 19.5, yaw: 0, colour: [0.78, 0.68, 0.84] },
-          { id: 'office-server-door', x: 25.5, y: 19.5, yaw: 0, colour: [0.62, 0.76, 0.88] }
+          { id: 'office-north-west-lobby-door', x: 4.5, y: 2.5, yaw: Math.PI / 2, colour: [0.74, 0.78, 0.82] },
+          { id: 'office-north-east-lobby-door', x: 31.5, y: 2.5, yaw: Math.PI / 2, colour: [0.74, 0.78, 0.82] },
+          { id: 'office-south-west-lobby-door', x: 4.5, y: 21.5, yaw: Math.PI / 2, colour: [0.74, 0.78, 0.82] },
+          { id: 'office-south-east-lobby-door', x: 31.5, y: 21.5, yaw: Math.PI / 2, colour: [0.74, 0.78, 0.82] },
+          { id: 'office-north-west-wing-door', x: 7.5, y: 8.5, yaw: 0, colour: [0.78, 0.68, 0.84] },
+          { id: 'office-north-east-wing-door', x: 28.5, y: 8.5, yaw: 0, colour: [0.78, 0.68, 0.84] },
+          { id: 'office-south-west-wing-door', x: 7.5, y: 15.5, yaw: 0, colour: [0.78, 0.68, 0.84] },
+          { id: 'office-south-east-wing-door', x: 28.5, y: 15.5, yaw: 0, colour: [0.78, 0.68, 0.84] },
+          { id: 'office-north-west-bay-door', x: 13.5, y: 5.5, yaw: 0, colour: [0.66, 0.80, 0.84] },
+          { id: 'office-north-east-bay-door', x: 22.5, y: 5.5, yaw: 0, colour: [0.66, 0.80, 0.84] },
+          { id: 'office-south-west-bay-door', x: 13.5, y: 18.5, yaw: 0, colour: [0.66, 0.80, 0.84] },
+          { id: 'office-south-east-bay-door', x: 22.5, y: 18.5, yaw: 0, colour: [0.66, 0.80, 0.84] }
         ],
         stairs: []
       },
       decor: {
+        // The courtyard rectangle is also the ceiling void, so it matches the
+        // real open floor (x 14-22, z 9-15) exactly.
         courtyards: [
-          { x: 18.0, z: 12.0, width: 9.0, depth: 5.6, stone: [0.40, 0.43, 0.42], grass: [0.15, 0.34, 0.20], water: [0.22, 0.62, 0.76] }
+          { x: 18.0, z: 12.0, width: 8.0, depth: 6.0, stone: [0.40, 0.43, 0.42], grass: [0.15, 0.34, 0.20], water: [0.22, 0.62, 0.76] }
         ],
         rugs: [
-          { x: 5.8, z: 6.1, width: 4.8, depth: 2.6, colour: [0.12, 0.26, 0.34] },
-          { x: 18.0, z: 18.5, width: 5.4, depth: 2.2, colour: [0.32, 0.22, 0.13] },
-          { x: 30.2, z: 17.0, width: 4.4, depth: 2.5, colour: [0.23, 0.18, 0.31] }
+          { x: 5.9, z: 2.5, width: 1.6, depth: 2.2, colour: [0.12, 0.26, 0.34] },
+          { x: 30.1, z: 2.5, width: 1.6, depth: 2.2, colour: [0.12, 0.26, 0.34] },
+          { x: 7.0, z: 11.6, width: 3.6, depth: 2.4, colour: [0.23, 0.18, 0.31] },
+          { x: 29.0, z: 11.6, width: 3.6, depth: 2.4, colour: [0.23, 0.18, 0.31] },
+          { x: 18.0, z: 21.2, width: 5.0, depth: 1.8, colour: [0.32, 0.22, 0.13] }
         ],
+        // Every display is mounted on a real wall face: masonry behind the
+        // backing plate and open floor in front of the screen face.
         wallScreens: [
-          { x: 5.97, z: 1.5, yaw: Math.PI / 2, width: 1.10, label: 'RECEPTION', flushMount: true },
-          { x: 18.5, z: 5.025, yaw: 0, width: 1.8, label: 'OPERATIONS', flushMount: true },
-          { x: 30.025, z: 20.5, yaw: Math.PI / 2, width: 1.5, label: 'SERVER', flushMount: true },
-          { x: 17.025, z: 19.5, yaw: Math.PI / 2, width: 1.8, label: 'MEETING', flushMount: true },
-          { x: 11.5, z: 11.025, yaw: 0, width: 1.4, label: 'COURTYARD', flushMount: true }
+          { x: 6.97, z: 2.5, yaw: -Math.PI / 2, width: 1.1, label: 'RECEPTION', flushMount: true },
+          { x: 29.03, z: 2.5, yaw: Math.PI / 2, width: 1.1, label: 'RECEPTION', flushMount: true },
+          { x: 9.5, z: 4.975, yaw: Math.PI, width: 1.6, label: 'OPERATIONS', flushMount: true },
+          { x: 26.5, z: 4.975, yaw: -Math.PI, width: 1.6, label: 'OPERATIONS', flushMount: true },
+          { x: 15.5, z: 9.025, yaw: 0, width: 1.8, label: 'COURTYARD', flushMount: true },
+          { x: 20.5, z: 9.025, yaw: 0, width: 1.8, label: 'COURTYARD', flushMount: true },
+          { x: 10.5, z: 19.025, yaw: 0, width: 1.8, label: 'MEETING', flushMount: true },
+          { x: 25.5, z: 19.025, yaw: 0, width: 1.8, label: 'MEETING', flushMount: true },
+          { x: 6.97, z: 21.5, yaw: -Math.PI / 2, width: 1.1, label: 'WAYFINDING', flushMount: true },
+          { x: 29.03, z: 21.5, yaw: Math.PI / 2, width: 1.1, label: 'WAYFINDING', flushMount: true }
         ],
+        // Glazing sits on the courtyard-facing plane of a real wall line.
         glassBands: [
-          { x: 13.0, z: 5.50, yaw: Math.PI / 2, width: 2.6 },
-          { x: 23.0, z: 5.50, yaw: Math.PI / 2, width: 2.6 },
-          { x: 13.0, z: 18.50, yaw: Math.PI / 2, width: 2.6 },
-          { x: 23.0, z: 18.50, yaw: Math.PI / 2, width: 2.6 }
+          { x: 15.5, z: 9.0, yaw: 0, width: 2.6 },
+          { x: 20.5, z: 9.0, yaw: 0, width: 2.6 },
+          { x: 15.5, z: 15.0, yaw: 0, width: 2.6 },
+          { x: 20.5, z: 15.0, yaw: 0, width: 2.6 },
+          { x: 14.0, z: 9.5, yaw: Math.PI / 2, width: 0.9 },
+          { x: 22.0, z: 9.5, yaw: -Math.PI / 2, width: 0.9 },
+          { x: 14.0, z: 14.5, yaw: Math.PI / 2, width: 0.9 },
+          { x: 22.0, z: 14.5, yaw: -Math.PI / 2, width: 0.9 }
         ],
         ceilingBaffles: [
-          { x: 8.0, z: 5.5, width: 8.0, depth: 0.12 },
-          { x: 28.0, z: 5.5, width: 8.0, depth: 0.12 },
-          { x: 8.0, z: 18.5, width: 8.0, depth: 0.12 },
-          { x: 28.0, z: 18.5, width: 8.0, depth: 0.12 }
+          { x: 6.0, z: 6.5, width: 6.0, depth: 0.12 },
+          { x: 30.0, z: 6.5, width: 6.0, depth: 0.12 },
+          { x: 6.0, z: 17.5, width: 6.0, depth: 0.12 },
+          { x: 30.0, z: 17.5, width: 6.0, depth: 0.12 },
+          { x: 14.0, z: 6.5, width: 5.0, depth: 0.12 },
+          { x: 22.0, z: 6.5, width: 5.0, depth: 0.12 },
+          { x: 14.0, z: 17.5, width: 5.0, depth: 0.12 },
+          { x: 22.0, z: 17.5, width: 5.0, depth: 0.12 }
+        ],
+        // Suspended ceilings are authored per room, so none of them hangs
+        // over the courtyard void or across a partition it does not own.
+        lowCeilings: [
+          { x: 2.5, z: 12.0, width: 3.0, depth: 22.0, height: 2.52, colour: [0.70, 0.73, 0.75] },
+          { x: 33.5, z: 12.0, width: 3.0, depth: 22.0, height: 2.52, colour: [0.70, 0.73, 0.75] },
+          { x: 7.5, z: 12.0, width: 5.0, depth: 6.0, height: 2.46, colour: [0.72, 0.75, 0.76] },
+          { x: 28.5, z: 12.0, width: 5.0, depth: 6.0, height: 2.46, colour: [0.72, 0.75, 0.76] },
+          { x: 12.0, z: 12.0, width: 2.0, depth: 6.0, height: 2.58, colour: [0.70, 0.73, 0.75] },
+          { x: 24.0, z: 12.0, width: 2.0, depth: 6.0, height: 2.58, colour: [0.70, 0.73, 0.75] },
+          { x: 18.0, z: 7.0, width: 34.0, depth: 2.0, height: 2.64, colour: [0.71, 0.74, 0.75] },
+          { x: 18.0, z: 17.0, width: 34.0, depth: 2.0, height: 2.64, colour: [0.71, 0.74, 0.75] },
+          { x: 18.0, z: 3.0, width: 26.0, depth: 4.0, height: 2.6, colour: [0.72, 0.75, 0.76] },
+          { x: 18.0, z: 21.0, width: 26.0, depth: 4.0, height: 2.6, colour: [0.67, 0.70, 0.72] }
+        ],
+        // Painted wayfinding. These are flush floor decals and never take
+        // part in collision, navigation or line of sight.
+        floorMarkings: [
+          { x: 6.4, z: 6.5, width: 6.4, depth: 0.16, colour: [0.34, 0.52, 0.60] },
+          { x: 29.6, z: 6.5, width: 6.4, depth: 0.16, colour: [0.34, 0.52, 0.60] },
+          { x: 6.4, z: 17.5, width: 6.4, depth: 0.16, colour: [0.34, 0.52, 0.60] },
+          { x: 29.6, z: 17.5, width: 6.4, depth: 0.16, colour: [0.34, 0.52, 0.60] },
+          { x: 2.5, z: 12.0, width: 0.16, depth: 20.6, colour: [0.34, 0.52, 0.60] },
+          { x: 33.5, z: 12.0, width: 0.16, depth: 20.6, colour: [0.34, 0.52, 0.60] },
+          { x: 12.0, z: 11.5, width: 0.16, depth: 4.6, colour: [0.40, 0.58, 0.52] },
+          { x: 24.0, z: 11.5, width: 0.16, depth: 4.6, colour: [0.40, 0.58, 0.52] },
+          { x: 18.0, z: 6.5, width: 12.6, depth: 0.16, colour: [0.34, 0.52, 0.60] },
+          { x: 18.0, z: 17.5, width: 12.6, depth: 0.16, colour: [0.34, 0.52, 0.60] }
         ]
       }
     }
@@ -831,7 +929,7 @@
   let hotspots = [];
   let LEVEL_ZONES = [];
   let LEVEL_PROP_LAYOUT = { containers: [], machines: [], tanks: [], doors: [], stairs: [] };
-  let LEVEL_DECOR_LAYOUT = { courtyards: [], rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [], canopies: [], arches: [], banners: [], mosaics: [], rubble: [], torches: [], walkways: [], lowCeilings: [], hazardZones: [], pipeRuns: [] };
+  let LEVEL_DECOR_LAYOUT = { courtyards: [], rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [], canopies: [], arches: [], banners: [], mosaics: [], rubble: [], torches: [], walkways: [], lowCeilings: [], hazardZones: [], pipeRuns: [], floorMarkings: [] };
 
   function cloneArenaList(list = []) {
     return Array.isArray(list) ? list.map(item => ({ ...item })) : [];
@@ -856,7 +954,9 @@
       walkways: cloneArenaList(decor.walkways),
       lowCeilings: cloneArenaList(decor.lowCeilings),
       hazardZones: cloneArenaList(decor.hazardZones),
-      pipeRuns: cloneArenaList(decor.pipeRuns)
+      pipeRuns: cloneArenaList(decor.pipeRuns),
+      // Skyline Offices' painted wayfinding. Flush floor decals only.
+      floorMarkings: cloneArenaList(decor.floorMarkings)
     };
   }
 

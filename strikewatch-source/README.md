@@ -1,8 +1,12 @@
-# Strikewatch Source 12.116
+# Strikewatch Source 12.117
 
 ## Repository workflow
 
 In the GitHub repository, this project lives under `strikewatch-source/`. Edit and build here, then publish the verified `dist/strikewatch-build-<version>.html` as root `cod.html`. Every release commit should include the source changes, updated Markdown authority/current audit and the matching `cod.html`. The root `other/` directory contains unrelated legacy projects and assets; it is not used by Strikewatch.
+
+## Build 12.117 Skyline Offices environment rework
+
+Build 12.117 reworks the Skyline Offices arena so it reads as a coherent corporate floorplate. A geometry pass found twenty-four authoring defects: the landscaped courtyard slab and its ceiling void covered fourteen wall cells because the real courtyard was only two cells deep, seven props were embedded in masonry, four glass bands floated in open walkway, three rugs and one AI hotspot sat over walls, and the office suspended ceilings were three hard-coded boxes, one of which hung across the courtyard. The floorplate is now authored as one quadrant and mirrored about both axes, so the two team halves are identical. The centre is a real 8x6 glazed atrium with four symmetric entrances, and a new decor layer adds painted wayfinding and per-room ceilings without adding any collider. The tactical minimap and deployment preview are already data-driven and follow the new layout automatically. Save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Build 12.116 desktop header split
 
