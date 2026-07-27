@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.127';
-  const BUILD_NAME = 'MOBILE COMBAT GRAPH LAYOUT';
-  const BUILD_ID = '12.127.0-mobile-combat-graph-layout';
+  const BUILD_VERSION = '12.128';
+  const BUILD_NAME = 'PORTRAIT COMMENTARY FLOW';
+  const BUILD_ID = '12.128.0-portrait-commentary-flow';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -31620,12 +31620,36 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return { ready: true, reason: 'ONE COMMAND AVAILABLE THIS ROUND' };
   }
 
+  function syncMatchCommentaryDockPlacement() {
+    if (!matchCommentaryDockEl || !matchStageEl || !matchViewEl || !matchObjectiveEl) return 'unavailable';
+    const portraitViewport = window.matchMedia
+      ? window.matchMedia('(orientation: portrait)').matches
+      : window.innerHeight >= window.innerWidth;
+    const portraitWindowed = portraitViewport && document.body.dataset.viewMode === 'windowed';
+    if (portraitWindowed) {
+      if (matchCommentaryDockEl.parentElement !== matchStageEl || matchCommentaryDockEl.nextElementSibling !== matchObjectiveEl) {
+        matchStageEl.insertBefore(matchCommentaryDockEl, matchObjectiveEl);
+      }
+      matchCommentaryDockEl.dataset.placement = 'portrait-stage';
+      return 'portrait-stage';
+    }
+    if (matchCommentaryDockEl.parentElement !== matchViewEl || matchCommentaryDockEl.previousElementSibling !== matchStageEl) {
+      matchStageEl.insertAdjacentElement('afterend', matchCommentaryDockEl);
+    }
+    matchCommentaryDockEl.dataset.placement = 'match-view';
+    return 'match-view';
+  }
+
   function updateMatchCommentaryPresentation() {
+    syncMatchCommentaryDockPlacement();
     const panelOpen = Boolean(liveCommandPulseState.open && commandPulsePanelEl && !commandPulsePanelEl.hidden);
     const hasFeed = Boolean(feedEl && !feedEl.hidden && feedEl.textContent.trim());
     const hasMoment = Boolean(careerMatchMomentEl && !careerMatchMomentEl.hidden && careerMatchMomentEl.textContent.trim());
     if (matchCommentaryIdleEl) matchCommentaryIdleEl.hidden = panelOpen || hasFeed || hasMoment;
-    if (matchCommentaryDockEl) matchCommentaryDockEl.classList.toggle('panel-open', panelOpen);
+    if (matchCommentaryDockEl) {
+      matchCommentaryDockEl.classList.toggle('panel-open', panelOpen);
+      matchCommentaryDockEl.classList.toggle('moment-open', hasMoment);
+    }
     if (matchCommentaryRoundEl) {
       let stateLabel = 'STANDBY';
       if (roundEnding || matchEnding) stateLabel = 'ROUND COMPLETE';
@@ -34417,6 +34441,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (maximizeViewBtn) {
       maximizeViewBtn.setAttribute('aria-pressed', fullViewRequested ? 'true' : 'false');
     }
+    if (typeof syncMatchCommentaryDockPlacement === 'function') syncMatchCommentaryDockPlacement();
     requestAnimationFrame(() => resize());
   }
 
@@ -46013,6 +46038,46 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         momentInsideDock: inside(momentRect, dock),
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
         panelOpen: Boolean(matchCommentaryDockEl?.classList.contains('panel-open'))
+      };
+    },
+    matchCommentaryPlacementForTest: () => {
+      const readRect = element => {
+        if (!element) return null;
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        if (style.display === 'none' || style.visibility === 'hidden' || rect.width <= 0.5 || rect.height <= 0.5) return null;
+        return {
+          top: Number(rect.top.toFixed(2)),
+          right: Number(rect.right.toFixed(2)),
+          bottom: Number(rect.bottom.toFixed(2)),
+          left: Number(rect.left.toFixed(2)),
+          width: Number(rect.width.toFixed(2)),
+          height: Number(rect.height.toFixed(2))
+        };
+      };
+      const scoreboard = readRect(roundPanelEl);
+      const dock = readRect(matchCommentaryDockEl);
+      const objective = readRect(matchObjectiveEl);
+      const viewport = readRect(matchStageViewportEl);
+      const portraitWindowed = document.body.dataset.viewMode === 'windowed' && (
+        window.matchMedia ? window.matchMedia('(orientation: portrait)').matches : window.innerHeight >= window.innerWidth
+      );
+      const stackedWithoutOverlap = !portraitWindowed || Boolean(scoreboard && dock && objective && viewport
+        && scoreboard.bottom <= dock.top + 1
+        && dock.bottom <= objective.top + 1
+        && objective.bottom <= viewport.top + 1);
+      return {
+        appState,
+        viewMode: document.body.dataset.viewMode || '',
+        portraitWindowed,
+        placement: matchCommentaryDockEl?.dataset.placement || '',
+        parentClass: matchCommentaryDockEl?.parentElement?.className || '',
+        scoreboard,
+        dock,
+        objective,
+        viewport,
+        stackedWithoutOverlap,
+        horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)
       };
     },
     openingWeekFlowForTest: () => typeof openingWeekFlowForTest === 'function' ? openingWeekFlowForTest() : { ok: false, reason: 'Opening-week module unavailable' },

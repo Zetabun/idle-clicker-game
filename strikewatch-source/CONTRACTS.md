@@ -46,6 +46,10 @@ current task. Release-specific implementation detail belongs in the matching
   inset, size and transition geometry.
 - Desktop version remains visible in the management header. Mobile version
   remains in the current-page bar revealed by Help.
+- In portrait windowed matches, the shared commentary dock sits in normal flow
+  between the scoreboard strip and round objective; live commentary and match
+  moments must not cover the rendered arena. Landscape and maximised layouts
+  retain their dedicated commentary placement.
 
 ## Onboarding and route access
 

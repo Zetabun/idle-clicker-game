@@ -30101,3 +30101,225 @@ body[data-app-state='menu'] { background: var(--skin-ink-0); }
     }
   }
 }
+
+
+/* ============================================================================
+   Build 12.128 — Portrait commentary in normal match flow.
+   Windowed portrait moves the shared commentary dock between the score strip
+   and round objective so match moments and play-by-play never cover the arena.
+   Landscape/maximised placement and the autonomous simulation remain unchanged.
+   ========================================================================== */
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage {
+    grid-template-rows: auto auto auto auto !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .topbar {
+    grid-row: 1;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock {
+    position: relative !important;
+    inset: auto !important;
+    z-index: 19;
+    grid-row: 2;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    max-height: 96px;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid rgba(102, 201, 255, .27);
+    border-left: 4px solid rgba(93, 199, 237, .78);
+    border-radius: 3px;
+    background:
+      linear-gradient(110deg, rgba(15, 40, 55, .98), rgba(4, 15, 23, .99)),
+      repeating-linear-gradient(90deg, transparent 0 46px, rgba(255, 255, 255, .016) 47px);
+    box-shadow: inset 0 1px rgba(255, 255, 255, .04);
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-label {
+    display: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-content {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-idle {
+    display: grid;
+    align-content: center;
+    min-width: 0;
+    min-height: 46px;
+    padding: 7px 10px;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-idle[hidden] {
+    display: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-idle span,
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-idle strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-idle span {
+    color: #72cbed;
+    font-size: 11px !important;
+    font-weight: 950;
+    line-height: 1.2 !important;
+    letter-spacing: .13em;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .match-commentary-idle strong {
+    margin-top: 3px;
+    color: rgba(220, 235, 242, .76);
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .feed,
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment {
+    position: relative !important;
+    inset: auto !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto;
+    margin: 0;
+    transform: none !important;
+    pointer-events: none;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .feed {
+    align-content: center;
+    justify-items: stretch;
+    gap: 3px;
+    max-height: 94px !important;
+    padding: 5px 7px;
+    overflow: hidden !important;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .feed.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .feed[hidden] {
+    display: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock.moment-open .feed {
+    display: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .feed-row {
+    width: 100% !important;
+    max-width: none;
+    min-height: 28px !important;
+    padding: 5px 8px !important;
+    justify-content: flex-start !important;
+    border-right: 0;
+    border-left: 3px solid var(--feed-accent);
+    border-radius: 0 2px 2px 0;
+    background: linear-gradient(90deg, rgba(12, 31, 43, .94), rgba(4, 12, 19, .84));
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    text-align: left;
+    animation: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .feed-row:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment {
+    display: grid;
+    align-content: center;
+    min-height: 62px;
+    max-height: 94px;
+    padding: 8px 10px;
+    overflow: hidden;
+    border: 0;
+    border-left: 0;
+    background: transparent;
+    opacity: 0;
+    text-align: left;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment[hidden] {
+    display: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment.show {
+    opacity: 1;
+    transform: none !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment span {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment strong {
+    margin-top: 4px;
+    overflow: hidden;
+    font-size: 15px !important;
+    line-height: 1.2 !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment small {
+    margin-top: 4px;
+    display: -webkit-box;
+    min-height: calc(2 * 1.3em);
+    max-height: calc(2 * 1.3em);
+    overflow: hidden;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-objective {
+    grid-row: 3;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-stage-viewport {
+    grid-row: 4;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 360px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock {
+    max-height: 90px;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment {
+    min-height: 58px;
+    padding: 7px 8px;
+  }
+
+  body[data-app-state='match'][data-view-mode='windowed'] .match-stage > .match-commentary-dock .career-match-moment strong {
+    font-size: 13.5px !important;
+  }
+}

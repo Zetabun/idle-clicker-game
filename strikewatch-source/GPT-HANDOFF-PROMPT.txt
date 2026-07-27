@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.127 — Mobile Combat Graph Layout
-Build ID: 12.127.0-mobile-combat-graph-layout
+Build 12.128 — Portrait Commentary Flow
+Build ID: 12.128.0-portrait-commentary-flow
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.128 owns the portrait-windowed commentary strip between the scoreboard
+and objective; commentary must not overlay the arena and must return to the
+existing match-view position outside portrait windowed mode.
 Build 12.127 owns the compact combat-effectiveness score header, readable
 legend, focused plot, responsive stat tiles and 320px single-column fallback.
 Build 12.126 retains compact tactics row sizing, the single normal-flow final

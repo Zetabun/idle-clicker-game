@@ -1444,6 +1444,46 @@
         panelOpen: Boolean(matchCommentaryDockEl?.classList.contains('panel-open'))
       };
     },
+    matchCommentaryPlacementForTest: () => {
+      const readRect = element => {
+        if (!element) return null;
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        if (style.display === 'none' || style.visibility === 'hidden' || rect.width <= 0.5 || rect.height <= 0.5) return null;
+        return {
+          top: Number(rect.top.toFixed(2)),
+          right: Number(rect.right.toFixed(2)),
+          bottom: Number(rect.bottom.toFixed(2)),
+          left: Number(rect.left.toFixed(2)),
+          width: Number(rect.width.toFixed(2)),
+          height: Number(rect.height.toFixed(2))
+        };
+      };
+      const scoreboard = readRect(roundPanelEl);
+      const dock = readRect(matchCommentaryDockEl);
+      const objective = readRect(matchObjectiveEl);
+      const viewport = readRect(matchStageViewportEl);
+      const portraitWindowed = document.body.dataset.viewMode === 'windowed' && (
+        window.matchMedia ? window.matchMedia('(orientation: portrait)').matches : window.innerHeight >= window.innerWidth
+      );
+      const stackedWithoutOverlap = !portraitWindowed || Boolean(scoreboard && dock && objective && viewport
+        && scoreboard.bottom <= dock.top + 1
+        && dock.bottom <= objective.top + 1
+        && objective.bottom <= viewport.top + 1);
+      return {
+        appState,
+        viewMode: document.body.dataset.viewMode || '',
+        portraitWindowed,
+        placement: matchCommentaryDockEl?.dataset.placement || '',
+        parentClass: matchCommentaryDockEl?.parentElement?.className || '',
+        scoreboard,
+        dock,
+        objective,
+        viewport,
+        stackedWithoutOverlap,
+        horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      };
+    },
     openingWeekFlowForTest: () => typeof openingWeekFlowForTest === 'function' ? openingWeekFlowForTest() : { ok: false, reason: 'Opening-week module unavailable' },
     seedFirstMatchCalendarForTest: () => {
       if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);

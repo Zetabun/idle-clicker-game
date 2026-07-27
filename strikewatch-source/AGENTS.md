@@ -56,6 +56,12 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.128 owns portrait-windowed commentary placement. Keep the shared
+commentary dock between the scoreboard and round objective, keep match moments
+and feed rows in normal flow rather than over the arena, and restore the dock
+to its existing match-view position for landscape/maximised presentation. See
+`AUDIT-12.128.md`.
+
 Build 12.127 owns the compact combat-effectiveness presentation. Keep its
 score header and legend in normal flow, hide the tiny SVG perimeter labels
 below 1024px, expose all five values through readable HTML stat tiles, retain

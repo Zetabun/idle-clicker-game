@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.127 replaces the cramped compact combat graph with a normal-flow
-score header, readable legend, focused radar plot and responsive stat tiles,
-while preserving the existing desktop graph. See `HANDOFF.md` and
-`AUDIT-12.127.md`.
+Build 12.128 moves portrait-windowed commentary and match moments into a
+normal-flow strip between the scoreboard and objective, preventing the live
+arena from being obscured while preserving landscape/maximised presentation.
+See `HANDOFF.md` and `AUDIT-12.128.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

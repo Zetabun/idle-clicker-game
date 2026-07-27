@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.127';
-  const BUILD_NAME = 'MOBILE COMBAT GRAPH LAYOUT';
-  const BUILD_ID = '12.127.0-mobile-combat-graph-layout';
+  const BUILD_VERSION = '12.128';
+  const BUILD_NAME = 'PORTRAIT COMMENTARY FLOW';
+  const BUILD_ID = '12.128.0-portrait-commentary-flow';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

@@ -2076,6 +2076,7 @@
     if (maximizeViewBtn) {
       maximizeViewBtn.setAttribute('aria-pressed', fullViewRequested ? 'true' : 'false');
     }
+    if (typeof syncMatchCommentaryDockPlacement === 'function') syncMatchCommentaryDockPlacement();
     requestAnimationFrame(() => resize());
   }
 

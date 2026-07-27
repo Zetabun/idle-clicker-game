@@ -232,12 +232,36 @@
     return { ready: true, reason: 'ONE COMMAND AVAILABLE THIS ROUND' };
   }
 
+  function syncMatchCommentaryDockPlacement() {
+    if (!matchCommentaryDockEl || !matchStageEl || !matchViewEl || !matchObjectiveEl) return 'unavailable';
+    const portraitViewport = window.matchMedia
+      ? window.matchMedia('(orientation: portrait)').matches
+      : window.innerHeight >= window.innerWidth;
+    const portraitWindowed = portraitViewport && document.body.dataset.viewMode === 'windowed';
+    if (portraitWindowed) {
+      if (matchCommentaryDockEl.parentElement !== matchStageEl || matchCommentaryDockEl.nextElementSibling !== matchObjectiveEl) {
+        matchStageEl.insertBefore(matchCommentaryDockEl, matchObjectiveEl);
+      }
+      matchCommentaryDockEl.dataset.placement = 'portrait-stage';
+      return 'portrait-stage';
+    }
+    if (matchCommentaryDockEl.parentElement !== matchViewEl || matchCommentaryDockEl.previousElementSibling !== matchStageEl) {
+      matchStageEl.insertAdjacentElement('afterend', matchCommentaryDockEl);
+    }
+    matchCommentaryDockEl.dataset.placement = 'match-view';
+    return 'match-view';
+  }
+
   function updateMatchCommentaryPresentation() {
+    syncMatchCommentaryDockPlacement();
     const panelOpen = Boolean(liveCommandPulseState.open && commandPulsePanelEl && !commandPulsePanelEl.hidden);
     const hasFeed = Boolean(feedEl && !feedEl.hidden && feedEl.textContent.trim());
     const hasMoment = Boolean(careerMatchMomentEl && !careerMatchMomentEl.hidden && careerMatchMomentEl.textContent.trim());
     if (matchCommentaryIdleEl) matchCommentaryIdleEl.hidden = panelOpen || hasFeed || hasMoment;
-    if (matchCommentaryDockEl) matchCommentaryDockEl.classList.toggle('panel-open', panelOpen);
+    if (matchCommentaryDockEl) {
+      matchCommentaryDockEl.classList.toggle('panel-open', panelOpen);
+      matchCommentaryDockEl.classList.toggle('moment-open', hasMoment);
+    }
     if (matchCommentaryRoundEl) {
       let stateLabel = 'STANDBY';
       if (roundEnding || matchEnding) stateLabel = 'ROUND COMPLETE';

@@ -6,15 +6,20 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.127 — Mobile Combat Graph Layout**
-- Build ID: `12.127.0-mobile-combat-graph-layout`
+- Build: **12.128 — Portrait Commentary Flow**
+- Build ID: `12.128.0-portrait-commentary-flow`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.127.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.128.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.128 places portrait-windowed match commentary in normal document flow
+between the scoreboard strip and round objective. Match moments, play-by-play
+and the idle tactical link no longer cover the arena; landscape/maximised
+commentary placement remains unchanged. See `AUDIT-12.128.md`.
 
 Build 12.127 restructures the combat-effectiveness graph below 1024px into a
 normal-flow score header, readable legend, focused radar plot and HTML stat
