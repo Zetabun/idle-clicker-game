@@ -25,6 +25,10 @@ pre-existing fixed-minimum scouting grid that overflowed internally at 320px.
 - Added component-scoped overrides for recruitment, operator profiles, team
   telemetry/armoury, development/training/supplies, league tables and
   Configuration appearance controls.
+- Raised the shared empty-state and transfer-status typography on desktop as
+  well as mobile. Explanatory empty-state copy now uses a 12.5px desktop floor
+  and the mobile body scale; incoming-offer metadata, player names, values and
+  status labels no longer retain the legacy 6–9px sizes.
 - Raised portrait match scoreboard, objective, feed, match-moment, telemetry
   and control copy while leaving transient damage tags and decorative glyphs
   compact.
@@ -41,6 +45,9 @@ pre-existing fixed-minimum scouting grid that overflowed internally at 320px.
 - At 390 × 844, recruitment, operator profile and portrait match views remain
   horizontally contained. The match stage reports equal client/scroll
   dimensions.
+- The `NO OFFERS RECEIVED` state resolves to 15px heading and 12.5px
+  explanatory copy on wide layouts, and to the mobile body scale on compact
+  layouts.
 - Compact landscape retains the raised semantic scale without changing the
   desktop breakpoint.
 - Persistent touch controls remain at least 44px where this pass changes their

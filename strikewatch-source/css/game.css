@@ -20727,6 +20727,111 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   }
 }
 
+
+/* Build 12.118 follow-up · readable empty and transfer-status surfaces.
+   These panels also appear on wide layouts, so their body-copy floor is
+   intentionally global instead of being limited to the mobile breakpoint. */
+#menuContent .team-empty-state strong,
+#menuContent .club-mail-empty strong,
+#menuContent .club-mail-reader-empty strong,
+#menuContent .squad-dynamics-empty strong,
+#menuContent .season-empty-state strong,
+#menuContent .player-accolade-empty strong,
+#menuContent .command-directory-empty strong {
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+}
+
+#menuContent .team-empty-state p,
+#menuContent .career-report-empty p,
+#menuContent .transfer-empty-panel p,
+#menuContent .transfer-offer-detail p,
+#menuContent .club-mail-empty p,
+#menuContent .club-mail-reader-empty p,
+#menuContent .command-empty-lineup p,
+#menuContent .command-directory-empty p,
+#menuContent .squad-dynamics-empty p,
+#menuContent .squad-dynamics-secondary article p,
+#menuContent .season-empty-state p,
+#menuContent .player-accolade-empty p {
+  font-size: 12.5px !important;
+  line-height: 1.58 !important;
+}
+
+#menuContent .team-history-empty,
+#menuContent .gold-history-empty,
+#menuContent .finance-chart-empty,
+#menuContent .supporter-empty,
+#menuContent .squad-dynamics-profile-empty,
+#menuContent .infrastructure-history-empty {
+  font-size: 11.5px !important;
+  line-height: 1.5 !important;
+}
+
+#menuContent .career-report-empty span,
+#menuContent .transfer-negotiation-card header > b,
+#menuContent .transfer-offer-row span {
+  font-size: 10.5px !important;
+  line-height: 1.35 !important;
+}
+
+#menuContent .transfer-negotiation-card header small,
+#menuContent .transfer-demand-row strong,
+#menuContent .transfer-offer-row small {
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+}
+
+#menuContent .transfer-negotiation-card > p {
+  font-size: 12.5px !important;
+  line-height: 1.58 !important;
+}
+
+#menuContent .transfer-offer-row {
+  min-height: 72px;
+  gap: 5px;
+  padding: 11px 12px;
+}
+
+#menuContent .transfer-offer-row strong {
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+}
+
+#menuContent .transfer-value-control small {
+  font-size: 10.5px !important;
+  line-height: 1.35 !important;
+}
+
+@media (max-width: 1023px) {
+  #menuContent .team-empty-state p,
+  #menuContent .career-report-empty p,
+  #menuContent .transfer-empty-panel p,
+  #menuContent .transfer-offer-detail p,
+  #menuContent .club-mail-empty p,
+  #menuContent .club-mail-reader-empty p,
+  #menuContent .command-empty-lineup p,
+  #menuContent .command-directory-empty p,
+  #menuContent .squad-dynamics-empty p,
+  #menuContent .squad-dynamics-secondary article p,
+  #menuContent .season-empty-state p,
+  #menuContent .player-accolade-empty p {
+    font-size: var(--mobile-type-body) !important;
+  }
+
+  #menuContent .team-history-empty,
+  #menuContent .gold-history-empty,
+  #menuContent .finance-chart-empty,
+  #menuContent .supporter-empty,
+  #menuContent .squad-dynamics-profile-empty,
+  #menuContent .infrastructure-history-empty,
+  #menuContent .transfer-negotiation-card header small,
+  #menuContent .transfer-demand-row strong,
+  #menuContent .transfer-offer-row small {
+    font-size: var(--mobile-type-small) !important;
+  }
+}
+
 /* Build 12.61 second-pass corrections: route-specific mobile readability and compact calendar agenda. */
 .menu-tab-label-mobile,
 .club-calendar-mobile-date { display: none; }

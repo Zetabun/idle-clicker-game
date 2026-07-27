@@ -10,10 +10,16 @@ Build 12.118 removes the remaining hard-to-read mobile microcopy. Recruitment
 cards, inline reports and role guides; full operator dossiers; team telemetry;
 development, training and supplies cards; league tables; Configuration
 appearance controls; persistent navigation; and the portrait live-match HUD
-now use bounded mobile type floors instead of legacy 5–9px values. The pass is
-mobile-only, preserves desktop density, and includes a 320px attribute-grid
-containment correction. Gameplay, recruitment values, simulation, economy,
-persistence, save schema 19 and diagnostics schema 1 are unchanged.
+now use bounded mobile type floors instead of legacy 5–9px values. The core
+type-scale pass is mobile-only, preserves desktop density, and includes a
+320px attribute-grid containment correction. Gameplay, recruitment values,
+simulation, economy, persistence, save schema 19 and diagnostics schema 1 are
+unchanged.
+
+The Build 12.118 follow-up also raises shared empty-state explanations and
+transfer-offer/status rows on wide layouts. These surfaces were still using
+legacy 6–9px fixed values even though the mobile component scale had been
+corrected.
 
 ## Build 12.117 Skyline Offices environment rework
 
