@@ -137,9 +137,12 @@ current task. Release-specific implementation detail belongs in the matching
 - Arena visuals derive from `MAP`, zones, decor and prop layouts. Minimap and
   deployment previews should consume the same authorities.
 - Before changing an arena, read its latest audit. Current high-risk records:
-  Skyline Offices `AUDIT-12.117.md`, Citadel Depot `AUDIT-12.108.md` and
-  `AUDIT-12.109.md`, Dune Bastion `AUDIT-12.07.md`, Summit Terminal audits
-  consolidated in `AUDIT-11.99.md`.
+  Aurora Terminal `AUDIT-12.130.md`, Skyline Offices `AUDIT-12.117.md`,
+  Citadel Depot `AUDIT-12.108.md` and `AUDIT-12.109.md`, Dune Bastion
+  `AUDIT-12.07.md`, Summit Terminal audits consolidated in `AUDIT-11.99.md`.
+- The `summit` arena id remains a redirect to `dune`; Aurora Terminal uses
+  the summit render theme under its own `aurora` id and must stay single
+  level (no doors, stairs or vertical profile) unless explicitly audited.
 - Do not relax geometry, collision, door, furniture, route or navigation gates
   merely to make a new layout pass.
 
