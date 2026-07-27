@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.131';
-  const BUILD_NAME = 'Calendar Clarity';
-  const BUILD_ID = '12.131.0-calendar-clarity';
+  const BUILD_VERSION = '12.132';
+  const BUILD_NAME = 'Selection Feedback';
+  const BUILD_ID = '12.132.0-selection-feedback';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

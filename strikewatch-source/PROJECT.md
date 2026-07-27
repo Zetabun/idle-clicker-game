@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.128 moves portrait-windowed commentary and match moments into a
-normal-flow strip between the scoreboard and objective, preventing the live
-arena from being obscured while preserving landscape/maximised presentation.
-See `HANDOFF.md` and `AUDIT-12.128.md`.
+Build 12.132 gives the match setup choice cards a distinct selected state and
+immediate press, hover, focus and confirmation feedback, so a click or tap is
+always visibly registered on both presentation targets.
+See `HANDOFF.md` and `AUDIT-12.132.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

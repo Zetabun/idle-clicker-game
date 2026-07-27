@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.132 — Selection Feedback
+
+- Gives the Formation, Team Approach, Engagement Range, Map Selection and Team Priority cards a clearly distinct selected state at every width.
+- Adds pressed, pointer-only hover, keyboard focus and post-selection confirmation feedback so a click or tap is always visibly registered.
+- Presentation-only release; save schema, gameplay, tactical fit calculations and match simulation are unchanged.
+- Evidence: `AUDIT-12.132.md`.
+
+
 ## 12.131 — Calendar Clarity
 
 - Promotes the tactical summary-tag and Active Operator Match Roles alignment fixes into a numbered release.
@@ -15,6 +23,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.131 | Tactical clarity consolidation and End Day contrast | `AUDIT-12.131.md` |
 | 12.130 | Fourth arena: Aurora Terminal (summit-theme polar transit hub) | `AUDIT-12.130.md` |
 | 12.129 | First Match Guide streamlining and opening progression-lock fixes | `AUDIT-12.129.md` |
 | 12.128 | Portrait match commentary in normal scoreboard/objective flow | `AUDIT-12.128.md` |

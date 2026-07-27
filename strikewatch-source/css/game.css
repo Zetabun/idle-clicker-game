@@ -30323,3 +30323,205 @@ body[data-app-state='menu'] { background: var(--skin-ink-0); }
     font-size: 13.5px !important;
   }
 }
+/* ==========================================================================
+   Build 12.132 — Tactical selection feedback layer
+   Owns the hovered / pressed / focused / selected presentation of the match
+   setup choice cards: Formation, Team Approach, Engagement Range, Map
+   Selection and Team Priority. Chrome only — no geometry, font-size or
+   touch-target changes.
+
+   Cascade note: the Command Skin layers set `border` and `border-radius` on a
+   bare `button` selector with `!important`, and put `.club-formation-card` in
+   a `.menu-shell :is(...):not(:disabled):not(.primary)` group — specificity
+   (0,4,1) — that marks border-color and box-shadow `!important`. The state
+   rules below therefore repeat their own class for a (0,5,0) specificity bump
+   and mark the contested properties important. Keep this layer last.
+   ========================================================================== */
+
+.club-formation-card,
+.club-plan-option {
+  position: relative;
+  cursor: pointer;
+  transition:
+    border-color .16s ease,
+    background-color .16s ease,
+    box-shadow .16s ease,
+    transform .10s ease !important;
+}
+
+.club-formation-card::before,
+.club-plan-option::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s ease;
+}
+
+.club-formation-card::before {
+  background: linear-gradient(90deg, rgba(108, 208, 255, .95), rgba(82, 173, 255, .55));
+}
+
+.club-plan-option::before {
+  background: linear-gradient(90deg, rgba(255, 209, 122, .95), rgba(244, 185, 66, .48));
+}
+
+/* --- Hover: pointer devices only, so a touch never sticks in a hover state --- */
+
+@media (hover: hover) and (pointer: fine) {
+  .club-formation-card.club-formation-card:not(.active):not(:disabled):not(.primary):hover {
+    border-color: rgba(122, 190, 236, .55) !important;
+    background: rgba(21, 45, 61, .92) !important;
+    box-shadow: inset 0 0 0 1px rgba(122, 190, 236, .18) !important;
+  }
+
+  .club-plan-option.club-plan-option:not(.active):not(:disabled):not(.primary):hover {
+    border-color: rgba(226, 176, 96, .46) !important;
+    border-left-color: rgba(244, 185, 66, .72) !important;
+    background: linear-gradient(90deg, rgba(43, 61, 74, .78), rgba(12, 22, 31, .72)) !important;
+    box-shadow: inset 0 0 0 1px rgba(226, 176, 96, .14) !important;
+  }
+}
+
+/* --- Press: fires on pointer-down, before the panel re-renders --- */
+
+.club-formation-card.club-formation-card:active:not(:disabled):not(.primary),
+.club-formation-card.club-formation-card.is-pressing:not(:disabled):not(.primary),
+.club-plan-option.club-plan-option:active:not(:disabled):not(.primary),
+.club-plan-option.club-plan-option.is-pressing:not(:disabled):not(.primary) {
+  transform: scale(.982) !important;
+}
+
+.club-formation-card.club-formation-card:active:not(:disabled):not(.primary),
+.club-formation-card.club-formation-card.is-pressing:not(:disabled):not(.primary) {
+  border-color: rgba(140, 214, 255, .82) !important;
+  background: rgba(30, 74, 100, .95) !important;
+  box-shadow: inset 0 0 0 2px rgba(140, 214, 255, .38) !important;
+}
+
+.club-plan-option.club-plan-option:active:not(:disabled):not(.primary),
+.club-plan-option.club-plan-option.is-pressing:not(:disabled):not(.primary) {
+  border-color: rgba(255, 205, 120, .74) !important;
+  border-left-color: rgba(255, 209, 122, .96) !important;
+  background: linear-gradient(90deg, rgba(104, 76, 27, .78), rgba(28, 25, 18, .84)) !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 205, 120, .34) !important;
+}
+
+/* --- Keyboard focus --- */
+
+.club-formation-card.club-formation-card:not(:disabled):not(.primary):focus-visible {
+  outline: 2px solid rgba(140, 214, 255, .85) !important;
+  outline-offset: 2px !important;
+}
+
+.club-plan-option.club-plan-option:not(:disabled):not(.primary):focus-visible {
+  outline: 2px solid rgba(255, 209, 122, .88) !important;
+  outline-offset: 2px !important;
+}
+
+/* --- Selected: the unmistakable state --- */
+
+.club-formation-card.club-formation-card.active:not(:disabled):not(.primary) {
+  border-color: rgba(120, 205, 255, .92) !important;
+  background: linear-gradient(150deg, rgba(31, 96, 133, .92), rgba(11, 35, 50, .95)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(140, 214, 255, .40),
+    0 0 0 2px rgba(82, 173, 255, .58),
+    0 8px 20px rgba(4, 26, 42, .42) !important;
+}
+
+.club-formation-card.club-formation-card.active::before { opacity: 1; }
+.club-formation-card.club-formation-card.active strong { color: #ffffff; }
+.club-formation-card.club-formation-card.active small { color: #b9d6e8; }
+.club-formation-card.club-formation-card.active .club-formation-card-head > b { color: #9ce0ff; }
+
+.club-plan-option.club-plan-option.active:not(:disabled):not(.primary) {
+  border-color: rgba(248, 199, 106, .80) !important;
+  border-left-color: rgba(255, 209, 122, 1) !important;
+  border-left-width: 4px !important;
+  background: linear-gradient(90deg, rgba(114, 82, 24, .72), rgba(28, 25, 18, .84)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(248, 199, 106, .28),
+    0 0 0 2px rgba(244, 185, 66, .50),
+    0 8px 20px rgba(28, 18, 2, .34) !important;
+}
+
+.club-plan-option.club-plan-option.active::before { opacity: 1; }
+.club-plan-option.club-plan-option.active strong { color: #ffffff; }
+.club-plan-option.club-plan-option.active small { color: #dcc9a4; }
+
+/* --- Post-selection confirmation pulse, applied by the feedback module --- */
+
+.club-formation-card.club-formation-card.just-selected:not(:disabled):not(.primary) {
+  animation: tacticalChoiceConfirmBlue .58s ease-out 1 !important;
+}
+
+.club-plan-option.club-plan-option.just-selected:not(:disabled):not(.primary) {
+  animation: tacticalChoiceConfirmAmber .58s ease-out 1 !important;
+}
+
+@keyframes tacticalChoiceConfirmBlue {
+  0% {
+    box-shadow:
+      inset 0 0 0 1px rgba(140, 214, 255, .40),
+      0 0 0 2px rgba(82, 173, 255, .58),
+      0 0 0 0 rgba(120, 205, 255, .62) !important;
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(140, 214, 255, .40),
+      0 0 0 2px rgba(82, 173, 255, .58),
+      0 0 0 12px rgba(120, 205, 255, 0) !important;
+  }
+}
+
+@keyframes tacticalChoiceConfirmAmber {
+  0% {
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 199, 106, .28),
+      0 0 0 2px rgba(244, 185, 66, .50),
+      0 0 0 0 rgba(255, 209, 122, .58) !important;
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 199, 106, .28),
+      0 0 0 2px rgba(244, 185, 66, .50),
+      0 0 0 12px rgba(255, 209, 122, 0) !important;
+  }
+}
+
+/* --- Compact / touch: same language, a little stronger so it reads on a phone --- */
+
+@media (max-width: 1023px) {
+  .club-formation-card::before,
+  .club-plan-option::before { height: 4px; }
+
+  .club-formation-card.club-formation-card.active:not(:disabled):not(.primary) {
+    box-shadow:
+      inset 0 0 0 1px rgba(140, 214, 255, .44),
+      0 0 0 3px rgba(82, 173, 255, .60),
+      0 6px 16px rgba(4, 26, 42, .40) !important;
+  }
+
+  .club-plan-option.club-plan-option.active:not(:disabled):not(.primary) {
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 199, 106, .32),
+      0 0 0 3px rgba(244, 185, 66, .54),
+      0 6px 16px rgba(28, 18, 2, .32) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .club-formation-card,
+  .club-plan-option { transition: none !important; }
+
+  .club-formation-card.club-formation-card:active:not(:disabled):not(.primary),
+  .club-formation-card.club-formation-card.is-pressing:not(:disabled):not(.primary),
+  .club-plan-option.club-plan-option:active:not(:disabled):not(.primary),
+  .club-plan-option.club-plan-option.is-pressing:not(:disabled):not(.primary) { transform: none !important; }
+
+  .club-formation-card.club-formation-card.just-selected:not(:disabled):not(.primary),
+  .club-plan-option.club-plan-option.just-selected:not(:disabled):not(.primary) { animation: none !important; }
+}

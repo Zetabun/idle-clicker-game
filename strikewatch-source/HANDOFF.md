@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.131 — Calendar Clarity**
-- Build ID: `12.131.0-calendar-clarity`
+- Build: **12.132 — Selection Feedback**
+- Build ID: `12.132.0-selection-feedback`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.131.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.132.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.132 makes match setup selection legible. The Formation, Team Approach, Engagement Range, Map Selection and Team Priority cards gain a distinct selected state (top accent bar, stronger border, ring and surface), a pressed state that fires on pointer-down, a pointer-only hover state, a visible focus outline and a short confirmation pulse re-applied after the panel re-renders. Presentation only; gameplay, tactical fit, saves and match simulation are unchanged. See `AUDIT-12.132.md`.
 
 Build 12.131 consolidates the tactical UI clarity fixes into a numbered release and gives the desktop End Day / Next Day control one persistent high-contrast slate treatment across enabled, locked, blocked and matchday states. The button keeps white primary copy, mint calendar/status copy and its orange response badge, preventing inherited disabled-state opacity from making it unreadable. Tactical summary tags and Active Operator Match Roles retain the 12.130 UI hotfix alignment improvements. See `AUDIT-12.131.md`.
 

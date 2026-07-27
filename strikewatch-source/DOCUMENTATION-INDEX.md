@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.128 — Portrait Commentary Flow
-- Standalone: `dist/strikewatch-build-12.128.html`
+- Build 12.132 — Selection Feedback
+- Standalone: `dist/strikewatch-build-12.132.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

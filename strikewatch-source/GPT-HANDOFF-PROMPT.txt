@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.128 — Portrait Commentary Flow
-Build ID: 12.128.0-portrait-commentary-flow
+Build 12.132 — Selection Feedback
+Build ID: 12.132.0-selection-feedback
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,16 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.132 owns the match setup selection feedback layer at the end of
+`css/game.css` plus `js/76-tactical-selection-feedback.js`; keep the choice
+cards' selected, pressed, hover, focus and confirmation states distinct and
+keep that layer last in the cascade.
+Build 12.131 owns the tactical summary tags, Active Operator Match Roles
+alignment and the persistent End Day / Next Day contrast.
+Build 12.130 owns the Aurora Terminal arena; see `AUDIT-12.130.md` before
+changing it.
+Build 12.129 owns the First Match Guide forward-only flow and the opening-week
+progression release.
 Build 12.128 owns the portrait-windowed commentary strip between the scoreboard
 and objective; commentary must not overlay the arena and must return to the
 existing match-view position outside portrait windowed mode.
