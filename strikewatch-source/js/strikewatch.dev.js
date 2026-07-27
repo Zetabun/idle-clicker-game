@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.119';
-  const BUILD_NAME = 'GUIDED NAVIGATION LABEL FIX';
-  const BUILD_ID = '12.119.0-guided-navigation-label-fix';
+  const BUILD_VERSION = '12.120';
+  const BUILD_NAME = 'MOBILE FLOW & ACCESSIBILITY FIX';
+  const BUILD_ID = '12.120.0-mobile-flow-accessibility-fix';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -15307,7 +15307,7 @@
           <button class="primary career-create-btn" data-career-action="create" ${!validTeam || !validManager ? 'disabled' : ''}>CREATE TEAM & BEGIN ORIENTATION</button>
           <div class="team-logo-creator" style="--team-logo-colour:${normaliseTeamLogoColour(careerDraft.teamIdentity?.logoColor)}">
             <div class="team-logo-preview">${teamLogoSvg(careerDraft.teamIdentity, 'team-logo-preview-mark')}<div><span>TEAM EMBLEM</span><strong>${escapeCareerHtml(TEAM_LOGO_DEFS[normaliseTeamLogoId(careerDraft.teamIdentity?.logoId)].label)}</strong><small>Appears beside your club name across Command HQ.</small></div></div>
-            <div class="team-logo-options" role="radiogroup" aria-label="Choose team emblem">${Object.entries(TEAM_LOGO_DEFS).map(([id, logo]) => `<button type="button" class="${normaliseTeamLogoId(careerDraft.teamIdentity?.logoId) === id ? 'selected' : ''}" data-team-logo="${id}" role="radio" aria-checked="${normaliseTeamLogoId(careerDraft.teamIdentity?.logoId) === id ? 'true' : 'false'}" title="${escapeCareerHtml(logo.label)}">${teamLogoSvg({ logoId: id, logoColor: careerDraft.teamIdentity?.logoColor }, 'team-logo-option-mark')}<span>${escapeCareerHtml(logo.label.split(' ')[0])}</span></button>`).join('')}</div>
+            <div class="team-logo-options" role="radiogroup" aria-label="Choose team emblem">${Object.entries(TEAM_LOGO_DEFS).map(([id, logo]) => `<button type="button" class="${normaliseTeamLogoId(careerDraft.teamIdentity?.logoId) === id ? 'selected' : ''}" data-team-logo="${id}" role="radio" aria-checked="${normaliseTeamLogoId(careerDraft.teamIdentity?.logoId) === id ? 'true' : 'false'}" aria-label="${escapeCareerHtml(logo.label)}" title="${escapeCareerHtml(logo.label)}">${teamLogoSvg({ logoId: id, logoColor: careerDraft.teamIdentity?.logoColor }, 'team-logo-option-mark')}<span aria-hidden="true">${escapeCareerHtml(logo.label.split(' ')[0])}</span></button>`).join('')}</div>
             <label class="team-logo-colour"><span>EMBLEM COLOUR</span><input id="careerLogoColorInput" type="color" value="${normaliseTeamLogoColour(careerDraft.teamIdentity?.logoColor)}" aria-label="Choose emblem colour" /><strong>${normaliseTeamLogoColour(careerDraft.teamIdentity?.logoColor).toUpperCase()}</strong></label>
           </div>
         </section>
@@ -16438,6 +16438,7 @@
 
   let selectedTeamPlayerId = null;
   let teamNoteReturnFocusEl = null;
+  const teamNoteBackgroundInertState = new Map();
 
   function teamSeedFromString(value) {
     let hash = 2166136261 >>> 0;
@@ -16585,6 +16586,68 @@
     return player?.lastMatch?.reflection || defaultPlayerReflection(player);
   }
 
+  function teamNoteBackgroundElements() {
+    const parent = teamNoteOverlayEl?.parentElement;
+    if (!parent) return [];
+    return Array.from(parent.children).filter(element => element !== teamNoteOverlayEl);
+  }
+
+  function setTeamNoteBackgroundIsolated(isolated) {
+    if (isolated) {
+      if (teamNoteBackgroundInertState.size) return true;
+      for (const element of teamNoteBackgroundElements()) {
+        teamNoteBackgroundInertState.set(element, {
+          inert: Boolean(element.inert),
+          inertAttribute: element.hasAttribute('inert')
+        });
+        element.inert = true;
+        element.setAttribute('inert', '');
+      }
+      return teamNoteBackgroundInertState.size > 0;
+    }
+    for (const [element, previous] of teamNoteBackgroundInertState) {
+      if (!element?.isConnected) continue;
+      element.inert = previous.inert;
+      if (previous.inertAttribute) element.setAttribute('inert', '');
+      else element.removeAttribute('inert');
+    }
+    teamNoteBackgroundInertState.clear();
+    return true;
+  }
+
+  function teamNoteFocusableControls() {
+    if (!teamNoteOverlayEl || teamNoteOverlayEl.hidden) return [];
+    return Array.from(teamNoteOverlayEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]'))
+      .filter(element => !element.disabled
+        && element.getAttribute('tabindex') !== '-1'
+        && !element.hidden
+        && element.getClientRects().length > 0);
+  }
+
+  function trapTeamNoteModalFocus(event) {
+    if (String(event?.key || '').toLowerCase() !== 'tab' || !teamNoteOverlayEl || teamNoteOverlayEl.hidden) return false;
+    const controls = teamNoteFocusableControls();
+    if (!controls.length) {
+      event.preventDefault();
+      return true;
+    }
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    const active = document.activeElement;
+    const outside = !teamNoteOverlayEl.contains(active);
+    if (event.shiftKey && (outside || active === first)) {
+      event.preventDefault();
+      last.focus({ preventScroll: true });
+      return true;
+    }
+    if (!event.shiftKey && (outside || active === last)) {
+      event.preventDefault();
+      first.focus({ preventScroll: true });
+      return true;
+    }
+    return false;
+  }
+
   function closeTeamNoteModal({ restoreFocus = true } = {}) {
     if (!teamNoteOverlayEl) return;
     const returnTarget = teamNoteReturnFocusEl;
@@ -16600,6 +16663,7 @@
     if (teamNoteQuoteEl) teamNoteQuoteEl.textContent = '“';
     if (teamNoteDismissHintEl) teamNoteDismissHintEl.textContent = 'TAP OUTSIDE OR PRESS × TO CLOSE';
     document.body.classList.remove('team-note-open');
+    setTeamNoteBackgroundIsolated(false);
     teamNoteReturnFocusEl = null;
     if (restoreFocus && returnTarget?.isConnected && typeof returnTarget.focus === 'function') {
       requestAnimationFrame(() => {
@@ -16631,6 +16695,7 @@
     teamNoteOverlayEl.hidden = false;
     teamNoteOverlayEl.setAttribute('aria-hidden', 'false');
     document.body.classList.add('team-note-open');
+    setTeamNoteBackgroundIsolated(true);
     if (teamNoteCloseBtn && typeof teamNoteCloseBtn.focus === 'function') teamNoteCloseBtn.focus({ preventScroll: true });
     return true;
   }
@@ -18385,6 +18450,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (route) {
       const targetRoute = route.dataset.teamRoute;
       const scrollTarget = route.dataset.teamScrollTarget || '';
+      if (typeof collapseMobileFirstMatchGuideAfterAction === 'function') collapseMobileFirstMatchGuideAfterAction(route);
       if (scrollTarget === 'recruitment-candidates' && typeof recruitmentState === 'function') {
         const state = recruitmentState();
         if (state.view !== 'market') {
@@ -18413,6 +18479,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     const profile = event.target.closest('[data-team-profile]');
     if (profile) {
+      if (typeof collapseMobileFirstMatchGuideAfterAction === 'function') collapseMobileFirstMatchGuideAfterAction(profile);
       selectedTeamPlayerId = profile.dataset.teamProfile;
       careerState.selectedPlayerId = selectedTeamPlayerId;
       careerState.tutorial.profileViewed = true;
@@ -26920,6 +26987,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         </div>
         <div class="recruitment-mobile-summary-actions">
           <button type="button" data-recruitment-toggle-report="${escapeCareerHtml(id)}" aria-expanded="${reportExpanded}" aria-controls="${mobileReportId}">${mobileReportToggleLabel}</button>
+          <button type="button" class="compare-toggle ${compared ? 'active' : ''}" data-recruitment-compare="${escapeCareerHtml(id)}" aria-pressed="${compared}">${mobileCompareLabel}</button>
           <button type="button" class="primary" data-transfer-start="${escapeCareerHtml(id)}" aria-label="Negotiate contract and transfer terms with ${escapeCareerHtml(player.name)}" ${canNegotiate ? '' : 'disabled'}>NEGOTIATE</button>
         </div>
         <div class="recruitment-mobile-report" id="${mobileReportId}" ${reportExpanded ? '' : 'hidden'}>
@@ -32488,6 +32556,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return mobileFirstMatchGuideCollapsed;
   }
 
+  function collapseMobileFirstMatchGuideAfterAction(source) {
+    if (!mobileNavigationEnabled() || !source?.closest?.('.management-priority-strip.first-match-guide')) return false;
+    setMobileFirstMatchGuideCollapsed(true);
+    return true;
+  }
+
   function handleMobileFirstMatchGuideClick(event) {
     const toggle = event.target.closest?.('[data-first-match-guide-toggle]');
     if (!toggle || !mobileNavigationEnabled()) return false;
@@ -32827,6 +32901,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return `<section class="foundation-path foundation-handoff"><header><div><span>FIRST MATCH GUIDE COMPLETE</span><strong>OPENING WEEK HANDOFF</strong><p>The guided journey is finished. This smaller checklist now hands control back to the normal club priorities.</p></div><b>${completeCount}/${steps.length}</b></header><div>${steps.map((step, index) => `<button class="${step.complete ? 'complete' : index === nextIndex ? 'current' : 'future'}" data-team-route="${escapeCareerHtml(step.route)}"><i>${step.complete ? '✓' : String(index + 1).padStart(2, '0')}</i><span>${escapeCareerHtml(step.label)}</span><em>${step.complete ? 'DONE' : index === nextIndex ? 'NEXT' : 'LATER'}</em></button>`).join('')}</div></section>`;
   }
 
+  function firstMatchRecommendedProfileId() {
+    const market = Array.isArray(careerState.market) ? careerState.market : [];
+    if (!market.length) return null;
+    if (typeof recruitmentRecommendationMap === 'function' && typeof recruitmentBeginnerCandidates === 'function') {
+      const recommended = recruitmentBeginnerCandidates(market, recruitmentRecommendationMap(market), 6);
+      if (recommended.length) return recommended[0].id;
+    }
+    return market[0]?.id || null;
+  }
+
   function firstMatchGuidance() {
     if (!careerState.created) return null;
     const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
@@ -32837,7 +32921,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const firstCareerMatchPlayed = Number(careerState.totalMatches) > 0;
     const steps = [
       { id: 'recruitment', complete: Boolean(tutorial.marketViewed), route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Start with the six recommended candidates. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
-      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', label: 'INSPECT ONE OPERATOR PROFILE', detail: 'Open a report to understand the role, strongest attributes, estimated fee and what the operator would add to your current Active Five.', action: 'VIEW PROFILE' },
+      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', playerId: firstMatchRecommendedProfileId(), label: 'INSPECT ONE OPERATOR PROFILE', detail: 'Open a report to understand the role, strongest attributes, estimated fee and what the operator would add to your current Active Five.', action: 'VIEW PROFILE' },
       { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Select two recommended candidates, read Best Current Fit and Main Trade-off, then negotiate with the one you prefer. The transfer fee leaves Club Cash immediately and the weekly wage uses wage headroom.', action: 'RECRUIT OPERATOR' },
       { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} deployment places are filled. Follow the remaining team needs, compare two candidates at a time and keep enough Club Cash for fees, wages and loan repayments.`, action: 'CONTINUE RECRUITING' },
       { id: 'lineup', complete: Boolean(tutorial.squadViewed), route: 'operators', label: 'REVIEW THE ACTIVE FIVE', detail: 'The first five squad positions deploy. Check readiness, roles and equipment, then reorder the line-up only when needed.', action: 'OPEN ACTIVE LINE-UP' },
@@ -33009,9 +33093,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const items = menuPriorityItems();
     const primary = guidance ? { kind: 'required', ...guidance } : items[0];
     if (!primary) return '';
-    const actionAttribute = primary.leagueAction
-      ? `data-league-action="${escapeCareerHtml(primary.leagueAction)}"`
-      : `data-team-route="${escapeCareerHtml(primary.route)}"`;
+    const actionAttribute = primary.playerId
+      ? `data-team-profile="${escapeCareerHtml(primary.playerId)}"`
+      : primary.leagueAction
+        ? `data-league-action="${escapeCareerHtml(primary.leagueAction)}"`
+        : `data-team-route="${escapeCareerHtml(primary.route)}"`;
     const secondaryCase = value => {
       const text = String(value || '').trim().toLowerCase();
       return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : '';
@@ -35710,6 +35796,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
   }
 
+  const baseClubEndDayBlockersOpeningWeek = clubEndDayBlockers;
+  clubEndDayBlockers = function clubEndDayBlockersOpeningWeek() {
+    const blockers = baseClubEndDayBlockersOpeningWeek();
+    const restriction = openingWeekTutorialDayRestriction();
+    if (!restriction) return blockers;
+    return [{
+      id: `first-match-guide-${restriction.id}`,
+      route: restriction.route,
+      category: 'FIRST MATCH GUIDE',
+      label: restriction.label,
+      detail: restriction.detail,
+      targetId: `guide:${restriction.id}`
+    }, ...blockers];
+  };
+
   function openingWeekCurrentOpponent() {
     const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
     if (!fixture || typeof leagueClubById !== 'function' || typeof leagueFixtureOpponentId !== 'function') return null;
@@ -36002,10 +36103,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const restriction = openingWeekTutorialDayRestriction();
     const checks = openingWeekPreparationChecks();
     const groups = openingWeekAgendaGroups();
+    const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    const restrictionRepresented = !restriction || blockers.some(item =>
+      item.id === `first-match-guide-${restriction.id}` && item.detail === restriction.detail);
     const markup = openingWeekAgendaMarkup();
     return {
-      ok: checks.length === 6 && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
+      ok: checks.length === 6 && restrictionRepresented && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
       restriction,
+      restrictionRepresented,
+      blockers: blockers.map(item => ({ ...item })),
       checks,
       groupCounts: Object.fromEntries(Object.entries(groups).map(([key, value]) => [key, value.length])),
       snapshot: openingWeekClubSnapshot(),
@@ -45389,7 +45495,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return;
     }
     if (teamNoteOpen) {
-      if (key === 'escape' && typeof closeTeamNoteModal === 'function') {
+      if (key === 'tab' && typeof trapTeamNoteModalFocus === 'function') {
+        trapTeamNoteModalFocus(event);
+      } else if (key === 'escape' && typeof closeTeamNoteModal === 'function') {
         event.preventDefault();
         closeTeamNoteModal();
       }
@@ -46663,6 +46771,47 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     menuBackForTest: () => ({ ok: navigateMenuHistory(-1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
     menuForwardForTest: () => ({ ok: navigateMenuHistory(1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
     endDayBlockersForTest: () => (typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().map(item => ({ ...item })) : []),
+    teamNoteModalAccessibilityForTest: () => {
+      if (!teamNoteOverlayEl || typeof openTeamNoteModal !== 'function' || typeof closeTeamNoteModal !== 'function') {
+        return { ok: false, checks: { modalAvailable: false } };
+      }
+      closeTeamNoteModal({ restoreFocus: false });
+      const background = teamNoteBackgroundElements();
+      const original = background.map(element => ({
+        element,
+        inert: Boolean(element.inert),
+        inertAttribute: element.hasAttribute('inert')
+      }));
+      const checks = {};
+      try {
+        openTeamNoteModal({
+          title: 'ACCESSIBILITY TEST',
+          body: 'Modal focus and background isolation regression check.',
+          actionsHtml: '<button type="button" id="teamNoteTestFirst">FIRST</button><button type="button" id="teamNoteTestLast">LAST</button>'
+        });
+        const dialog = teamNoteOverlayEl.querySelector('[role="dialog"]');
+        const first = teamNoteCloseBtn;
+        const last = document.getElementById('teamNoteTestLast');
+        checks.backgroundIsInert = background.length > 0 && background.every(element => element.inert && element.hasAttribute('inert'));
+        checks.overlayExposed = !teamNoteOverlayEl.hidden && teamNoteOverlayEl.getAttribute('aria-hidden') === 'false';
+        checks.dialogIsModal = dialog?.getAttribute('aria-modal') === 'true';
+        checks.initialFocusInside = teamNoteOverlayEl.contains(document.activeElement);
+        last?.focus();
+        let forwardPrevented = false;
+        trapTeamNoteModalFocus({ key: 'Tab', shiftKey: false, preventDefault: () => { forwardPrevented = true; } });
+        checks.forwardTabWraps = forwardPrevented && document.activeElement === first;
+        first?.focus();
+        let backwardPrevented = false;
+        trapTeamNoteModalFocus({ key: 'Tab', shiftKey: true, preventDefault: () => { backwardPrevented = true; } });
+        checks.backwardTabWraps = backwardPrevented && document.activeElement === last;
+      } finally {
+        closeTeamNoteModal({ restoreFocus: false });
+        checks.backgroundRestored = original.every(({ element, inert, inertAttribute }) =>
+          Boolean(element.inert) === inert && element.hasAttribute('inert') === inertAttribute);
+        checks.overlayHidden = teamNoteOverlayEl.hidden && teamNoteOverlayEl.getAttribute('aria-hidden') === 'true';
+      }
+      return { ok: Object.values(checks).every(Boolean), checks };
+    },
     matchdayForTest: () => ({
       confirmed: typeof clubMatchPlanConfirmed === 'function' ? clubMatchPlanConfirmed() : false,
       prep: typeof clubMatchPrepState === 'function' ? { ...clubMatchPrepState() } : null,
@@ -47493,13 +47642,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         pinchZoomDisabled: /user-scalable\s*=\s*no/i.test(viewport) && /maximum-scale\s*=\s*1(?:\D|$)/i.test(viewport),
         mainNavReadable: samples.mainNav >= (mobileViewport ? 10 : 9),
         subnavReadable: samples.subnav >= (mobileViewport ? 10 : 9.5),
-        dateReadable: samples.datePrimary >= (mobileViewport ? 10 : 9) && visibleFloor(dateSecondary, mobileViewport ? 9 : 6.5),
-        priorityReadable: visibleFloor(priorityLabel, mobileViewport ? 9.5 : 9) && visibleFloor(priorityBody, mobileViewport ? 11 : 11),
-        priorityActionReadable: visibleFloor(priorityAction, mobileViewport ? 10 : 0),
-        tutorialReadable: visibleFloor(tutorialBody, mobileViewport ? 11.5 : 13),
-        mobileHierarchyReadable: !mobileViewport || (visibleFloor(mobileKicker, 9.5) && visibleFloor(mobilePill, 10)),
-        mobileLockCopyReadable: !mobileViewport || (visibleFloor(mobileLock, 9) && visibleFloor(mobileAccess, 9)),
-        mobileEconomyReadable: !mobileViewport || visibleFloor(economyLabel, 10),
+        dateReadable: samples.datePrimary >= (mobileViewport ? 12 : 9) && visibleFloor(dateSecondary, mobileViewport ? 12 : 6.5),
+        priorityReadable: visibleFloor(priorityLabel, mobileViewport ? 12 : 9) && visibleFloor(priorityBody, mobileViewport ? 14 : 11),
+        priorityActionReadable: visibleFloor(priorityAction, mobileViewport ? 13 : 0),
+        tutorialReadable: visibleFloor(tutorialBody, mobileViewport ? 14 : 13),
+        mobileHierarchyReadable: !mobileViewport || (visibleFloor(mobileKicker, 12) && visibleFloor(mobilePill, 12)),
+        mobileLockCopyReadable: !mobileViewport || (visibleFloor(mobileLock, 12) && visibleFloor(mobileAccess, 12)),
+        mobileEconomyReadable: !mobileViewport || visibleFloor(economyLabel, 12),
         desktopSecondaryReadable: !desktopViewport || visibleFloor(desktopSmall, 10.75),
         desktopCommandRowsReadable: !desktopViewport || (!commandObjectiveTitle.visible || !commandObjectiveBody.visible || (samples.commandObjectiveTitle >= 11.5 && samples.commandObjectiveBody >= 10.75)),
         desktopDirectoryReadable: !desktopViewport || visibleFloor(commandDirectoryBody, 10.75)
@@ -47518,20 +47667,29 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         tutorial: careerState.tutorial,
         totalMatches: careerState.totalMatches,
         lastRound: careerState.lastRound,
-        transfers: careerState.transfers
+        transfers: careerState.transfers,
+        selectedPlayerId: careerState.selectedPlayerId,
+        selectedTeamPlayerId
       };
       let recruitmentScroll = { guide: null, strip: '', market: '', transferAccessBefore: null, transferAccessDuring: null };
       let recruitmentMarketCount = 0;
+      let profileGuide = null;
+      let profileStrip = '';
+      let recommendedProfileIds = [];
       try {
         careerState.created = true;
         careerState.squad = [];
         careerState.totalMatches = 0;
         careerState.lastRound = null;
         careerState.market = Array.isArray(previous.market) && previous.market.length ? previous.market : generateTeamMarket(12332);
-        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: true };
+        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: false };
         careerState.transfers = { ...(previous.transfers || {}), activeIncoming: null };
         recruitmentBeginnerExpanded = false;
         recruitmentMarketCount = careerState.market.length;
+        recommendedProfileIds = recruitmentBeginnerCandidates(careerState.market, recruitmentRecommendationMap(careerState.market), 6).map(player => player.id);
+        profileGuide = firstMatchGuidance();
+        profileStrip = renderMenuPriorityStrip();
+        careerState.tutorial.profileViewed = true;
         recruitmentScroll = {
           guide: firstMatchGuidance(),
           strip: renderMenuPriorityStrip(),
@@ -47549,6 +47707,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         careerState.totalMatches = previous.totalMatches;
         careerState.lastRound = previous.lastRound;
         careerState.transfers = previous.transfers;
+        careerState.selectedPlayerId = previous.selectedPlayerId;
+        selectedTeamPlayerId = previous.selectedTeamPlayerId;
         recruitmentBeginnerExpanded = false;
       }
       const marketHost = document.createElement('div');
@@ -47564,7 +47724,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         advancedToolsCollapsed: !marketHost.querySelector('.recruitment-toolbar') && !marketHost.querySelector('.club-pool-control'),
         roleGuideAvailableButCollapsed: Boolean(roleGuide && !roleGuide.open),
         transfersLockedBeforeNegotiation: Boolean(recruitmentScroll.transferAccessBefore?.locked),
-        transfersOpenForActiveTutorialNegotiation: Boolean(!recruitmentScroll.transferAccessDuring?.locked && recruitmentScroll.transferAccessDuring?.label === 'NEGOTIATE')
+        transfersOpenForActiveTutorialNegotiation: Boolean(!recruitmentScroll.transferAccessDuring?.locked && recruitmentScroll.transferAccessDuring?.label === 'NEGOTIATE'),
+        profileTargetsRecommendedCandidate: profileGuide?.id === 'profile' && recommendedProfileIds.includes(profileGuide.playerId),
+        profileActionSelectsCandidate: new RegExp(`data-team-profile="${profileGuide?.playerId || ''}"`).test(profileStrip),
+        profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip)
       };
       return {
         ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && guide.milestoneTotal === 6 && primarySection === guide.section)) && (!guide || /FIRST MATCH JOURNEY/.test(strip)) && Object.values(scrollChecks).every(Boolean)),
@@ -47825,6 +47988,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const first = cards[0];
       const front = first?.querySelector('.recruitment-card-front');
       const back = first?.querySelector('.recruitment-card-back');
+      const mobile = first?.querySelector('.recruitment-mobile-card');
       const checks = {
         guidedListUsesSixCompactCards: cards.length === 6,
         twoFacesPresent: Boolean(front && back),
@@ -47832,6 +47996,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         decisionFactsOnFront: Boolean(front && /ABILITY/.test(front.textContent || '') && /POTENTIAL/.test(front.textContent || '') && /FEE/.test(front.textContent || '') && /WAGE/.test(front.textContent || '')),
         scoutDepthOnBack: Boolean(back && /ROLE BRIEF/.test(back.textContent || '') && /KEY ATTRIBUTES/.test(back.textContent || '') && /MEDICAL/.test(back.textContent || '') && /ACTIVE FIVE IMPACT/.test(back.textContent || '')),
         directActionsRetained: Boolean(front?.querySelector('[data-recruitment-shortlist]') && front?.querySelector('[data-recruitment-compare]') && front?.querySelector('[data-team-profile]') && front?.querySelector('[data-transfer-start]')),
+        mobileFrontCompareVisible: Boolean(mobile?.querySelector('.recruitment-mobile-summary-actions [data-recruitment-compare]')),
         comparisonTrayHasThreeSlots: host.querySelectorAll('.recruitment-comparison-slot').length === 3,
         detailWorkspaceStartsClosed: Boolean(host.querySelector('[data-recruitment-comparison-panel]')?.hidden),
         transientOnly: !Object.prototype.hasOwnProperty.call(recruitmentState(), 'comparisonExpanded') && !Object.prototype.hasOwnProperty.call(recruitmentState(), 'flippedIds')

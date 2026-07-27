@@ -1033,7 +1033,9 @@
       return;
     }
     if (teamNoteOpen) {
-      if (key === 'escape' && typeof closeTeamNoteModal === 'function') {
+      if (key === 'tab' && typeof trapTeamNoteModalFocus === 'function') {
+        trapTeamNoteModalFocus(event);
+      } else if (key === 'escape' && typeof closeTeamNoteModal === 'function') {
         event.preventDefault();
         closeTeamNoteModal();
       }
@@ -2307,6 +2309,47 @@
     menuBackForTest: () => ({ ok: navigateMenuHistory(-1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
     menuForwardForTest: () => ({ ok: navigateMenuHistory(1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
     endDayBlockersForTest: () => (typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().map(item => ({ ...item })) : []),
+    teamNoteModalAccessibilityForTest: () => {
+      if (!teamNoteOverlayEl || typeof openTeamNoteModal !== 'function' || typeof closeTeamNoteModal !== 'function') {
+        return { ok: false, checks: { modalAvailable: false } };
+      }
+      closeTeamNoteModal({ restoreFocus: false });
+      const background = teamNoteBackgroundElements();
+      const original = background.map(element => ({
+        element,
+        inert: Boolean(element.inert),
+        inertAttribute: element.hasAttribute('inert')
+      }));
+      const checks = {};
+      try {
+        openTeamNoteModal({
+          title: 'ACCESSIBILITY TEST',
+          body: 'Modal focus and background isolation regression check.',
+          actionsHtml: '<button type="button" id="teamNoteTestFirst">FIRST</button><button type="button" id="teamNoteTestLast">LAST</button>'
+        });
+        const dialog = teamNoteOverlayEl.querySelector('[role="dialog"]');
+        const first = teamNoteCloseBtn;
+        const last = document.getElementById('teamNoteTestLast');
+        checks.backgroundIsInert = background.length > 0 && background.every(element => element.inert && element.hasAttribute('inert'));
+        checks.overlayExposed = !teamNoteOverlayEl.hidden && teamNoteOverlayEl.getAttribute('aria-hidden') === 'false';
+        checks.dialogIsModal = dialog?.getAttribute('aria-modal') === 'true';
+        checks.initialFocusInside = teamNoteOverlayEl.contains(document.activeElement);
+        last?.focus();
+        let forwardPrevented = false;
+        trapTeamNoteModalFocus({ key: 'Tab', shiftKey: false, preventDefault: () => { forwardPrevented = true; } });
+        checks.forwardTabWraps = forwardPrevented && document.activeElement === first;
+        first?.focus();
+        let backwardPrevented = false;
+        trapTeamNoteModalFocus({ key: 'Tab', shiftKey: true, preventDefault: () => { backwardPrevented = true; } });
+        checks.backwardTabWraps = backwardPrevented && document.activeElement === last;
+      } finally {
+        closeTeamNoteModal({ restoreFocus: false });
+        checks.backgroundRestored = original.every(({ element, inert, inertAttribute }) =>
+          Boolean(element.inert) === inert && element.hasAttribute('inert') === inertAttribute);
+        checks.overlayHidden = teamNoteOverlayEl.hidden && teamNoteOverlayEl.getAttribute('aria-hidden') === 'true';
+      }
+      return { ok: Object.values(checks).every(Boolean), checks };
+    },
     matchdayForTest: () => ({
       confirmed: typeof clubMatchPlanConfirmed === 'function' ? clubMatchPlanConfirmed() : false,
       prep: typeof clubMatchPrepState === 'function' ? { ...clubMatchPrepState() } : null,
@@ -3137,13 +3180,13 @@
         pinchZoomDisabled: /user-scalable\s*=\s*no/i.test(viewport) && /maximum-scale\s*=\s*1(?:\D|$)/i.test(viewport),
         mainNavReadable: samples.mainNav >= (mobileViewport ? 10 : 9),
         subnavReadable: samples.subnav >= (mobileViewport ? 10 : 9.5),
-        dateReadable: samples.datePrimary >= (mobileViewport ? 10 : 9) && visibleFloor(dateSecondary, mobileViewport ? 9 : 6.5),
-        priorityReadable: visibleFloor(priorityLabel, mobileViewport ? 9.5 : 9) && visibleFloor(priorityBody, mobileViewport ? 11 : 11),
-        priorityActionReadable: visibleFloor(priorityAction, mobileViewport ? 10 : 0),
-        tutorialReadable: visibleFloor(tutorialBody, mobileViewport ? 11.5 : 13),
-        mobileHierarchyReadable: !mobileViewport || (visibleFloor(mobileKicker, 9.5) && visibleFloor(mobilePill, 10)),
-        mobileLockCopyReadable: !mobileViewport || (visibleFloor(mobileLock, 9) && visibleFloor(mobileAccess, 9)),
-        mobileEconomyReadable: !mobileViewport || visibleFloor(economyLabel, 10),
+        dateReadable: samples.datePrimary >= (mobileViewport ? 12 : 9) && visibleFloor(dateSecondary, mobileViewport ? 12 : 6.5),
+        priorityReadable: visibleFloor(priorityLabel, mobileViewport ? 12 : 9) && visibleFloor(priorityBody, mobileViewport ? 14 : 11),
+        priorityActionReadable: visibleFloor(priorityAction, mobileViewport ? 13 : 0),
+        tutorialReadable: visibleFloor(tutorialBody, mobileViewport ? 14 : 13),
+        mobileHierarchyReadable: !mobileViewport || (visibleFloor(mobileKicker, 12) && visibleFloor(mobilePill, 12)),
+        mobileLockCopyReadable: !mobileViewport || (visibleFloor(mobileLock, 12) && visibleFloor(mobileAccess, 12)),
+        mobileEconomyReadable: !mobileViewport || visibleFloor(economyLabel, 12),
         desktopSecondaryReadable: !desktopViewport || visibleFloor(desktopSmall, 10.75),
         desktopCommandRowsReadable: !desktopViewport || (!commandObjectiveTitle.visible || !commandObjectiveBody.visible || (samples.commandObjectiveTitle >= 11.5 && samples.commandObjectiveBody >= 10.75)),
         desktopDirectoryReadable: !desktopViewport || visibleFloor(commandDirectoryBody, 10.75)
@@ -3162,20 +3205,29 @@
         tutorial: careerState.tutorial,
         totalMatches: careerState.totalMatches,
         lastRound: careerState.lastRound,
-        transfers: careerState.transfers
+        transfers: careerState.transfers,
+        selectedPlayerId: careerState.selectedPlayerId,
+        selectedTeamPlayerId
       };
       let recruitmentScroll = { guide: null, strip: '', market: '', transferAccessBefore: null, transferAccessDuring: null };
       let recruitmentMarketCount = 0;
+      let profileGuide = null;
+      let profileStrip = '';
+      let recommendedProfileIds = [];
       try {
         careerState.created = true;
         careerState.squad = [];
         careerState.totalMatches = 0;
         careerState.lastRound = null;
         careerState.market = Array.isArray(previous.market) && previous.market.length ? previous.market : generateTeamMarket(12332);
-        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: true };
+        careerState.tutorial = { ...(previous.tutorial || {}), marketViewed: true, profileViewed: false };
         careerState.transfers = { ...(previous.transfers || {}), activeIncoming: null };
         recruitmentBeginnerExpanded = false;
         recruitmentMarketCount = careerState.market.length;
+        recommendedProfileIds = recruitmentBeginnerCandidates(careerState.market, recruitmentRecommendationMap(careerState.market), 6).map(player => player.id);
+        profileGuide = firstMatchGuidance();
+        profileStrip = renderMenuPriorityStrip();
+        careerState.tutorial.profileViewed = true;
         recruitmentScroll = {
           guide: firstMatchGuidance(),
           strip: renderMenuPriorityStrip(),
@@ -3193,6 +3245,8 @@
         careerState.totalMatches = previous.totalMatches;
         careerState.lastRound = previous.lastRound;
         careerState.transfers = previous.transfers;
+        careerState.selectedPlayerId = previous.selectedPlayerId;
+        selectedTeamPlayerId = previous.selectedTeamPlayerId;
         recruitmentBeginnerExpanded = false;
       }
       const marketHost = document.createElement('div');
@@ -3208,7 +3262,10 @@
         advancedToolsCollapsed: !marketHost.querySelector('.recruitment-toolbar') && !marketHost.querySelector('.club-pool-control'),
         roleGuideAvailableButCollapsed: Boolean(roleGuide && !roleGuide.open),
         transfersLockedBeforeNegotiation: Boolean(recruitmentScroll.transferAccessBefore?.locked),
-        transfersOpenForActiveTutorialNegotiation: Boolean(!recruitmentScroll.transferAccessDuring?.locked && recruitmentScroll.transferAccessDuring?.label === 'NEGOTIATE')
+        transfersOpenForActiveTutorialNegotiation: Boolean(!recruitmentScroll.transferAccessDuring?.locked && recruitmentScroll.transferAccessDuring?.label === 'NEGOTIATE'),
+        profileTargetsRecommendedCandidate: profileGuide?.id === 'profile' && recommendedProfileIds.includes(profileGuide.playerId),
+        profileActionSelectsCandidate: new RegExp(`data-team-profile="${profileGuide?.playerId || ''}"`).test(profileStrip),
+        profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip)
       };
       return {
         ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && guide.milestoneTotal === 6 && primarySection === guide.section)) && (!guide || /FIRST MATCH JOURNEY/.test(strip)) && Object.values(scrollChecks).every(Boolean)),
@@ -3469,6 +3526,7 @@
       const first = cards[0];
       const front = first?.querySelector('.recruitment-card-front');
       const back = first?.querySelector('.recruitment-card-back');
+      const mobile = first?.querySelector('.recruitment-mobile-card');
       const checks = {
         guidedListUsesSixCompactCards: cards.length === 6,
         twoFacesPresent: Boolean(front && back),
@@ -3476,6 +3534,7 @@
         decisionFactsOnFront: Boolean(front && /ABILITY/.test(front.textContent || '') && /POTENTIAL/.test(front.textContent || '') && /FEE/.test(front.textContent || '') && /WAGE/.test(front.textContent || '')),
         scoutDepthOnBack: Boolean(back && /ROLE BRIEF/.test(back.textContent || '') && /KEY ATTRIBUTES/.test(back.textContent || '') && /MEDICAL/.test(back.textContent || '') && /ACTIVE FIVE IMPACT/.test(back.textContent || '')),
         directActionsRetained: Boolean(front?.querySelector('[data-recruitment-shortlist]') && front?.querySelector('[data-recruitment-compare]') && front?.querySelector('[data-team-profile]') && front?.querySelector('[data-transfer-start]')),
+        mobileFrontCompareVisible: Boolean(mobile?.querySelector('.recruitment-mobile-summary-actions [data-recruitment-compare]')),
         comparisonTrayHasThreeSlots: host.querySelectorAll('.recruitment-comparison-slot').length === 3,
         detailWorkspaceStartsClosed: Boolean(host.querySelector('[data-recruitment-comparison-panel]')?.hidden),
         transientOnly: !Object.prototype.hasOwnProperty.call(recruitmentState(), 'comparisonExpanded') && !Object.prototype.hasOwnProperty.call(recruitmentState(), 'flippedIds')

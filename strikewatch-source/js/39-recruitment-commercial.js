@@ -1247,6 +1247,7 @@
         </div>
         <div class="recruitment-mobile-summary-actions">
           <button type="button" data-recruitment-toggle-report="${escapeCareerHtml(id)}" aria-expanded="${reportExpanded}" aria-controls="${mobileReportId}">${mobileReportToggleLabel}</button>
+          <button type="button" class="compare-toggle ${compared ? 'active' : ''}" data-recruitment-compare="${escapeCareerHtml(id)}" aria-pressed="${compared}">${mobileCompareLabel}</button>
           <button type="button" class="primary" data-transfer-start="${escapeCareerHtml(id)}" aria-label="Negotiate contract and transfer terms with ${escapeCareerHtml(player.name)}" ${canNegotiate ? '' : 'disabled'}>NEGOTIATE</button>
         </div>
         <div class="recruitment-mobile-report" id="${mobileReportId}" ${reportExpanded ? '' : 'hidden'}>

@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.119 fixes the hidden/stretched onboarding `NEXT` badge without
-changing navigation or onboarding state. See `HANDOFF.md` and
-`AUDIT-12.119.md`.
+Build 12.120 improves compact typography, guided recruitment continuity,
+candidate comparison access, dialog accessibility and guided calendar
+blocker reporting. See `HANDOFF.md` and `AUDIT-12.120.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

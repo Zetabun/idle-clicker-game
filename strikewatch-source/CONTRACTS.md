@@ -32,10 +32,13 @@ current task. Release-specific implementation detail belongs in the matching
   density.
 - Require no document-level horizontal overflow at supported widths.
 - Touch actions affected by a change should remain at least 44px.
-- Meaningful mobile microcopy has a 10.5px floor. Decorative glyphs, transient
-  damage tags and non-semantic marks may remain smaller.
+- Meaningful mobile microcopy has a 12px floor; explanatory paragraphs and
+  decision-support copy use at least 14px. Decorative glyphs, transient damage
+  tags and non-semantic marks may remain smaller.
 - Keep focus visibility, accessible names, safe-area clearance, keyboard
   access and full-page scrolling intact.
+- Shared management dialogs isolate the background with `inert`, move initial
+  focus inside, trap Tab/Shift+Tab and restore background state on close.
 - Primary navigation, subsection navigation, previous/next history, Inbox,
   Calendar, End Day and Help controls must remain reachable.
 - `.menu-subtab::after` owns the active-route bottom rail. On an inactive
@@ -50,14 +53,18 @@ current task. Release-specific implementation detail belongs in the matching
   state. Do not add a second saved tutorial progression authority.
 - The guide teaches recruitment, one profile, the Active Five, line-up review,
   one match plan, the first match, debrief and one training focus.
+- The guided profile action must select one of the six candidates displayed in
+  the beginner recruitment list. On compact cards, Compare remains available
+  without requiring the user to reveal the detailed card face.
 - Guided presentation may focus or explain existing actions, but must not
   auto-sign a player, choose tactics, assign training, resolve a blocker or
   advance a decision without the player.
 - Progressive route locks are derived from club readiness and completed
   milestones. They must remain truthful and accessible.
 - `openingWeekTutorialDayRestriction()` prevents unnecessary calendar
-  consumption during guided decisions. It must release when time genuinely
-  needs to advance.
+  consumption during guided decisions. The restriction is also represented by
+  `clubEndDayBlockers()` so UI and simulation report one canonical cause, and
+  it must release when time genuinely needs to advance.
 - `openingWeekAdvanceToNextEvent()` uses the normal day simulation, stops for
   meaningful events or decisions and never auto-resolves them.
 - Transient guidance, comparison and summary state must not leak into save
