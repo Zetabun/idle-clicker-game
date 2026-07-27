@@ -2553,6 +2553,10 @@
     mailPresentationForTest: () => {
       const client = menuContentEl?.querySelector('.club-mail-client');
       const reader = menuContentEl?.querySelector('#clubMailReader');
+      const list = menuContentEl?.querySelector('.club-mail-list');
+      const firstRow = list?.querySelector('.club-mail-row');
+      const listHeight = Math.max(0, Math.round(list?.getBoundingClientRect().height || 0));
+      const rowHeight = Math.max(0, Math.round(firstRow?.getBoundingClientRect().height || 0));
       return {
         inlineReader: typeof clubMailUsesInlineReader === 'function' ? clubMailUsesInlineReader() : false,
         presentation: client?.dataset.mailPresentation || '',
@@ -2560,7 +2564,13 @@
         activeRowMailId: menuContentEl?.querySelector('.club-mail-row.active')?.dataset.clubMail || '',
         readerSubject: reader?.querySelector('.club-mail-message-subject h2')?.textContent || '',
         readerChoiceCount: reader?.querySelectorAll('[data-club-decision][data-club-choice]').length || 0,
-        modalOpen: Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden && teamNoteOverlayEl.dataset.mode === 'mail')
+        modalOpen: Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden && teamNoteOverlayEl.dataset.mode === 'mail'),
+        contentScrollTop: Math.max(0, Math.round(menuContentEl?.closest('.menu-content')?.scrollTop || 0)),
+        listScrollTop: Math.max(0, Math.round(list?.scrollTop || 0)),
+        listHeight,
+        rowHeight,
+        visibleRowCapacity: rowHeight ? Math.round((listHeight / rowHeight) * 100) / 100 : 0,
+        listScrollable: Boolean(list && list.scrollHeight > list.clientHeight + 1)
       };
     },
     selectMailForTest: mailId => {

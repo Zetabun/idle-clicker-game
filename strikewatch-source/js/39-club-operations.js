@@ -712,12 +712,26 @@
     const mail = clubMailById(mailId);
     if (!mail) return false;
     const inlineReader = clubMailUsesInlineReader();
+    const inlineScrollState = inlineReader ? {
+      contentTop: Math.max(0, Number(menuContentEl?.closest('.menu-content')?.scrollTop) || 0),
+      listTop: Math.max(0, Number(menuContentEl?.querySelector('.club-mail-list')?.scrollTop) || 0)
+    } : null;
     careerState.selectedMailId = mail.id;
     mail.read = true;
     saveCareerState();
     updateMenuUI();
     if (inlineReader) {
-      requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
+      const restoreInlinePosition = () => {
+        const contentScroller = menuContentEl?.closest('.menu-content');
+        const mailList = menuContentEl?.querySelector('.club-mail-list');
+        clubMailRowElement(mail.id)?.focus({ preventScroll: true });
+        if (contentScroller) contentScroller.scrollTop = inlineScrollState.contentTop;
+        if (mailList) mailList.scrollTop = inlineScrollState.listTop;
+      };
+      requestAnimationFrame(() => {
+        restoreInlinePosition();
+        requestAnimationFrame(restoreInlinePosition);
+      });
       return true;
     }
     return openClubMailModal(mail.id, clubMailRowElement(mail.id) || fallbackTrigger, false);

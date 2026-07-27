@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.124 adds the team name beneath the desktop crest and keeps desktop
-emails in the adjacent Inbox reader while preserving the compact mail modal.
-See `HANDOFF.md` and `AUDIT-12.124.md`.
+Build 12.125 keeps the desktop Inbox compact, retains scroll position when
+opening messages, and adds subtle translucent desktop command chrome while
+preserving compact/mobile behaviour. See `HANDOFF.md` and `AUDIT-12.125.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

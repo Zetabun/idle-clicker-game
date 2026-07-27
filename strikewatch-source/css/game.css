@@ -29771,3 +29771,61 @@ body[data-app-state='menu'] { background: var(--skin-ink-0); }
     line-height: 1.45;
   }
 }
+
+
+/* ============================================================================
+   Build 12.125 — Desktop Inbox viewport and translucent command chrome.
+   The Inbox shows at most five desktop rows before its own scrollbar takes
+   over. Sticky command surfaces use translucent backgrounds and backdrop blur
+   so scrolled content remains faintly visible without reducing text opacity.
+   ========================================================================== */
+@media (min-width: 1024px) {
+  .club-mail-client[data-mail-presentation='inline'] {
+    min-height: 0;
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-layout {
+    height: clamp(528px, calc(100dvh - 240px), 588px);
+    min-height: 0;
+    max-height: 588px;
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-list {
+    max-height: 540px;
+    overscroll-behavior: contain;
+  }
+
+  .manager-topbar {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .035), transparent 42%),
+      linear-gradient(90deg, rgba(8, 13, 24, .9), rgba(15, 23, 41, .88) 52%, rgba(8, 13, 24, .9));
+    backdrop-filter: blur(14px) saturate(118%);
+    -webkit-backdrop-filter: blur(14px) saturate(118%);
+  }
+  .menu-shell .manager-history-btn {
+    background: rgba(8, 13, 24, .58) !important;
+    backdrop-filter: blur(11px) saturate(115%);
+    -webkit-backdrop-filter: blur(11px) saturate(115%);
+  }
+  .menu-shell .manager-history-btn:disabled {
+    background: linear-gradient(180deg, rgba(36, 49, 59, .72), rgba(32, 44, 54, .68)) !important;
+  }
+  .menu-shell .manager-history-btn:not(:disabled):hover,
+  .menu-shell .manager-history-btn:not(:disabled):focus-visible {
+    background: color-mix(in srgb, var(--manager-accent) 14%, rgba(10, 18, 32, .76)) !important;
+  }
+  .menu-sidebar {
+    background:
+      linear-gradient(180deg, rgba(11, 17, 32, .91), rgba(6, 10, 18, .9)),
+      repeating-linear-gradient(180deg, transparent 0 39px, rgba(255, 255, 255, .012) 40px) !important;
+    backdrop-filter: blur(12px) saturate(112%);
+    -webkit-backdrop-filter: blur(12px) saturate(112%);
+  }
+  body[data-menu-context='pause'] .menu-header-row,
+  .menu-subnav-shell {
+    background: rgba(9, 15, 27, .86);
+    backdrop-filter: blur(13px) saturate(116%);
+    -webkit-backdrop-filter: blur(13px) saturate(116%);
+  }
+  .menu-subnav {
+    background: transparent;
+  }
+}

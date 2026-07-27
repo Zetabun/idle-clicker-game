@@ -6,20 +6,24 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.124 — Desktop Club Identity & Inline Inbox**
-- Build ID: `12.124.0-desktop-club-identity-inline-inbox`
+- Build: **12.125 — Desktop Inbox & Glass Chrome**
+- Build ID: `12.125.0-desktop-inbox-glass-chrome`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.124.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.125.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
+Build 12.125 caps the desktop Inbox feed at five rows (about four on shorter
+viewports), preserves page and list scroll position when a message opens, and
+adds restrained translucent desktop command chrome. Compact/mobile mail and
+navigation remain unchanged. See `AUDIT-12.125.md`.
+
 Build 12.124 shows the active team name beneath the desktop sidebar crest and
-keeps desktop email selection inside the adjacent Inbox reader. Compact/mobile
-email selection continues to use the accessible modal. Decision responses are
-available in both presentations. See `AUDIT-12.124.md`.
+owns the desktop-inline/compact-modal Inbox presentation split. Decision
+responses remain available in both presentations. See `AUDIT-12.124.md`.
 
 Build 12.123 extends the skin to the bespoke route surfaces (section hubs,
 journey strip, gates, metric tiles, recruitment/market panels). Skin changes

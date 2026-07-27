@@ -19,7 +19,7 @@ documents.
 | `PROJECT.md` | A short product/technical overview is useful |
 | `README.md` | Build/start instructions or developer-facing summary |
 | `CHANGELOG.md` | Locating one historical regression record |
-| `AUDIT-12.124.md` | Changing or verifying the current release |
+| `AUDIT-12.125.md` | Changing or verifying the current release |
 | other `AUDIT-*.md` | A specific historical system/regression requires it |
 
 `00-READ-FIRST-GPT.md` and `GPT-HANDOFF-PROMPT.txt` are concise compatibility
@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.124 — Desktop Club Identity & Inline Inbox
-- Standalone: `dist/strikewatch-build-12.124.html`
+- Build 12.125 — Desktop Inbox & Glass Chrome
+- Standalone: `dist/strikewatch-build-12.125.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

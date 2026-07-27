@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.124';
-  const BUILD_NAME = 'DESKTOP CLUB IDENTITY & INLINE INBOX';
-  const BUILD_ID = '12.124.0-desktop-club-identity-inline-inbox';
+  const BUILD_VERSION = '12.125';
+  const BUILD_NAME = 'DESKTOP INBOX & GLASS CHROME';
+  const BUILD_ID = '12.125.0-desktop-inbox-glass-chrome';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -21894,12 +21894,26 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const mail = clubMailById(mailId);
     if (!mail) return false;
     const inlineReader = clubMailUsesInlineReader();
+    const inlineScrollState = inlineReader ? {
+      contentTop: Math.max(0, Number(menuContentEl?.closest('.menu-content')?.scrollTop) || 0),
+      listTop: Math.max(0, Number(menuContentEl?.querySelector('.club-mail-list')?.scrollTop) || 0)
+    } : null;
     careerState.selectedMailId = mail.id;
     mail.read = true;
     saveCareerState();
     updateMenuUI();
     if (inlineReader) {
-      requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
+      const restoreInlinePosition = () => {
+        const contentScroller = menuContentEl?.closest('.menu-content');
+        const mailList = menuContentEl?.querySelector('.club-mail-list');
+        clubMailRowElement(mail.id)?.focus({ preventScroll: true });
+        if (contentScroller) contentScroller.scrollTop = inlineScrollState.contentTop;
+        if (mailList) mailList.scrollTop = inlineScrollState.listTop;
+      };
+      requestAnimationFrame(() => {
+        restoreInlinePosition();
+        requestAnimationFrame(restoreInlinePosition);
+      });
       return true;
     }
     return openClubMailModal(mail.id, clubMailRowElement(mail.id) || fallbackTrigger, false);
@@ -47065,6 +47079,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     mailPresentationForTest: () => {
       const client = menuContentEl?.querySelector('.club-mail-client');
       const reader = menuContentEl?.querySelector('#clubMailReader');
+      const list = menuContentEl?.querySelector('.club-mail-list');
+      const firstRow = list?.querySelector('.club-mail-row');
+      const listHeight = Math.max(0, Math.round(list?.getBoundingClientRect().height || 0));
+      const rowHeight = Math.max(0, Math.round(firstRow?.getBoundingClientRect().height || 0));
       return {
         inlineReader: typeof clubMailUsesInlineReader === 'function' ? clubMailUsesInlineReader() : false,
         presentation: client?.dataset.mailPresentation || '',
@@ -47072,7 +47090,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         activeRowMailId: menuContentEl?.querySelector('.club-mail-row.active')?.dataset.clubMail || '',
         readerSubject: reader?.querySelector('.club-mail-message-subject h2')?.textContent || '',
         readerChoiceCount: reader?.querySelectorAll('[data-club-decision][data-club-choice]').length || 0,
-        modalOpen: Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden && teamNoteOverlayEl.dataset.mode === 'mail')
+        modalOpen: Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden && teamNoteOverlayEl.dataset.mode === 'mail'),
+        contentScrollTop: Math.max(0, Math.round(menuContentEl?.closest('.menu-content')?.scrollTop || 0)),
+        listScrollTop: Math.max(0, Math.round(list?.scrollTop || 0)),
+        listHeight,
+        rowHeight,
+        visibleRowCapacity: rowHeight ? Math.round((listHeight / rowHeight) * 100) / 100 : 0,
+        listScrollable: Boolean(list && list.scrollHeight > list.clientHeight + 1)
       };
     },
     selectMailForTest: mailId => {

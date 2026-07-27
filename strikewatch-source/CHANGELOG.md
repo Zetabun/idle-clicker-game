@@ -7,6 +7,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.125 | Compact desktop Inbox, retained scroll and glass command chrome | `AUDIT-12.125.md` |
 | 12.124 | Desktop club identity and inline Inbox reader | `AUDIT-12.124.md` |
 | 12.123 | Command Skin depth pass on bespoke route surfaces | `AUDIT-12.123.md` |
 | 12.122 | FM-inspired Command Skin visual revamp | `AUDIT-12.122.md` |

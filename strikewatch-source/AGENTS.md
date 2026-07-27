@@ -56,6 +56,11 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.125 owns the desktop Inbox viewport, email-selection scroll retention
+and translucent command chrome. Keep the feed at no more than five visible
+rows, preserve both page and feed position through a reader refresh, and keep
+the compact/mobile presentation unchanged. See `AUDIT-12.125.md`.
+
 Build 12.124 owns desktop club identification and Inbox presentation:
 the active team name appears beneath the desktop crest, desktop email rows
 select the adjacent reader, and compact/mobile rows retain the mail modal.
