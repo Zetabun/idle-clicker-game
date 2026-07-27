@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.133 — Readable Command
+
+- Enlarges Opponent Quick Read, Active Operator Match Roles, Confirm Deployment and after-action reward typography, and removes the dead space in the match-roles rows.
+- Stops the Inbox feed capturing page scroll until the manager clicks into it.
+- Warns before a response template or tactical control replaces an applied scout recommendation.
+- Fixes repeated Inbox decision mail from the same player via a per-player, per-type cooldown.
+- Gives operator portraits independent complexion, headgear, kit and rig variation, still asset-free and deterministic.
+- Save schema, match simulation, tactical fit and the economy are unchanged.
+- Evidence: `AUDIT-12.133.md`.
+
+
 ## 12.132 — Selection Feedback
 
 - Gives the Formation, Team Approach, Engagement Range, Map Selection and Team Priority cards a clearly distinct selected state at every width.
@@ -23,6 +34,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.132 | Match setup selection feedback | `AUDIT-12.132.md` |
 | 12.131 | Tactical clarity consolidation and End Day contrast | `AUDIT-12.131.md` |
 | 12.130 | Fourth arena: Aurora Terminal (summit-theme polar transit hub) | `AUDIT-12.130.md` |
 | 12.129 | First Match Guide streamlining and opening progression-lock fixes | `AUDIT-12.129.md` |

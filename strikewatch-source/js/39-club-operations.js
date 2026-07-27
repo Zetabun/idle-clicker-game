@@ -908,6 +908,8 @@
     const formation = event.target.closest('[data-club-formation]');
     if (formation) {
       const value = CLUB_FORMATIONS[formation.dataset.clubFormation] ? formation.dataset.clubFormation : 'balanced';
+      if (typeof matchdayGuardRecommendedPlanChange === 'function'
+        && matchdayGuardRecommendedPlanChange('tactics', { field: 'formationId', value }, formation)) return true;
       if (typeof workflowSetTacticsField === 'function') workflowSetTacticsField('formationId', value);
       else { careerState.tactics.formationId = value; saveCareerState(); updateMenuUI(); }
       return true;

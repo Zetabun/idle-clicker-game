@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.132 — Selection Feedback
-- Standalone: `dist/strikewatch-build-12.132.html`
+- Build 12.133 — Readable Command
+- Standalone: `dist/strikewatch-build-12.133.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

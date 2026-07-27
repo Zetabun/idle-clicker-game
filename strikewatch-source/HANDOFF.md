@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.132 — Selection Feedback**
-- Build ID: `12.132.0-selection-feedback`
+- Build: **12.133 — Readable Command**
+- Build ID: `12.133.0-readable-command`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.132.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.133.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.133 makes the reported command surfaces readable and predictable. Opponent Quick Read tiles, Active Operator Match Roles, Confirm Deployment and the after-action reward guide all gain legible type and tighter alignment; the Inbox feed no longer steals page scroll; applying a scout recommendation and then changing it now asks for confirmation; the same player no longer raises the same Inbox decision repeatedly; and operator portraits carry independent complexion, headgear and kit variation. See `AUDIT-12.133.md`.
 
 Build 12.132 makes match setup selection legible. The Formation, Team Approach, Engagement Range, Map Selection and Team Priority cards gain a distinct selected state (top accent bar, stronger border, ring and surface), a pressed state that fires on pointer-down, a pointer-only hover state, a visible focus outline and a short confirmation pulse re-applied after the panel re-renders. Presentation only; gameplay, tactical fit, saves and match simulation are unchanged. See `AUDIT-12.132.md`.
 

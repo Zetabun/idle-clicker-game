@@ -1507,6 +1507,78 @@
         daysUntilFixture: typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null
       };
     },
+    // Build 12.133: exercises the recommended-plan change warning end to end —
+    // apply the scout recommendation, then attempt a change and report whether
+    // the confirmation modal intercepted it and what each choice did.
+    matchdayPlanWarningForTest: (choice = 'proceed') => {
+      if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);
+      menuContext = 'main';
+      menuTab = 'tactics';
+      setAppState('menu');
+      const plans = typeof opponentResponsePlanCandidates === 'function' ? opponentResponsePlanCandidates() : [];
+      const recommended = plans.find(item => item.recommended) || plans[0] || null;
+      if (!recommended) return { ok: false, reason: 'No response plans available.' };
+      clubSelectOpponentResponsePlan(recommended.id);
+      const alternative = plans.find(item => item.id !== recommended.id) || null;
+      const before = { ...clubWorkflowTactics() };
+
+      const guarded = matchdayGuardRecommendedPlanChange('response', { planId: alternative?.id }, null);
+      const modalOpen = Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden);
+      const buttons = Array.from(teamNoteOverlayEl?.querySelectorAll('[data-matchday-plan-warning]') || []).map(node => node.dataset.matchdayPlanWarning);
+      const target = teamNoteOverlayEl?.querySelector(`[data-matchday-plan-warning="${choice === 'keep' ? 'keep' : 'proceed'}"]`) || null;
+      if (target) handleMatchdayPlanWarningAction({ target });
+      const after = { ...clubWorkflowTactics() };
+
+      // Second attempt, using an approach the recommendation does not already
+      // use so the guard is genuinely exercised. After CHANGE ANYWAY it must
+      // stay silent; after KEEP RECOMMENDED it must warn again.
+      const otherApproach = Object.keys(CLUB_APPROACHES).find(id => id !== recommended.approachId) || 'balanced';
+      const secondGuard = matchdayGuardRecommendedPlanChange('tactics', { field: 'approachId', value: otherApproach }, null);
+      if (teamNoteOverlayEl && !teamNoteOverlayEl.hidden) closeTeamNoteModal({ restoreFocus: false });
+
+      return {
+        ok: true, guarded, modalOpen, buttons, choice,
+        changed: before.formationId !== after.formationId || before.approachId !== after.approachId
+          || before.engagementId !== after.engagementId || before.priorityId !== after.priorityId,
+        warnedAgain: secondGuard, secondAttemptApproach: otherApproach,
+        selectedResponseId: clubMatchPrepState().selectedResponseId,
+        recommendedId: recommended.id, alternativeId: alternative?.id || null
+      };
+    },
+    // Build 12.133: drives the decision generator over a long calendar run and
+    // reports any repeat of the same decision type for the same player inside
+    // the repeat cooldown, which is what produced duplicate Inbox mail.
+    clubDecisionRotationForTest: (days = 120) => {
+      if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(8);
+      careerState.decisions = { sequence: 0, items: [], lastGeneratedDay: -4 };
+      const calendar = clubCalendarState();
+      const startDay = Number(calendar.absoluteDay) || 0;
+      const generated = [];
+      for (let offset = 0; offset < Math.max(1, Math.round(Number(days) || 0)); offset++) {
+        calendar.absoluteDay = startDay + offset;
+        const decision = clubMaybeGenerateDecision();
+        if (decision) {
+          generated.push({ type: decision.type, playerId: decision.playerId, day: decision.createdDay });
+          decision.resolved = true;
+        }
+      }
+      calendar.absoluteDay = startDay;
+      const violations = [];
+      const subjects = new Map();
+      for (const item of generated) {
+        const key = `${item.type}:${item.playerId || 'club'}`;
+        const previous = subjects.get(key);
+        if (previous !== undefined && item.day - previous < 24 && item.playerId) violations.push({ key, gap: item.day - previous });
+        subjects.set(key, item.day);
+      }
+      return {
+        generated: generated.length,
+        distinctSubjects: subjects.size,
+        repeatViolations: violations.length,
+        violations: violations.slice(0, 5),
+        types: generated.reduce((acc, item) => { acc[item.type] = (acc[item.type] || 0) + 1; return acc; }, {})
+      };
+    },
     seedOpeningWeekForTest: () => {
       if (!careerState.created || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) window.__strikeDebug.seedReadabilityCareerForTest(5);
       careerState.tutorial = careerState.tutorial || {};

@@ -1523,12 +1523,20 @@
     return true;
   }
 
+  // Build 12.133: the portrait stays asset-free and fully deterministic, but the
+  // bust now carries independent silhouette, complexion and headgear axes plus
+  // shoulder, chest-plate and comms detail, so two operators rarely read as the
+  // same drawing. Every axis derives from its own seed slice.
   function teamPlayerVisualMarkup(player, role = teamRoleById(player?.role)) {
-    const seed = teamSeedFromString(`${player?.id || player?.name || 'operator'}:portrait`);
+    const identity = `${player?.id || player?.name || 'operator'}`;
+    const seed = teamSeedFromString(`${identity}:portrait`);
     const variant = Math.abs(seed) % 4;
+    const tone = Math.abs(teamSeedFromString(`${identity}:complexion`)) % 6;
+    const helmet = Math.abs(teamSeedFromString(`${identity}:headgear`)) % 5;
+    const rig = Math.abs(teamSeedFromString(`${identity}:rig`)) % 3;
     const initials = String(player?.name || 'OP').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'OP';
     const roleId = String(role?.id || 'flex').replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'flex';
-    return `<div class="team-player-visual role-${escapeCareerHtml(roleId)} variant-${variant}" aria-hidden="true"><div class="operator-bust"><i class="operator-head"></i><i class="operator-visor"></i><i class="operator-neck"></i><i class="operator-body"></i><i class="operator-rig"></i></div><b>${escapeCareerHtml(initials)}</b><span>${escapeCareerHtml(role?.short || role?.name || 'FLEX')}</span></div>`;
+    return `<div class="team-player-visual role-${escapeCareerHtml(roleId)} variant-${variant} tone-${tone} helmet-${helmet} rig-${rig}" aria-hidden="true"><div class="operator-bust"><i class="operator-helmet"></i><i class="operator-head"></i><i class="operator-visor"></i><i class="operator-neck"></i><i class="operator-shoulders"></i><i class="operator-body"></i><i class="operator-rig"></i><i class="operator-plate"></i><i class="operator-comms"></i></div><b>${escapeCareerHtml(initials)}</b><span>${escapeCareerHtml(role?.short || role?.name || 'FLEX')}</span></div>`;
   }
 
   function renderTeamPlayerMini(player, index, squadContext = false) {
@@ -2102,6 +2110,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function handleTeamNoteModalAction(event) {
     if (typeof handleWorkflowModalAction === 'function' && handleWorkflowModalAction(event)) return true;
+    if (typeof handleMatchdayPlanWarningAction === 'function' && handleMatchdayPlanWarningAction(event)) return true;
     if (typeof handleTransferModalAction === 'function' && handleTransferModalAction(event)) return true;
     const trainingAction = event.target.closest?.('[data-team-note-action="open-training"]');
     if (!trainingAction) return false;

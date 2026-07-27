@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.132';
-  const BUILD_NAME = 'Selection Feedback';
-  const BUILD_ID = '12.132.0-selection-feedback';
+  const BUILD_VERSION = '12.133';
+  const BUILD_NAME = 'Readable Command';
+  const BUILD_ID = '12.133.0-readable-command';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

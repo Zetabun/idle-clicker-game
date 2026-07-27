@@ -30525,3 +30525,319 @@ body[data-app-state='menu'] { background: var(--skin-ink-0); }
   .club-formation-card.club-formation-card.just-selected:not(:disabled):not(.primary),
   .club-plan-option.club-plan-option.just-selected:not(:disabled):not(.primary) { animation: none !important; }
 }
+
+/* ==========================================================================
+   Build 12.133 — Readability, alignment and portrait layer
+   Owns:
+     · Opponent Quick Read watch-for / opening tiles at compact widths
+     · Active Operator Match Roles alignment and density
+     · Confirm Deployment typography and operator portraits (all form factors)
+     · After-action reward / economy guide typography
+     · Inbox feed scroll gating (paired with js/77-mail-scroll-guard.js)
+     · Richer procedural operator bust (paired with teamPlayerVisualMarkup)
+   Keep this layer last so it wins the cascade over the Command Skin layers.
+   ========================================================================== */
+
+/* --- Opponent Quick Read: readable watch-for / opening tiles --- */
+
+.opponent-preparation-quick-read dt {
+  font-size: 9px !important;
+  letter-spacing: .1em;
+}
+
+.opponent-preparation-quick-read dd {
+  margin-top: 5px !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+}
+
+@media (max-width: 1023px) {
+  .opponent-preparation-quick-read dl {
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+    margin-top: 13px !important;
+  }
+
+  .opponent-preparation-quick-read dl > div {
+    padding: 11px 12px !important;
+  }
+
+  .opponent-preparation-quick-read dt {
+    font-size: 11px !important;
+  }
+
+  .opponent-preparation-quick-read dd {
+    margin-top: 6px !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+
+  .opponent-preparation-quick-read > span { font-size: 11px !important; }
+  .opponent-preparation-quick-read > strong { font-size: 16px !important; }
+  .opponent-preparation-quick-read > p { font-size: 13px !important; line-height: 1.5 !important; }
+}
+
+/* --- Active Operator Match Roles: tighter, aligned rows --- */
+
+.club-role-assignment-list > article {
+  grid-template-columns: 28px minmax(0, 1fr) minmax(150px, auto) minmax(190px, 250px) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 0 !important;
+  padding: 13px 16px !important;
+}
+
+.club-role-assignment-list > article > span {
+  display: grid;
+  place-items: center;
+  align-self: center !important;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(120, 205, 255, .28);
+  border-radius: 4px;
+  color: #8fd4ff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.club-role-assignment-list > article > div:first-of-type > strong { font-size: 13px; line-height: 1.25; }
+.club-role-assignment-list > article > div:first-of-type > small { display: block; margin-top: 3px; font-size: 10px; line-height: 1.35; }
+.club-role-assignment-list > article > div:first-of-type > em { display: block; margin-top: 3px; font-size: 10px; line-height: 1.35; }
+
+.club-role-fit-readout {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  text-align: right !important;
+}
+
+.club-role-assignment-list > article > label {
+  gap: 5px !important;
+  justify-self: end;
+  width: 100%;
+}
+
+.club-role-assignment-list > article > label > span { font-size: 9px; letter-spacing: .1em; }
+.club-role-assignment-list > article > label select { min-height: 42px !important; font-size: 12px; }
+
+@media (max-width: 1023px) {
+  .club-role-assignment-list > article {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 10px 12px !important;
+    padding: 14px !important;
+  }
+
+  .club-role-fit-readout {
+    justify-content: flex-start !important;
+    text-align: left !important;
+  }
+
+  .club-role-assignment-list > article > label { justify-self: stretch; }
+  .club-role-assignment-list > article > div:first-of-type > strong { font-size: 15px; }
+  .club-role-assignment-list > article > div:first-of-type > small,
+  .club-role-assignment-list > article > div:first-of-type > em { font-size: 12px; }
+  .club-role-assignment-list > article > label > span { font-size: 11px; }
+  .club-role-assignment-list > article > label select { min-height: 46px !important; font-size: 14px; }
+}
+
+/* --- Confirm Deployment: readable at every width --- */
+
+.deployment-section-head span,
+.deployment-map-card em,
+.deployment-operator-row > span,
+.deployment-tactics span { font-size: 10px !important; letter-spacing: .11em !important; }
+
+.deployment-section-head strong { font-size: 17px !important; }
+.deployment-section-head small { font-size: 11px !important; line-height: 1.5 !important; }
+
+.deployment-map-card > span:not(.deployment-map-visual) b { font-size: 13px !important; }
+.deployment-map-card > span:not(.deployment-map-visual) small { font-size: 10px !important; line-height: 1.5 !important; }
+
+.deployment-operator-row {
+  grid-template-columns: 26px 54px minmax(0, 1fr) minmax(128px, .72fr) !important;
+  gap: 11px !important;
+  min-height: 60px !important;
+  padding: 9px 12px !important;
+}
+
+.deployment-operator-row strong { font-size: 12px !important; }
+.deployment-operator-row b { font-size: 11px !important; }
+.deployment-operator-row small { margin-top: 4px !important; font-size: 10px !important; }
+
+.deployment-tactics strong { font-size: 11px !important; }
+
+.deployment-lane-row strong { font-size: 12px !important; }
+.deployment-lane-row small,
+.deployment-lane-row b { font-size: 10px !important; }
+
+@media (max-width: 1023px) {
+  .deployment-section-head strong { font-size: 19px !important; }
+  .deployment-section-head small { font-size: 13px !important; }
+  .deployment-section-head span,
+  .deployment-map-card em,
+  .deployment-operator-row > span,
+  .deployment-tactics span { font-size: 11px !important; }
+
+  .deployment-map-card > span:not(.deployment-map-visual) b { font-size: 15px !important; }
+  .deployment-map-card > span:not(.deployment-map-visual) small { font-size: 12px !important; }
+
+  .deployment-operator-row {
+    grid-template-columns: 24px 50px minmax(0, 1fr) !important;
+    min-height: 62px !important;
+  }
+
+  .deployment-operator-row strong { font-size: 14px !important; }
+  .deployment-operator-row b { font-size: 12px !important; }
+  .deployment-operator-row small { font-size: 11px !important; }
+  .deployment-tactics strong { font-size: 12px !important; }
+  .deployment-lane-row strong { font-size: 14px !important; }
+  .deployment-lane-row small,
+  .deployment-lane-row b { font-size: 11px !important; }
+}
+
+/* --- After-action rewards / economy guide typography --- */
+
+.club-economy-guide > header > span { font-size: 10px !important; }
+.club-economy-guide > header > strong { font-size: 15px !important; }
+.club-economy-guide > header > p { font-size: 11px !important; line-height: 1.55 !important; }
+
+.club-economy-guide article > span { font-size: 9.5px !important; letter-spacing: .1em !important; }
+.club-economy-guide article > strong { font-size: 17px !important; }
+.club-economy-guide article > b { font-size: 11px !important; line-height: 1.4 !important; }
+.club-economy-guide article > p { font-size: 11px !important; line-height: 1.55 !important; }
+.club-economy-guide > aside { font-size: 11px !important; line-height: 1.5 !important; }
+
+@media (max-width: 1023px) {
+  .club-economy-guide > div { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+  .club-economy-guide > header > strong { font-size: 17px !important; }
+  .club-economy-guide > header > p { font-size: 13px !important; }
+  .club-economy-guide article > span { font-size: 11px !important; }
+  .club-economy-guide article > strong { font-size: 19px !important; }
+  .club-economy-guide article > b { font-size: 13px !important; }
+  .club-economy-guide article > p { font-size: 12px !important; line-height: 1.55 !important; }
+  .club-economy-guide > aside { font-size: 12px !important; }
+}
+
+@media (max-width: 560px) {
+  .club-economy-guide > div { grid-template-columns: 1fr !important; }
+}
+
+/* --- Inbox feed: inert until the manager clicks into it --- */
+
+.club-mail-list {
+  overflow-y: hidden !important;
+  overscroll-behavior: contain;
+}
+
+body.mail-scroll-armed .club-mail-list {
+  overflow-y: auto !important;
+}
+
+/* Only shown while the feed is inert and actually has more rows below. */
+.club-mail-list.mail-scroll-overflow {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, .18) 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, .18) 100%);
+}
+
+/* --- Operator portrait: deeper procedural variation --- */
+
+.team-player-visual {
+  --skin-light: #c9a68b;
+  --skin-mid: #a07f66;
+  --skin-dark: #6d5341;
+  --kit-light: #5b7686;
+  --kit-mid: #2b4351;
+  --kit-dark: #16242d;
+}
+
+.team-player-visual.tone-1 { --skin-light: #f0cdb2; --skin-mid: #cda588; --skin-dark: #8e6f57; }
+.team-player-visual.tone-2 { --skin-light: #8d6a51; --skin-mid: #6d5040; --skin-dark: #47332a; }
+.team-player-visual.tone-3 { --skin-light: #e2b492; --skin-mid: #b98a6a; --skin-dark: #7c5842; }
+.team-player-visual.tone-4 { --skin-light: #5f4433; --skin-mid: #473327; --skin-dark: #33241c; }
+.team-player-visual.tone-5 { --skin-light: #d9b79c; --skin-mid: #ab8467; --skin-dark: #6b4f3c; }
+
+.team-player-visual.variant-1 { --kit-light: #6a7f6c; --kit-mid: #33473a; --kit-dark: #182420; }
+.team-player-visual.variant-2 { --kit-light: #7a7488; --kit-mid: #3c3950; --kit-dark: #1d1b28; }
+.team-player-visual.variant-3 { --kit-light: #86735e; --kit-mid: #4a3d30; --kit-dark: #241d17; }
+
+.team-player-visual .operator-head {
+  background: linear-gradient(96deg, var(--skin-dark), var(--skin-light) 46%, var(--skin-mid)) !important;
+}
+
+.team-player-visual .operator-neck { background: var(--skin-dark) !important; }
+
+.team-player-visual .operator-body {
+  background: linear-gradient(96deg, var(--kit-dark), var(--kit-light) 48%, var(--kit-mid)) !important;
+}
+
+.team-player-visual .operator-helmet {
+  left: 10px;
+  top: 0;
+  width: 19px;
+  height: 11px;
+  border-radius: 50% 50% 22% 22%;
+  background: linear-gradient(96deg, var(--kit-dark), var(--kit-light) 52%, var(--kit-mid));
+  box-shadow: inset 0 -1px rgba(0, 0, 0, .34);
+}
+
+.team-player-visual.helmet-1 .operator-helmet { height: 9px; border-radius: 46% 46% 30% 30%; }
+.team-player-visual.helmet-2 .operator-helmet { width: 21px; left: 9px; height: 12px; }
+/* Bare head: a low headband rather than a helmet shell. */
+.team-player-visual.helmet-3 .operator-helmet { top: 2px; height: 5px; border-radius: 44% 44% 8% 8%; }
+.team-player-visual.helmet-4 .operator-helmet { height: 10px; border-radius: 50% 50% 44% 44%; }
+
+.team-player-visual .operator-shoulders {
+  left: 1px;
+  top: 24px;
+  width: 37px;
+  height: 9px;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(96deg, var(--kit-dark), var(--kit-mid) 50%, var(--kit-dark));
+}
+
+.team-player-visual .operator-plate {
+  left: 13px;
+  top: 33px;
+  width: 13px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .13), rgba(0, 0, 0, .22));
+}
+
+.team-player-visual.rig-1 .operator-plate { width: 15px; left: 12px; height: 6px; }
+.team-player-visual.rig-2 .operator-plate { width: 9px; left: 15px; height: 10px; border-radius: 1px; }
+
+.team-player-visual .operator-comms {
+  left: 26px;
+  top: 9px;
+  width: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--role-accent, #7fd4ff);
+  box-shadow: 0 0 5px var(--role-accent, #7fd4ff);
+}
+
+.team-player-visual.helmet-3 .operator-comms { left: 27px; top: 8px; }
+
+/* Deployment rows carry the portrait at a legible size on every form factor. */
+.deployment-operator-row > .team-player-visual {
+  width: 54px !important;
+  height: 52px !important;
+  border-radius: 5px !important;
+}
+
+.deployment-operator-row > .team-player-visual .operator-bust {
+  transform: translateX(-50%) scale(.88) !important;
+  transform-origin: top center;
+}
+
+.deployment-operator-row > .team-player-visual > b,
+.deployment-operator-row > .team-player-visual > span { font-size: 6.5px !important; }
+
+@media (max-width: 1023px) {
+  .deployment-operator-row > .team-player-visual { width: 50px !important; height: 50px !important; }
+  .deployment-operator-row > .team-player-visual > b,
+  .deployment-operator-row > .team-player-visual > span { font-size: 7px !important; }
+}

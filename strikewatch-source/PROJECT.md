@@ -32,10 +32,11 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.132 gives the match setup choice cards a distinct selected state and
-immediate press, hover, focus and confirmation feedback, so a click or tap is
-always visibly registered on both presentation targets.
-See `HANDOFF.md` and `AUDIT-12.132.md`.
+Build 12.133 raises command-surface readability, removes the match-roles dead
+space, gates Inbox feed scrolling behind a deliberate click, confirms before an
+applied scout recommendation is replaced, stops repeated decision mail from the
+same player and deepens the procedural operator portraits.
+See `HANDOFF.md` and `AUDIT-12.133.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

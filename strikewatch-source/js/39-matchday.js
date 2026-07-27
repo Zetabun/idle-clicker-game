@@ -1023,6 +1023,99 @@
     return opponentResponsePlanCandidates(preparation).find(item => item.id === prep.selectedResponseId) || null;
   }
 
+  // Build 12.133: warn once before a manager action replaces or fine-tunes the
+  // scout-recommended response they already applied. Acknowledgement is session
+  // state only, so it never touches the career save schema, and it resets
+  // whenever the recommendation is (re)selected so the warning stays truthful
+  // without nagging on every subsequent control change.
+  let matchdayRecommendedPlanAcknowledged = '';
+  let matchdayPendingPlanChange = null;
+
+  function matchdayRecommendedPlanInPlay() {
+    if (menuContext === 'pause' || appState === 'match') return null;
+    const preparation = opponentPreparationRead();
+    const plans = opponentResponsePlanCandidates(preparation);
+    const recommended = plans.find(item => item.recommended) || plans[0] || null;
+    if (!recommended) return null;
+    const prep = clubMatchPrepState();
+    if (prep.selectedResponseId !== recommended.id) return null;
+    // Already fine-tuned away from the template: there is no intact
+    // recommendation left to protect.
+    if (opponentResponsePlanAdjusted(recommended)) return null;
+    return recommended;
+  }
+
+  function matchdayPlanChangeWarningCopy(kind, detail, recommended) {
+    if (kind === 'response') {
+      const plans = opponentResponsePlanCandidates();
+      const target = plans.find(item => item.id === detail.planId) || null;
+      return {
+        title: 'REPLACE THE RECOMMENDED PLAN?',
+        body: `${recommended.title} is currently applied exactly as the scout recommended it. Selecting ${target?.title || 'another response'} replaces the staged formation, approach, range and priority.`
+      };
+    }
+    return {
+      title: 'FINE-TUNE THE RECOMMENDED PLAN?',
+      body: `${recommended.title} is currently applied exactly as the scout recommended it. Changing this control fine-tunes the plan, so it will no longer match the recommendation.`
+    };
+  }
+
+  function matchdayGuardRecommendedPlanChange(kind, detail = {}, returnFocus = null) {
+    if (typeof openTeamNoteModal !== 'function') return false;
+    const recommended = matchdayRecommendedPlanInPlay();
+    if (!recommended) return false;
+    // Re-selecting the same recommendation changes nothing, so never warn.
+    if (kind === 'response' && detail.planId === recommended.id) return false;
+    if (kind === 'tactics' && recommended[detail.field] === detail.value) return false;
+    if (matchdayRecommendedPlanAcknowledged === recommended.id) return false;
+
+    matchdayPendingPlanChange = { kind, detail: { ...detail }, planId: recommended.id, returnFocus };
+    const copy = matchdayPlanChangeWarningCopy(kind, detail, recommended);
+    const actionsHtml = '<footer class="team-note-management-actions matchday-plan-warning-actions"><button type="button" data-matchday-plan-warning="keep">KEEP RECOMMENDED</button><button type="button" class="primary" data-matchday-plan-warning="proceed">CHANGE ANYWAY</button></footer>';
+    openTeamNoteModal({
+      kicker: 'SCOUT RECOMMENDATION APPLIED',
+      title: copy.title,
+      body: copy.body,
+      footer: 'Nothing is saved yet. Continuing will not warn again until you re-apply the recommendation.',
+      tone: 'warning', mode: 'management', glyph: '!', actionsHtml,
+      dismissHint: 'CHOOSE AN OPTION TO CONTINUE',
+      returnFocus
+    });
+    return true;
+  }
+
+  function matchdayApplyPendingPlanChange() {
+    const pending = matchdayPendingPlanChange;
+    matchdayPendingPlanChange = null;
+    if (!pending) return false;
+    matchdayRecommendedPlanAcknowledged = pending.planId;
+    if (pending.kind === 'response') {
+      const applied = clubSelectOpponentResponsePlan(pending.detail.planId);
+      showStatus(applied ? 'OPPONENT RESPONSE STAGED · SAVE CHANGES' : 'UNABLE TO STAGE RESPONSE');
+      return true;
+    }
+    const { field, value } = pending.detail;
+    if (typeof workflowSetTacticsField === 'function') workflowSetTacticsField(field, value);
+    else { clubTacticsState()[field] = value; saveCareerState(); updateMenuUI(); }
+    showStatus('RECOMMENDED PLAN FINE-TUNED · SAVE CHANGES');
+    return true;
+  }
+
+  function handleMatchdayPlanWarningAction(event) {
+    const button = event.target.closest?.('[data-matchday-plan-warning]');
+    if (!button) return false;
+    const keep = button.dataset.matchdayPlanWarning === 'keep';
+    if (keep) {
+      matchdayPendingPlanChange = null;
+      closeTeamNoteModal({ restoreFocus: true });
+      showStatus('RECOMMENDED PLAN RETAINED');
+      return true;
+    }
+    closeTeamNoteModal({ restoreFocus: false });
+    matchdayApplyPendingPlanChange();
+    return true;
+  }
+
   function clubSelectOpponentResponsePlan(id) {
     const preparation = opponentPreparationRead();
     const plan = opponentResponsePlanCandidates(preparation).find(item => item.id === id);
@@ -1043,6 +1136,9 @@
     prep.selectedResponseId = plan.id;
     prep.opponentDepthAtReview = preparation?.depth || 0;
     delete prep.invalidatedReason;
+    // Re-applying the recommendation restores an intact scout plan, so the
+    // change warning becomes relevant again.
+    if (plan.recommended) matchdayRecommendedPlanAcknowledged = '';
     saveCareerState();
     updateMenuUI();
     return true;
@@ -1352,6 +1448,27 @@
     return true;
   }
 
+  // Build 12.133: a decision only repeats for the same player once the cooldown
+  // below has elapsed. Without this the unhappiest reserve is re-selected on
+  // every rotation, so the same "requests a clearer role" mail arrives again and
+  // again and reads as a duplicate.
+  const CLUB_DECISION_PLAYER_REPEAT_DAYS = 24;
+
+  function clubDecisionPlayerOnCooldown(type, playerId, day) {
+    if (!playerId) return false;
+    return clubDecisionState().items.some(item =>
+      item.type === type
+      && item.playerId === playerId
+      && day - (Number(item.createdDay) || 0) < CLUB_DECISION_PLAYER_REPEAT_DAYS);
+  }
+
+  // Prefer the neediest candidate who has not raised this issue recently. Only
+  // when every candidate is on cooldown does the decision fall through, letting
+  // the caller advance the rotation instead of repeating itself.
+  function clubDecisionCandidate(type, candidates, day) {
+    return candidates.find(player => player && !clubDecisionPlayerOnCooldown(type, player.id, day)) || null;
+  }
+
   function clubMaybeGenerateDecision() {
     if (!careerState.created || !(careerState.squad || []).length) return null;
     const state = clubDecisionState();
@@ -1361,8 +1478,12 @@
     const squad = careerState.squad || [];
     const type = state.sequence % 4;
     if (type === 0) {
-      const reserve = squad.slice(TEAM_REQUIRED_STARTERS).sort((a, b) => a.happiness - b.happiness)[0] || squad.slice().sort((a, b) => a.happiness - b.happiness)[0];
-      if (!reserve) return null;
+      const byHappiness = squad.slice(TEAM_REQUIRED_STARTERS).sort((a, b) => a.happiness - b.happiness);
+      const fallback = squad.slice().sort((a, b) => a.happiness - b.happiness);
+      const reserve = clubDecisionCandidate('playing-time', byHappiness.concat(fallback), day);
+      // Every candidate asked recently: advance the rotation so the next day
+      // offers a different decision rather than re-sending the same request.
+      if (!reserve) { state.sequence++; return null; }
       return clubAddDecision({
         type: 'playing-time', playerId: reserve.id, category: 'STAFF',
         subject: `${reserve.name} requests a clearer role`,
@@ -1375,8 +1496,8 @@
       });
     }
     if (type === 1) {
-      const tired = squad.slice().sort((a, b) => b.fatigue - a.fatigue)[0];
-      if (!tired) return null;
+      const tired = clubDecisionCandidate('medical-rest', squad.slice().sort((a, b) => b.fatigue - a.fatigue), day);
+      if (!tired) { state.sequence++; return null; }
       return clubAddDecision({
         type: 'medical-rest', playerId: tired.id, category: 'MEDICAL',
         subject: `Medical recommendation · ${tired.name}`,
@@ -1398,7 +1519,10 @@
         ]
       });
     }
-    const player = squad[Math.abs((day + state.sequence) % squad.length)];
+    const rotationStart = Math.abs((day + state.sequence) % squad.length);
+    const rotation = squad.slice(rotationStart).concat(squad.slice(0, rotationStart));
+    const player = clubDecisionCandidate('discipline', rotation, day);
+    if (!player) { state.sequence++; return null; }
     return clubAddDecision({
       type: 'discipline', playerId: player.id, category: 'STAFF',
       subject: `Training standards · ${player.name}`,
@@ -1774,7 +1898,9 @@
     }
     const responsePlan = event.target.closest('[data-opponent-response-plan]');
     if (responsePlan) {
-      const applied = clubSelectOpponentResponsePlan(responsePlan.dataset.opponentResponsePlan);
+      const planId = responsePlan.dataset.opponentResponsePlan;
+      if (matchdayGuardRecommendedPlanChange('response', { planId }, responsePlan)) return true;
+      const applied = clubSelectOpponentResponsePlan(planId);
       showStatus(applied ? 'OPPONENT RESPONSE STAGED · SAVE CHANGES' : 'UNABLE TO STAGE RESPONSE');
       return true;
     }
@@ -1823,18 +1949,21 @@
     const approach = event.target.closest('[data-club-approach]');
     if (approach) {
       const value = CLUB_APPROACHES[approach.dataset.clubApproach] ? approach.dataset.clubApproach : 'balanced';
+      if (matchdayGuardRecommendedPlanChange('tactics', { field: 'approachId', value }, approach)) return true;
       if (typeof workflowSetTacticsField === 'function') workflowSetTacticsField('approachId', value); else { clubTacticsState().approachId = value; saveCareerState(); updateMenuUI(); }
       return true;
     }
     const engagement = event.target.closest('[data-club-engagement]');
     if (engagement) {
       const value = CLUB_ENGAGEMENTS[engagement.dataset.clubEngagement] ? engagement.dataset.clubEngagement : 'mixed';
+      if (matchdayGuardRecommendedPlanChange('tactics', { field: 'engagementId', value }, engagement)) return true;
       if (typeof workflowSetTacticsField === 'function') workflowSetTacticsField('engagementId', value); else { clubTacticsState().engagementId = value; saveCareerState(); updateMenuUI(); }
       return true;
     }
     const priority = event.target.closest('[data-club-priority]');
     if (priority) {
       const value = CLUB_PRIORITIES[priority.dataset.clubPriority] ? priority.dataset.clubPriority : 'trade';
+      if (matchdayGuardRecommendedPlanChange('tactics', { field: 'priorityId', value }, priority)) return true;
       if (typeof workflowSetTacticsField === 'function') workflowSetTacticsField('priorityId', value); else { clubTacticsState().priorityId = value; saveCareerState(); updateMenuUI(); }
       return true;
     }

@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.132 — Selection Feedback
-Build ID: 12.132.0-selection-feedback
+Build 12.133 — Readable Command
+Build ID: 12.133.0-readable-command
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,10 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.133 owns the readability/alignment/portrait layer at the end of
+`css/game.css`, the Inbox scroll guard, the recommended-plan change warning and
+the per-player decision cooldown; keep the feed inert until clicked and the
+portraits deterministic and asset-free.
 Build 12.132 owns the match setup selection feedback layer at the end of
 `css/game.css` plus `js/76-tactical-selection-feedback.js`; keep the choice
 cards' selected, pressed, hover, focus and confirmation states distinct and
