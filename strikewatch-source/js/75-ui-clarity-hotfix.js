@@ -1,12 +1,12 @@
 /*
  * Strikewatch source module: 75-ui-clarity-hotfix.js
  * Purpose: Scoped presentation fixes for tactical summary tags, role-assignment
- * alignment and disabled End Day contrast in the 12.130 release.
+ * alignment and disabled End Day contrast in the 12.131 release.
  */
 
   (() => {
     const style = document.createElement('style');
-    style.id = 'strikewatch-12-130-ui-clarity';
+    style.id = 'strikewatch-12-131-ui-clarity';
     style.textContent = `
       .club-tactics-hero .menu-pill-row {
         gap: 10px;
@@ -77,33 +77,51 @@
       }
 
       .manager-end-day-primary,
+      .manager-end-day-primary.blocked,
+      .manager-end-day-primary.matchday,
       .manager-end-day-primary:disabled,
       .manager-end-day-primary[aria-disabled='true'] {
-        color: #f5fff8;
-        text-shadow: 0 1px 2px rgba(0,0,0,.72);
+        opacity: 1 !important;
+        filter: none !important;
+        background: linear-gradient(180deg, rgba(30, 39, 55, .99), rgba(22, 29, 43, .99)) !important;
+        border: 1px solid rgba(135, 163, 181, .42) !important;
+        color: #f7fbff !important;
+        box-shadow: inset 0 1px rgba(255,255,255,.07), 0 0 0 1px rgba(0,0,0,.30), 0 8px 22px rgba(0,0,0,.22) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,.76) !important;
       }
 
-      .manager-end-day-primary:disabled,
-      .manager-end-day-primary[aria-disabled='true'] {
-        opacity: 1;
-        background: linear-gradient(180deg, rgba(47, 72, 64, .98), rgba(27, 46, 41, .98));
-        border-color: rgba(145, 205, 174, .58);
-        box-shadow: inset 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(0,0,0,.24);
-      }
-
+      .manager-end-day-primary span,
+      .manager-end-day-primary strong,
+      .manager-end-day-primary small,
+      .manager-end-day-primary.blocked span,
+      .manager-end-day-primary.blocked strong,
+      .manager-end-day-primary.blocked small,
+      .manager-end-day-primary.matchday span,
+      .manager-end-day-primary.matchday strong,
+      .manager-end-day-primary.matchday small,
       .manager-end-day-primary:disabled span,
       .manager-end-day-primary:disabled strong,
       .manager-end-day-primary:disabled small,
       .manager-end-day-primary[aria-disabled='true'] span,
       .manager-end-day-primary[aria-disabled='true'] strong,
       .manager-end-day-primary[aria-disabled='true'] small {
-        color: #eaf8ef;
-        opacity: 1;
+        opacity: 1 !important;
       }
 
-      .manager-end-day-primary:disabled small,
-      .manager-end-day-primary[aria-disabled='true'] small {
-        color: #c6dfcf;
+      .manager-end-day-primary span,
+      .manager-end-day-primary small {
+        color: #a9d2bf !important;
+      }
+
+      .manager-end-day-primary strong {
+        color: #ffffff !important;
+      }
+
+      .manager-end-day-primary .manager-end-day-block-badge {
+        background: #ec7444 !important;
+        border-color: #ff9b72 !important;
+        color: #17202b !important;
+        text-shadow: none !important;
       }
 
       @media (max-width: 1023px) {
