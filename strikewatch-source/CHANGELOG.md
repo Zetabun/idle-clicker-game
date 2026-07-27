@@ -7,6 +7,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.127 | Responsive mobile combat-effectiveness graph and stat readout | `AUDIT-12.127.md` |
 | 12.126 | Mobile tactics layout and fixture-persistent preparation | `AUDIT-12.126.md` |
 | 12.125 | Compact desktop Inbox, retained scroll and glass command chrome | `AUDIT-12.125.md` |
 | 12.124 | Desktop club identity and inline Inbox reader | `AUDIT-12.124.md` |

@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.126 repairs compact tactics layout, removes duplicate floating
-confirmation, clarifies guided Next Day status and keeps a confirmed plan
-valid while advancing toward its scheduled fixture. See `HANDOFF.md` and
-`AUDIT-12.126.md`.
+Build 12.127 replaces the cramped compact combat graph with a normal-flow
+score header, readable legend, focused radar plot and responsive stat tiles,
+while preserving the existing desktop graph. See `HANDOFF.md` and
+`AUDIT-12.127.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

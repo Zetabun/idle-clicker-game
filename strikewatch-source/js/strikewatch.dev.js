@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.126';
-  const BUILD_NAME = 'MOBILE TACTICS & FIXTURE PREP';
-  const BUILD_ID = '12.126.0-mobile-tactics-fixture-prep';
+  const BUILD_VERSION = '12.127';
+  const BUILD_NAME = 'MOBILE COMBAT GRAPH LAYOUT';
+  const BUILD_ID = '12.127.0-mobile-combat-graph-layout';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -15215,27 +15215,40 @@
     const axes = entries.map((_, index) => `<line x1="${centreX}" y1="${centreY}" x2="${pointAt(index).split(',')[0]}" y2="${pointAt(index).split(',')[1]}"></line>`).join('');
     const totalPoints = entries.map(([key, value], index) => pointAt(index, Math.max(0.045, value))).join(' ');
     const operatorPoints = entries.map(([key], index) => pointAt(index, Math.max(0.045, breakdown.operator[key]))).join(' ');
-    const labels = [
+    const labelDefinitions = [
       ['PRECISION', 160, 19], ['CONTROL', 280, 101], ['AWARENESS', 241, 260], ['MOBILITY', 79, 260], ['ENDURANCE', 40, 101]
-    ].map(([label, x, y], index) => {
+    ];
+    const labels = labelDefinitions.map(([label, x, y], index) => {
       const key = entries[index][0];
       const total = Math.round(breakdown.total[key] * 100);
       const weaponValue = Math.round(breakdown.weapon[key] * 100);
       return `<text x="${x}" y="${y}" text-anchor="middle"><tspan>${label}</tspan><tspan class="career-radar-total-label" x="${x}" dy="12">${total}</tspan><tspan class="career-radar-weapon-label" x="${x}" dy="10">+${weaponValue} WPN</tspan></text>`;
+    }).join('');
+    const mobileStats = labelDefinitions.map(([label], index) => {
+      const key = entries[index][0];
+      const operatorValue = Math.round(breakdown.operator[key] * 100);
+      const weaponValue = Math.round(breakdown.weapon[key] * 100);
+      const total = Math.round(breakdown.total[key] * 100);
+      return `<article><span>${label}</span><strong>${total}</strong><small><b>${operatorValue} ATTR</b><em>+${weaponValue} WPN</em></small></article>`;
     }).join('');
     const overall = Math.round(entries.reduce((sum, [, value]) => sum + value, 0) / entries.length * 100);
     return `
       <div class="career-combat-graph ${context}" style="--combat-rating:${overall}">
         <div class="career-combat-graph-head"><span>COMBAT EFFECTIVENESS</span><strong>${overall}</strong><small>OPERATOR + EQUIPPED WEAPON</small></div>
         <div class="career-radar-legend"><span class="operator">ATTRIBUTES</span><span class="weapon">WEAPON BONUS</span><span class="total">COMBINED</span></div>
-        <svg viewBox="0 0 320 280" role="img" aria-label="Combat effectiveness graph showing blue operator attributes, red equipped weapon contribution and the combined total">
-          <g class="career-radar-grid">${rings}${axes}</g>
-          <polygon class="career-radar-weapon-area" points="${totalPoints}"></polygon>
-          <polygon class="career-radar-operator-area" points="${operatorPoints}"></polygon>
-          <polygon class="career-radar-total-outline" points="${totalPoints}"></polygon>
-          <g class="career-radar-nodes">${entries.map(([key, value], index) => { const [x, y] = pointAt(index, Math.max(0.045, value)).split(','); return `<circle cx="${x}" cy="${y}" r="4"></circle>`; }).join('')}</g>
-          <g class="career-radar-labels">${labels}</g>
-        </svg>
+        <div class="career-radar-layout">
+          <div class="career-radar-plot">
+            <svg viewBox="0 0 320 280" role="img" aria-label="Combat effectiveness graph showing blue operator attributes, red equipped weapon contribution and the combined total">
+              <g class="career-radar-grid">${rings}${axes}</g>
+              <polygon class="career-radar-weapon-area" points="${totalPoints}"></polygon>
+              <polygon class="career-radar-operator-area" points="${operatorPoints}"></polygon>
+              <polygon class="career-radar-total-outline" points="${totalPoints}"></polygon>
+              <g class="career-radar-nodes">${entries.map(([key, value], index) => { const [x, y] = pointAt(index, Math.max(0.045, value)).split(','); return `<circle cx="${x}" cy="${y}" r="4"></circle>`; }).join('')}</g>
+              <g class="career-radar-labels">${labels}</g>
+            </svg>
+          </div>
+          <div class="career-radar-mobile-stats" aria-label="Combat effectiveness breakdown">${mobileStats}</div>
+        </div>
       </div>`;
   }
 

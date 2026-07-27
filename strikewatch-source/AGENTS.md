@@ -56,6 +56,12 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.127 owns the compact combat-effectiveness presentation. Keep its
+score header and legend in normal flow, hide the tiny SVG perimeter labels
+below 1024px, expose all five values through readable HTML stat tiles, retain
+the narrow-container single-column fallback and preserve the desktop chart. See
+`AUDIT-12.127.md`.
+
 Build 12.126 owns compact tactics flow and fixture-persistent match
 preparation. Keep tactics panels in content-sized grid rows, retain one
 normal-flow final check, show readable guided Next Day status, and invalidate

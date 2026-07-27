@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.126 — Mobile Tactics & Fixture Prep
-Build ID: 12.126.0-mobile-tactics-fixture-prep
+Build 12.127 — Mobile Combat Graph Layout
+Build ID: 12.127.0-mobile-combat-graph-layout
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,7 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
-Build 12.126 owns compact tactics row sizing, the single normal-flow final
+Build 12.127 owns the compact combat-effectiveness score header, readable
+legend, focused plot, responsive stat tiles and 320px single-column fallback.
+Build 12.126 retains compact tactics row sizing, the single normal-flow final
 check, readable guided Next Day status, and fixture-persistent preparation.
 Build 12.125 retains the desktop Inbox and translucent command chrome.
 Builds 12.122–12.123 own the Command Skin layers near the end of
