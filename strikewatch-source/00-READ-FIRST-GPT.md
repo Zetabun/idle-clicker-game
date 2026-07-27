@@ -1,8 +1,22 @@
 # Read This Before Doing Anything
 
-This directory is the authoritative, maintainable source project for **Strikewatch Build 12.117: Skyline Offices Environment Rework**.
+This directory is the authoritative, maintainable source project for **Strikewatch Build 12.118: Mobile Typography Readability Pass**.
 
 ## Current release essentials
+
+## Build 12.118 mobile typography readability pass
+
+Build 12.118 raises the remaining compact-screen type below a practical
+readability floor. `css/game.css` owns one final mobile-only semantic scale and
+component-specific corrections for recruitment cards and reports, operator
+dossiers, development/training, team telemetry, league tables, Configuration
+appearance controls, persistent navigation and the portrait match HUD. At
+phone widths, nonessential micro-labels now resolve to at least 10.5px,
+decision labels and controls to 11–12.25px, and explanatory copy to roughly
+11.75–13.75px. A narrow-phone attribute-grid correction keeps the larger
+scouting copy contained at 320px. Desktop typography, game data, navigation,
+simulation, economy, persistence, save schema 19 and diagnostics schema 1 are
+unchanged.
 
 ## Build 12.117 Skyline Offices environment rework
 

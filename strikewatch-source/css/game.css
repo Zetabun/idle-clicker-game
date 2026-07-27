@@ -20727,6 +20727,111 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   }
 }
 
+
+/* Build 12.118 follow-up · readable empty and transfer-status surfaces.
+   These panels also appear on wide layouts, so their body-copy floor is
+   intentionally global instead of being limited to the mobile breakpoint. */
+#menuContent .team-empty-state strong,
+#menuContent .club-mail-empty strong,
+#menuContent .club-mail-reader-empty strong,
+#menuContent .squad-dynamics-empty strong,
+#menuContent .season-empty-state strong,
+#menuContent .player-accolade-empty strong,
+#menuContent .command-directory-empty strong {
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+}
+
+#menuContent .team-empty-state p,
+#menuContent .career-report-empty p,
+#menuContent .transfer-empty-panel p,
+#menuContent .transfer-offer-detail p,
+#menuContent .club-mail-empty p,
+#menuContent .club-mail-reader-empty p,
+#menuContent .command-empty-lineup p,
+#menuContent .command-directory-empty p,
+#menuContent .squad-dynamics-empty p,
+#menuContent .squad-dynamics-secondary article p,
+#menuContent .season-empty-state p,
+#menuContent .player-accolade-empty p {
+  font-size: 12.5px !important;
+  line-height: 1.58 !important;
+}
+
+#menuContent .team-history-empty,
+#menuContent .gold-history-empty,
+#menuContent .finance-chart-empty,
+#menuContent .supporter-empty,
+#menuContent .squad-dynamics-profile-empty,
+#menuContent .infrastructure-history-empty {
+  font-size: 11.5px !important;
+  line-height: 1.5 !important;
+}
+
+#menuContent .career-report-empty span,
+#menuContent .transfer-negotiation-card header > b,
+#menuContent .transfer-offer-row span {
+  font-size: 10.5px !important;
+  line-height: 1.35 !important;
+}
+
+#menuContent .transfer-negotiation-card header small,
+#menuContent .transfer-demand-row strong,
+#menuContent .transfer-offer-row small {
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+}
+
+#menuContent .transfer-negotiation-card > p {
+  font-size: 12.5px !important;
+  line-height: 1.58 !important;
+}
+
+#menuContent .transfer-offer-row {
+  min-height: 72px;
+  gap: 5px;
+  padding: 11px 12px;
+}
+
+#menuContent .transfer-offer-row strong {
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+}
+
+#menuContent .transfer-value-control small {
+  font-size: 10.5px !important;
+  line-height: 1.35 !important;
+}
+
+@media (max-width: 1023px) {
+  #menuContent .team-empty-state p,
+  #menuContent .career-report-empty p,
+  #menuContent .transfer-empty-panel p,
+  #menuContent .transfer-offer-detail p,
+  #menuContent .club-mail-empty p,
+  #menuContent .club-mail-reader-empty p,
+  #menuContent .command-empty-lineup p,
+  #menuContent .command-directory-empty p,
+  #menuContent .squad-dynamics-empty p,
+  #menuContent .squad-dynamics-secondary article p,
+  #menuContent .season-empty-state p,
+  #menuContent .player-accolade-empty p {
+    font-size: var(--mobile-type-body) !important;
+  }
+
+  #menuContent .team-history-empty,
+  #menuContent .gold-history-empty,
+  #menuContent .finance-chart-empty,
+  #menuContent .supporter-empty,
+  #menuContent .squad-dynamics-profile-empty,
+  #menuContent .infrastructure-history-empty,
+  #menuContent .transfer-negotiation-card header small,
+  #menuContent .transfer-demand-row strong,
+  #menuContent .transfer-offer-row small {
+    font-size: var(--mobile-type-small) !important;
+  }
+}
+
 /* Build 12.61 second-pass corrections: route-specific mobile readability and compact calendar agenda. */
 .menu-tab-label-mobile,
 .club-calendar-mobile-date { display: none; }
@@ -28324,5 +28429,377 @@ body[data-app-state='menu'] .menu-content {
       radial-gradient(115% 100% at 100% 0%, rgba(30, 88, 124, .13), transparent 42%),
       radial-gradient(95% 105% at 0% 100%, rgba(20, 87, 69, .08), transparent 42%),
       linear-gradient(180deg, #122737 0%, #0c1d2a 54%, #08131d 100%) !important;
+  }
+}
+
+
+/* =====================================================================
+   BUILD 12.118 · MOBILE TYPOGRAPHY READABILITY PASS
+   Raise the remaining compact-screen microcopy without changing desktop
+   density. Component-specific rules cover legacy areas that still own fixed
+   5–9px values instead of the shared mobile semantic type scale.
+   ===================================================================== */
+@media (max-width: 1023px) {
+  .menu-shell {
+    --mobile-type-micro: clamp(10.5px, 2.75vw, 11px);
+    --mobile-type-label: clamp(11px, 3vw, 12px);
+    --mobile-type-small: clamp(11.75px, 3.2vw, 12.75px);
+    --mobile-type-body: clamp(12.75px, 3.45vw, 13.75px);
+    --mobile-control-type: clamp(11.5px, 3vw, 12.25px);
+  }
+
+  /* Persistent mobile chrome and navigation. */
+  .menu-shell .manager-gold-brand > div > span,
+  .menu-shell .manager-gold-brand > div > small,
+  .menu-shell .manager-end-day-primary > span:first-child,
+  .menu-shell .manager-end-day-primary > small,
+  .menu-shell .manager-topbar-action > span,
+  .menu-shell .manager-topbar-action > small {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.25 !important;
+  }
+  .menu-shell .menu-tab-access,
+  .menu-shell .menu-tab-badge,
+  .menu-shell .manager-mail-badge {
+    font-size: 10.5px !important;
+    line-height: 1.15 !important;
+  }
+  .menu-shell .menu-tab-copy strong {
+    font-size: 11.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Operator dossier, role guide and player-history decision copy. */
+  #menuContent .team-page-backbar span,
+  #menuContent .player-development-panel span,
+  #menuContent .player-development-panel em,
+  #menuContent .team-player-voice-card > span,
+  #menuContent .team-player-voice-card > small,
+  #menuContent .recruitment-profile-role-guide > header span,
+  #menuContent .recruitment-role-card.compact > header span,
+  #menuContent .recruitment-role-card.compact > small b {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.35 !important;
+  }
+  #menuContent .team-page-backbar button,
+  #menuContent .team-profile-actions button,
+  #menuContent .player-development-training button {
+    min-height: 44px !important;
+    font-size: var(--mobile-control-type) !important;
+    line-height: 1.25 !important;
+  }
+  #menuContent .player-development-panel small,
+  #menuContent .team-player-voice-card > p,
+  #menuContent .recruitment-profile-role-guide > header p,
+  #menuContent .recruitment-role-card.compact > p,
+  #menuContent .recruitment-role-card.compact > small {
+    font-size: var(--mobile-type-small) !important;
+    line-height: 1.5 !important;
+  }
+  #menuContent .team-profile-facts strong {
+    overflow: visible;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+  #menuContent .team-history-head {
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+  }
+  #menuContent .team-history-row {
+    min-height: 38px;
+    font-size: 10.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .team-history-row strong {
+    font-size: 11.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .recruitment-profile-role-guide > header strong {
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .menu-pill,
+  #menuContent .team-attribute-row > span small,
+  #menuContent .team-trait-list .redacted,
+  #menuContent .team-player-voice-card.insight strong,
+  #menuContent .dynamic-market-profile article > span,
+  #menuContent .recruitment-needs-panel > header span,
+  #menuContent .recruitment-needs-panel > header > b,
+  #menuContent .recruitment-function-grid article > span,
+  #menuContent .recruitment-needs-panel > footer span {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.35 !important;
+  }
+
+  /* Recruitment carousel, inline report and tutorial cards. */
+  #menuContent .recruitment-beginner-panel > header span,
+  #menuContent .recruitment-beginner-steps span,
+  #menuContent .recruitment-beginner-steps b,
+  #menuContent .recruitment-beginner-candidate-head span,
+  #menuContent .recruitment-beginner-candidate-head aside span,
+  #menuContent .recruitment-beginner-candidate-head aside small,
+  #menuContent .recruitment-comparison-tray header span,
+  #menuContent .recruitment-comparison-tray header small,
+  #menuContent .recruitment-comparison-tray header b,
+  #menuContent .recruitment-mobile-carousel-controls span,
+  #menuContent .recruitment-mobile-carousel-controls small,
+  #menuContent .recruitment-mobile-front-head > div > span,
+  #menuContent .recruitment-mobile-front-head > div > small,
+  #menuContent .recruitment-mobile-front-actions button,
+  #menuContent .recruitment-mobile-summary-signals > *,
+  #menuContent .recruitment-mobile-summary-grid span,
+  #menuContent .recruitment-mobile-summary-grid small,
+  #menuContent .recruitment-mobile-summary-fit > span,
+  #menuContent .recruitment-mobile-summary-fit > small,
+  #menuContent .recruitment-mobile-report section > span,
+  #menuContent .recruitment-role-card > header span,
+  #menuContent .recruitment-role-card > small b,
+  #menuContent .recruitment-role-guide-body > aside strong,
+  #menuContent .recruitment-role-guide-body > aside span {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.35 !important;
+  }
+  #menuContent .recruitment-mobile-report section > small,
+  #menuContent .recruitment-role-card > p,
+  #menuContent .recruitment-role-card > small,
+  #menuContent .recruitment-role-guide-body > aside p {
+    font-size: var(--mobile-type-small) !important;
+    line-height: 1.5 !important;
+  }
+  #menuContent .recruitment-mobile-summary-actions button,
+  #menuContent .recruitment-mobile-report footer button {
+    min-height: 44px !important;
+    font-size: var(--mobile-control-type) !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Team telemetry and armoury selectors previously retained 5–9px copy. */
+  #menuContent .career-armoury-player-copy strong,
+  #menuContent .telemetry-player-selector button strong,
+  #menuContent .team-telemetry-roster button strong,
+  #menuContent .team-player-condition b {
+    font-size: 11.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .career-armoury-player-copy small,
+  #menuContent .telemetry-player-selector button small,
+  #menuContent .team-telemetry-roster button small,
+  #menuContent .team-telemetry-roster button > b,
+  #menuContent .team-telemetry-roster button > em,
+  #menuContent .team-expand-card span,
+  #menuContent .team-expand-card small {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.4 !important;
+  }
+  #menuContent .team-expand-card p {
+    font-size: var(--mobile-type-small) !important;
+    line-height: 1.52 !important;
+  }
+
+  /* Development, training and supplies cards. */
+  #menuContent .development-intro-panel > div > span,
+  #menuContent .development-intro-panel ol span,
+  #menuContent .development-benefit-card > div:first-child > span,
+  #menuContent .development-benefit-level span,
+  #menuContent .development-benefit-level small,
+  #menuContent .training-player-card header span,
+  #menuContent .training-player-card header small,
+  #menuContent .training-player-metrics span,
+  #menuContent .training-player-card label > span,
+  #menuContent .training-focus-progress span,
+  #menuContent .training-focus-progress strong,
+  #menuContent .ammo-store-item > span,
+  #menuContent .ammo-store-item b,
+  #menuContent .ammo-store-notice strong {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.35 !important;
+  }
+  #menuContent .development-intro-panel p,
+  #menuContent .development-benefit-card > div:first-child > small,
+  #menuContent .training-player-metrics b,
+  #menuContent .training-player-card > p,
+  #menuContent .ammo-store-item p,
+  #menuContent .ammo-store-notice p {
+    font-size: var(--mobile-type-small) !important;
+    line-height: 1.5 !important;
+  }
+  #menuContent .training-player-card header strong,
+  #menuContent .development-benefit-card > div:first-child > strong,
+  #menuContent .ammo-store-item > strong {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+  #menuContent .training-player-card select,
+  #menuContent .training-player-actions button,
+  #menuContent .ammo-store-item button {
+    min-height: 44px !important;
+    font-size: var(--mobile-control-type) !important;
+  }
+
+  /* League overview and table labels. */
+  #menuContent .league-intro-panel > div > span,
+  #menuContent .league-intro-panel ol span,
+  #menuContent .league-operations-grid span,
+  #menuContent .league-operations-grid small {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.35 !important;
+  }
+  #menuContent .league-intro-panel p {
+    font-size: var(--mobile-type-small) !important;
+    line-height: 1.5 !important;
+  }
+  #menuContent .league-table-head {
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+  }
+  #menuContent .league-table-row {
+    min-height: 44px;
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+  }
+  #menuContent .league-table-row .club strong {
+    font-size: 11.5px !important;
+    line-height: 1.3 !important;
+  }
+  #menuContent .league-table-row .club small {
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Configuration appearance controls are a late legacy surface. */
+  #menuContent .interface-background-preview > span,
+  #menuContent .interface-background-picker > span,
+  #menuContent .interface-background-preset span,
+  #menuContent .interface-background-preset small,
+  #menuContent .interface-background-card > small {
+    font-size: var(--mobile-type-micro) !important;
+    line-height: 1.4 !important;
+  }
+  #menuContent .interface-background-picker output {
+    font-size: 11.5px !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-console-brand > span,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-console-brand > small,
+  body[data-app-state='match'][data-view-mode='windowed'] .view-mode-copy > strong,
+  body[data-app-state='match'][data-view-mode='windowed'] .view-mode-copy > small,
+  body[data-app-state='match'][data-view-mode='windowed'] .round-team .team-alive,
+  body[data-app-state='match'][data-view-mode='windowed'] .round-meta > *,
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > span,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-live-bug,
+  body[data-app-state='match'][data-view-mode='windowed'] #roundResultKicker,
+  body[data-app-state='match'][data-view-mode='windowed'] #roundResultDetail,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-dock-kicker,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-dock-readout span,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-dock-meta,
+  body[data-app-state='match'][data-view-mode='windowed'] .career-match-moment span,
+  body[data-app-state='match'][data-view-mode='windowed'] .career-match-moment small,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-owned-link span,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-owned-link em,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-owned-link b,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-owned-link small {
+    font-size: 10.5px !important;
+    line-height: 1.3 !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view .timer,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-owned-link strong {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > strong {
+    font-size: 10.75px !important;
+    line-height: 1.25 !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .feed-row,
+  body[data-app-state='match'][data-view-mode='windowed'] .feed-row b {
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .feed-row .weapon {
+    font-size: 10px !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .feed-row .feed-critical {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-command-pulse-btn,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-dock-controls button {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 360px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > span {
+    font-size: 9.5px !important;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-objective > strong {
+    font-size: 10.25px !important;
+  }
+  #menuContent .team-attribute-row.scouting-estimate:not(:has(> button)) {
+    grid-template-columns: minmax(120px, 1.25fr) minmax(50px, .7fr) minmax(40px, auto);
+    gap: 4px;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 1023px) and (max-height: 500px) {
+  .menu-shell {
+    --mobile-type-micro: 10.5px;
+    --mobile-type-label: 11px;
+    --mobile-type-small: 11.75px;
+    --mobile-type-body: 12.75px;
+    --mobile-control-type: 11.5px;
+  }
+  body[data-app-state='match'] .round-team .team-alive,
+  body[data-app-state='match'] .round-meta > *,
+  body[data-app-state='match'] .tap-hint,
+  body[data-app-state='match'] .match-objective > span,
+  body[data-app-state='match'] .owned-telemetry-grid span,
+  body[data-app-state='match'] .owned-telemetry-grid b,
+  body[data-app-state='match'] .owned-telemetry-head span,
+  body[data-app-state='match'] .owned-decision-panel header span,
+  body[data-app-state='match'] .owned-decision-grid span,
+  body[data-app-state='match'] .owned-decision-grid b,
+  body[data-app-state='match'] .match-commentary-label > span,
+  body[data-app-state='match'] .match-commentary-label > b,
+  body[data-app-state='match'] .career-match-moment span,
+  body[data-app-state='match'] .career-match-moment small,
+  body[data-app-state='match'] #ownedTelemetryName,
+  body[data-app-state='match'] #ownedTelemetryStatus,
+  body[data-app-state='match'] #ownedTelemetryWeapon,
+  body[data-app-state='match'] #ownedTelemetryBehaviour,
+  body[data-app-state='match'] #ownedTelemetryHealth,
+  body[data-app-state='match'] #ownedTelemetryAccuracy,
+  body[data-app-state='match'] #ownedTelemetryDamage,
+  body[data-app-state='match'] #ownedTelemetryKd,
+  body[data-app-state='match'] #ownedDecisionReason,
+  body[data-app-state='match'] #roundResultKicker,
+  body[data-app-state='match'] #roundResultDetail,
+  body[data-app-state='match'] #matchCommentaryIdle span,
+  body[data-app-state='match'] #matchCommentaryIdle strong {
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+  }
+  body[data-app-state='match'] .match-objective > strong,
+  body[data-app-state='match'] #ownedDecisionAction,
+  body[data-app-state='match'] #matchCommentaryRound {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+  body[data-app-state='match'] #audioBtn,
+  body[data-app-state='match'] #menuBtn,
+  body[data-app-state='match'] #uiToggleBtn,
+  body[data-app-state='match'] #prevBtn,
+  body[data-app-state='match'] #autoBtn,
+  body[data-app-state='match'] #nextBtn,
+  body[data-app-state='match'] #matchSpeedBtn,
+  body[data-app-state='match'] #commandPulseBtn {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
   }
 }

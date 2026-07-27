@@ -1,3 +1,24 @@
+STRIKEWATCH BUILD 12.118 MOBILE TYPOGRAPHY READABILITY CONTRACT
+
+Preserve the mobile readability floor without changing desktop density or game
+behavior.
+
+BUILD 12.118 INVARIANTS
+- `css/game.css` owns the final mobile typography authority after legacy rules.
+- At compact widths, meaningful microcopy must not fall below 10.5px; labels,
+  explanatory copy and controls use the larger semantic ranges defined on
+  `.menu-shell`.
+- Recruitment cards/reports, operator dossiers, team telemetry, development,
+  supplies, league tables, Configuration and portrait match presentation must
+  remain covered.
+- At 320px, recruitment cards and full operator profiles must have no
+  horizontal overflow. Keep the narrow scouting-estimate column correction.
+- Desktop typography, navigation, gameplay, recruitment values, simulation,
+  economy, persistence, save schema 19 and diagnostics schema 1 are unchanged.
+- Run 320px/390px portrait checks, compact-landscape checks, mobile match HUD
+  checks, modular/generated/standalone syntax, deterministic-build and archive
+  integrity checks.
+
 STRIKEWATCH BUILD 12.117 SKYLINE OFFICES ENVIRONMENT REWORK CONTRACT
 
 Preserve the reworked Skyline Offices floorplate and its geometry gate.

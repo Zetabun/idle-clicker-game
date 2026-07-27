@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.117';
-  const BUILD_NAME = 'SKYLINE OFFICES ENVIRONMENT REWORK';
-  const BUILD_ID = '12.117.0-skyline-offices-environment-rework';
+  const BUILD_VERSION = '12.118';
+  const BUILD_NAME = 'MOBILE TYPOGRAPHY READABILITY PASS';
+  const BUILD_ID = '12.118.0-mobile-typography-readability-pass';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

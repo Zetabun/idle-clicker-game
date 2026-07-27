@@ -1,4 +1,16 @@
-CURRENT RELEASE: STRIKEWATCH BUILD 12.117 - SKYLINE OFFICES ENVIRONMENT REWORK
+CURRENT RELEASE: STRIKEWATCH BUILD 12.118 - MOBILE TYPOGRAPHY READABILITY PASS
+
+Build 12.118 makes `css/game.css` the final compact-screen type authority.
+Preserve its 10.5px meaningful-microcopy floor, larger label/body/control
+ranges, and component coverage across recruitment, operator dossiers, team
+telemetry, development, supplies, league tables, Configuration and portrait
+match presentation. Keep the narrow 320px scouting-estimate grid correction so
+larger copy does not create horizontal overflow. This is presentation-only:
+desktop typography, navigation, recruitment values, gameplay, simulation,
+economy, persistence, save schema 19 and diagnostics schema 1 remain unchanged.
+Require 320px/390px portrait, compact-landscape, mobile match HUD,
+modular/generated/standalone syntax, deterministic-build and archive-integrity
+checks.
 
 Build 12.117 reworks the Skyline Offices arena into a coherent corporate floorplate. The floorplate is authored as its north-west quadrant in `js/00-core.js` and mirrored about `x = 18` and `z = 12`; furniture is authored for the west half and mirrored about `x = 18` only. `decor.courtyards` doubles as the office ceiling void, so it must always match real open floor - the authored atrium is `x` 14-22, `z` 9-15. Authored `decor.lowCeilings` and the new `decor.floorMarkings` layer replace the three hard-coded office ceiling boxes; do not reintroduce them. No office prop, door, decal, glass band, display, baffle or ceiling may overlap a wall cell, and every door must sit in a genuine single-cell opening. The office branch of `arenaGeometryPresentationSnapshot` gates all of this plus layout symmetry and the counts (8 baffles, 8 glass bands, 10 screens, 38 chairs, 4 benches, 4 sofas, 12 doors); keep it passing rather than relaxing it. The tactical minimap and deployment preview are data-driven but should still be verified after layout changes. Preserve Citadel Depot, Dune Bastion, weapons, AI decisions, match simulation, economy, persistence, save schema 19 and diagnostics schema 1.
 
