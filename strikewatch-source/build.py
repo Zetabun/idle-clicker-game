@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parent
-MODULES = ['00-core.js', '10-audio.js', '20-navigation.js', '30-bot-ai.js', '31-match-diagnostics.js', '32-tactical-minimap.js', '33-season-narrative-state.js', '34-squad-dynamics.js', '35-career.js', '39-medical.js', '36-team-management.js', '37-league.js', '38-development.js', '39-infrastructure.js', '39-club-operations.js', '39-opposition-intelligence.js', '39-matchday.js', '39-transfers.js', '39-recruitment-commercial.js', '39-dynamic-market-mail.js', '39-calendar-finance.js', '39-workflow-integrity.js', '40-match-flow.js', '41-live-command-pulses.js', '50-ui-menus.js', '52-season-narratives.js', '55-opening-week.js', '56-world-press-awards.js', '60-renderer-core.js', '61-world-renderer.js', '62-character-renderer.js', '63-viewmodel-renderer.js', '64-reward-renderer.js', '70-runtime.js']
+MODULES = ['00-core.js', '10-audio.js', '20-navigation.js', '30-bot-ai.js', '31-match-diagnostics.js', '32-tactical-minimap.js', '33-season-narrative-state.js', '34-squad-dynamics.js', '35-career.js', '39-medical.js', '36-team-management.js', '37-league.js', '38-development.js', '39-infrastructure.js', '39-club-operations.js', '39-opposition-intelligence.js', '39-matchday.js', '39-transfers.js', '39-recruitment-commercial.js', '39-dynamic-market-mail.js', '39-calendar-finance.js', '39-workflow-integrity.js', '40-match-flow.js', '41-live-command-pulses.js', '50-ui-menus.js', '52-season-narratives.js', '55-opening-week.js', '56-world-press-awards.js', '60-renderer-core.js', '61-world-renderer.js', '62-character-renderer.js', '63-viewmodel-renderer.js', '64-reward-renderer.js', '70-runtime.js', '75-ui-clarity-hotfix.js']
 BUNDLE_PATH = ROOT / "js" / "strikewatch.dev.js"
 
 

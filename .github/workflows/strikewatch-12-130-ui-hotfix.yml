@@ -1,0 +1,60 @@
+name: Strikewatch 12.130 UI hotfix rebuild
+
+on:
+  push:
+    branches:
+      - agent/strikewatch-12-131-tactical-clarity
+    paths:
+      - 'strikewatch-source/build.py'
+      - 'strikewatch-source/js/75-ui-clarity-hotfix.js'
+      - 'strikewatch-source/AUDIT-12.130-UI-HOTFIX.md'
+      - '.github/workflows/strikewatch-12-130-ui-hotfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/strikewatch-12-131-tactical-clarity
+          fetch-depth: 0
+
+      - name: First deterministic build
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.130.html > /tmp/strikewatch-first.sha256
+
+      - name: Parse source and generated JavaScript
+        working-directory: strikewatch-source
+        run: |
+          for file in js/*.js; do node --check "$file"; done
+          node --check js/strikewatch.dev.js
+
+      - name: Second deterministic build
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.130.html > /tmp/strikewatch-second.sha256
+          diff -u /tmp/strikewatch-first.sha256 /tmp/strikewatch-second.sha256
+
+      - name: Publish verified standalone
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.130.html cod.html
+          cmp -s strikewatch-source/dist/strikewatch-build-12.130.html cod.html
+
+      - name: Commit generated release artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add strikewatch-source/js/strikewatch.dev.js strikewatch-source/dist/strikewatch-build-12.130.html cod.html
+          if git diff --cached --quiet; then
+            echo "Generated artifacts already match the source build."
+          else
+            git commit -m "Rebuild Strikewatch 12.130 UI hotfix artifacts"
+            git push origin HEAD:agent/strikewatch-12-131-tactical-clarity
+          fi
