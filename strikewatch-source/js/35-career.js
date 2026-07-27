@@ -1429,7 +1429,7 @@
       tactics: {
         formationId: 'balanced', lineupMode: 'manual', autoApplyBeforeMatch: true,
         approachId: 'balanced', engagementId: 'mixed', priorityId: 'trade', assignments: {},
-        matchPrep: { day: -1, briefingReviewed: false, planConfirmed: false, lineupSignature: '', opponentId: '', selectedResponseId: '', fixtureDrills: [], opponentDepthAtReview: 0 },
+        matchPrep: { day: -1, fixtureId: '', briefingReviewed: false, planConfirmed: false, lineupSignature: '', opponentId: '', selectedResponseId: '', fixtureDrills: [], opponentDepthAtReview: 0 },
         familiarity: {
           formation: { balanced: 52, pressure: 28, control: 30, defensive: 28, wide: 28 },
           approach: { cautious: 30, balanced: 52, aggressive: 30 },
@@ -1633,6 +1633,7 @@
         assignments: raw.tactics?.assignments && typeof raw.tactics.assignments === 'object' ? { ...raw.tactics.assignments } : {},
         matchPrep: {
           day: Number.isFinite(Number(raw.tactics?.matchPrep?.day)) ? Math.round(Number(raw.tactics.matchPrep.day)) : -1,
+          fixtureId: String(raw.tactics?.matchPrep?.fixtureId || ''),
           briefingReviewed: Boolean(raw.tactics?.matchPrep?.briefingReviewed),
           planConfirmed: Boolean(raw.tactics?.matchPrep?.planConfirmed),
           lineupSignature: String(raw.tactics?.matchPrep?.lineupSignature || ''),

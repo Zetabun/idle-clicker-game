@@ -2379,8 +2379,7 @@
       const formationIndex = markup.indexOf('club-tactics-panel');
       const finalCheckIndex = markup.indexOf('club-plan-confirm');
       return {
-        dockPresent: dockIndex >= 0,
-        dockBeforeDetailedSettings: dockIndex >= 0 && formationIndex > dockIndex,
+        dockRemoved: dockIndex < 0,
         finalCheckAfterDetailedSettings: finalCheckIndex > formationIndex,
         confirmActions: (markup.match(/data-matchday-action="confirm-plan"/g) || []).length,
         deployActions: (markup.match(/data-matchday-action="deploy"/g) || []).length,
@@ -2413,6 +2412,35 @@
       return { result, familiarity: clubTacticsState().familiarity, suitability: clubTacticalSuitabilityReport() };
     },
     confirmMatchdayPlanForTest: () => ({ ok: clubConfirmMatchPlan(), state: window.__strikeDebug.matchdayForTest() }),
+    matchPlanPersistenceForTest: () => {
+      if (!careerSquadReady() && typeof window.__strikeDebug?.seedReadabilityCareerForTest === 'function') window.__strikeDebug.seedReadabilityCareerForTest(5);
+      const calendar = clubCalendarState();
+      const tactics = clubTacticsState();
+      const player = clubWorkflowSquad()[0] || null;
+      const originalDay = calendar.absoluteDay;
+      const originalApproach = tactics.approachId;
+      const originalFatigue = Number(player?.fatigue) || 0;
+      const originalPrep = { ...tactics.matchPrep, fixtureDrills: [...(tactics.matchPrep.fixtureDrills || [])] };
+      const confirmed = clubConfirmMatchPlan();
+      const confirmedFixtureId = clubMatchPrepState().fixtureId;
+      calendar.absoluteDay = originalDay + 1;
+      if (player) player.fatigue = clamp(originalFatigue + 7, 0, 100);
+      const survivesDayAndReadiness = clubMatchPlanConfirmed();
+      tactics.approachId = originalApproach === 'balanced' ? 'aggressive' : 'balanced';
+      const materialChangeInvalidates = !clubMatchPlanConfirmed();
+      tactics.approachId = originalApproach;
+      calendar.absoluteDay = originalDay;
+      if (player) player.fatigue = originalFatigue;
+      tactics.matchPrep = originalPrep;
+      saveCareerState();
+      return {
+        ok: Boolean(confirmed && confirmedFixtureId && survivesDayAndReadiness && materialChangeInvalidates),
+        confirmed,
+        fixtureId: confirmedFixtureId,
+        survivesDayAndReadiness,
+        materialChangeInvalidates
+      };
+    },
     applyMatchdayPlanToBotsForTest: () => {
       clubCaptureActiveMatchPlan();
       createMatch();

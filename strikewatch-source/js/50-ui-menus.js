@@ -2324,12 +2324,12 @@
             : `End day · advance from ${currentDate}`;
       menuEndDayBtn.setAttribute('aria-label', actionLabel);
       menuEndDayBtn.title = actionLabel;
-      if (managerDateDayEl) managerDateDayEl.textContent = tutorialDayRestriction ? '' : blockers.length ? 'END DAY LOCKED' : 'END DAY';
+      if (managerDateDayEl) managerDateDayEl.textContent = tutorialDayRestriction ? 'NEXT DAY' : blockers.length ? 'END DAY LOCKED' : 'END DAY';
       const compactHeaderDate = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : currentDate;
       if (managerDateMetaEl) managerDateMetaEl.textContent = !careerState.created
         ? 'CREATE TEAM FIRST'
         : tutorialDayRestriction
-          ? ''
+          ? 'FINISH GUIDE'
           : blockers.length
             ? `${blockers.length} RESPONSE${blockers.length === 1 ? '' : 'S'}`
             : compactHeaderDate;

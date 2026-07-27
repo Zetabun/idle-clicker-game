@@ -56,6 +56,12 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.126 owns compact tactics flow and fixture-persistent match
+preparation. Keep tactics panels in content-sized grid rows, retain one
+normal-flow final check, show readable guided Next Day status, and invalidate
+a confirmed plan only for a new fixture or material setup change. See
+`AUDIT-12.126.md`.
+
 Build 12.125 owns the desktop Inbox viewport, email-selection scroll retention
 and translucent command chrome. Keep the feed at no more than five visible
 rows, preserve both page and feed position through a reader refresh, and keep

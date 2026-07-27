@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.125';
-  const BUILD_NAME = 'DESKTOP INBOX & GLASS CHROME';
-  const BUILD_ID = '12.125.0-desktop-inbox-glass-chrome';
+  const BUILD_VERSION = '12.126';
+  const BUILD_NAME = 'MOBILE TACTICS & FIXTURE PREP';
+  const BUILD_ID = '12.126.0-mobile-tactics-fixture-prep';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

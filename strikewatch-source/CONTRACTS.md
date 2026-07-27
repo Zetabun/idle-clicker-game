@@ -67,6 +67,12 @@ current task. Release-specific implementation detail belongs in the matching
   it must release when time genuinely needs to advance.
 - `openingWeekAdvanceToNextEvent()` uses the normal day simulation, stops for
   meaningful events or decisions and never auto-resolves them.
+- Confirmed match preparation belongs to the scheduled fixture, not the
+  current calendar day. It remains valid while advancing toward that fixture
+  and is invalidated only when the fixture or material setup (active five,
+  roles, equipment or tactical instructions) changes.
+- On compact tactics, detailed sections and the final confirmation remain in
+  normal scroll flow. Do not add a second floating confirmation action.
 - Transient guidance, comparison and summary state must not leak into save
   schema 19 unless a deliberate migration is designed.
 

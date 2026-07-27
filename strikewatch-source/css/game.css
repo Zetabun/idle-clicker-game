@@ -29829,3 +29829,65 @@ body[data-app-state='menu'] { background: var(--skin-ink-0); }
     background: transparent;
   }
 }
+
+
+/* ============================================================================
+   Build 12.126 — Mobile tactics flow and fixture-persistent preparation.
+   Tactics owns a fixed-height scroll viewport on compact screens, so its grid
+   tracks must use their content height instead of shrinking every panel to its
+   border box. The normal-flow final check is the single mobile confirmation
+   action; the former sticky duplicate is removed.
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .menu-shell[data-menu-route='tactics'] #menuContent {
+    grid-auto-rows: max-content;
+    align-content: start;
+    padding-bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+  }
+
+  .menu-shell[data-menu-route='tactics'] #menuContent > :is(
+    .club-tactics-panel,
+    .club-plan-grid,
+    .club-role-assignment-panel,
+    .club-delegation-panel,
+    .club-plan-confirm
+  ) {
+    align-self: start;
+    min-height: max-content !important;
+  }
+
+  #menuContent .mobile-match-plan-actions {
+    display: none !important;
+  }
+
+  .menu-shell .manager-end-day-primary.guided-lock {
+    padding-inline: 5px;
+  }
+
+  .menu-shell .manager-end-day-primary.guided-lock > strong,
+  .menu-shell .manager-end-day-primary.guided-lock > small {
+    display: block !important;
+    width: 100%;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .menu-shell .manager-end-day-primary.guided-lock > strong {
+    font-size: 10.5px !important;
+    line-height: 1.1 !important;
+    letter-spacing: .04em;
+  }
+
+  .menu-shell .manager-end-day-primary.guided-lock > small {
+    margin-top: 2px;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    letter-spacing: .035em;
+  }
+
+  .menu-shell .manager-end-day-primary.guided-lock > .manager-end-day-lock-icon {
+    display: none !important;
+  }
+}

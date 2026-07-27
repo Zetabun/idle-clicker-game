@@ -32,9 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.125 keeps the desktop Inbox compact, retains scroll position when
-opening messages, and adds subtle translucent desktop command chrome while
-preserving compact/mobile behaviour. See `HANDOFF.md` and `AUDIT-12.125.md`.
+Build 12.126 repairs compact tactics layout, removes duplicate floating
+confirmation, clarifies guided Next Day status and keeps a confirmed plan
+valid while advancing toward its scheduled fixture. See `HANDOFF.md` and
+`AUDIT-12.126.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.125 — Desktop Inbox & Glass Chrome
-Build ID: 12.125.0-desktop-inbox-glass-chrome
+Build 12.126 — Mobile Tactics & Fixture Prep
+Build ID: 12.126.0-mobile-tactics-fixture-prep
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,9 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
-Build 12.125 caps the desktop Inbox feed, preserves its page/list scroll
-position through message selection, and owns the translucent desktop command
-chrome. Build 12.124 retains the desktop-inline/compact-modal Inbox split.
+Build 12.126 owns compact tactics row sizing, the single normal-flow final
+check, readable guided Next Day status, and fixture-persistent preparation.
+Build 12.125 retains the desktop Inbox and translucent command chrome.
 Builds 12.122–12.123 own the Command Skin layers near the end of
 `css/game.css`; visual changes belong there and must stay chrome-only.
 Preserve the 12px meaningful-copy and 14px explanatory floors, the mobile

@@ -497,6 +497,7 @@
     }
     tactics.matchPrep = tactics.matchPrep && typeof tactics.matchPrep === 'object' ? tactics.matchPrep : {};
     tactics.matchPrep.day = Number.isFinite(Number(tactics.matchPrep.day)) ? Math.round(Number(tactics.matchPrep.day)) : -1;
+    tactics.matchPrep.fixtureId = String(tactics.matchPrep.fixtureId || '');
     tactics.matchPrep.briefingReviewed = Boolean(tactics.matchPrep.briefingReviewed);
     tactics.matchPrep.planConfirmed = Boolean(tactics.matchPrep.planConfirmed);
     tactics.matchPrep.lineupSignature = String(tactics.matchPrep.lineupSignature || '');
@@ -544,25 +545,52 @@
   function clubMatchPlanSignature() {
     const tactics = clubWorkflowTactics();
     const lineup = clubWorkflowSquad().slice(0, TEAM_REQUIRED_STARTERS).map(player => {
-      const stats = TACTICAL_CORE_STATS.map(key => Math.round(Number(player.stats?.[key]) || 0)).join('.');
-      return `${player.id}:${clubMatchRoleForPlayer(player).id}:${typeof careerPlayerPrimaryWeaponId === 'function' ? (careerPlayerPrimaryWeaponId(player) || 'none') : (player.equippedPrimaryWeaponId || 'none')}:${typeof careerPlayerSidearmId === 'function' ? careerPlayerSidearmId(player) : (player.equippedSidearmId || 'scrap-p12')}:${player.equippedArmourId || 'none'}:${stats}:${teamReadinessScore(player)}`;
+      return `${player.id}:${clubMatchRoleForPlayer(player).id}:${typeof careerPlayerPrimaryWeaponId === 'function' ? (careerPlayerPrimaryWeaponId(player) || 'none') : (player.equippedPrimaryWeaponId || 'none')}:${typeof careerPlayerSidearmId === 'function' ? careerPlayerSidearmId(player) : (player.equippedSidearmId || 'scrap-p12')}:${player.equippedArmourId || 'none'}`;
     }).join('|');
     const prep = careerState.tactics?.matchPrep || {};
     const preparationKey = `${String(prep.opponentId || 'none')}:${Math.round(Number(prep.opponentDepthAtReview) || 0)}:${String(prep.selectedResponseId || 'custom')}:${(Array.isArray(prep.fixtureDrills) ? prep.fixtureDrills : []).slice().sort().join('.')}`;
     return `${tactics.formationId}/${tactics.approachId}/${tactics.engagementId}/${tactics.priorityId}//${lineup}//${preparationKey}`;
   }
 
+  function clubMatchPrepFixtureId() {
+    const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+    const active = typeof leagueActiveFixture === 'function' ? leagueActiveFixture() : null;
+    return String(fixture?.id || active?.id || '');
+  }
+
+  function clubCreateMatchPrepState(day, fixtureId = '', opponentId = '', invalidatedReason = '') {
+    const state = {
+      day,
+      fixtureId: String(fixtureId || ''),
+      briefingReviewed: false,
+      planConfirmed: false,
+      lineupSignature: '',
+      opponentId: String(opponentId || ''),
+      selectedResponseId: '',
+      fixtureDrills: [],
+      opponentDepthAtReview: 0
+    };
+    if (invalidatedReason) state.invalidatedReason = invalidatedReason;
+    return state;
+  }
+
   function clubMatchPrepState() {
     const tactics = clubTacticsState();
     const day = clubCalendarState().absoluteDay;
-    if (tactics.matchPrep.day !== day) {
-      tactics.matchPrep = { day, briefingReviewed: false, planConfirmed: false, lineupSignature: '', opponentId: '', selectedResponseId: '', fixtureDrills: [], opponentDepthAtReview: 0 };
+    const fixtureId = clubMatchPrepFixtureId();
+    if (tactics.matchPrep.day < 0) tactics.matchPrep.day = day;
+    // Build 12.126: preparation belongs to the scheduled fixture, not to the
+    // current calendar day. Advancing toward the same fixture must not force
+    // the manager through the same briefing and confirmation loop again.
+    if (!tactics.matchPrep.fixtureId && fixtureId) tactics.matchPrep.fixtureId = fixtureId;
+    if (fixtureId && tactics.matchPrep.fixtureId && tactics.matchPrep.fixtureId !== fixtureId) {
+      tactics.matchPrep = clubCreateMatchPrepState(day, fixtureId, '', 'A new fixture is now scheduled, so the previous match plan was cleared.');
       opponentPreparationAdvancedOpen = false;
     }
     const targetClub = typeof opponentPreparationTargetClub === 'function' ? opponentPreparationTargetClub() : null;
     const targetId = String(targetClub?.id || '');
     if (targetId && tactics.matchPrep.opponentId && tactics.matchPrep.opponentId !== targetId) {
-      tactics.matchPrep = { day, briefingReviewed: false, planConfirmed: false, lineupSignature: '', opponentId: targetId, selectedResponseId: '', fixtureDrills: [], opponentDepthAtReview: 0, invalidatedReason: 'The opposition changed, so the previous fixture plan was cleared.' };
+      tactics.matchPrep = clubCreateMatchPrepState(day, fixtureId, targetId, 'The opposition changed, so the previous fixture plan was cleared.');
       opponentPreparationAdvancedOpen = false;
     }
     if (tactics.matchPrep.planConfirmed && tactics.matchPrep.lineupSignature !== clubMatchPlanSignature()) tactics.matchPrep.planConfirmed = false;
@@ -587,6 +615,8 @@
     if (!careerState.created) return false;
     const prep = clubMutableMatchPrepState();
     const preparation = typeof opponentPreparationRead === 'function' ? opponentPreparationRead() : null;
+    prep.day = clubCalendarState().absoluteDay;
+    prep.fixtureId = clubMatchPrepFixtureId();
     prep.briefingReviewed = true;
     prep.opponentId = preparation?.clubId || prep.opponentId || '';
     prep.opponentDepthAtReview = preparation?.depth || prep.opponentDepthAtReview || 0;
@@ -598,6 +628,8 @@
     if (!careerSquadReady()) return false;
     const prep = clubMutableMatchPrepState();
     const preparation = typeof opponentPreparationRead === 'function' ? opponentPreparationRead() : null;
+    prep.day = clubCalendarState().absoluteDay;
+    prep.fixtureId = clubMatchPrepFixtureId();
     prep.briefingReviewed = true;
     prep.opponentId = preparation?.clubId || prep.opponentId || '';
     prep.opponentDepthAtReview = preparation?.depth || prep.opponentDepthAtReview || 0;
@@ -1143,10 +1175,10 @@
       { id: 'briefing', label: 'OPPOSITION PREPARATION', complete: prep.briefingReviewed, detail: preparation ? `${preparation.name} · ${preparation.depth}% confidence${prep.selectedResponseId ? ` · ${opponentSelectedResponsePlan(preparation)?.title || 'CUSTOM PLAN'}` : ''}` : `${opponent.name} · ${opponent.style}`, action: 'review-briefing', button: prep.briefingReviewed ? 'REVIEW AGAIN' : 'OPEN PREPARATION' },
       { id: 'lineup', label: 'ACTIVE FIVE OPERATORS', complete: ready, detail: ready ? `${clubLineupSignature().split('|').length} operators submitted` : `${careerState.squad.length} / ${TEAM_REQUIRED_STARTERS} signed`, route: ready ? 'operators' : 'market', button: ready ? 'REVIEW SQUAD' : 'RECRUIT' },
       { id: 'plan', label: 'TACTICAL PLAN', complete: planConfirmed, detail: `${clubApproach().name} · ${clubEngagementPlan().name} · ${suitability.overall}/100 fit`, route: 'tactics', button: planConfirmed ? 'REVIEW PLAN' : 'SET TACTICS' },
-      { id: 'deploy', label: 'MATCHMAKING', complete: false, detail: planConfirmed ? 'All matchday checks complete' : 'Confirm the tactical plan first', action: 'deploy', button: planConfirmed ? 'START MATCHMAKING' : 'LOCKED', disabled: !planConfirmed }
+      { id: 'deploy', label: 'MATCHMAKING', complete: false, detail: planConfirmed ? 'All matchday checks complete' : 'Confirm the tactical plan first', action: 'review-final-check', button: planConfirmed ? 'VIEW FINAL CHECK' : 'LOCKED', disabled: !planConfirmed }
     ];
     return `<section class="matchday-preparation-panel">
-      <header><div><span>MATCHDAY WORKFLOW</span><strong>BRIEFING → LINE-UP → TACTICS → DEPLOYMENT</strong><small>Match preparation is saved for the current simulated day and invalidated if tactics, the active five operators, roles, loadouts or player readiness change.</small></div><aside><span>OPPOSITION</span><strong>${escapeCareerHtml(opponent.name)}</strong><small>${escapeCareerHtml(opponent.detail)}</small></aside></header>
+      <header><div><span>MATCHDAY WORKFLOW</span><strong>BRIEFING → LINE-UP → TACTICS → DEPLOYMENT</strong><small>Match preparation is saved for the scheduled fixture. It remains ready while days advance and is cleared only when the fixture, tactics, active five, assigned roles or loadouts change.</small></div><aside><span>OPPOSITION</span><strong>${escapeCareerHtml(opponent.name)}</strong><small>${escapeCareerHtml(opponent.detail)}</small></aside></header>
       <div class="matchday-step-grid">${steps.map((step, index) => `<article class="matchday-step ${step.complete ? 'complete' : ''} ${step.disabled ? 'locked' : ''}"><span>${String(index + 1).padStart(2, '0')}</span><div><strong>${step.label}</strong><small>${escapeCareerHtml(step.detail)}</small></div><button ${step.disabled ? 'disabled' : ''} ${step.route ? `data-team-route="${step.route}"` : `data-matchday-action="${step.action}"`}>${step.button}</button></article>`).join('')}</div>
     </section>`;
   }
@@ -1194,15 +1226,6 @@
     </section>`;
   }
 
-  function renderMobileMatchPlanActions(suitability) {
-    const confirmed = clubMatchPlanConfirmed();
-    const ready = careerSquadReady();
-    return `<aside class="mobile-match-plan-actions ${confirmed ? 'confirmed' : ''}" aria-label="Match plan actions">
-      <div><span>${confirmed ? 'PLAN CONFIRMED' : 'FINAL MATCHDAY ACTION'}</span><strong>${confirmed ? `${suitability.executionPercent}% EXECUTION READY` : `${suitability.overall}/100 PLAN FIT`}</strong><small>${confirmed ? 'Start matchmaking or keep reviewing the settings below.' : ready ? 'Confirm now or review the detailed settings below.' : 'Complete the active five before confirming.'}</small></div>
-      <button class="primary" data-matchday-action="${confirmed ? 'deploy' : 'confirm-plan'}" ${confirmed || ready ? '' : 'disabled'}>${confirmed ? 'START MATCHMAKING' : 'CONFIRM PLAN'}</button>
-    </aside>`;
-  }
-
   function renderAdvancedTacticsTab() {
     ensureClubOperationsState();
     clubTacticsState();
@@ -1221,7 +1244,6 @@
       <div class="menu-hero career-hero club-tactics-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TACTICAL MATCHDAY</div><h2>TEAM PLAN & ASSIGNED RESPONSIBILITIES</h2><p>Choose the active-operator structure, match approach, engagement distance and team priority. The fit model now measures whether the selected operators, weapons and assigned roles can execute those instructions effectively.</p><div class="menu-pill-row"><span class="menu-pill">${escapeCareerHtml(formation.name)}</span><span class="menu-pill">${clubApproach().name}</span><span class="menu-pill">${clubEngagementPlan().name}</span><span class="menu-pill">${clubTeamPriority().name}</span><span class="menu-pill">PLAN FIT ${suitability.overall}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">OPPOSITION READ</div><div class="menu-side-operator">${opponent.rating}</div><p>${escapeCareerHtml(opponent.name)} · ${escapeCareerHtml(opponent.style)}</p><small>${escapeCareerHtml(suitability.matchup.note)}</small></div></div>
       ${renderOpponentSpecificPreparationPanel()}
       ${renderTacticalSuitabilityPanel(suitability)}
-      ${renderMobileMatchPlanActions(suitability)}
       <section class="club-tactics-panel"><div class="career-section-head"><div><span>TACTICAL SHAPE</span><strong>FORMATION</strong></div><p>Formation fit combines the active five operators' weighted attributes with the role coverage needed by that structure.</p></div><div class="club-formation-grid">${Object.values(CLUB_FORMATIONS).map(item => { const fit = tacticalComponentForOverride('formation', item.id); return `<button class="club-formation-card ${item.id === formation.id ? 'active' : ''}" data-club-formation="${item.id}"><span class="club-formation-card-head"><b>${escapeCareerHtml(item.short)}</b>${tacticalFitBadgeMarkup(fit.score)}</span><strong>${escapeCareerHtml(item.name)}</strong><small>${escapeCareerHtml(item.description)}</small><em>${escapeCareerHtml(fit.explanation || '')}</em></button>`; }).join('')}</div></section>
       <section class="club-plan-grid"><article><div class="career-section-head compact"><div><span>RISK & TEMPO</span><strong>TEAM APPROACH</strong></div></div><div>${matchdayOptionCards(CLUB_APPROACHES, clubApproach().id, 'club-approach', 'approach')}</div></article><article><div class="career-section-head compact"><div><span>WEAPON SPACING</span><strong>ENGAGEMENT RANGE</strong></div></div><div>${matchdayOptionCards(CLUB_ENGAGEMENTS, clubEngagementPlan().id, 'club-engagement', 'engagement')}</div></article><article><div class="career-section-head compact"><div><span>BATTLEGROUND</span><strong>MAP SELECTION · ${escapeCareerHtml(selectedArena.short)}</strong></div></div><div>${arenaOptions().map(item => `<button class="club-plan-option ${item.id === selectedArena.id ? 'active' : ''}" data-club-map="${item.id}"><span class="club-plan-option-head"><strong>${escapeCareerHtml(item.name)}</strong></span><small>${escapeCareerHtml(item.description)}</small><em>${escapeCareerHtml(item.matchmakingBlurb)}</em></button>`).join('')}</div></article><article><div class="career-section-head compact"><div><span>COLLECTIVE BEHAVIOUR</span><strong>TEAM PRIORITY</strong></div></div><div>${matchdayOptionCards(CLUB_PRIORITIES, clubTeamPriority().id, 'club-priority', 'priority')}</div></article></section>
       <section class="club-role-assignment-panel"><div class="career-section-head"><div><span>ASSIGNED RESPONSIBILITIES</span><strong>ACTIVE OPERATOR MATCH ROLES</strong></div><p>The fit score compares the operator's attributes with the selected role. Role Effectiveness then shows how completely they are expected to follow that role's tactical decisions and coordination; it does not reduce weapon damage.</p></div><div class="club-role-assignment-list">${lineup.length ? lineup.map((player, index) => { const assigned = clubMatchRoleForPlayer(player); const fit = tacticalPlayerRoleSuitability(player, assigned.id); return `<article class="role-fit-${fit.tone}"><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>NATURAL ${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small><em>${fit.naturalMatch ? 'NATURAL ROLE' : fit.secondaryMatch ? 'SECONDARY ROLE' : `BEST ATTRIBUTES: ${fit.strengths.join(' · ')}`}</em></div><div class="club-role-fit-readout">${tacticalFitBadgeMarkup(fit.score, false)}${tacticalRoleExecutionMarkup(fit)}</div><label><span>MATCH ROLE</span><select data-club-role-player="${player.id}">${roleOptions.replace(`value="${assigned.id}"`, `value="${assigned.id}" selected`)}</select></label></article>`; }).join('') : '<div class="team-empty-state compact"><strong>NO ACTIVE FIVE OPERATORS</strong><p>Recruit and order five operators before assigning responsibilities.</p></div>'}</div>${reserves.length ? `<div class="club-substitute-bench"><div><span>SUBSTITUTES</span><strong>AVAILABLE RESERVES</strong><small>Choose which starter a reserve should replace. The displaced player moves to the bench.</small></div>${reserves.map(player => `<article><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small></div><label><span>REPLACE</span><select data-club-substitute-player="${player.id}"><option value="">KEEP AS RESERVE</option>${lineup.map((starter, index) => `<option value="${index}">S${index + 1} · ${escapeCareerHtml(starter.name)}</option>`).join('')}</select></label></article>`).join('')}</div>` : ''}</section>
@@ -1776,6 +1798,15 @@
           if (target && typeof scrollCommandContentTargetIntoView === 'function') scrollCommandContentTargetIntoView(target, { block: 'start', behavior: 'smooth' });
         });
         showStatus('OPPONENT PREPARATION OPENED · BUILD THE MATCH PLAN');
+      } else if (action === 'review-final-check') {
+        const target = menuContentEl?.querySelector('.club-plan-confirm');
+        if (target && menuContentEl) {
+          const scrollerRect = menuContentEl.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const desiredTop = Math.max(0, menuContentEl.scrollTop + targetRect.top - scrollerRect.top - 12);
+          menuContentEl.scrollTo({ top: desiredTop, left: 0, behavior: 'smooth' });
+        }
+        showStatus('FINAL MATCHDAY CHECK');
       } else if (action === 'confirm-plan') {
         if (typeof workflowSaveMatchSetupDrafts === 'function') workflowSaveMatchSetupDrafts({ render: false });
         const confirmed = clubConfirmMatchPlan();

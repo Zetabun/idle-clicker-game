@@ -6,15 +6,20 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.125 — Desktop Inbox & Glass Chrome**
-- Build ID: `12.125.0-desktop-inbox-glass-chrome`
+- Build: **12.126 — Mobile Tactics & Fixture Prep**
+- Build ID: `12.126.0-mobile-tactics-fixture-prep`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.125.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.126.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.126 keeps compact tactics panels in normal scroll flow, removes the
+duplicate floating confirmation control, makes the guided Next Day status
+readable, and binds confirmed preparation to the scheduled fixture instead of
+the current day. See `AUDIT-12.126.md`.
 
 Build 12.125 caps the desktop Inbox feed at five rows (about four on shorter
 viewports), preserves page and list scroll position when a message opens, and
