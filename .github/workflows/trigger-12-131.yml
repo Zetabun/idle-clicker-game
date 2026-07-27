@@ -1,0 +1,28 @@
+name: Trigger Build 12.131 packaging
+
+on:
+  push:
+    branches:
+      - agent/build-12-131-calendar-clarity-package
+    paths:
+      - '.github/workflows/trigger-12-131.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/build-12-131-calendar-clarity-package
+          fetch-depth: 0
+      - name: Trigger release workflow
+        run: |
+          printf '\n# Triggered by %s\n' "${GITHUB_SHA}" >> .github/workflows/build-12-131-package.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/build-12-131-package.yml
+          git commit -m "Trigger Build 12.131 package"
+          git push origin HEAD:agent/build-12-131-calendar-clarity-package
