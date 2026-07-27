@@ -7,6 +7,9 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.123 | Command Skin depth pass on bespoke route surfaces | `AUDIT-12.123.md` |
+| 12.122 | FM-inspired Command Skin visual revamp | `AUDIT-12.122.md` |
+| 12.121 | Mobile tactics action reachability and section containment | `AUDIT-12.121.md` |
 | 12.120 | Mobile flow, readability and modal accessibility | `AUDIT-12.120.md` |
 | 12.119 | Guided navigation `NEXT` label visibility | `AUDIT-12.119.md` |
 | 12.118 | Mobile typography readability | `AUDIT-12.118.md` |
@@ -34,7 +37,7 @@ the task.
 | --- | --- |
 | Recruitment, transfers and comparison UX | `AUDIT-12.33.md`–`AUDIT-12.34.md`, `AUDIT-12.47.md`–`AUDIT-12.51.md`, `AUDIT-12.69.md`–`AUDIT-12.97.md` |
 | First Match Guide and opening week | `AUDIT-12.24.md`–`AUDIT-12.36.md`, `AUDIT-12.58.md`–`AUDIT-12.68.md` |
-| Mobile/desktop navigation and readability | `AUDIT-12.60.md`–`AUDIT-12.66.md`, `AUDIT-12.78.md`–`AUDIT-12.92.md`, `AUDIT-12.104.md`–`AUDIT-12.120.md` |
+| Mobile/desktop navigation and readability | `AUDIT-12.60.md`–`AUDIT-12.66.md`, `AUDIT-12.78.md`–`AUDIT-12.92.md`, `AUDIT-12.104.md`–`AUDIT-12.121.md` |
 | Weapons, armour and operator presentation | `AUDIT-12.08-retained.md`–`AUDIT-12.23.md`, `AUDIT-12.41.md`–`AUDIT-12.57.md`, `AUDIT-12.110.md`–`AUDIT-12.111.md` |
 | Match AI, diagnostics and live command | `AUDIT-12.09.md`–`AUDIT-12.13.md`, `AUDIT-12.21.md`, `AUDIT-12.37.md`–`AUDIT-12.40.md`, `AUDIT-12.53.md`, `AUDIT-12.109.md` |
 | Arenas, navigation and rendering | `AUDIT-11.99.md`, `AUDIT-12.05.md`–`AUDIT-12.07.md`, `AUDIT-12.52.md`, `AUDIT-12.108.md`–`AUDIT-12.109.md`, `AUDIT-12.117.md` |

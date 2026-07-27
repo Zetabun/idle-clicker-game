@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.120 — Mobile Flow & Accessibility Fix
-Build ID: 12.120.0-mobile-flow-accessibility-fix
+Build 12.123 — Command Skin Depth Pass
+Build ID: 12.123.0-command-skin-depth-pass
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,12 +16,11 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
-Compact meaningful copy must stay at least 12px and explanatory copy at least
-14px. Guided profile actions must select a displayed recommendation; compact
-candidate fronts retain Compare; management modals isolate the background and
-trap focus. Preserve the existing guided `NEXT` rail reset and
-content-sized visible badge, route-copy clearance, the ordinary active rail,
-8px desktop text and the 12px compact meaningful-microcopy floor.
+Builds 12.122–12.123 own the final Command Skin layers at the end of
+`css/game.css`; visual changes belong there and must stay chrome-only.
+Preserve the 12px meaningful-copy and 14px explanatory floors, the mobile
+tactics action and content-sized sections, modal focus isolation, compact
+Compare access, and the guided `NEXT` rail reset and visible badge geometry.
 
 RELEASE
 Update the smallest relevant authority and current audit, build, parse, run

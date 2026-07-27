@@ -29063,3 +29063,646 @@ body[data-app-state='menu'] .menu-content {
     line-height: 1.2 !important;
   }
 }
+
+/* =====================================================================
+   BUILD 12.121 · MOBILE TACTICS CONTROL REACHABILITY
+   Keep long match-plan sections in normal document flow and surface the
+   current matchday action after suitability so it remains reachable while
+   managers review formation, plan and role settings on compact screens.
+   ===================================================================== */
+.mobile-match-plan-actions {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .menu-shell[data-menu-route='tactics'] #menuContent {
+    overflow-x: clip;
+    padding-bottom: max(142px, calc(env(safe-area-inset-bottom) + 126px));
+  }
+
+  #menuContent .mobile-match-plan-actions {
+    position: sticky;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 8;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(156px, auto);
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 11px 12px;
+    border: 1px solid rgba(244, 185, 66, .56);
+    border-left: 4px solid #f4b942;
+    background: linear-gradient(135deg, rgba(25, 31, 32, .98), rgba(7, 18, 27, .98));
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .58), inset 0 1px rgba(255, 255, 255, .06);
+  }
+
+  #menuContent .mobile-match-plan-actions.confirmed {
+    border-color: rgba(84, 215, 177, .54);
+    border-left-color: #54d7b1;
+  }
+
+  #menuContent .mobile-match-plan-actions > div {
+    min-width: 0;
+  }
+
+  #menuContent .mobile-match-plan-actions span,
+  #menuContent .mobile-match-plan-actions strong,
+  #menuContent .mobile-match-plan-actions small {
+    display: block;
+  }
+
+  #menuContent .mobile-match-plan-actions span {
+    color: #f4b942;
+    font-size: 12px !important;
+    font-weight: 950;
+    line-height: 1.25 !important;
+    letter-spacing: .12em;
+  }
+
+  #menuContent .mobile-match-plan-actions.confirmed span {
+    color: #69dfbd;
+  }
+
+  #menuContent .mobile-match-plan-actions strong {
+    margin-top: 3px;
+    color: #f4f8fa;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+    letter-spacing: .04em;
+  }
+
+  #menuContent .mobile-match-plan-actions small {
+    margin-top: 3px;
+    color: #a9bac5;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  #menuContent .mobile-match-plan-actions button {
+    width: 100%;
+    min-width: 156px;
+    min-height: 48px !important;
+    padding-inline: 14px;
+    font-size: 13px !important;
+    white-space: normal;
+  }
+
+  #menuContent :is(
+    .club-tactics-panel,
+    .club-plan-grid,
+    .club-role-assignment-panel,
+    .club-delegation-panel,
+    .club-plan-confirm
+  ) {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #menuContent :is(
+    .club-tactics-panel,
+    .club-plan-grid,
+    .club-role-assignment-panel,
+    .club-delegation-panel,
+    .club-plan-confirm
+  ) > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #menuContent .club-plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #menuContent .club-plan-grid > article,
+  #menuContent .club-plan-option,
+  #menuContent .club-formation-card,
+  #menuContent .club-role-assignment-list > article,
+  #menuContent .club-delegation-actions {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #menuContent .club-plan-confirm {
+    scroll-margin-bottom: 126px;
+  }
+
+  #menuContent .club-plan-confirm button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 48px !important;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@media (max-width: 620px) {
+  #menuContent .mobile-match-plan-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(132px, 42%);
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  #menuContent .mobile-match-plan-actions small {
+    display: none;
+  }
+
+  #menuContent .mobile-match-plan-actions button {
+    min-width: 0;
+    padding-inline: 9px;
+  }
+
+  #menuContent .club-formation-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #menuContent .club-role-assignment-list > article {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  #menuContent .club-role-assignment-list .club-role-fit-readout,
+  #menuContent .club-role-assignment-list label {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #menuContent .club-plan-confirm {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  #menuContent .club-plan-confirm > div,
+  #menuContent .club-plan-confirm button {
+    grid-column: 1;
+    width: 100%;
+  }
+}
+
+
+/* ============================================================================
+   Build 12.122 — Command Skin Revamp.
+   Modern Football-Manager-inspired management skin: unified ink/violet-slate
+   palette, electric-green primary action language (FM-style "Continue"
+   End Day button), elevated card chrome, route-accent navigation glow and
+   instrument-panel headers. Chrome-only layer: no layout geometry, font-size
+   floors, touch-target sizes, subtab rail (::after) or guided-NEXT geometry
+   are modified. Mobile (<1024px) and desktop (≥1024px) each keep their
+   established structure and only receive the new visual language.
+   ========================================================================== */
+
+:root {
+  --skin-ink-0: #06090f;
+  --skin-ink-1: #0a0f1b;
+  --skin-panel-hi: rgba(24, 33, 54, .92);
+  --skin-panel-lo: rgba(11, 17, 30, .95);
+  --skin-line: rgba(150, 172, 218, .16);
+  --skin-line-strong: rgba(163, 186, 231, .27);
+  --skin-text-dim: #93a3bd;
+  --skin-gold: #f2c14e;
+  --manager-navy: #080d17;
+  --manager-panel: #0e1626;
+  --manager-panel-2: #131d31;
+  --manager-line: var(--skin-line);
+  --manager-accent: #31e8a6;
+  --manager-accent-soft: rgba(49, 232, 166, .15);
+}
+
+/* --- Shell atmosphere: depth instead of flat page background. ------------- */
+body[data-app-state='menu'] { background: var(--skin-ink-0); }
+.menu-shell {
+  background:
+    radial-gradient(120% 68% at 18% -8%, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 9%, transparent), transparent 52%),
+    radial-gradient(90% 60% at 108% 12%, rgba(124, 92, 255, .07), transparent 46%),
+    radial-gradient(140% 90% at 50% 118%, rgba(8, 14, 26, .0), rgba(4, 7, 13, .82) 78%),
+    linear-gradient(180deg, #0b1120, #070b13 72%),
+    repeating-linear-gradient(90deg, transparent 0 95px, rgba(126, 148, 200, .022) 96px);
+}
+.menu-shell::before,
+.menu-shell::after { opacity: .12; }
+
+/* --- Manager top bar: title-bar instrument strip. ------------------------- */
+.manager-topbar {
+  border-bottom: 1px solid color-mix(in srgb, var(--route-accent, var(--manager-accent)) 30%, rgba(20, 30, 50, .9));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .028), transparent 38%),
+    linear-gradient(90deg, #0a101d, #101a2e 50%, #0a101d);
+  box-shadow: 0 14px 34px rgba(1, 4, 10, .5);
+}
+.manager-brand,
+.manager-context,
+.manager-profile { border-right-color: var(--skin-line); }
+.manager-brand span,
+.manager-context span,
+.manager-profile span { color: var(--skin-text-dim); }
+.manager-gold-brand {
+  background: linear-gradient(110deg, rgba(242, 193, 78, .13), transparent 68%);
+  border-right: 1px solid var(--skin-line);
+}
+.manager-gold-brand .manager-balance-icon { color: var(--skin-gold); }
+.manager-gold-brand strong { color: var(--skin-gold); }
+.manager-gold-brand:hover,
+.manager-gold-brand:focus-visible { background: linear-gradient(110deg, rgba(242, 193, 78, .22), rgba(242, 193, 78, .04) 74%); }
+.manager-context strong { letter-spacing: .09em; }
+.manager-context-topline > #managerBreadcrumb { color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 78%, #dfe9ff); }
+.manager-context-topline > .manager-build-version {
+  border-color: color-mix(in srgb, var(--manager-accent) 34%, transparent);
+  color: color-mix(in srgb, var(--manager-accent) 82%, #ffffff);
+  background: color-mix(in srgb, var(--manager-accent) 9%, rgba(8, 14, 24, .9));
+}
+.manager-history-btn { background: rgba(8, 13, 24, .72); border-color: var(--skin-line); }
+.manager-history-btn:not(:disabled):hover,
+.manager-history-btn:not(:disabled):focus-visible {
+  color: #eafff6;
+  background: color-mix(in srgb, var(--manager-accent) 16%, rgba(10, 18, 32, .92));
+}
+.manager-topbar-action { background: rgba(8, 13, 24, .55); }
+.manager-topbar-action + .manager-topbar-action { border-left-color: var(--skin-line); }
+.manager-topbar-action:not(:disabled):hover,
+.manager-topbar-action:not(:disabled):focus-visible {
+  background: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 13%, rgba(10, 17, 30, .9));
+  color: #f2fbff;
+}
+
+/* FM-style always-visible primary action: the End Day / Continue block. */
+.manager-end-day-primary:not(:disabled):not(.blocked) {
+  border-color: color-mix(in srgb, var(--manager-accent) 70%, transparent);
+  background: linear-gradient(180deg, #3df2af 0%, #17c288 58%, #0fa273 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .4),
+    inset 0 -2px 0 rgba(4, 34, 24, .35),
+    0 4px 20px rgba(35, 224, 156, .3);
+}
+.manager-end-day-primary:not(:disabled):not(.blocked) > span:first-child { color: rgba(4, 38, 27, .82); }
+.manager-end-day-primary:not(:disabled):not(.blocked) > strong { color: #03271b; text-shadow: none; }
+.manager-end-day-primary:not(:disabled):not(.blocked) > small { color: rgba(5, 44, 31, .78); }
+.manager-end-day-primary:not(:disabled):not(.blocked):hover,
+.manager-end-day-primary:not(:disabled):not(.blocked):focus-visible {
+  border-color: rgba(211, 255, 238, .8);
+  background: linear-gradient(180deg, #55ffc0 0%, #1cd396 58%, #12b381 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .5),
+    inset 0 -2px 0 rgba(4, 34, 24, .35),
+    0 6px 26px rgba(35, 224, 156, .44);
+}
+.manager-end-day-primary.matchday:not(:disabled):not(.blocked) {
+  border-color: color-mix(in srgb, var(--skin-gold) 74%, transparent);
+  background: linear-gradient(180deg, #ffd876 0%, #ecb23f 58%, #d09427 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .45),
+    inset 0 -2px 0 rgba(64, 42, 4, .35),
+    0 4px 20px rgba(240, 187, 70, .32);
+}
+.manager-end-day-primary.matchday:not(:disabled):not(.blocked) > span:first-child { color: rgba(58, 38, 3, .85); }
+.manager-end-day-primary.matchday:not(:disabled):not(.blocked) > strong { color: #332102; }
+.manager-end-day-primary.matchday:not(:disabled):not(.blocked) > small { color: rgba(63, 42, 5, .8); }
+.manager-end-day-primary.blocked,
+.manager-end-day-primary:disabled {
+  border-color: rgba(142, 162, 196, .24);
+  background: linear-gradient(180deg, rgba(20, 28, 45, .85), rgba(11, 17, 30, .92));
+  box-shadow: inset 0 -2px rgba(120, 142, 180, .14);
+}
+
+/* --- Sidebar rail: dark dock with route-accent glow. ---------------------- */
+.menu-sidebar {
+  border-right-color: var(--skin-line);
+  background:
+    linear-gradient(180deg, #0b1120, #070b14),
+    repeating-linear-gradient(180deg, transparent 0 39px, rgba(255, 255, 255, .014) 40px);
+  box-shadow: 14px 0 34px rgba(1, 4, 10, .38);
+}
+.menu-command-mark { border-bottom-color: var(--skin-line); }
+.menu-tab:hover { background: rgba(148, 172, 220, .07); }
+.menu-tab.active,
+.menu-tab.primary {
+  border-left-color: var(--route-accent, var(--manager-accent));
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--route-accent, var(--manager-accent)) 17%, rgba(12, 19, 34, .6)),
+    color-mix(in srgb, var(--route-accent, var(--manager-accent)) 4%, rgba(12, 19, 34, .25)));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04);
+}
+.menu-side-actions button,
+.menu-return-btn {
+  border-radius: 9px;
+  border-color: var(--skin-line);
+  background: linear-gradient(180deg, rgba(24, 33, 54, .8), rgba(13, 19, 33, .88));
+}
+.menu-side-actions button:hover,
+.menu-side-actions button:focus-visible {
+  border-color: var(--skin-line-strong);
+  background: linear-gradient(180deg, rgba(33, 45, 72, .88), rgba(17, 25, 43, .92));
+}
+
+/* --- Content column, sticky header and sub-navigation. -------------------- */
+.menu-content { background: linear-gradient(180deg, rgba(10, 16, 28, .96), rgba(6, 10, 18, .97)); }
+.menu-content::before {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 5%, transparent), transparent 30%),
+    repeating-linear-gradient(90deg, transparent 0 119px, rgba(126, 148, 200, .02) 120px);
+}
+.menu-header-row {
+  border-bottom-color: var(--skin-line);
+  background: rgba(9, 14, 25, .96);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+.menu-badge {
+  border-radius: 5px;
+  border-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 34%, transparent);
+  background: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 10%, rgba(9, 15, 26, .85));
+  color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 86%, #ffffff);
+}
+.menu-subnav,
+.menu-subnav-shell { background: #0b1322; }
+.menu-subnav { border-bottom-color: var(--skin-line); }
+.menu-subnav-shell::before { background: linear-gradient(90deg, #0b1322 20%, transparent); }
+.menu-subnav-shell::after { background: linear-gradient(270deg, #0b1322 20%, transparent); }
+.menu-subtab:hover { background: rgba(148, 172, 220, .07); }
+.menu-subtab.active {
+  border-left-color: transparent;
+  background: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 9%, rgba(13, 20, 35, .5));
+}
+
+/* --- Card system: elevated instrument panels. ----------------------------- */
+.menu-card,
+.menu-hero-main,
+.menu-hero-side,
+.menu-info-tile,
+.menu-setting-card,
+.menu-roster-group {
+  border-radius: 12px;
+  border: 1px solid var(--skin-line);
+  background: linear-gradient(180deg, var(--skin-panel-hi), var(--skin-panel-lo));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 12px 28px rgba(1, 4, 10, .34);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.menu-card::before,
+.menu-hero-main::before,
+.menu-hero-side::before,
+.menu-info-tile::before,
+.menu-setting-card::before {
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, var(--route-accent, var(--manager-accent)), transparent 46%);
+  opacity: .5;
+}
+.menu-card:hover,
+.menu-setting-card:hover,
+.menu-info-tile:hover {
+  border-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 36%, var(--skin-line));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .05),
+    0 12px 30px rgba(1, 4, 10, .4),
+    0 0 22px color-mix(in srgb, var(--route-accent, var(--manager-accent)) 10%, transparent);
+}
+.menu-info-tile.blue { background: linear-gradient(180deg, rgba(43, 96, 158, .34), var(--skin-panel-lo)); }
+.menu-info-tile.red { background: linear-gradient(180deg, rgba(146, 52, 68, .32), var(--skin-panel-lo)); }
+.menu-pill {
+  border-radius: 6px;
+  border-color: var(--skin-line);
+  background: rgba(148, 172, 220, .09);
+}
+.menu-list-item,
+.menu-weapon-row {
+  border-radius: 9px;
+  transition: border-color .16s ease, background .16s ease;
+}
+.menu-list-item:hover,
+.menu-weapon-row:hover {
+  border-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 32%, var(--skin-line));
+  background: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 5%, rgba(148, 172, 220, .06));
+}
+.career-xp-panel { border-radius: 12px; }
+.matchmaking-card,
+.career-report-card { border-radius: 14px; border-top-color: var(--manager-accent); }
+
+/* --- Focus visibility, consistent across the skin. ------------------------ */
+.menu-shell :focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--route-accent, var(--manager-accent)) 78%, #ffffff);
+  outline-offset: 2px;
+}
+
+/* --- Desktop Command Centre refinements (≥1024px only). ------------------- */
+@media (min-width: 1024px) {
+  body[data-app-state='menu'] { background: var(--skin-ink-0); }
+  .menu-shell {
+    background:
+      radial-gradient(94% 60% at 14% -10%, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 10%, transparent), transparent 46%),
+      radial-gradient(70% 52% at 104% 6%, rgba(124, 92, 255, .08), transparent 44%),
+      linear-gradient(180deg, #0b1120, #060a12 74%);
+  }
+  .manager-topbar {
+    border-bottom-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 32%, rgba(22, 32, 52, .9));
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .03), transparent 40%),
+      linear-gradient(90deg, rgba(8, 13, 24, .99), rgba(15, 23, 41, .99) 52%, rgba(8, 13, 24, .99));
+  }
+  /* Build 12.90 fixed these with !important; keep its geometry, replace the
+     chrome so the rail reads as a dock of glowing route chips. */
+  .menu-tab {
+    border-color: rgba(150, 172, 218, .1) !important;
+    background: rgba(10, 16, 29, .42) !important;
+  }
+  .menu-tab:hover {
+    border-color: var(--skin-line-strong) !important;
+    background: rgba(148, 172, 220, .1) !important;
+  }
+  .menu-tab.active,
+  .menu-tab.primary {
+    border-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 34%, var(--skin-line)) !important;
+    border-left-color: var(--route-accent, var(--manager-accent)) !important;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--route-accent, var(--manager-accent)) 19%, rgba(12, 19, 34, .72)),
+      color-mix(in srgb, var(--route-accent, var(--manager-accent)) 5%, rgba(12, 19, 34, .34))) !important;
+    box-shadow: 0 0 16px color-mix(in srgb, var(--route-accent, var(--manager-accent)) 14%, transparent) !important;
+  }
+  .menu-tab-icon {
+    border-color: rgba(150, 172, 218, .18);
+    background: rgba(7, 12, 22, .6);
+  }
+  .menu-sidebar {
+    background:
+      linear-gradient(180deg, #0b1120, #060a12),
+      repeating-linear-gradient(180deg, transparent 0 39px, rgba(255, 255, 255, .012) 40px);
+  }
+  .menu-header-row { background: rgba(8, 13, 23, .94); }
+  .menu-subnav { background: rgba(10, 16, 29, .92); }
+
+  /* Slim, accent-tinted scrollbars for the content column. */
+  .menu-content::-webkit-scrollbar,
+  #menuContent ::-webkit-scrollbar { width: 9px; height: 9px; }
+  .menu-content::-webkit-scrollbar-track,
+  #menuContent ::-webkit-scrollbar-track { background: rgba(7, 11, 20, .6); }
+  .menu-content::-webkit-scrollbar-thumb,
+  #menuContent ::-webkit-scrollbar-thumb {
+    border: 2px solid rgba(7, 11, 20, .9);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 34%, rgba(96, 116, 158, .5));
+  }
+  .menu-content::-webkit-scrollbar-thumb:hover,
+  #menuContent ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 58%, rgba(96, 116, 158, .5));
+  }
+  .menu-content { scrollbar-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 34%, rgba(96, 116, 158, .5)) rgba(7, 11, 20, .6); scrollbar-width: thin; }
+}
+
+/* --- Mobile chrome tint (geometry untouched, palette unified). ------------ */
+@media (max-width: 1023px) {
+  .menu-shell .mobile-command-route-button {
+    border-color: var(--skin-line);
+    background: linear-gradient(180deg, rgba(20, 28, 46, .92), rgba(11, 17, 30, .94));
+  }
+  .mobile-navigation-drawer {
+    background: linear-gradient(180deg, #0d1425, #070b14);
+  }
+}
+
+
+/* ============================================================================
+   Build 12.123 — Command Skin depth pass.
+   Extends the 12.122 skin to the bespoke route surfaces the player actually
+   spends time on (section hubs, journey strip, gates, metric tiles, section
+   heads, recruitment/market/comparison panels and generic top-level page
+   panels). Chrome-only: backgrounds, borders, radii, shadows and hover glow.
+   No geometry, font-size floors, guided-blocker semantics or touch targets
+   are modified. Semantic state tints (urgent, guided, contracted, matchday)
+   keep their hue and only gain the modern panel chrome.
+   ========================================================================== */
+
+/* Generic top-level page panels: every route's direct section/article panels
+   get the elevated instrument-panel face. Known transparent wrappers and the
+   market list keep their layout-only role. */
+#menuContent > section[class]:not(.team-market-list):not([class*='-zone']):not(.management-priority-strip),
+#menuContent > article[class] {
+  border: 1px solid var(--skin-line);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 5%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--skin-panel-hi), var(--skin-panel-lo));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 12px 26px rgba(1, 4, 10, .32);
+}
+#menuContent > section[class] > header,
+#menuContent > article[class] > header { border-bottom-color: var(--skin-line); }
+
+/* Guided journey strip: keep the guided-blue authority edge, modernise the
+   shell around it. */
+#menuContent .management-priority-strip {
+  border-radius: 14px;
+  border-color: var(--skin-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 12px 26px rgba(1, 4, 10, .32);
+}
+
+/* Section hub hero + stage gates. */
+#menuContent .section-hub-hero {
+  background:
+    radial-gradient(120% 150% at 0% 0%, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 13%, transparent), transparent 52%),
+    linear-gradient(180deg, var(--skin-panel-hi), var(--skin-panel-lo));
+}
+#menuContent .progressive-section-gate {
+  border-radius: 14px;
+  border: 1px solid var(--skin-line);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 9px, rgba(148, 172, 220, .028) 9px 10px),
+    linear-gradient(180deg, rgba(17, 24, 41, .88), rgba(10, 15, 27, .92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+}
+
+/* Metric tiles (Contracted / Active / Medical / Transfers etc.): the FM-style
+   big-number stat blocks. */
+#menuContent .section-hub-metrics { gap: 10px; }
+#menuContent .section-hub-metrics > article {
+  border: 1px solid var(--skin-line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--skin-panel-hi), var(--skin-panel-lo));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 8px 20px rgba(1, 4, 10, .28);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+#menuContent .section-hub-metrics > article:hover {
+  border-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 38%, var(--skin-line));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .05),
+    0 8px 22px rgba(1, 4, 10, .34),
+    0 0 18px color-mix(in srgb, var(--route-accent, var(--manager-accent)) 11%, transparent);
+}
+#menuContent .section-hub-metrics > article > span {
+  color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 62%, var(--skin-text-dim));
+}
+
+/* Section headers used across routes. */
+#menuContent .career-section-head {
+  position: relative;
+  border-radius: 10px;
+  padding-left: 14px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+#menuContent .career-section-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--route-accent, var(--manager-accent)), transparent);
+}
+
+/* Priority/attention cards keep their semantic tint, gain modern chrome. */
+#menuContent .section-priority-card {
+  border: 1px solid var(--skin-line);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035), 0 8px 20px rgba(1, 4, 10, .26);
+}
+#menuContent .section-priority-card.urgent { border-color: rgba(255, 122, 122, .34); }
+
+/* Recruitment surfaces: beginner panel, comparison tray/panel, needs panel,
+   role guide and the candidate market cards. */
+#menuContent .recruitment-beginner-panel,
+#menuContent .recruitment-needs-panel,
+#menuContent .recruitment-comparison-panel,
+#menuContent .recruitment-role-guide {
+  border: 1px solid var(--skin-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--skin-panel-hi), var(--skin-panel-lo));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 24px rgba(1, 4, 10, .3);
+}
+#menuContent .recruitment-comparison-tray {
+  border-radius: 14px;
+  border-color: color-mix(in srgb, var(--skin-gold) 30%, var(--skin-line));
+  background:
+    linear-gradient(135deg, rgba(242, 193, 78, .05), transparent 40%),
+    linear-gradient(180deg, var(--skin-panel-hi), var(--skin-panel-lo));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 24px rgba(1, 4, 10, .3);
+}
+.team-market-row {
+  border: 1px solid var(--skin-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 10px 22px rgba(1, 4, 10, .26);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.team-market-row:hover {
+  border-color: color-mix(in srgb, var(--route-accent, var(--manager-accent)) 40%, var(--skin-line));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .05),
+    0 12px 26px rgba(1, 4, 10, .34),
+    0 0 20px color-mix(in srgb, var(--route-accent, var(--manager-accent)) 12%, transparent);
+}
+
+/* Deepen the content canvas so the elevated panels clearly separate from the
+   page: this is what kills the flat "website" read. */
+.menu-content {
+  background:
+    radial-gradient(110% 70% at 12% -6%, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 7%, transparent), transparent 46%),
+    linear-gradient(180deg, #0a1020, #05080f 74%);
+}

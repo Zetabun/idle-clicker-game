@@ -2373,6 +2373,20 @@
         routeReplans: Number(bot.roundRouteReplans) || 0
       }))
     }),
+    mobileTacticsControlsForTest: () => {
+      const markup = typeof renderAdvancedTacticsTab === 'function' ? renderAdvancedTacticsTab() : '';
+      const dockIndex = markup.indexOf('mobile-match-plan-actions');
+      const formationIndex = markup.indexOf('club-tactics-panel');
+      const finalCheckIndex = markup.indexOf('club-plan-confirm');
+      return {
+        dockPresent: dockIndex >= 0,
+        dockBeforeDetailedSettings: dockIndex >= 0 && formationIndex > dockIndex,
+        finalCheckAfterDetailedSettings: finalCheckIndex > formationIndex,
+        confirmActions: (markup.match(/data-matchday-action="confirm-plan"/g) || []).length,
+        deployActions: (markup.match(/data-matchday-action="deploy"/g) || []).length,
+        confirmed: typeof clubMatchPlanConfirmed === 'function' ? clubMatchPlanConfirmed() : false
+      };
+    },
     setMatchdayPlanForTest: (approach = 'balanced', engagement = 'mixed', priority = 'trade') => {
       const tactics = clubTacticsState();
       tactics.approachId = CLUB_APPROACHES[approach] ? approach : 'balanced';

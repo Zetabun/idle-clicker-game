@@ -6,23 +6,32 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.120 — Mobile Flow & Accessibility Fix**
-- Build ID: `12.120.0-mobile-flow-accessibility-fix`
+- Build: **12.123 — Command Skin Depth Pass**
+- Build ID: `12.123.0-command-skin-depth-pass`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.120.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.123.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.120 completes the compact readability and early recruitment flow:
-meaningful mobile microcopy has a 12px floor, explanatory copy is 14px, emblem
-captions are accessible-only, Compare is present on the compact candidate
-front, and the profile guide selects one of the six visible recommendations.
-Shared management dialogs isolate the background and trap focus. The First
-Match Guide collapses after its compact action, and its End Day restriction is
-reported through the canonical blocker list. See `AUDIT-12.120.md`.
+Build 12.123 extends the skin to the bespoke route surfaces (section hubs,
+journey strip, gates, metric tiles, recruitment/market panels). Skin changes
+belong in the 12.122/12.123 layers at the end of `css/game.css`. See
+`AUDIT-12.123.md`.
+
+Build 12.122 is the management-skin authority: a chrome-only theme layer at
+the end of `css/game.css` gives both presentation targets the modern
+FM-inspired ink/violet palette, green End Day CTA, route-accent navigation and
+elevated card chrome. Change skin colours/chrome there, not in older layers.
+See `AUDIT-12.122.md`.
+
+Build 12.121 remains the mobile tactics reachability and section-containment
+authority. See `AUDIT-12.121.md`.
+
+Build 12.120 remains the compact readability, recruitment-flow, modal
+accessibility and canonical guided-blocker authority. See `AUDIT-12.120.md`.
 
 Build 12.119 remains the guided `NEXT` badge geometry authority. See
 `AUDIT-12.119.md`.

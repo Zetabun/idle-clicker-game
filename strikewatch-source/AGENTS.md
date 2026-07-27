@@ -56,7 +56,10 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.120 sets the compact meaningful-copy floor to 12px and explanatory
-copy to 14px. Preserve direct Compare access, recommended-candidate profile
-routing, modal background isolation/focus trapping and the canonical guided
-End Day blocker. See `AUDIT-12.120.md`.
+Builds 12.122–12.123 add the Command Skin theme layers at the end of
+`css/game.css` (12.123 covers bespoke route surfaces).
+Visual/chrome changes belong in that layer; it must stay chrome-only (no
+geometry, font-size or touch-target changes). Preserve the compact 12px
+meaningful-copy floor, 14px explanatory floor, the Build 12.121 tactics
+containment and the Build 12.120 onboarding/accessibility safeguards.
+See `AUDIT-12.123.md` and `AUDIT-12.122.md`.

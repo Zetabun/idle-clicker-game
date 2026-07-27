@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.120';
-  const BUILD_NAME = 'MOBILE FLOW & ACCESSIBILITY FIX';
-  const BUILD_ID = '12.120.0-mobile-flow-accessibility-fix';
+  const BUILD_VERSION = '12.123';
+  const BUILD_NAME = 'COMMAND SKIN DEPTH PASS';
+  const BUILD_ID = '12.123.0-command-skin-depth-pass';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
