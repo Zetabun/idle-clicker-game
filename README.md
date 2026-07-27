@@ -1,15 +1,25 @@
 # Strikewatch repository
 
-The live GitHub Pages game is [`cod.html`](cod.html).
+The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
+project is in [`strikewatch-source/`](strikewatch-source/).
 
-The complete editable project—including modular JavaScript, CSS, build tooling, release audits and GPT guidance—is in [`strikewatch-source/`](strikewatch-source/).
+## Concise agent workflow
+
+Read only:
+
+1. `strikewatch-source/HANDOFF.md`
+2. `strikewatch-source/AGENTS.md`
+
+Use the handoff routing table to load one relevant architecture/contract
+section or historical audit. Do not load every Markdown file by default.
 
 ## Release workflow
 
-1. Read every Markdown file under `strikewatch-source/`, beginning with `00-READ-FIRST-GPT.md` and `AGENTS.md`.
-2. Make implementation and documentation changes under `strikewatch-source/`.
-3. Run `strikewatch-source/build.py` and complete the documented verification gates.
-4. Copy the verified `strikewatch-source/dist/strikewatch-build-<version>.html` to root `cod.html`.
-5. Commit the source, updated documentation/current audit and matching `cod.html` together.
+1. Change source and concise documentation under `strikewatch-source/`.
+2. Run `py -3 build.py` there and complete the targeted verification gates.
+3. Rebuild deterministically.
+4. Copy the verified standalone to root `cod.html`.
+5. Commit source, current audit, concise documentation and artifacts together.
 
-The [`other/`](other/) directory preserves unrelated legacy games, assets and retired automation. Those files are not Strikewatch dependencies.
+Root [`other/`](other/) contains unrelated or retired material and is not a
+Strikewatch dependency.

@@ -37,8 +37,26 @@ stretched the cyan badge across the subtab and clipped its text.
 - Repeated builds are byte-identical and root `cod.html` matches the verified
   standalone release.
 
+## Documentation compaction follow-up
+
+The previous default authority set duplicated release-by-release history
+across `00-READ-FIRST-GPT.md`, `AGENTS.md`, `PROJECT.md`, `README.md`,
+`GPT-HANDOFF-PROMPT.txt` and `DOCUMENTATION-INDEX.md`. Together those files
+were approximately 296,000 tokens before an agent inspected source.
+
+The default handoff is now `HANDOFF.md` plus the concise `AGENTS.md`.
+`CONTRACTS.md` and `ARCHITECTURE.md` are task-specific references, while
+`CHANGELOG.md` routes historical work to one matching `AUDIT-*.md`. Full
+historical audits remain unchanged and available on demand. Compatibility
+entry points now redirect to the same two-file default rather than requiring
+every Markdown file.
+
+This is documentation-only maintenance. It does not change Build 12.119 game
+source, generated output, release metadata, save schema or diagnostics schema.
+
 ## Boundaries
 
-This release changes CSS presentation and release metadata only. Guided step
-derivation, route availability, navigation actions, simulation, economy,
-persistence, save schema 19 and diagnostics schema 1 are unchanged.
+The playable change is limited to CSS presentation and release metadata; the
+follow-up changes documentation routing only. Guided step derivation, route
+availability, navigation actions, simulation, economy, persistence, save
+schema 19 and diagnostics schema 1 are unchanged.
