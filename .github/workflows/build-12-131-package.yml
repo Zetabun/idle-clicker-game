@@ -1,0 +1,234 @@
+name: Build Strikewatch 12.131 package
+
+on:
+  push:
+    branches:
+      - agent/build-12-131-calendar-clarity-package
+    paths:
+      - '.github/workflows/build-12-131-package.yml'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/build-12-131-calendar-clarity-package
+          fetch-depth: 0
+
+      - name: Apply Build 12.131 source and documentation update
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('strikewatch-source')
+
+          core = root / 'js' / '00-core.js'
+          text = core.read_text(encoding='utf-8')
+          replacements = {
+              "const BUILD_VERSION = '12.130';": "const BUILD_VERSION = '12.131';",
+              "const BUILD_NAME = 'Aurora Terminal';": "const BUILD_NAME = 'Calendar Clarity';",
+              "const BUILD_ID = '12.130.0-aurora-terminal';": "const BUILD_ID = '12.131.0-calendar-clarity';",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Missing core metadata: {old}')
+              text = text.replace(old, new, 1)
+          core.write_text(text, encoding='utf-8')
+
+          index = root / 'index.html'
+          text = index.read_text(encoding='utf-8')
+          index_replacements = {
+              '<title>Strikewatch 12.130: Aurora Terminal</title>': '<title>Strikewatch 12.131: Calendar Clarity</title>',
+              'css/game.css?v=12.130.0-aurora-terminal': 'css/game.css?v=12.131.0-calendar-clarity',
+              'js/strikewatch.dev.js?v=12.130.0-aurora-terminal': 'js/strikewatch.dev.js?v=12.131.0-calendar-clarity',
+              'id="managerBuildVersion">12.130</b>': 'id="managerBuildVersion">12.131</b>',
+              'id="mobileCommandBuildVersion">12.130</b>': 'id="mobileCommandBuildVersion">12.131</b>',
+          }
+          for old, new in index_replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Missing index metadata: {old}')
+              text = text.replace(old, new, 1)
+          index.write_text(text, encoding='utf-8')
+
+          hotfix = root / 'js' / '75-ui-clarity-hotfix.js'
+          text = hotfix.read_text(encoding='utf-8')
+          text = text.replace('12.130 release', '12.131 release')
+          text = text.replace("strikewatch-12-130-ui-clarity", "strikewatch-12-131-ui-clarity")
+          end_day_start = text.index('      .manager-end-day-primary,')
+          end_day_end = text.index('      @media (max-width: 1023px)', end_day_start)
+          end_day_css = '''      .manager-end-day-primary,
+      .manager-end-day-primary.blocked,
+      .manager-end-day-primary.matchday,
+      .manager-end-day-primary:disabled,
+      .manager-end-day-primary[aria-disabled='true'] {
+        opacity: 1 !important;
+        filter: none !important;
+        background:
+          linear-gradient(180deg, rgba(30, 39, 55, .99), rgba(22, 29, 43, .99)) !important;
+        border: 1px solid rgba(135, 163, 181, .42) !important;
+        color: #f7fbff !important;
+        box-shadow:
+          inset 0 1px rgba(255,255,255,.07),
+          0 0 0 1px rgba(0,0,0,.30),
+          0 8px 22px rgba(0,0,0,.22) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,.76) !important;
+      }
+
+      .manager-end-day-primary span,
+      .manager-end-day-primary strong,
+      .manager-end-day-primary small,
+      .manager-end-day-primary.blocked span,
+      .manager-end-day-primary.blocked strong,
+      .manager-end-day-primary.blocked small,
+      .manager-end-day-primary.matchday span,
+      .manager-end-day-primary.matchday strong,
+      .manager-end-day-primary.matchday small,
+      .manager-end-day-primary:disabled span,
+      .manager-end-day-primary:disabled strong,
+      .manager-end-day-primary:disabled small,
+      .manager-end-day-primary[aria-disabled='true'] span,
+      .manager-end-day-primary[aria-disabled='true'] strong,
+      .manager-end-day-primary[aria-disabled='true'] small {
+        opacity: 1 !important;
+      }
+
+      .manager-end-day-primary span,
+      .manager-end-day-primary small {
+        color: #a9d2bf !important;
+      }
+
+      .manager-end-day-primary strong {
+        color: #ffffff !important;
+      }
+
+      .manager-end-day-primary .manager-end-day-block-badge {
+        background: #ec7444 !important;
+        border-color: #ff9b72 !important;
+        color: #17202b !important;
+        text-shadow: none !important;
+      }
+
+'''
+          text = text[:end_day_start] + end_day_css + text[end_day_end:]
+          hotfix.write_text(text, encoding='utf-8')
+
+          handoff = root / 'HANDOFF.md'
+          text = handoff.read_text(encoding='utf-8')
+          text = text.replace('- Build: **12.130 — Aurora Terminal**', '- Build: **12.131 — Calendar Clarity**', 1)
+          text = text.replace('- Build ID: `12.130.0-aurora-terminal`', '- Build ID: `12.131.0-calendar-clarity`', 1)
+          text = text.replace('strikewatch-source/dist/strikewatch-build-12.130.html', 'strikewatch-source/dist/strikewatch-build-12.131.html', 1)
+          anchor = 'Build 12.130 adds the fourth arena'
+          note = '''Build 12.131 consolidates the tactical UI clarity fixes into a numbered release and gives the desktop End Day / Next Day control one persistent high-contrast slate treatment across enabled, locked, blocked and matchday states. The button keeps white primary copy, mint calendar/status copy and its orange response badge, preventing inherited disabled-state opacity from making it unreadable. Tactical summary tags and Active Operator Match Roles retain the 12.130 UI hotfix alignment improvements. See `AUDIT-12.131.md`.\n\n'''
+          if note not in text:
+              text = text.replace(anchor, note + anchor, 1)
+          handoff.write_text(text, encoding='utf-8')
+
+          agents = root / 'AGENTS.md'
+          text = agents.read_text(encoding='utf-8')
+          anchor = 'Build 12.130 owns the Aurora Terminal arena'
+          note = '''Build 12.131 owns the consolidated tactical clarity presentation and persistent End Day / Next Day contrast. Keep every calendar-control state on the same readable slate surface with white primary copy, mint supporting copy and full opacity; preserve the existing button lock, blocker and progression behaviour. See `AUDIT-12.131.md`.\n\n'''
+          if note not in text:
+              text = text.replace(anchor, note + anchor, 1)
+          agents.write_text(text, encoding='utf-8')
+
+          changelog = root / 'CHANGELOG.md'
+          if changelog.exists():
+              text = changelog.read_text(encoding='utf-8')
+              entry = '''## 12.131 — Calendar Clarity\n\n- Promotes the tactical summary-tag and Active Operator Match Roles alignment fixes into a numbered release.\n- Keeps End Day / Next Day readable with one consistent slate, white and mint colour scheme across enabled, locked, blocked and matchday states.\n- Presentation-only release; save schema, gameplay, calendar progression and match simulation are unchanged.\n- Evidence: `AUDIT-12.131.md`.\n\n'''
+              first_heading_end = text.find('\n', text.find('#')) + 1
+              if '## 12.131 — Calendar Clarity' not in text:
+                  text = text[:first_heading_end] + '\n' + entry + text[first_heading_end:]
+              changelog.write_text(text, encoding='utf-8')
+
+          audit = root / 'AUDIT-12.131.md'
+          audit.write_text('''# Build 12.131 — Calendar Clarity audit\n\n## Scope\n\n- Publish the existing tactical-summary and Active Operator Match Roles presentation fixes as a correctly numbered release.\n- Make the desktop End Day / Next Day control retain one readable colour scheme in every state, including enabled, locked, blocked, disabled and matchday variants.\n- Keep gameplay, calendar blockers, progression, saves, tactical calculations and match simulation unchanged.\n\n## Implementation\n\n- Build metadata is aligned to `12.131`, `Calendar Clarity` and `12.131.0-calendar-clarity` in the source constants, document title, asset queries, desktop build label and mobile Help-bar build label.\n- `js/75-ui-clarity-hotfix.js` remains the scoped presentation authority for the tactical tags and role rows. Its calendar-control rules now cover the base, `.blocked`, `.matchday`, `:disabled` and `[aria-disabled=true]` states with `!important` only where necessary to defeat older release layers.\n- The calendar control uses a dark slate gradient, visible border, white primary copy, mint supporting copy, full opacity and an orange response badge in every state. Behaviour and disabled semantics are untouched.\n\n## Verification gates\n\n- `python3 build.py` succeeds twice with byte-identical bundle and standalone hashes.\n- Every modular JavaScript source file and the generated bundle pass `node --check`.\n- The standalone inline JavaScript parses successfully.\n- Release metadata and both visible version labels resolve to 12.131.\n- Root `cod.html` is byte-identical to `dist/strikewatch-build-12.131.html`.\n- Source, concise documentation, generated artifacts and the distributable ZIP are produced together.\n\n## Responsive review targets\n\nThe presentation remains scoped to the existing desktop and compact structures. Manual visual checks should cover 390, 430, 1024, 1366 and 1920 CSS pixels, with particular attention to all calendar-control states.\n''', encoding='utf-8')
+          PY
+
+      - name: First deterministic build
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.131.html > /tmp/first.sha256
+
+      - name: Parse JavaScript
+        working-directory: strikewatch-source
+        run: |
+          for file in js/*.js; do node --check "$file"; done
+          node --check js/strikewatch.dev.js
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('dist/strikewatch-build-12.131.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
+          if not scripts:
+              raise SystemExit('No inline standalone script found')
+          Path('/tmp/strikewatch-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/strikewatch-inline.js
+
+      - name: Second deterministic build and publish root artifact
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.131.html > /tmp/second.sha256
+          diff -u /tmp/first.sha256 /tmp/second.sha256
+          cp dist/strikewatch-build-12.131.html ../cod.html
+          cmp -s dist/strikewatch-build-12.131.html ../cod.html
+          grep -q "Strikewatch 12.131: Calendar Clarity" index.html
+          grep -q 'id="managerBuildVersion">12.131</b>' index.html
+          grep -q 'id="mobileCommandBuildVersion">12.131</b>' index.html
+
+      - name: Create distributable ZIP
+        run: |
+          rm -rf /tmp/strikewatch-12.131
+          mkdir -p /tmp/strikewatch-12.131
+          cp -R strikewatch-source /tmp/strikewatch-12.131/
+          cp cod.html /tmp/strikewatch-12.131/
+          cat > /tmp/strikewatch-12.131/MANUAL-GITHUB-INSTALL.txt <<'EOF'
+          STRIKEWATCH 12.131 MANUAL GITHUB INSTALL
+
+          1. Download and extract this ZIP.
+          2. Open your local clone of https://github.com/Zetabun/idle-clicker-game.
+          3. Copy the included strikewatch-source folder over the repository's existing strikewatch-source folder.
+          4. Copy the included cod.html over the root cod.html.
+          5. From the repository root run:
+             git status
+             git add strikewatch-source cod.html
+             git commit -m "Build 12.131: Calendar Clarity"
+             git push origin main
+          6. Open GitHub Actions / Pages and wait for deployment to complete.
+          7. Visit https://zetabun.github.io/idle-clicker-game/cod.html and hard-refresh with Ctrl+F5.
+          8. Confirm BUILD 12.131 appears and test enabled, locked and blocked End Day / Next Day states.
+
+          Do not copy only cod.html. Source, documentation and the generated artifact should be committed together.
+          EOF
+          cd /tmp
+          zip -qr /tmp/strikewatch-build-12.131-calendar-clarity.zip strikewatch-12.131
+          cp /tmp/strikewatch-build-12.131-calendar-clarity.zip "$GITHUB_WORKSPACE/strikewatch-build-12.131-calendar-clarity.zip"
+
+      - name: Commit release source and artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add strikewatch-source cod.html
+          if git diff --cached --quiet; then
+            echo "Release files already committed."
+          else
+            git commit -m "Build 12.131: Calendar Clarity"
+            git push origin HEAD:agent/build-12-131-calendar-clarity-package
+          fi
+
+      - name: Upload Build 12.131 ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikewatch-build-12.131-calendar-clarity
+          path: strikewatch-build-12.131-calendar-clarity.zip
+          if-no-files-found: error
