@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.133 — Readable Command**
-- Build ID: `12.133.0-readable-command`
+- Build: **12.134 — Durable Career**
+- Build ID: `12.134.0-durable-career`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.133.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.134.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.134 hardens career persistence and clears the compact interface backlog. Saves are sequenced and read back, so a stale second tab can no longer overwrite newer progress and a rejected write is reported instead of silently discarded. A measured audit closed every horizontal overflow at 390px and lifted the smallest rendered copy from 5.5px to 11px floors. Clubs are now founded with one inherited assistant manager who carries a wage and weak Division 3 judgement, the after-action Combat Effectiveness dial no longer overlaps its caption, and the post-match report always states the fixture type. See `AUDIT-12.134.md`.
 
 Build 12.133 makes the reported command surfaces readable and predictable. Opponent Quick Read tiles, Active Operator Match Roles, Confirm Deployment and the after-action reward guide all gain legible type and tighter alignment; the Inbox feed no longer steals page scroll; applying a scout recommendation and then changing it now asks for confirmation; the same player no longer raises the same Inbox decision repeatedly; and operator portraits carry independent complexion, headgear and kit variation. See `AUDIT-12.133.md`.
 

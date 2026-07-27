@@ -30841,3 +30841,258 @@ body.mail-scroll-armed .club-mail-list {
   .deployment-operator-row > .team-player-visual > b,
   .deployment-operator-row > .team-player-visual > span { font-size: 7px !important; }
 }
+
+/* ==========================================================================
+   Build 12.134 — Compact readability and containment layer
+   Owns, below 1024px:
+     · a readable floor for the shared command chrome that the mobile audit
+       found rendering at 6–10.7px
+     · containment for nowrap copy that escaped its column
+     · the after-action Combat Effectiveness ring, whose caption overlapped
+       the ring stroke at phone widths
+   Measured by __strikeDebug.mobileInterfaceAuditForTest(). Keep last.
+   ========================================================================== */
+
+@media (max-width: 1023px) {
+
+  /* --- Shared command chrome: readable floor --- */
+
+  #menuContent .menu-pill { font-size: 12px !important; line-height: 1.25 !important; }
+
+  #menuContent .command-hero-meta > b,
+  #menuContent .command-hero-meta > button,
+  #menuContent .command-currency-link { font-size: 12px !important; }
+
+  #menuContent .career-xp-panel .career-xp-rank > span,
+  #menuContent .career-xp-panel .career-xp-heading > span,
+  #menuContent .career-xp-panel .career-xp-heading > strong,
+  #menuContent .career-xp-panel .career-xp-footer > span { font-size: 12px !important; }
+
+  #menuContent .club-response-group button > span { font-size: 12px !important; }
+  #menuContent .club-response-group button > b { font-size: 11px !important; }
+
+  #menuContent .command-fixture-card > header > b { font-size: 11px !important; }
+
+  #menuContent .career-armoury-player-slot,
+  #menuContent .career-armoury-player-action,
+  #menuContent .career-inventory-state { font-size: 11.5px !important; }
+
+  /* Section heads and stat tiles read as labels, so they sit one step below
+     body copy but never below the 11px floor. */
+  #menuContent .career-section-head > div > span,
+  #menuContent .career-section-head > div > strong,
+  #menuContent .career-section-head > p { font-size: 12px !important; }
+
+  #menuContent .club-staff-card dt,
+  #menuContent .club-staff-card dd { font-size: 11px !important; }
+
+  /* --- Containment: nowrap copy escaping its column --- */
+
+  #menuContent small,
+  #menuContent em,
+  #menuContent .menu-pill {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  #menuContent .career-armoury-player-strip small,
+  #menuContent .career-armoury-player-row small {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  #menuContent .command-hero-meta {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    min-width: 0;
+  }
+}
+
+/* --- After-action Combat Effectiveness ring --- */
+
+/* The caption lived inside the ring, so at phone widths it wrapped to two
+   lines and printed over the ring stroke and the grade. It now sits under the
+   ring as a caption, which leaves the grade and score the whole dial. */
+@media (max-width: 1023px) {
+  .career-report-analysis-panel { min-width: 0; }
+
+  .career-report-score-ring {
+    width: 138px !important;
+    height: 138px !important;
+    margin: 0 auto 30px !important;
+  }
+
+  .career-report-score-content {
+    gap: 1px !important;
+    padding: 0 !important;
+  }
+
+  .career-report-score-content span { font-size: 40px !important; line-height: .84 !important; }
+  .career-report-score-content strong { font-size: 21px !important; line-height: 1 !important; }
+
+  .career-report-score-content small {
+    position: absolute;
+    top: calc(100% + 9px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: min(240px, 78vw) !important;
+    color: rgba(196, 216, 228, .92) !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    letter-spacing: .12em;
+    white-space: nowrap;
+  }
+
+  .career-report-influence-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+    margin-top: 4px;
+  }
+
+  .career-report-influence-legend > span { font-size: 11px !important; }
+
+  .career-report-influence > div > span,
+  .career-report-influence > div > strong { font-size: 11px !important; }
+}
+
+@media (max-width: 380px) {
+  .career-report-score-ring {
+    width: 124px !important;
+    height: 124px !important;
+    margin-bottom: 28px !important;
+  }
+
+  .career-report-score-content span { font-size: 35px !important; }
+  .career-report-score-content strong { font-size: 19px !important; }
+  .career-report-score-content small { font-size: 10.5px !important; }
+}
+
+/* --- Post-match report: match type row --- */
+
+.career-report-competition > span { font-weight: 950; letter-spacing: .11em; }
+
+@media (max-width: 1023px) {
+  .career-report-competition > span { font-size: 11px !important; }
+  .career-report-competition > strong { font-size: 15px !important; }
+  .career-report-competition > small { font-size: 11px !important; line-height: 1.45 !important; }
+}
+
+.first-match-type-line {
+  margin: 6px 0 0;
+  color: rgba(190, 212, 224, .82);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 1.4;
+}
+
+@media (max-width: 1023px) {
+  .first-match-type-line { font-size: 12px; }
+}
+
+/* --------------------------------------------------------------------------
+   Build 12.134 — compact readability floor, part two.
+   Selectors taken directly from mobileInterfaceAuditForTest() output at 390px;
+   every rule below replaces measured 5.5–10px copy. Label-weight text lands on
+   11px and meaningful copy on 12px, matching the 12.118/12.120 floors.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+
+  /* League pyramid tier chips */
+  #menuContent .league-pyramid > div > span { font-size: 11px !important; }
+
+  /* Development alert strip */
+  #menuContent .development-alert-strip > button > span { font-size: 12px !important; }
+
+  /* Formation cards */
+  #menuContent .club-formation-card-head > b { font-size: 11px !important; }
+  #menuContent .club-formation-card > em { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* Squad cards */
+  #menuContent .team-player-card-head > span { font-size: 11px !important; }
+
+  /* Player profile: stat points */
+  #menuContent .player-stat-point-banner span,
+  #menuContent .player-stat-allocation-actions > span { font-size: 11.5px !important; }
+
+  /* Weapon inspector callout */
+  #menuContent .career-inspector-callout > span { font-size: 11px !important; }
+  #menuContent .career-inspector-callout > strong { font-size: 12px !important; }
+
+  /* Commercial partnerships */
+  #menuContent .commercial-offer-card > header > span,
+  #menuContent .commercial-deal-grid > div > span { font-size: 11px !important; }
+
+  /* Inbox view tabs */
+  #menuContent .club-mail-view-tabs button b { font-size: 11px !important; }
+
+  /* Squad dynamics */
+  #menuContent .squad-dynamics-policy > span,
+  #menuContent .squad-dynamics-pair > header > span,
+  #menuContent .squad-dynamics-profile-pairs > button > span { font-size: 11px !important; }
+  #menuContent .squad-dynamics-pair > footer { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* Opponent preparation */
+  #menuContent .opponent-preparation-recommendation > header span,
+  #menuContent .opponent-preparation-focus > div > span,
+  #menuContent .opponent-response-settings > span { font-size: 11px !important; }
+
+  /* Dashboard tiles */
+  #menuContent .menu-info-tile .menu-meta { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* Player telemetry */
+  #menuContent .player-profile-telemetry-status span { font-size: 11px !important; }
+
+  /* Armoury detail */
+  #menuContent .career-weapon-topline > span,
+  #menuContent .career-rarity { font-size: 11px !important; }
+  #menuContent .career-weapon-tradeoffs > article > strong { font-size: 11.5px !important; }
+  #menuContent .career-weapon-tradeoffs > article > ul > li { font-size: 11.5px !important; line-height: 1.5 !important; }
+
+  /* Supporters and coaching advice */
+  #menuContent .supporter-expectation-grid > div > span { font-size: 11px !important; }
+  #menuContent .opposition-counter-advice button b { font-size: 11.5px !important; }
+
+  /* Dense grids that now hold larger copy must be allowed to grow rather than
+     clip it. */
+  #menuContent .commercial-deal-grid > div,
+  #menuContent .supporter-expectation-grid > div,
+  #menuContent .player-profile-telemetry-status > div,
+  #menuContent .squad-dynamics-pair,
+  #menuContent .menu-info-tile { min-width: 0; }
+}
+
+/* Build 12.134 - compact readability floor, part three (second audit pass). */
+
+@media (max-width: 1023px) {
+  #menuContent .league-opponent-facts > div > span,
+  #menuContent .league-pyramid > div > strong { font-size: 11px !important; }
+
+  #menuContent .club-plan-option > em { font-size: 11px !important; line-height: 1.4 !important; }
+
+  #menuContent .team-trait-list > span { font-size: 11.5px !important; }
+
+  #menuContent .career-skin-option > span,
+  #menuContent .armour-rig-label { font-size: 11px !important; }
+
+  #menuContent .club-role-execution > strong { font-size: 11.5px !important; }
+
+  #menuContent .club-plan-confirm > div > span { font-size: 11px !important; }
+
+  #menuContent .player-accolade-entry > div > span { font-size: 11px !important; }
+
+  #menuContent .career-armour-guide-grid > article > strong { font-size: 12px !important; }
+
+  #menuContent .career-armour-inventory-item > span > em { font-size: 11px !important; }
+
+  #menuContent .career-attachment-slot > strong { font-size: 11.5px !important; }
+
+  #menuContent .league-opponent-facts > div,
+  #menuContent .career-attachment-slot,
+  #menuContent .player-accolade-entry { min-width: 0; }
+}

@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.134 — Durable Career
+
+- Sequences and verifies every career save: a stale second tab can no longer overwrite newer progress, and a rejected write now raises a visible warning instead of being discarded.
+- Closes every horizontal overflow at 390px and raises the smallest rendered copy from 5.5px to 11px readability floors across all 22 management routes.
+- Fixes the after-action Combat Effectiveness dial, whose caption overlapped the ring and grade on phones.
+- Founds every club with one inherited assistant manager: generated name, weekly wage, no signing fee, weak Division 3 judgement, replaceable at any time.
+- States the fixture type (league, exhibition or orientation) in the post-match report.
+- Investigated the reported Gold Coin loss: settlement, ledger and persistence verified correct across matches and calendar advances; no defect reproduced in the award path.
+- Evidence: `AUDIT-12.134.md`.
+
+
 ## 12.133 — Readable Command
 
 - Enlarges Opponent Quick Read, Active Operator Match Roles, Confirm Deployment and after-action reward typography, and removes the dead space in the match-roles rows.
@@ -34,6 +45,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.133 | Command-surface readability, Inbox scroll and portraits | `AUDIT-12.133.md` |
 | 12.132 | Match setup selection feedback | `AUDIT-12.132.md` |
 | 12.131 | Tactical clarity consolidation and End Day contrast | `AUDIT-12.131.md` |
 | 12.130 | Fourth arena: Aurora Terminal (summit-theme polar transit hub) | `AUDIT-12.130.md` |

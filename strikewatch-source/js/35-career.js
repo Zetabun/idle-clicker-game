@@ -1876,8 +1876,41 @@
     };
   }
 
+  // Build 12.134: every write is sequenced and read back.
+  //
+  // Two silent failure modes could lose match rewards. A second tab (or a page
+  // restored from the back/forward cache) still holds the career it loaded
+  // before the match, and its next autosave overwrote the newer save with
+  // last-writer-wins. And a rejected write — quota, private browsing, a full
+  // disk — was swallowed and reported to nobody, so the manager kept playing
+  // against a balance that was never stored.
+  //
+  // The sequence counter makes a stale session detectable, and the read-back
+  // proves the bytes actually landed before the save is treated as durable.
+  let careerSaveSequence = Math.max(0, Math.round(Number(careerSaveMetadata()?.saveSequence) || 0));
+  let careerSaveFailure = null;
+
+  function careerSaveIsStale() {
+    const storedSequence = Math.max(0, Math.round(Number(careerSaveMetadata()?.saveSequence) || 0));
+    return storedSequence > careerSaveSequence;
+  }
+
   function saveCareerState(options = {}) {
     try {
+      // Refuse to clobber a newer save written by another session. Losing this
+      // session's unsaved progress is recoverable; silently deleting a match
+      // result the manager already banked elsewhere is not.
+      if (options.force !== true && careerSaveIsStale()) {
+        careerSaveFailure = {
+          code: 'stale-session',
+          savedAt: new Date().toISOString(),
+          detail: 'Another tab or window saved this career more recently. This session did not overwrite it.'
+        };
+        setCareerDataNotice('warning', 'SAVE HELD BACK',
+          'This career was updated in another tab or window. Strikewatch did not overwrite that newer save. Reload this page to continue from the most recent progress.');
+        return false;
+      }
+
       const serialised = JSON.stringify(careerState);
       const existing = localStorage.getItem(CAREER_STORAGE_KEY);
       const previousMeta = careerSaveMetadata();
@@ -1887,17 +1920,50 @@
         localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, existing);
       }
       localStorage.setItem(CAREER_STORAGE_KEY, serialised);
+
+      // Read back before claiming success. A rejected or truncated write must
+      // not be reported as a completed save.
+      if (localStorage.getItem(CAREER_STORAGE_KEY) !== serialised) {
+        throw new Error('Career save did not read back identically.');
+      }
+
+      careerSaveSequence = Math.max(0, Math.round(Number(previousMeta?.saveSequence) || 0)) + 1;
       localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
         savedAt: new Date().toISOString(),
         buildVersion: BUILD_VERSION,
         reason: String(options.reason || 'autosave'),
+        saveSequence: careerSaveSequence,
         backupProtected
       }));
+      if (careerSaveFailure) {
+        careerSaveFailure = null;
+        setCareerDataNotice('success', 'SAVING RESTORED', 'Career progress is being written to this browser again.');
+      }
       return true;
     } catch (error) {
-      // Storage can be unavailable in private browsing; the live session still works.
+      // Storage can be unavailable in private browsing or full. The live
+      // session still works, but the manager has to know their progress is
+      // not being kept.
+      careerSaveFailure = {
+        code: 'write-failed',
+        savedAt: new Date().toISOString(),
+        detail: String(error?.message || 'The browser rejected the save.')
+      };
+      setCareerDataNotice('danger', 'PROGRESS IS NOT BEING SAVED',
+        'This browser rejected the career save, so match rewards, Gold Coins and transfers will be lost when the page closes. Export the career from Data & Recovery, then free browser storage or leave private browsing.');
       return false;
     }
+  }
+
+  function careerSaveHealth() {
+    const meta = careerSaveMetadata();
+    return {
+      sequence: careerSaveSequence,
+      storedSequence: Math.max(0, Math.round(Number(meta?.saveSequence) || 0)),
+      stale: careerSaveIsStale(),
+      failure: careerSaveFailure ? { ...careerSaveFailure } : null,
+      savedAt: meta?.savedAt || null
+    };
   }
 
   function careerExportFilename() {
@@ -1951,7 +2017,7 @@
       teamIdentity: normaliseTeamIdentity(careerState.teamIdentity),
       stats: careerState.created ? { ...careerState.stats } : defaultCareerStats()
     };
-    saveCareerState({ createBackup: false, backupProtected: true, reason: sourceLabel });
+    saveCareerState({ createBackup: false, backupProtected: true, force: true, reason: sourceLabel });
     resetCareerMatchFlow();
     createMatch();
     menuContext = 'main';
@@ -2707,6 +2773,44 @@
     }).join('')}</div></section>`;
   }
 
+  // Build 12.134: one authority for "what kind of match was this", used by the
+  // detailed report and the staged first-match outcome so both agree. Prefers
+  // the settled league record, then the stored match presentation, then the
+  // live presentation.
+  function careerMatchTypeDescriptor(summary = {}) {
+    const competition = summary.league || null;
+    const presentation = summary.matchPresentation || (typeof currentMatchPresentation === 'function' ? currentMatchPresentation() : null);
+    const mode = competition?.mode || presentation?.mode || null;
+
+    if (mode === 'tutorial') {
+      return {
+        mode: 'tutorial', tone: 'exhibition', label: 'ORIENTATION ROUND',
+        kicker: escapeCareerHtml(presentation?.competition || 'GUIDED ORIENTATION ROUND'),
+        detail: 'Guided practice round · no league standings, wages or transfers are affected'
+      };
+    }
+
+    if (mode === 'league') {
+      const division = competition?.divisionName
+        || (typeof leagueCompetitionName === 'function' ? leagueCompetitionName() : 'LEAGUE');
+      const matchday = competition?.matchday ? ` · MATCHDAY ${competition.matchday}` : '';
+      const standing = competition
+        ? `LEAGUE POSITION ${competition.position} · ${competition.points} POINTS${competition.seasonComplete ? ` · SEASON COMPLETE${competition.championName ? ` · CHAMPION ${competition.championName}` : ''}` : ''}`
+        : 'Counts towards the league table';
+      return {
+        mode: 'league', tone: 'league', label: 'LEAGUE MATCH',
+        kicker: `LEAGUE MATCH · ${division}${matchday}`,
+        detail: standing
+      };
+    }
+
+    return {
+      mode: 'exhibition', tone: 'exhibition', label: 'EXHIBITION MATCH',
+      kicker: 'EXHIBITION MATCH',
+      detail: 'Friendly fixture · rewards are paid but the result does not affect league standings'
+    };
+  }
+
   function careerReportMarkup(summary, embedded = false) {
     if (!summary) return `<section class="career-report-empty"><span>AFTER ACTION ARCHIVE</span><strong>NO MATCH DATA</strong><p>Complete a full first-to-three match to generate the first team debrief.</p></section>`;
     const accuracy = Math.round(clamp(Number(summary.accuracy) || 0, 0, 1) * 100);
@@ -2729,9 +2833,12 @@
     const goldMarkup = goldReward
       ? `<div class="career-report-gold"><span>GOLD COINS</span><strong>+${careerGoldCoins(goldReward.amount)}</strong><small>${escapeCareerHtml(goldReward.label || 'MATCH AWARD')}${Number(goldReward.multiKillBonus || 0) > 0 ? ` · MULTI-KILL +${careerGoldCoins(goldReward.multiKillBonus)}` : ''} · ${careerGoldCoins(goldReward.balanceAfter)} BALANCE</small></div>`
       : '';
-    const competitionMarkup = competition
-      ? `<div class="career-report-competition ${competition.mode === 'league' ? 'league' : 'exhibition'}"><span>${competition.mode === 'league' ? `${escapeCareerHtml(competition.divisionName || (typeof leagueCompetitionName === 'function' ? leagueCompetitionName() : 'LEAGUE'))} · MATCHDAY ${competition.matchday}` : 'EXHIBITION MATCH'}</span><strong>${escapeCareerHtml(competition.opponentName || 'Unknown opposition')}</strong><small>${competition.mode === 'league' ? `LEAGUE POSITION ${competition.position} · ${competition.points} POINTS${competition.seasonComplete ? ` · SEASON COMPLETE${competition.championName ? ` · CHAMPION ${escapeCareerHtml(competition.championName)}` : ''}` : ''}` : 'Result does not affect league standings'}</small></div>`
-      : '';
+    // Build 12.134: the report always states what kind of match this was.
+    // Previously the competition row only appeared when a league settlement
+    // existed, so exhibition and orientation results carried no fixture type at
+    // all and read identically to a league result.
+    const type = careerMatchTypeDescriptor(summary);
+    const competitionMarkup = `<div class="career-report-competition ${escapeCareerHtml(type.tone)}"><span>${escapeCareerHtml(type.kicker)}</span><strong>${escapeCareerHtml(competition?.opponentName || redClubName || 'Unknown opposition')}</strong><small>${escapeCareerHtml(type.detail)}</small></div>`;
     const matchAwardMarkup = typeof renderWorldPressMatchAward === 'function' ? renderWorldPressMatchAward(summary) : '';
     const multiKillEvents = Array.isArray(summary.multiKillEvents) ? summary.multiKillEvents : [];
     const firstMatchGuide = Number(careerState.totalMatches) <= 1 ? `<section class="first-debrief-guide"><header><span>YOUR FIRST AFTER ACTION REPORT</span><strong>TURN THE MATCH INTO ONE DECISION</strong></header><div><article><b>1</b><span><strong>READ WHAT WORKED</strong><small>Keep the parts of the plan your operators executed well.</small></span></article><article><b>2</b><span><strong>FIND THE BIGGEST ISSUE</strong><small>Use the clearest evidence instead of changing everything at once.</small></span></article><article><b>3</b><span><strong>OPEN NEXT MANAGER ACTION</strong><small>The recommendation below links directly to Tactics, Training or Loadout.</small></span></article></div></section>` : '';
@@ -2801,12 +2908,13 @@
     const presentation = summary.matchPresentation || currentMatchPresentation();
     const blueName = summary.blueTeamName || presentation.blue?.name || careerState.name || 'Your Club';
     const redName = summary.redTeamName || presentation.red?.name || summary.league?.opponentName || 'Opposition';
+    const matchType = careerMatchTypeDescriptor(summary);
     const resultTitle = summary.won ? 'YOUR FIRST CAREER VICTORY' : 'YOUR FIRST CAREER MATCH IS COMPLETE';
     const resultTone = summary.won ? 'positive' : 'warning';
     const scoreLine = `${escapeCareerHtml(blueName)} ${summary.blueScore ?? 0} — ${summary.redScore ?? 0} ${escapeCareerHtml(redName)}`;
     let content = '';
     if (stage === 0) {
-      content = `<section class="first-match-outcome-stage result ${resultTone}"><span>MATCH RESULT</span><strong>${resultTitle}</strong><h3>${scoreLine}</h3><p>${summary.won ? 'Your recruitment, roles, equipment and tactical plan combined to win a full first-to-three match.' : 'The result is recorded, but the debrief will separate the useful parts of the plan from the clearest weakness.'}</p><div class="first-match-score-block"><article><b>${summary.roundsWon || 0}</b><small>ROUNDS WON</small></article><article><b>${summary.kills || 0}</b><small>ELIMINATIONS</small></article><article><b>${Math.round((Number(summary.accuracy) || 0) * 100)}%</b><small>ACCURACY</small></article><article><b>${summary.grade || careerCombatGrade(summary.score)}</b><small>COMBAT GRADE</small></article></div></section>`;
+      content = `<section class="first-match-outcome-stage result ${resultTone}"><span>MATCH RESULT · ${escapeCareerHtml(matchType.label)}</span><strong>${resultTitle}</strong><h3>${scoreLine}</h3><p class="first-match-type-line">${escapeCareerHtml(matchType.kicker)} · ${escapeCareerHtml(matchType.detail)}</p><p>${summary.won ? 'Your recruitment, roles, equipment and tactical plan combined to win a full first-to-three match.' : 'The result is recorded, but the debrief will separate the useful parts of the plan from the clearest weakness.'}</p><div class="first-match-score-block"><article><b>${summary.roundsWon || 0}</b><small>ROUNDS WON</small></article><article><b>${summary.kills || 0}</b><small>ELIMINATIONS</small></article><article><b>${Math.round((Number(summary.accuracy) || 0) * 100)}%</b><small>ACCURACY</small></article><article><b>${summary.grade || careerCombatGrade(summary.score)}</b><small>COMBAT GRADE</small></article></div></section>`;
     } else if (stage === 1) {
       content = `<section class="first-match-outcome-stage rewards"><span>REWARDS BANKED</span><strong>FOUR RESOURCES · FOUR DIFFERENT USES</strong><p>Everything below is already saved. Club Cash, Gold Coins, Team XP and Player XP do not substitute for one another.</p>${typeof clubEconomyGuideMarkup === 'function' ? clubEconomyGuideMarkup('reward', { summary }) : `<div class="first-match-reward-grid"><article><small>CLUB CASH</small><b>+${teamCredits(summary.finance?.income || 0)}</b><span>PAYS CLUB COSTS</span></article><article><small>TEAM XP</small><b>+${Math.round(Number(summary.xpAward) || 0)}</b><span>LEVELS THE CLUB</span></article><article><small>GOLD COINS</small><b>+${careerGoldCoins(summary.goldCoinReward?.amount || 0)}</b><span>SUPPLY CRATES ONLY</span></article><article><small>SUPPLY DROP</small><b>${summary.rewardEligible ? 'EARNED' : 'NOT EARNED'}</b><span>${summary.rewardEligible ? 'FREE VICTORY CRATE' : 'VICTORY REQUIRED'}</span></article></div>`}</section>`;
     } else if (stage === 2) {

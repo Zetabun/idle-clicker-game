@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.134 owns career save durability (`saveCareerState` sequencing and read-back in `js/35-career.js`), the compact readability/containment layer at the release end of `css/game.css`, the inherited founding assistant in `js/39-club-operations.js` and `careerMatchTypeDescriptor`. Keep saves sequenced, keep `mobileInterfaceAuditForTest` reporting zero overflow at 390px, and keep the founding assistant one-per-career and deliberately weak. See `AUDIT-12.134.md`.
+
 Build 12.133 owns the readability, alignment and portrait layer at the release end of `css/game.css`, `js/77-mail-scroll-guard.js`, the recommended-plan change warning in `js/39-matchday.js` and the per-player decision cooldown in the same file. Keep the Inbox feed inert until it is clicked, keep the plan warning firing only while an intact recommendation is applied, and keep operator portraits deterministic and asset-free. See `AUDIT-12.133.md`.
 
 Build 12.132 owns the match setup selection feedback layer at the release end of `css/game.css` plus `js/76-tactical-selection-feedback.js`. Keep the choice cards' selected, pressed, hover, focus and confirmation states distinct at every width, and keep the layer last in the cascade: the Command Skin sets `border` on a bare `button` with `!important` and puts `.club-formation-card` in a (0,4,1) `!important` group, so those rules need their specificity bump to reach the element. See `AUDIT-12.132.md`.

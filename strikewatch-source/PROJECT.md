@@ -32,11 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.133 raises command-surface readability, removes the match-roles dead
-space, gates Inbox feed scrolling behind a deliberate click, confirms before an
-applied scout recommendation is replaced, stops repeated decision mail from the
-same player and deepens the procedural operator portraits.
-See `HANDOFF.md` and `AUDIT-12.133.md`.
+Build 12.134 makes career saves durable and verifiable, clears the compact
+interface overflow and readability backlog, founds each club with one inherited
+assistant manager, and states the fixture type in the post-match report.
+See `HANDOFF.md` and `AUDIT-12.134.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

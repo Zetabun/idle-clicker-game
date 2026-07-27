@@ -259,9 +259,12 @@
       manManagement: clamp(Math.round(Number(member?.manManagement) || 4), 1, 10),
       fitness: clamp(Math.round(Number(member?.fitness) || 4), 1, 10),
       wage: Math.max(500, Math.round(Number(member?.wage) || 1800)),
-      signingFee: Math.max(0, Math.round(Number(member?.signingFee) || 5000)),
+      // A genuine zero fee (the inherited founding assistant) must survive
+      // normalisation; `|| 5000` silently replaced it.
+      signingFee: Number.isFinite(Number(member?.signingFee)) ? Math.max(0, Math.round(Number(member.signingFee))) : 5000,
       style: String(member?.style || 'Pragmatic organiser'),
-      employedWeek: Math.max(0, Math.round(Number(member?.employedWeek) || 0))
+      employedWeek: Math.max(0, Math.round(Number(member?.employedWeek) || 0)),
+      founding: Boolean(member?.founding)
     };
   }
 
@@ -293,6 +296,55 @@
   function clubAssistantManager() {
     const id = careerState.staff?.assistantManagerId;
     return (careerState.staff?.employees || []).find(member => member.id === id) || null;
+  }
+
+  // Build 12.134: a club is founded with one inherited assistant manager. This
+  // is what the formation, approach and line-up recommendations have always
+  // come from, so the advice now has a visible author with a name, a wage and a
+  // measurable level of judgement.
+  //
+  // They are deliberately a weak Division 3 appointment: their ratings sit at
+  // the bottom of the generated range, which feeds `clubPlayerSelectionScore`
+  // exactly like any other assistant. Better advice has to be bought.
+  function clubCreateFoundingAssistant() {
+    const seed = Math.max(1, teamSeedFromString(`${careerState.name}:${careerState.managerName}:founding-assistant:${careerState.marketSeed || 1}`));
+    const random = teamRng(seed ^ 0x3f19b7);
+    const name = `${teamPick(random, STAFF_FIRST_NAMES)} ${teamPick(random, STAFF_LAST_NAMES)}`;
+    const base = 2.1 + random() * 1.5;
+    return clubNormaliseStaffMember({
+      id: `ST-FOUNDING-${(seed >>> 0).toString(36)}`,
+      name,
+      divisionTier: leagueDivisionTier(),
+      judgingAbility: Math.round(base + random() * 1.2),
+      judgingPotential: Math.round(base + random() * 1.6),
+      tactics: Math.round(base + random() * 1.3),
+      manManagement: Math.round(base + random() * 1.4),
+      fitness: Math.round(base + random() * 1.2),
+      // Carried on the wage bill from day one, but signed before the manager
+      // arrived, so there is no signing fee to recover.
+      wage: Math.round((900 + base * 240) / 50) * 50,
+      signingFee: 0,
+      style: teamPick(random, STAFF_STYLES),
+      founding: true
+    }, 'ST-FOUNDING');
+  }
+
+  function clubEnsureFoundingAssistant() {
+    const staff = careerState.staff;
+    if (!staff || staff.foundingAssistantAppointed) return null;
+    // Only seed the inherited appointment on a club that has never employed
+    // anyone; never re-appoint after the manager releases or replaces them.
+    staff.foundingAssistantAppointed = true;
+    if ((staff.employees || []).length || staff.assistantManagerId) return null;
+    const assistant = clubCreateFoundingAssistant();
+    staff.employees.push(assistant);
+    staff.assistantManagerId = assistant.id;
+    clubAddMail(
+      `${assistant.name} is your assistant manager`,
+      `${assistant.name} was already under contract when you took over and stays on ${teamCredits(assistant.wage)} per week. They are a ${assistant.style.toLowerCase()} with modest judgement for this level, and theirs is the voice behind the formation, approach and line-up recommendations you will see on the Tactics page. Treat the advice as an opinion, not an instruction — a better assistant can be appointed from Staff at any time, and replacing them ends this contract.`,
+      'STAFF', false, 'staff'
+    );
+    return assistant;
   }
 
   function clubStaffWageBill() {
@@ -508,6 +560,7 @@
     if (!assistant || menuContext === 'pause' || appState === 'match') return false;
     careerState.staff.employees = careerState.staff.employees.filter(item => item.id !== assistant.id);
     careerState.staff.assistantManagerId = null;
+    careerState.staff.foundingAssistantAppointed = true;
     careerState.tactics.lineupMode = 'manual';
     clubAddMail('Assistant manager departed', `${assistant.name} has left the club. Starting-five selection has returned to manual control.`, 'STAFF', false, 'tactics');
     saveCareerState();
@@ -537,6 +590,7 @@
     careerState.staff = careerState.staff && typeof careerState.staff === 'object' ? careerState.staff : {};
     careerState.staff.employees = Array.isArray(careerState.staff.employees) ? careerState.staff.employees.map((item, index) => clubNormaliseStaffMember(item, `EMP-${index}`)) : [];
     careerState.staff.assistantManagerId = careerState.staff.assistantManagerId || null;
+    careerState.staff.foundingAssistantAppointed = Boolean(careerState.staff.foundingAssistantAppointed);
     careerState.staff.poolSeed = Math.max(1, Math.round(Number(careerState.staff.poolSeed) || teamSeedFromString(`${careerState.name}:staff:${careerState.week}`)));
     careerState.staff.selectedPoolDivision = leagueDivisionTier();
     careerState.staff.pool = Array.isArray(careerState.staff.pool) && careerState.staff.pool.length
@@ -546,10 +600,11 @@
     careerState.tactics.formationId = CLUB_FORMATIONS[careerState.tactics.formationId] ? careerState.tactics.formationId : 'balanced';
     careerState.tactics.lineupMode = careerState.tactics.lineupMode === 'assistant' && clubAssistantManager() ? 'assistant' : 'manual';
     careerState.tactics.autoApplyBeforeMatch = careerState.tactics.autoApplyBeforeMatch !== false;
+    clubEnsureFoundingAssistant();
     if (!careerState.mail.length) {
       clubAddMail('Welcome to Strikewatch Division 3', 'Your club begins in Division 3, the entry tier of the Strikewatch pyramid. Finish in the top two to earn promotion to Division 2.', 'COMPETITION', true, 'league');
       clubAddMail('Club calendar activated', 'Use End Day to move through the week. League fixtures are scheduled for Saturday, while training, recovery, staff decisions and recruitment can be managed between matchdays.', 'CALENDAR', true, 'play');
-      clubAddMail('Staff recruitment available', 'The club may employ one assistant manager. They can recommend or automatically select the five active operators according to your chosen formation.', 'STAFF', false, 'staff');
+      clubAddMail('Staff recruitment available', 'The club employs one assistant manager at a time. They recommend or automatically select the five active operators according to your chosen formation, and a stronger candidate can be appointed from Staff whenever you can afford the fee and wage.', 'STAFF', false, 'staff');
     }
     return careerState;
   }

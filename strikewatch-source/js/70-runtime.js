@@ -4390,6 +4390,127 @@
       updateMenuUI();
       return window.__strikeDebug.financeAnalyticsForTest();
     },
+    careerSaveHealthForTest: () => (typeof careerSaveHealth === 'function' ? careerSaveHealth() : null),
+    // Build 12.134: walks every management route and reports concrete compact
+    // presentation defects — content wider than its container, unreadable type
+    // and undersized touch targets. Run with the viewport already at the width
+    // under test; the audit only measures what is actually laid out.
+    mobileInterfaceAuditForTest: (options = {}) => {
+      const minFont = Number(options.minFont) || 11;
+      const minTouch = Number(options.minTouch) || 40;
+      const routes = Array.isArray(options.routes) && options.routes.length ? options.routes : [
+        'play', 'league', 'calendar', 'mail', 'telemetry', 'reports',
+        'operators', 'tactics', 'market', 'transfers', 'honours', 'profile',
+        'loadout', 'store', 'training', 'infrastructure', 'staff',
+        'barracks', 'gold', 'commercial', 'supporters', 'settings'
+      ];
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const previousRoute = menuTab;
+      const results = [];
+      const describe = node => {
+        const cls = String(node.className || '').split(/\s+/).filter(Boolean).slice(0, 2).join('.');
+        return `${node.tagName.toLowerCase()}${cls ? '.' + cls : ''}`;
+      };
+      // Short ancestor path so a reported defect can be turned into a selector
+      // without re-rendering the route by hand.
+      const ancestry = node => {
+        const parts = [];
+        let current = node;
+        for (let depth = 0; depth < 4 && current && current !== menuContentEl; depth++) {
+          const cls = String(current.className || '').split(/\s+/).filter(Boolean)[0];
+          parts.unshift(`${current.tagName.toLowerCase()}${cls ? '.' + cls : ''}`);
+          current = current.parentElement;
+        }
+        return parts.join('>');
+      };
+      for (const route of routes) {
+        let overflowing = [];
+        let tinyText = [];
+        let smallTargets = [];
+        try {
+          setMenuRoute(route, { skipDraftGuard: true });
+        } catch (error) {
+          results.push({ route, error: String(error?.message || error) });
+          continue;
+        }
+        const host = menuContentEl;
+        if (!host) continue;
+        const hostRect = host.getBoundingClientRect();
+        const seenOverflow = new Set();
+        for (const node of host.querySelectorAll('*')) {
+          const style = getComputedStyle(node);
+          if (style.display === 'none' || style.visibility === 'hidden' || !node.getClientRects().length) continue;
+          const rect = node.getBoundingClientRect();
+
+          // Content escaping the scroll container horizontally. Anything inside
+          // a deliberate horizontal scroller (the recruitment carousel, wide
+          // tables) is out of bounds by design, so measure against that
+          // scroller instead of the page.
+          let scroller = node.parentElement;
+          let inHorizontalScroller = false;
+          while (scroller && scroller !== host) {
+            const overflowX = getComputedStyle(scroller).overflowX;
+            if (overflowX === 'auto' || overflowX === 'scroll') { inHorizontalScroller = true; break; }
+            scroller = scroller.parentElement;
+          }
+          const bounds = inHorizontalScroller ? scroller.getBoundingClientRect() : hostRect;
+          const tolerance = inHorizontalScroller ? Number.POSITIVE_INFINITY : 1.5;
+          if (rect.width > 0 && (rect.right - bounds.right > tolerance || bounds.left - rect.left > tolerance)) {
+            const key = describe(node);
+            if (!seenOverflow.has(key)) { seenOverflow.add(key); overflowing.push({ node: key, overshoot: Math.round(Math.max(rect.right - bounds.right, bounds.left - rect.left)) }); }
+          }
+
+          // Unreadable copy: only leaf nodes that actually render text.
+          const text = node.children.length === 0 ? String(node.textContent || '').trim() : '';
+          if (text.length > 1) {
+            const size = parseFloat(style.fontSize) || 0;
+            if (size > 0 && size < minFont) tinyText.push({ node: describe(node), path: ancestry(node), size: Number(size.toFixed(1)), sample: text.slice(0, 28) });
+          }
+
+          // Interactive controls below a usable touch target.
+          if (['BUTTON', 'SELECT', 'A', 'INPUT'].includes(node.tagName) && !node.disabled) {
+            if (rect.height > 0 && rect.height < minTouch) smallTargets.push({ node: describe(node), height: Math.round(rect.height) });
+          }
+        }
+        const dedupe = (list, key) => {
+          const seen = new Map();
+          for (const item of list) if (!seen.has(item[key])) seen.set(item[key], item);
+          return [...seen.values()];
+        };
+        tinyText = dedupe(tinyText, 'path');
+        smallTargets = dedupe(smallTargets, 'node');
+        results.push({
+          route,
+          overflowCount: overflowing.length, overflow: overflowing.slice(0, 6),
+          tinyTextCount: tinyText.length, tinyText: tinyText.slice(0, 14),
+          smallTargetCount: smallTargets.length, smallTargets: smallTargets.slice(0, 6)
+        });
+      }
+      setMenuRoute(previousRoute, { skipDraftGuard: true });
+      const totals = results.reduce((acc, item) => {
+        acc.overflow += item.overflowCount || 0;
+        acc.tinyText += item.tinyTextCount || 0;
+        acc.smallTargets += item.smallTargetCount || 0;
+        return acc;
+      }, { overflow: 0, tinyText: 0, smallTargets: 0 });
+      return {
+        width: window.innerWidth, minFont, minTouch, totals,
+        worst: results.slice().sort((a, b) => (b.overflowCount + b.tinyTextCount) - (a.overflowCount + a.tinyTextCount)).slice(0, 8),
+        results
+      };
+    },
+    // Build 12.134: proves a stale second session cannot overwrite a newer save.
+    staleSaveGuardForTest: () => {
+      const before = careerSaveHealth();
+      const meta = JSON.parse(localStorage.getItem('strikewatchCareerSaveMetaV1') || '{}');
+      // Simulate another tab having saved after this session loaded.
+      localStorage.setItem('strikewatchCareerSaveMetaV1', JSON.stringify({ ...meta, saveSequence: (Number(meta.saveSequence) || 0) + 5 }));
+      const guardedWrite = saveCareerState({ reason: 'stale guard test' });
+      const duringGuard = careerSaveHealth();
+      const forcedWrite = saveCareerState({ force: true, reason: 'stale guard test recovery' });
+      const after = careerSaveHealth();
+      return { before, guardedWrite, duringGuard, forcedWrite, after };
+    },
     currencyLedgerForTest: () => ({
       credits: Math.round(Number(careerState.credits) || 0),
       goldCoins: Math.max(0, Math.round(Number(careerState.goldCoins) || 0)),
@@ -4409,6 +4530,93 @@
       history: (careerState.goldCoinHistory || []).slice(0, 6).map(item => ({ ...item }))
     }),
     goldCoinRewardForTest: (won = true, mode = 'league', blue = 3, red = 1) => careerGoldCoinRewardBreakdown(Boolean(won), mode === 'exhibition' ? 'exhibition' : 'league', Number(blue), Number(red)),
+    // Build 12.134: runs the real end-of-match settlement and reports the live
+    // balance against what a fresh load would read at each stage, so a reward
+    // that is granted but not durably stored is visible.
+    goldCoinMatchPersistenceForTest: (startingBalance = 40) => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const snapshot = JSON.parse(JSON.stringify(careerState));
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        careerState.goldCoins = Math.max(0, Math.round(Number(startingBalance) || 0));
+        saveCareerState({ createBackup: false, reason: 'gold persistence test baseline' });
+        const before = { live: careerState.goldCoins, persisted: loadCareerState().goldCoins };
+
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, {
+          roundsPlayed: 3, kills: 6, deaths: 2, shotsFired: 24, shotsHit: 12,
+          damageDealt: 420, damageTaken: 180, survivalTime: 150, reloads: 4, finalSurvived: true
+        });
+        blueScore = 3; redScore = 0;
+        completeCareerMatch(TEAM_BLUE);
+        const award = careerState.lastRound?.goldCoinReward || null;
+        const afterSettlement = { live: careerState.goldCoins, persisted: loadCareerState().goldCoins };
+
+        // The report and crate overlay both run before the manager returns to
+        // Command HQ, so re-check once the flow has been driven forward.
+        if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+        updateMenuUI();
+        const afterReport = { live: careerState.goldCoins, persisted: loadCareerState().goldCoins };
+
+        return {
+          ok: true, before, award: award ? { amount: award.amount, mode: award.mode, label: award.label } : null,
+          afterSettlement, afterReport,
+          expected: before.live + (award?.amount || 0),
+          liveCorrect: careerState.goldCoins === before.live + (award?.amount || 0),
+          persistedMatchesLive: afterReport.persisted === afterReport.live,
+          historyTop: (careerState.goldCoinHistory || []).slice(0, 2).map(item => ({ amount: item.amount, label: item.label }))
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        careerState = normaliseCareerState(snapshot);
+        appState = stateSnapshot;
+        saveCareerState({ createBackup: false, reason: 'gold persistence test restore' });
+      }
+    },
+    // Build 12.134: the Gold Coin balance must always equal the sum of its own
+    // ledger. Runs real match settlements interleaved with day advances and
+    // reports the first point where the balance and the ledger disagree.
+    goldCoinLedgerIntegrityForTest: (matches = 6, daysBetween = 3) => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      careerState.goldCoins = 0;
+      careerState.goldCoinHistory = [];
+      const steps = [];
+      const ledgerSum = () => (careerState.goldCoinHistory || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      try {
+        for (let match = 0; match < Math.max(1, Math.round(Number(matches) || 0)); match++) {
+          careerMatchStats = makeCareerMatchStats();
+          Object.assign(careerMatchStats, {
+            roundsPlayed: 3, kills: 5, deaths: 2, shotsFired: 20, shotsHit: 10,
+            damageDealt: 380, damageTaken: 200, survivalTime: 140, reloads: 3,
+            finalSurvived: match % 2 === 0
+          });
+          const won = match % 3 !== 2;
+          blueScore = won ? 3 : 1;
+          redScore = won ? 1 : 3;
+          completeCareerMatch(won ? TEAM_BLUE : TEAM_RED);
+          if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+          steps.push({ stage: `match-${match + 1}`, balance: careerState.goldCoins, ledger: ledgerSum(), persisted: loadCareerState().goldCoins });
+          for (let day = 0; day < Math.max(0, Math.round(Number(daysBetween) || 0)); day++) {
+            if (typeof advanceCareerDay === 'function') advanceCareerDay();
+          }
+          steps.push({ stage: `days-after-${match + 1}`, balance: careerState.goldCoins, ledger: ledgerSum(), persisted: loadCareerState().goldCoins });
+        }
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
+      const mismatches = steps.filter(step => step.balance !== step.ledger || step.persisted !== step.balance);
+      return {
+        finalBalance: careerState.goldCoins,
+        finalLedger: ledgerSum(),
+        steps,
+        mismatchCount: mismatches.length,
+        firstMismatch: mismatches[0] || null
+      };
+    },
     setGoldCoinsForTest: amount => {
       careerState.goldCoins = Math.max(0, Math.round(Number(amount) || 0));
       careerState.pendingStoreCrate = null;
