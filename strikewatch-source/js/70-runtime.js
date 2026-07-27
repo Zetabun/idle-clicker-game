@@ -2550,6 +2550,24 @@
       choiceCount: teamNoteActionsEl?.querySelectorAll('[data-club-decision][data-club-choice]').length || 0,
       hasRelatedRoute: Boolean(teamNoteActionsEl?.querySelector('[data-mail-modal-route]'))
     }),
+    mailPresentationForTest: () => {
+      const client = menuContentEl?.querySelector('.club-mail-client');
+      const reader = menuContentEl?.querySelector('#clubMailReader');
+      return {
+        inlineReader: typeof clubMailUsesInlineReader === 'function' ? clubMailUsesInlineReader() : false,
+        presentation: client?.dataset.mailPresentation || '',
+        selectedMailId: careerState.selectedMailId || '',
+        activeRowMailId: menuContentEl?.querySelector('.club-mail-row.active')?.dataset.clubMail || '',
+        readerSubject: reader?.querySelector('.club-mail-message-subject h2')?.textContent || '',
+        readerChoiceCount: reader?.querySelectorAll('[data-club-decision][data-club-choice]').length || 0,
+        modalOpen: Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden && teamNoteOverlayEl.dataset.mode === 'mail')
+      };
+    },
+    selectMailForTest: mailId => {
+      const id = String(mailId || careerState.selectedMailId || clubMailMessagesForView?.('inbox')?.[0]?.id || '');
+      const ok = typeof selectClubMailAndOpen === 'function' ? selectClubMailAndOpen(id, null) : false;
+      return { ok, presentation: window.__strikeDebug.mailPresentationForTest(), modal: window.__strikeDebug.mailModalForTest() };
+    },
     openMailModalForTest: mailId => {
       const id = String(mailId || careerState.selectedMailId || clubSelectedMail()?.id || '');
       return { ok: typeof openClubMailModal === 'function' ? openClubMailModal(id, null, true) : false, modal: window.__strikeDebug.mailModalForTest() };

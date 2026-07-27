@@ -56,7 +56,13 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Builds 12.122–12.123 add the Command Skin theme layers at the end of
+Build 12.124 owns desktop club identification and Inbox presentation:
+the active team name appears beneath the desktop crest, desktop email rows
+select the adjacent reader, and compact/mobile rows retain the mail modal.
+Preserve inline decision actions and the 1024px presentation boundary. See
+`AUDIT-12.124.md`.
+
+Builds 12.122–12.123 add the Command Skin theme layers near the end of
 `css/game.css` (12.123 covers bespoke route surfaces).
 Visual/chrome changes belong in that layer; it must stay chrome-only (no
 geometry, font-size or touch-target changes). Preserve the compact 12px

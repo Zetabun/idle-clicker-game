@@ -627,8 +627,17 @@
     return Boolean(decision && !decision.resolved);
   }
 
+  function clubMailUsesInlineReader() {
+    if (typeof window?.matchMedia === 'function') return window.matchMedia('(min-width: 1024px)').matches;
+    return Number(window?.innerWidth) >= 1024;
+  }
+
   function clubMailVisibleInInbox(mail) {
-    return Boolean(mail && (!mail.read || clubMailDecisionRequired(mail)));
+    return Boolean(mail && (
+      !mail.read
+      || clubMailDecisionRequired(mail)
+      || (clubMailUsesInlineReader() && careerState.selectedMailId === mail.id)
+    ));
   }
 
   function clubMailMessagesForView(view = clubMailView) {
@@ -702,10 +711,15 @@
   function selectClubMailAndOpen(mailId, fallbackTrigger = null) {
     const mail = clubMailById(mailId);
     if (!mail) return false;
+    const inlineReader = clubMailUsesInlineReader();
     careerState.selectedMailId = mail.id;
     mail.read = true;
     saveCareerState();
     updateMenuUI();
+    if (inlineReader) {
+      requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
+      return true;
+    }
     return openClubMailModal(mail.id, clubMailRowElement(mail.id) || fallbackTrigger, false);
   }
 
@@ -752,6 +766,7 @@
   function renderMailTab() {
     ensureClubOperationsState();
     const view = clubMailView === 'saved' ? 'saved' : 'inbox';
+    const inlineReader = clubMailUsesInlineReader();
     const messages = clubMailMessagesForView(view);
     const selected = clubSelectedMail(view);
     const unread = clubUnreadMailCount();
@@ -761,23 +776,28 @@
       const sender = clubMailSender(item.category, item);
       const decision = clubMailDecisionForMessage(item);
       const decisionRequired = Boolean(decision && !decision.resolved);
-      return `<button class="club-mail-row ${item.read ? '' : 'unread'} ${item.saved ? 'saved' : ''} ${item.important ? 'important' : ''} ${decisionRequired ? 'decision-required' : ''} ${selected?.id === item.id ? 'active' : ''}" data-club-mail="${item.id}" data-management-target-id="mail:${escapeCareerHtml(item.id)}" aria-haspopup="dialog" aria-label="${item.read ? '' : 'Unread: '}${item.saved ? 'Saved: ' : ''}${decisionRequired ? 'Decision required: ' : ''}${escapeCareerHtml(item.subject)} from ${escapeCareerHtml(sender)}">
+      return `<button class="club-mail-row ${item.read ? '' : 'unread'} ${item.saved ? 'saved' : ''} ${item.important ? 'important' : ''} ${decisionRequired ? 'decision-required' : ''} ${selected?.id === item.id ? 'active' : ''}" data-club-mail="${item.id}" data-management-target-id="mail:${escapeCareerHtml(item.id)}" ${inlineReader ? `aria-controls="clubMailReader" aria-pressed="${selected?.id === item.id ? 'true' : 'false'}"` : 'aria-haspopup="dialog"'} aria-label="${item.read ? '' : 'Unread: '}${item.saved ? 'Saved: ' : ''}${decisionRequired ? 'Decision required: ' : ''}${escapeCareerHtml(item.subject)} from ${escapeCareerHtml(sender)}">
         <i class="club-mail-unread-dot" aria-hidden="true"></i>
         <span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(item.category, item)}</span>
         <span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>${escapeCareerHtml(sender)}</b><time>${escapeCareerHtml(item.dateLabel || '')}</time></span><strong>${escapeCareerHtml(item.subject)}</strong><small>${escapeCareerHtml(clubMailPreview(item.body, item))}</small></span>
         ${decisionRequired ? '<em class="club-mail-decision-badge">DECISION</em>' : item.saved ? '<em class="club-mail-saved-badge" aria-label="Saved email">★</em>' : (item.important ? '<em class="club-mail-important" aria-label="Important message">★</em>' : '')}
       </button>`;
     }).join('') || `<div class="club-mail-empty"><span aria-hidden="true">${view === 'saved' ? '★' : '✉'}</span><strong>${view === 'saved' ? 'NO SAVED EMAILS' : 'YOUR INBOX IS CLEAR'}</strong><p>${view === 'saved' ? 'Open an email and choose Save Email to keep it here.' : 'Read emails disappear from the Inbox automatically. Save anything you want to keep.'}</p></div>`;
+    const decisionMarkup = selected
+      ? (inlineReader && typeof renderClubDecisionMailActions === 'function'
+          ? renderClubDecisionMailActions(selected)
+          : renderClubDecisionMailPreview(selected))
+      : '';
     const reader = selected ? `<header class="club-mail-message-head"><div class="club-mail-message-sender"><span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(selected.category, selected)}</span><div><strong>${escapeCareerHtml(clubMailSender(selected.category, selected))}</strong><small>To: ${escapeCareerHtml(careerState.managerName || 'Manager')} · ${escapeCareerHtml(selected.dateLabel || '')}</small></div></div><span class="club-mail-message-category">${escapeCareerHtml(selected.category)}</span></header>
       <div class="club-mail-message-subject"><h2>${escapeCareerHtml(selected.subject)}</h2>${selected.saved ? '<span class="saved">SAVED</span>' : selected.important ? '<span>IMPORTANT</span>' : ''}</div>
       <div class="club-mail-message-body"><p>${escapeCareerHtml(selected.body).replace(/\n/g, '<br>')}</p></div>
-      ${renderClubDecisionMailPreview(selected)}
-      <footer class="club-mail-message-actions"><button class="primary" data-club-mail-open="${escapeCareerHtml(selected.id)}">OPEN FULL EMAIL</button><button class="${selected.saved ? 'saved' : ''}" data-club-action="toggle-selected-save">${selected.saved ? '★ SAVED EMAIL' : '☆ SAVE EMAIL'}</button><button data-club-action="toggle-selected-read">${selected.read ? 'MARK AS UNREAD' : 'MARK AS READ'}</button>${selected.actionRoute && selected.actionRoute !== 'mail' ? `<button data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}</footer>` : '<div class="club-mail-reader-empty"><span aria-hidden="true">✉</span><strong>SELECT A MESSAGE</strong><p>Choose an item from the list to read the full club communication.</p></div>';
+      ${decisionMarkup}
+      <footer class="club-mail-message-actions"><button class="primary club-mail-open-full" data-club-mail-open="${escapeCareerHtml(selected.id)}">OPEN FULL EMAIL</button><button class="${selected.saved ? 'saved' : ''}" data-club-action="toggle-selected-save">${selected.saved ? '★ SAVED EMAIL' : '☆ SAVE EMAIL'}</button><button data-club-action="toggle-selected-read">${selected.read ? 'MARK AS UNREAD' : 'MARK AS READ'}</button>${selected.actionRoute && selected.actionRoute !== 'mail' ? `<button data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}</footer>` : '<div class="club-mail-reader-empty"><span aria-hidden="true">✉</span><strong>SELECT A MESSAGE</strong><p>Choose an item from the list to read the full club communication.</p></div>';
     const title = view === 'saved' ? 'SAVED MAIL' : 'INBOX';
     const listLabel = view === 'saved' ? 'SAVED EMAILS' : 'UNREAD & ACTION REQUIRED';
-    return `${typeof renderDevelopmentAlertsStrip === 'function' ? renderDevelopmentAlertsStrip() : ''}<section class="club-mail-client">
+    return `${typeof renderDevelopmentAlertsStrip === 'function' ? renderDevelopmentAlertsStrip() : ''}<section class="club-mail-client" data-mail-presentation="${inlineReader ? 'inline' : 'modal'}">
       <header class="club-mail-toolbar"><div class="club-mail-toolbar-title"><span class="club-mail-toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg></span><div><span>Club communications</span><strong>${title}</strong><small>${escapeCareerHtml(clubCurrentDateLabel())}</small></div></div><div class="club-mail-toolbar-actions"><nav class="club-mail-view-tabs" aria-label="Mail folders"><button type="button" class="${view === 'inbox' ? 'active' : ''}" data-club-mail-view="inbox">INBOX <b>${inboxCount}</b></button><button type="button" class="${view === 'saved' ? 'active' : ''}" data-club-mail-view="saved">SAVED <b>${savedCount}</b></button></nav><span><b>${unread}</b> unread</span>${view === 'inbox' ? `<button data-club-action="mark-all-read" ${inboxCount ? '' : 'disabled'}>CLEAR INBOX</button>` : ''}</div></header>
-      <div class="club-mail-layout"><aside class="club-mail-column"><header><span>${listLabel}</span><small>${messages.length} message${messages.length === 1 ? '' : 's'}</small></header><section class="club-mail-list">${rows}</section></aside><article class="club-mail-reader">${reader}</article></div>
+      <div class="club-mail-layout"><aside class="club-mail-column"><header><span>${listLabel}</span><small>${messages.length} message${messages.length === 1 ? '' : 's'}</small></header><section class="club-mail-list">${rows}</section></aside><article class="club-mail-reader" id="clubMailReader" tabindex="-1" aria-label="Selected email">${reader}</article></div>
     </section>`;
   }
 
@@ -906,6 +926,22 @@
   function handleClubOperationsInput(event) {
     if (typeof handleMatchdayInput === 'function' && handleMatchdayInput(event)) return true;
     return false;
+  }
+
+  const clubMailPresentationMedia = typeof window?.matchMedia === 'function'
+    ? window.matchMedia('(min-width: 1024px)')
+    : null;
+  const syncClubMailPresentation = () => {
+    if (appState !== 'menu' || menuTab !== 'mail') return;
+    if (clubMailUsesInlineReader() && teamNoteOverlayEl && !teamNoteOverlayEl.hidden && teamNoteOverlayEl.dataset.mode === 'mail') {
+      closeTeamNoteModal({ restoreFocus: false });
+    }
+    if (typeof updateMenuUI === 'function') updateMenuUI();
+  };
+  if (typeof clubMailPresentationMedia?.addEventListener === 'function') {
+    clubMailPresentationMedia.addEventListener('change', syncClubMailPresentation);
+  } else if (typeof clubMailPresentationMedia?.addListener === 'function') {
+    clubMailPresentationMedia.addListener(syncClubMailPresentation);
   }
 
   ensureClubOperationsState();

@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.123 extends the Command Skin to bespoke route surfaces while keeping
-the Build 12.121 mobile tactics and Build 12.120 onboarding safeguards intact.
-See `HANDOFF.md` and `AUDIT-12.123.md`.
+Build 12.124 adds the team name beneath the desktop crest and keeps desktop
+emails in the adjacent Inbox reader while preserving the compact mail modal.
+See `HANDOFF.md` and `AUDIT-12.124.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

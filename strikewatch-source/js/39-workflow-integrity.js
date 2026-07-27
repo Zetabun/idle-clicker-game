@@ -635,7 +635,11 @@
     if (!managementArrival || managementArrival.route !== menuTab) return;
     const action = managementActionById(managementArrival.id) || managementArrival;
     requestAnimationFrame(() => {
-      if (action.mailId && menuTab === 'mail' && typeof selectClubMailAndOpen === 'function' && (teamNoteOverlayEl?.hidden ?? true)) {
+      const mailAlreadyInline = action.mailId
+        && typeof clubMailUsesInlineReader === 'function'
+        && clubMailUsesInlineReader()
+        && careerState.selectedMailId === action.mailId;
+      if (action.mailId && !mailAlreadyInline && menuTab === 'mail' && typeof selectClubMailAndOpen === 'function' && (teamNoteOverlayEl?.hidden ?? true)) {
         const trigger = menuContentEl?.querySelector(`[data-club-mail="${String(action.mailId).replace(/"/g, '\\"')}"]`) || null;
         selectClubMailAndOpen(action.mailId, trigger);
         return;

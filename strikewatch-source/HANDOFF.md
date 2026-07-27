@@ -6,23 +6,28 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.123 — Command Skin Depth Pass**
-- Build ID: `12.123.0-command-skin-depth-pass`
+- Build: **12.124 — Desktop Club Identity & Inline Inbox**
+- Build ID: `12.124.0-desktop-club-identity-inline-inbox`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.123.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.124.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
+Build 12.124 shows the active team name beneath the desktop sidebar crest and
+keeps desktop email selection inside the adjacent Inbox reader. Compact/mobile
+email selection continues to use the accessible modal. Decision responses are
+available in both presentations. See `AUDIT-12.124.md`.
+
 Build 12.123 extends the skin to the bespoke route surfaces (section hubs,
 journey strip, gates, metric tiles, recruitment/market panels). Skin changes
-belong in the 12.122/12.123 layers at the end of `css/game.css`. See
+belong in the 12.122/12.123 theme layers near the end of `css/game.css`. See
 `AUDIT-12.123.md`.
 
 Build 12.122 is the management-skin authority: a chrome-only theme layer at
-the end of `css/game.css` gives both presentation targets the modern
+the release end of `css/game.css` gives both presentation targets the modern
 FM-inspired ink/violet palette, green End Day CTA, route-accent navigation and
 elevated card chrome. Change skin colours/chrome there, not in older layers.
 See `AUDIT-12.122.md`.

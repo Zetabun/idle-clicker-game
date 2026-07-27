@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.123';
-  const BUILD_NAME = 'COMMAND SKIN DEPTH PASS';
-  const BUILD_ID = '12.123.0-command-skin-depth-pass';
+  const BUILD_VERSION = '12.124';
+  const BUILD_NAME = 'DESKTOP CLUB IDENTITY & INLINE INBOX';
+  const BUILD_ID = '12.124.0-desktop-club-identity-inline-inbox';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

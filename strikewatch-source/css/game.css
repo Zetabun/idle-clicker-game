@@ -29706,3 +29706,68 @@ body[data-app-state='menu'] { background: var(--skin-ink-0); }
     radial-gradient(110% 70% at 12% -6%, color-mix(in srgb, var(--route-accent, var(--manager-accent)) 7%, transparent), transparent 46%),
     linear-gradient(180deg, #0a1020, #05080f 74%);
 }
+
+
+/* ============================================================================
+   Build 12.124 — Desktop club identity and inline Inbox.
+   Desktop shows the active club name beneath its crest and uses the existing
+   two-column mail reader instead of opening the compact email modal. Mobile
+   retains the established modal interaction below 1024px.
+   ========================================================================== */
+@media (min-width: 1024px) {
+  .menu-club-brand {
+    gap: 7px !important;
+    padding-bottom: 13px !important;
+  }
+  .menu-club-brand-copy {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    justify-items: center;
+    text-align: center;
+  }
+  .menu-club-brand-copy strong {
+    display: -webkit-box !important;
+    max-width: 100%;
+    overflow: hidden;
+    color: #eef5ff;
+    font-size: clamp(11px, .76vw, 13px) !important;
+    line-height: 1.18;
+    letter-spacing: .055em;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    text-overflow: clip !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .menu-club-brand-copy small {
+    display: none !important;
+  }
+
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-reader {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-open-full {
+    display: none;
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-decision {
+    margin: 0 26px 20px;
+    padding: 16px;
+    border-color: rgba(240, 189, 104, .38);
+    background: linear-gradient(145deg, rgba(63, 44, 15, .3), rgba(6, 13, 19, .96));
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-decision > header > span,
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-decision.resolved > span {
+    font-size: 10px;
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-decision > header > strong,
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-decision.resolved > strong {
+    font-size: 17px;
+  }
+  .club-mail-client[data-mail-presentation='inline'] .club-mail-decision small {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+}
