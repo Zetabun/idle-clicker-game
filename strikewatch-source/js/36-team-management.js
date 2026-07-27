@@ -1964,7 +1964,20 @@
         ${firstGuide ? '' : `<aside class="${topAction?.priority || 'standard'}"><span>NEXT MANAGER ACTION</span><strong>${escapeCareerHtml(topAction?.label || 'REVIEW CLUB')}</strong><button ${topAction?.leagueAction ? `data-league-action="${escapeCareerHtml(topAction.leagueAction)}"` : `data-team-route="${escapeCareerHtml(topAction?.route || 'calendar')}"`}>${topAction?.leagueAction ? 'START MATCHMAKING' : `OPEN ${escapeCareerHtml((topAction?.route || 'calendar').replace('barracks', 'finances').toUpperCase())}`}</button></aside>`}
       </section>`;
     const progressMarkup = `${renderCareerXpProgress()}${typeof renderFoundationPath === 'function' ? renderFoundationPath() : ''}`;
-    if (firstGuide) return `${tutorialMarkup}${heroMarkup}${progressMarkup}`;
+    if (firstGuide) {
+      // During the guided match step the full dashboard is hidden, so the
+      // fixture card with the launch/wait action must render here or the
+      // first match cannot be started from the guided path.
+      const guidePlanConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+      const matchDue = fixture.daysLabel === 'TODAY';
+      const guidedMatchMarkup = firstGuide.id === 'match' && !fixture.complete
+        ? `<section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">
+            <header><div><span>YOUR FIRST FIXTURE</span><strong>${escapeCareerHtml(fixture.title)}</strong><small>${escapeCareerHtml(fixture.location)} · ${escapeCareerHtml(fixture.dateLabel)}</small></div><b>${escapeCareerHtml(fixture.daysLabel)}</b></header>
+            <footer><button data-team-route="tactics">REVIEW MATCH PLAN</button>${matchDue && ready && guidePlanConfirmed && !pauseMenu ? '<button class="primary" data-league-action="play-league">START MATCHMAKING</button>' : `<button class="primary" data-team-route="calendar">MATCH ${escapeCareerHtml(fixture.daysLabel)} · USE END DAY</button>`}</footer>
+          </section>`
+        : '';
+      return `${tutorialMarkup}${heroMarkup}${guidedMatchMarkup}${progressMarkup}`;
+    }
     return `${tutorialMarkup}${calendarMarkup}${heroMarkup}${progressMarkup}
       <div class="command-overview-grid">
         <section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">

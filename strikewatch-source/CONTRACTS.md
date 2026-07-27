@@ -55,6 +55,11 @@ current task. Release-specific implementation detail belongs in the matching
 
 - `firstMatchGuidance()` derives the active objective from existing career
   state. Do not add a second saved tutorial progression authority.
+- Guide steps are forward-only: a step whose taught outcome is already
+  achieved (an operator signed, a plan confirmed) counts as complete even if
+  its route-view flag was never set. The guide must never step backwards.
+- The guided `match` step must always expose a working action: start
+  matchmaking when the fixture is due, otherwise point to End Day/calendar.
 - The guide teaches recruitment, one profile, the Active Five, line-up review,
   one match plan, the first match, debrief and one training focus.
 - The guided profile action must select one of the six candidates displayed in

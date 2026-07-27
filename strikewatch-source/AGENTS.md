@@ -56,6 +56,12 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.129 owns the guided opening flow. Keep First Match Guide steps
+forward-only (derived from existing career state, no saved progression
+authority), keep a visible match-launch or End Day action available on the
+guided `match` step, and keep the opening-week day restriction releasing when
+recruitment is stalled by affordability. See `AUDIT-12.129.md`.
+
 Build 12.128 owns portrait-windowed commentary placement. Keep the shared
 commentary dock between the scoreboard and round objective, keep match moments
 and feed rows in normal flow rather than over the arena, and restore the dock

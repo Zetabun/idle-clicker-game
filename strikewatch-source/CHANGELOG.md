@@ -7,6 +7,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.129 | First Match Guide streamlining and opening progression-lock fixes | `AUDIT-12.129.md` |
 | 12.128 | Portrait match commentary in normal scoreboard/objective flow | `AUDIT-12.128.md` |
 | 12.127 | Responsive mobile combat-effectiveness graph and stat readout | `AUDIT-12.127.md` |
 | 12.126 | Mobile tactics layout and fixture-persistent preparation | `AUDIT-12.126.md` |

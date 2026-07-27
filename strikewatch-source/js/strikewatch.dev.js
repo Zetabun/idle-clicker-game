@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.128';
-  const BUILD_NAME = 'PORTRAIT COMMENTARY FLOW';
-  const BUILD_ID = '12.128.0-portrait-commentary-flow';
+  const BUILD_VERSION = '12.129';
+  const BUILD_NAME = 'GUIDED OPENING FLOW';
+  const BUILD_ID = '12.129.0-guided-opening-flow';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -18149,7 +18149,20 @@
         ${firstGuide ? '' : `<aside class="${topAction?.priority || 'standard'}"><span>NEXT MANAGER ACTION</span><strong>${escapeCareerHtml(topAction?.label || 'REVIEW CLUB')}</strong><button ${topAction?.leagueAction ? `data-league-action="${escapeCareerHtml(topAction.leagueAction)}"` : `data-team-route="${escapeCareerHtml(topAction?.route || 'calendar')}"`}>${topAction?.leagueAction ? 'START MATCHMAKING' : `OPEN ${escapeCareerHtml((topAction?.route || 'calendar').replace('barracks', 'finances').toUpperCase())}`}</button></aside>`}
       </section>`;
     const progressMarkup = `${renderCareerXpProgress()}${typeof renderFoundationPath === 'function' ? renderFoundationPath() : ''}`;
-    if (firstGuide) return `${tutorialMarkup}${heroMarkup}${progressMarkup}`;
+    if (firstGuide) {
+      // During the guided match step the full dashboard is hidden, so the
+      // fixture card with the launch/wait action must render here or the
+      // first match cannot be started from the guided path.
+      const guidePlanConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+      const matchDue = fixture.daysLabel === 'TODAY';
+      const guidedMatchMarkup = firstGuide.id === 'match' && !fixture.complete
+        ? `<section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">
+            <header><div><span>YOUR FIRST FIXTURE</span><strong>${escapeCareerHtml(fixture.title)}</strong><small>${escapeCareerHtml(fixture.location)} · ${escapeCareerHtml(fixture.dateLabel)}</small></div><b>${escapeCareerHtml(fixture.daysLabel)}</b></header>
+            <footer><button data-team-route="tactics">REVIEW MATCH PLAN</button>${matchDue && ready && guidePlanConfirmed && !pauseMenu ? '<button class="primary" data-league-action="play-league">START MATCHMAKING</button>' : `<button class="primary" data-team-route="calendar">MATCH ${escapeCareerHtml(fixture.daysLabel)} · USE END DAY</button>`}</footer>
+          </section>`
+        : '';
+      return `${tutorialMarkup}${heroMarkup}${guidedMatchMarkup}${progressMarkup}`;
+    }
     return `${tutorialMarkup}${calendarMarkup}${heroMarkup}${progressMarkup}
       <div class="command-overview-grid">
         <section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">
@@ -33052,14 +33065,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const trainingSet = squad.some(player => player.trainingFocus && player.trainingFocus !== 'none');
     const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
     const firstCareerMatchPlayed = Number(careerState.totalMatches) > 0;
+    const daysToFixture = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    const matchWaitDays = planConfirmed && Number(daysToFixture) > 0 ? Number(daysToFixture) : 0;
+    // Steps only ever move forward: viewing flags are also satisfied by the
+    // outcome they teach (a signed operator implies the market and a candidate
+    // report were used; a confirmed plan implies the line-up was reviewed).
     const steps = [
-      { id: 'recruitment', complete: Boolean(tutorial.marketViewed), route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Start with the six recommended candidates. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
-      { id: 'profile', complete: Boolean(tutorial.profileViewed), route: 'profile', playerId: firstMatchRecommendedProfileId(), label: 'INSPECT ONE OPERATOR PROFILE', detail: 'Open a report to understand the role, strongest attributes, estimated fee and what the operator would add to your current Active Five.', action: 'VIEW PROFILE' },
+      { id: 'recruitment', complete: Boolean(tutorial.marketViewed) || squad.length > 0, route: 'market', label: 'OPEN OPERATOR RECRUITMENT', detail: 'Start with the six recommended candidates. You need five contracted operators before a match can begin.', action: 'OPEN RECRUITMENT' },
+      { id: 'profile', complete: Boolean(tutorial.profileViewed) || squad.length > 0, route: 'profile', playerId: firstMatchRecommendedProfileId(), label: 'INSPECT ONE OPERATOR PROFILE', detail: 'Open a report to understand the role, strongest attributes, estimated fee and what the operator would add to your current Active Five.', action: 'VIEW PROFILE' },
       { id: 'first-signing', complete: squad.length > 0, route: 'market', scrollTarget: 'recruitment-candidates', label: 'RECRUIT YOUR FIRST OPERATOR', detail: 'Select two recommended candidates, read Best Current Fit and Main Trade-off, then negotiate with the one you prefer. The transfer fee leaves Club Cash immediately and the weekly wage uses wage headroom.', action: 'RECRUIT OPERATOR' },
       { id: 'active-five', complete: squad.length >= TEAM_REQUIRED_STARTERS, route: 'market', scrollTarget: 'recruitment-candidates', label: squad.length ? `RECRUIT ${TEAM_REQUIRED_STARTERS - squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 'S'}` : 'BUILD THE ACTIVE FIVE', detail: `${squad.length} of ${TEAM_REQUIRED_STARTERS} deployment places are filled. Follow the remaining team needs, compare two candidates at a time and keep enough Club Cash for fees, wages and loan repayments.`, action: 'CONTINUE RECRUITING' },
-      { id: 'lineup', complete: Boolean(tutorial.squadViewed), route: 'operators', label: 'REVIEW THE ACTIVE FIVE', detail: 'The first five squad positions deploy. Check readiness, roles and equipment, then reorder the line-up only when needed.', action: 'OPEN ACTIVE LINE-UP' },
+      { id: 'lineup', complete: Boolean(tutorial.squadViewed) || planConfirmed || firstCareerMatchPlayed, route: 'operators', label: 'REVIEW THE ACTIVE FIVE', detail: 'The first five squad positions deploy. Check readiness, roles and equipment, then reorder the line-up only when needed.', action: 'OPEN ACTIVE LINE-UP' },
       { id: 'plan', complete: planConfirmed || firstCareerMatchPlayed, route: 'tactics', label: 'CONFIRM ONE MATCH PLAN', detail: 'Choose operator roles, approach, engagement range and team priority, then lock the plan for the match.', action: 'PREPARE TACTICS' },
-      { id: 'match', complete: firstCareerMatchPlayed, route: 'play', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Watch how well they execute the plan in a first-to-three match.', action: 'OPEN MATCH CONTROL' },
+      matchWaitDays
+        ? { id: 'match', complete: firstCareerMatchPlayed, route: 'calendar', label: `ADVANCE ${matchWaitDays} DAY${matchWaitDays === 1 ? '' : 'S'} TO MATCHDAY`, detail: `The match plan is locked and the fixture is ${matchWaitDays} day${matchWaitDays === 1 ? '' : 's'} away. Use END DAY to advance the club calendar — it stays unlocked until matchday.`, action: 'OPEN CALENDAR' }
+        : { id: 'match', complete: firstCareerMatchPlayed, route: 'play', leagueAction: 'play-league', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Start matchmaking and watch how well they execute the plan in a first-to-three match.', action: 'START MATCHMAKING' },
       { id: 'debrief', complete: reportReviewed, route: 'reports', label: 'REVIEW WHAT HAPPENED', detail: 'Read What Worked, Biggest Issue and Next Manager Action before changing the squad or tactics.', action: 'OPEN DEBRIEF' },
       { id: 'training', complete: trainingSet, route: 'training', label: 'SET ONE TRAINING FOCUS', detail: 'Use the debrief recommendation to choose one targeted improvement for an operator.', action: 'OPEN TRAINING' }
     ];
@@ -35912,13 +35932,28 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   let openingWeekAdvanceSummaryState = null;
   let openingWeekBatchAdvanceActive = false;
 
+  function openingWeekRecruitmentStalled(guide) {
+    if (!guide || !['recruitment', 'profile', 'first-signing', 'active-five'].includes(guide.id)) return false;
+    if (careerState.transfers?.activeIncoming) return false;
+    const market = Array.isArray(careerState.market) ? careerState.market : [];
+    if (!market.length) return true;
+    const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : (typeof teamSquadWageBill === 'function' ? teamSquadWageBill() : 0);
+    return !market.some(player => Number(careerState.credits) >= Number(player.fee || 0)
+      && wageBill + Number(player.wage || 0) <= Number(careerState.wageBudget || 0));
+  }
+
   function openingWeekTutorialDayRestriction() {
     if (!careerState.created || typeof firstMatchGuidance !== 'function') return null;
     const guide = firstMatchGuidance();
     if (!guide) return null;
     const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
     const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
-    const calendarNeeded = guide.id === 'match' && planConfirmed && Number(days) > 0;
+    // Time genuinely needs to advance when the guide is waiting on the
+    // scheduled fixture, or when recruitment cannot continue because no
+    // remaining candidate is affordable (income and the weekly market
+    // refresh only arrive through End Day).
+    const calendarNeeded = (guide.id === 'match' && planConfirmed && Number(days) > 0)
+      || openingWeekRecruitmentStalled(guide);
     if (calendarNeeded) return null;
     return {
       active: true,
@@ -36241,10 +36276,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const restrictionRepresented = !restriction || blockers.some(item =>
       item.id === `first-match-guide-${restriction.id}` && item.detail === restriction.detail);
     const markup = openingWeekAgendaMarkup();
+    const guide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
     return {
       ok: checks.length === 6 && restrictionRepresented && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
       restriction,
       restrictionRepresented,
+      recruitmentStalled: openingWeekRecruitmentStalled(guide),
       blockers: blockers.map(item => ({ ...item })),
       checks,
       groupCounts: Object.fromEntries(Object.entries(groups).map(([key, value]) => [key, value.length])),

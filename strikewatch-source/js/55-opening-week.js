@@ -11,13 +11,28 @@
   let openingWeekAdvanceSummaryState = null;
   let openingWeekBatchAdvanceActive = false;
 
+  function openingWeekRecruitmentStalled(guide) {
+    if (!guide || !['recruitment', 'profile', 'first-signing', 'active-five'].includes(guide.id)) return false;
+    if (careerState.transfers?.activeIncoming) return false;
+    const market = Array.isArray(careerState.market) ? careerState.market : [];
+    if (!market.length) return true;
+    const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : (typeof teamSquadWageBill === 'function' ? teamSquadWageBill() : 0);
+    return !market.some(player => Number(careerState.credits) >= Number(player.fee || 0)
+      && wageBill + Number(player.wage || 0) <= Number(careerState.wageBudget || 0));
+  }
+
   function openingWeekTutorialDayRestriction() {
     if (!careerState.created || typeof firstMatchGuidance !== 'function') return null;
     const guide = firstMatchGuidance();
     if (!guide) return null;
     const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
     const planConfirmed = typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
-    const calendarNeeded = guide.id === 'match' && planConfirmed && Number(days) > 0;
+    // Time genuinely needs to advance when the guide is waiting on the
+    // scheduled fixture, or when recruitment cannot continue because no
+    // remaining candidate is affordable (income and the weekly market
+    // refresh only arrive through End Day).
+    const calendarNeeded = (guide.id === 'match' && planConfirmed && Number(days) > 0)
+      || openingWeekRecruitmentStalled(guide);
     if (calendarNeeded) return null;
     return {
       active: true,
@@ -340,10 +355,12 @@
     const restrictionRepresented = !restriction || blockers.some(item =>
       item.id === `first-match-guide-${restriction.id}` && item.detail === restriction.detail);
     const markup = openingWeekAgendaMarkup();
+    const guide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
     return {
       ok: checks.length === 6 && restrictionRepresented && /ADVANCE TO NEXT EVENT|RESOLVE REQUIRED ACTIONS|FOLLOW FIRST MATCH GUIDE/.test(markup) && /REQUIRED BEFORE PROGRESSION/.test(markup) && /MATCH READINESS/.test(markup),
       restriction,
       restrictionRepresented,
+      recruitmentStalled: openingWeekRecruitmentStalled(guide),
       blockers: blockers.map(item => ({ ...item })),
       checks,
       groupCounts: Object.fromEntries(Object.entries(groups).map(([key, value]) => [key, value.length])),

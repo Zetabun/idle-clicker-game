@@ -6,15 +6,25 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.128 — Portrait Commentary Flow**
-- Build ID: `12.128.0-portrait-commentary-flow`
+- Build: **12.129 — Guided Opening Flow**
+- Build ID: `12.129.0-guided-opening-flow`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.128.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.129.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.129 streamlines the First Match Guide: guide steps only move forward
+(signings and a confirmed plan satisfy the earlier view-flag steps), the
+guided match step launches matchmaking directly on matchday and points to End
+Day while the fixture is days away, the guided Command Centre shows a fixture
+launch card during the match step, and the opening-week day restriction
+releases when no market candidate is affordable so recruitment can never
+dead-lock the calendar. **Generated artifacts are pending: run
+`py -3 build.py` twice and complete the release gate before publishing** —
+see `AUDIT-12.129.md`.
 
 Build 12.128 places portrait-windowed match commentary in normal document flow
 between the scoreboard strip and round objective. Match moments, play-by-play
