@@ -1,5 +1,17 @@
 # Release history router
 
+## 12.152 — Preview Fit
+
+- Fixes a Build 12.151 regression: a pre-existing `.career-weapon-inspector.ar4-sentinel` rule outranked the new pivot rule and kept re-applying the old rotation variables, so the AR-4 inspector rendered at a fixed compound angle and dragging turned an already-turned frame. It affected only the AR-4, because it is the only model with a per-class inspector override.
+- Rebuilds the AR-4 magazine as a chain of three segments, each placed where the previous one ended, with the rake increasing five degrees at a time. The old two-segment version left the lower half standing 16 units proud of the joint, and its ribs stopped dead two thirds of the way down.
+- Weapon previews now frame themselves. The rig publishes its own span and centre, each context declares how many model units it wants to show, and CSS derives the scale — the AR-4 thumbnail used to overflow its box by 1.6x and was being cropped. Three hand-tuned overrides deleted.
+- Adds `careerWeaponThumbnailParts()`, the weapon equivalent of the armour thumbnail level of detail armour has had since 12.54. The two inventory thumbnails were 43% of everything on the Armoury page.
+- Stops promoting static 3D rigs to compositor layers: seven permanently promoted elements on the Armoury, of which two ever move, down to two.
+- Armoury page quads 1,270 to 1,046. Frame rate remains unmeasured — the browser pane does not composite.
+- Model geometry and presentation only; weapon and armour statistics, ranges, penetration, handling, saves and match simulation are untouched.
+- Evidence: `AUDIT-12.152.md`.
+
+
 ## 12.151 — Sentinel Rebuild
 
 - Rebuilds the AR-4 Sentinel around real carbine landmarks: a buffer tube under the stock, mirrored recessed handguard cuts instead of black rectangles on one flank, one continuous flat-top rail instead of three stepped top lines, a magazine that curves toward the muzzle, a three-piece trigger guard and a muzzle brake with port cuts.

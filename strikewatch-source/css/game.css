@@ -3353,7 +3353,10 @@
   transform-style: preserve-3d;
   transform: translate3d(0, -8px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom));
   transition: transform .15s ease-out;
-  will-change: transform;
+  /* Build 12.152: `will-change: transform` used to sit here, which promoted
+     EVERY rig to its own permanent compositor layer — seven of them on the
+     Armoury, of which two actually move. Promotion belongs on the elements
+     that are animated, not on the class they happen to share. */
 }
 /* Build 12.151: the live rotation belongs to this pivot, not to
    `--viewer-yaw/pitch` on the rig root. Those are inherited custom properties,
@@ -3526,14 +3529,30 @@
   overflow: hidden;
   perspective: 520px;
 }
+/* Build 12.152: the preview scale is derived, not hand-tuned. `--fit-span` is
+   how many model units this box wants to show; `--model-span` and
+   `--model-centre-*` are published by the rig from its own bounds. The final
+   translate runs innermost, so it is applied in unscaled model units and
+   centres the model's bounding box on the rig origin — which is why a rifle
+   and a pistol both land centred without a per-model nudge. */
 .career-weapon-mini3d .career-weapon-rig {
+  --fit-span: 94;
   left: 50%;
   top: 48%;
-  transform: translate3d(0, -3px, 0) rotateX(-12deg) rotateY(-32deg) scale(.31);
+  transform:
+    translate3d(0, -3px, 0)
+    rotateX(-12deg) rotateY(-32deg)
+    scale(calc(var(--fit-span) / var(--model-span, 304)))
+    translate3d(calc(var(--model-centre-x, 0) * -1px), calc(var(--model-centre-y, 0) * -1px), 0);
   transition: none;
 }
 .career-inventory-item.selected .career-weapon-mini3d .career-weapon-rig {
-  transform: translate3d(0, -3px, 0) rotateX(-9deg) rotateY(-22deg) scale(.33);
+  --fit-span: 100;
+  transform:
+    translate3d(0, -3px, 0)
+    rotateX(-9deg) rotateY(-22deg)
+    scale(calc(var(--fit-span) / var(--model-span, 304)))
+    translate3d(calc(var(--model-centre-x, 0) * -1px), calc(var(--model-centre-y, 0) * -1px), 0);
 }
 
 @media (orientation: portrait) and (max-width: 900px) {
@@ -3545,7 +3564,14 @@
   .career-inspector-controls button { min-height: 32px; font-size: 6px; }
   .career-inventory-thumb { overflow: visible; }
   .career-weapon-mini3d { width: 88px; height: 66px; }
-  .career-weapon-mini3d .career-weapon-rig { transform: translate3d(0, -2px, 0) rotateX(-12deg) rotateY(-32deg) scale(.27); }
+  .career-weapon-mini3d .career-weapon-rig {
+    --fit-span: 80;
+    transform:
+      translate3d(0, -2px, 0)
+      rotateX(-12deg) rotateY(-32deg)
+      scale(calc(var(--fit-span) / var(--model-span, 304)))
+      translate3d(calc(var(--model-centre-x, 0) * -1px), calc(var(--model-centre-y, 0) * -1px), 0);
+  }
 }
 
 /* Build 10.7: unified weapon geometry across inventory, crates and WebGL. */
@@ -11675,21 +11701,26 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
 .gold-store-crate-3d-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(244,215,124,.70); font-size: 7px; letter-spacing: .12em; }
 .gold-store-crate-3d-fallback[hidden] { display: none !important; }
 .gold-store-odds { grid-template-columns: repeat(4, minmax(0,1fr)); }
-.career-weapon-inspector.ar4-sentinel .career-weapon-rig { transform: translate3d(0, 10px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom)) scale(.72); }
-.career-weapon-mini3d.ar4-sentinel .career-weapon-rig { transform: translate3d(-8px, 4px, 0) rotateX(-10deg) rotateY(-28deg) scale(.22); }
+/* Build 12.152 — regression fix. This rule is (0,3,0) and beat the (0,2,0)
+   `.career-weapon-viewer-pivot > .career-weapon-rig` rule introduced in 12.151,
+   so it kept re-applying `rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw))`
+   on top of the pivot's rotation. Those properties are now static defaults, so
+   the AR-4 inspector was rendering at a fixed -10deg/-28deg compound offset and
+   dragging rotated a frame that was already turned. It only ever affected this
+   model, because this is the only model with a per-class inspector override.
+   The rig must carry scale and offset only; rotation belongs to the pivot. */
+.career-weapon-viewer-pivot > .career-weapon-rig.ar4-sentinel { transform: translate3d(0, 10px, 0) scale(var(--viewer-zoom)) scale(.72); }
 .career-crate-model .career-weapon-mini3d.ar4-sentinel .career-weapon-rig { transform: translate3d(-10px, -48px, 0) rotateX(-7deg) rotateY(-21deg) scale(.46); }
-.career-weapon-cuboid.vent-1 .front, .career-weapon-cuboid.vent-2 .front, .career-weapon-cuboid.vent-3 .front, .career-weapon-cuboid.vent-4 .front { box-shadow: inset 0 0 10px #000; }
 @media (max-width: 760px) {
   .gold-store-crate-visual { min-height: 180px; }
   .gold-store-odds { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .career-weapon-inspector.ar4-sentinel .career-weapon-rig { transform: translate3d(0, 8px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom)) scale(.55); }
+  .career-weapon-viewer-pivot > .career-weapon-rig.ar4-sentinel { transform: translate3d(0, 8px, 0) scale(var(--viewer-zoom)) scale(.55); }
 }
 @media (max-width: 480px) {
-  .career-weapon-inspector.ar4-sentinel .career-weapon-rig { transform: translate3d(0, 8px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom)) scale(.40); }
+  .career-weapon-viewer-pivot > .career-weapon-rig.ar4-sentinel { transform: translate3d(0, 8px, 0) scale(var(--viewer-zoom)) scale(.40); }
 }
 @media (max-width: 380px) {
   .gold-store-odds { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .career-weapon-mini3d.ar4-sentinel .career-weapon-rig { transform: translate3d(-6px, 4px, 0) rotateX(-10deg) rotateY(-28deg) scale(.18); }
 }
 
 /* Build 11.66: actionable currency/date headers, command index and finance analytics. */
@@ -14437,7 +14468,9 @@ body[data-view-mode='maximized'] .match-view .owned-decision-grid strong { font-
   transform-style: preserve-3d;
   transform: translate3d(0, 0, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom));
   transition: transform .15s ease-out;
-  will-change: transform;
+  /* Build 12.152: promotion moved to the elements that are actually animated —
+     the armour pivot and the store orbit — so static minis and product views
+     stop holding a permanent compositor layer each. */
 }
 .career-armour-model-system > .career-weapon-rig {
   left: 50%;
@@ -31406,10 +31439,15 @@ body.mail-scroll-armed .club-mail-list {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  will-change: transform;
 }
+/* Build 12.152: every armour rig emits a pivot, but only the inspector's is
+   ever driven — `syncCareerArmourViewerTransform()` selects
+   `[data-career-armour-viewer] [data-career-armour-pivot]`. Promotion is
+   scoped to match, so thumbnails and product views stop being composited
+   layers that never move. */
 .career-armour-inspector .career-armour-viewer-pivot {
   transition: transform .15s ease-out;
+  will-change: transform;
 }
 .career-armour-inspector.dragging .career-armour-viewer-pivot,
 .career-armour-inspector.auto-rotating .career-armour-viewer-pivot {

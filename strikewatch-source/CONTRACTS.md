@@ -63,6 +63,20 @@ current task. Release-specific implementation detail belongs in the matching
 - A per-frame animation must not be driven by writing an inherited custom
   property onto an ancestor of a large CSS-3D subtree; that invalidates every
   descendant. Animate a dedicated wrapper's own `transform`.
+- A preview box frames its model by derivation, never by a typed scale. The rig
+  publishes `--model-span` and `--model-centre-x/y` measured from the parts it
+  actually draws; the context declares `--fit-span`, the number of model units
+  it wants to show. The centring translate must be the innermost transform so
+  it applies in unscaled model units. Adding a per-model scale override is the
+  defect this replaced, not a fix for it.
+- `will-change` belongs only on elements that are actually animated. Declaring
+  it on a shared rig class promotes every instance to a permanent compositor
+  layer; scope it to the pivot or the animated wrapper, matching whatever
+  selector the driving JavaScript uses.
+- Moving a transform onto a wrapper invalidates every per-model or per-context
+  override of the element it was moved off. Those overrides are usually more
+  specific and will keep re-applying the old transform against variables that
+  have become static defaults. Grep for the class before shipping the move.
 - The CSS-3D menu models are **quad-bound**, not paint-bound: their frame cost
   tracks the number of face elements, near enough linearly, and is independent
   of what those faces are painted with. Detail must therefore be proportionate

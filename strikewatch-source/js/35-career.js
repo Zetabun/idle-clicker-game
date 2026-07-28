@@ -3649,13 +3649,37 @@
       add('trigger', 'gunmetal', -82, 56, 0, 9, 26, 9, -14);
 
       // A box magazine curves toward the muzzle at its base — a NEGATIVE rake
-      // under the 12.149 convention. Two segments and a base plate that follows
-      // the lower one carry that line.
-      addRounded('magazine', 'gunmetal', -14, 78, 0, 70, 96, 46, -5);
-      addRounded('mag-lower', 'gunmetal', -2, 138, 0, 66, 48, 44, -15);
-      addRounded('mag-base', 'dark-metal', 6, 168, 0, 76, 15, 48, -15);
-      add('mag-rib-front', 'metal-edge', 6, 82, 22.4, 6, 78, 4, -5);
-      add('mag-rib-rear', 'metal-edge', -36, 78, 22.4, 6, 74, 4, -5);
+      // under the 12.149 convention.
+      //
+      // Build 12.152: this was two segments at -5 and -15 degrees, each placed
+      // by hand. A 10-degree step between neighbours of different widths left
+      // the lower segment's front corner standing 16 units proud of the upper
+      // one's bottom edge, which read as a broken notch halfway down the
+      // magazine. The segments are now a chain — each one starts exactly where
+      // the previous one ended — with the rake increasing 5 degrees at a time
+      // and every segment the same width, so the walls stay near flush. The
+      // ribs are gone: they ran only as far as the old first segment and
+      // stopped dead in mid-air, and the seams between chained segments already
+      // give the magazine its form.
+      const magSegments = [{ h: 46, rz: -4 }, { h: 46, rz: -9 }, { h: 44, rz: -14 }];
+      let magX = -16;
+      let magY = 34;
+      let magRz = 0;
+      magSegments.forEach((segment, index) => {
+        const rake = (segment.rz * Math.PI) / 180;
+        const half = segment.h / 2;
+        // +2 on the drawn height overlaps each joint so no seam can open up.
+        addRounded(index === 0 ? 'magazine' : `mag-segment-${index}`, 'gunmetal',
+          magX - half * Math.sin(rake), magY + half * Math.cos(rake), 0,
+          68, segment.h + 4, 46, segment.rz);
+        magX -= segment.h * Math.sin(rake);
+        magY += segment.h * Math.cos(rake);
+        magRz = segment.rz;
+      });
+      const magBaseRake = (magRz * Math.PI) / 180;
+      addRounded('mag-base', 'dark-metal',
+        magX - 7 * Math.sin(magBaseRake), magY + 7 * Math.cos(magBaseRake), 0,
+        78, 16, 48, magRz);
 
       // One continuous flat-top rail from the receiver to the front sight, not
       // a stepped stack of three top lines. The rail slots are a repeating
@@ -3703,6 +3727,33 @@
 
   function careerWeapon3dParts(weapon) {
     return careerWeaponVisualParts(weapon);
+  }
+
+  // Build 12.152: the inventory list drew the full inspection model into a
+  // 104x76px box — 392 quads for the AR-4, 43% of everything on the Armoury
+  // page, at a scale where one model unit is about a tenth of a pixel. Armour
+  // has had `careerArmourThumbnailParts()` for this since 12.54; weapons never
+  // got the equivalent. This keeps the volumes that carry the silhouette and
+  // drops everything that cannot resolve. Whitelisted rather than blacklisted
+  // so a new weapon part is left out of thumbnails until someone decides it
+  // belongs there.
+  const CAREER_WEAPON_THUMBNAIL_VOLUMES = [
+    /^stock$/, /^stock-comb$/, /^stock-brace$/, /^butt-pad$/, /^buffer-tube$/,
+    /^slide$/, /^slide-top$/, /^slide-cap$/, /^slide-rail$/, /^frame$/,
+    /^receiver$/, /^upper-receiver$/, /^lower-receiver$/, /^magwell$/,
+    /^receiver-collar$/, /^charging-handle$/,
+    /^handguard$/, /^handguard-top$/, /^handguard-bottom$/, /^handguard-endcap$/,
+    /^gas-block$/, /^barrel$/, /^barrel-step$/, /^muzzle$/, /^muzzle-collar$/,
+    /^compensator$/,
+    /^grip$/, /^grip-tang$/, /^grip-backstrap$/, /^pistol-grip$/, /^grip-beavertail$/,
+    /^magazine$/, /^mag-segment-\d+$/, /^mag-base$/,
+    /^trigger-guard$/, /^support-grip$/, /^rail$/, /^top-rail$/,
+    /^rear-sight$/, /^front-sight$/, /^rear-sight-base$/, /^front-sight-base$/
+  ];
+
+  function careerWeaponThumbnailParts(weapon) {
+    return careerWeaponVisualParts(weapon)
+      .filter(part => CAREER_WEAPON_THUMBNAIL_VOLUMES.some(pattern => pattern.test(part.className)));
   }
 
   function careerAr4ModelAudit() {
@@ -3791,7 +3842,10 @@
   }
 
   function careerWeaponVisualBounds(weapon) {
-    const parts = careerWeaponVisualParts(weapon);
+    return careerWeaponPartsBounds(careerWeaponVisualParts(weapon));
+  }
+
+  function careerWeaponPartsBounds(parts) {
     const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
     for (const part of parts) {
       bounds.minX = Math.min(bounds.minX, part.x - part.w * 0.5);
@@ -4009,8 +4063,8 @@
       .map(part => part.className)
       .sort();
     // Every authored magazine part must ride the reload transform. The set is
-    // no longer exactly two: the AR-4 carries a curved lower segment and two
-    // ribs, all of which have to travel with the body and the base plate.
+    // no longer exactly two: the AR-4's magazine is a chain of curved segments,
+    // all of which have to travel with the body and the base plate.
     const magazineAssemblyMovesTogether = magazineAssemblyParts.includes('magazine') &&
       magazineAssemblyParts.includes('mag-base') &&
       careerWeaponVisualParts(CAREER_WEAPON_CATALOG['ar4-sentinel'])
@@ -4054,19 +4108,48 @@
     return `rotateX(${careerWeaponViewerState.pitch}deg) rotateY(${careerWeaponViewerState.yaw}deg)`;
   }
 
+  // Build 12.152: the framing of a weapon in a preview box used to be a
+  // hand-tuned scale and nudge per model class per context, so the AR-4 kept
+  // needing its own override and still overflowed its inventory thumbnail by
+  // 1.6x — the model was cropped, which is what made the previews look wrong.
+  // The rig now publishes its own measurements and CSS derives the fit, so any
+  // weapon lands centred in any box without a magic number.
+  // Measured from the parts actually drawn, not from the full model: a
+  // thumbnail rendering the reduced part set is physically smaller, and framing
+  // it by the full model's bounds would leave it undersized in its box.
+  function careerWeaponFrameStyle(parts) {
+    const bounds = careerWeaponPartsBounds(parts);
+    const span = Math.max(1, Math.round(bounds.maxX - bounds.minX));
+    const rise = Math.max(1, Math.round(bounds.maxY - bounds.minY));
+    return [
+      `--model-span:${span}`,
+      `--model-rise:${rise}`,
+      `--model-centre-x:${Math.round((bounds.minX + bounds.maxX) * 0.5)}`,
+      `--model-centre-y:${Math.round((bounds.minY + bounds.maxY) * 0.5)}`
+    ].join(';');
+  }
+
   function careerWeapon3dMarkup(weapon, context = 'detail', interactive = true, skinId = null) {
     const modelClass = weapon?.modelClass || 'service-p12';
     const resolvedSkin = skinId || weapon?.skinId || null;
     const skinClass = resolvedSkin ? ` skin-${resolvedSkin}` : '';
-    const parts = careerWeapon3dParts(weapon).map(careerWeaponPartMarkup).join('');
     // Only the interactive inspector carries the viewer state. The inventory
     // thumbnails have their own fixed CSS transform, so writing viewer custom
     // properties onto them cost a full subtree style invalidation per frame and
     // moved nothing.
     if (!interactive) {
-      return `<span class="career-weapon-mini3d ${modelClass} ${context}" aria-hidden="true"><div class="career-weapon-rig ${modelClass}${skinClass}">${parts}</div></span>`;
+      // The inventory list draws into a 104x76px box. Anything below the volumes
+      // that carry the silhouette is under a pixel there, so it uses the
+      // thumbnail level of detail; the crate reveal and store cards are shown
+      // large enough to keep the full model.
+      const thumbnail = context === 'inventory';
+      const source = thumbnail ? careerWeaponThumbnailParts(weapon) : careerWeapon3dParts(weapon);
+      const miniParts = source.map(careerWeaponPartMarkup).join('');
+      return `<span class="career-weapon-mini3d ${modelClass} ${context}" aria-hidden="true"><div class="career-weapon-rig ${modelClass}${skinClass}" style="${careerWeaponFrameStyle(source)}">${miniParts}</div></span>`;
     }
-    const content = `<div class="career-weapon-rig ${modelClass}${skinClass}" data-career-weapon-rig style="${careerWeaponViewerTransform()}">${parts}</div>`;
+    const source = careerWeapon3dParts(weapon);
+    const parts = source.map(careerWeaponPartMarkup).join('');
+    const content = `<div class="career-weapon-rig ${modelClass}${skinClass}" data-career-weapon-rig style="${careerWeaponFrameStyle(source)};${careerWeaponViewerTransform()}">${parts}</div>`;
     return `
       <div class="career-weapon-inspector ${modelClass}" data-career-weapon-viewer data-weapon-id="${weapon.id}">
         <div class="career-inspector-stage" aria-label="Interactive 3D model of ${escapeCareerHtml(weapon.name)}. Drag or swipe to rotate.">

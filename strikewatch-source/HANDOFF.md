@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.151 — Sentinel Rebuild**
-- Build ID: `12.151.0-sentinel-rebuild`
+- Build: **12.152 — Preview Fit**
+- Build ID: `12.152.0-preview-fit`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.151.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.152.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.152 fixes a regression 12.151 shipped and finishes the preview work. **A pre-existing `.career-weapon-inspector.ar4-sentinel` rule is (0,3,0) and outranked the new (0,2,0) `.career-weapon-viewer-pivot > .career-weapon-rig` rule**, so it kept re-applying `rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw))` — variables that are now static defaults — and the AR-4 inspector rendered at a fixed compound angle while dragging turned an already-turned frame. Only that model was affected, because it is the only one with a per-class inspector override: when you move a transform to a wrapper, grep for every per-model override of the element you moved it off. The AR-4 magazine is now a computed chain of three segments rather than two hand-placed ones whose walls crossed. Weapon previews frame themselves — the rig publishes `--model-span`/`--model-centre-*` from the parts it actually draws and each context declares `--fit-span`, replacing four hand-tuned AR-4 scales that still left the thumbnail cropped at 1.6x its box. `careerWeaponThumbnailParts()` gives weapons the thumbnail LOD armour has had since 12.54, and `will-change` now sits only on elements that animate (seven promoted layers on the Armoury down to two). Armoury quads 1,270 to 1,046; the depot is unchanged at 1,268. **Frame rate is still unmeasured — `requestAnimationFrame` fires zero frames in a browser pane that is not displayed, confirmed with a probe.** See `AUDIT-12.152.md`.
 
 Build 12.151 rebuilds the AR-4 and attacks the menu 3D cost. Profiling the Supply Depot first settled what the cost actually was: the game's own JavaScript ran at 1.59ms with zero long tasks inside a 58ms frame, and hiding the four armour rigs dropped it to 4.2ms. Stripping every filter, shadow and border off the faces changed nothing; halving the *number* of faces halved the frame. **These surfaces are quad-bound, not paint-bound** — detail must be proportionate to the size drawn, which is now a `CONTRACTS.md` invariant. The Armoury had a separate and worse fault: `syncCareerWeaponViewerTransform()` wrote inherited `--viewer-*` properties onto every weapon rig per rotation step, including thumbnails that ignore them — the exact pattern 12.142 diagnosed, fixed for armour and then banned. Weapons now rotate a dedicated pivot: 7.63ms per step to 0.015ms. The depot sheds 48% of its rendered quads via a store LOD, thin-part face culling shared by every model, underside culling on the fixed-pitch store orbit, and off-screen cards that stop rendering. **The depot is better but still the heaviest surface in the game, and its frame-interval re-measurement is outstanding — the browser pane stopped compositing, and rAF does not fire in a pane that is not displayed.** The AR-4 gains a buffer tube, mirrored recessed handguard cuts, one continuous flat-top rail, a forward-curving magazine, a three-piece trigger guard, and a grip rake corrected from -12 to +14 (it pointed the butt at the target; 12.149 fixed that sign only through the shared sidearm assembly). See `AUDIT-12.151.md`.
 
