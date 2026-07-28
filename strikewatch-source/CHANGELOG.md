@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.150 — Grip Tang
+
+- Closes the gap where the grip meets the frame. A raked grip met a horizontal frame underside at an angle, leaving a wedge that made the handle read as detached even though the parts genuinely overlapped.
+- Every sidearm gains a grip tang carrying half the rake, which transitions between frame and grip the way a real frame does.
+- Fixes the Viper 9 trigger, which was 32 units tall against an 11-unit guard bar and hung 22 units below its own guard. The Viper now has a proper three-piece guard bow with the trigger seated inside it.
+- Model geometry only; weapon statistics, ranges, penetration and handling are untouched.
+- Evidence: `AUDIT-12.150.md`.
+
+
 ## 12.149 — Grip Rake
 
 - Fixes the pistol grips, which raked forward so the handle pointed at the target instead of trailing behind it.

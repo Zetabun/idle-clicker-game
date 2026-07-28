@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.149';
-  const BUILD_NAME = 'Grip Rake';
-  const BUILD_ID = '12.149.0-grip-rake';
+  const BUILD_VERSION = '12.150';
+  const BUILD_NAME = 'Grip Tang';
+  const BUILD_ID = '12.150.0-grip-tang';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -14317,6 +14317,15 @@
       const panel = aboutGrip(panelX, panelY);
       const magazine = aboutGrip(magazineX, magazineY);
       const magBase = aboutGrip(magBaseX, magBaseY);
+      // Build 12.150: a raked grip meets the horizontal underside of the frame
+      // at an angle, leaving a wedge-shaped gap on one side. The connectivity
+      // audit tolerates it — the parts still overlap — but it reads as a
+      // detached handle. This tang fills the junction, carrying half the rake
+      // so it transitions between the frame and the grip, exactly as the grip
+      // tang of a real frame does.
+      const gripTop = aboutGrip(gripX, gripY - gripH / 2);
+      add('grip-tang', backstrapMaterial, gripTop.x, gripTop.y + 4, 0,
+        gripW * 0.92, 30, gripD * 0.94, gripRz * 0.5);
       add('grip', material, gripX, gripY, 0, gripW, gripH, gripD, gripRz);
       add('grip-backstrap', backstrapMaterial, backstrap.x, backstrap.y, 0, backstrapW, backstrapH, backstrapD, gripRz);
       add('grip-panel-left', panelMaterial, panel.x, panel.y, panelZ, panelW, panelH, panelD, gripRz);
@@ -14360,7 +14369,7 @@
       add('trigger-guard', 'dark-metal', 58, 24, 0, 15, 34, 30, -12);
       add('trigger-guard-bow', 'dark-metal', 30, 44, 0, 72, 11, 30);
       add('trigger-guard-rear', 'dark-metal', -6, 30, 0, 13, 30, 30, 8);
-      add('trigger', 'metal-edge', 24, 34, 0, 9, 28, 8, -17);
+      add('trigger', 'metal-edge', 24, 30, 0, 9, 20, 8, -17);
       add('rear-sight', 'metal-edge', -92, -64, 0, 22, 12, 38);
       add('front-sight', 'metal-edge', 92, -63, 0, 12, 11, 30);
       // Recessed port: a shadowed well with the cut standing proud of it, so
@@ -14383,8 +14392,12 @@
         magazineMaterial: 'gunmetal', magazineX: -67, magazineY: 125, magazineW: 49, magazineH: 22, magazineD: 33,
         magBaseMaterial: 'dark-metal', magBaseX: -69, magBaseY: 139, magBaseW: 56, magBaseH: 11, magBaseD: 29, magBaseRz: 12
       });
-      add('trigger-guard', 'dark-metal', 24, 27, 0, 66, 11, 31);
-      add('trigger', 'metal-edge', 13, 39, 0, 8, 32, 7, -15);
+      // Build 12.150: was a single bar at y 27 with a 32-tall trigger blade at
+      // y 39, so the trigger hung straight through and below its own guard.
+      add('trigger-guard', 'dark-metal', 50, 22, 0, 14, 32, 29, -12);
+      add('trigger-guard-bow', 'dark-metal', 24, 40, 0, 66, 10, 29);
+      add('trigger-guard-rear', 'dark-metal', -9, 27, 0, 12, 28, 29, 8);
+      add('trigger', 'metal-edge', 19, 28, 0, 8, 20, 7, -15);
       add('rear-sight', 'metal-edge', -84, -66, 0, 20, 11, 34);
       add('front-sight', 'metal-edge', 68, -65, 0, 12, 10, 30);
       add('ejection-port', 'black', 12, -38, 19.4, 54, 17, 4);

@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.149 — Grip Rake
-Build ID: 12.149.0-grip-rake
+Build 12.150 — Grip Tang
+Build ID: 12.150.0-grip-tang
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,8 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.150 owns the grip tang and trigger seating; the connectivity audit
+cannot tell you whether a joint LOOKS solid, so review against a capture.
 Build 12.149 owns the grip rake convention: +x is toward the muzzle, +y is
 down, and a POSITIVE gripRz rakes the grip rearward. Verify by reading the
 rendered mag-base x against grip x, not by eye.

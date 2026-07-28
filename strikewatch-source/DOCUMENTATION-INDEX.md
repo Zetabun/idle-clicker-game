@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.149 — Grip Rake
-- Standalone: `dist/strikewatch-build-12.149.html`
+- Build 12.150 — Grip Tang
+- Standalone: `dist/strikewatch-build-12.150.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

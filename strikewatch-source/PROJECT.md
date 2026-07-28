@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.149 corrects the grip rake direction on every sidearm, so handles
-trail away from the muzzle instead of pointing at the target.
-See `HANDOFF.md` and `AUDIT-12.149.md`.
+Build 12.150 closes the grip-to-frame joint with a tang and seats each trigger
+inside its guard.
+See `HANDOFF.md` and `AUDIT-12.150.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

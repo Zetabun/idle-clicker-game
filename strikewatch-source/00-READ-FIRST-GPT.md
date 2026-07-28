@@ -11,6 +11,6 @@ Read:
 Then load only the task-specific section or audit selected by the routing table
 in `HANDOFF.md`. Do not read every Markdown file or every historical audit.
 
-Current release: **Strikewatch Build 12.149 — Grip Rake**.
+Current release: **Strikewatch Build 12.150 — Grip Tang**.
 Editable source is this directory; root `cod.html` is the deployed copy of the
 verified generated standalone.
