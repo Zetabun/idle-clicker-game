@@ -1,5 +1,17 @@
 # Release history router
 
+## 12.151 — Sentinel Rebuild
+
+- Rebuilds the AR-4 Sentinel around real carbine landmarks: a buffer tube under the stock, mirrored recessed handguard cuts instead of black rectangles on one flank, one continuous flat-top rail instead of three stepped top lines, a magazine that curves toward the muzzle, a three-piece trigger guard and a muzzle brake with port cuts.
+- Corrects the AR-4 pistol grip rake, which pointed the butt at the target. Build 12.149 fixed that sign on every sidearm through the shared grip assembly; the AR-4 authors its grip directly and was missed.
+- Fixes the Armoury loadout screen, which wrote inherited custom properties onto every weapon rig once per rotation step — including the inventory thumbnails, which ignore them. 7.63ms per step down to 0.015ms.
+- Cuts the Supply Depot's rendered 3D quads by 48%: a store level of detail, thin-part face culling shared by every model, underside culling on the fixed-pitch store orbit, and off-screen cards that stop rendering.
+- The depot is improved but still the heaviest surface in the game, and its frame-time re-measurement is outstanding.
+- Every magazine part now travels with the reload; the AR-4's magazine ribs used to hang in mid-air while the magazine dropped.
+- Model geometry and presentation only; weapon and armour statistics, ranges, penetration, handling, saves and match simulation are untouched.
+- Evidence: `AUDIT-12.151.md`.
+
+
 ## 12.150 — Grip Tang
 
 - Closes the gap where the grip meets the frame. A raked grip met a horizontal frame underside at an angle, leaving a wedge that made the handle read as detached even though the parts genuinely overlapped.

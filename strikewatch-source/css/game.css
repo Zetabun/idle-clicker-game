@@ -3355,7 +3355,28 @@
   transition: transform .15s ease-out;
   will-change: transform;
 }
-.career-weapon-inspector.dragging .career-weapon-rig { transition: none; }
+/* Build 12.151: the live rotation belongs to this pivot, not to
+   `--viewer-yaw/pitch` on the rig root. Those are inherited custom properties,
+   so changing them once per frame invalidated the computed style of every
+   cuboid face beneath them. Same defect, and same fix, as Build 12.142's
+   armour viewer. */
+.career-weapon-viewer-pivot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(-10deg) rotateY(-28deg);
+  transition: transform .15s ease-out;
+  will-change: transform;
+}
+.career-weapon-viewer-pivot > .career-weapon-rig {
+  transform: translate3d(0, -8px, 0) scale(var(--viewer-zoom));
+  transition: none;
+  will-change: auto;
+}
+.career-weapon-inspector.dragging .career-weapon-viewer-pivot { transition: none; }
 .career-weapon-cuboid {
   position: absolute;
   left: 0;
@@ -3428,6 +3449,18 @@
 .career-weapon-cuboid.worn-metal .face { background: linear-gradient(145deg, #685f55, #34383b 34%, #151b1f 72%, #080c0e); }
 .career-weapon-cuboid.worn-polymer .face { background: linear-gradient(145deg, #3b3a37, #20292c 46%, #0c1214); }
 .career-weapon-cuboid.brass .face { background: linear-gradient(145deg, #b98934, #604213 56%, #241706); }
+/* Build 12.151: a picatinny rail reads as cross-slots. Drawing those as
+   cuboids would cost dozens of extra 3D quads on a surface that is quad-bound
+   already, so the slots are a repeating material on the faces that show them. */
+.career-weapon-cuboid.picatinny .face { background: linear-gradient(145deg, #79838a, #303c44 45%, #0d1418); }
+.career-weapon-cuboid.picatinny .top,
+.career-weapon-cuboid.picatinny .front,
+.career-weapon-cuboid.picatinny .back {
+  background:
+    repeating-linear-gradient(90deg, rgba(3,7,10,.66) 0 3px, rgba(168,184,194,.14) 3px 5px, rgba(0,0,0,0) 5px 10px),
+    linear-gradient(145deg, #79838a, #303c44 45%, #0d1418);
+}
+.career-weapon-cylinder.picatinny .cylinder-face { background: linear-gradient(145deg, #79838a, #303c44 45%, #0d1418); }
 .career-weapon-cuboid.blue-accent .face { background: linear-gradient(90deg, #1a638e, #54b7e8); box-shadow: 0 0 10px rgba(82,173,255,.25); }
 .career-weapon-cuboid.green-accent .face { background: linear-gradient(90deg, #216b50, #5bd09a); box-shadow: 0 0 10px rgba(88,214,155,.25); }
 .career-weapon-cylinder.gunmetal .cylinder-face { background: linear-gradient(145deg, #5c6972, #24313a 42%, #0b1217 82%); }
@@ -3442,6 +3475,11 @@
 .career-weapon-cylinder.blue-accent .cylinder-face { background: linear-gradient(90deg, #1a638e, #54b7e8); box-shadow: 0 0 10px rgba(82,173,255,.25); }
 .career-weapon-cylinder.green-accent .cylinder-face { background: linear-gradient(90deg, #216b50, #5bd09a); box-shadow: 0 0 10px rgba(88,214,155,.25); }
 .career-weapon-cuboid.ejection-port .front,
+.career-weapon-cuboid.ejection-well .front,
+.career-weapon-cuboid.handguard-slot .front,
+.career-weapon-cuboid.muzzle-port-left .front,
+.career-weapon-cuboid.muzzle-port-right .front,
+.career-weapon-cuboid.muzzle-port-top .front,
 .career-weapon-cuboid.cut-1 .front,
 .career-weapon-cuboid.cut-2 .front,
 .career-weapon-cuboid.cut-3 .front,
@@ -3502,7 +3540,7 @@
   .career-loadout-preview { min-height: 260px; }
   .career-weapon-inspector { min-height: 260px; grid-template-rows: minmax(210px, 1fr) auto; }
   .career-inspector-stage { min-height: 210px; }
-  .career-weapon-rig { transform: translate3d(0, -5px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom)) scale(.78); }
+  .career-weapon-viewer-pivot > .career-weapon-rig { transform: translate3d(0, -5px, 0) scale(var(--viewer-zoom)) scale(.78); }
   .career-inspector-controls { grid-template-columns: repeat(3, 1fr); }
   .career-inspector-controls button { min-height: 32px; font-size: 6px; }
   .career-inventory-thumb { overflow: visible; }
@@ -18392,6 +18430,11 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   margin: 0;
   overflow: hidden;
   perspective: 1260px;
+  /* Build 12.151: a card scrolled out of the depot stops rendering its orbit
+     entirely. The models are already clipped to this box, so containment
+     changes nothing that was visible. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100% auto 232px;
   border-color: rgba(119,181,213,.18);
   background:
     radial-gradient(circle at 49% 38%, rgba(101,190,239,.22), transparent 31%),
@@ -18437,6 +18480,11 @@ body[data-minimap='visible'] .command-pulse-panel { display: none !important; }
   82% { transform: translate3d(0, 0, 0) rotateX(-7deg) rotateY(276deg) scale(var(--armour-store-scale)); }
   94%, 100% { transform: translate3d(0, 0, 0) rotateX(-7deg) rotateY(330deg) scale(var(--armour-store-scale)); }
 }
+/* Build 12.151: the store orbit holds its pitch between -5deg and -7deg for
+   the whole cycle, so the underside of every part faces away from the camera
+   at all times. `backface-visibility: hidden` already stopped painting them,
+   but the boxes still cost a 3D quad each, and this surface is quad-bound. */
+.cash-armour-visual .career-weapon-cuboid .bottom { display: none; }
 .cash-armour-visual .armour-rig-label { display: none; }
 .career-armour-store-caption {
   position: absolute;

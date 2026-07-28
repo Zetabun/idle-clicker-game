@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.150';
-  const BUILD_NAME = 'Grip Tang';
-  const BUILD_ID = '12.150.0-grip-tang';
+  const BUILD_VERSION = '12.151';
+  const BUILD_NAME = 'Sentinel Rebuild';
+  const BUILD_ID = '12.151.0-sentinel-rebuild';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

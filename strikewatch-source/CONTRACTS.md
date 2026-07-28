@@ -63,6 +63,14 @@ current task. Release-specific implementation detail belongs in the matching
 - A per-frame animation must not be driven by writing an inherited custom
   property onto an ancestor of a large CSS-3D subtree; that invalidates every
   descendant. Animate a dedicated wrapper's own `transform`.
+- The CSS-3D menu models are **quad-bound**, not paint-bound: their frame cost
+  tracks the number of face elements, near enough linearly, and is independent
+  of what those faces are painted with. Detail must therefore be proportionate
+  to the size a surface actually draws at — a model authored for a 610px
+  inspector cannot be dropped unchanged into a 232px card, and four of them
+  cannot share a page. Measure by hiding the rigs and comparing frame interval
+  against `document.body.dataset.runtimeFrameMs`; if the game's own JavaScript
+  is cheap and the frame interval is not, the geometry is the cost.
 - Earned progress must be written before the manager can plausibly leave.
   Returning to HQ, ending the day and the page being hidden or closed are all
   save checkpoints; no path back to HQ may skip one.

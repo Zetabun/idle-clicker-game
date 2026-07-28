@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.150 — Grip Tang**
-- Build ID: `12.150.0-grip-tang`
+- Build: **12.151 — Sentinel Rebuild**
+- Build ID: `12.151.0-sentinel-rebuild`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.150.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.151.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.151 rebuilds the AR-4 and attacks the menu 3D cost. Profiling the Supply Depot first settled what the cost actually was: the game's own JavaScript ran at 1.59ms with zero long tasks inside a 58ms frame, and hiding the four armour rigs dropped it to 4.2ms. Stripping every filter, shadow and border off the faces changed nothing; halving the *number* of faces halved the frame. **These surfaces are quad-bound, not paint-bound** — detail must be proportionate to the size drawn, which is now a `CONTRACTS.md` invariant. The Armoury had a separate and worse fault: `syncCareerWeaponViewerTransform()` wrote inherited `--viewer-*` properties onto every weapon rig per rotation step, including thumbnails that ignore them — the exact pattern 12.142 diagnosed, fixed for armour and then banned. Weapons now rotate a dedicated pivot: 7.63ms per step to 0.015ms. The depot sheds 48% of its rendered quads via a store LOD, thin-part face culling shared by every model, underside culling on the fixed-pitch store orbit, and off-screen cards that stop rendering. **The depot is better but still the heaviest surface in the game, and its frame-interval re-measurement is outstanding — the browser pane stopped compositing, and rAF does not fire in a pane that is not displayed.** The AR-4 gains a buffer tube, mirrored recessed handguard cuts, one continuous flat-top rail, a forward-curving magazine, a three-piece trigger guard, and a grip rake corrected from -12 to +14 (it pointed the butt at the target; 12.149 fixed that sign only through the shared sidearm assembly). See `AUDIT-12.151.md`.
 
 Build 12.150 closes the grip joint and seats the triggers. A raked grip meets the horizontal underside of the frame at an angle, leaving a wedge gap that `weaponGeometryIntegrityForTest()` tolerates — overlapping parts still count as one component — but which reads as a detached handle. `addGripAssembly()` now emits a `grip-tang` carrying half the rake, so every sidearm gained one. The Viper's trigger was 32 tall at y 39 against a guard bar at y 27, so it hung 22 units below its own guard; it now has the three-piece bow and a trigger seated inside it. Note the gate cannot answer "does this look right" — review weapon changes against a capture. See `AUDIT-12.150.md`.
 

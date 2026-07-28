@@ -765,6 +765,41 @@
     return parts;
   }
 
+  // Build 12.151: the Supply Depot draws four carriers at once inside 232px
+  // cards. At that size the trim authored for the 610px inspector — 3px MOLLE
+  // rows, 3px seams, 5px buckles and caps, the radio cable and antenna — is
+  // sub-pixel, but each one still costs a set of 3D quads, and the depot page
+  // is quad-bound: hiding the rigs took the frame from ~58ms to 4.2ms while the
+  // game's own JavaScript stayed at 1.6ms. The store keeps every volume that
+  // carries the silhouette and drops what cannot resolve.
+  const CAREER_ARMOUR_STORE_OMITTED = [
+    /^molle-row$/,
+    /^rear-molle-row$/,
+    /^center-seam$/,
+    /^cummerbund-rib-/,
+    /^strap-anchor-/,
+    /^strap-buckle-/,
+    /^side-buckle-/,
+    /^pouch-clip-/,
+    /^pouch-cap-/,
+    /^side-pouch-cap-/,
+    /^rear-pouch-cap-/,
+    /^plate-cap$/,
+    /^rear-id-panel$/,
+    /^radio-screen$/,
+    /^radio-antenna$/,
+    /^radio-cable$/,
+    /^drag-handle-post-/,
+    /^strap-back-/,
+    /^rear-hem-/,
+    /^radio-clip-/
+  ];
+
+  function careerArmourStoreParts(armour) {
+    return careerArmour3dParts(armour)
+      .filter(part => !CAREER_ARMOUR_STORE_OMITTED.some(pattern => pattern.test(part.className)));
+  }
+
   function careerArmourThumbnailParts(armour) {
     const essentialPatterns = [
       /^shell-(?:front|back)-(?:core|wing)/,
@@ -853,7 +888,9 @@
     const showStoreForm = mode === 'store' || mode === 'display';
     const compactModel = mode === 'thumbnail' || mode === 'compact';
     const productOnly = mode === 'product' || mode === 'armour-only';
-    const armourSource = compactModel ? careerArmourThumbnailParts(armour) : careerArmour3dParts(armour);
+    const armourSource = compactModel
+      ? careerArmourThumbnailParts(armour)
+      : (showStoreForm ? careerArmourStoreParts(armour) : careerArmour3dParts(armour));
     const armourParts = armourSource.map(careerWeaponPartMarkup).join('');
     const bodyParts = showOperator
       ? careerArmourOperatorBodyParts().map(careerWeaponPartMarkup).join('')
@@ -3289,11 +3326,31 @@
     return careerWeaponCuboidMarkup(part);
   }
 
+  // Build 12.151: the CSS-3D menu models are quad-bound, not paint-bound —
+  // measured on the Supply Depot, hiding the armour rigs took the frame from
+  // ~58ms to 4.2ms while the game's own JavaScript stayed at 1.6ms, and halving
+  // the face count halved the frame cost. A slab thinner than this in model
+  // units has four faces that are edge-on slivers at every scale the menus draw
+  // at, so it emits only the two faces that carry its surface.
+  const CAREER_WEAPON_THIN_FACE_LIMIT = 6;
+
+  function careerWeaponCuboidFaces(part) {
+    const w = Math.max(1, Number(part.w) || 1);
+    const h = Math.max(1, Number(part.h) || 1);
+    const d = Math.max(1, Number(part.d) || 1);
+    const thinnest = Math.min(w, h, d);
+    if (thinnest > CAREER_WEAPON_THIN_FACE_LIMIT) return ['front', 'back', 'left', 'right', 'top', 'bottom'];
+    if (d === thinnest) return ['front', 'back'];
+    if (h === thinnest) return ['top', 'bottom'];
+    return ['left', 'right'];
+  }
+
   function careerWeaponCuboidMarkup(part) {
     const material = part.material || 'metal';
     const className = part.className ? ` ${part.className}` : '';
     const shapeClass = part.shape === 'rounded' ? ' rounded' : '';
-    return `<span class="career-weapon-cuboid ${material}${className}${shapeClass}" style="${careerWeaponPartStyle(part)}"><i class="face front"></i><i class="face back"></i><i class="face left"></i><i class="face right"></i><i class="face top"></i><i class="face bottom"></i></span>`;
+    const faces = careerWeaponCuboidFaces(part).map(face => `<i class="face ${face}"></i>`).join('');
+    return `<span class="career-weapon-cuboid ${material}${className}${shapeClass}" style="${careerWeaponPartStyle(part)}">${faces}</span>`;
   }
 
   function careerWeaponReloadPhases(progress = 0, active = false, emptyMagazine = false) {
@@ -3493,73 +3550,131 @@
       add('rail', 'dark-metal', 45, 18, 0, 92, 8, 30);
     } else if (model === 'ar4-sentinel') {
       // The AR-4 is authored once for Armoury, first-person and operator-held
-      // rendering. Build 12.19 removes the tube optic, lowers the upper profile
-      // and tightens the carbine proportions while preserving every functional
-      // hand, magazine and muzzle anchor.
-      addRounded('stock', 'polymer', -286, 2, 0, 142, 72, 56, -3);
-      addRounded('butt-pad', 'rubber', -368, 7, 0, 26, 96, 64, -3);
-      addCylinder('stock-rail', 'metal-edge', -211, -8, 0, 122, 20, 20);
-      addRounded('stock-cheek', 'dark-metal', -265, -38, 0, 132, 22, 46, -2);
-      addRounded('stock-brace', 'dark-metal', -258, 37, 0, 72, 22, 32, -9);
-      addCylinder('stock-adjuster', 'gunmetal', -337, 31, 0, 20, 26, 26);
+      // rendering. Build 12.151 rebuilds it around real carbine landmarks: the
+      // stock rides a buffer tube instead of hanging off a bare rail, the
+      // handguard carries recessed M-LOK style cuts instead of flat black
+      // rectangles painted on one flank, the magazine curves through two
+      // segments, the trigger sits inside a three-piece bow, and the grip rake
+      // follows the 12.149 convention (it used to lean at the target).
+      // Rake convention (12.149): +x is toward the muzzle, +y is downward, so a
+      // POSITIVE rz trails the bottom of a part rearward.
+      const gripX = -128;
+      const gripY = 76;
+      const gripRz = 14;
+      const gripRake = (gripRz * Math.PI) / 180;
+      // 12.148: `rz` rotates a part about its own centre, so every sub-part of
+      // the grip assembly must have its position rotated about the grip centre
+      // or the assembly shears apart.
+      const aboutGrip = (px, py) => {
+        const dx = px - gripX;
+        const dy = py - gripY;
+        return {
+          x: gripX + dx * Math.cos(gripRake) - dy * Math.sin(gripRake),
+          y: gripY + dx * Math.sin(gripRake) + dy * Math.cos(gripRake)
+        };
+      };
 
-      addRounded('receiver', 'gunmetal', -54, -25, 0, 236, 84, 64);
-      addRounded('upper-receiver', 'dark-metal', -35, -70, 0, 232, 26, 58);
-      addRounded('lower-receiver', 'polymer', -77, 25, 0, 164, 54, 56, 3);
-      addRounded('magwell', 'dark-metal', -10, 47, 0, 84, 42, 54, 5);
-      addRounded('receiver-collar', 'dark-metal', 61, -27, 0, 38, 72, 60);
-      addRounded('forward-assist', 'metal-edge', -116, -29, -33, 24, 24, 17, 0, 0, 12);
-      add('receiver-side-left', 'metal-edge', -62, -5, 32.2, 102, 9, 4, 2);
-      add('receiver-side-right', 'metal-edge', -62, -5, -32.2, 102, 9, 4, 2);
+      // Stock group. The buffer tube is the spine the stock slides on; the comb
+      // and cheek pad give the top line somewhere for a face to sit, and the
+      // butt plate has a heel and a toe instead of being one slab.
+      addCylinder('buffer-tube', 'gunmetal', -222, -22, 0, 150, 28, 28);
+      addRounded('stock', 'polymer', -262, -6, 0, 158, 60, 48, -2);
+      addRounded('stock-comb', 'polymer', -252, -40, 0, 128, 20, 38, -2);
+      addRounded('stock-cheek', 'rubber', -248, -52, 0, 100, 10, 30, -2);
+      addRounded('stock-brace', 'dark-metal', -230, 28, 0, 96, 22, 34, -6);
+      addCylinder('stock-adjuster', 'gunmetal', -292, 26, 0, 18, 20, 20);
+      addRounded('butt-pad', 'rubber', -354, -4, 0, 28, 92, 54, -2);
+      addRounded('butt-toe', 'dark-metal', -338, 40, 0, 26, 14, 44, -2);
+      add('sling-mount', 'metal-edge', -292, -30, 22, 14, 24, 8);
 
-      addRounded('handguard', 'polymer', 154, -28, 0, 226, 72, 60);
-      addRounded('handguard-top', 'gunmetal', 154, -68, 0, 232, 16, 52);
-      addRounded('handguard-bottom', 'dark-metal', 151, 13, 0, 202, 14, 44);
-      addRounded('handguard-endcap', 'dark-metal', 270, -28, 0, 24, 68, 56);
-      add('handguard-rail-left', 'metal-edge', 154, -29, 31, 176, 10, 7);
-      add('handguard-rail-right', 'metal-edge', 154, -29, -31, 176, 10, 7);
-      addCylinder('gas-tube', 'metal-edge', 239, -56, 0, 142, 11, 11);
-      addRounded('gas-block', 'dark-metal', 270, -41, 0, 32, 44, 40);
-      addCylinder('barrel', 'metal-edge', 339, -30, 0, 158, 19, 19);
-      addCylinder('muzzle-collar', 'gunmetal', 403, -30, 0, 26, 28, 28);
-      addCylinder('muzzle', 'dark-metal', 431, -30, 0, 42, 34, 34);
-      add('muzzle-port-left', 'black', 434, -30, 17.2, 18, 12, 4);
-      add('muzzle-port-right', 'black', 434, -30, -17.2, 18, 12, 4);
+      addRounded('receiver', 'gunmetal', -58, -22, 0, 218, 74, 60);
+      addRounded('upper-receiver', 'dark-metal', -44, -62, 0, 216, 30, 54);
+      addRounded('lower-receiver', 'polymer', -84, 24, 0, 152, 50, 52, 2);
+      addRounded('magwell', 'dark-metal', -12, 46, 0, 88, 46, 52, 4);
+      addRounded('receiver-collar', 'dark-metal', 58, -26, 0, 38, 66, 58);
+      addRounded('forward-assist', 'metal-edge', -110, -30, -32, 22, 22, 16, 0, 0, 10);
+      addRounded('brass-deflector', 'metal-edge', -30, -33, 30, 32, 20, 12, 0, 0, -12);
+      add('receiver-side-left', 'metal-edge', -60, -4, 30.4, 104, 8, 4, 2);
+      add('receiver-side-right', 'metal-edge', -60, -4, -30.4, 104, 8, 4, 2);
+      add('takedown-pin-front', 'metal-edge', -142, -18, 30.4, 14, 14, 4);
+      add('takedown-pin-rear', 'metal-edge', -30, 18, 26.4, 13, 13, 4);
+      // Recessed port, per the 12.148 pattern: a shadowed well with the cut
+      // standing proud of it, so the opening reads as depth rather than a
+      // black sticker.
+      add('ejection-well', 'black', -6, -40, 29, 72, 22, 5);
+      add('ejection-port', 'dark-metal', -6, -52, 30.6, 76, 5, 4);
+      add('bolt', 'metal-edge', -10, -40, 27, 56, 14, 5);
+      // The charging handle sits behind the rear sight and under the rail line
+      // rather than breaking the top profile.
+      addRounded('charging-handle', 'metal-edge', -152, -68, 0, 48, 12, 44);
+      add('charging-latch', 'metal-edge', -176, -68, 18, 16, 10, 10);
+      add('selector', 'brass', -106, 6, 27.4, 16, 16, 4);
 
-      addRounded('pistol-grip', 'polymer', -130, 77, 0, 62, 120, 48, -12);
-      add('grip-panel-left', 'rubber', -133, 79, 24.2, 37, 78, 4, -12);
-      add('grip-panel-right', 'rubber', -133, 79, -24.2, 37, 78, 4, -12);
-      addRounded('magazine', 'gunmetal', -14, 89, 0, 74, 142, 48, 7);
-      addRounded('mag-base', 'dark-metal', -5, 166, 0, 84, 17, 52, 7);
-      add('mag-rib-front', 'metal-edge', 10, 95, 24.2, 7, 104, 4, 7);
-      add('mag-rib-rear', 'metal-edge', -40, 88, 24.2, 7, 100, 4, 7);
-      addRounded('trigger-guard', 'dark-metal', -78, 51, 0, 84, 15, 42);
-      add('trigger', 'metal-edge', -70, 66, 0, 9, 40, 8, -18);
+      addRounded('handguard', 'polymer', 152, -26, 0, 208, 66, 56);
+      addRounded('handguard-top', 'gunmetal', 152, -70, 0, 214, 18, 46);
+      addRounded('handguard-bottom', 'dark-metal', 148, 12, 0, 186, 12, 40);
+      addRounded('handguard-endcap', 'dark-metal', 262, -26, 0, 22, 60, 50);
+      add('handguard-rail-left', 'metal-edge', 152, -50, 28.6, 176, 8, 5);
+      add('handguard-rail-right', 'metal-edge', 152, -50, -28.6, 176, 8, 5);
+      // Real cuts through the handguard flanks, mirrored, rather than four flat
+      // rectangles on one side only.
+      for (let index = 0; index < 3; index++) {
+        const slotX = 96 + index * 52;
+        add('handguard-slot', 'black', slotX, -24, 26.2, 30, 26, 6);
+        add('handguard-slot', 'black', slotX, -24, -26.2, 30, 26, 6);
+      }
+      addCylinder('gas-tube', 'metal-edge', 228, -54, 0, 130, 9, 9);
+      addRounded('gas-block', 'dark-metal', 268, -42, 0, 30, 40, 36);
+      addCylinder('barrel', 'metal-edge', 330, -28, 0, 152, 18, 18);
+      addCylinder('barrel-step', 'gunmetal', 396, -28, 0, 24, 22, 22);
+      addCylinder('muzzle-collar', 'gunmetal', 412, -28, 0, 18, 26, 26);
+      addCylinder('muzzle', 'dark-metal', 434, -28, 0, 46, 32, 32);
+      add('muzzle-port-left', 'black', 430, -28, 15, 26, 10, 5);
+      add('muzzle-port-right', 'black', 430, -28, -15, 26, 10, 5);
+      add('muzzle-port-top', 'black', 430, -41, 0, 26, 5, 12);
 
-      // Low-profile rail and flip-up iron sights replace the removed scope.
-      add('top-rail', 'metal-edge', 38, -91, 0, 382, 10, 42);
-      addRounded('rear-sight-base', 'dark-metal', -112, -103, 0, 42, 15, 38);
-      add('rear-sight-left', 'gunmetal', -112, -120, 14, 10, 28, 8);
-      add('rear-sight-right', 'gunmetal', -112, -120, -14, 10, 28, 8);
-      add('rear-sight-bridge', 'dark-metal', -112, -123, 0, 10, 8, 24);
-      add('rear-sight-aperture', 'black', -112, -128, 0, 11, 11, 10);
-      addRounded('front-sight-base', 'dark-metal', 244, -101, 0, 38, 15, 38);
-      add('front-sight-post', 'gunmetal', 244, -121, 0, 9, 34, 9);
-      add('front-sight-guard-left', 'dark-metal', 244, -117, 13, 8, 28, 7);
-      add('front-sight-guard-right', 'dark-metal', 244, -117, -13, 8, 28, 7);
+      addRounded('pistol-grip', 'polymer', gripX, gripY, 0, 58, 114, 46, gripRz);
+      addRounded('grip-beavertail', 'dark-metal', -104, 30, 0, 44, 26, 44, 8);
+      const gripPanel = aboutGrip(gripX - 3, gripY + 4);
+      add('grip-panel-left', 'rubber', gripPanel.x, gripPanel.y, 23.4, 34, 74, 4, gripRz);
+      add('grip-panel-right', 'rubber', gripPanel.x, gripPanel.y, -23.4, 34, 74, 4, gripRz);
+      const gripCap = aboutGrip(gripX, gripY + 55);
+      addRounded('grip-cap', 'dark-metal', gripCap.x, gripCap.y, 0, 48, 12, 40, gripRz);
 
-      addRounded('support-grip', 'polymer', 130, 40, 0, 44, 90, 42, -3);
-      add('ejection-port', 'black', -1, -41, 32.2, 90, 34, 4);
-      add('bolt', 'metal-edge', -5, -41, 28.5, 72, 20, 5);
-      addRounded('charging-handle', 'metal-edge', -143, -84, 0, 54, 15, 50);
-      add('selector', 'brass', -110, 4, 32.4, 17, 17, 4);
-      add('accent-left', 'blue-accent', 158, -7, 30.8, 116, 6, 4);
-      add('accent-right', 'blue-accent', 158, -7, -30.8, 116, 6, 4);
-      add('vent-1', 'black', 82, -29, 30.8, 25, 32, 4, -8);
-      add('vent-2', 'black', 122, -29, 30.8, 25, 32, 4, -8);
-      add('vent-3', 'black', 162, -29, 30.8, 25, 32, 4, -8);
-      add('vent-4', 'black', 202, -29, 30.8, 25, 32, 4, -8);
-      add('sling-mount', 'metal-edge', -248, -34, 29, 17, 30, 8);
+      // 12.150: a trigger needs a three-piece bow around it, not a flat bar it
+      // can hang below.
+      add('trigger-guard', 'dark-metal', -62, 52, 0, 12, 36, 40, -10);
+      add('trigger-guard-bow', 'dark-metal', -90, 74, 0, 68, 10, 40);
+      add('trigger-guard-rear', 'dark-metal', -116, 56, 0, 12, 34, 40, 10);
+      add('trigger', 'gunmetal', -82, 56, 0, 9, 26, 9, -14);
+
+      // A box magazine curves toward the muzzle at its base — a NEGATIVE rake
+      // under the 12.149 convention. Two segments and a base plate that follows
+      // the lower one carry that line.
+      addRounded('magazine', 'gunmetal', -14, 78, 0, 70, 96, 46, -5);
+      addRounded('mag-lower', 'gunmetal', -2, 138, 0, 66, 48, 44, -15);
+      addRounded('mag-base', 'dark-metal', 6, 168, 0, 76, 15, 48, -15);
+      add('mag-rib-front', 'metal-edge', 6, 82, 22.4, 6, 78, 4, -5);
+      add('mag-rib-rear', 'metal-edge', -36, 78, 22.4, 6, 74, 4, -5);
+
+      // One continuous flat-top rail from the receiver to the front sight, not
+      // a stepped stack of three top lines. The rail slots are a repeating
+      // material rather than dozens of tiny cuboids.
+      add('top-rail', 'picatinny', 60, -83, 0, 380, 13, 40);
+      addRounded('rear-sight-base', 'dark-metal', -106, -98, 0, 44, 22, 38);
+      add('rear-sight-left', 'gunmetal', -106, -118, 13, 10, 26, 8);
+      add('rear-sight-right', 'gunmetal', -106, -118, -13, 10, 26, 8);
+      add('rear-sight-bridge', 'dark-metal', -106, -128, 0, 10, 8, 24);
+      add('rear-sight-aperture', 'black', -106, -133, 0, 11, 11, 10);
+      addRounded('front-sight-base', 'dark-metal', 238, -96, 0, 38, 20, 38);
+      add('front-sight-post', 'gunmetal', 238, -122, 0, 9, 32, 9);
+      add('front-sight-guard-left', 'dark-metal', 238, -118, 13, 8, 26, 7);
+      add('front-sight-guard-right', 'dark-metal', 238, -118, -13, 8, 26, 7);
+
+      addRounded('support-grip', 'polymer', 128, 34, 0, 42, 84, 40, -6);
+      addRounded('support-grip-cap', 'dark-metal', 130, 74, 0, 46, 12, 42, -6);
+      add('accent-left', 'blue-accent', 150, -6, 27.4, 108, 5, 4);
+      add('accent-right', 'blue-accent', 150, -6, -27.4, 108, 5, 4);
     } else {
       add('slide', 'gunmetal', 0, -38, 0, 258, 46, 42);
       add('frame', 'polymer', -17, 0, 0, 194, 33, 37);
@@ -3711,9 +3826,13 @@
       name === 'slide-cut' || name === 'wear-band' || name === 'bolt' || name === 'charging-handle' || name.startsWith('cut-');
   }
 
+  // Build 12.151: every part authored as magazine geometry travels with the
+  // reload, not just the body and the base plate. The AR-4's ribs already sat
+  // outside this predicate and hung in mid-air while the magazine dropped; the
+  // curved lower segment added this build would have done the same.
   function careerWeaponPartMovesWithMagazine(part) {
     const name = part?.className || '';
-    return name === 'magazine' || name === 'mag-base';
+    return name === 'magazine' || name.startsWith('mag-');
   }
 
   function careerWeaponPartFitOffset(part, context = 'world') {
@@ -3839,11 +3958,33 @@
         const magazineIndex = parts.findIndex(part => part.className === 'magazine');
         const baseIndex = parts.findIndex(part => part.className === 'mag-base');
         const magazineAssemblyPresent = magazineIndex >= 0 && baseIndex >= 0;
-        const rawMagazineGap = magazineAssemblyPresent
-          ? careerWeaponRenderedPartGap(rendered[magazineIndex], rendered[baseIndex])
-          : null;
-        const magazineBaseGap = rawMagazineGap === null ? null : Number(rawMagazineGap.toFixed(6));
-        const magazineBaseConnected = magazineAssemblyPresent && rawMagazineGap <= CAREER_WEAPON_CONNECTION_TOLERANCE;
+        // Build 12.151: the base plate no longer has to touch the magazine
+        // body directly — the AR-4's magazine curves through a second segment
+        // between them. What must hold is that the parts travelling with the
+        // reload form one solid, so the base cannot float off during a drop.
+        const magazineParts = parts
+          .map((part, index) => ({ part, index }))
+          .filter(entry => careerWeaponPartMovesWithMagazine(entry.part))
+          .map(entry => entry.index);
+        const magazineSeen = new Set([magazineIndex]);
+        const magazineQueue = magazineAssemblyPresent ? [magazineIndex] : [];
+        let magazineBaseGap = null;
+        while (magazineQueue.length) {
+          const index = magazineQueue.pop();
+          for (const candidate of magazineParts) {
+            if (magazineSeen.has(candidate)) continue;
+            const gap = careerWeaponRenderedPartGap(rendered[index], rendered[candidate]);
+            if (candidate === baseIndex) {
+              magazineBaseGap = magazineBaseGap === null ? Number(gap.toFixed(6)) : Math.min(magazineBaseGap, Number(gap.toFixed(6)));
+            }
+            if (gap <= CAREER_WEAPON_CONNECTION_TOLERANCE) {
+              magazineSeen.add(candidate);
+              magazineQueue.push(candidate);
+            }
+          }
+        }
+        const magazineBaseConnected = magazineAssemblyPresent &&
+          magazineParts.every(index => magazineSeen.has(index));
         samples.push({
           id: weapon.id || weapon.name,
           name: weapon.name || weapon.id,
@@ -3867,8 +4008,14 @@
       .filter(careerWeaponPartMovesWithMagazine)
       .map(part => part.className)
       .sort();
-    const magazineAssemblyMovesTogether = magazineAssemblyParts.length === 2 &&
-      magazineAssemblyParts[0] === 'mag-base' && magazineAssemblyParts[1] === 'magazine';
+    // Every authored magazine part must ride the reload transform. The set is
+    // no longer exactly two: the AR-4 carries a curved lower segment and two
+    // ribs, all of which have to travel with the body and the base plate.
+    const magazineAssemblyMovesTogether = magazineAssemblyParts.includes('magazine') &&
+      magazineAssemblyParts.includes('mag-base') &&
+      careerWeaponVisualParts(CAREER_WEAPON_CATALOG['ar4-sentinel'])
+        .filter(part => /^mag(azine|-)/.test(part.className || ''))
+        .every(careerWeaponPartMovesWithMagazine);
     return {
       ok: failures.length === 0 && magazineAssemblyMovesTogether,
       revision: CAREER_WEAPON_VISUAL_REVISION,
@@ -3892,8 +4039,19 @@
     };
   }
 
+  // Build 12.151: yaw and pitch move to a dedicated pivot, exactly as Build
+  // 12.142 did for the armour viewer. `--viewer-*` are inherited custom
+  // properties, so writing them on the rig root once per rotation step
+  // invalidated the computed style of every cuboid face below it — measured at
+  // 7.63ms per step across the Armoury's three rigs against 0.015ms for a
+  // direct transform on one element. Zoom stays on the custom property because
+  // it only changes on a button press, never on the animation path.
   function careerWeaponViewerTransform() {
-    return `--viewer-yaw:${careerWeaponViewerState.yaw}deg;--viewer-pitch:${careerWeaponViewerState.pitch}deg;--viewer-zoom:${careerWeaponViewerState.zoom}`;
+    return `--viewer-zoom:${careerWeaponViewerState.zoom}`;
+  }
+
+  function careerWeaponPivotTransform() {
+    return `rotateX(${careerWeaponViewerState.pitch}deg) rotateY(${careerWeaponViewerState.yaw}deg)`;
   }
 
   function careerWeapon3dMarkup(weapon, context = 'detail', interactive = true, skinId = null) {
@@ -3901,14 +4059,20 @@
     const resolvedSkin = skinId || weapon?.skinId || null;
     const skinClass = resolvedSkin ? ` skin-${resolvedSkin}` : '';
     const parts = careerWeapon3dParts(weapon).map(careerWeaponPartMarkup).join('');
+    // Only the interactive inspector carries the viewer state. The inventory
+    // thumbnails have their own fixed CSS transform, so writing viewer custom
+    // properties onto them cost a full subtree style invalidation per frame and
+    // moved nothing.
+    if (!interactive) {
+      return `<span class="career-weapon-mini3d ${modelClass} ${context}" aria-hidden="true"><div class="career-weapon-rig ${modelClass}${skinClass}">${parts}</div></span>`;
+    }
     const content = `<div class="career-weapon-rig ${modelClass}${skinClass}" data-career-weapon-rig style="${careerWeaponViewerTransform()}">${parts}</div>`;
-    if (!interactive) return `<span class="career-weapon-mini3d ${modelClass} ${context}" aria-hidden="true">${content}</span>`;
     return `
       <div class="career-weapon-inspector ${modelClass}" data-career-weapon-viewer data-weapon-id="${weapon.id}">
         <div class="career-inspector-stage" aria-label="Interactive 3D model of ${escapeCareerHtml(weapon.name)}. Drag or swipe to rotate.">
           <div class="career-inspector-grid" aria-hidden="true"></div>
           <div class="career-inspector-shadow" aria-hidden="true"></div>
-          ${content}
+          <span class="career-weapon-viewer-pivot" data-career-weapon-pivot style="transform:${careerWeaponPivotTransform()}">${content}</span>
           <div class="career-inspector-callout"><span>INTERACTIVE 3D INSPECTION</span><strong>DRAG / SWIPE TO ROTATE</strong></div>
         </div>
         <div class="career-inspector-controls" aria-label="Weapon model controls">
@@ -3923,12 +4087,16 @@
   }
 
   function syncCareerWeaponViewerTransform() {
-    const rigs = menuContentEl ? menuContentEl.querySelectorAll('[data-career-weapon-rig]') : [];
-    for (const rig of rigs) {
-      rig.style.setProperty('--viewer-yaw', `${careerWeaponViewerState.yaw}deg`);
-      rig.style.setProperty('--viewer-pitch', `${careerWeaponViewerState.pitch}deg`);
-      rig.style.setProperty('--viewer-zoom', String(careerWeaponViewerState.zoom));
-    }
+    if (!menuContentEl) return;
+    const pivots = menuContentEl.querySelectorAll('[data-career-weapon-pivot]');
+    const transform = careerWeaponPivotTransform();
+    for (const pivot of pivots) pivot.style.transform = transform;
+  }
+
+  function syncCareerWeaponViewerZoom() {
+    if (!menuContentEl) return;
+    const rigs = menuContentEl.querySelectorAll('[data-career-weapon-viewer] [data-career-weapon-rig]');
+    for (const rig of rigs) rig.style.setProperty('--viewer-zoom', String(careerWeaponViewerState.zoom));
   }
 
   function resetCareerWeaponViewer(stopAuto = true) {
@@ -3937,6 +4105,7 @@
     careerWeaponViewerState.zoom = 1;
     if (stopAuto) careerWeaponViewerState.autoRotate = false;
     syncCareerWeaponViewerTransform();
+    syncCareerWeaponViewerZoom();
   }
 
   function handleCareerWeaponViewerAction(action) {
@@ -3947,6 +4116,7 @@
     else if (action === 'reset') resetCareerWeaponViewer();
     else if (action === 'auto') careerWeaponViewerState.autoRotate = !careerWeaponViewerState.autoRotate;
     syncCareerWeaponViewerTransform();
+    if (action === 'zoom-out' || action === 'zoom-in' || action === 'reset') syncCareerWeaponViewerZoom();
     if (action === 'auto') updateMenuUI();
   }
 
@@ -3987,12 +4157,16 @@
     const viewer = event.target.closest('[data-career-weapon-viewer]');
     if (!viewer) return;
     careerWeaponViewerState.zoom = clamp(careerWeaponViewerState.zoom + (event.deltaY < 0 ? 0.08 : -0.08), 0.72, 1.35);
-    syncCareerWeaponViewerTransform();
+    syncCareerWeaponViewerZoom();
     event.preventDefault();
   }
 
   function updateCareerWeaponViewer(dt) {
-    if (!careerWeaponViewerState.autoRotate || careerWeaponViewerState.dragging || appState !== 'menu' || menuTab !== 'loadout') return;
+    if (!careerWeaponViewerState.autoRotate || careerWeaponViewerState.dragging || appState !== 'menu' || menuTab !== 'loadout' || document.visibilityState === 'hidden') return;
+    const viewer = menuContentEl?.querySelector('[data-career-weapon-viewer]');
+    if (!viewer) return;
+    const bounds = viewer.getBoundingClientRect();
+    if (bounds.bottom <= 0 || bounds.top >= window.innerHeight || bounds.right <= 0 || bounds.left >= window.innerWidth) return;
     careerWeaponViewerState.yaw += dt * 22;
     syncCareerWeaponViewerTransform();
   }
