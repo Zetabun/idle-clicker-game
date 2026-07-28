@@ -3213,6 +3213,171 @@
       if (!prepared.ok) return prepared;
       return settleLeagueAfterCareerMatch(won ? TEAM_BLUE : TEAM_RED, { blueScore: Math.max(0, Math.round(blue)), redScore: Math.max(0, Math.round(red)) });
     },
+    // Build 12.135: drives the whole league match path — prepare, complete,
+    // settle — and reports whether the fixture, the table and the report agree.
+    // A league match that leaves the table on zero shows up here as
+    // settledMode !== 'league'.
+    leagueMatchFlowForTest: (blue = 3, red = 0) => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        const league = ensureLeagueState();
+        // Put the calendar on the next fixture day so the league match is legal.
+        const fixture = leagueNextFixture();
+        if (!fixture) return { ok: false, reason: 'no fixture scheduled' };
+        const calendar = clubCalendarState();
+        let guard = 0;
+        while (typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue() && guard++ < 400) calendar.absoluteDay++;
+        const due = typeof clubLeagueMatchDue === 'function' ? clubLeagueMatchDue() : false;
+
+        const prepared = prepareCareerMatchContext('league');
+        const modeAfterPrepare = league.activeMode;
+
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, {
+          roundsPlayed: 3, kills: 6, deaths: 2, shotsFired: 24, shotsHit: 12,
+          damageDealt: 420, damageTaken: 200, survivalTime: 150, reloads: 4, finalSurvived: true
+        });
+        blueScore = Math.max(0, Math.round(Number(blue) || 0));
+        redScore = Math.max(0, Math.round(Number(red) || 0));
+        const modeAtCompletion = league.activeMode;
+        completeCareerMatch(TEAM_BLUE);
+        if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+
+        const settled = careerState.lastRound?.league || null;
+        const table = leagueTable();
+        const userRow = table.find(row => row.id === LEAGUE_USER_CLUB_ID) || null;
+        const playedFixtures = (league.fixtures || []).filter(item => item.played).length;
+        return {
+          ok: true, due, preparedOk: prepared?.ok, preparedReason: prepared?.reason || null,
+          modeAfterPrepare, modeAtCompletion,
+          settledMode: settled?.mode || null,
+          reportMatchday: settled?.matchday ?? null,
+          userRow: userRow ? { played: userRow.played, won: userRow.won, points: userRow.points, position: userRow.position, roundDifference: userRow.roundDifference } : null,
+          playedFixtures,
+          tableTotalPoints: table.reduce((sum, row) => sum + (Number(row.points) || 0), 0),
+          goldMode: careerState.lastRound?.goldCoinReward?.mode || null
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
+    },
+    // Build 12.135: reproduces the reported "league match did not update the
+    // table". A league context is prepared, then the calendar advances past the
+    // fixture (End Day auto-simulates it). The stale activeMode survives, the
+    // match presents as a league fixture, but the settlement finds no unplayed
+    // fixture to write the result into.
+    staleLeagueContextForTest: () => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        const league = ensureLeagueState();
+        const calendar = clubCalendarState();
+        let guard = 0;
+        while (typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue() && guard++ < 400) calendar.absoluteDay++;
+        const prepared = prepareCareerMatchContext('league');
+        const preparedFixtureId = league.activeFixtureId;
+
+        // The manager backs out without cancelling (page reload, or leaving the
+        // deployment screen), then ends the day. The fixture is simulated.
+        const fixture = (league.fixtures || []).find(item => item.id === preparedFixtureId) || null;
+        if (fixture) leagueSimulateFixture(fixture);
+
+        const staleMode = league.activeMode;
+        const staleFixture = leagueActiveFixture();
+
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, { roundsPlayed: 3, kills: 5, deaths: 2, shotsFired: 20, shotsHit: 10, damageDealt: 380, damageTaken: 190, survivalTime: 140, reloads: 3, finalSurvived: true });
+        blueScore = 3; redScore = 0;
+        const pointsBefore = (leagueTable().find(row => row.id === LEAGUE_USER_CLUB_ID) || {}).points || 0;
+        completeCareerMatch(TEAM_BLUE);
+        if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+        const userRow = leagueTable().find(row => row.id === LEAGUE_USER_CLUB_ID) || null;
+        return {
+          preparedOk: prepared?.ok, preparedFixtureId,
+          staleMode, staleFixtureFound: Boolean(staleFixture),
+          presentationMode: careerState.lastRound?.matchPresentation?.mode || null,
+          settled: careerState.lastRound?.league || null,
+          settledMode: careerState.lastRound?.league?.mode || null,
+          pointsBefore, pointsAfter: userRow?.points ?? null,
+          reportSaysLeague: (careerState.lastRound?.matchPresentation?.mode === 'league')
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
+    },
+    // Build 12.135: the exact reported failure — the prepared fixture id stops
+    // resolving between kick-off and settlement, which previously discarded the
+    // whole league result and left every club on zero.
+    orphanedLeagueFixtureForTest: () => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        const league = ensureLeagueState();
+        const calendar = clubCalendarState();
+        let guard = 0;
+        while (typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue() && guard++ < 400) calendar.absoluteDay++;
+        const prepared = prepareCareerMatchContext('league');
+        const opponentId = league.activeOpponentId;
+        // Simulate the league rebuild that re-derives fixture ids.
+        league.activeFixtureId = 'S1-M99-does-not-exist';
+        const resolvesBefore = Boolean(leagueActiveFixture());
+
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, { roundsPlayed: 3, kills: 5, deaths: 1, shotsFired: 20, shotsHit: 11, damageDealt: 400, damageTaken: 150, survivalTime: 150, reloads: 3, finalSurvived: true });
+        blueScore = 3; redScore = 0;
+        const pointsBefore = (leagueTable().find(row => row.id === LEAGUE_USER_CLUB_ID) || {}).points || 0;
+        const playedBefore = (league.fixtures || []).filter(item => item.played).length;
+        completeCareerMatch(TEAM_BLUE);
+        if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+        const row = leagueTable().find(item => item.id === LEAGUE_USER_CLUB_ID) || null;
+        const settled = careerState.lastRound?.league || null;
+        return {
+          preparedOk: prepared?.ok, opponentId,
+          activeFixtureResolved: resolvesBefore,
+          settledMode: settled?.mode || null,
+          recoveredOpponent: settled?.opponentName || null,
+          matchday: settled?.matchday ?? null,
+          pointsBefore, pointsAfter: row?.points ?? null,
+          userPlayed: row?.played ?? null,
+          playedBefore, playedAfter: (league.fixtures || []).filter(item => item.played).length,
+          resultRecorded: (row?.points ?? 0) > pointsBefore
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
+    },
+    // Build 12.135: renders a route and leaves it mounted so a specific panel
+    // can be measured. The compact audit restores the previous route, which
+    // makes per-panel inspection impossible on its own.
+    renderRouteForTest: (route = 'training') => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      setMenuRoute(String(route), { skipDraftGuard: true });
+      const host = menuContentEl;
+      const cards = [...host.querySelectorAll('.training-player-card')].map(card => {
+        const rect = card.getBoundingClientRect();
+        const children = [...card.children].map(child => {
+          const style = getComputedStyle(child);
+          const box = child.getBoundingClientRect();
+          return { tag: child.tagName.toLowerCase(), cls: String(child.className || '').split(/\s+/)[0] || '',
+                   display: style.display, height: Math.round(box.height),
+                   visible: style.display !== 'none' && style.visibility !== 'hidden' && box.height > 0 };
+        });
+        return { height: Math.round(rect.height), width: Math.round(rect.width),
+                 childCount: card.children.length,
+                 visibleChildren: children.filter(c => c.visible).length,
+                 hiddenChildren: children.filter(c => !c.visible).map(c => `${c.tag}.${c.cls}(${c.display})`),
+                 text: String(card.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40) };
+      });
+      return { route, width: window.innerWidth, cardCount: cards.length, cards: cards.slice(0, 4),
+               gridColumns: host.querySelector('.training-player-grid') ? getComputedStyle(host.querySelector('.training-player-grid')).gridTemplateColumns : null };
+    },
     randomTeamNameForTest: (count = 12) => {
       const total = clamp(Math.round(Number(count) || 12), 1, 50);
       let state = 0x6a09e667;
@@ -4472,6 +4637,23 @@
             if (rect.height > 0 && rect.height < minTouch) smallTargets.push({ node: describe(node), height: Math.round(rect.height) });
           }
         }
+        // Build 12.135: collapsed containers. A direct child of the grid scroll
+        // container that clips almost all of its own content is the "card did
+        // not load" failure: the panel renders as an empty box. Grid items with
+        // a non-visible overflow get an automatic minimum size of 0, so a row
+        // can be squashed to padding height while the content still exists.
+        const collapsed = [];
+        for (const node of host.children) {
+          const style = getComputedStyle(node);
+          if (style.display === 'none' || !node.getClientRects().length) continue;
+          if (style.overflowY === 'visible') continue;
+          // A closed <details> is meant to hide its content.
+          if (node.tagName === 'DETAILS' && !node.open) continue;
+          if (node.scrollHeight > node.clientHeight + 24 && node.clientHeight < node.scrollHeight * 0.5) {
+            collapsed.push({ node: describe(node), clientHeight: node.clientHeight, scrollHeight: node.scrollHeight });
+          }
+        }
+
         const dedupe = (list, key) => {
           const seen = new Map();
           for (const item of list) if (!seen.has(item[key])) seen.set(item[key], item);
@@ -4481,6 +4663,7 @@
         smallTargets = dedupe(smallTargets, 'node');
         results.push({
           route,
+          collapsedCount: collapsed.length, collapsed: collapsed.slice(0, 6),
           overflowCount: overflowing.length, overflow: overflowing.slice(0, 6),
           tinyTextCount: tinyText.length, tinyText: tinyText.slice(0, 14),
           smallTargetCount: smallTargets.length, smallTargets: smallTargets.slice(0, 6)
@@ -4488,11 +4671,12 @@
       }
       setMenuRoute(previousRoute, { skipDraftGuard: true });
       const totals = results.reduce((acc, item) => {
+        acc.collapsed += item.collapsedCount || 0;
         acc.overflow += item.overflowCount || 0;
         acc.tinyText += item.tinyTextCount || 0;
         acc.smallTargets += item.smallTargetCount || 0;
         return acc;
-      }, { overflow: 0, tinyText: 0, smallTargets: 0 });
+      }, { collapsed: 0, overflow: 0, tinyText: 0, smallTargets: 0 });
       return {
         width: window.innerWidth, minFont, minTouch, totals,
         worst: results.slice().sort((a, b) => (b.overflowCount + b.tinyTextCount) - (a.overflowCount + a.tinyTextCount)).slice(0, 8),

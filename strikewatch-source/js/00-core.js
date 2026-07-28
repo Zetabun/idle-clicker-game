@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.134';
-  const BUILD_NAME = 'Durable Career';
-  const BUILD_ID = '12.134.0-durable-career';
+  const BUILD_VERSION = '12.135';
+  const BUILD_NAME = 'Open Containers';
+  const BUILD_ID = '12.135.0-open-containers';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

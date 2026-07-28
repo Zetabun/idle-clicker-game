@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.134 — Durable Career
-Build ID: 12.134.0-durable-career
+Build 12.135 — Open Containers
+Build ID: 12.135.0-open-containers
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,10 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.135 owns the grid container-collapse fix, league settlement
+recovery and the league/agenda/training readability rules; keep the compact
+audit reporting zero collapsed containers and never let a league result settle
+to null.
 Build 12.134 owns career save sequencing and read-back verification, the
 compact readability/containment layer, the inherited founding assistant and the
 post-match fixture-type descriptor; keep saves sequenced and the compact audit

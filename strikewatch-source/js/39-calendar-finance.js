@@ -373,12 +373,38 @@
     return `<button class="club-calendar-event ${escapeCareerHtml(event.tone)}" ${attrs} title="${escapeCareerHtml(event.title)} · ${escapeCareerHtml(event.detail)}" aria-label="${escapeCareerHtml(accessible)}"><b>${escapeCareerHtml(label)}</b>${compact ? '' : `<small>${escapeCareerHtml(event.detail)}</small>`}</button>`;
   }
 
+  // Build 12.135: the agenda row already prints the event type, title and
+  // detail. Reusing the calendar-grid button here repeated all of it a second
+  // time inside the row, which read as duplicated ghost text at every width.
+  // The agenda gets a short action label instead; the full description stays on
+  // the accessible name and the tooltip.
+  const CLUB_AGENDA_ACTION_LABELS = {
+    match: 'OPEN MATCH',
+    sponsor: 'REVIEW OFFER',
+    loan: 'OPEN FINANCES',
+    'loan-overdue': 'OPEN FINANCES',
+    finance: 'OPEN FINANCES',
+    medical: 'OPEN MEDICAL',
+    contract: 'OPEN CONTRACT',
+    transfer: 'OPEN TRANSFERS',
+    training: 'OPEN TRAINING'
+  };
+
+  function clubCalendarAgendaActionMarkup(event) {
+    const attrs = event.playerId
+      ? `data-team-profile="${escapeCareerHtml(event.playerId)}"`
+      : (event.route ? `data-team-route="${escapeCareerHtml(event.route)}"` : 'disabled');
+    const label = CLUB_AGENDA_ACTION_LABELS[event.type] || (event.route || event.playerId ? 'OPEN' : 'SCHEDULED');
+    const accessible = `${event.title}. ${event.detail}. ${clubDatePartsForAbsoluteDay(event.day).fullDate}.`;
+    return `<button class="club-calendar-event club-calendar-agenda-action ${escapeCareerHtml(event.tone)}" ${attrs} title="${escapeCareerHtml(event.title)} · ${escapeCareerHtml(event.detail)}" aria-label="${escapeCareerHtml(accessible)}"><b>${escapeCareerHtml(label)}</b></button>`;
+  }
+
   function clubCalendarAgendaMarkup(events, currentDay) {
     const agendaEvents = events.filter(event => event.day >= currentDay).slice(0, 18);
     if (!agendaEvents.length) return '<div class="team-history-empty">No scheduled club events in the next twelve weeks.</div>';
     return agendaEvents.map(event => {
       const date = clubDatePartsForAbsoluteDay(event.day);
-      return `<article class="club-calendar-agenda-item ${escapeCareerHtml(event.tone)}"><time><b>${date.shortDay}</b><strong>${date.dayOfMonth}</strong><small>${date.shortMonth} ${date.year}</small></time><div><span>${escapeCareerHtml(event.type.replace(/-/g, ' ').toUpperCase())}</span><strong>${escapeCareerHtml(event.title)}</strong><small>${escapeCareerHtml(event.detail)}</small></div>${clubCalendarEventMarkup(event, false)}</article>`;
+      return `<article class="club-calendar-agenda-item ${escapeCareerHtml(event.tone)}"><time><b>${date.shortDay}</b><strong>${date.dayOfMonth}</strong><small>${date.shortMonth} ${date.year}</small></time><div><span>${escapeCareerHtml(event.type.replace(/-/g, ' ').toUpperCase())}</span><strong>${escapeCareerHtml(event.title)}</strong><small>${escapeCareerHtml(event.detail)}</small></div>${clubCalendarAgendaActionMarkup(event)}</article>`;
     }).join('');
   }
 

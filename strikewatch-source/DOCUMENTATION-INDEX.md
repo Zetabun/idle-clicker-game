@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.134 — Durable Career
-- Standalone: `dist/strikewatch-build-12.134.html`
+- Build 12.135 — Open Containers
+- Standalone: `dist/strikewatch-build-12.135.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

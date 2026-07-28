@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.134 — Durable Career**
-- Build ID: `12.134.0-durable-career`
+- Build: **12.135 — Open Containers**
+- Build ID: `12.135.0-open-containers`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.134.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.135.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.135 fixes the panels that rendered as empty boxes. `#menuContent` is a grid, and a grid item that clips its own overflow gets an automatic minimum size of zero, so eighteen panels across thirteen routes were being squashed to padding height with their content clipped underneath — Training Squad, Team XP Benefits, the league table, squad dynamics, the calendar agenda, the loadout panel and the tactical analysis. A league result can no longer be discarded when its fixture id stops resolving, and the league table, Event Agenda and training copy are readable on both targets. See `AUDIT-12.135.md`.
 
 Build 12.134 hardens career persistence and clears the compact interface backlog. Saves are sequenced and read back, so a stale second tab can no longer overwrite newer progress and a rejected write is reported instead of silently discarded. A measured audit closed every horizontal overflow at 390px and lifted the smallest rendered copy from 5.5px to 11px floors. Clubs are now founded with one inherited assistant manager who carries a wage and weak Division 3 judgement, the after-action Combat Effectiveness dial no longer overlaps its caption, and the post-match report always states the fixture type. See `AUDIT-12.134.md`.
 

@@ -627,6 +627,33 @@
     return fixture;
   }
 
+  // Build 12.135: pick the fixture a league result belongs to when the prepared
+  // one is missing or has already been simulated. Prefers the same opponent so
+  // the recovered result still matches what the manager was shown.
+  function leagueRecoverSettlementFixture(league, preparedFixture = null) {
+    const opponentId = league.activeOpponentId
+      || (preparedFixture ? leagueFixtureOpponentId(preparedFixture) : null);
+    const userFixtures = (league.fixtures || [])
+      .filter(item => item.homeId === LEAGUE_USER_CLUB_ID || item.awayId === LEAGUE_USER_CLUB_ID)
+      .sort((a, b) => (Number(a.matchday) || 0) - (Number(b.matchday) || 0));
+    const unplayed = userFixtures.filter(item => !item.played);
+    if (opponentId) {
+      const sameOpponent = unplayed.find(item => leagueFixtureOpponentId(item) === opponentId);
+      if (sameOpponent) return sameOpponent;
+    }
+    return unplayed[0] || null;
+  }
+
+  // Build 12.135: a stored league context is only usable while it still points
+  // at a real, unplayed fixture. Anything else has to be prepared again.
+  function leaguePreparedContextValid() {
+    const league = ensureLeagueState();
+    if (!league?.activeMode) return false;
+    if (league.activeMode === 'exhibition') return true;
+    const fixture = leagueActiveFixture();
+    return Boolean(fixture && !fixture.played);
+  }
+
   function settleLeagueAfterCareerMatch(winner, summary) {
     const league = ensureLeagueState();
     if (!league || !league.activeMode) return null;
@@ -641,11 +668,35 @@
       return result;
     }
 
-    const fixture = leagueActiveFixture();
+    // Build 12.135: a league result must never be silently discarded.
+    //
+    // `activeFixtureId` can stop resolving between kick-off and settlement —
+    // the league state is rebuilt whenever `careerState` is replaced (save
+    // reload, import, recovery), and a rebuild that re-derives the schedule
+    // invalidates the stored id. The old code returned null here, so the match
+    // was played and presented as a league fixture but nothing was ever written
+    // to the table, leaving every club on zero.
+    //
+    // Recover by writing the result into the correct fixture: the prepared one
+    // if it still exists, otherwise the next unplayed user fixture against the
+    // same opponent, otherwise the next unplayed user fixture at all.
+    let fixture = leagueActiveFixture();
+    if (!fixture || fixture.played) {
+      fixture = leagueRecoverSettlementFixture(league, fixture);
+    }
     if (!fixture) {
+      // Genuinely nothing left to record against (season complete). Report it
+      // honestly as a non-counting fixture rather than returning nothing.
       league.activeMode = null;
+      league.activeFixtureId = null;
       league.activeOpponentId = null;
-      return null;
+      saveCareerState();
+      return {
+        mode: 'exhibition',
+        opponentId: opponent?.id || null,
+        opponentName: opponent?.name || 'League Opponent',
+        unrecorded: true
+      };
     }
     const userHome = fixture.homeId === LEAGUE_USER_CLUB_ID;
     fixture.homeScore = userHome ? summary.blueScore : summary.redScore;

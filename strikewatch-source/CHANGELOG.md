@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.135 — Open Containers
+
+- Fixes eighteen panels across thirteen routes that rendered as empty boxes on mobile, including Training Squad, Team XP Benefits, the league table, squad dynamics, the calendar agenda, the loadout panel and the tactical analysis.
+- Stops a league result being discarded when its prepared fixture id no longer resolves, and refuses to reuse a stale match context.
+- Makes the league table readable on both presentation targets.
+- Removes the duplicated title and detail from Event Agenda rows and replaces it with a short action label, with readable type on both targets.
+- Raises training and development readability on desktop and mobile.
+- Evidence: `AUDIT-12.135.md`.
+
+
 ## 12.134 — Durable Career
 
 - Sequences and verifies every career save: a stale second tab can no longer overwrite newer progress, and a rejected write now raises a visible warning instead of being discarded.
@@ -45,6 +55,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.134 | Career save durability and compact interface audit | `AUDIT-12.134.md` |
 | 12.133 | Command-surface readability, Inbox scroll and portraits | `AUDIT-12.133.md` |
 | 12.132 | Match setup selection feedback | `AUDIT-12.132.md` |
 | 12.131 | Tactical clarity consolidation and End Day contrast | `AUDIT-12.131.md` |

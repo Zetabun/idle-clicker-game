@@ -32,10 +32,11 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.134 makes career saves durable and verifiable, clears the compact
-interface overflow and readability backlog, founds each club with one inherited
-assistant manager, and states the fixture type in the post-match report.
-See `HANDOFF.md` and `AUDIT-12.134.md`.
+Build 12.135 stops management panels collapsing to empty boxes inside the grid
+scroll container, recovers league results whose fixture reference goes stale,
+and makes the league table, Event Agenda and training copy readable on both
+presentation targets.
+See `HANDOFF.md` and `AUDIT-12.135.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

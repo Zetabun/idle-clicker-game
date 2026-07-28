@@ -1428,7 +1428,13 @@
 
   function startMatchmakingSearch() {
     if (matchmakingState.active || !careerState.created || !careerSquadReady() || !matchmakingOverlayEl) return;
-    if (typeof prepareCareerMatchContext === 'function' && !careerState.league?.activeMode) {
+    // Build 12.135: only reuse a stored league context while it still resolves
+    // to an unplayed fixture. A stale activeMode used to skip preparation and
+    // send the manager into a "league" match that could not be settled.
+    const contextUsable = typeof leaguePreparedContextValid === 'function'
+      ? leaguePreparedContextValid()
+      : Boolean(careerState.league?.activeMode);
+    if (typeof prepareCareerMatchContext === 'function' && !contextUsable) {
       const prepared = prepareCareerMatchContext();
       if (!prepared?.ok) {
         deploymentSelectionState.active = true;

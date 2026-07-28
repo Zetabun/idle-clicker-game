@@ -31096,3 +31096,113 @@ body.mail-scroll-armed .club-mail-list {
   #menuContent .career-attachment-slot,
   #menuContent .player-accolade-entry { min-width: 0; }
 }
+
+/* ==========================================================================
+   Build 12.135 - Container collapse, league table and agenda layer
+   ========================================================================== */
+
+/* --- Collapsed panels ------------------------------------------------------
+   #menuContent is a grid with a definite block size on compact viewports. A
+   grid item whose overflow is not visible gets an automatic minimum size of
+   zero, so any panel that clips its own overflow could be squashed to padding
+   height while its content still existed underneath. That is the reported
+   "cards are not loading" failure: Training Squad, Team XP Benefits, the
+   league table, squad dynamics, the calendar agenda, the loadout panel and the
+   tactical analysis all rendered as empty boxes.
+
+   Restoring a content-based minimum fixes every one of them at once. Measured
+   by __strikeDebug.mobileInterfaceAuditForTest().collapsed.
+   -------------------------------------------------------------------------- */
+
+#menuContent > * {
+  min-height: max-content;
+}
+
+/* --- League table: readable at both targets --------------------------------
+   The table shipped at 6px headers and 7px rows, which is unreadable on a
+   phone and uncomfortable on desktop. Both targets now sit on the release
+   readability floors.
+   -------------------------------------------------------------------------- */
+
+#menuContent .league-table-head { font-size: 10px !important; letter-spacing: .1em !important; }
+#menuContent .league-table-row { font-size: 11px !important; }
+#menuContent .league-table-row .position { font-size: 14px !important; }
+#menuContent .league-table-row .club strong { font-size: 12px !important; }
+#menuContent .league-table-row .club small { font-size: 10.5px !important; }
+
+@media (max-width: 1023px) {
+  #menuContent .league-table-head { font-size: 11px !important; }
+  #menuContent .league-table-row { font-size: 12px !important; min-height: 52px; }
+  #menuContent .league-table-row .position { font-size: 15px !important; }
+  #menuContent .league-table-row .club strong { font-size: 13px !important; }
+  #menuContent .league-table-row .club small { font-size: 11px !important; white-space: normal; }
+}
+
+/* --- Event agenda: readable at both targets --------------------------------
+   Date chips ran at 5.5-6px and the description at 7px. The action button no
+   longer repeats the row copy (see clubCalendarAgendaActionMarkup), so the row
+   has room for real type sizes.
+   -------------------------------------------------------------------------- */
+
+#menuContent .club-calendar-agenda-item > time b { font-size: 10px !important; }
+#menuContent .club-calendar-agenda-item > time strong { font-size: 22px !important; }
+#menuContent .club-calendar-agenda-item > time small { font-size: 10px !important; }
+#menuContent .club-calendar-agenda-item > div span { font-size: 10px !important; }
+#menuContent .club-calendar-agenda-item > div strong { font-size: 13px !important; }
+#menuContent .club-calendar-agenda-item > div small { font-size: 11px !important; }
+#menuContent .club-calendar-agenda-action { min-width: 118px; }
+#menuContent .club-calendar-agenda-action b { font-size: 11px !important; letter-spacing: .1em; }
+
+@media (max-width: 1023px) {
+  #menuContent .club-calendar-agenda-item {
+    grid-template-columns: 62px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 10px 12px !important;
+    padding: 12px !important;
+  }
+
+  #menuContent .club-calendar-agenda-item > time b { font-size: 11px !important; }
+  #menuContent .club-calendar-agenda-item > time strong { font-size: 24px !important; }
+  #menuContent .club-calendar-agenda-item > time small { font-size: 11px !important; }
+
+  #menuContent .club-calendar-agenda-item > div span { font-size: 11px !important; }
+  #menuContent .club-calendar-agenda-item > div strong { font-size: 15px !important; white-space: normal !important; }
+  #menuContent .club-calendar-agenda-item > div small { font-size: 12px !important; white-space: normal !important; line-height: 1.45 !important; }
+
+  /* The action moves under the description rather than squeezing a third
+     column onto a phone. */
+  #menuContent .club-calendar-agenda-action {
+    grid-column: 2;
+    justify-self: start;
+    min-width: 150px !important;
+    min-height: 44px !important;
+  }
+
+  #menuContent .club-calendar-agenda-action b { font-size: 12px !important; }
+}
+
+/* --- Training & development: desktop readability --------------------------- */
+
+#menuContent .training-player-card header span { font-size: 10px !important; letter-spacing: .1em !important; }
+#menuContent .training-player-card header strong { font-size: 13px !important; }
+#menuContent .training-player-card header small { font-size: 10.5px !important; }
+#menuContent .training-player-card label > span { font-size: 10px !important; }
+#menuContent .training-player-card select { font-size: 11.5px !important; min-height: 40px !important; }
+#menuContent .training-player-card > p { font-size: 11px !important; line-height: 1.55 !important; }
+#menuContent .training-player-metrics span { font-size: 10.5px !important; }
+#menuContent .development-intro-panel > div > span { font-size: 10px !important; }
+#menuContent .development-intro-panel p { font-size: 11.5px !important; }
+#menuContent .development-intro-panel ol span { font-size: 10.5px !important; }
+
+@media (max-width: 1023px) {
+  #menuContent .training-player-card header span { font-size: 11px !important; }
+  #menuContent .training-player-card header strong { font-size: 15px !important; }
+  #menuContent .training-player-card header small { font-size: 11.5px !important; white-space: normal !important; }
+  #menuContent .training-player-card label > span { font-size: 11px !important; }
+  #menuContent .training-player-card select { font-size: 13px !important; min-height: 46px !important; }
+  #menuContent .training-player-card > p { font-size: 12px !important; }
+  #menuContent .training-player-metrics span { font-size: 11.5px !important; }
+  #menuContent .development-intro-panel > div > span { font-size: 11px !important; }
+  #menuContent .development-intro-panel p { font-size: 12.5px !important; }
+  #menuContent .development-intro-panel ol span { font-size: 11.5px !important; }
+}
