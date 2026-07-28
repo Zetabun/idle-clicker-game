@@ -1,0 +1,268 @@
+name: Release Strikewatch 12.156
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-release-12-156
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-durable-match-results-12.156
+          fetch-depth: 0
+
+      - name: Patch release metadata and concise documentation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('strikewatch-source')
+
+          core = root / 'js' / '00-core.js'
+          text = core.read_text(encoding='utf-8')
+          text = text.replace("const BUILD_VERSION = '12.155';", "const BUILD_VERSION = '12.156';")
+          text = text.replace("const BUILD_NAME = 'Still Armoury';", "const BUILD_NAME = 'Durable Results';")
+          text = text.replace("const BUILD_ID = '12.155.0-still-armoury';", "const BUILD_ID = '12.156.0-durable-results';")
+          core.write_text(text, encoding='utf-8')
+
+          index = root / 'index.html'
+          text = index.read_text(encoding='utf-8')
+          text = text.replace('12.155.0-still-armoury', '12.156.0-durable-results')
+          text = text.replace('Strikewatch 12.155: Still Armoury', 'Strikewatch 12.156: Durable Results')
+          text = text.replace('BUILD 12.155 · Still Armoury', 'BUILD 12.156 · Durable Results')
+          text = text.replace('>12.155</b>', '>12.156</b>')
+          index.write_text(text, encoding='utf-8')
+
+          handoff = root / 'HANDOFF.md'
+          text = handoff.read_text(encoding='utf-8')
+          text = text.replace('- Build: **12.155 — Still Armoury**', '- Build: **12.156 — Durable Results**')
+          text = text.replace('- Build ID: `12.155.0-still-armoury`', '- Build ID: `12.156.0-durable-results`')
+          text = text.replace('- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.155.html`', '- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.156.html`')
+          note = "Build 12.156 makes completed match settlement a protected durability boundary. If another tab or restored session advances the save sequence during a match, the displaced stored career is preserved as the recovery backup and the fully settled result — Gold Coins, league fixture, finances, player progression and any pending victory crate — is written before the reward presentation can be left. Ordinary stale autosaves remain blocked. `durableMatchSettlementForTest()` covers the stale-save round trip. See `AUDIT-12.156.md`.\n\n"
+          if note not in text:
+              marker = 'Build 12.155 replaces the Armoury'
+              text = text.replace(marker, note + marker, 1)
+          handoff.write_text(text, encoding='utf-8')
+
+          agents = root / 'AGENTS.md'
+          text = agents.read_text(encoding='utf-8')
+          note = "Build 12.156 owns durable match settlement (`js/80-durable-results.js`). A completed match is a protected save boundary after all rewards and league state have settled; ordinary stale-session autosaves must remain blocked. If the protected write displaces a newer stored career, preserve that stored career through the existing recovery backup before writing. Keep `durableMatchSettlementForTest()` green and retain the final module ordering after `79-save-checkpoints.js`. See `AUDIT-12.156.md`.\n\n"
+          if note not in text:
+              marker = 'Build 12.155 owns the loadout stills'
+              text = text.replace(marker, note + marker, 1)
+          agents.write_text(text, encoding='utf-8')
+
+          contracts = root / 'CONTRACTS.md'
+          text = contracts.read_text(encoding='utf-8')
+          addition = "- Completed match settlement is a protected durability boundary after finance, Gold Coins, league fixtures, player progression and pending rewards have all been applied. A stale ordinary session must not silently discard that earned result; preserve the displaced stored career as the recovery backup, then commit the fully settled state. Ordinary autosaves remain subject to the stale-session guard.\n"
+          if addition not in text:
+              anchor = '- Returning to HQ, ending the day and the page being hidden or closed are all\n  save checkpoints; no path back to HQ may skip one.\n'
+              text = text.replace(anchor, anchor + addition, 1)
+          contracts.write_text(text, encoding='utf-8')
+
+          changelog = root / 'CHANGELOG.md'
+          text = changelog.read_text(encoding='utf-8')
+          section = "## 12.156 — Durable Results\n\n- Makes completed match settlement a protected save boundary after every reward and league mutation has been applied.\n- Preserves a displaced stored career through Data & Recovery before a stale in-match session writes the completed result.\n- Keeps ordinary stale-session autosaves blocked, so background tabs still cannot overwrite newer progress.\n- Adds a save-and-reload regression covering Gold Coins, the played fixture, winner, backup and sequence advancement.\n- Save schema, reward values, league scoring, match simulation and responsive presentation are unchanged.\n- Evidence: `AUDIT-12.156.md`.\n\n\n"
+          if section not in text:
+              text = text.replace('# Release history router\n\n', '# Release history router\n\n' + section, 1)
+          changelog.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Run targeted durability regression
+        shell: bash
+        run: |
+          cat > /tmp/durable-results-test.js <<'JS'
+          const fs = require('fs');
+          const store = new Map();
+          global.window = { __strikeDebug: {} };
+          global.localStorage = {
+            getItem: key => store.has(key) ? store.get(key) : null,
+            setItem: (key, value) => store.set(key, String(value)),
+            removeItem: key => store.delete(key)
+          };
+
+          const CAREER_STORAGE_KEY = 'strikewatchCareerV1';
+          const CAREER_BACKUP_STORAGE_KEY = 'strikewatchCareerBackupV1';
+          const CAREER_SAVE_META_STORAGE_KEY = 'strikewatchCareerSaveMetaV1';
+          const BUILD_VERSION = '12.156';
+          const LEAGUE_USER_CLUB_ID = 'club-user';
+          let careerState = { created: true, goldCoins: 2, league: { fixtures: [] } };
+          let careerSaveSequence = 10;
+          let careerSaveFailure = null;
+          let careerDataNotice = null;
+
+          function careerSaveMetadata() {
+            try { return JSON.parse(localStorage.getItem(CAREER_SAVE_META_STORAGE_KEY) || 'null'); }
+            catch { return null; }
+          }
+          function careerSaveIsStale() {
+            return Math.max(0, Number(careerSaveMetadata()?.saveSequence) || 0) > careerSaveSequence;
+          }
+          function saveCareerState(options = {}) {
+            if (options.force !== true && careerSaveIsStale()) {
+              careerSaveFailure = { code: 'stale-session' };
+              return false;
+            }
+            const serialised = JSON.stringify(careerState);
+            const existing = localStorage.getItem(CAREER_STORAGE_KEY);
+            const previousMeta = careerSaveMetadata();
+            if (options.createBackup !== false && existing && existing !== serialised) {
+              localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, existing);
+            }
+            localStorage.setItem(CAREER_STORAGE_KEY, serialised);
+            if (localStorage.getItem(CAREER_STORAGE_KEY) !== serialised) throw new Error('read-back failed');
+            careerSaveSequence = Math.max(0, Number(previousMeta?.saveSequence) || 0) + 1;
+            localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
+              savedAt: new Date().toISOString(), buildVersion: BUILD_VERSION,
+              reason: String(options.reason || 'autosave'), saveSequence: careerSaveSequence
+            }));
+            careerSaveFailure = null;
+            return true;
+          }
+          function completeCareerMatch() {
+            careerState.goldCoins = 14;
+            careerState.league = { fixtures: [{
+              id: 'REAL-WRAPPER', homeId: LEAGUE_USER_CLUB_ID, awayId: 'opponent',
+              played: true, homeScore: 3, awayScore: 1, winnerId: LEAGUE_USER_CLUB_ID
+            }] };
+            saveCareerState({ reason: 'base-match-save' });
+            return { goldCoins: 14 };
+          }
+          function normaliseCareerState(value) { return JSON.parse(JSON.stringify(value)); }
+
+          eval(fs.readFileSync('strikewatch-source/js/80-durable-results.js', 'utf8'));
+
+          const hook = window.__strikeDebug.durableMatchSettlementForTest();
+          if (!hook.ok) throw new Error(`debug regression failed: ${JSON.stringify(hook)}`);
+
+          const oldCareer = { created: true, goldCoins: 2, league: { fixtures: [{ id: 'REAL-WRAPPER', played: false }] } };
+          careerState = JSON.parse(JSON.stringify(oldCareer));
+          careerSaveSequence = 20;
+          localStorage.setItem(CAREER_STORAGE_KEY, JSON.stringify(oldCareer));
+          localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({ saveSequence: 25 }));
+          completeCareerMatch(0);
+          const persisted = JSON.parse(localStorage.getItem(CAREER_STORAGE_KEY));
+          const backup = JSON.parse(localStorage.getItem(CAREER_BACKUP_STORAGE_KEY));
+          const meta = JSON.parse(localStorage.getItem(CAREER_SAVE_META_STORAGE_KEY));
+          if (persisted.goldCoins !== 14 || !persisted.league.fixtures[0].played) throw new Error('wrapped settlement did not persist');
+          if (backup.goldCoins !== 2) throw new Error('displaced save was not retained');
+          if (meta.saveSequence !== 26 || meta.reason !== 'match-settlement') throw new Error('protected sequence did not advance from stored authority');
+          console.log(JSON.stringify({ hook, wrapped: { goldCoins: persisted.goldCoins, played: persisted.league.fixtures[0].played, backupGoldCoins: backup.goldCoins, sequence: meta.saveSequence } }, null, 2));
+          JS
+          node /tmp/durable-results-test.js
+
+      - name: Build and verify deterministically
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd strikewatch-source
+          python3 build.py
+          for file in js/*.js; do node --check "$file"; done
+          node --check js/strikewatch.dev.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('dist/strikewatch-build-12.156.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
+          if not scripts:
+              raise SystemExit('No inline standalone script found')
+          Path('/tmp/strikewatch-standalone.js').write_text(scripts[-1], encoding='utf-8')
+          PY
+          node --check /tmp/strikewatch-standalone.js
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.156.html /tmp/strikewatch-12.156.first.html
+          first_bundle=$(sha256sum js/strikewatch.dev.js | cut -d' ' -f1)
+          first_standalone=$(sha256sum dist/strikewatch-build-12.156.html | cut -d' ' -f1)
+          python3 build.py
+          cmp -s /tmp/strikewatch.dev.first.js js/strikewatch.dev.js
+          cmp -s /tmp/strikewatch-12.156.first.html dist/strikewatch-build-12.156.html
+          second_bundle=$(sha256sum js/strikewatch.dev.js | cut -d' ' -f1)
+          second_standalone=$(sha256sum dist/strikewatch-build-12.156.html | cut -d' ' -f1)
+          test "$first_bundle" = "$second_bundle"
+          test "$first_standalone" = "$second_standalone"
+          cp dist/strikewatch-build-12.156.html ../cod.html
+          cmp -s dist/strikewatch-build-12.156.html ../cod.html
+          echo "bundle_sha=$second_bundle" >> "$GITHUB_OUTPUT"
+          echo "standalone_sha=$second_standalone" >> "$GITHUB_OUTPUT"
+
+      - name: Finalise release audit
+        shell: bash
+        env:
+          BUNDLE_SHA: ${{ steps.verify.outputs.bundle_sha }}
+          STANDALONE_SHA: ${{ steps.verify.outputs.standalone_sha }}
+        run: |
+          cat > strikewatch-source/AUDIT-12.156.md <<EOF
+          # Build 12.156 — Durable Results
+
+          ## Reported defect
+
+          A completed league match showed awarded Gold Coins and league points in the live report, but a later visit could restore the pre-match balance and table.
+
+          ## Root cause
+
+          Match settlement updated live \`careerState\`, but the stale-session sequence guard could reject the write when another tab or restored same-origin session advanced the stored sequence during the match. The report continued rendering from live memory, while return-to-HQ and page-hide checkpoints retried the same stale ordinary save and were rejected again.
+
+          ## Fix
+
+          \`js/80-durable-results.js\` loads after the established save checkpoints and wraps the existing save and match-completion authorities.
+
+          - Ordinary stale-session autosaves remain blocked.
+          - After the base match completion applies finance, Gold Coins, league fixture state, player progression and any pending victory crate, one protected settlement write runs before the manager can leave the reward presentation.
+          - If the sequence is stale, the displaced stored career is copied to the existing recovery-backup key before the complete settled state is written using the stored sequence as authority.
+          - Storage rejection and read-back failures continue through the existing save-health notice path.
+          - Save schema 19, league scoring, reward values and match simulation are unchanged.
+
+          ## Verification
+
+          - \`durableMatchSettlementForTest()\`: pass. An ordinary stale write was rejected; the protected result persisted 14 GC, a played winning fixture, the displaced 2 GC save as backup, and advanced sequence 25 to 26.
+          - Wrapped \`completeCareerMatch()\` mock: pass with the same persisted and backup values.
+          - Every modular JavaScript file parsed with \`node --check\`.
+          - Generated \`js/strikewatch.dev.js\` parsed.
+          - Standalone inline JavaScript parsed.
+          - \`python3 build.py\` succeeded twice.
+          - Deterministic bundle SHA-256: \`$BUNDLE_SHA\`.
+          - Deterministic standalone SHA-256: \`$STANDALONE_SHA\`.
+          - Root \`cod.html\` is byte-identical to \`dist/strikewatch-build-12.156.html\`.
+
+          ## Compatibility
+
+          No responsive CSS, renderer, navigation, combat, economy values, fixture generation or save schema changed.
+          EOF
+
+      - name: Commit verified release to candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strikewatch-source/js/00-core.js \
+                  strikewatch-source/js/80-durable-results.js \
+                  strikewatch-source/js/strikewatch.dev.js \
+                  strikewatch-source/build.py \
+                  strikewatch-source/index.html \
+                  strikewatch-source/HANDOFF.md \
+                  strikewatch-source/AGENTS.md \
+                  strikewatch-source/CONTRACTS.md \
+                  strikewatch-source/CHANGELOG.md \
+                  strikewatch-source/AUDIT-12.156.md \
+                  strikewatch-source/dist/strikewatch-build-12.156.html \
+                  cod.html
+          if git diff --cached --quiet; then
+            echo 'Release already up to date.'
+            exit 0
+          fi
+          git commit -m 'Build 12.156: make match results durable'
+          git push origin HEAD:agent/fix-durable-match-results-12.156
