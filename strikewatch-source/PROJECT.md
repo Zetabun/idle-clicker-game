@@ -32,11 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.135 stops management panels collapsing to empty boxes inside the grid
-scroll container, recovers league results whose fixture reference goes stale,
-and makes the league table, Event Agenda and training copy readable on both
-presentation targets.
-See `HANDOFF.md` and `AUDIT-12.135.md`.
+Build 12.136 sizes the management scroll container's grid rows to their
+content, so panels are neither clipped nor overlapped, completing the container
+fix begun in 12.135.
+See `HANDOFF.md` and `AUDIT-12.136.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

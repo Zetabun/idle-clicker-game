@@ -4654,6 +4654,21 @@
           }
         }
 
+        // Build 12.136: overlapping panels. Two adjacent children of the scroll
+        // container must never intersect. This is the mirror of the collapsed
+        // check: an undersized grid row either clips its panel (when overflow
+        // is hidden) or lets it print over the next one. Both are failures.
+        const overlapping = [];
+        const laidOut = [...host.children].filter(node => node.getClientRects().length && getComputedStyle(node).display !== 'none');
+        for (let index = 0; index < laidOut.length - 1; index++) {
+          const current = laidOut[index].getBoundingClientRect();
+          const next = laidOut[index + 1].getBoundingClientRect();
+          const intersection = Math.round(current.bottom - next.top);
+          if (intersection > 2) {
+            overlapping.push({ node: describe(laidOut[index]), over: describe(laidOut[index + 1]), overlapPx: intersection });
+          }
+        }
+
         const dedupe = (list, key) => {
           const seen = new Map();
           for (const item of list) if (!seen.has(item[key])) seen.set(item[key], item);
@@ -4663,6 +4678,7 @@
         smallTargets = dedupe(smallTargets, 'node');
         results.push({
           route,
+          overlapCount: overlapping.length, overlapping: overlapping.slice(0, 6),
           collapsedCount: collapsed.length, collapsed: collapsed.slice(0, 6),
           overflowCount: overflowing.length, overflow: overflowing.slice(0, 6),
           tinyTextCount: tinyText.length, tinyText: tinyText.slice(0, 14),
@@ -4671,12 +4687,13 @@
       }
       setMenuRoute(previousRoute, { skipDraftGuard: true });
       const totals = results.reduce((acc, item) => {
+        acc.overlapping += item.overlapCount || 0;
         acc.collapsed += item.collapsedCount || 0;
         acc.overflow += item.overflowCount || 0;
         acc.tinyText += item.tinyTextCount || 0;
         acc.smallTargets += item.smallTargetCount || 0;
         return acc;
-      }, { collapsed: 0, overflow: 0, tinyText: 0, smallTargets: 0 });
+      }, { overlapping: 0, collapsed: 0, overflow: 0, tinyText: 0, smallTargets: 0 });
       return {
         width: window.innerWidth, minFont, minTouch, totals,
         worst: results.slice().sort((a, b) => (b.overflowCount + b.tinyTextCount) - (a.overflowCount + a.tinyTextCount)).slice(0, 8),

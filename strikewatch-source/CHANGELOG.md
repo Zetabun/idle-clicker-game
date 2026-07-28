@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.136 — Row Sizing
+
+- Hotfix: Build 12.135 stopped panels being clipped but left the grid rows undersized, so management panels overlapped each other on existing saves.
+- Sizes the scroll container's rows to their content instead of giving the items a minimum height, which resolves clipping and overlapping together.
+- Adds an overlap check to the compact interface audit so this regression class fails the gate.
+- Evidence: `AUDIT-12.136.md`.
+
+
 ## 12.135 — Open Containers
 
 - Fixes eighteen panels across thirteen routes that rendered as empty boxes on mobile, including Training Squad, Team XP Benefits, the league table, squad dynamics, the calendar agenda, the loadout panel and the tactical analysis.
@@ -55,6 +63,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.135 | Collapsed panels and lost league results | `AUDIT-12.135.md` |
 | 12.134 | Career save durability and compact interface audit | `AUDIT-12.134.md` |
 | 12.133 | Command-surface readability, Inbox scroll and portraits | `AUDIT-12.133.md` |
 | 12.132 | Match setup selection feedback | `AUDIT-12.132.md` |

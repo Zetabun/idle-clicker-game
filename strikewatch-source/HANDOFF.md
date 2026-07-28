@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.135 — Open Containers**
-- Build ID: `12.135.0-open-containers`
+- Build: **12.136 — Row Sizing**
+- Build ID: `12.136.0-row-sizing`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.135.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.136.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.136 is a hotfix for a Build 12.135 regression. 12.135 gave the scroll container's children a content-based minimum height, which stopped panels being clipped but left the grid rows undersized, so panels overflowed their own row and printed over the next one. The tracks are now sized instead (`grid-auto-rows: max-content`), which resolves clipping and overlapping together, and the compact audit gained an overlap check. See `AUDIT-12.136.md`.
 
 Build 12.135 fixes the panels that rendered as empty boxes. `#menuContent` is a grid, and a grid item that clips its own overflow gets an automatic minimum size of zero, so eighteen panels across thirteen routes were being squashed to padding height with their content clipped underneath — Training Squad, Team XP Benefits, the league table, squad dynamics, the calendar agenda, the loadout panel and the tactical analysis. A league result can no longer be discarded when its fixture id stops resolving, and the league table, Event Agenda and training copy are readable on both targets. See `AUDIT-12.135.md`.
 

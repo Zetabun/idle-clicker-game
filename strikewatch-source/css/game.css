@@ -31114,8 +31114,17 @@ body.mail-scroll-armed .club-mail-list {
    by __strikeDebug.mobileInterfaceAuditForTest().collapsed.
    -------------------------------------------------------------------------- */
 
-#menuContent > * {
-  min-height: max-content;
+/* Build 12.136 corrects this. `min-height: max-content` on the items stopped
+   the clipping but left the rows themselves undersized, so panels overflowed
+   their own row and printed on top of the next one. Sizing the rows is the
+   actual fix: with `max-content` rows the grid no longer distributes the
+   container's definite height across the tracks, so each panel gets a row as
+   tall as its content and nothing is clipped or overlapped. The item-level
+   minimum is no longer needed and is removed with it. */
+
+#menuContent {
+  grid-auto-rows: max-content;
+  align-content: start;
 }
 
 /* --- League table: readable at both targets --------------------------------

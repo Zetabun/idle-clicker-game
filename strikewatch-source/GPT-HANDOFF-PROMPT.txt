@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.135 — Open Containers
-Build ID: 12.135.0-open-containers
+Build 12.136 — Row Sizing
+Build ID: 12.136.0-row-sizing
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,8 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.136 owns the scroll-container row sizing; size the grid tracks, not
+the items, and keep the compact audit at zero overlapping and zero collapsed.
 Build 12.135 owns the grid container-collapse fix, league settlement
 recovery and the league/agenda/training readability rules; keep the compact
 audit reporting zero collapsed containers and never let a league result settle
