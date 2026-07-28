@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.146';
-  const BUILD_NAME = 'Contact Shading';
-  const BUILD_ID = '12.146.0-contact-shading';
+  const BUILD_VERSION = '12.147';
+  const BUILD_NAME = 'Weapon Form';
+  const BUILD_ID = '12.147.0-weapon-form';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

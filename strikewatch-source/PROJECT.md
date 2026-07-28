@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.146 bakes ambient occlusion into the arenas at build time, so enclosed
-space reads darker than open space at no per-frame cost.
-See `HANDOFF.md` and `AUDIT-12.146.md`.
+Build 12.147 gives weapon models a light direction, so they resolve as solids
+rather than flat slabs on every menu surface.
+See `HANDOFF.md` and `AUDIT-12.147.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.147 — Weapon Form
+
+- Gives weapons a light direction: every face of every weapon box used the same gradient, so guns read as flat slabs at any angle. Per-face shading now runs from 0.50 on the bottom to 1.30 on the top, matching the armour rig.
+- Barrels and suppressors get the same treatment so they no longer read as flat bands against a shaded receiver.
+- Fixes the grip texture, which repeated every 9px at high contrast and read as hazard tape rather than grip.
+- Corrects AUDIT-12.141: weapon geometry has one authority, not two. `careerWeaponVisualParts()` feeds the menus, the operator weapon and the viewmodel alike.
+- Presentation only — no authored weapon part moved, so no hitbox, anchor or handling value changed.
+- Evidence: `AUDIT-12.147.md`.
+
+
 ## 12.146 — Contact Shading
 
 - Adds baked ambient occlusion to every arena: corridors, corners and enclosed walls now resolve darker than open rooms.

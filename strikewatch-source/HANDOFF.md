@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.146 — Contact Shading**
-- Build ID: `12.146.0-contact-shading`
+- Build: **12.147 — Weapon Form**
+- Build ID: `12.147.0-weapon-form`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.146.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.147.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.147 gives weapons form. Every face of every weapon cuboid used one gradient, so guns read as flat slabs at any angle; per-face directional shading now runs 0.50 on the bottom to 1.30 on the top, matching the armour rig. The `rubber` grip texture dropped from a 9px high-contrast period to 4px, since at inspection scale it read as hazard tape. **Correction to AUDIT-12.141**: weapon geometry has one authority, `careerWeaponVisualParts()`, consumed by the menus, the operator weapon and the viewmodel alike — the earlier claim of two independent authorities was wrong and `CONTRACTS.md` is fixed. See `AUDIT-12.147.md`.
 
 Build 12.146 adds baked ambient occlusion. Enclosure is sampled once from the collision grid when world batches are built and folded into the existing per-draw colour, so it costs no extra draw calls, no texture and no shader work — corridors resolve darker than open rooms. It is quantised to six steps because the static batcher groups by exact material; citadel's batching survives at 120 batch draws. Static batching was **not** extended past citadel: `drawStaticWorld` has many time-dependent draws and `setStaticWorldBatchEligibility()` is never called, so batching other arenas today would freeze their animated decor. See `AUDIT-12.146.md`.
 

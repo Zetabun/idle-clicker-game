@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.146 — Contact Shading
-- Standalone: `dist/strikewatch-build-12.146.html`
+- Build 12.147 — Weapon Form
+- Standalone: `dist/strikewatch-build-12.147.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

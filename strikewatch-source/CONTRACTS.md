@@ -66,9 +66,11 @@ current task. Release-specific implementation detail belongs in the matching
 - Earned progress must be written before the manager can plausibly leave.
   Returning to HQ, ending the day and the page being hidden or closed are all
   save checkpoints; no path back to HQ may skip one.
-- Weapon geometry has two authorities: `careerWeapon3dParts()` for every menu
-  surface and `operatorSharedWeaponRig()`/`drawFirstPersonWeapon()` for the
-  live match. A weapon change must be applied to both.
+- `careerWeaponVisualParts()` is the single authority for weapon geometry. The
+  CSS-3D menu surfaces, the in-match operator weapon and the first-person
+  viewmodel all consume it, and `careerWeaponGeometryIntegrityAudit()` verifies
+  every model class stays connected in both the world and viewmodel contexts.
+  Author a weapon once; never fork its parts per renderer.
 - A control that can refuse must state that it will refuse before it is
   pressed, and a refused press must route to whatever clears the blocker.
   `careerMatchLaunchState()` is the single authority for match availability.

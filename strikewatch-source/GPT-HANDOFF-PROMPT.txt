@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.146 — Contact Shading
-Build ID: 12.146.0-contact-shading
+Build 12.147 — Weapon Form
+Build ID: 12.147.0-weapon-form
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,8 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.147 owns weapon presentation; careerWeaponVisualParts() is the single
+geometry authority for menus, operator weapon and viewmodel alike.
 Build 12.146 owns baked occlusion; keep it quantised or the static batcher
 fragments. Do not batch another arena until animated draws in drawStaticWorld
 are excluded via setStaticWorldBatchEligibility().
