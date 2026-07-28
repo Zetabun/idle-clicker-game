@@ -31,6 +31,7 @@ current task. Release-specific implementation detail belongs in the matching
   casually override phone rules, and a mobile fix must not change desktop
   density.
 - Require no document-level horizontal overflow at supported widths.
+- Compact Armoury inventory cards use explicit thumbnail, copy, comparison and issue-state areas. The issue state remains horizontal and the list must not become a document-level or nested horizontal carousel at supported compact widths.
 - Touch actions affected by a change should remain at least 44px.
 - Meaningful mobile microcopy has a 12px floor; explanatory paragraphs and
   decision-support copy use at least 14px. Decorative glyphs, transient damage
@@ -207,6 +208,7 @@ current task. Release-specific implementation detail belongs in the matching
   line of sight unless the gameplay change is explicit and audited.
 - Living and fallen operators share the established procedural body/head
   geometry and deterministic identity palette.
+- Operator contact ambient occlusion is folded into the existing deterministic material palette at authored overlap zones. It must not add meshes, draw calls, textures, shader passes or uniforms unless a later release explicitly budgets and measures that cost; living and fallen operators share the same treatment.
 - Weapon and armour presentation derives from shared authored parts and
   attachment anchors. Do not restore unrelated generic hand, muzzle or fit
   coordinates.

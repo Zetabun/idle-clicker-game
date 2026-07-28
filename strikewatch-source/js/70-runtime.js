@@ -7992,6 +7992,7 @@
       headGeometry: operatorHeadGeometryAudit(bots[0] || null),
       skinPresentation: operatorSkinPresentationAudit(bots[0] || null),
       armour: operatorArmourMaterialAudit(),
+      ambientOcclusion: operatorAmbientOcclusionAudit(bots[0] || null),
       armourPresentation: bots.map(bot => ({ name: bot.name, id: bot.armourId || 'none', ...operatorArmourPresentationAudit(bot) })),
       surfaceGeometry: operatorSurfaceGeometryAudit(),
       liveOperators: bots.filter(bot => bot.alive).length,
@@ -8003,6 +8004,7 @@
     }),
     operatorHeadGeometryForTest: (slot = 0) => operatorHeadGeometryAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     operatorSkinPresentationForTest: (slot = 0) => operatorSkinPresentationAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
+    operatorAmbientOcclusionForTest: (slot = 0) => operatorAmbientOcclusionAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     armourSystemForTest: () => {
       const p12 = getCareerWeapon('scrap-p12');
       const rifle = getCareerWeapon('ar4-sentinel');
@@ -9396,6 +9398,7 @@
         geometry: operatorSurfaceGeometryAudit(),
         headGeometry: operatorHeadGeometryAudit(target),
         skinPresentation: operatorSkinPresentationAudit(target),
+        ambientOcclusion: operatorAmbientOcclusionAudit(target),
         proportions: operatorProportionAudit()
       };
     },

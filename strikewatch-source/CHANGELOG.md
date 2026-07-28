@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.157 — Operator Depth
+
+- Adds baked contact ambient occlusion to operator models at the helmet, neck, joints, vest/webbing, belt equipment, ankles and gloves.
+- Uses darker variants of the existing deterministic palette, so living and fallen operators gain depth with zero additional meshes, draw calls, textures, shader passes or uniforms.
+- Rebuilds the compact Armoury inventory as bounded cards instead of a portrait horizontal carousel; comparison badges remain visible and issue state reads horizontally.
+- Verifies the loadout route at 320, 375, 390, 430 and 823 CSS pixels plus 844 × 390 landscape with zero overflow or overlap.
+- Gameplay geometry, hit detection, collision, navigation, line of sight, weapon values, saves and schemas are unchanged.
+- Evidence: `AUDIT-12.157.md`.
+
+
 ## 12.156 — Durable Results
 
 - Makes completed match settlement a protected save boundary after every reward and league mutation has been applied.
