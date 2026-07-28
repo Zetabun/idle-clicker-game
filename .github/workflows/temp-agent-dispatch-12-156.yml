@@ -1,0 +1,38 @@
+name: Temporary Agent Dispatch 12.156
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/temp-agent-dispatch-12-156.yml
+      - .agent-dispatch-12-156-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  dispatch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-durable-match-results-12.156
+          fetch-depth: 0
+      - name: Run branch release steps
+        shell: bash
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 - <<'PY'
+          import subprocess, yaml
+          from pathlib import Path
+          workflow = yaml.safe_load(Path('.github/workflows/agent-build-12-156.yml').read_text(encoding='utf-8'))
+          steps = workflow['jobs']['build-release']['steps']
+          for step in steps:
+              script = step.get('run')
+              if not script:
+                  continue
+              print(f"::group::{step.get('name', 'release step')}")
+              subprocess.run(['bash', '-euo', 'pipefail', '-c', script], check=True)
+              print('::endgroup::')
+          PY
