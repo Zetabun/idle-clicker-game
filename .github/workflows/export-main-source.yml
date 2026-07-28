@@ -1,0 +1,33 @@
+name: Export Strikewatch Source
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - '.github/export-source-trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Package repository
+        run: |
+          git archive --format=zip --output=/tmp/idle-clicker-game-main.zip HEAD
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: idle-clicker-game-main
+          path: /tmp/idle-clicker-game-main.zip
+          if-no-files-found: error
+          retention-days: 1
