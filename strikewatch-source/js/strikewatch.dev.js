@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.156';
-  const BUILD_NAME = 'Durable Results';
-  const BUILD_ID = '12.156.0-durable-results';
+  const BUILD_VERSION = '12.157';
+  const BUILD_NAME = 'Operator Depth';
+  const BUILD_ID = '12.157.0-operator-depth';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -43963,6 +43963,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   const OPERATOR_SKIN_TONES = OPERATOR_SKIN_PRESENTATION.tones;
 
+  // Build 12.157: operator ambient occlusion is baked into the existing
+  // procedural material palette at contact points. This mirrors the arena AO
+  // principle — fold occlusion into colour before drawing — but uses the
+  // operator's authored overlap hierarchy instead of sampling the map grid.
+  // It adds no meshes, draw calls, textures, framebuffer pass or shader work.
+  const OPERATOR_AMBIENT_OCCLUSION = Object.freeze({
+    revision: '12.157-baked-operator-contact-1',
+    technique: 'per-part contact shading folded into existing material colours',
+    factors: Object.freeze({
+      cloth: 0.88,
+      clothLight: 0.91,
+      armour: 0.90,
+      plate: 0.89,
+      polymer: 0.84,
+      webbing: 0.82,
+      utility: 0.85,
+      skin: 0.88,
+      metal: 0.92
+    })
+  });
+
   function operatorVisualSeed(bot) {
     const identity = `${bot?.name || 'operator'}|${bot?.slot ?? ''}|${bot?.team ?? ''}`;
     let hash = 2166136261;
@@ -43993,19 +44014,40 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const visual = operatorVisualProfile(bot);
     const clothVariation = 0.96 + ((visual.seed >>> 4) & 31) / 31 * 0.08;
     const multiply = (colour, factor) => colour.map(channel => clamp(channel * factor, 0, 1));
+    const cloth = multiply(blue ? [0.070, 0.086, 0.103] : [0.103, 0.077, 0.067], clothVariation);
+    const clothLight = multiply(blue ? [0.105, 0.128, 0.148] : [0.145, 0.112, 0.098], clothVariation);
+    const armour = multiply(blue ? [0.145, 0.174, 0.193] : [0.188, 0.158, 0.141], 0.98 + clothVariation * 0.02);
+    const plate = blue ? [0.082, 0.107, 0.125] : [0.119, 0.095, 0.082];
+    const polymer = [0.032, 0.043, 0.049];
+    const webbing = multiply(blue ? [0.105, 0.132, 0.142] : [0.139, 0.113, 0.097], clothVariation);
+    const utility = [0.054, 0.066, 0.071];
+    const skin = OPERATOR_SKIN_TONES[visual.skinIndex].slice();
+    const metal = [0.18, 0.21, 0.22];
+    const factors = OPERATOR_AMBIENT_OCCLUSION.factors;
     return {
-      cloth: multiply(blue ? [0.070, 0.086, 0.103] : [0.103, 0.077, 0.067], clothVariation),
-      clothLight: multiply(blue ? [0.105, 0.128, 0.148] : [0.145, 0.112, 0.098], clothVariation),
-      armour: multiply(blue ? [0.145, 0.174, 0.193] : [0.188, 0.158, 0.141], 0.98 + clothVariation * 0.02),
-      plate: blue ? [0.082, 0.107, 0.125] : [0.119, 0.095, 0.082],
-      polymer: [0.032, 0.043, 0.049],
-      webbing: multiply(blue ? [0.105, 0.132, 0.142] : [0.139, 0.113, 0.097], clothVariation),
-      utility: [0.054, 0.066, 0.071],
+      cloth,
+      clothLight,
+      armour,
+      plate,
+      polymer,
+      webbing,
+      utility,
       visor: multiply(blue ? [0.105, 0.285, 0.345] : [0.155, 0.235, 0.265], visual.visorBrightness),
-      skin: OPERATOR_SKIN_TONES[visual.skinIndex].slice(),
+      skin,
       team: blue ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11],
       teamSoft: blue ? [0.18, 0.50, 0.84] : [0.82, 0.26, 0.20],
-      metal: [0.18, 0.21, 0.22]
+      metal,
+      occluded: {
+        cloth: multiply(cloth, factors.cloth),
+        clothLight: multiply(clothLight, factors.clothLight),
+        armour: multiply(armour, factors.armour),
+        plate: multiply(plate, factors.plate),
+        polymer: multiply(polymer, factors.polymer),
+        webbing: multiply(webbing, factors.webbing),
+        utility: multiply(utility, factors.utility),
+        skin: multiply(skin, factors.skin),
+        metal: multiply(metal, factors.metal)
+      }
     };
   }
 
@@ -44141,6 +44183,34 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
   }
 
+  function operatorAmbientOcclusionAudit(bot = null) {
+    const sampleBot = bot || { name: 'ao-audit-operator', slot: 0, team: TEAM_BLUE };
+    const palette = getOperatorPalette(sampleBot);
+    const luminance = colour => colour[0] * 0.2126 + colour[1] * 0.7152 + colour[2] * 0.0722;
+    const materials = Object.keys(OPERATOR_AMBIENT_OCCLUSION.factors);
+    const reductions = Object.fromEntries(materials.map(material => [
+      material,
+      Math.round((1 - luminance(palette.occluded[material]) / Math.max(0.0001, luminance(palette[material]))) * 1000) / 1000
+    ]));
+    return {
+      revision: OPERATOR_AMBIENT_OCCLUSION.revision,
+      technique: OPERATOR_AMBIENT_OCCLUSION.technique,
+      factors: { ...OPERATOR_AMBIENT_OCCLUSION.factors },
+      measuredLuminanceReduction: reductions,
+      allContactMaterialsDarker: materials.every(material => luminance(palette.occluded[material]) < luminance(palette[material])),
+      contactZones: ['helmet and face equipment', 'neck and collar', 'arm and knee joints', 'vest straps and abdomen', 'belt equipment', 'ankles and gloves'],
+      additionalDrawCalls: 0,
+      additionalMeshes: 0,
+      additionalTextures: 0,
+      additionalShaderPasses: 0,
+      additionalShaderUniforms: 0,
+      sharedLivingAndCorpsePalette: true,
+      mapOcclusionChanged: false,
+      gameplayCollisionChanged: false,
+      hitDetectionChanged: false
+    };
+  }
+
   function operatorSkinPresentationAudit(bot = null) {
     const sampleBot = bot || { name: 'audit-operator', slot: 0, team: TEAM_BLUE };
     const visual = operatorVisualProfile(sampleBot);
@@ -44234,6 +44304,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       joints: 'forward-profiled tapered knee and elbow shells',
       boots: 'rounded heel, instep and tapered toe profile',
       equipment: 'soft rounded superellipsoid accessory forms',
+      ambientOcclusion: OPERATOR_AMBIENT_OCCLUSION.technique,
       sharedLivingAndCorpseGeometry: true,
       gameplayCollisionChanged: false,
       hitDetectionChanged: false,
@@ -44294,7 +44365,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       spec.faceCover.height,
       spec.faceCover.depth * visual.headDepth
     );
-    drawMesh(glMeshes.operatorFaceCover || smoothBox, palette.utility, glModel, hurt * 0.18, 1, 5, 0.88);
+    drawMesh(glMeshes.operatorFaceCover || smoothBox, palette.occluded.utility, glModel, hurt * 0.18, 1, 5, 0.88);
 
     const helmet = point(0, spec.helmet.offsetY, spec.helmet.offsetZ);
     mat4TRS(
@@ -44309,7 +44380,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     const brow = point(0, spec.brow.offsetY, spec.brow.offsetZ);
     mat4TRS(glModel, brow.x, brow.y, brow.z, yaw, pitch, roll, spec.brow.width, spec.brow.height, spec.brow.depth);
-    drawMesh(smoothBox, palette.utility, glModel, hurt * 0.26, 1, 6, 0.58);
+    drawMesh(smoothBox, palette.occluded.utility, glModel, hurt * 0.26, 1, 6, 0.58);
 
     const mount = point(0, spec.mount.offsetY, spec.mount.offsetZ);
     mat4TRS(glModel, mount.x, mount.y, mount.z, yaw, pitch, roll, spec.mount.width, spec.mount.height, spec.mount.depth);
@@ -44319,7 +44390,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (const lensSide of [-1, 1]) {
         const frame = point(lensSide * spec.lens.lateral, spec.lens.offsetY, spec.lens.offsetZ);
         mat4TRS(glModel, frame.x, frame.y, frame.z, yaw, pitch, roll + lensSide * 0.025, spec.lens.frameWidth, spec.lens.frameHeight, spec.lens.frameDepth);
-        drawMesh(glMeshes.sphere || smoothBox, palette.utility, glModel, hurt * 0.08, 1, 6, 0.58);
+        drawMesh(glMeshes.sphere || smoothBox, palette.occluded.utility, glModel, hurt * 0.08, 1, 6, 0.58);
         const lens = point(lensSide * spec.lens.lateral, spec.lens.offsetY, spec.lens.offsetZ + 0.007);
         mat4TRS(glModel, lens.x, lens.y, lens.z, yaw, pitch, roll + lensSide * 0.025, spec.lens.width, spec.lens.height, spec.lens.depth);
         drawMesh(glMeshes.sphere || smoothBox, palette.visor, glModel, 0.15 + hurt * 0.28, 1, 4, 0.16);
@@ -44331,7 +44402,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (const headsetSide of [-1, 1]) {
         const ear = point(headsetSide * spec.ear.lateral, spec.ear.offsetY, spec.ear.offsetZ);
         mat4TRS(glModel, ear.x, ear.y, ear.z, yaw, pitch, roll, spec.ear.width, spec.ear.height, spec.ear.depth);
-        drawMesh(glMeshes.sphere, palette.utility, glModel, hurt * 0.12, 1, 6, 0.72);
+        drawMesh(glMeshes.sphere, palette.occluded.utility, glModel, hurt * 0.12, 1, 6, 0.72);
         if (fullDetail) {
           const rail = point(headsetSide * spec.rail.lateral, spec.rail.offsetY, spec.rail.offsetZ);
           mat4TRS(glModel, rail.x, rail.y, rail.z, yaw, pitch, roll + headsetSide * 0.10, spec.rail.width, spec.rail.height, spec.rail.depth);
@@ -44341,7 +44412,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(smoothBox, palette.teamSoft, glModel, 0.11 + hurt * 0.10, 1, 4, 0.30);
           const strapTop = point(headsetSide * 0.154, 0.018, 0.000);
           const strapBottom = point(headsetSide * 0.072, -0.145, 0.086);
-          drawSegment(strapTop, strapBottom, 0.0095, palette.webbing, hurt * 0.06, 1, 5, 0.92);
+          drawSegment(strapTop, strapBottom, 0.0095, palette.occluded.webbing, hurt * 0.06, 1, 5, 0.92);
         }
       }
     } else {
@@ -44734,6 +44805,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     const palette = getOperatorPalette(bot);
     const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, skin, team: teamPatch, teamSoft, metal } = palette;
+    const ao = palette.occluded;
 
     setBlendMode(true);
     mat4TRS(glModel, base.x, 0.007, base.z, yaw, 0, 0, lerp(0.36, 0.78, fall), 1, lerp(0.24, 0.43, fall));
@@ -44760,16 +44832,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 3, 0.44);
     const belt = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, 0, 0.015, 0.01);
     mat4TRS(glModel, belt.x, belt.y, belt.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.42, 0.05, 0.29);
-    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, 0, 1, 6, 0.72);
     const buckle = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, 0, 0.02, 0.145);
     mat4TRS(glModel, buckle.x, buckle.y, buckle.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.075, 0.045, 0.030);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.04, 1, 3, 0.18);
     const holster = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, side * 0.22, -0.06, 0.02);
     mat4TRS(glModel, holster.x, holster.y, holster.z, yaw, torsoPitch * 0.30, torsoRoll * 0.50, 0.09, 0.20, 0.08);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.72);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.polymer, glModel, 0, 1, 6, 0.72);
     const radio = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, -side * 0.20, 0.06, -0.06);
     mat4TRS(glModel, radio.x, radio.y, radio.z, yaw, torsoPitch * 0.22, torsoRoll * 0.38, 0.085, 0.15, 0.07);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.68);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, 0, 1, 6, 0.68);
 
     mat4TRS(glModel, torso.x, torso.y, torso.z, yaw, torsoPitch, torsoRoll, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
     drawMesh(glMeshes.operatorTorso || glMeshes.roundedBox || glMeshes.cube, armour, glModel, 0, 1, 5, 0.84);
@@ -44779,11 +44851,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.operatorCarrier || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, armourVisual.broken ? 0.16 : 0.02, 1, 6, armourVisual.classId === 'none' ? 0.30 : 0.60);
     const pack = worldPoint(torso.x, torso.y, torso.z, yaw, 0, 0, -0.22);
     mat4TRS(glModel, pack.x, pack.y, pack.z, yaw, torsoPitch, torsoRoll, 0.34 * armourVisual.pack, 0.42 * armourVisual.pack, 0.15 * armourVisual.pack);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 5, 0.88);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, 0, 1, 5, 0.88);
     for (const strapSide of [-1, 1]) {
       const strap = worldPoint(torso.x, torso.y, torso.z, yaw, strapSide * 0.15, 0.01, 0.03);
       mat4TRS(glModel, strap.x, strap.y, strap.z, yaw, torsoPitch, torsoRoll + strapSide * 0.08, 0.045, 0.42, 0.055);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 5, 0.78);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, 0, 1, 5, 0.78);
       if (armourVisual.side) {
         const sidePlate = worldPoint(torso.x, torso.y, torso.z, yaw, strapSide * 0.235, -0.03, 0.04);
         mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, yaw, torsoPitch, torsoRoll, armourVisual.sideWidth, armourVisual.sideHeight, armourVisual.sideDepth);
@@ -44812,7 +44884,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     const abdomen = worldPoint(torso.x, torso.y, torso.z, yaw, 0, -0.18, 0.15);
     mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, yaw, torsoPitch, torsoRoll, 0.31, 0.17, 0.06);
-    drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 5, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, 0, 1, 5, 0.72);
     for (const pouchSide of [-1, 0, 1]) {
       const pouch = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, pouchSide * 0.13, 0.08, 0.20);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, yaw, torsoPitch * 0.4, torsoRoll * 0.7, 0.105, 0.14, 0.075);
@@ -44824,7 +44896,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const neckA = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX * 0.62, fall), lerp(1.405, 0.22, fall) + impactSettle, lerp(0, headFinalZ * 0.62, fall));
     const neckB = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX * 0.78, fall), lerp(1.475, 0.20, fall) + impactSettle, lerp(0, headFinalZ * 0.78, fall));
     drawAnatomicalSegment(
-      neckA, neckB, 0.112, palette.skin, 0, 1,
+      neckA, neckB, 0.112, ao.skin, 0, 1,
       OPERATOR_SKIN_PRESENTATION.surface,
       OPERATOR_SKIN_PRESENTATION.roughness,
       0.104
@@ -44841,7 +44913,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const ankle = worldPoint(base.x, 0, base.z, yaw, legPose.ankle.x, legPose.ankle.y, legPose.ankle.z);
       const boot = worldPoint(base.x, 0, base.z, yaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
       drawAnatomicalSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90, 0.104);
-      drawAnatomicalSegment(knee, ankle, 0.102, clothLight, 0, 1, 5, 0.90, 0.088);
+      drawAnatomicalSegment(knee, ankle, 0.102, ao.clothLight, 0, 1, 5, 0.90, 0.088);
       const thighPlateA = worldPoint(base.x, 0, base.z, yaw,
         lerp(legPose.hip.x, legPose.knee.x, 0.30),
         lerp(legPose.hip.y, legPose.knee.y, 0.30),
@@ -44856,11 +44928,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.operatorJointPad || glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.88);
       const kneeShell = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.104);
       mat4TRS(glModel, kneeShell.x, kneeShell.y, kneeShell.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.106, 0.070, 0.026);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.polymer, glModel, 0, 1, 6, 0.92);
       if (fullDetail) for (const strapOffset of [-0.050, 0.050]) {
         const strap = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + strapOffset, legPose.knee.z + 0.034);
         mat4TRS(glModel, strap.x, strap.y, strap.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.158, 0.022, 0.052);
-        drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, 0, 1, 6, 0.94);
       }
       const shinGuardA = worldPoint(base.x, 0, base.z, yaw,
         lerp(legPose.knee.x, legPose.ankle.x, 0.22),
@@ -44872,7 +44944,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         lerp(legPose.knee.z, legPose.ankle.z, 0.72) + 0.035);
       drawAnatomicalSegment(shinGuardA, shinGuardB, 0.052, plate, 0, 1, 6, 0.74, 0.030);
       mat4TRS(glModel, ankle.x, ankle.y, ankle.z, yaw, torsoPitch * 0.12, torsoRoll * 0.16, 0.135, 0.13, 0.15);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.84);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, 0, 1, 6, 0.84);
       mat4TRS(glModel, boot.x, boot.y, boot.z, yaw, torsoPitch * 0.14, torsoRoll * 0.18, 0.155, 0.14, 0.29);
       drawMesh(glMeshes.operatorBoot || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.90);
       const toe = worldPoint(boot.x, boot.y, boot.z, yaw, 0, -0.025, 0.125);
@@ -44884,16 +44956,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const elbow = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.31, limbSide * armSpread, fall), lerp(1.14, 0.115, fall), lerp(0.18, leading ? 0.18 : -0.12, fall));
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
       drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
-      drawAnatomicalSegment(elbow, hand, 0.088, clothLight, 0, 1, 5, 0.86, 0.078);
+      drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, 0, 1, 5, 0.86, 0.078);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.112, 0.104, 0.094);
-      drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
+      drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, 0, 1, 6, 0.70);
       mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.155, 0.185, 0.205);
       drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
       const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, limbSide * 0.075, 0.01, 0);
       mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, torsoPitch, torsoRoll, 0.035, 0.10, 0.10);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, teamPatch, glModel, 0.04, 1, 4, 0.34);
       mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.25, 0.112, 0.105, 0.125);
-      drawMesh(glMeshes.operatorGlove || glMeshes.softRoundedBox || glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.86);
+      drawMesh(glMeshes.operatorGlove || glMeshes.softRoundedBox || glMeshes.sphere, ao.polymer, glModel, 0, 1, 6, 0.86);
     }
 
     const corpseSidearm = bot.usingSecondary || bot.weapon?.category === 'pistol' || bot.weapon?.viewmodel === 'P12 SIDEARM';
@@ -44991,6 +45063,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const pelvisOrigin = worldPoint(bot.x, 0, bot.y, moveYaw, gaitSway * 0.010, 0, 0);
     const palette = getOperatorPalette(bot);
     const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, team, teamSoft, metal } = palette;
+    const ao = palette.occluded;
 
     const joints = { feet: [], knees: [], hips: [], shoulders: [], elbows: [], hands: [] };
 
@@ -45016,11 +45089,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       joints.feet.push(foot); joints.knees.push(knee); joints.hips.push(hip);
 
       drawAnatomicalSegment(hip, knee, 0.121, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
-      drawAnatomicalSegment(knee, ankle, 0.101, clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
+      drawAnatomicalSegment(knee, ankle, 0.101, ao.clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
 
       const hipGuard = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.hip.x + side * 0.035, legPose.hip.y - 0.045, legPose.hip.z + 0.018);
       mat4TRS(glModel, hipGuard.x, hipGuard.y, hipGuard.z, moveYaw, 0, side * 0.08, 0.10, 0.16, 0.13);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.22, 1, 6, 0.76);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, hurt * 0.22, 1, 6, 0.76);
 
       const thighPlateA = worldPoint(bot.x, 0, bot.y, moveYaw,
         lerp(legPose.hip.x, legPose.knee.x, 0.28),
@@ -45037,11 +45110,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.operatorJointPad || glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.88);
       const kneeShell = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.104);
       mat4TRS(glModel, kneeShell.x, kneeShell.y, kneeShell.z, moveYaw, crouch * 0.10, side * 0.025, 0.106, 0.070, 0.026);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.polymer, glModel, 0, 1, 6, 0.92);
       for (const strapOffset of [-0.050, 0.050]) {
         const strap = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + strapOffset, legPose.knee.z + 0.034);
         mat4TRS(glModel, strap.x, strap.y, strap.z, moveYaw, crouch * 0.10, side * 0.025, 0.158, 0.022, 0.052);
-        drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, 0, 1, 6, 0.94);
       }
       if (fullDetail) {
         const kneeTab = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x + side * 0.066, legPose.knee.y + 0.008, legPose.knee.z + 0.098);
@@ -45060,7 +45133,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawAnatomicalSegment(shinGuardA, shinGuardB, 0.053, plate, hurt * 0.24, 1, 6, 0.74, 0.030);
 
       mat4TRS(glModel, ankle.x, ankle.y, ankle.z, footYaw, legPose.footPitch * 0.45, 0, 0.138, 0.13, 0.15);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.24, 1, 6, 0.84);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, hurt * 0.24, 1, 6, 0.84);
       mat4TRS(glModel, foot.x, foot.y, foot.z, footYaw, legPose.footPitch, 0, 0.162, 0.135, 0.300);
       drawMesh(glMeshes.operatorBoot || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
       if (mediumDetail) {
@@ -45080,7 +45153,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.operatorPelvis || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
     const beltY = OPERATOR_PROPORTIONS.pelvisY + 0.02 + bodyBob - stanceDrop * 0.72;
     mat4TRS(glModel, pelvisOrigin.x, beltY, pelvisOrigin.z, pelvisYaw, 0, pelvisRoll, 0.42, 0.05, 0.29);
-    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.30, 1, 6, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, hurt * 0.30, 1, 6, 0.72);
     const buckle = worldPoint(pelvisOrigin.x, bodyBob, pelvisOrigin.z, pelvisYaw, 0, OPERATOR_PROPORTIONS.pelvisY + 0.02 - stanceDrop * 0.72, 0.14);
     mat4TRS(glModel, buckle.x, buckle.y, buckle.z, pelvisYaw, 0, pelvisRoll, 0.075, 0.045, 0.030);
     drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.06 + hurt * 0.30, 1, 3, 0.18);
@@ -45094,11 +45167,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.operatorCarrier || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, (armourVisual.broken ? 0.16 : 0.03) + hurt * 0.55, 1, 6, armourVisual.classId === 'none' ? 0.30 : 0.58);
     const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY + 0.02 - stanceDrop, -0.20);
     mat4TRS(glModel, backPack.x, backPack.y, backPack.z, upperYaw, torsoLean, torsoRoll, 0.34 * armourVisual.pack, 0.44 * armourVisual.pack, 0.16 * armourVisual.pack);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.4, 1, 5, 0.88);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, hurt * 0.4, 1, 5, 0.88);
     if (mediumDetail) for (const strapSide of [-1, 1]) {
       const strap = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.15, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.02);
       mat4TRS(glModel, strap.x, strap.y, strap.z, upperYaw, torsoLean, torsoRoll + strapSide * 0.08, 0.045, 0.42, 0.055);
-      drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.25, 1, 5, 0.78);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, hurt * 0.25, 1, 5, 0.78);
       if (armourVisual.side) {
         const sidePlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.235, OPERATOR_PROPORTIONS.torsoY - 0.05 - stanceDrop, 0.04);
         mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, upperYaw, torsoLean, torsoRoll, armourVisual.sideWidth, armourVisual.sideHeight, armourVisual.sideDepth);
@@ -45127,18 +45200,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     const abdomen = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - 0.115 - stanceDrop * 0.84, 0.15);
     mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, upperYaw, torsoLean, torsoRoll, 0.31, 0.17, 0.06);
-    drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.22, 1, 5, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, hurt * 0.22, 1, 5, 0.72);
     if (mediumDetail) for (const side of [-1, 0, 1]) {
       const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, OPERATOR_PROPORTIONS.pelvisY + 0.12 - stanceDrop * 0.78, 0.185);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, upperYaw, 0, hitLean, 0.105, 0.15, 0.075);
-      drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.35, 1, 5, 0.86);
+      drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.webbing, glModel, hurt * 0.35, 1, 5, 0.86);
     }
     const holster = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0.22, OPERATOR_PROPORTIONS.pelvisY - 0.055 - stanceDrop * 0.60, 0.02);
     mat4TRS(glModel, holster.x, holster.y, holster.z, moveYaw, 0, hitLean * 0.20, 0.09, 0.20, 0.08);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, polymer, glModel, hurt * 0.20, 1, 6, 0.72);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.polymer, glModel, hurt * 0.20, 1, 6, 0.72);
     const radio = worldPoint(bot.x, bodyBob, bot.y, moveYaw, -0.20, OPERATOR_PROPORTIONS.pelvisY + 0.115 - stanceDrop * 0.60, -0.06);
     mat4TRS(glModel, radio.x, radio.y, radio.z, moveYaw, 0, hitLean * 0.18, 0.085, 0.15, 0.07);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.18, 1, 6, 0.68);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.utility, glModel, hurt * 0.18, 1, 6, 0.68);
 
     // Protected neck and a shared profiled head assembly follow the aim offset.
     // Living and fallen operators use the same geometry, materials and detail tiers.
@@ -45146,11 +45219,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const headYaw = moveYaw + headTurn;
     const collar = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.42 - stanceDrop, 0.005);
     mat4TRS(glModel, collar.x, collar.y, collar.z, upperYaw, crouch * 0.05, hitLean, 0.275, 0.105, 0.225);
-    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, armour, glModel, hurt * 0.5, 1, 5, 0.76);
+    drawMesh(glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.armour, glModel, hurt * 0.5, 1, 5, 0.76);
     const neckA = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.42 - stanceDrop, 0);
     const neckB = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.475 - stanceDrop, 0);
     drawAnatomicalSegment(
-      neckA, neckB, 0.118, palette.skin, hurt * 0.28, 1,
+      neckA, neckB, 0.118, ao.skin, hurt * 0.28, 1,
       OPERATOR_SKIN_PRESENTATION.surface,
       OPERATOR_SKIN_PRESENTATION.roughness,
       0.108
@@ -45247,11 +45320,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const hand = worldPoint(bot.x, 0, bot.y, upperYaw, handX, handY, handZ);
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
       drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
-      drawAnatomicalSegment(elbow, hand, 0.088, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
+      drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.112, 0.104, 0.094);
-      drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, hurt * 0.20, 1, 6, 0.70);
+      drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, hurt * 0.20, 1, 6, 0.70);
       mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.112, 0.105, 0.125);
-      drawMesh(glMeshes.operatorGlove || glMeshes.softRoundedBox || glMeshes.sphere, polymer, glModel, hurt * 0.35, 1, 6, 0.86);
+      drawMesh(glMeshes.operatorGlove || glMeshes.softRoundedBox || glMeshes.sphere, ao.polymer, glModel, hurt * 0.35, 1, 6, 0.86);
     }
 
     if (isSidearm || sharedLongGun) {
@@ -54818,6 +54891,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       headGeometry: operatorHeadGeometryAudit(bots[0] || null),
       skinPresentation: operatorSkinPresentationAudit(bots[0] || null),
       armour: operatorArmourMaterialAudit(),
+      ambientOcclusion: operatorAmbientOcclusionAudit(bots[0] || null),
       armourPresentation: bots.map(bot => ({ name: bot.name, id: bot.armourId || 'none', ...operatorArmourPresentationAudit(bot) })),
       surfaceGeometry: operatorSurfaceGeometryAudit(),
       liveOperators: bots.filter(bot => bot.alive).length,
@@ -54829,6 +54903,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }),
     operatorHeadGeometryForTest: (slot = 0) => operatorHeadGeometryAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     operatorSkinPresentationForTest: (slot = 0) => operatorSkinPresentationAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
+    operatorAmbientOcclusionForTest: (slot = 0) => operatorAmbientOcclusionAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     armourSystemForTest: () => {
       const p12 = getCareerWeapon('scrap-p12');
       const rifle = getCareerWeapon('ar4-sentinel');
@@ -56222,6 +56297,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         geometry: operatorSurfaceGeometryAudit(),
         headGeometry: operatorHeadGeometryAudit(target),
         skinPresentation: operatorSkinPresentationAudit(target),
+        ambientOcclusion: operatorAmbientOcclusionAudit(target),
         proportions: operatorProportionAudit()
       };
     },

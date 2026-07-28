@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.156 — Durable Results**
-- Build ID: `12.156.0-durable-results`
+- Build: **12.157 — Operator Depth**
+- Build ID: `12.157.0-operator-depth`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.156.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.157.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.157 adds baked contact ambient occlusion to living and fallen operator models by selecting darker variants from the existing procedural palette at authored overlap zones. It adds no meshes, draw calls, textures, shader passes or uniforms. The compact Armoury inventory is also a bounded card grid at every supported phone/Fold width: comparison badges remain visible, issue state is horizontal, and the list no longer relies on the broken portrait carousel. Keep `operatorAmbientOcclusionForTest()` and the loadout-only responsive matrix green. See `AUDIT-12.157.md`.
 
 Build 12.156 makes completed match settlement a protected durability boundary. If another tab or restored session advances the save sequence during a match, the displaced stored career is preserved as the recovery backup and the fully settled result — Gold Coins, league fixture, finances, player progression and any pending victory crate — is written before the reward presentation can be left. Ordinary stale autosaves remain blocked. `durableMatchSettlementForTest()` covers the stale-save round trip. See `AUDIT-12.156.md`.
 

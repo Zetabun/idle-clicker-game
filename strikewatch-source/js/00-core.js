@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.156';
-  const BUILD_NAME = 'Durable Results';
-  const BUILD_ID = '12.156.0-durable-results';
+  const BUILD_VERSION = '12.157';
+  const BUILD_NAME = 'Operator Depth';
+  const BUILD_ID = '12.157.0-operator-depth';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
