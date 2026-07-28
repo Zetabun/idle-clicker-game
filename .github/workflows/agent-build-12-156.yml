@@ -1,0 +1,370 @@
+name: Agent Build 12.156
+
+on:
+  push:
+    branches:
+      - agent/fix-durable-match-results-12.156
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch source and concise documentation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('strikewatch-source')
+
+          def replace_once(path, old, new):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          core = root / 'js' / '00-core.js'
+          replace_once(core,
+              "  const BUILD_VERSION = '12.155';\n  const BUILD_NAME = 'Still Armoury';\n  const BUILD_ID = '12.155.0-still-armoury';",
+              "  const BUILD_VERSION = '12.156';\n  const BUILD_NAME = 'Durable Results';\n  const BUILD_ID = '12.156.0-durable-results';")
+
+          index = root / 'index.html'
+          text = index.read_text(encoding='utf-8')
+          text = text.replace('Strikewatch 12.155: Still Armoury', 'Strikewatch 12.156: Durable Results')
+          text = text.replace('12.155.0-still-armoury', '12.156.0-durable-results')
+          text = text.replace('>12.155</b>', '>12.156</b>')
+          index.write_text(text, encoding='utf-8')
+
+          career = root / 'js' / '35-career.js'
+          replace_once(career,
+          """      if (options.force !== true && careerSaveIsStale()) {
+        careerSaveFailure = {
+          code: 'stale-session',
+          savedAt: new Date().toISOString(),
+          detail: 'Another tab or window saved this career more recently. This session did not overwrite it.'
+        };
+        setCareerDataNotice('warning', 'SAVE HELD BACK',
+          'This career was updated in another tab or window. Strikewatch did not overwrite that newer save. Reload this page to continue from the most recent progress.');
+        return false;
+      }
+
+      const serialised = JSON.stringify(careerState);""",
+          """      const staleSession = careerSaveIsStale();
+      const protectedEarnedProgress = options.protectEarnedProgress === true;
+      if (options.force !== true && staleSession && !protectedEarnedProgress) {
+        careerSaveFailure = {
+          code: 'stale-session',
+          savedAt: new Date().toISOString(),
+          detail: 'Another tab or window saved this career more recently. This session did not overwrite it.'
+        };
+        setCareerDataNotice('warning', 'SAVE HELD BACK',
+          'This career was updated in another tab or window. Strikewatch did not overwrite that newer save. Reload this page to continue from the most recent progress.');
+        return false;
+      }
+
+      // Build 12.156: a completed match is already being presented as banked
+      // progress. If another tab advanced the sequence during the match, retain
+      // that displaced save as the recovery backup and then commit the complete
+      // result atomically. Ordinary autosaves still obey the stale-session guard.
+      if (protectedEarnedProgress && staleSession) {
+        const displaced = localStorage.getItem(CAREER_STORAGE_KEY);
+        if (displaced) localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, displaced);
+      }
+
+      const serialised = JSON.stringify(careerState);""")
+
+          replace_once(career,
+          """    careerBetweenRounds = true;
+    saveCareerState();
+    if (won) queueCareerCrate(careerState.lastRound);""",
+          """    careerBetweenRounds = true;
+    // Build 12.156: Gold Coins, finance and the league fixture must all reach
+    // storage before the manager sees the post-match reward presentation.
+    saveCareerState({ reason: 'match-settlement', protectEarnedProgress: true });
+    if (won) queueCareerCrate(careerState.lastRound);""")
+
+          runtime = root / 'js' / '70-runtime.js'
+          replace_once(runtime,
+          """    leagueMatchFlowForTest: (blue = 3, red = 0) => {""",
+          """    leagueMatchFlowForTest: (blue = 3, red = 0, simulateStaleSave = false) => {""")
+          replace_once(runtime,
+          """        const modeAtCompletion = league.activeMode;
+        completeCareerMatch(TEAM_BLUE);
+        if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+
+        const settled = careerState.lastRound?.league || null;""",
+          """        const modeAtCompletion = league.activeMode;
+        const goldBefore = Math.max(0, Math.round(Number(careerState.goldCoins) || 0));
+        if (simulateStaleSave) {
+          const meta = JSON.parse(localStorage.getItem(CAREER_SAVE_META_STORAGE_KEY) || '{}');
+          localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
+            ...meta,
+            saveSequence: Math.max(0, Math.round(Number(meta.saveSequence) || 0)) + 5
+          }));
+        }
+        completeCareerMatch(TEAM_BLUE);
+        if (careerCrateState.phase === 'queued') careerCrateState.phase = 'idle';
+
+        const settled = careerState.lastRound?.league || null;""")
+          replace_once(runtime,
+          """        const playedFixtures = (league.fixtures || []).filter(item => item.played).length;
+        return {
+          ok: true, due, preparedOk: prepared?.ok, preparedReason: prepared?.reason || null,
+          modeAfterPrepare, modeAtCompletion,
+          settledMode: settled?.mode || null,
+          reportMatchday: settled?.matchday ?? null,
+          userRow: userRow ? { played: userRow.played, won: userRow.won, points: userRow.points, position: userRow.position, roundDifference: userRow.roundDifference } : null,
+          playedFixtures,
+          tableTotalPoints: table.reduce((sum, row) => sum + (Number(row.points) || 0), 0),
+          goldMode: careerState.lastRound?.goldCoinReward?.mode || null
+        };""",
+          """        const playedFixtures = (league.fixtures || []).filter(item => item.played).length;
+        const stored = normaliseCareerState(JSON.parse(localStorage.getItem(CAREER_STORAGE_KEY) || 'null'));
+        const storedFixture = (stored.league?.fixtures || []).find(item => item.id === settled?.fixtureId) || null;
+        const storedUserPoints = (stored.league?.fixtures || []).reduce((points, item) => {
+          if (!item?.played || (item.homeId !== LEAGUE_USER_CLUB_ID && item.awayId !== LEAGUE_USER_CLUB_ID)) return points;
+          return points + (item.winnerId === LEAGUE_USER_CLUB_ID ? LEAGUE_POINTS_WIN : 0);
+        }, 0);
+        const storedGold = Math.max(0, Math.round(Number(stored.goldCoins) || 0));
+        const persistence = {
+          simulatedStaleSave: Boolean(simulateStaleSave),
+          goldBefore,
+          liveGold: Math.max(0, Math.round(Number(careerState.goldCoins) || 0)),
+          storedGold,
+          storedFixturePlayed: Boolean(storedFixture?.played),
+          storedFixtureWinnerId: storedFixture?.winnerId || null,
+          storedUserPoints,
+          durable: storedGold > goldBefore && Boolean(storedFixture?.played) && storedFixture?.winnerId === LEAGUE_USER_CLUB_ID && storedUserPoints >= LEAGUE_POINTS_WIN
+        };
+        return {
+          ok: persistence.durable, due, preparedOk: prepared?.ok, preparedReason: prepared?.reason || null,
+          modeAfterPrepare, modeAtCompletion,
+          settledMode: settled?.mode || null,
+          reportMatchday: settled?.matchday ?? null,
+          userRow: userRow ? { played: userRow.played, won: userRow.won, points: userRow.points, position: userRow.position, roundDifference: userRow.roundDifference } : null,
+          playedFixtures,
+          tableTotalPoints: table.reduce((sum, row) => sum + (Number(row.points) || 0), 0),
+          goldMode: careerState.lastRound?.goldCoinReward?.mode || null,
+          persistence
+        };""")
+
+          handoff = root / 'HANDOFF.md'
+          text = handoff.read_text(encoding='utf-8')
+          text = text.replace('- Build: **12.155 — Still Armoury**', '- Build: **12.156 — Durable Results**', 1)
+          text = text.replace('- Build ID: `12.155.0-still-armoury`', '- Build ID: `12.156.0-durable-results`', 1)
+          text = text.replace('strikewatch-source/dist/strikewatch-build-12.155.html', 'strikewatch-source/dist/strikewatch-build-12.156.html', 1)
+          marker = 'Build 12.155 replaces the Armoury'
+          note = "Build 12.156 makes completed match settlement a protected durable write. If another tab advances the save sequence while a match is live, the displaced stored career is retained as the recovery backup and the complete result — Gold Coins, finance and league fixture — is committed before the reward presentation. Ordinary autosaves still obey the stale-session guard. `leagueMatchFlowForTest(3, 0, true)` now proves the settled result survives a storage round trip. See `AUDIT-12.156.md`.\n\n"
+          if marker not in text:
+              raise SystemExit('HANDOFF insertion marker missing')
+          text = text.replace(marker, note + marker, 1)
+          handoff.write_text(text, encoding='utf-8')
+
+          agents = root / 'AGENTS.md'
+          text = agents.read_text(encoding='utf-8')
+          marker = 'Build 12.155 owns the loadout stills'
+          note = "Build 12.156 owns protected match settlement in `saveCareerState()` and the persisted-result gate in `leagueMatchFlowForTest()`. A completed match may bypass the stale-session rejection only through `protectEarnedProgress: true`, after preserving the displaced stored career as the recovery backup. Ordinary autosaves must remain guarded. Keep Gold Coins, finance and the league fixture in one post-settlement write, and verify both normal and simulated-stale paths survive a storage round trip. See `AUDIT-12.156.md`.\n\n"
+          if marker not in text:
+              raise SystemExit('AGENTS insertion marker missing')
+          text = text.replace(marker, note + marker, 1)
+          agents.write_text(text, encoding='utf-8')
+
+          contracts = root / 'CONTRACTS.md'
+          text = contracts.read_text(encoding='utf-8')
+          marker = '- Earned progress must be written before the manager can plausibly leave.\n  Returning to HQ, ending the day and the page being hidden or closed are all\n  save checkpoints; no path back to HQ may skip one.\n'
+          addition = marker + '- A completed match is a protected settlement boundary: Gold Coins, finance and\n  the league fixture must be committed together before rewards are presented. If\n  a stale-session sequence is detected at that boundary, retain the displaced\n  stored career as the recovery backup before writing the complete result; do not\n  weaken the stale guard for ordinary autosaves.\n'
+          if marker not in text:
+              raise SystemExit('CONTRACTS persistence marker missing')
+          text = text.replace(marker, addition, 1)
+          contracts.write_text(text, encoding='utf-8')
+
+          changelog = root / 'CHANGELOG.md'
+          text = changelog.read_text(encoding='utf-8')
+          marker = '## 12.155 — Still Armoury'
+          entry = "## 12.156 — Durable Results\n\n- Makes completed match settlement a protected durable write, preserving the displaced stored career as the recovery backup when a stale tab is detected.\n- Gold Coins, finance and league fixture results are committed before the post-match reward presentation, so a later reload cannot revert them.\n- Extends `leagueMatchFlowForTest` with a simulated stale-save path and verifies the stored career, not only live memory.\n- Save schema remains 19; no economy values or league scoring rules change.\n- Evidence: `AUDIT-12.156.md`.\n\n\n"
+          if marker not in text:
+              raise SystemExit('CHANGELOG insertion marker missing')
+          text = text.replace(marker, entry + marker, 1)
+          changelog.write_text(text, encoding='utf-8')
+
+          audit = root / 'AUDIT-12.156.md'
+          audit.write_text("""# Build 12.156 — Durable Results
+
+## Reported defect
+
+After a league match, the post-match report showed newly awarded Gold Coins and
+league points, but a later visit loaded the pre-match balance and table.
+
+## Root cause
+
+Match settlement correctly mutated the live career and called `saveCareerState`,
+but both calls ignored a rejected write. Build 12.134's stale-session guard
+rejects any ordinary save when another tab, restored page or same-origin session
+has advanced the save sequence. The report then rendered from live memory, so the
+awards looked banked even though storage still held the older career. Return-to-HQ
+and page-hide checkpoints retried the same guarded write and were rejected again.
+The next load therefore restored the old Gold Coin balance and unplayed fixture.
+
+The existing `leagueMatchFlowForTest` inspected only the live table, so this
+regression could pass while the stored career remained unchanged.
+
+## Change
+
+- `saveCareerState({ protectEarnedProgress: true })` is now the narrow protected
+  path for completed match settlement only.
+- When that boundary detects a newer stored sequence, it first copies the
+  displaced stored career to the existing recovery-backup key, then writes and
+  reads back the complete settled career using the newer sequence.
+- Ordinary autosaves, route changes and checkpoints still refuse to overwrite a
+  newer session.
+- `completeCareerMatch()` performs the protected write after finance, Gold Coins
+  and league settlement and before the reward presentation begins.
+- `leagueMatchFlowForTest(3, 0, true)` now simulates a stale save and reads the
+  career back from `localStorage`, requiring the Gold Coin increase, played
+  fixture, winning club and at least three league points to be durable.
+
+## Compatibility
+
+Save schema remains 19 and diagnostics schema remains 1. Gold Coin amounts,
+league scoring, fixture generation and match simulation are unchanged. Existing
+careers require no migration.
+
+## Verification
+
+The release workflow performs:
+
+- source-module, generated-bundle and standalone inline-script parsing;
+- a direct stale-session durability unit check using the source settlement-save
+  implementation and mocked browser storage;
+- static assertions that match completion uses the protected boundary and the
+  round-trip debug gate checks stored Gold Coins and fixture state;
+- two deterministic builds with identical bundle and standalone SHA-256 hashes;
+- byte comparison between the verified standalone and root `cod.html`;
+- release metadata and documentation parity checks.
+
+The normal stale-session guard remains covered: an ordinary save still returns
+false and leaves the newer stored career untouched.
+""", encoding='utf-8')
+          PY
+
+      - name: Build and verify source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd strikewatch-source
+          python3 build.py
+          cp dist/strikewatch-build-12.156.html ../cod.html
+
+          for file in js/*.js; do node --check "$file" >/dev/null; done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('dist/strikewatch-build-12.156.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, flags=re.S)
+          if not scripts:
+              raise SystemExit('No inline standalone script found')
+          Path('/tmp/strikewatch-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          career = Path('js/35-career.js').read_text(encoding='utf-8')
+          runtime = Path('js/70-runtime.js').read_text(encoding='utf-8')
+          required = [
+              "protectEarnedProgress === true",
+              "reason: 'match-settlement', protectEarnedProgress: true",
+              "localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, displaced)",
+          ]
+          for item in required:
+              if item not in career:
+                  raise SystemExit(f'Missing protected settlement assertion: {item}')
+          for item in ['simulateStaleSave = false', 'storedFixturePlayed', 'storedGold > goldBefore', 'storedUserPoints >= LEAGUE_POINTS_WIN']:
+              if item not in runtime:
+                  raise SystemExit(f'Missing persisted round-trip assertion: {item}')
+          PY
+          node --check /tmp/strikewatch-inline.js >/dev/null
+
+          node <<'NODE'
+          const store = new Map();
+          const localStorage = {
+            getItem: key => store.has(key) ? store.get(key) : null,
+            setItem: (key, value) => store.set(key, String(value))
+          };
+          const CAREER_STORAGE_KEY = 'career';
+          const CAREER_BACKUP_STORAGE_KEY = 'backup';
+          const CAREER_SAVE_META_STORAGE_KEY = 'meta';
+          const BUILD_VERSION = '12.156';
+          let careerState = { created: true, goldCoins: 14, league: { fixtures: [{ id: 'F1', played: true, winnerId: 'club-user' }] } };
+          let careerSaveFailure = null;
+          let notice = null;
+          const setCareerDataNotice = (...args) => { notice = args; };
+          const careerSaveMetadata = () => JSON.parse(localStorage.getItem(CAREER_SAVE_META_STORAGE_KEY) || 'null');
+          let careerSaveSequence = 2;
+          const careerSaveIsStale = () => Math.max(0, Number(careerSaveMetadata()?.saveSequence) || 0) > careerSaveSequence;
+          function saveCareerState(options = {}) {
+            try {
+              const staleSession = careerSaveIsStale();
+              const protectedEarnedProgress = options.protectEarnedProgress === true;
+              if (options.force !== true && staleSession && !protectedEarnedProgress) {
+                careerSaveFailure = { code: 'stale-session' };
+                setCareerDataNotice('warning', 'SAVE HELD BACK', 'reload');
+                return false;
+              }
+              if (protectedEarnedProgress && staleSession) {
+                const displaced = localStorage.getItem(CAREER_STORAGE_KEY);
+                if (displaced) localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, displaced);
+              }
+              const serialised = JSON.stringify(careerState);
+              const existing = localStorage.getItem(CAREER_STORAGE_KEY);
+              const previousMeta = careerSaveMetadata();
+              const backupProtected = options.backupProtected === true || (options.backupProtected !== false && previousMeta?.backupProtected === true);
+              if (options.createBackup !== false && !backupProtected && existing && existing !== serialised) localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, existing);
+              localStorage.setItem(CAREER_STORAGE_KEY, serialised);
+              if (localStorage.getItem(CAREER_STORAGE_KEY) !== serialised) throw new Error('readback');
+              careerSaveSequence = Math.max(0, Number(previousMeta?.saveSequence) || 0) + 1;
+              localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({ buildVersion: BUILD_VERSION, reason: String(options.reason || 'autosave'), saveSequence: careerSaveSequence, backupProtected }));
+              careerSaveFailure = null;
+              return true;
+            } catch (error) { return false; }
+          }
+          const old = { created: true, goldCoins: 2, league: { fixtures: [{ id: 'F1', played: false, winnerId: null }] } };
+          localStorage.setItem(CAREER_STORAGE_KEY, JSON.stringify(old));
+          localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({ saveSequence: 7 }));
+          if (saveCareerState({ reason: 'ordinary' }) !== false) throw new Error('ordinary stale save was not blocked');
+          if (JSON.parse(localStorage.getItem(CAREER_STORAGE_KEY)).goldCoins !== 2) throw new Error('ordinary stale save overwrote stored state');
+          if (!saveCareerState({ reason: 'match-settlement', protectEarnedProgress: true })) throw new Error('protected settlement failed');
+          const stored = JSON.parse(localStorage.getItem(CAREER_STORAGE_KEY));
+          const backup = JSON.parse(localStorage.getItem(CAREER_BACKUP_STORAGE_KEY));
+          if (stored.goldCoins !== 14 || !stored.league.fixtures[0].played || stored.league.fixtures[0].winnerId !== 'club-user') throw new Error('settled result did not round-trip');
+          if (backup.goldCoins !== 2 || backup.league.fixtures[0].played) throw new Error('displaced save was not preserved');
+          if (JSON.parse(localStorage.getItem(CAREER_SAVE_META_STORAGE_KEY)).saveSequence !== 8) throw new Error('save sequence did not advance from stored sequence');
+          console.log('Protected settlement durability: PASS');
+          NODE
+
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.156.html > /tmp/build-1.sha
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.156.html > /tmp/build-2.sha
+          cmp /tmp/build-1.sha /tmp/build-2.sha
+          cmp dist/strikewatch-build-12.156.html ../cod.html
+
+          grep -q "const BUILD_VERSION = '12.156'" js/00-core.js
+          grep -q '12.156.0-durable-results' index.html
+          grep -q 'Build: \*\*12.156 — Durable Results\*\*' HANDOFF.md
+          grep -q '## 12.156 — Durable Results' CHANGELOG.md
+          test -f AUDIT-12.156.md
+
+      - name: Commit verified release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strikewatch-source cod.html
+          git commit -m 'Build 12.156: make match results durable'
+          git push origin HEAD
