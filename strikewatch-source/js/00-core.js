@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.144';
-  const BUILD_NAME = 'Sandstone Masonry';
-  const BUILD_ID = '12.144.0-sandstone-masonry';
+  const BUILD_VERSION = '12.145';
+  const BUILD_NAME = 'Clean Surfaces';
+  const BUILD_ID = '12.145.0-clean-surfaces';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

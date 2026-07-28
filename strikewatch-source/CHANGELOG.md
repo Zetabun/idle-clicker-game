@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.145 — Clean Surfaces
+
+- Removes the mottled patchwork from every arena, not just Dune: the shared surface noise term hashed two mismatched grids together, and six surface modes read it.
+- Office partitions now vary per panel module rather than per fragment, and the corduroy streaking is gone: std dev down 33.1%, horizontal roughness down 61.1%.
+- Wall displays no longer read as hard corduroy — scanlines drop from 130 cycles per world unit to 34, at a third of the amplitude.
+- Brushed metal grain drops from 92 cycles to 26 with a broad sheen, so it stops aliasing on large surfaces.
+- Skyline Offices navigation measured and confirmed sound; six symmetric chokepoints are documented with coordinates but the layout is unchanged.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.145.md`.
+
+
 ## 12.144 — Sandstone Masonry
 
 - Replaces the mottled patchwork on Dune walls with real masonry: horizontal courses in a running bond, soft mortar joints and gentle per-block tone.

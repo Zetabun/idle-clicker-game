@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.144 — Sandstone Masonry
-Build ID: 12.144.0-sandstone-masonry
+Build 12.145 — Clean Surfaces
+Build ID: 12.145.0-clean-surfaces
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.145 owns the shared surface noise term and valueNoise(); six surface
+modes read it, so changes there affect every arena. Keep detail below ~40
+cycles per world unit or it aliases.
 Build 12.144 owns the desert sandstone surface (uSurface == 7) and the Dune
 wall tilework; keep surface variation structured, not hashed noise.
 Build 12.143 owns the open-air sky (js/65-sky-dome.js); desert only, no depth

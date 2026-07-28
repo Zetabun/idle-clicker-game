@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.144 — Sandstone Masonry**
-- Build ID: `12.144.0-sandstone-masonry`
+- Build: **12.145 — Clean Surfaces**
+- Build ID: `12.145.0-clean-surfaces`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.144.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.145.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.145 denoises every arena. The mottling fixed for sandstone in 12.144 existed one level up, in the shared `noise` term read by six surface modes: `hash21(floor(xz * 5.0) + floor(xy * 2.0))`, two mismatched grids whose result also changed with facing direction. It is now smoothly interpolated `valueNoise()` on one grid. Office partitions vary per module instead of per fragment (std dev down 33.1%, horizontal roughness down 61.1%), wall-display scanlines drop from 130 cycles per world unit to 34 at a third of the amplitude, and brushed metal from 92 to 26. Skyline Offices navigation is measured and sound (464 nodes / 1,948 edges / 1 component, 60/60 routes); six symmetric chokepoints are recorded in the audit but the layout is unchanged. See `AUDIT-12.145.md`.
 
 Build 12.144 reworks the Dune surfaces. The desert shader mode multiplied two mismatched `floor()` noise grids, giving unstructured +/-10% speckle that read as a dirty quilt; it is now masonry with courses in a running bond, soft mortar joints and much gentler tone (std dev down 54.9%, horizontal roughness down 63.7%, measured by porting the shader's hash to JS over a fixed grid). Wall panels become inset tilework in four desaturated tones instead of two saturated slabs stuck on the surface. Dune navigation is unchanged at 494 nodes / 2,752 edges / 1 component. Banners and floor tiles are still outstanding. See `AUDIT-12.144.md`.
 

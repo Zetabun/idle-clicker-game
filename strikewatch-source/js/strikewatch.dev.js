@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.144';
-  const BUILD_NAME = 'Sandstone Masonry';
-  const BUILD_ID = '12.144.0-sandstone-masonry';
+  const BUILD_VERSION = '12.145';
+  const BUILD_NAME = 'Clean Surfaces';
+  const BUILD_ID = '12.145.0-clean-surfaces';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -38412,6 +38412,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         return fract(p.x * p.y);
       }
 
+      // Smoothly interpolated value noise. Surfaces need gentle variation, not
+      // the hard per-cell steps a raw hash gives.
+      float valueNoise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float a = hash21(i);
+        float b = hash21(i + vec2(1.0, 0.0));
+        float c = hash21(i + vec2(0.0, 1.0));
+        float d = hash21(i + vec2(1.0, 1.0));
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+      }
+
       float smoothGrid(vec2 p, float width) {
         vec2 g = abs(fract(p) - 0.5);
         return smoothstep(0.5 - width, 0.5, max(g.x, g.y));
@@ -38420,8 +38433,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       void main() {
         vec3 normal = normalize(vNormal);
         vec3 base = uColour;
-        vec2 cell = floor(vWorldPosition.xz * 5.0);
-        float noise = hash21(cell + floor(vWorldPosition.xy * 2.0));
+        // Build 12.145: the shared surface noise used to be
+        // hash21(floor(xz * 5.0) + floor(xy * 2.0)) — two mismatched grids
+        // summed and hashed, which produced hard blocky patches and made the
+        // result depend on which axis a surface happened to face. Every
+        // surface mode reads this term, so that single line was the quilted
+        // mottling on office walls, industrial floors and metal alike.
+        // Smoothly interpolated value noise on one coherent grid replaces it.
+        vec2 noiseCoord = vWorldPosition.xz * 1.7 + vec2(vWorldPosition.y * 0.55);
+        float noise = valueNoise(noiseCoord);
         float materialRoughness = clamp(uRoughness, 0.04, 1.0);
         float materialAmbientLift = 0.0;
 
@@ -38442,25 +38462,38 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         // Surface 2: modular wall panels with seams, vertical water streaks and
         // grime concentrated around the base and ceiling service zone.
         } else if (uSurface > 1.5 && uSurface < 2.5) {
-          float verticalSeam = smoothstep(0.955, 1.0, fract((vWorldPosition.x + vWorldPosition.z) * 0.5));
-          float horizontalSeam = smoothstep(0.92, 1.0, fract(vWorldPosition.y * 1.65));
+          // Build 12.145: modular partition panels. The tone now varies per
+          // panel module rather than per fragment, and the streaking that ran
+          // at twelve cycles per world unit is gone — at office scale it read
+          // as corduroy rather than as wear.
+          float panelU = (vWorldPosition.x + vWorldPosition.z) * 0.5;
+          float panelV = vWorldPosition.y * 1.65;
+          float verticalSeam = smoothstep(0.955, 1.0, fract(panelU));
+          float horizontalSeam = smoothstep(0.92, 1.0, fract(panelV));
           float lowerGrime = 1.0 - smoothstep(0.04, 0.82, vWorldPosition.y);
           float upperGrime = smoothstep(1.72, 2.30, vWorldPosition.y);
-          float streak = smoothstep(0.72, 1.0, sin((vWorldPosition.x + vWorldPosition.z) * 12.0 + noise * 8.0) * 0.5 + 0.5);
-          base *= 0.89 + noise * 0.14;
-          base = mix(base, base * 0.38, max(verticalSeam, horizontalSeam) * 0.62);
-          base *= 1.0 - lowerGrime * (0.10 + noise * 0.12);
-          base *= 1.0 - upperGrime * 0.08;
-          base = mix(base, base * 0.72, streak * lowerGrime * 0.20);
+          float moduleTone = 0.972 + hash21(vec2(floor(panelU), floor(panelV))) * 0.050;
+          base *= moduleTone * (0.975 + noise * 0.045);
+          base = mix(base, base * 0.46, max(verticalSeam, horizontalSeam) * 0.52);
+          base *= 1.0 - lowerGrime * (0.06 + noise * 0.05);
+          base *= 1.0 - upperGrime * 0.05;
         // Surface 3: painted or exposed metal.
         } else if (uSurface > 2.5 && uSurface < 3.5) {
-          float brushed = 0.91 + 0.09 * sin(vWorldPosition.y * 92.0 + vWorldPosition.x * 8.0 + vWorldPosition.z * 5.0);
-          float edgeWear = smoothstep(0.76, 1.0, noise);
-          base *= brushed;
-          base = mix(base, min(base * 1.38, vec3(0.78)), edgeWear * 0.16);
+          // Build 12.145: 92 cycles per world unit aliased into visible bands
+          // on anything larger than a handrail. A slower grain plus a broad
+          // sheen reads as brushed metal at room scale.
+          float brushed = 0.965 + 0.035 * sin(vWorldPosition.y * 26.0 + vWorldPosition.x * 3.0 + vWorldPosition.z * 2.0);
+          float sheen = 0.98 + 0.02 * sin(vWorldPosition.y * 2.4);
+          float edgeWear = smoothstep(0.80, 1.0, noise);
+          base *= brushed * sheen;
+          base = mix(base, min(base * 1.28, vec3(0.78)), edgeWear * 0.12);
         // Surface 4: lamps, displays and luminous paint.
         } else if (uSurface > 3.5 && uSurface < 4.5) {
-          float scan = 0.94 + 0.06 * sin(vWorldPosition.y * 130.0 + uTime * 7.0);
+          // Build 12.145: the scanline ran at 130 cycles per world unit with a
+          // 6% swing, which turned every wall display into hard corduroy. A
+          // slow roll at a third of the amplitude still reads as an emissive
+          // panel without dominating the room.
+          float scan = 0.982 + 0.018 * sin(vWorldPosition.y * 34.0 + uTime * 2.4);
           base *= scan;
           materialRoughness = 0.14;
         // Surface 5: tactical fabric and painted armour.

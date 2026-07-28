@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.145 owns the shared surface `noise` term and `valueNoise()` in `js/60-renderer-core.js`. Six surface modes read it, so a change there affects every arena — re-run all-arena geometry integrity and per-arena navigation, not just the one being worked on. Keep surface detail at room scale: anything above roughly 40 cycles per world unit aliases into banding. See `AUDIT-12.145.md`.
+
 Build 12.144 owns the desert sandstone surface (`uSurface == 7` in `js/60-renderer-core.js`) and the Dune wall tilework. Keep surface variation structured — courses, bond and joints — rather than hashed noise, and keep the tile tones desaturated enough to sit against sandstone. Measure changes with `arenaSurfaceSampleForTest()` or by porting the shader maths, not by eye alone. See `AUDIT-12.144.md`.
 
 Build 12.143 owns the open-air sky (`js/65-sky-dome.js`). Only the `desert` theme has a preset; every other arena is roofed. The sky pass must keep writing no depth and must restore `DEPTH_TEST`/`CULL_FACE` and rebind the world program, so it can never affect collision, navigation or line of sight — re-check the Dune nav baseline (494 nodes / 2,752 edges / 1 component) after touching it. Sky colour and fog colour are separate decisions now; do not re-couple them. See `AUDIT-12.143.md`.
