@@ -1,5 +1,17 @@
 # Release history router
 
+## 12.155 — Still Armoury
+
+- Replaces the Armoury's live 3D previews with still images: the loadout page goes from 804 CSS-3D quads and 1,361 DOM nodes to **zero quads and 387 nodes**.
+- Adds INSPECT IN 3D. Exactly one rotating model can be mounted at a time; opening one inspector closes the other, and changing the selected item closes an inspector opened on the previous one.
+- Stills are rasterised from the same part lists every other renderer consumes, and read their material colours back out of the live stylesheet through a hidden probe rather than duplicating the palette — change a material in CSS and the stills change with it.
+- Detail frames size themselves to the model's proportions so a pistol and a rifle both fill their panel; thumbnails keep fixed frames so inventory rows stay aligned.
+- Adds impact decals: a missed shot now carries on and marks the surface it hits, placed with the same grid raycaster line-of-sight already uses. Capped at 48, two draw calls each, cleared on round reset, and drawn outside the static pass so batching cannot freeze them.
+- Menu re-render time is unchanged (14.2ms to 15.3ms); the saving is in per-frame compositor work, and the resulting frame rate is not measured.
+- Weapon and armour statistics, geometry, collision, navigation, saves and match simulation are untouched.
+- Evidence: `AUDIT-12.155.md`.
+
+
 ## 12.154 — Batch Reach
 
 - Extends static world batching from Citadel to every arena: 58–75% fewer draw calls on Dune Bastion, Aurora Terminal and Skyline Offices, which had never been batched.

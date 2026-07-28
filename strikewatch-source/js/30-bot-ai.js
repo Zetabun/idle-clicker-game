@@ -4674,6 +4674,12 @@
         }
       } else {
         spawnTracer(this, target, { miss: true });
+        // Build 12.155: a missed round carries on and marks whatever it meets.
+        if (typeof spawnImpactDecal === 'function') {
+          const shooterEye = arenaElevationAt(this.x, this.y) + 1.30 - (this.crouched ? 0.43 : 0);
+          const targetChest = arenaElevationAt(target.x, target.y) + 1.24 - (target.crouched ? 0.38 : 0);
+          spawnImpactDecal(this, target.x, target.y, targetChest + (Math.random() - 0.5) * 0.5, shooterEye);
+        }
       }
       return true;
     }

@@ -77,6 +77,13 @@ current task. Release-specific implementation detail belongs in the matching
   override of the element it was moved off. Those overrides are usually more
   specific and will keep re-applying the old transform against variables that
   have become static defaults. Grep for the class before shipping the move.
+- A rasterised still is a renderer, never a second geometry or material
+  authority. It consumes the shared part lists like every other renderer, and it
+  reads material colours back out of the stylesheet rather than holding a copy
+  of the palette — a hand-written table drifts the first time a material
+  changes. At most one live CSS-3D rig may be mounted on a management surface at
+  a time; every path that changes the selected item must close an inspector
+  opened on the previous one.
 - Static world batching bakes model matrices at capture time and is enabled for
   every arena. Any draw inside `drawStaticWorld` whose transform, colour or
   scale depends on `time`, on door state, or on anything else that varies

@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.154 — Batch Reach**
-- Build ID: `12.154.0-batch-reach`
+- Build: **12.155 — Still Armoury**
+- Build ID: `12.155.0-still-armoury`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.154.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.155.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.155 replaces the Armoury's live 3D previews with stills rasterised from the same part lists, and puts the rotating model behind INSPECT IN 3D — **804 CSS-3D quads and 1,361 DOM nodes down to zero quads and 387 nodes**, with at most one live rig mounted at a time (`careerInspectState`). `js/57-loadout-stills.js` owns it. Two things must not be broken there: it is a *renderer*, so it consumes the shared part lists and never forks one, and it reads material colours back out of `css/game.css` through a hidden probe rather than duplicating the palette, so a CSS change carries into the stills automatically. **Menu re-render time is a wash (14.2ms to 15.3ms)** — parsing a few large data URLs costs about what building 800 elements did — so the saving is per-frame compositor work, not render time, and the frame rate itself is still unmeasured because the browser pane does not composite. Also adds impact decals for missed shots, placed with the same grid raycaster line-of-sight uses, capped at 48 and drawn **outside** `drawStaticWorld` so 12.154's batching cannot bake and freeze them. See `AUDIT-12.155.md`.
 
 Build 12.154 extends static world batching to every arena — 58–75% fewer draw calls on Dune, Aurora and Offices, which had never been batched. The blocker was four animated draws left unwrapped (Dune lamp glow, banner cloth, torch flame; coolant tank column); they are wrapped now. **There was a second, independent `activeArenaId === 'citadel'` gate inside `drawMesh()`** as well as the one in the render path, and clearing only the render-path one produced no batches at all — if batching ever appears not to apply, check both. Faithfulness was proven against the renderer's own `?staticBatching=0` reference (99% of pixels within 1/255; the Offices view, which has no animated decor, differs by at most 1 across the frame), and nothing froze: on the pixels the unbatched build animates strongly, the batched build animates them by exactly the same amount. **Any new draw in `drawStaticWorld` that depends on `time` or any per-frame state must be wrapped in `setStaticWorldBatchEligibility(false)`, or batching will bake it and freeze it for the session.** See `AUDIT-12.154.md`.
 

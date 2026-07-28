@@ -78,6 +78,14 @@
     batchingEnabled: STATIC_WORLD_BATCHING_ENABLED
   };
   const tracers = [];
+  // Build 12.155: impact decals. A shot that misses carries on until it hits
+  // something, and leaving a mark there is what makes a firefight read as
+  // having happened. Capped and reused as a ring buffer so the cost is a fixed
+  // ceiling rather than something that grows with match length, and drawn in
+  // the dynamic pass — never batched, since batching bakes model matrices and
+  // these appear and expire while the batch is live.
+  const IMPACT_DECAL_LIMIT = 48;
+  const impactDecals = [];
   let lastFrameDt = 1 / 60;
   const viewWeaponState = {
     initialised: false,

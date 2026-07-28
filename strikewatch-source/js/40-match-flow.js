@@ -1043,6 +1043,7 @@
     roundRestartTimer = 0;
     roundReason = '';
     tracers.length = 0;
+    if (typeof clearImpactDecals === 'function') clearImpactDecals();
     soundEvents = [];
     lastCombatContactAt = simulationClock;
     lateRoundMode = false;

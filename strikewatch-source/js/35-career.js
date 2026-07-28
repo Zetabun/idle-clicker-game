@@ -4093,6 +4093,31 @@
     };
   }
 
+  // Build 12.155: the Armoury shows stills until the manager asks for a live
+  // model, and only ever one live model at a time. `careerInspectState` records
+  // which pane, if any, is currently mounted as a CSS-3D rig; everything else
+  // on the page is a rasterised image.
+  const careerInspectState = { surface: null, id: null };
+
+  function careerInspectActive(surface, id) {
+    return careerInspectState.surface === surface && String(careerInspectState.id) === String(id);
+  }
+
+  function setCareerInspectSurface(surface, id) {
+    const already = careerInspectActive(surface, id);
+    careerInspectState.surface = already ? null : surface;
+    careerInspectState.id = already ? null : String(id);
+    // Opening one inspector closes the other, so two rigs can never coexist.
+    if (!already && surface === 'weapon') resetCareerWeaponViewer(true);
+    if (!already && surface === 'armour') resetCareerArmourViewer(true);
+    return !already;
+  }
+
+  function careerInspectToggleMarkup(surface, id, label) {
+    const active = careerInspectActive(surface, id);
+    return `<button class="career-inspect-toggle ${active ? 'active' : ''}" data-career-inspect="${surface}" data-career-inspect-id="${escapeCareerHtml(String(id))}" aria-pressed="${active ? 'true' : 'false'}">${active ? 'CLOSE 3D VIEW' : label}</button>`;
+  }
+
   // Build 12.151: yaw and pitch move to a dedicated pivot, exactly as Build
   // 12.142 did for the armour viewer. `--viewer-*` are inherited custom
   // properties, so writing them on the rig root once per rotation step
@@ -5184,7 +5209,7 @@
           : (assignmentCount ? `${assignmentCount} ISSUED · UNLIMITED STARTER` : 'UNLIMITED STARTER');
       return `
         <button class="career-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-select="${weapon.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
-          <span class="career-inventory-thumb">${careerWeapon3dMarkup(weapon, 'inventory', false, careerState.equippedSkinId)}</span>
+          <span class="career-inventory-thumb">${careerWeaponStillMarkup(weapon, { width: 104, height: 76, thumbnail: true, skinId: careerState.equippedSkinId, className: 'thumb' })}</span>
           <span class="career-inventory-copy"><small>${weapon.quality} · ${slotType.toUpperCase()} · ${weapon.category.toUpperCase()} · ${finiteCopies ? `${ownedCount} CLUB ${ownedCount === 1 ? 'COPY' : 'COPIES'}` : 'STANDARD ISSUE'}</small><strong>${weapon.name}</strong><em>${weapon.damageMin}–${weapon.damageMax} DMG · ${presentation.rangeBand} · ${presentation.recoilLabel}</em></span>
           ${compareMarkup}
           <span class="career-inventory-state">${state}</span>
@@ -5217,7 +5242,7 @@
       const issued = careerArmourAssignmentCount(id);
       const available = careerArmourAvailableCount(id);
       const state = id === 'none' ? 'ALWAYS AVAILABLE' : `${owned} OWNED · ${issued} ISSUED · ${available} FREE`;
-      return `<button class="career-armour-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-armour-select="${escapeCareerHtml(id)}" aria-pressed="${isSelected ? 'true' : 'false'}">${careerArmourVisualMarkup(armour, 'inventory')}<span><small>${escapeCareerHtml(armour.quality)} · ${escapeCareerHtml(armour.coverage)}</small><strong>${escapeCareerHtml(armour.name)}</strong><em>${careerArmourProtectionLabel(armour)} · ${armour.maxDurability || 0} INTEGRITY</em></span><b>${state}</b></button>`;
+      return `<button class="career-armour-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-armour-select="${escapeCareerHtml(id)}" aria-pressed="${isSelected ? 'true' : 'false'}">${careerArmourStillMarkup(armour, { width: 118, height: 132, thumbnail: true, className: 'thumb armour' })}<span><small>${escapeCareerHtml(armour.quality)} · ${escapeCareerHtml(armour.coverage)}</small><strong>${escapeCareerHtml(armour.name)}</strong><em>${careerArmourProtectionLabel(armour)} · ${armour.maxDurability || 0} INTEGRITY</em></span><b>${state}</b></button>`;
     }).join('');
     const selectedArmourEquipped = selectedArmour.id === targetArmourId;
     const selectedArmourHolder = careerAssignedPlayersForArmour(selectedArmour.id, targetPlayer.id)[0] || null;
@@ -5283,7 +5308,11 @@
         </section>
         <article class="career-loadout-detail ${selectedEquipped ? 'equipped' : ''}" data-management-target-id="loadout:${escapeCareerHtml(targetPlayer.id)}">
           <div class="career-weapon-topline"><span>ITEM ${String(selected.id).toUpperCase()}</span><span>${selectedIssueText}</span></div>
-          <div class="career-loadout-preview">${careerWeapon3dMarkup(selected, 'armoury-detail', true, careerState.equippedSkinId)}</div>
+          <div class="career-loadout-preview">${careerInspectActive('weapon', selected.id)
+            ? careerWeapon3dMarkup(selected, 'armoury-detail', true, careerState.equippedSkinId)
+            : `<div class="career-loadout-still-stage"><div class="career-inspector-grid" aria-hidden="true"></div><div class="career-inspector-shadow" aria-hidden="true"></div>${careerWeaponStillMarkup(selected, { width: 520, height: 240, skinId: careerState.equippedSkinId })}<div class="career-inspector-callout"><span>WEAPON PROFILE</span><strong>STILL VIEW</strong></div></div>`}
+            <div class="career-inspect-bar">${careerInspectToggleMarkup('weapon', selected.id, 'INSPECT IN 3D')}</div>
+          </div>
           <div class="career-loadout-head">
             <div><span class="career-rarity ${selected.rarity}">${selected.quality}</span><h3>${selected.name}</h3><small class="career-loadout-target">TARGET PLAYER · ${escapeCareerHtml(targetPlayer.name)} · ${targetRole.name}</small></div>
             <div class="career-slot-actions"><button class="primary" ${selectedEquipped || locked ? 'disabled' : ''} data-career-equip="${selected.id}" data-career-equip-slot="${selectedCareerWeaponSlot}">${issueButtonText}</button>${selectedCareerWeaponSlot === 'primary' && targetPrimaryId ? `<button ${locked ? 'disabled' : ''} data-career-remove-primary="true">REMOVE PRIMARY</button>` : ''}</div>
@@ -5317,7 +5346,11 @@
         <section class="career-inventory-panel"><div class="career-section-head compact"><div><span>OWNED CLUB ARMOUR</span><strong>VEST INVENTORY</strong></div><p>Protection is graded rather than all-or-nothing. Higher weapon penetration reduces absorbed damage and wears integrity faster.</p></div><div class="career-armour-inventory-list">${armourRows}</div></section>
         <article class="career-loadout-detail career-armour-detail ${selectedArmourEquipped ? 'equipped' : ''}">
           <div class="career-weapon-topline"><span>ARMOUR ${escapeCareerHtml(selectedArmour.id).toUpperCase()}</span><span>${selectedArmour.id === 'none' ? 'MOBILITY CONFIGURATION' : `${careerArmourOwnedCount(selectedArmour.id)} CLUB COPIES`}</span></div>
-          <div class="career-armour-detail-preview">${careerArmourVisualMarkup(selectedArmour, 'detail')}</div>
+          <div class="career-armour-detail-preview">${careerInspectActive('armour', selectedArmour.id)
+            ? careerArmourVisualMarkup(selectedArmour, 'detail')
+            : `<div class="career-loadout-still-stage armour"><div class="career-armour-showcase-grid" aria-hidden="true"></div><div class="career-armour-showcase-shadow" aria-hidden="true"></div>${careerArmourStillMarkup(selectedArmour, { width: 360, height: 380 })}<div class="career-inspector-callout"><span>ARMOUR PROFILE</span><strong>STILL VIEW · FRONT</strong></div></div>`}
+            <div class="career-inspect-bar">${careerInspectToggleMarkup('armour', selectedArmour.id, 'INSPECT IN 3D')}</div>
+          </div>
           <div class="career-loadout-head"><div><span class="career-rarity ${escapeCareerHtml(selectedArmour.rarity)}">${escapeCareerHtml(selectedArmour.quality)}</span><h3>${escapeCareerHtml(selectedArmour.name)}</h3><small class="career-loadout-target">TARGET PLAYER · ${escapeCareerHtml(targetPlayer.name)} · ${targetRole.name}</small></div><button class="primary" data-career-armour-equip="${escapeCareerHtml(selectedArmour.id)}" ${selectedArmourEquipped || locked ? 'disabled' : ''}>${armourIssueText}</button></div>
           <p class="career-loadout-description">${escapeCareerHtml(selectedArmour.description)}</p>
           <div class="career-armour-stat-grid"><article><span>PROTECTION</span><strong>${Math.round(selectedArmour.protection * 100)}%</strong><small>Maximum base torso reduction before penetration.</small></article><article><span>ARMOUR RATING</span><strong>${selectedArmour.rating}</strong><small>Higher values resist low-penetration weapons more effectively.</small></article><article><span>INTEGRITY</span><strong>${selectedArmour.maxDurability}</strong><small>Zero integrity destroys this purchased copy.</small></article><article><span>MOBILITY COST</span><strong>${Math.round(selectedArmour.movementPenalty * 100)}%</strong><small>Also adds ${selectedArmour.fatigueLoad.toFixed(1)} match workload.</small></article></div>
@@ -5612,6 +5645,15 @@
       selectCareerArmouryPlayer(armouryPlayerButton.dataset.careerArmouryPlayer, false);
       return;
     }
+    // Build 12.155: the only control that mounts a live CSS-3D rig.
+    const inspectButton = event.target.closest('[data-career-inspect]');
+    if (inspectButton) {
+      const surface = String(inspectButton.dataset.careerInspect || '');
+      const opened = setCareerInspectSurface(surface, inspectButton.dataset.careerInspectId || '');
+      showStatus(opened ? 'INTERACTIVE 3D INSPECTION OPEN' : 'RETURNED TO STILL VIEW');
+      updateMenuUI();
+      return;
+    }
     const selectButton = event.target.closest('[data-career-select]');
     if (selectButton) {
       const id = selectButton.dataset.careerSelect;
@@ -5619,6 +5661,9 @@
         selectedCareerWeaponId = id;
         selectedCareerWeaponSlot = careerWeaponSlotType(id);
         resetCareerWeaponViewer(false);
+        // Selecting a different weapon closes an inspector opened on the old
+        // one, so the live rig always belongs to what is on screen.
+        if (careerInspectState.surface === 'weapon') { careerInspectState.surface = null; careerInspectState.id = null; }
         updateMenuUI();
       }
       return;
@@ -5626,7 +5671,11 @@
     const armourSelectButton = event.target.closest('[data-career-armour-select]');
     if (armourSelectButton) {
       const id = String(armourSelectButton.dataset.careerArmourSelect || 'none');
-      if (CAREER_ARMOUR_CATALOG[id] && (id === 'none' || (careerState.armourInventory || []).includes(id))) { selectedCareerArmourId = id; updateMenuUI(); }
+      if (CAREER_ARMOUR_CATALOG[id] && (id === 'none' || (careerState.armourInventory || []).includes(id))) {
+        selectedCareerArmourId = id;
+        if (careerInspectState.surface === 'armour') { careerInspectState.surface = null; careerInspectState.id = null; }
+        updateMenuUI();
+      }
       return;
     }
     const armourEquipButton = event.target.closest('[data-career-armour-equip]');

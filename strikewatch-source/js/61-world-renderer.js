@@ -1323,6 +1323,82 @@
     for (let i = tracers.length - 1; i >= 0; i--) if (tracers[i].life <= 0) tracers.splice(i, 1);
   }
 
+  // Build 12.155: where a missed shot actually lands.
+  //
+  // `spawnTracer` already knows the shooter, the target and the spread, but it
+  // stops the visible streak at the target — a miss simply ended in mid-air.
+  // This walks the same grid raycaster the renderer and line-of-sight checks
+  // use, so a decal can only ever land on a surface those agree is solid, and
+  // works out the height by carrying the shot's own rise or fall past the
+  // target. If that puts the round below the floor it becomes a floor mark
+  // instead, which is where most wild shots go.
+  function spawnImpactDecal(shooter, endX, endZ, endHeight, startHeight) {
+    if (!shooter || typeof castRay !== 'function') return null;
+    const dx = endX - shooter.x;
+    const dz = endZ - shooter.y;
+    const horizontal = Math.hypot(dx, dz);
+    if (horizontal < 0.05) return null;
+    const angle = Math.atan2(dz, dx);
+    const hit = castRay(shooter.x, shooter.y, angle);
+    if (!hit || !Number.isFinite(hit.d)) return null;
+    const rise = (endHeight - startHeight) / horizontal;
+    const wallHeight = Number(activeArenaMeta().ceilingHeight) || GL_WALL_HEIGHT;
+    const shooterElevation = arenaElevationAt(shooter.x, shooter.y);
+    let height = startHeight + rise * hit.d;
+    let decal;
+    if (height <= shooterElevation + 0.05 && rise < 0) {
+      // The round reaches the ground before the wall.
+      const groundDistance = (shooterElevation + 0.04 - startHeight) / rise;
+      if (!(groundDistance > 0.2) || groundDistance > hit.d) return null;
+      decal = {
+        x: shooter.x + Math.cos(angle) * groundDistance,
+        y: shooterElevation + 0.012,
+        z: shooter.y + Math.sin(angle) * groundDistance,
+        axis: 'y',
+        life: 1
+      };
+    } else {
+      if (height >= shooterElevation + wallHeight - 0.08) return null;
+      height = clamp(height, shooterElevation + 0.06, shooterElevation + wallHeight - 0.1);
+      // `side` 0 is a wall face normal to x, 1 is normal to z. Nudge the mark
+      // out of the surface so it cannot z-fight with the wall it sits on.
+      const nudge = 0.014;
+      decal = {
+        x: hit.hitX - (hit.side === 0 ? Math.sign(Math.cos(angle)) * nudge : 0),
+        y: height,
+        z: hit.hitY - (hit.side === 1 ? Math.sign(Math.sin(angle)) * nudge : 0),
+        axis: hit.side === 0 ? 'x' : 'z',
+        life: 1
+      };
+    }
+    decal.size = 0.040 + Math.random() * 0.020;
+    impactDecals.push(decal);
+    if (impactDecals.length > IMPACT_DECAL_LIMIT) impactDecals.splice(0, impactDecals.length - IMPACT_DECAL_LIMIT);
+    return decal;
+  }
+
+  function clearImpactDecals() {
+    impactDecals.length = 0;
+  }
+
+  function drawImpactDecals() {
+    if (!impactDecals.length) return;
+    for (const decal of impactDecals) {
+      const size = decal.size;
+      // A pale chipped rim under a dark core. Two draws rather than one,
+      // because a single black plate reads as a sticker stuck on the wall
+      // while a rim gives the mark an edge the scene lighting can catch.
+      if (decal.axis === 'x') mat4TRS(glModel, decal.x, decal.y, decal.z, 0, 0, 0, 0.010, size * 1.55, size * 1.55);
+      else if (decal.axis === 'z') mat4TRS(glModel, decal.x, decal.y, decal.z, 0, 0, 0, size * 1.55, size * 1.55, 0.010);
+      else mat4TRS(glModel, decal.x, decal.y, decal.z, 0, 0, 0, size * 1.90, 0.010, size * 1.90);
+      drawMesh(glMeshes.cube, [0.30, 0.32, 0.33], glModel, 0, 1, 3, 0.92);
+      if (decal.axis === 'x') mat4TRS(glModel, decal.x, decal.y, decal.z, 0, 0, 0, 0.016, size, size);
+      else if (decal.axis === 'z') mat4TRS(glModel, decal.x, decal.y, decal.z, 0, 0, 0, size, size, 0.016);
+      else mat4TRS(glModel, decal.x, decal.y, decal.z, 0, 0, 0, size * 1.35, 0.016, size * 1.35);
+      drawMesh(glMeshes.cube, [0.018, 0.021, 0.024], glModel, 0, 1, 3, 0.96);
+    }
+  }
+
   function drawGroundGlow(x, z, sx, sz, colour, alpha, yaw = 0, emissive = 0.0) {
     mat4TRS(glModel, x, 0.010, z, yaw, 0, 0, sx, 1, sz);
     drawMesh(glMeshes.disc, colour, glModel, emissive, alpha, 4, 0.08);

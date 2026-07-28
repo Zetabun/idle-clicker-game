@@ -189,6 +189,36 @@
       withinQuantisationBudget: levels <= 8
     };
   };
+  // Build 12.155: the loadout stills. A still that renders blank would look
+  // like an empty panel rather than an error, so this checks every catalogue
+  // entry actually rasterises to something.
+  window.__strikeDebug.loadoutStillForTest = () => loadoutStillAuditForTest();
+  // Build 12.155: impact decals. Fires a miss from a known point and reports
+  // where the mark landed, so the placement can be checked without needing a
+  // live firefight.
+  window.__strikeDebug.impactDecalForTest = (fromX = 4.5, fromZ = 4.5, toX = 30, toZ = 4.5, endHeight = 1.24, startHeight = 1.30) => {
+    if (typeof spawnImpactDecal !== 'function') return { ok: false, reason: 'spawnImpactDecal unavailable' };
+    const before = impactDecals.length;
+    const shooter = { x: fromX, y: fromZ, crouched: false };
+    const decal = spawnImpactDecal(shooter, toX, toZ, endHeight, startHeight);
+    const solidBehind = decal
+      ? isWall(decal.x + (decal.axis === 'x' ? 0.06 : 0), decal.z + (decal.axis === 'z' ? 0.06 : 0))
+        || isWall(decal.x - (decal.axis === 'x' ? 0.06 : 0), decal.z - (decal.axis === 'z' ? 0.06 : 0))
+      : false;
+    return {
+      ok: Boolean(decal) && (decal.axis === 'y' || solidBehind),
+      arenaId: activeArenaId,
+      spawned: Boolean(decal),
+      decal: decal ? { x: Number(decal.x.toFixed(3)), y: Number(decal.y.toFixed(3)), z: Number(decal.z.toFixed(3)), axis: decal.axis } : null,
+      restsOnSolidSurface: solidBehind || (decal ? decal.axis === 'y' : false),
+      insideMap: decal ? decal.x >= 0 && decal.z >= 0 && decal.x <= MAP_W && decal.z <= MAP_H : false,
+      count: impactDecals.length,
+      grew: impactDecals.length > before,
+      limit: IMPACT_DECAL_LIMIT
+    };
+  };
+  window.__strikeDebug.impactDecalCountForTest = () => ({ count: impactDecals.length, limit: IMPACT_DECAL_LIMIT });
+  window.__strikeDebug.clearImpactDecalsForTest = () => { clearImpactDecals(); return { count: impactDecals.length }; };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({
