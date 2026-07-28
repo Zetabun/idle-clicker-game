@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.143 gives the open-air Dune arena a procedural gradient sky in place
-of a flat clear colour borrowed from the fog.
-See `HANDOFF.md` and `AUDIT-12.143.md`.
+Build 12.144 rebuilds the Dune sandstone as structured masonry and sets its
+wall tilework into the surface instead of onto it.
+See `HANDOFF.md` and `AUDIT-12.144.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

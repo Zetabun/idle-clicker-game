@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.143 — Desert Sky
-Build ID: 12.143.0-desert-sky
+Build 12.144 — Sandstone Masonry
+Build ID: 12.144.0-sandstone-masonry
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,8 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.144 owns the desert sandstone surface (uSurface == 7) and the Dune
+wall tilework; keep surface variation structured, not hashed noise.
 Build 12.143 owns the open-air sky (js/65-sky-dome.js); desert only, no depth
 writes, and sky colour is not derived from fog colour. Re-check the Dune nav
 baseline (494 nodes / 2752 edges / 1 component) after touching it.

@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.143 — Desert Sky
-- Standalone: `dist/strikewatch-build-12.143.html`
+- Build 12.144 — Sandstone Masonry
+- Standalone: `dist/strikewatch-build-12.144.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

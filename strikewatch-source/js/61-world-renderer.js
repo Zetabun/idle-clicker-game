@@ -3186,15 +3186,32 @@
           drawMesh(glMeshes.cube, [0.78, 0.82, 0.80], glModel, 0.04, 0.34, 3, 0.82);
         }
       } else if (desertTheme) {
-        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.58, 0.76, 0.040);
-        drawMesh(glMeshes.cube, [0.56, 0.38, 0.22], glModel, 0, 1, 7, 0.96);
-        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.46, 0.62, 0.047);
-        const tileColour = panel.variant % 2 ? [0.18, 0.38, 0.42] : [0.58, 0.20, 0.13];
-        drawMesh(glMeshes.cube, tileColour, glModel, 0.04, 1, 7, 0.90);
-        for (const offset of [-0.18, 0, 0.18]) {
-          const tile = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.052);
-          mat4TRS(glModel, tile.x, 1.34 + offset * 0.7, tile.z, panel.yaw, 0, 0, 0.055, 0.44, 0.012);
-          drawMesh(glMeshes.cube, [0.86, 0.70, 0.42], glModel, 0.02, 0.42, 7, 0.92);
+        // Build 12.144: glazed tilework set into the masonry rather than a
+        // saturated slab applied on top of it. The old pair of colours,
+        // [0.18,0.38,0.42] and [0.58,0.20,0.13], read as bright stickers
+        // against the sandstone and repeated identically across the arena.
+        const DESERT_TILE_TONES = [
+          [0.16, 0.31, 0.36],
+          [0.44, 0.20, 0.16],
+          [0.20, 0.34, 0.31],
+          [0.40, 0.26, 0.15]
+        ];
+        const tileColour = DESERT_TILE_TONES[panel.variant % DESERT_TILE_TONES.length];
+
+        // Carved surround, slightly proud of the wall.
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.60, 0.78, 0.044);
+        drawMesh(glMeshes.cube, [0.60, 0.44, 0.27], glModel, 0, 1, 7, 0.97);
+        // Shadowed reveal so the tile reads as recessed.
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.50, 0.66, 0.038);
+        drawMesh(glMeshes.cube, [0.34, 0.24, 0.15], glModel, 0, 1, 7, 0.98);
+        // The glazed tile itself sits behind the reveal, not in front of it.
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.44, 0.60, 0.030);
+        drawMesh(glMeshes.cube, tileColour, glModel, 0.015, 1, 3, 0.46);
+        // Narrow inlays, warm but no longer near-white.
+        for (const offset of [-0.15, 0.15]) {
+          const tile = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.036);
+          mat4TRS(glModel, tile.x, 1.34, tile.z, panel.yaw, 0, 0, 0.042, 0.40, 0.010);
+          drawMesh(glMeshes.cube, [0.72, 0.58, 0.35], glModel, 0.01, 0.52, 7, 0.90);
         }
       } else {
         mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.45, 0.62, 0.038);

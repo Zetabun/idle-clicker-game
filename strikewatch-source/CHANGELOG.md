@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.144 — Sandstone Masonry
+
+- Replaces the mottled patchwork on Dune walls with real masonry: horizontal courses in a running bond, soft mortar joints and gentle per-block tone.
+- The old shader hashed two mismatched noise grids together, giving unstructured speckle that read as dirt; measured std dev is down 54.9% and horizontal roughness down 63.7%.
+- Wall panels become inset tilework — carved surround, shadowed reveal, recessed glazed tile — in four desaturated tones, replacing two saturated slabs that read as stickers.
+- Arena geometry, collision and navigation are untouched: Dune stays at 494 navigation nodes, 2,752 edges and one component, 60/60 routes.
+- Banners and floor tiles are not changed in this build.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.144.md`.
+
+
 ## 12.143 — Desert Sky
 
 - Replaces the flat muddy brown above Dune Bastion with a procedural gradient sky: warm horizon haze, pale upper sky, deep zenith, a low sun and a below-horizon ground haze.

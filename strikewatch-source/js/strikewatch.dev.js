@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.143';
-  const BUILD_NAME = 'Desert Sky';
-  const BUILD_ID = '12.143.0-desert-sky';
+  const BUILD_VERSION = '12.144';
+  const BUILD_NAME = 'Sandstone Masonry';
+  const BUILD_ID = '12.144.0-sandstone-masonry';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -38474,12 +38474,34 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           materialRoughness = max(materialRoughness, 0.88);
         // Surface 7: rough sandstone, packed earth and sun-weathered plaster.
         } else if (uSurface > 6.5 && uSurface < 7.5) {
-          float coarse = hash21(floor(vWorldPosition.xz * 8.0) + floor(vWorldPosition.xy * 3.0));
-          float strata = 0.93 + 0.07 * sin(vWorldPosition.y * 22.0 + vWorldPosition.x * 2.2 + vWorldPosition.z * 1.7);
+          // Build 12.144: sandstone masonry. The previous version multiplied
+          // two mismatched floor() noise grids (xz * 8 and xy * 3), which gave
+          // a random patchwork that read as dirt rather than stone. Courses
+          // now run horizontally in a running bond with soft mortar joints and
+          // a much gentler per-block tone.
+          float courseHeight = 0.44;
+          float blockLength = 0.88;
+          float course = floor(vWorldPosition.y / courseHeight);
+          float bond = mod(course, 2.0) * 0.5;
+          float along = (vWorldPosition.x + vWorldPosition.z) / blockLength + bond;
+          float block = floor(along);
+
+          float blockTone = 0.972 + hash21(vec2(block, course)) * 0.056;
+          float courseTone = 0.980 + hash21(vec2(course * 1.7, 4.3)) * 0.040;
+
+          // Mortar: darken where a course line or a block edge falls.
+          float courseEdge = abs(fract(vWorldPosition.y / courseHeight) - 0.5) * 2.0;
+          float blockEdge = abs(fract(along) - 0.5) * 2.0;
+          float joint = max(smoothstep(0.90, 1.0, courseEdge), smoothstep(0.93, 1.0, blockEdge));
+
+          // A slow warm gradient replaces the old high-frequency strata stripe.
+          float bedding = 0.985 + 0.015 * sin(vWorldPosition.y * 2.6 + block * 0.6);
           float dust = smoothstep(0.64, 0.96, noise) * (1.0 - smoothstep(0.04, 0.58, vWorldPosition.y));
-          base *= (0.88 + coarse * 0.18) * strata;
-          base = mix(base, vec3(0.52, 0.35, 0.20), dust * 0.14);
-          materialRoughness = max(materialRoughness, 0.92);
+
+          base *= blockTone * courseTone * bedding;
+          base = mix(base, base * 0.82, joint * 0.55);
+          base = mix(base, vec3(0.54, 0.38, 0.23), dust * 0.12);
+          materialRoughness = max(materialRoughness, 0.90);
         // Surface 8: exposed operator skin. Keep natural matte shading, but
         // retain enough ambient response for pale skin to remain readable under
         // helmets, goggles and armour collars without making it self-luminous.
@@ -42631,15 +42653,32 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(glMeshes.cube, [0.78, 0.82, 0.80], glModel, 0.04, 0.34, 3, 0.82);
         }
       } else if (desertTheme) {
-        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.58, 0.76, 0.040);
-        drawMesh(glMeshes.cube, [0.56, 0.38, 0.22], glModel, 0, 1, 7, 0.96);
-        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.46, 0.62, 0.047);
-        const tileColour = panel.variant % 2 ? [0.18, 0.38, 0.42] : [0.58, 0.20, 0.13];
-        drawMesh(glMeshes.cube, tileColour, glModel, 0.04, 1, 7, 0.90);
-        for (const offset of [-0.18, 0, 0.18]) {
-          const tile = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.052);
-          mat4TRS(glModel, tile.x, 1.34 + offset * 0.7, tile.z, panel.yaw, 0, 0, 0.055, 0.44, 0.012);
-          drawMesh(glMeshes.cube, [0.86, 0.70, 0.42], glModel, 0.02, 0.42, 7, 0.92);
+        // Build 12.144: glazed tilework set into the masonry rather than a
+        // saturated slab applied on top of it. The old pair of colours,
+        // [0.18,0.38,0.42] and [0.58,0.20,0.13], read as bright stickers
+        // against the sandstone and repeated identically across the arena.
+        const DESERT_TILE_TONES = [
+          [0.16, 0.31, 0.36],
+          [0.44, 0.20, 0.16],
+          [0.20, 0.34, 0.31],
+          [0.40, 0.26, 0.15]
+        ];
+        const tileColour = DESERT_TILE_TONES[panel.variant % DESERT_TILE_TONES.length];
+
+        // Carved surround, slightly proud of the wall.
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.60, 0.78, 0.044);
+        drawMesh(glMeshes.cube, [0.60, 0.44, 0.27], glModel, 0, 1, 7, 0.97);
+        // Shadowed reveal so the tile reads as recessed.
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.50, 0.66, 0.038);
+        drawMesh(glMeshes.cube, [0.34, 0.24, 0.15], glModel, 0, 1, 7, 0.98);
+        // The glazed tile itself sits behind the reveal, not in front of it.
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.44, 0.60, 0.030);
+        drawMesh(glMeshes.cube, tileColour, glModel, 0.015, 1, 3, 0.46);
+        // Narrow inlays, warm but no longer near-white.
+        for (const offset of [-0.15, 0.15]) {
+          const tile = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.036);
+          mat4TRS(glModel, tile.x, 1.34, tile.z, panel.yaw, 0, 0, 0.042, 0.40, 0.010);
+          drawMesh(glMeshes.cube, [0.72, 0.58, 0.35], glModel, 0.01, 0.52, 7, 0.90);
         }
       } else {
         mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.45, 0.62, 0.038);
@@ -56261,6 +56300,43 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   });
   // Registered here for the same reason as the crate hook: 70-runtime.js
   // reassigns window.__strikeDebug wholesale.
+  // Forces a frame and reads it back in the same task so surface quality can be
+  // measured objectively. The canvas has no preserveDrawingBuffer, so a sample
+  // taken after the frame is presented comes back empty.
+  window.__strikeDebug.arenaSurfaceSampleForTest = (fx = 0.55, fy = 0.55, boxW = 140, boxH = 110) => {
+    if (typeof render !== 'function' || !gl) return { ok: false, reason: 'Renderer not reachable.' };
+    render(performance.now());
+    const w = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+    const x0 = Math.max(0, Math.min(w - boxW, Math.floor(w * fx)));
+    const y0 = Math.max(0, Math.min(h - boxH, Math.floor(h * fy)));
+    const buffer = new Uint8Array(boxW * boxH * 4);
+    gl.readPixels(x0, y0, boxW, boxH, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+    const luminance = [];
+    for (let i = 0; i < boxW * boxH; i++) {
+      luminance.push(0.2126 * buffer[i * 4] + 0.7152 * buffer[i * 4 + 1] + 0.0722 * buffer[i * 4 + 2]);
+    }
+    const mean = luminance.reduce((a, v) => a + v, 0) / luminance.length;
+    const variance = luminance.reduce((a, v) => a + (v - mean) * (v - mean), 0) / luminance.length;
+    // Mean absolute difference between horizontally adjacent pixels. Random
+    // per-patch noise drives this up; structured masonry keeps it low except
+    // at the mortar joints.
+    let adjacent = 0;
+    let pairs = 0;
+    for (let y = 0; y < boxH; y++) {
+      for (let x = 1; x < boxW; x++) {
+        adjacent += Math.abs(luminance[y * boxW + x] - luminance[y * boxW + x - 1]);
+        pairs++;
+      }
+    }
+    return {
+      ok: true,
+      meanLuminance: Number(mean.toFixed(2)),
+      stdDev: Number(Math.sqrt(variance).toFixed(3)),
+      meanAdjacentDelta: Number((adjacent / Math.max(1, pairs)).toFixed(4)),
+      samples: boxW * boxH
+    };
+  };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({

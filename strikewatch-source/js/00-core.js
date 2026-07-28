@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.143';
-  const BUILD_NAME = 'Desert Sky';
-  const BUILD_ID = '12.143.0-desert-sky';
+  const BUILD_VERSION = '12.144';
+  const BUILD_NAME = 'Sandstone Masonry';
+  const BUILD_ID = '12.144.0-sandstone-masonry';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

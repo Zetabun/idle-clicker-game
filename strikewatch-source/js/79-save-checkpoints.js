@@ -83,6 +83,43 @@
   });
   // Registered here for the same reason as the crate hook: 70-runtime.js
   // reassigns window.__strikeDebug wholesale.
+  // Forces a frame and reads it back in the same task so surface quality can be
+  // measured objectively. The canvas has no preserveDrawingBuffer, so a sample
+  // taken after the frame is presented comes back empty.
+  window.__strikeDebug.arenaSurfaceSampleForTest = (fx = 0.55, fy = 0.55, boxW = 140, boxH = 110) => {
+    if (typeof render !== 'function' || !gl) return { ok: false, reason: 'Renderer not reachable.' };
+    render(performance.now());
+    const w = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+    const x0 = Math.max(0, Math.min(w - boxW, Math.floor(w * fx)));
+    const y0 = Math.max(0, Math.min(h - boxH, Math.floor(h * fy)));
+    const buffer = new Uint8Array(boxW * boxH * 4);
+    gl.readPixels(x0, y0, boxW, boxH, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+    const luminance = [];
+    for (let i = 0; i < boxW * boxH; i++) {
+      luminance.push(0.2126 * buffer[i * 4] + 0.7152 * buffer[i * 4 + 1] + 0.0722 * buffer[i * 4 + 2]);
+    }
+    const mean = luminance.reduce((a, v) => a + v, 0) / luminance.length;
+    const variance = luminance.reduce((a, v) => a + (v - mean) * (v - mean), 0) / luminance.length;
+    // Mean absolute difference between horizontally adjacent pixels. Random
+    // per-patch noise drives this up; structured masonry keeps it low except
+    // at the mortar joints.
+    let adjacent = 0;
+    let pairs = 0;
+    for (let y = 0; y < boxH; y++) {
+      for (let x = 1; x < boxW; x++) {
+        adjacent += Math.abs(luminance[y * boxW + x] - luminance[y * boxW + x - 1]);
+        pairs++;
+      }
+    }
+    return {
+      ok: true,
+      meanLuminance: Number(mean.toFixed(2)),
+      stdDev: Number(Math.sqrt(variance).toFixed(3)),
+      meanAdjacentDelta: Number((adjacent / Math.max(1, pairs)).toFixed(4)),
+      samples: boxW * boxH
+    };
+  };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({

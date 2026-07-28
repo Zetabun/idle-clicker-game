@@ -273,12 +273,34 @@
           materialRoughness = max(materialRoughness, 0.88);
         // Surface 7: rough sandstone, packed earth and sun-weathered plaster.
         } else if (uSurface > 6.5 && uSurface < 7.5) {
-          float coarse = hash21(floor(vWorldPosition.xz * 8.0) + floor(vWorldPosition.xy * 3.0));
-          float strata = 0.93 + 0.07 * sin(vWorldPosition.y * 22.0 + vWorldPosition.x * 2.2 + vWorldPosition.z * 1.7);
+          // Build 12.144: sandstone masonry. The previous version multiplied
+          // two mismatched floor() noise grids (xz * 8 and xy * 3), which gave
+          // a random patchwork that read as dirt rather than stone. Courses
+          // now run horizontally in a running bond with soft mortar joints and
+          // a much gentler per-block tone.
+          float courseHeight = 0.44;
+          float blockLength = 0.88;
+          float course = floor(vWorldPosition.y / courseHeight);
+          float bond = mod(course, 2.0) * 0.5;
+          float along = (vWorldPosition.x + vWorldPosition.z) / blockLength + bond;
+          float block = floor(along);
+
+          float blockTone = 0.972 + hash21(vec2(block, course)) * 0.056;
+          float courseTone = 0.980 + hash21(vec2(course * 1.7, 4.3)) * 0.040;
+
+          // Mortar: darken where a course line or a block edge falls.
+          float courseEdge = abs(fract(vWorldPosition.y / courseHeight) - 0.5) * 2.0;
+          float blockEdge = abs(fract(along) - 0.5) * 2.0;
+          float joint = max(smoothstep(0.90, 1.0, courseEdge), smoothstep(0.93, 1.0, blockEdge));
+
+          // A slow warm gradient replaces the old high-frequency strata stripe.
+          float bedding = 0.985 + 0.015 * sin(vWorldPosition.y * 2.6 + block * 0.6);
           float dust = smoothstep(0.64, 0.96, noise) * (1.0 - smoothstep(0.04, 0.58, vWorldPosition.y));
-          base *= (0.88 + coarse * 0.18) * strata;
-          base = mix(base, vec3(0.52, 0.35, 0.20), dust * 0.14);
-          materialRoughness = max(materialRoughness, 0.92);
+
+          base *= blockTone * courseTone * bedding;
+          base = mix(base, base * 0.82, joint * 0.55);
+          base = mix(base, vec3(0.54, 0.38, 0.23), dust * 0.12);
+          materialRoughness = max(materialRoughness, 0.90);
         // Surface 8: exposed operator skin. Keep natural matte shading, but
         // retain enough ambient response for pale skin to remain readable under
         // helmets, goggles and armour collars without making it self-luminous.

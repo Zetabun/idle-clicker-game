@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.143 — Desert Sky**
-- Build ID: `12.143.0-desert-sky`
+- Build: **12.144 — Sandstone Masonry**
+- Build ID: `12.144.0-sandstone-masonry`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.143.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.144.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.144 reworks the Dune surfaces. The desert shader mode multiplied two mismatched `floor()` noise grids, giving unstructured +/-10% speckle that read as a dirty quilt; it is now masonry with courses in a running bond, soft mortar joints and much gentler tone (std dev down 54.9%, horizontal roughness down 63.7%, measured by porting the shader's hash to JS over a fixed grid). Wall panels become inset tilework in four desaturated tones instead of two saturated slabs stuck on the surface. Dune navigation is unchanged at 494 nodes / 2,752 edges / 1 component. Banners and floor tiles are still outstanding. See `AUDIT-12.144.md`.
 
 Build 12.143 gives Dune Bastion a real sky. It is the only open-air arena, and above the ramparts there was no sky pass at all — just the GL clear colour, which was derived from the desert fog `[0.25, 0.18, 0.10]`, a flat muddy brown. `js/65-sky-dome.js` draws a procedural gradient from the view ray's elevation before any world geometry, with depth writes off. The desert fog becomes a warm haze matched to the sky horizon. Dune navigation is unchanged at 494 nodes / 2,752 edges / 1 component and the boot release audit reports no runtime faults. The arena's decor models are untouched. See `AUDIT-12.143.md`.
 
