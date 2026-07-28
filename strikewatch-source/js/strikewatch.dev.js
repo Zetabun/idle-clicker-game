@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.145';
-  const BUILD_NAME = 'Clean Surfaces';
-  const BUILD_ID = '12.145.0-clean-surfaces';
+  const BUILD_VERSION = '12.146';
+  const BUILD_NAME = 'Contact Shading';
+  const BUILD_ID = '12.146.0-contact-shading';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39474,6 +39474,43 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return { x: baseX + c * lx + s * lz, z: baseZ - s * lx + c * lz };
   }
 
+  // Build 12.146: baked ambient occlusion.
+  //
+  // Enclosure is sampled once from the collision grid when the world batches
+  // are built, never per frame, and is folded into the existing per-draw
+  // colour. That costs no extra draw calls, no texture and no shader work — a
+  // corridor simply resolves darker than an open room, which is most of what
+  // makes a space read as lit.
+  //
+  // The value is quantised: the static batcher groups draws by exact material,
+  // so a continuous factor would shatter one wall batch into hundreds.
+  const STATIC_OCCLUSION_STEPS = 6;
+  const STATIC_OCCLUSION_RADIUS = 2.6;
+
+  function staticOcclusionAt(x, z) {
+    let blocked = 0;
+    let total = 0;
+    // Two rings give a cheap approximation of how enclosed a point is without
+    // the cost of a real hemisphere sample.
+    for (const radius of [STATIC_OCCLUSION_RADIUS * 0.45, STATIC_OCCLUSION_RADIUS]) {
+      for (let step = 0; step < 12; step++) {
+        const angle = (step / 12) * Math.PI * 2;
+        total++;
+        if (isWall(x + Math.cos(angle) * radius, z + Math.sin(angle) * radius)) blocked++;
+      }
+    }
+    if (!total) return 0;
+    const raw = blocked / total;
+    return Math.round(raw * STATIC_OCCLUSION_STEPS) / STATIC_OCCLUSION_STEPS;
+  }
+
+  // Occlusion darkens, it never brightens, and it is deliberately shallow:
+  // this is contact shading, not a lighting model.
+  function applyStaticOcclusion(colour, occlusion, strength = 0.22) {
+    const factor = 1 - clamp(Number(occlusion) || 0, 0, 1) * strength;
+    return [colour[0] * factor, colour[1] * factor, colour[2] * factor];
+  }
+
   function createWallRectangles() {
     const visited = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(false));
     const rectangles = [];
@@ -40409,6 +40446,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
 
     for (const rect of createWallRectangles()) {
+      // Build 12.146: sample enclosure once, here, so nothing is paid per frame.
+      rect.occlusion = staticOcclusionAt(rect.x, rect.z);
       worldBatches.walls.push(rect);
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
@@ -42594,15 +42633,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, sceneWallHeight / 2, wall.z, 0, 0, 0, wall.width, sceneWallHeight, wall.depth);
-      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(wall.variant ? wallA : wallB, wall.occlusion), glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
-      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205], glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
+      const kickColour = officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205];
+      // The kick plate sits at floor level, so it carries the contact shading
+      // more strongly than the wall above it.
+      drawMesh(glMeshes.cube, applyStaticOcclusion(kickColour, kick.occlusion, 0.30), glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
-      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(trimColour, trim.occlusion, 0.26), glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
     }
     for (const hazard of worldBatches.hazards) {
       mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);
@@ -56368,6 +56410,44 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       stdDev: Number(Math.sqrt(variance).toFixed(3)),
       meanAdjacentDelta: Number((adjacent / Math.max(1, pairs)).toFixed(4)),
       samples: boxW * boxH
+    };
+  };
+  // Forces a frame and reports the renderer's own counters. The published
+  // body dataset only refreshes on a countdown and stalls when the animation
+  // frame is throttled, so it cannot be used to compare builds.
+  window.__strikeDebug.rendererFrameStatsForTest = (frames = 3) => {
+    if (typeof render !== 'function') return { ok: false, reason: 'Renderer not reachable.' };
+    let last = null;
+    for (let i = 0; i < Math.max(1, frames); i++) {
+      render(performance.now() + i * 16);
+      last = { ...rendererFrameStats };
+    }
+    return { ok: true, ...last };
+  };
+  // Reports the baked occlusion actually assigned to the current arena's wall
+  // rectangles, so the effect can be checked directly rather than inferred from
+  // a rendered viewport, which varies with whatever the camera happens to face.
+  window.__strikeDebug.staticOcclusionForTest = () => {
+    const walls = (typeof worldBatches === 'object' && worldBatches?.walls) || [];
+    if (!walls.length) return { ok: false, reason: 'No wall batches built.' };
+    const values = walls.map(w => Number(w.occlusion) || 0);
+    const buckets = {};
+    for (const v of values) {
+      const k = v.toFixed(3);
+      buckets[k] = (buckets[k] || 0) + 1;
+    }
+    const mean = values.reduce((a, v) => a + v, 0) / values.length;
+    return {
+      ok: true,
+      arenaId: activeArenaId,
+      wallRects: walls.length,
+      distinctLevels: Object.keys(buckets).length,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      mean: Number(mean.toFixed(4)),
+      histogram: buckets,
+      // Quantisation keeps the static batcher's material groups bounded.
+      withinQuantisationBudget: Object.keys(buckets).length <= 8
     };
   };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();

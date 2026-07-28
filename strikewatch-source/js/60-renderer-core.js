@@ -1273,6 +1273,43 @@
     return { x: baseX + c * lx + s * lz, z: baseZ - s * lx + c * lz };
   }
 
+  // Build 12.146: baked ambient occlusion.
+  //
+  // Enclosure is sampled once from the collision grid when the world batches
+  // are built, never per frame, and is folded into the existing per-draw
+  // colour. That costs no extra draw calls, no texture and no shader work — a
+  // corridor simply resolves darker than an open room, which is most of what
+  // makes a space read as lit.
+  //
+  // The value is quantised: the static batcher groups draws by exact material,
+  // so a continuous factor would shatter one wall batch into hundreds.
+  const STATIC_OCCLUSION_STEPS = 6;
+  const STATIC_OCCLUSION_RADIUS = 2.6;
+
+  function staticOcclusionAt(x, z) {
+    let blocked = 0;
+    let total = 0;
+    // Two rings give a cheap approximation of how enclosed a point is without
+    // the cost of a real hemisphere sample.
+    for (const radius of [STATIC_OCCLUSION_RADIUS * 0.45, STATIC_OCCLUSION_RADIUS]) {
+      for (let step = 0; step < 12; step++) {
+        const angle = (step / 12) * Math.PI * 2;
+        total++;
+        if (isWall(x + Math.cos(angle) * radius, z + Math.sin(angle) * radius)) blocked++;
+      }
+    }
+    if (!total) return 0;
+    const raw = blocked / total;
+    return Math.round(raw * STATIC_OCCLUSION_STEPS) / STATIC_OCCLUSION_STEPS;
+  }
+
+  // Occlusion darkens, it never brightens, and it is deliberately shallow:
+  // this is contact shading, not a lighting model.
+  function applyStaticOcclusion(colour, occlusion, strength = 0.22) {
+    const factor = 1 - clamp(Number(occlusion) || 0, 0, 1) * strength;
+    return [colour[0] * factor, colour[1] * factor, colour[2] * factor];
+  }
+
   function createWallRectangles() {
     const visited = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(false));
     const rectangles = [];

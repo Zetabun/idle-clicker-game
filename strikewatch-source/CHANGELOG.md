@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.146 — Contact Shading
+
+- Adds baked ambient occlusion to every arena: corridors, corners and enclosed walls now resolve darker than open rooms.
+- Costs nothing per frame — enclosure is sampled once from the collision grid when world batches are built and folded into the existing draw colour, so there are no extra draw calls, no texture and no shader work.
+- Quantised to six steps so the static batcher's merged geometry is not fragmented; Citadel's batching still works.
+- Static batching was not extended to the other arenas: they contain animated decor that batching would freeze, and the eligibility guard the renderer provides has never been wired up. Recorded for a follow-up.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.146.md`.
+
+
 ## 12.145 — Clean Surfaces
 
 - Removes the mottled patchwork from every arena, not just Dune: the shared surface noise term hashed two mismatched grids together, and six surface modes read it.

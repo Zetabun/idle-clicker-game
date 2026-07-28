@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.145 — Clean Surfaces
-- Standalone: `dist/strikewatch-build-12.145.html`
+- Build 12.146 — Contact Shading
+- Standalone: `dist/strikewatch-build-12.146.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

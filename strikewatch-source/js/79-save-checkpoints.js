@@ -120,6 +120,44 @@
       samples: boxW * boxH
     };
   };
+  // Forces a frame and reports the renderer's own counters. The published
+  // body dataset only refreshes on a countdown and stalls when the animation
+  // frame is throttled, so it cannot be used to compare builds.
+  window.__strikeDebug.rendererFrameStatsForTest = (frames = 3) => {
+    if (typeof render !== 'function') return { ok: false, reason: 'Renderer not reachable.' };
+    let last = null;
+    for (let i = 0; i < Math.max(1, frames); i++) {
+      render(performance.now() + i * 16);
+      last = { ...rendererFrameStats };
+    }
+    return { ok: true, ...last };
+  };
+  // Reports the baked occlusion actually assigned to the current arena's wall
+  // rectangles, so the effect can be checked directly rather than inferred from
+  // a rendered viewport, which varies with whatever the camera happens to face.
+  window.__strikeDebug.staticOcclusionForTest = () => {
+    const walls = (typeof worldBatches === 'object' && worldBatches?.walls) || [];
+    if (!walls.length) return { ok: false, reason: 'No wall batches built.' };
+    const values = walls.map(w => Number(w.occlusion) || 0);
+    const buckets = {};
+    for (const v of values) {
+      const k = v.toFixed(3);
+      buckets[k] = (buckets[k] || 0) + 1;
+    }
+    const mean = values.reduce((a, v) => a + v, 0) / values.length;
+    return {
+      ok: true,
+      arenaId: activeArenaId,
+      wallRects: walls.length,
+      distinctLevels: Object.keys(buckets).length,
+      min: Math.min(...values),
+      max: Math.max(...values),
+      mean: Number(mean.toFixed(4)),
+      histogram: buckets,
+      // Quantisation keeps the static batcher's material groups bounded.
+      withinQuantisationBudget: Object.keys(buckets).length <= 8
+    };
+  };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({

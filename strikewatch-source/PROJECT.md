@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.145 replaces the shared surface noise every arena was built on, so
-partitions, floors, metal and displays read as materials rather than speckle.
-See `HANDOFF.md` and `AUDIT-12.145.md`.
+Build 12.146 bakes ambient occlusion into the arenas at build time, so enclosed
+space reads darker than open space at no per-frame cost.
+See `HANDOFF.md` and `AUDIT-12.146.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -163,6 +163,12 @@ current task. Release-specific implementation detail belongs in the matching
   coordinates.
 - Arena visuals derive from `MAP`, zones, decor and prop layouts. Minimap and
   deployment previews should consume the same authorities.
+- Baked occlusion is presentation only and must stay quantised, so the static
+  batcher's material grouping is not fragmented. It may never influence
+  collision, navigation or line of sight.
+- Static world batching bakes model matrices at capture time. An arena may only
+  be batched once every time-dependent draw in `drawStaticWorld` is excluded
+  through `setStaticWorldBatchEligibility()`.
 - Open-air arenas draw their sky through `drawArenaSky()` before any world
   geometry, writing no depth and restoring renderer state. Sky colour and fog
   colour are separate decisions; the sky must not be derived from the fog.

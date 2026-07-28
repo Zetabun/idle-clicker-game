@@ -909,6 +909,8 @@
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
 
     for (const rect of createWallRectangles()) {
+      // Build 12.146: sample enclosure once, here, so nothing is paid per frame.
+      rect.occlusion = staticOcclusionAt(rect.x, rect.z);
       worldBatches.walls.push(rect);
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
@@ -3094,15 +3096,18 @@
 
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, sceneWallHeight / 2, wall.z, 0, 0, 0, wall.width, sceneWallHeight, wall.depth);
-      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(wall.variant ? wallA : wallB, wall.occlusion), glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
-      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205], glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
+      const kickColour = officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205];
+      // The kick plate sits at floor level, so it carries the contact shading
+      // more strongly than the wall above it.
+      drawMesh(glMeshes.cube, applyStaticOcclusion(kickColour, kick.occlusion, 0.30), glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
-      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(trimColour, trim.occlusion, 0.26), glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
     }
     for (const hazard of worldBatches.hazards) {
       mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);

@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.146 owns baked occlusion (`staticOcclusionAt`/`applyStaticOcclusion` in `js/60-renderer-core.js`). Keep it quantised — the static batcher groups by exact material, so a continuous factor shatters merged batches. Do not enable `STATIC_WORLD_BATCHING_ENABLED` for another arena until every time-dependent draw in `drawStaticWorld` is wrapped in `setStaticWorldBatchEligibility()`, which currently exists but is never called; batching bakes model matrices, so animated decor would freeze. Renderer stats in `document.body.dataset` stall under a throttled animation frame — use `rendererFrameStatsForTest()` and fix the camera pose, since draw calls are view-dependent. See `AUDIT-12.146.md`.
+
 Build 12.145 owns the shared surface `noise` term and `valueNoise()` in `js/60-renderer-core.js`. Six surface modes read it, so a change there affects every arena — re-run all-arena geometry integrity and per-arena navigation, not just the one being worked on. Keep surface detail at room scale: anything above roughly 40 cycles per world unit aliases into banding. See `AUDIT-12.145.md`.
 
 Build 12.144 owns the desert sandstone surface (`uSurface == 7` in `js/60-renderer-core.js`) and the Dune wall tilework. Keep surface variation structured — courses, bond and joints — rather than hashed noise, and keep the tile tones desaturated enough to sit against sandstone. Measure changes with `arenaSurfaceSampleForTest()` or by porting the shader maths, not by eye alone. See `AUDIT-12.144.md`.

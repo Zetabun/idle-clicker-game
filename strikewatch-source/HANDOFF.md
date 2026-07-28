@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.145 — Clean Surfaces**
-- Build ID: `12.145.0-clean-surfaces`
+- Build: **12.146 — Contact Shading**
+- Build ID: `12.146.0-contact-shading`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.145.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.146.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.146 adds baked ambient occlusion. Enclosure is sampled once from the collision grid when world batches are built and folded into the existing per-draw colour, so it costs no extra draw calls, no texture and no shader work — corridors resolve darker than open rooms. It is quantised to six steps because the static batcher groups by exact material; citadel's batching survives at 120 batch draws. Static batching was **not** extended past citadel: `drawStaticWorld` has many time-dependent draws and `setStaticWorldBatchEligibility()` is never called, so batching other arenas today would freeze their animated decor. See `AUDIT-12.146.md`.
 
 Build 12.145 denoises every arena. The mottling fixed for sandstone in 12.144 existed one level up, in the shared `noise` term read by six surface modes: `hash21(floor(xz * 5.0) + floor(xy * 2.0))`, two mismatched grids whose result also changed with facing direction. It is now smoothly interpolated `valueNoise()` on one grid. Office partitions vary per module instead of per fragment (std dev down 33.1%, horizontal roughness down 61.1%), wall-display scanlines drop from 130 cycles per world unit to 34 at a third of the amplitude, and brushed metal from 92 to 26. Skyline Offices navigation is measured and sound (464 nodes / 1,948 edges / 1 component, 60/60 routes); six symmetric chokepoints are recorded in the audit but the layout is unchanged. See `AUDIT-12.145.md`.
 

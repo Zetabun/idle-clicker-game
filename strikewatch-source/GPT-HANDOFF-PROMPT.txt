@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.145 — Clean Surfaces
-Build ID: 12.145.0-clean-surfaces
+Build 12.146 — Contact Shading
+Build ID: 12.146.0-contact-shading
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.146 owns baked occlusion; keep it quantised or the static batcher
+fragments. Do not batch another arena until animated draws in drawStaticWorld
+are excluded via setStaticWorldBatchEligibility().
 Build 12.145 owns the shared surface noise term and valueNoise(); six surface
 modes read it, so changes there affect every arena. Keep detail below ~40
 cycles per world unit or it aliases.
