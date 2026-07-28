@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.138';
-  const BUILD_NAME = 'Reachable Training';
-  const BUILD_ID = '12.138.0-reachable-training';
+  const BUILD_VERSION = '12.139';
+  const BUILD_NAME = 'Stated Requirement';
+  const BUILD_ID = '12.139.0-stated-requirement';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -20495,14 +20495,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       </article>`;
     }).join('') : '<div class="team-empty-state"><strong>NO CONTRACTED PLAYERS</strong><p>Recruit a squad before assigning training programmes.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>';
 
-    return `${intro}${recommendationPanel}${renderDevelopmentAlertsStrip()}${typeof renderWorkflowDraftBar === 'function' ? renderWorkflowDraftBar('training', 'TRAINING PROGRAMMES', 'Programme selections remain reversible until Save Changes is pressed.') : ''}
+    // Build 12.139: the requirement has to be stated where the controls are.
+    // Saved focus decides whether the objective is still outstanding; staged
+    // focus decides what the manager has already chosen but not yet saved.
+    const savedAssigned = squad.filter(player => player.trainingFocus && player.trainingFocus !== 'none').length;
+    const stagedAssigned = squad.filter(player => {
+      const staged = typeof workflowTrainingFocusForPlayer === 'function' ? workflowTrainingFocusForPlayer(player) : player.trainingFocus;
+      return staged && staged !== 'none';
+    }).length;
+    const awaitingSave = stagedAssigned > savedAssigned;
+    const needsProgramme = squad.length > 0 && savedAssigned === 0;
+    const rosterKicker = needsProgramme ? (awaitingSave ? 'ONE STEP LEFT' : 'ACTION REQUIRED') : 'ACTIVE PROGRAMMES';
+    const rosterDetail = needsProgramme
+      ? (awaitingSave
+        ? `${stagedAssigned} programme${stagedAssigned === 1 ? ' is' : 's are'} chosen but not yet active. Press SAVE CHANGES above to confirm.`
+        : `No operator has a training programme. Pick one from PROGRAMME SELECTION on any operator below, then press SAVE CHANGES above.`)
+      : 'Technical programmes build progress slowly. Rest &amp; Recovery trades skill growth for condition.';
+
+    const draftBar = typeof renderWorkflowDraftBar === 'function'
+      ? renderWorkflowDraftBar('training', 'TRAINING PROGRAMMES', 'Programme selections remain reversible until Save Changes is pressed.')
+      : '';
+
+    return `${intro}${recommendationPanel}${renderDevelopmentAlertsStrip()}
       <div class="menu-hero career-hero development-hero">
         <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TRAINING FACILITY // WEEK ${careerState.week}</div><h2>TEAM & PLAYER DEVELOPMENT</h2><p>Training progress is deliberately gradual and advances whenever you use End Day. Player XP grants personal stat points; Team XP grants club-wide department benefits.</p><div class="menu-pill-row"><span class="menu-pill">TEAM LEVEL ${careerState.level}</span><span class="menu-pill">${careerState.unspentPoints} TEAM POINTS</span><span class="menu-pill">${squad.length} PLAYERS</span><span class="menu-pill">COACHING ${teamBenefitLevel('coaching')} / ${TEAM_BENEFIT_MAX}</span></div></div>
         <div class="menu-hero-side"><div class="menu-kicker">NEXT TEAM LEVEL</div><div class="menu-side-operator">${Math.max(0, required - careerState.xp)} XP</div><p>${Math.round(teamProgress * 100)}% complete · team benefits affect every contracted player.</p></div>
       </div>
       ${renderCareerXpProgress()}
       <section class="development-benefits-panel"><div class="career-section-head"><div><span>TEAM XP BENEFITS</span><strong>CLUB DEVELOPMENT</strong></div><p>Each Team Level grants one point. Benefits are permanent and capped at level ${TEAM_BENEFIT_MAX}.</p></div><div class="development-benefit-grid">${teamBenefitCardsMarkup()}</div></section>
-      <section class="training-roster-panel" data-guide-target="training-programmes"><div class="career-section-head"><div><span>ACTIVE PROGRAMMES</span><strong>TRAINING SQUAD</strong></div><p>Technical programmes build progress slowly. Rest & Recovery trades skill growth for condition.</p></div><div class="training-player-grid">${roster}</div></section>`;
+      <div class="training-programmes-zone ${needsProgramme ? 'needs-programme' : ''}" data-guide-target="training-programmes">${draftBar}
+        <section class="training-roster-panel"><div class="career-section-head"><div><span>${rosterKicker}</span><strong>TRAINING SQUAD</strong></div><p>${rosterDetail}</p></div><div class="training-player-grid">${roster}</div></section>
+      </div>`;
   }
 
   function renderPlayerDevelopmentPanel(player, inSquad = false) {
@@ -30068,14 +30091,26 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function workflowSaveTrainingDrafts(options = {}) {
     if (!workflowTrainingDrafts.size) return false;
     let changed = false;
+    // Build 12.139: setPlayerTrainingFocus refuses while a match is live. The
+    // result must be honoured — clearing the drafts regardless reported a save
+    // that never happened and silently reverted every selection.
+    const rejected = new Map();
     for (const [playerId, draft] of workflowTrainingDrafts.entries()) {
       const player = (careerState.squad || []).find(candidate => candidate.id === playerId);
       if (!player || !TRAINING_FOCUS_DEFS?.[draft.focusId]) continue;
-      if (typeof setPlayerTrainingFocus === 'function') setPlayerTrainingFocus(playerId, draft.focusId, { render: false, save: false });
-      else player.trainingFocus = draft.focusId;
-      changed = true;
+      let applied = true;
+      if (typeof setPlayerTrainingFocus === 'function') {
+        applied = setPlayerTrainingFocus(playerId, draft.focusId, { render: false, save: false }) !== false;
+      } else {
+        player.trainingFocus = draft.focusId;
+      }
+      if (applied) changed = true;
+      else rejected.set(playerId, draft);
     }
-    workflowTrainingDrafts = new Map();
+    workflowTrainingDrafts = rejected;
+    if (rejected.size && typeof showStatus === 'function') {
+      showStatus('TRAINING PROGRAMMES CANNOT CHANGE DURING A LIVE MATCH');
+    }
     if (changed) {
       if (careerState.trainingRecommendation) {
         const player = (careerState.squad || []).find(item => item.id === careerState.trainingRecommendation.playerId);
@@ -48911,6 +48946,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return { ok: Object.values(checks).every(Boolean), checks, samples, viewport };
     },
     firstMatchGuidanceForTest: () => {
+      // Build 12.139: this hook replays earlier guide steps by blanking
+      // careerState.squad, market, tutorial and totalMatches. Several of the
+      // renders it drives call saveCareerState(), which persisted that empty
+      // squad over a real career. Persistence is suppressed for the whole
+      // replay so a diagnostic can never destroy a save.
+      const liveSaveCareerState = saveCareerState;
+      saveCareerState = () => false;
+      try {
+        return window.__strikeDebug.firstMatchGuidanceReplayForTest();
+      } finally {
+        saveCareerState = liveSaveCareerState;
+      }
+    },
+    firstMatchGuidanceReplayForTest: () => {
       const guide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
       const validRoute = !guide || Boolean(menuRouteDefinition(guide.route));
       const primarySection = guide ? menuSectionForRoute(guide.route) : '';
@@ -49015,7 +49064,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         profileTargetsRecommendedCandidate: profileGuide?.id === 'profile' && recommendedProfileIds.includes(profileGuide.playerId),
         profileActionSelectsCandidate: new RegExp(`data-team-profile="${profileGuide?.playerId || ''}"`).test(profileStrip),
         profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip),
-        trainingDestinationIsRosterPanel: Boolean(trainingDestination?.classList.contains('training-roster-panel'))
+        // Build 12.139: arriving at the objective must deliver the save
+        // control and the requirement copy alongside the selects, not just
+        // the selects.
+        trainingDestinationIsProgrammesZone: Boolean(trainingDestination?.classList.contains('training-programmes-zone')),
+        trainingDestinationCarriesSaveControl: Boolean(trainingDestination?.querySelector('[data-workflow-save="training"]')),
+        trainingDestinationCarriesRoster: Boolean(trainingDestination?.querySelector('.training-roster-panel')),
+        trainingDestinationStatesRequirement: /No operator has a training programme/i.test(trainingDestination?.textContent || '')
       };
       // The replayed training step only reaches the guide when the career
       // already holds a deployment-ready squad, so report whether it was

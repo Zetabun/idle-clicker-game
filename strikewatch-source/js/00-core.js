@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.138';
-  const BUILD_NAME = 'Reachable Training';
-  const BUILD_ID = '12.138.0-reachable-training';
+  const BUILD_VERSION = '12.139';
+  const BUILD_NAME = 'Stated Requirement';
+  const BUILD_ID = '12.139.0-stated-requirement';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

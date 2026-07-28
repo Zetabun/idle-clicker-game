@@ -689,14 +689,37 @@
       </article>`;
     }).join('') : '<div class="team-empty-state"><strong>NO CONTRACTED PLAYERS</strong><p>Recruit a squad before assigning training programmes.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>';
 
-    return `${intro}${recommendationPanel}${renderDevelopmentAlertsStrip()}${typeof renderWorkflowDraftBar === 'function' ? renderWorkflowDraftBar('training', 'TRAINING PROGRAMMES', 'Programme selections remain reversible until Save Changes is pressed.') : ''}
+    // Build 12.139: the requirement has to be stated where the controls are.
+    // Saved focus decides whether the objective is still outstanding; staged
+    // focus decides what the manager has already chosen but not yet saved.
+    const savedAssigned = squad.filter(player => player.trainingFocus && player.trainingFocus !== 'none').length;
+    const stagedAssigned = squad.filter(player => {
+      const staged = typeof workflowTrainingFocusForPlayer === 'function' ? workflowTrainingFocusForPlayer(player) : player.trainingFocus;
+      return staged && staged !== 'none';
+    }).length;
+    const awaitingSave = stagedAssigned > savedAssigned;
+    const needsProgramme = squad.length > 0 && savedAssigned === 0;
+    const rosterKicker = needsProgramme ? (awaitingSave ? 'ONE STEP LEFT' : 'ACTION REQUIRED') : 'ACTIVE PROGRAMMES';
+    const rosterDetail = needsProgramme
+      ? (awaitingSave
+        ? `${stagedAssigned} programme${stagedAssigned === 1 ? ' is' : 's are'} chosen but not yet active. Press SAVE CHANGES above to confirm.`
+        : `No operator has a training programme. Pick one from PROGRAMME SELECTION on any operator below, then press SAVE CHANGES above.`)
+      : 'Technical programmes build progress slowly. Rest &amp; Recovery trades skill growth for condition.';
+
+    const draftBar = typeof renderWorkflowDraftBar === 'function'
+      ? renderWorkflowDraftBar('training', 'TRAINING PROGRAMMES', 'Programme selections remain reversible until Save Changes is pressed.')
+      : '';
+
+    return `${intro}${recommendationPanel}${renderDevelopmentAlertsStrip()}
       <div class="menu-hero career-hero development-hero">
         <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TRAINING FACILITY // WEEK ${careerState.week}</div><h2>TEAM & PLAYER DEVELOPMENT</h2><p>Training progress is deliberately gradual and advances whenever you use End Day. Player XP grants personal stat points; Team XP grants club-wide department benefits.</p><div class="menu-pill-row"><span class="menu-pill">TEAM LEVEL ${careerState.level}</span><span class="menu-pill">${careerState.unspentPoints} TEAM POINTS</span><span class="menu-pill">${squad.length} PLAYERS</span><span class="menu-pill">COACHING ${teamBenefitLevel('coaching')} / ${TEAM_BENEFIT_MAX}</span></div></div>
         <div class="menu-hero-side"><div class="menu-kicker">NEXT TEAM LEVEL</div><div class="menu-side-operator">${Math.max(0, required - careerState.xp)} XP</div><p>${Math.round(teamProgress * 100)}% complete · team benefits affect every contracted player.</p></div>
       </div>
       ${renderCareerXpProgress()}
       <section class="development-benefits-panel"><div class="career-section-head"><div><span>TEAM XP BENEFITS</span><strong>CLUB DEVELOPMENT</strong></div><p>Each Team Level grants one point. Benefits are permanent and capped at level ${TEAM_BENEFIT_MAX}.</p></div><div class="development-benefit-grid">${teamBenefitCardsMarkup()}</div></section>
-      <section class="training-roster-panel" data-guide-target="training-programmes"><div class="career-section-head"><div><span>ACTIVE PROGRAMMES</span><strong>TRAINING SQUAD</strong></div><p>Technical programmes build progress slowly. Rest & Recovery trades skill growth for condition.</p></div><div class="training-player-grid">${roster}</div></section>`;
+      <div class="training-programmes-zone ${needsProgramme ? 'needs-programme' : ''}" data-guide-target="training-programmes">${draftBar}
+        <section class="training-roster-panel"><div class="career-section-head"><div><span>${rosterKicker}</span><strong>TRAINING SQUAD</strong></div><p>${rosterDetail}</p></div><div class="training-player-grid">${roster}</div></section>
+      </div>`;
   }
 
   function renderPlayerDevelopmentPanel(player, inSquad = false) {

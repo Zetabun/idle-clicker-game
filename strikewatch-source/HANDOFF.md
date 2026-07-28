@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.138 — Reachable Training**
-- Build ID: `12.138.0-reachable-training`
+- Build: **12.139 — Stated Requirement**
+- Build ID: `12.139.0-stated-requirement`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.138.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.139.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.139 states the training requirement where the controls are. Reaching the selects was not enough: the `SAVE CHANGES` bar sat ~630px above the fold once the manager scrolled to them, so a programme could be chosen with no visible way to commit it and no copy saying a second step existed. The draft bar and the roster now share one `.training-programmes-zone`, and the panel head states the requirement and tracks it. Two defects found alongside: `workflowSaveTrainingDrafts()` ignored a refused write, and `firstMatchGuidanceForTest()` could persist an empty squad over a real career. See `AUDIT-12.139.md`.
 
 Build 12.138 clears the First Match Guide soft lock at its final objective. `SET ONE TRAINING FOCUS` routed to the top of Training Facility while the programme selects sat 1100–2900px further down, so the screen the guide opened contained no way to finish the step and the career could not progress. The step now carries a `training-programmes` scroll target and the roster panel carries the matching anchor. The same work fixed guided scrolling below 1024px: `menuHistoryScroller()` returned the desktop `.menu-content` section unconditionally, but the compact interface scrolls `#menuContent`, so every guided scroll destination — including the existing recruitment one — was inert on mobile. See `AUDIT-12.138.md`.
 

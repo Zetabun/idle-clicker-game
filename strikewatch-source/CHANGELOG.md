@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.139 — Stated Requirement
+
+- Fixes the remaining onboarding wall at `SET ONE TRAINING FOCUS`: scrolling to the programme selects left the `SAVE CHANGES` bar ~630px above the fold, so a programme could be chosen with nothing on screen saying a second step existed or where to perform it.
+- The save control now sits directly above the Training Squad roster, and the panel head states the requirement and tracks progress through it: `ACTION REQUIRED` → `ONE STEP LEFT` → `ACTIVE PROGRAMMES`.
+- Fixes a save path that reported success without writing: `setPlayerTrainingFocus()` refuses while a match is live, and the caller cleared every staged draft regardless, silently reverting the selection.
+- Fixes a debug hook that could destroy a career: `firstMatchGuidanceForTest()` blanks the squad to replay earlier guide steps, and renders it drives were persisting that empty squad.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.139.md`.
+
+
 ## 12.138 — Reachable Training
 
 - Fixes a First Match Guide soft lock: the closing `SET ONE TRAINING FOCUS` objective opened Training Facility at the top, with the programme selects 1100–2900px below the fold and nothing pointing at them, so the guide could not be completed and the remaining club systems stayed locked.

@@ -60,6 +60,13 @@ current task. Release-specific implementation detail belongs in the matching
   its route-view flag was never set. The guide must never step backwards.
 - The guided `match` step must always expose a working action: start
   matchmaking when the fixture is due, otherwise point to End Day/calendar.
+- A guide step must land the player on a screen that contains the control it
+  names *and* any control needed to commit it. Where a route uses a workflow
+  draft bar, that bar belongs beside the controls it saves, and the owning
+  panel must state the outstanding requirement rather than describe the system.
+- A `*ForTest()` hook that mutates `careerState` must suppress persistence for
+  the duration. A diagnostic must never be able to write partial state over a
+  real career.
 - Every guide step must land the player on a screen that contains the control
   it names. When that control is not on the arrival screen, the step carries a
   `scrollTarget` and the owning panel carries the matching `data-guide-target`

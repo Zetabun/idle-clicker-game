@@ -3627,6 +3627,20 @@
       return { ok: Object.values(checks).every(Boolean), checks, samples, viewport };
     },
     firstMatchGuidanceForTest: () => {
+      // Build 12.139: this hook replays earlier guide steps by blanking
+      // careerState.squad, market, tutorial and totalMatches. Several of the
+      // renders it drives call saveCareerState(), which persisted that empty
+      // squad over a real career. Persistence is suppressed for the whole
+      // replay so a diagnostic can never destroy a save.
+      const liveSaveCareerState = saveCareerState;
+      saveCareerState = () => false;
+      try {
+        return window.__strikeDebug.firstMatchGuidanceReplayForTest();
+      } finally {
+        saveCareerState = liveSaveCareerState;
+      }
+    },
+    firstMatchGuidanceReplayForTest: () => {
       const guide = typeof firstMatchGuidance === 'function' ? firstMatchGuidance() : null;
       const validRoute = !guide || Boolean(menuRouteDefinition(guide.route));
       const primarySection = guide ? menuSectionForRoute(guide.route) : '';
@@ -3731,7 +3745,13 @@
         profileTargetsRecommendedCandidate: profileGuide?.id === 'profile' && recommendedProfileIds.includes(profileGuide.playerId),
         profileActionSelectsCandidate: new RegExp(`data-team-profile="${profileGuide?.playerId || ''}"`).test(profileStrip),
         profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip),
-        trainingDestinationIsRosterPanel: Boolean(trainingDestination?.classList.contains('training-roster-panel'))
+        // Build 12.139: arriving at the objective must deliver the save
+        // control and the requirement copy alongside the selects, not just
+        // the selects.
+        trainingDestinationIsProgrammesZone: Boolean(trainingDestination?.classList.contains('training-programmes-zone')),
+        trainingDestinationCarriesSaveControl: Boolean(trainingDestination?.querySelector('[data-workflow-save="training"]')),
+        trainingDestinationCarriesRoster: Boolean(trainingDestination?.querySelector('.training-roster-panel')),
+        trainingDestinationStatesRequirement: /No operator has a training programme/i.test(trainingDestination?.textContent || '')
       };
       // The replayed training step only reaches the guide when the career
       // already holds a deployment-ready squad, so report whether it was

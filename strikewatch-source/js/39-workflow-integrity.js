@@ -278,14 +278,26 @@
   function workflowSaveTrainingDrafts(options = {}) {
     if (!workflowTrainingDrafts.size) return false;
     let changed = false;
+    // Build 12.139: setPlayerTrainingFocus refuses while a match is live. The
+    // result must be honoured — clearing the drafts regardless reported a save
+    // that never happened and silently reverted every selection.
+    const rejected = new Map();
     for (const [playerId, draft] of workflowTrainingDrafts.entries()) {
       const player = (careerState.squad || []).find(candidate => candidate.id === playerId);
       if (!player || !TRAINING_FOCUS_DEFS?.[draft.focusId]) continue;
-      if (typeof setPlayerTrainingFocus === 'function') setPlayerTrainingFocus(playerId, draft.focusId, { render: false, save: false });
-      else player.trainingFocus = draft.focusId;
-      changed = true;
+      let applied = true;
+      if (typeof setPlayerTrainingFocus === 'function') {
+        applied = setPlayerTrainingFocus(playerId, draft.focusId, { render: false, save: false }) !== false;
+      } else {
+        player.trainingFocus = draft.focusId;
+      }
+      if (applied) changed = true;
+      else rejected.set(playerId, draft);
     }
-    workflowTrainingDrafts = new Map();
+    workflowTrainingDrafts = rejected;
+    if (rejected.size && typeof showStatus === 'function') {
+      showStatus('TRAINING PROGRAMMES CANNOT CHANGE DURING A LIVE MATCH');
+    }
     if (changed) {
       if (careerState.trainingRecommendation) {
         const player = (careerState.squad || []).find(item => item.id === careerState.trainingRecommendation.playerId);
