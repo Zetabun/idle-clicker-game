@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.143 owns the open-air sky (`js/65-sky-dome.js`). Only the `desert` theme has a preset; every other arena is roofed. The sky pass must keep writing no depth and must restore `DEPTH_TEST`/`CULL_FACE` and rebind the world program, so it can never affect collision, navigation or line of sight — re-check the Dune nav baseline (494 nodes / 2,752 edges / 1 component) after touching it. Sky colour and fog colour are separate decisions now; do not re-couple them. See `AUDIT-12.143.md`.
+
 Build 12.142 owns the armour viewer rotation pivot. Never drive a per-frame animation by writing an inherited custom property onto an ancestor of a large CSS-3D subtree: it invalidates every descendant's computed style. Rotate a dedicated wrapper instead. `--armour-viewer-scale` stays a custom property on purpose — the per-model and per-width scale factors are layered on it in CSS. See `AUDIT-12.142.md`.
 
 Build 12.141 owns career save checkpoints (`js/79-save-checkpoints.js`): any path that returns the manager to HQ, and any page-hide or unload, must leave progress written. Do not add a route back to HQ that skips a save. The reward crate spins from the wall clock passed into `renderCareerCrate3D` — never a per-call increment, which makes the rate frame-dependent. Note that `js/70-runtime.js` assigns `window.__strikeDebug` wholesale, so a `*ForTest()` hook added by an earlier module is discarded; register from a module after 70. See `AUDIT-12.141.md`.

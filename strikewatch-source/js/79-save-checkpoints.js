@@ -81,6 +81,10 @@
     spinBase: Number(rewardRendererState.spinBase.toFixed(4)),
     dragging: rewardRendererState.dragging
   });
+  // Registered here for the same reason as the crate hook: 70-runtime.js
+  // reassigns window.__strikeDebug wholesale.
+  window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
+  window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({
     saved: careerSaveCheckpoint(String(reason || 'manual'), { force: true }),
     state: { checkpointCount, lastCheckpointReason }

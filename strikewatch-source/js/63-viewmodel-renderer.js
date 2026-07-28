@@ -489,7 +489,10 @@
     mat4LookAt(glView, eye, target, [0, 1, 0]);
 
     const arenaTheme = activeArenaMeta().theme;
-    const baseFog = arenaTheme === 'desert' ? [0.25, 0.18, 0.10] : [0.028, 0.044, 0.056];
+    // Build 12.143: the desert fog was a muddy brown that doubled as the sky.
+    // The sky is now drawn properly below, so the fog can be the warm haze that
+    // distant sandstone should actually fade into, matched to the sky horizon.
+    const baseFog = arenaTheme === 'desert' ? [0.72, 0.62, 0.47] : [0.028, 0.044, 0.056];
     const zoneFog = zone ? [
       clamp(baseFog[0] * 0.72 + zone.colour[0] * 0.16 + zone.light[0] * 0.035, 0, 1),
       clamp(baseFog[1] * 0.72 + zone.colour[1] * 0.16 + zone.light[1] * 0.035, 0, 1),
@@ -504,6 +507,10 @@
     if (glLocations.time) gl.uniform1f(glLocations.time, time);
     gl.clearColor(zoneFog[0] * 0.86, zoneFog[1] * 0.90, zoneFog[2] * 0.94, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Open-air arenas replace the flat clear colour with a gradient sky. It is
+    // drawn before any world geometry, with depth writes off, so it cannot
+    // occlude the arena or affect collision, navigation or line of sight.
+    if (typeof drawArenaSky === 'function') drawArenaSky(eye, target);
     setBlendMode(false);
 
     if (STATIC_WORLD_BATCHING_ENABLED && activeArenaId === 'citadel' && !staticWorldGpuBatchesReady) {

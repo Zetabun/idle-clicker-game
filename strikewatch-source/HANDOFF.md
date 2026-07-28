@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.142 — Armour Pass**
-- Build ID: `12.142.0-armour-pass`
+- Build: **12.143 — Desert Sky**
+- Build ID: `12.143.0-desert-sky`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.142.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.143.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.143 gives Dune Bastion a real sky. It is the only open-air arena, and above the ramparts there was no sky pass at all — just the GL clear colour, which was derived from the desert fog `[0.25, 0.18, 0.10]`, a flat muddy brown. `js/65-sky-dome.js` draws a procedural gradient from the view ray's elevation before any world geometry, with depth writes off. The desert fog becomes a warm haze matched to the sky horizon. Dune navigation is unchanged at 494 nodes / 2,752 edges / 1 component and the boot release audit reports no runtime faults. The arena's decor models are untouched. See `AUDIT-12.143.md`.
 
 Build 12.142 fixes the armour viewer lag. The rotation was written to `--armour-viewer-yaw/pitch` on the rig root, and those are inherited custom properties, so every frame invalidated the computed style of all 384+ cuboid faces beneath it — 9.60ms per rotation step against 0.03ms for a direct transform. Rotation now belongs to a dedicated `.career-armour-viewer-pivot`; zoom deliberately stays on the custom property because the per-model and per-width scale factors are layered on it in CSS and it only changes on a button press. The armour models still look bad — that half is not addressed. See `AUDIT-12.142.md`.
 

@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.143 — Desert Sky
+
+- Replaces the flat muddy brown above Dune Bastion with a procedural gradient sky: warm horizon haze, pale upper sky, deep zenith, a low sun and a below-horizon ground haze.
+- Dune is the only open-air arena and had no sky pass at all; the sky was whatever the clear colour was, and that was derived from the fog.
+- Warms the desert fog to match the sky horizon, so distant sandstone fades into haze instead of into mud.
+- Arena geometry, collision and navigation are untouched: Dune stays at 494 navigation nodes, 2,752 edges and one component, with 60/60 route successes.
+- The arena's decor models are not changed in this build.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.143.md`.
+
+
 ## 12.142 — Armour Pass
 
 - Fixes the armour viewer lagging the game: rotating the model rewrote inherited CSS custom properties on the rig root, invalidating the computed style of all 384+ model faces every frame.

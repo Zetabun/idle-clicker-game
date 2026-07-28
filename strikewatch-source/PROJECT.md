@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.142 removes the armour inspector's per-frame style invalidation, so
-rotating a model no longer costs most of a frame.
-See `HANDOFF.md` and `AUDIT-12.142.md`.
+Build 12.143 gives the open-air Dune arena a procedural gradient sky in place
+of a flat clear colour borrowed from the fog.
+See `HANDOFF.md` and `AUDIT-12.143.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

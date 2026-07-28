@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.142 — Armour Pass
-Build ID: 12.142.0-armour-pass
+Build 12.143 — Desert Sky
+Build ID: 12.143.0-desert-sky
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.143 owns the open-air sky (js/65-sky-dome.js); desert only, no depth
+writes, and sky colour is not derived from fog colour. Re-check the Dune nav
+baseline (494 nodes / 2752 edges / 1 component) after touching it.
 Build 12.142 owns the armour viewer rotation pivot; never animate by writing
 an inherited custom property onto an ancestor of a big CSS-3D subtree.
 Build 12.141 owns career save checkpoints; no path back to HQ may skip a save,

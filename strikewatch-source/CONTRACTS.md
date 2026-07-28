@@ -163,6 +163,9 @@ current task. Release-specific implementation detail belongs in the matching
   coordinates.
 - Arena visuals derive from `MAP`, zones, decor and prop layouts. Minimap and
   deployment previews should consume the same authorities.
+- Open-air arenas draw their sky through `drawArenaSky()` before any world
+  geometry, writing no depth and restoring renderer state. Sky colour and fog
+  colour are separate decisions; the sky must not be derived from the fog.
 - Before changing an arena, read its latest audit. Current high-risk records:
   Aurora Terminal `AUDIT-12.130.md`, Skyline Offices `AUDIT-12.117.md`,
   Citadel Depot `AUDIT-12.108.md` and `AUDIT-12.109.md`, Dune Bastion

@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.142';
-  const BUILD_NAME = 'Armour Pass';
-  const BUILD_ID = '12.142.0-armour-pass';
+  const BUILD_VERSION = '12.143';
+  const BUILD_NAME = 'Desert Sky';
+  const BUILD_ID = '12.143.0-desert-sky';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -44793,7 +44793,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     mat4LookAt(glView, eye, target, [0, 1, 0]);
 
     const arenaTheme = activeArenaMeta().theme;
-    const baseFog = arenaTheme === 'desert' ? [0.25, 0.18, 0.10] : [0.028, 0.044, 0.056];
+    // Build 12.143: the desert fog was a muddy brown that doubled as the sky.
+    // The sky is now drawn properly below, so the fog can be the warm haze that
+    // distant sandstone should actually fade into, matched to the sky horizon.
+    const baseFog = arenaTheme === 'desert' ? [0.72, 0.62, 0.47] : [0.028, 0.044, 0.056];
     const zoneFog = zone ? [
       clamp(baseFog[0] * 0.72 + zone.colour[0] * 0.16 + zone.light[0] * 0.035, 0, 1),
       clamp(baseFog[1] * 0.72 + zone.colour[1] * 0.16 + zone.light[1] * 0.035, 0, 1),
@@ -44808,6 +44811,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (glLocations.time) gl.uniform1f(glLocations.time, time);
     gl.clearColor(zoneFog[0] * 0.86, zoneFog[1] * 0.90, zoneFog[2] * 0.94, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Open-air arenas replace the flat clear colour with a gradient sky. It is
+    // drawn before any world geometry, with depth writes off, so it cannot
+    // occlude the arena or affect collision, navigation or line of sight.
+    if (typeof drawArenaSky === 'function') drawArenaSky(eye, target);
     setBlendMode(false);
 
     if (STATIC_WORLD_BATCHING_ENABLED && activeArenaId === 'citadel' && !staticWorldGpuBatchesReady) {
@@ -45397,6 +45404,268 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       rewardDrawCube(0, bodyY + 0.52, 0, 2.18, 0.12 + easedOpen * 0.22, 1.22, [0.96, 0.68, 0.20], yaw, 0, 0, 1.55, 0.16, glowAlpha);
       rewardDrawCube(0, bodyY + 0.68, 0, 1.72, 0.08, 0.94, [0.36, 0.94, 0.72], yaw, 0, 0, 1.35, 0.12, glowAlpha * 0.72);
     }
+  }
+
+/*
+ * Strikewatch source module: 65-sky-dome.js
+ * Purpose: Procedural gradient sky for open-air arenas.
+ *
+ * Dune Bastion has no ceiling, so everything above the ramparts was whatever
+ * `gl.clearColor` happened to be — and that was derived from the fog colour,
+ * which for the desert theme was [0.25, 0.18, 0.10]. The result was a flat
+ * muddy brown where the sky should be.
+ *
+ * This draws a real gradient before the world: a full-screen triangle whose
+ * fragment colour is chosen from the view ray's elevation, so looking up gives
+ * deep sky and looking toward the ramparts gives warm horizon haze. It runs
+ * with depth writes and depth testing off and touches no world geometry, so it
+ * cannot affect collision, navigation or line of sight.
+ *
+ * Run `python3 build.py` to regenerate js/strikewatch.dev.js and dist/.
+ */
+
+  const SKY_THEME_PRESETS = Object.freeze({
+    desert: Object.freeze({
+      zenith: [0.13, 0.30, 0.58],
+      upper: [0.30, 0.50, 0.76],
+      horizon: [0.88, 0.78, 0.60],
+      ground: [0.40, 0.30, 0.20],
+      sun: [1.00, 0.88, 0.66],
+      sunDirection: [0.42, 0.26, -0.87],
+      sunSharpness: 26.0,
+      sunStrength: 0.62,
+      hazeLift: 0.30
+    })
+  });
+
+  let glSkyProgram = null;
+  let glSkyBuffer = null;
+  let glSkyVao = null;
+  const glSkyLocations = {};
+  let skyInitFailed = false;
+
+  function skyPresetForArena(arena) {
+    return SKY_THEME_PRESETS[arena?.theme] || null;
+  }
+
+  function arenaUsesSkyDome(arena = activeArenaMeta()) {
+    return Boolean(skyPresetForArena(arena));
+  }
+
+  function createSkyProgram() {
+    const vertexSource = `
+      attribute vec2 aClip;
+      varying vec2 vClip;
+      void main() {
+        vClip = aClip;
+        gl_Position = vec4(aClip, 0.999999, 1.0);
+      }
+    `;
+    const fragmentSource = `
+      precision mediump float;
+      varying vec2 vClip;
+      uniform vec3 uForward;
+      uniform vec3 uRight;
+      uniform vec3 uUp;
+      uniform vec2 uSlope;
+      uniform vec3 uZenith;
+      uniform vec3 uUpper;
+      uniform vec3 uHorizon;
+      uniform vec3 uGround;
+      uniform vec3 uSun;
+      uniform vec3 uSunDirection;
+      uniform float uSunSharpness;
+      uniform float uSunStrength;
+      uniform float uHazeLift;
+      void main() {
+        vec3 dir = normalize(uForward + uRight * (vClip.x * uSlope.x) + uUp * (vClip.y * uSlope.y));
+        float elevation = dir.y;
+
+        // Warm haze hugs the horizon, cool sky opens up overhead. Keeping the
+        // two bands separate stops the whole dome washing out to one tone.
+        float horizonBand = 1.0 - smoothstep(0.0, 0.22, elevation);
+        float upperBand = smoothstep(0.10, 0.42, elevation);
+        float zenithBand = smoothstep(0.38, 0.92, elevation);
+
+        vec3 colour = mix(uHorizon, uUpper, upperBand);
+        colour = mix(colour, uZenith, zenithBand);
+        colour = mix(colour, uHorizon, horizonBand * 0.85);
+
+        // Below the horizon the dome reads as distant ground haze rather than
+        // sky, so the ramparts do not appear to float.
+        float belowHorizon = smoothstep(0.0, -0.16, elevation);
+        colour = mix(colour, uGround, belowHorizon);
+
+        // A broad low sun warms one side of the sky and anchors the time of day.
+        float sunDot = max(dot(dir, normalize(uSunDirection)), 0.0);
+        float sunGlow = pow(sunDot, uSunSharpness) * uSunStrength;
+        float sunWash = pow(sunDot, 2.2) * 0.20;
+        colour += uSun * (sunGlow + sunWash) * (1.0 - belowHorizon);
+
+        // Gentle banding break-up so the gradient does not show steps on
+        // 8-bit displays.
+        float dither = fract(sin(dot(vClip, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+        colour += dither * 0.006;
+
+        colour = mix(colour, colour + vec3(0.04, 0.03, 0.02), uHazeLift * horizonBand);
+        gl_FragColor = vec4(clamp(colour, 0.0, 1.0), 1.0);
+      }
+    `;
+    const program = gl.createProgram();
+    gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw new Error(gl.getProgramInfoLog(program) || 'Unable to link sky program');
+    }
+    return program;
+  }
+
+  function ensureSkyResources() {
+    if (glSkyProgram || skyInitFailed) return Boolean(glSkyProgram);
+    try {
+      glSkyProgram = createSkyProgram();
+      glSkyLocations.clip = gl.getAttribLocation(glSkyProgram, 'aClip');
+      for (const name of ['uForward', 'uRight', 'uUp', 'uSlope', 'uZenith', 'uUpper', 'uHorizon', 'uGround', 'uSun', 'uSunDirection', 'uSunSharpness', 'uSunStrength', 'uHazeLift']) {
+        glSkyLocations[name] = gl.getUniformLocation(glSkyProgram, name);
+      }
+      // One oversized triangle covers the viewport with no clipping seam.
+      glSkyVao = gl.createVertexArray ? gl.createVertexArray() : null;
+      if (glSkyVao) gl.bindVertexArray(glSkyVao);
+      glSkyBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, glSkyBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(glSkyLocations.clip);
+      gl.vertexAttribPointer(glSkyLocations.clip, 2, gl.FLOAT, false, 0, 0);
+      if (glSkyVao) gl.bindVertexArray(null);
+      return true;
+    } catch (error) {
+      // A missing sky must never take the match renderer down with it.
+      skyInitFailed = true;
+      glSkyProgram = null;
+      return false;
+    }
+  }
+
+  // `eye` and `target` are the same vectors handed to mat4LookAt, so the sky
+  // ray always agrees with the camera the world is drawn through.
+  function drawArenaSky(eye, target) {
+    const preset = skyPresetForArena(activeArenaMeta());
+    if (!preset || !gl || !eye || !target) return false;
+    if (!ensureSkyResources()) return false;
+
+    let fx = target[0] - eye[0];
+    let fy = target[1] - eye[1];
+    let fz = target[2] - eye[2];
+    const flen = Math.hypot(fx, fy, fz) || 1;
+    fx /= flen; fy /= flen; fz /= flen;
+
+    // right = normalize(forward × worldUp) with worldUp = (0, 1, 0), which
+    // reduces to (-fz, 0, fx). Taking the cross the other way round mirrors the
+    // sky and puts the sun on the wrong side.
+    let rx = -fz;
+    let ry = 0;
+    let rz = fx;
+    const rlen = Math.hypot(rx, ry, rz) || 1;
+    rx /= rlen; ry /= rlen; rz /= rlen;
+
+    // up = right × forward, giving a true camera up even when pitched.
+    const ux = ry * fz - rz * fy;
+    const uy = rz * fx - rx * fz;
+    const uz = rx * fy - ry * fx;
+
+    const horizontalSlope = 1 / Math.max(0.0001, glProjection[0]);
+    const verticalSlope = 1 / Math.max(0.0001, glProjection[5]);
+
+    const previousDepthTest = gl.isEnabled(gl.DEPTH_TEST);
+    const previousCull = gl.isEnabled(gl.CULL_FACE);
+    gl.useProgram(glSkyProgram);
+    if (glSkyVao) gl.bindVertexArray(glSkyVao);
+    else {
+      gl.bindBuffer(gl.ARRAY_BUFFER, glSkyBuffer);
+      gl.enableVertexAttribArray(glSkyLocations.clip);
+      gl.vertexAttribPointer(glSkyLocations.clip, 2, gl.FLOAT, false, 0, 0);
+    }
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.depthMask(false);
+
+    gl.uniform3f(glSkyLocations.uForward, fx, fy, fz);
+    gl.uniform3f(glSkyLocations.uRight, rx, ry, rz);
+    gl.uniform3f(glSkyLocations.uUp, ux, uy, uz);
+    gl.uniform2f(glSkyLocations.uSlope, horizontalSlope, verticalSlope);
+    gl.uniform3fv(glSkyLocations.uZenith, preset.zenith);
+    gl.uniform3fv(glSkyLocations.uUpper, preset.upper);
+    gl.uniform3fv(glSkyLocations.uHorizon, preset.horizon);
+    gl.uniform3fv(glSkyLocations.uGround, preset.ground);
+    gl.uniform3fv(glSkyLocations.uSun, preset.sun);
+    gl.uniform3fv(glSkyLocations.uSunDirection, preset.sunDirection);
+    gl.uniform1f(glSkyLocations.uSunSharpness, preset.sunSharpness);
+    gl.uniform1f(glSkyLocations.uSunStrength, preset.sunStrength);
+    gl.uniform1f(glSkyLocations.uHazeLift, preset.hazeLift);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if (glSkyVao) gl.bindVertexArray(null);
+    gl.depthMask(true);
+    if (previousDepthTest) gl.enable(gl.DEPTH_TEST);
+    if (previousCull) gl.enable(gl.CULL_FACE);
+    gl.useProgram(glProgram);
+    return true;
+  }
+
+  // Draws the sky and reads it back inside the same task. The canvas has no
+  // preserveDrawingBuffer, so sampling after the frame has been presented
+  // returns an empty buffer — the draw and the read have to share a turn.
+  function skyDomeSampleForTest(direction = [0, 0, -1]) {
+    const preset = skyPresetForArena(activeArenaMeta());
+    if (!preset) return { ok: false, reason: 'Active arena does not use a sky dome.' };
+    if (!gl || !glReady) return { ok: false, reason: 'WebGL renderer is not ready.' };
+    const eye = [MAP_W * 0.5, 1.6, MAP_H * 0.5];
+    const target = [eye[0] + direction[0], eye[1] + direction[1], eye[2] + direction[2]];
+    const drawn = drawArenaSky(eye, target);
+    if (!drawn) return { ok: false, reason: 'Sky pass did not run.' };
+    const w = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+    const at = (fx, fy) => {
+      const pixel = new Uint8Array(4);
+      gl.readPixels(Math.floor(w * fx), Math.floor(h * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+      return [pixel[0], pixel[1], pixel[2]];
+    };
+    // GL reads bottom-up, so a high fy is the top of the screen.
+    const top = at(0.5, 0.96);
+    const upper = at(0.5, 0.74);
+    const middle = at(0.5, 0.52);
+    const lower = at(0.5, 0.18);
+    const luminance = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const blueBias = c => c[2] - c[0];
+    return {
+      ok: true,
+      width: w,
+      height: h,
+      top,
+      upper,
+      middle,
+      lower,
+      // A sky must not be uniform, and must be cooler overhead than at the
+      // horizon. Both were false when the clear colour was doing this job.
+      hasVerticalGradient: Math.abs(luminance(top) - luminance(lower)) > 6,
+      coolerOverhead: blueBias(top) > blueBias(lower),
+      notFlatBrown: !(Math.abs(luminance(top) - luminance(middle)) < 2 && blueBias(top) < 0)
+    };
+  }
+
+  function skyDomeForTest() {
+    const arena = activeArenaMeta();
+    const preset = skyPresetForArena(arena);
+    return {
+      arenaId: arena?.id || null,
+      theme: arena?.theme || null,
+      usesSkyDome: Boolean(preset),
+      programReady: Boolean(glSkyProgram),
+      initFailed: skyInitFailed,
+      preset: preset ? { zenith: [...preset.zenith], horizon: [...preset.horizon], ground: [...preset.ground] } : null
+    };
   }
 
 /*
@@ -55990,6 +56259,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     spinBase: Number(rewardRendererState.spinBase.toFixed(4)),
     dragging: rewardRendererState.dragging
   });
+  // Registered here for the same reason as the crate hook: 70-runtime.js
+  // reassigns window.__strikeDebug wholesale.
+  window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
+  window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({
     saved: careerSaveCheckpoint(String(reason || 'manual'), { force: true }),
     state: { checkpointCount, lastCheckpointReason }
