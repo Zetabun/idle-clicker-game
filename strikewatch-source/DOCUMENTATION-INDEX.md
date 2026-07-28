@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.137 — Kept Rewards
-- Standalone: `dist/strikewatch-build-12.137.html`
+- Build 12.138 — Reachable Training
+- Standalone: `dist/strikewatch-build-12.138.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

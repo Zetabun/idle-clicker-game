@@ -696,7 +696,7 @@
       </div>
       ${renderCareerXpProgress()}
       <section class="development-benefits-panel"><div class="career-section-head"><div><span>TEAM XP BENEFITS</span><strong>CLUB DEVELOPMENT</strong></div><p>Each Team Level grants one point. Benefits are permanent and capped at level ${TEAM_BENEFIT_MAX}.</p></div><div class="development-benefit-grid">${teamBenefitCardsMarkup()}</div></section>
-      <section class="training-roster-panel"><div class="career-section-head"><div><span>ACTIVE PROGRAMMES</span><strong>TRAINING SQUAD</strong></div><p>Technical programmes build progress slowly. Rest & Recovery trades skill growth for condition.</p></div><div class="training-player-grid">${roster}</div></section>`;
+      <section class="training-roster-panel" data-guide-target="training-programmes"><div class="career-section-head"><div><span>ACTIVE PROGRAMMES</span><strong>TRAINING SQUAD</strong></div><p>Technical programmes build progress slowly. Rest & Recovery trades skill growth for condition.</p></div><div class="training-player-grid">${roster}</div></section>`;
   }
 
   function renderPlayerDevelopmentPanel(player, inSquad = false) {

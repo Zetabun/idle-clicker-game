@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.137 — Kept Rewards
-Build ID: 12.137.0-kept-rewards
+Build 12.138 — Reachable Training
+Build ID: 12.138.0-reachable-training
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,10 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.138 owns guided scroll reachability; a guide step whose control is
+off the arrival screen needs a scrollTarget plus a matching data-guide-target
+anchor, and menuHistoryScroller() must resolve the element that actually
+scrolls on the active presentation target.
 Build 12.137 owns victory-crate persistence; any earned reward must reach the
 career save before it is shown, never only module state.
 Build 12.136 owns the scroll-container row sizing; size the grid tracks, not

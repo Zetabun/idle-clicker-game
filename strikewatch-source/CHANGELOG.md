@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.138 — Reachable Training
+
+- Fixes a First Match Guide soft lock: the closing `SET ONE TRAINING FOCUS` objective opened Training Facility at the top, with the programme selects 1100–2900px below the fold and nothing pointing at them, so the guide could not be completed and the remaining club systems stayed locked.
+- The step now scrolls to Training Squad on arrival, and its copy names Programme Selection and Save Changes instead of assuming a debrief recommendation exists.
+- Fixes guided scrolling below 1024px, which had never worked: the scroll helper always targeted the desktop scroll container, so the existing recruitment destination was inert on mobile too. Previous/next scroll restoration on compact is fixed by the same change.
+- Restores `firstMatchGuidanceForTest()` to a meaningful gate — its journey-strip assertion had been case-sensitive and always failing — and extends it to cover the training step.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.138.md`.
+
+
 ## 12.137 — Kept Rewards
 
 - Fixes victory crates being lost: the awarded weapon lived only in memory until the reveal was clicked through, so refreshing or closing the tab destroyed it.

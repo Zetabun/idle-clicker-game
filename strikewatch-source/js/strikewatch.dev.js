@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.137';
-  const BUILD_NAME = 'Kept Rewards';
-  const BUILD_ID = '12.137.0-kept-rewards';
+  const BUILD_VERSION = '12.138';
+  const BUILD_NAME = 'Reachable Training';
+  const BUILD_ID = '12.138.0-reachable-training';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -20502,7 +20502,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       </div>
       ${renderCareerXpProgress()}
       <section class="development-benefits-panel"><div class="career-section-head"><div><span>TEAM XP BENEFITS</span><strong>CLUB DEVELOPMENT</strong></div><p>Each Team Level grants one point. Benefits are permanent and capped at level ${TEAM_BENEFIT_MAX}.</p></div><div class="development-benefit-grid">${teamBenefitCardsMarkup()}</div></section>
-      <section class="training-roster-panel"><div class="career-section-head"><div><span>ACTIVE PROGRAMMES</span><strong>TRAINING SQUAD</strong></div><p>Technical programmes build progress slowly. Rest & Recovery trades skill growth for condition.</p></div><div class="training-player-grid">${roster}</div></section>`;
+      <section class="training-roster-panel" data-guide-target="training-programmes"><div class="career-section-head"><div><span>ACTIVE PROGRAMMES</span><strong>TRAINING SQUAD</strong></div><p>Technical programmes build progress slowly. Rest & Recovery trades skill growth for condition.</p></div><div class="training-player-grid">${roster}</div></section>`;
   }
 
   function renderPlayerDevelopmentPanel(player, inSquad = false) {
@@ -33655,7 +33655,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         ? { id: 'match', complete: firstCareerMatchPlayed, route: 'calendar', label: `ADVANCE ${matchWaitDays} DAY${matchWaitDays === 1 ? '' : 'S'} TO MATCHDAY`, detail: `The match plan is locked and the fixture is ${matchWaitDays} day${matchWaitDays === 1 ? '' : 's'} away. Use END DAY to advance the club calendar — it stays unlocked until matchday.`, action: 'OPEN CALENDAR' }
         : { id: 'match', complete: firstCareerMatchPlayed, route: 'play', leagueAction: 'play-league', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Start matchmaking and watch how well they execute the plan in a first-to-three match.', action: 'START MATCHMAKING' },
       { id: 'debrief', complete: reportReviewed, route: 'reports', label: 'REVIEW WHAT HAPPENED', detail: 'Read What Worked, Biggest Issue and Next Manager Action before changing the squad or tactics.', action: 'OPEN DEBRIEF' },
-      { id: 'training', complete: trainingSet, route: 'training', label: 'SET ONE TRAINING FOCUS', detail: 'Use the debrief recommendation to choose one targeted improvement for an operator.', action: 'OPEN TRAINING' }
+      // The programme selects sit below the development hero and Team XP
+      // benefits, so the final step must scroll to Training Squad the same way
+      // the signing steps scroll to the candidate list. Without it the guide
+      // lands on a screen that contains no way to complete the objective.
+      { id: 'training', complete: trainingSet, route: 'training', scrollTarget: 'training-programmes', label: 'SET ONE TRAINING FOCUS', detail: 'Open Programme Selection on one operator in Training Squad, choose an improvement, then press Save Changes to make it active.', action: 'OPEN TRAINING' }
     ];
     const index = steps.findIndex(step => !step.complete);
     if (index < 0) return null;
@@ -33972,7 +33976,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   let menuNavigationIndex = -1;
 
   function menuHistoryScroller() {
-    return menuContentEl?.closest('.menu-content') || menuContentEl || null;
+    // The scrolling element differs by presentation target: the desktop Command
+    // Centre scrolls the `.menu-content` section, while the compact interface
+    // scrolls `#menuContent` inside it. Returning the section unconditionally
+    // made guided scroll targets and history restore no-ops below 1024px, so
+    // prefer whichever element can actually scroll.
+    const section = menuContentEl?.closest('.menu-content') || null;
+    if (menuContentEl && menuContentEl.scrollHeight - menuContentEl.clientHeight > 1) return menuContentEl;
+    if (section && section.scrollHeight - section.clientHeight > 1) return section;
+    return section || menuContentEl || null;
   }
 
   function menuHistorySnapshot(route = menuTab) {
@@ -48954,6 +48966,38 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         selectedTeamPlayerId = previous.selectedTeamPlayerId;
         recruitmentBeginnerExpanded = false;
       }
+      // Build 12.138: the closing training step must reach its own control the
+      // same way the signing step reaches the candidate list. Replay the step
+      // with a real squad, no active focus and a reviewed debrief.
+      let trainingScroll = { guide: null, strip: '', training: '', squadSampled: 0 };
+      const trainingPrevious = {
+        totalMatches: careerState.totalMatches,
+        lastRound: careerState.lastRound,
+        recommendation: careerState.trainingRecommendation,
+        focuses: (careerState.squad || []).map(player => player.trainingFocus)
+      };
+      try {
+        careerState.totalMatches = Math.max(1, Number(careerState.totalMatches) || 0);
+        careerState.lastRound = { ...(careerState.lastRound || {}), reportReviewed: true };
+        careerState.trainingRecommendation = null;
+        for (const player of careerState.squad || []) player.trainingFocus = 'none';
+        trainingScroll = {
+          guide: firstMatchGuidance(),
+          strip: renderMenuPriorityStrip(),
+          training: renderTrainingFacilityTab(),
+          squadSampled: (careerState.squad || []).length
+        };
+      } finally {
+        careerState.totalMatches = trainingPrevious.totalMatches;
+        careerState.lastRound = trainingPrevious.lastRound;
+        careerState.trainingRecommendation = trainingPrevious.recommendation;
+        (careerState.squad || []).forEach((player, index) => { player.trainingFocus = trainingPrevious.focuses[index]; });
+      }
+      const trainingHost = document.createElement('div');
+      trainingHost.innerHTML = trainingScroll.training;
+      const trainingDestination = trainingHost.querySelector('[data-guide-target="training-programmes"]');
+      const trainingSelects = trainingDestination?.querySelectorAll('[data-training-focus]').length || 0;
+
       const marketHost = document.createElement('div');
       marketHost.innerHTML = recruitmentScroll.market;
       const candidateDestination = marketHost.querySelector('[data-guide-target="recruitment-candidates"]');
@@ -48970,15 +49014,28 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         transfersOpenForActiveTutorialNegotiation: Boolean(!recruitmentScroll.transferAccessDuring?.locked && recruitmentScroll.transferAccessDuring?.label === 'NEGOTIATE'),
         profileTargetsRecommendedCandidate: profileGuide?.id === 'profile' && recommendedProfileIds.includes(profileGuide.playerId),
         profileActionSelectsCandidate: new RegExp(`data-team-profile="${profileGuide?.playerId || ''}"`).test(profileStrip),
-        profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip)
+        profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip),
+        trainingDestinationIsRosterPanel: Boolean(trainingDestination?.classList.contains('training-roster-panel'))
       };
+      // The replayed training step only reaches the guide when the career
+      // already holds a deployment-ready squad, so report whether it was
+      // sampled instead of passing the checks silently.
+      const trainingSampled = trainingScroll.squadSampled >= TEAM_REQUIRED_STARTERS;
+      if (trainingSampled) {
+        scrollChecks.trainingStepTargetsProgrammes = trainingScroll.guide?.id === 'training' && trainingScroll.guide?.scrollTarget === 'training-programmes';
+        scrollChecks.trainingObjectiveCarriesScrollTarget = /data-team-scroll-target="training-programmes"/.test(trainingScroll.strip);
+        scrollChecks.trainingDestinationHoldsProgrammeSelects = trainingSelects === trainingScroll.squadSampled;
+      }
       return {
-        ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && guide.milestoneTotal === 6 && primarySection === guide.section)) && (!guide || /FIRST MATCH JOURNEY/.test(strip)) && Object.values(scrollChecks).every(Boolean)),
+        ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && guide.milestoneTotal === 6 && primarySection === guide.section)) && (!guide || /FIRST MATCH JOURNEY/i.test(strip)) && Object.values(scrollChecks).every(Boolean)),
         guide: guide ? { ...guide } : null,
         primarySection,
-        hasJourneyStrip: /FIRST MATCH JOURNEY/.test(strip),
+        hasJourneyStrip: /FIRST MATCH JOURNEY/i.test(strip),
         scrollChecks,
         candidateRows,
+        trainingSampled,
+        trainingSelects,
+        trainingSquadSampled: trainingScroll.squadSampled,
         savesAdditionalChecklist: false
       };
     },

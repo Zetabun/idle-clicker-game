@@ -703,7 +703,11 @@
         ? { id: 'match', complete: firstCareerMatchPlayed, route: 'calendar', label: `ADVANCE ${matchWaitDays} DAY${matchWaitDays === 1 ? '' : 'S'} TO MATCHDAY`, detail: `The match plan is locked and the fixture is ${matchWaitDays} day${matchWaitDays === 1 ? '' : 's'} away. Use END DAY to advance the club calendar — it stays unlocked until matchday.`, action: 'OPEN CALENDAR' }
         : { id: 'match', complete: firstCareerMatchPlayed, route: 'play', leagueAction: 'play-league', label: 'WATCH YOUR FIRST MATCH', detail: 'Your five operators move, aim and fight autonomously. Start matchmaking and watch how well they execute the plan in a first-to-three match.', action: 'START MATCHMAKING' },
       { id: 'debrief', complete: reportReviewed, route: 'reports', label: 'REVIEW WHAT HAPPENED', detail: 'Read What Worked, Biggest Issue and Next Manager Action before changing the squad or tactics.', action: 'OPEN DEBRIEF' },
-      { id: 'training', complete: trainingSet, route: 'training', label: 'SET ONE TRAINING FOCUS', detail: 'Use the debrief recommendation to choose one targeted improvement for an operator.', action: 'OPEN TRAINING' }
+      // The programme selects sit below the development hero and Team XP
+      // benefits, so the final step must scroll to Training Squad the same way
+      // the signing steps scroll to the candidate list. Without it the guide
+      // lands on a screen that contains no way to complete the objective.
+      { id: 'training', complete: trainingSet, route: 'training', scrollTarget: 'training-programmes', label: 'SET ONE TRAINING FOCUS', detail: 'Open Programme Selection on one operator in Training Squad, choose an improvement, then press Save Changes to make it active.', action: 'OPEN TRAINING' }
     ];
     const index = steps.findIndex(step => !step.complete);
     if (index < 0) return null;
@@ -1020,7 +1024,15 @@
   let menuNavigationIndex = -1;
 
   function menuHistoryScroller() {
-    return menuContentEl?.closest('.menu-content') || menuContentEl || null;
+    // The scrolling element differs by presentation target: the desktop Command
+    // Centre scrolls the `.menu-content` section, while the compact interface
+    // scrolls `#menuContent` inside it. Returning the section unconditionally
+    // made guided scroll targets and history restore no-ops below 1024px, so
+    // prefer whichever element can actually scroll.
+    const section = menuContentEl?.closest('.menu-content') || null;
+    if (menuContentEl && menuContentEl.scrollHeight - menuContentEl.clientHeight > 1) return menuContentEl;
+    if (section && section.scrollHeight - section.clientHeight > 1) return section;
+    return section || menuContentEl || null;
   }
 
   function menuHistorySnapshot(route = menuTab) {

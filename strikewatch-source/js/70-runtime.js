@@ -3682,6 +3682,38 @@
         selectedTeamPlayerId = previous.selectedTeamPlayerId;
         recruitmentBeginnerExpanded = false;
       }
+      // Build 12.138: the closing training step must reach its own control the
+      // same way the signing step reaches the candidate list. Replay the step
+      // with a real squad, no active focus and a reviewed debrief.
+      let trainingScroll = { guide: null, strip: '', training: '', squadSampled: 0 };
+      const trainingPrevious = {
+        totalMatches: careerState.totalMatches,
+        lastRound: careerState.lastRound,
+        recommendation: careerState.trainingRecommendation,
+        focuses: (careerState.squad || []).map(player => player.trainingFocus)
+      };
+      try {
+        careerState.totalMatches = Math.max(1, Number(careerState.totalMatches) || 0);
+        careerState.lastRound = { ...(careerState.lastRound || {}), reportReviewed: true };
+        careerState.trainingRecommendation = null;
+        for (const player of careerState.squad || []) player.trainingFocus = 'none';
+        trainingScroll = {
+          guide: firstMatchGuidance(),
+          strip: renderMenuPriorityStrip(),
+          training: renderTrainingFacilityTab(),
+          squadSampled: (careerState.squad || []).length
+        };
+      } finally {
+        careerState.totalMatches = trainingPrevious.totalMatches;
+        careerState.lastRound = trainingPrevious.lastRound;
+        careerState.trainingRecommendation = trainingPrevious.recommendation;
+        (careerState.squad || []).forEach((player, index) => { player.trainingFocus = trainingPrevious.focuses[index]; });
+      }
+      const trainingHost = document.createElement('div');
+      trainingHost.innerHTML = trainingScroll.training;
+      const trainingDestination = trainingHost.querySelector('[data-guide-target="training-programmes"]');
+      const trainingSelects = trainingDestination?.querySelectorAll('[data-training-focus]').length || 0;
+
       const marketHost = document.createElement('div');
       marketHost.innerHTML = recruitmentScroll.market;
       const candidateDestination = marketHost.querySelector('[data-guide-target="recruitment-candidates"]');
@@ -3698,15 +3730,28 @@
         transfersOpenForActiveTutorialNegotiation: Boolean(!recruitmentScroll.transferAccessDuring?.locked && recruitmentScroll.transferAccessDuring?.label === 'NEGOTIATE'),
         profileTargetsRecommendedCandidate: profileGuide?.id === 'profile' && recommendedProfileIds.includes(profileGuide.playerId),
         profileActionSelectsCandidate: new RegExp(`data-team-profile="${profileGuide?.playerId || ''}"`).test(profileStrip),
-        profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip)
+        profileActionAvoidsGenericRoute: !/data-team-route="profile"/.test(profileStrip),
+        trainingDestinationIsRosterPanel: Boolean(trainingDestination?.classList.contains('training-roster-panel'))
       };
+      // The replayed training step only reaches the guide when the career
+      // already holds a deployment-ready squad, so report whether it was
+      // sampled instead of passing the checks silently.
+      const trainingSampled = trainingScroll.squadSampled >= TEAM_REQUIRED_STARTERS;
+      if (trainingSampled) {
+        scrollChecks.trainingStepTargetsProgrammes = trainingScroll.guide?.id === 'training' && trainingScroll.guide?.scrollTarget === 'training-programmes';
+        scrollChecks.trainingObjectiveCarriesScrollTarget = /data-team-scroll-target="training-programmes"/.test(trainingScroll.strip);
+        scrollChecks.trainingDestinationHoldsProgrammeSelects = trainingSelects === trainingScroll.squadSampled;
+      }
       return {
-        ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && guide.milestoneTotal === 6 && primarySection === guide.section)) && (!guide || /FIRST MATCH JOURNEY/.test(strip)) && Object.values(scrollChecks).every(Boolean)),
+        ok: Boolean(validRoute && (!guide || (guide.label && guide.detail && guide.action && guide.total === 9 && guide.milestoneTotal === 6 && primarySection === guide.section)) && (!guide || /FIRST MATCH JOURNEY/i.test(strip)) && Object.values(scrollChecks).every(Boolean)),
         guide: guide ? { ...guide } : null,
         primarySection,
-        hasJourneyStrip: /FIRST MATCH JOURNEY/.test(strip),
+        hasJourneyStrip: /FIRST MATCH JOURNEY/i.test(strip),
         scrollChecks,
         candidateRows,
+        trainingSampled,
+        trainingSelects,
+        trainingSquadSampled: trainingScroll.squadSampled,
         savesAdditionalChecklist: false
       };
     },

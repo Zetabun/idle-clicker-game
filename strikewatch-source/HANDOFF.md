@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.137 — Kept Rewards**
-- Build ID: `12.137.0-kept-rewards`
+- Build: **12.138 — Reachable Training**
+- Build ID: `12.138.0-reachable-training`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.137.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.138.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.138 clears the First Match Guide soft lock at its final objective. `SET ONE TRAINING FOCUS` routed to the top of Training Facility while the programme selects sat 1100–2900px further down, so the screen the guide opened contained no way to finish the step and the career could not progress. The step now carries a `training-programmes` scroll target and the roster panel carries the matching anchor. The same work fixed guided scrolling below 1024px: `menuHistoryScroller()` returned the desktop `.menu-content` section unconditionally, but the compact interface scrolls `#menuContent`, so every guided scroll destination — including the existing recruitment one — was inert on mobile. See `AUDIT-12.138.md`.
 
 Build 12.137 stops victory crates being lost. The reward existed only in a module variable between the final round and the reveal, so closing the tab or refreshing before claiming destroyed the weapon; the Build 12.134 save hardening could not help because the value never reached the save. The crate is now banked to `careerState.pendingMatchCrate` the moment it is awarded, re-offered if the session is interrupted, and cleared on claim. See `AUDIT-12.137.md`.
 

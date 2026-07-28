@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.138 owns guided scroll reachability. Every First Match Guide step whose control is not on the arrival screen needs a `scrollTarget` on the step and a matching `data-guide-target` anchor on the owning panel — the `training` step and `.training-roster-panel` are the current example. `menuHistoryScroller()` must keep resolving to the element that actually scrolls (`#menuContent` on compact, the `.menu-content` section on desktop); returning one of them unconditionally silently disables guided scrolling and history restore on the other target. Keep `firstMatchGuidanceForTest().ok` true — it had been permanently false because its journey-strip assertion was case-sensitive. See `AUDIT-12.138.md`.
+
 Build 12.137 owns victory-crate persistence: `careerState.pendingMatchCrate` is written when the crate is awarded, restored by `queuePendingMatchCrate()` and cleared on claim. Any reward the manager has earned must reach the save before it is displayed, never only module state. See `AUDIT-12.137.md`.
 
 Build 12.136 owns the scroll-container row sizing (`#menuContent { grid-auto-rows: max-content; align-content: start }`). Size the tracks, never the items: giving items a minimum height instead leaves rows undersized and makes panels overlap. Keep `mobileInterfaceAuditForTest()` reporting zero for both `overlapping` and `collapsed`. See `AUDIT-12.136.md`.

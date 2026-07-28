@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.137 persists an awarded victory crate to the career save before it is
-displayed, so a reward is no longer destroyed by refreshing or closing the page
-before the reveal is claimed.
-See `HANDOFF.md` and `AUDIT-12.137.md`.
+Build 12.138 makes every First Match Guide objective reachable: a step whose
+control is not on the arrival screen scrolls to it, and the scroll helper now
+resolves the container that actually scrolls on each presentation target.
+See `HANDOFF.md` and `AUDIT-12.138.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
