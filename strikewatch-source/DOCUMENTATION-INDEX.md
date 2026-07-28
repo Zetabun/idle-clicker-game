@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.136 — Row Sizing
-- Standalone: `dist/strikewatch-build-12.136.html`
+- Build 12.137 — Kept Rewards
+- Standalone: `dist/strikewatch-build-12.137.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

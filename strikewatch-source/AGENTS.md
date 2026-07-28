@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.137 owns victory-crate persistence: `careerState.pendingMatchCrate` is written when the crate is awarded, restored by `queuePendingMatchCrate()` and cleared on claim. Any reward the manager has earned must reach the save before it is displayed, never only module state. See `AUDIT-12.137.md`.
+
 Build 12.136 owns the scroll-container row sizing (`#menuContent { grid-auto-rows: max-content; align-content: start }`). Size the tracks, never the items: giving items a minimum height instead leaves rows undersized and makes panels overlap. Keep `mobileInterfaceAuditForTest()` reporting zero for both `overlapping` and `collapsed`. See `AUDIT-12.136.md`.
 
 Build 12.135 owns the container-collapse fix (`#menuContent > * { min-height: max-content }` at the release end of `css/game.css`), league settlement recovery in `js/37-league.js` and the league/agenda/training readability rules. Keep `mobileInterfaceAuditForTest().collapsed` at zero, never let a league result settle to null, and keep the agenda action label short rather than repeating the row copy. See `AUDIT-12.135.md`.

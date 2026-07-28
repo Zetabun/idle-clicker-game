@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.137 — Kept Rewards
+
+- Fixes victory crates being lost: the awarded weapon lived only in memory until the reveal was clicked through, so refreshing or closing the tab destroyed it.
+- The crate is now banked to the career save the moment it is awarded, re-offered if the session is interrupted, and cleared on claim so it can never be granted twice.
+- Save schema stays at 19; the field is additive with a null default.
+- Evidence: `AUDIT-12.137.md`.
+
+
 ## 12.136 — Row Sizing
 
 - Hotfix: Build 12.135 stopped panels being clipped but left the grid rows undersized, so management panels overlapped each other on existing saves.
@@ -63,6 +71,7 @@ release history into the default GPT context.
 
 | Build | Focus | Detailed record |
 | --- | --- | --- |
+| 12.136 | Scroll container row sizing hotfix | `AUDIT-12.136.md` |
 | 12.135 | Collapsed panels and lost league results | `AUDIT-12.135.md` |
 | 12.134 | Career save durability and compact interface audit | `AUDIT-12.134.md` |
 | 12.133 | Command-surface readability, Inbox scroll and portraits | `AUDIT-12.133.md` |

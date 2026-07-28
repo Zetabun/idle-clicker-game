@@ -80478,6 +80478,36 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return { route, width: window.innerWidth, cardCount: cards.length, cards: cards.slice(0, 4),
                gridColumns: host.querySelector('.training-player-grid') ? getComputedStyle(host.querySelector('.training-player-grid')).gridTemplateColumns : null };
     },
+    // Build 12.137: does a victory crate survive leaving the page before it is
+    // claimed? The store crate is persisted because it was paid for; the match
+    // crate historically lived only in memory.
+    matchCrateDurabilityForTest: () => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        careerState.inventory = ['scrap-p12'];
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, { roundsPlayed: 3, kills: 6, deaths: 1, shotsFired: 24, shotsHit: 13, damageDealt: 430, damageTaken: 140, survivalTime: 155, reloads: 4, finalSurvived: true });
+        blueScore = 3; redScore = 0;
+        completeCareerMatch(TEAM_BLUE);
+        const queued = { phase: careerCrateState.phase, source: careerCrateState.source,
+                         reward: careerCrateState.result ? { ...careerCrateState.result } : null };
+        // What a reload would see: only what reached storage.
+        const persisted = loadCareerState();
+        return {
+          queuedInMemory: queued,
+          inventoryNow: [...(careerState.inventory || [])],
+          persistedInventory: [...(persisted.inventory || [])],
+          persistedPendingMatchCrate: persisted.pendingMatchCrate || null,
+          persistedPendingStoreCrate: persisted.pendingStoreCrate || null,
+          survivesReload: Boolean(persisted.pendingMatchCrate)
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
+    },
     randomTeamNameForTest: (count = 12) => {
       const total = clamp(Math.round(Number(count) || 12), 1, 50);
       let state = 0x6a09e667;

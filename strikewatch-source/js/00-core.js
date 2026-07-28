@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.136';
-  const BUILD_NAME = 'Row Sizing';
-  const BUILD_ID = '12.136.0-row-sizing';
+  const BUILD_VERSION = '12.137';
+  const BUILD_NAME = 'Kept Rewards';
+  const BUILD_ID = '12.137.0-kept-rewards';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

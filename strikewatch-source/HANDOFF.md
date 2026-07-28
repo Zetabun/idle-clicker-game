@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.136 — Row Sizing**
-- Build ID: `12.136.0-row-sizing`
+- Build: **12.137 — Kept Rewards**
+- Build ID: `12.137.0-kept-rewards`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.136.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.137.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.137 stops victory crates being lost. The reward existed only in a module variable between the final round and the reveal, so closing the tab or refreshing before claiming destroyed the weapon; the Build 12.134 save hardening could not help because the value never reached the save. The crate is now banked to `careerState.pendingMatchCrate` the moment it is awarded, re-offered if the session is interrupted, and cleared on claim. See `AUDIT-12.137.md`.
 
 Build 12.136 is a hotfix for a Build 12.135 regression. 12.135 gave the scroll container's children a content-based minimum height, which stopped panels being clipped but left the grid rows undersized, so panels overflowed their own row and printed over the next one. The tracks are now sized instead (`grid-auto-rows: max-content`), which resolves clipping and overlapping together, and the compact audit gained an overlap check. See `AUDIT-12.136.md`.
 

@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.136 sizes the management scroll container's grid rows to their
-content, so panels are neither clipped nor overlapped, completing the container
-fix begun in 12.135.
-See `HANDOFF.md` and `AUDIT-12.136.md`.
+Build 12.137 persists an awarded victory crate to the career save before it is
+displayed, so a reward is no longer destroyed by refreshing or closing the page
+before the reveal is claimed.
+See `HANDOFF.md` and `AUDIT-12.137.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

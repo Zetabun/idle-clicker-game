@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.136';
-  const BUILD_NAME = 'Row Sizing';
-  const BUILD_ID = '12.136.0-row-sizing';
+  const BUILD_VERSION = '12.137';
+  const BUILD_NAME = 'Kept Rewards';
+  const BUILD_ID = '12.137.0-kept-rewards';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -12362,6 +12362,7 @@
       goldCoins: 0,
       goldCoinHistory: [],
       pendingStoreCrate: null,
+      pendingMatchCrate: null,
       storeCratesPurchased: 0,
       financeLoan: makeDefaultFinanceLoan(1, false),
       wageBudget: 32000,
@@ -12621,6 +12622,16 @@
           price: Math.max(0, Math.round(Number(raw.pendingStoreCrate.price) || CAREER_GOLD_COIN_CRATE_PRICE)),
           reward: normaliseCareerCrateReward(raw.pendingStoreCrate.reward),
           purchasedMatch: Math.max(0, Math.round(Number(raw.pendingStoreCrate.purchasedMatch) || 0))
+        }
+        : null,
+      // Build 12.137: an unclaimed victory crate is career data, not view state.
+      // Persisting it means leaving the page before the reveal no longer
+      // destroys the reward.
+      pendingMatchCrate: raw.pendingMatchCrate && typeof raw.pendingMatchCrate === 'object'
+        ? {
+          id: String(raw.pendingMatchCrate.id || 'MATCH-CRATE'),
+          reward: normaliseCareerCrateReward(raw.pendingMatchCrate.reward),
+          awardedMatch: Math.max(0, Math.round(Number(raw.pendingMatchCrate.awardedMatch) || 0))
         }
         : null,
       storeCratesPurchased: Math.max(0, Math.round(Number(raw.storeCratesPurchased) || 0)),
@@ -13628,14 +13639,26 @@
     return careerState.lastRound;
   }
 
+  // Build 12.137: the reward is rolled and banked to the career save before the
+  // overlay is shown. It used to live only in `careerCrateState`, a module
+  // variable, so a refresh, a closed tab or any navigation away from the
+  // unclaimed reveal destroyed the weapon permanently. The paid store crate was
+  // already persisted for exactly this reason; the victory crate now is too.
   function queueCareerCrate(summary) {
+    const reward = normaliseCareerCrateReward(rollCareerCrateReward());
+    careerState.pendingMatchCrate = {
+      id: `MATCH-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+      reward,
+      awardedMatch: Math.max(0, Number(careerState.totalMatches) || 0)
+    };
+    saveCareerState();
     careerCrateState = {
       phase: 'queued',
       delay: 0,
       timer: 0,
       cycleTimer: 0,
       displayIndex: 0,
-      result: rollCareerCrateReward(),
+      result: reward,
       duplicate: false,
       summary,
       source: 'match',
@@ -14895,6 +14918,30 @@
     syncCareerArmourViewerTransform();
   }
 
+  // Build 12.137: re-offer an unclaimed victory crate. Called when the manager
+  // returns to the menu, so a reward interrupted by a reload or a closed tab is
+  // still waiting rather than lost.
+  function queuePendingMatchCrate() {
+    const pending = careerState.pendingMatchCrate;
+    if (!pending || careerCrateState.phase !== 'idle' || appState === 'match' || menuContext === 'pause') return false;
+    careerCrateState = {
+      phase: 'queued',
+      delay: 0,
+      timer: 0,
+      cycleTimer: 0,
+      displayIndex: 0,
+      result: normaliseCareerCrateReward(pending.reward),
+      duplicate: false,
+      summary: careerState.lastRound && Number(careerState.lastRound.matchNumber || careerState.totalMatches) === pending.awardedMatch
+        ? careerState.lastRound
+        : { restoredAward: true, xpAward: 0 },
+      source: 'match',
+      returnRoute: 'loadout'
+    };
+    showCareerCrateClosed();
+    return true;
+  }
+
   function queuePendingStoreCrate() {
     const pending = careerState.pendingStoreCrate;
     if (!pending) return false;
@@ -15105,6 +15152,7 @@
     careerState.skins = Array.from(new Set(careerState.skins));
     careerState.cratesOpened++;
     if (careerCrateState.source === 'store') careerState.pendingStoreCrate = null;
+    else careerState.pendingMatchCrate = null;
     saveCareerState();
     careerCrateState.phase = 'idle';
     if (careerCrateOverlayEl) {
@@ -35424,6 +35472,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function updateMenu(dt) {
     menuTime += dt;
+    // Build 12.137: re-offer a victory crate that was never claimed. Held back
+    // while the after-action report is on screen so it still arrives in its
+    // normal place in the flow.
+    if (typeof queuePendingMatchCrate === 'function' && careerReportState.phase === 'idle') queuePendingMatchCrate();
     updateMatchmaking(dt);
     updateCareerWeaponViewer(dt);
     updateCareerArmourViewer(dt);
@@ -48597,6 +48649,92 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       });
       return { route, width: window.innerWidth, cardCount: cards.length, cards: cards.slice(0, 4),
                gridColumns: host.querySelector('.training-player-grid') ? getComputedStyle(host.querySelector('.training-player-grid')).gridTemplateColumns : null };
+    },
+    // Build 12.137: does a victory crate survive leaving the page before it is
+    // claimed? The store crate is persisted because it was paid for; the match
+    // crate historically lived only in memory.
+    matchCrateDurabilityForTest: () => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        careerState.inventory = ['scrap-p12'];
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, { roundsPlayed: 3, kills: 6, deaths: 1, shotsFired: 24, shotsHit: 13, damageDealt: 430, damageTaken: 140, survivalTime: 155, reloads: 4, finalSurvived: true });
+        blueScore = 3; redScore = 0;
+        completeCareerMatch(TEAM_BLUE);
+        const queued = { phase: careerCrateState.phase, source: careerCrateState.source,
+                         reward: careerCrateState.result ? { ...careerCrateState.result } : null };
+        // What a reload would see: only what reached storage.
+        const persisted = loadCareerState();
+        return {
+          queuedInMemory: queued,
+          inventoryNow: [...(careerState.inventory || [])],
+          persistedInventory: [...(persisted.inventory || [])],
+          persistedPendingMatchCrate: persisted.pendingMatchCrate || null,
+          persistedPendingStoreCrate: persisted.pendingStoreCrate || null,
+          survivesReload: Boolean(persisted.pendingMatchCrate)
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
+    },
+    // Build 12.137: full victory-crate lifecycle — awarded, persisted, restored
+    // after an interrupted session, claimed into the inventory, and cleared so
+    // it is never handed out twice.
+    matchCrateLifecycleForTest: () => {
+      if (!careerState.created || !careerSquadReady()) window.__strikeDebug.seedFirstMatchCalendarForTest();
+      const statsSnapshot = careerMatchStats;
+      const stateSnapshot = appState;
+      try {
+        careerState.inventory = ['scrap-p12'];
+        careerCrateState.phase = 'idle';
+        careerMatchStats = makeCareerMatchStats();
+        Object.assign(careerMatchStats, { roundsPlayed: 3, kills: 6, deaths: 1, shotsFired: 24, shotsHit: 13, damageDealt: 430, damageTaken: 140, survivalTime: 155, reloads: 4, finalSurvived: true });
+        blueScore = 3; redScore = 0;
+        completeCareerMatch(TEAM_BLUE);
+
+        const awarded = careerState.pendingMatchCrate ? { ...careerState.pendingMatchCrate } : null;
+        const persistedAfterAward = loadCareerState().pendingMatchCrate;
+
+        // Simulate the manager closing the page before claiming: the module
+        // state is gone, only the save remains.
+        careerCrateState = { phase: 'idle', delay: 0, timer: 0, cycleTimer: 0, displayIndex: 0, result: null, duplicate: false, summary: null, source: 'match', returnRoute: 'loadout' };
+        careerReportState = { phase: 'idle', delay: 0, summary: null, revealStage: 0, detailed: true };
+        appState = 'menu';
+        const restored = queuePendingMatchCrate();
+        const restoredReward = careerCrateState.result ? { ...careerCrateState.result } : null;
+
+        // Claim it.
+        careerCrateState.phase = 'revealed';
+        careerCrateState.duplicate = false;
+        const inventoryBefore = [...(careerState.inventory || [])];
+        claimCareerCrate();
+        const inventoryAfter = [...(careerState.inventory || [])];
+
+        // And it must not be offered a second time.
+        careerCrateState.phase = 'idle';
+        const reofferedAfterClaim = queuePendingMatchCrate();
+
+        return {
+          awardedReward: awarded?.reward || null,
+          persistedOnAward: Boolean(persistedAfterAward),
+          restoredAfterInterruption: restored,
+          restoredReward,
+          rewardSurvivedIntact: Boolean(awarded && restoredReward && awarded.reward.id === restoredReward.id),
+          inventoryBefore, inventoryAfter,
+          weaponGranted: awarded?.reward?.type === 'weapon'
+            ? inventoryAfter.includes(awarded.reward.id) && !inventoryBefore.includes(awarded.reward.id)
+            : 'reward-was-cosmetic',
+          pendingClearedAfterClaim: careerState.pendingMatchCrate === null,
+          persistedClearedAfterClaim: !loadCareerState().pendingMatchCrate,
+          reofferedAfterClaim
+        };
+      } finally {
+        careerMatchStats = statsSnapshot;
+        appState = stateSnapshot;
+      }
     },
     randomTeamNameForTest: (count = 12) => {
       const total = clamp(Math.round(Number(count) || 12), 1, 50);

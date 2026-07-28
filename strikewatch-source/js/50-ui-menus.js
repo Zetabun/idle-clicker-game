@@ -2520,6 +2520,10 @@
 
   function updateMenu(dt) {
     menuTime += dt;
+    // Build 12.137: re-offer a victory crate that was never claimed. Held back
+    // while the after-action report is on screen so it still arrives in its
+    // normal place in the flow.
+    if (typeof queuePendingMatchCrate === 'function' && careerReportState.phase === 'idle') queuePendingMatchCrate();
     updateMatchmaking(dt);
     updateCareerWeaponViewer(dt);
     updateCareerArmourViewer(dt);

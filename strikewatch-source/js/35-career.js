@@ -1447,6 +1447,7 @@
       goldCoins: 0,
       goldCoinHistory: [],
       pendingStoreCrate: null,
+      pendingMatchCrate: null,
       storeCratesPurchased: 0,
       financeLoan: makeDefaultFinanceLoan(1, false),
       wageBudget: 32000,
@@ -1706,6 +1707,16 @@
           price: Math.max(0, Math.round(Number(raw.pendingStoreCrate.price) || CAREER_GOLD_COIN_CRATE_PRICE)),
           reward: normaliseCareerCrateReward(raw.pendingStoreCrate.reward),
           purchasedMatch: Math.max(0, Math.round(Number(raw.pendingStoreCrate.purchasedMatch) || 0))
+        }
+        : null,
+      // Build 12.137: an unclaimed victory crate is career data, not view state.
+      // Persisting it means leaving the page before the reveal no longer
+      // destroys the reward.
+      pendingMatchCrate: raw.pendingMatchCrate && typeof raw.pendingMatchCrate === 'object'
+        ? {
+          id: String(raw.pendingMatchCrate.id || 'MATCH-CRATE'),
+          reward: normaliseCareerCrateReward(raw.pendingMatchCrate.reward),
+          awardedMatch: Math.max(0, Math.round(Number(raw.pendingMatchCrate.awardedMatch) || 0))
         }
         : null,
       storeCratesPurchased: Math.max(0, Math.round(Number(raw.storeCratesPurchased) || 0)),
@@ -2713,14 +2724,26 @@
     return careerState.lastRound;
   }
 
+  // Build 12.137: the reward is rolled and banked to the career save before the
+  // overlay is shown. It used to live only in `careerCrateState`, a module
+  // variable, so a refresh, a closed tab or any navigation away from the
+  // unclaimed reveal destroyed the weapon permanently. The paid store crate was
+  // already persisted for exactly this reason; the victory crate now is too.
   function queueCareerCrate(summary) {
+    const reward = normaliseCareerCrateReward(rollCareerCrateReward());
+    careerState.pendingMatchCrate = {
+      id: `MATCH-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+      reward,
+      awardedMatch: Math.max(0, Number(careerState.totalMatches) || 0)
+    };
+    saveCareerState();
     careerCrateState = {
       phase: 'queued',
       delay: 0,
       timer: 0,
       cycleTimer: 0,
       displayIndex: 0,
-      result: rollCareerCrateReward(),
+      result: reward,
       duplicate: false,
       summary,
       source: 'match',
@@ -3980,6 +4003,30 @@
     syncCareerArmourViewerTransform();
   }
 
+  // Build 12.137: re-offer an unclaimed victory crate. Called when the manager
+  // returns to the menu, so a reward interrupted by a reload or a closed tab is
+  // still waiting rather than lost.
+  function queuePendingMatchCrate() {
+    const pending = careerState.pendingMatchCrate;
+    if (!pending || careerCrateState.phase !== 'idle' || appState === 'match' || menuContext === 'pause') return false;
+    careerCrateState = {
+      phase: 'queued',
+      delay: 0,
+      timer: 0,
+      cycleTimer: 0,
+      displayIndex: 0,
+      result: normaliseCareerCrateReward(pending.reward),
+      duplicate: false,
+      summary: careerState.lastRound && Number(careerState.lastRound.matchNumber || careerState.totalMatches) === pending.awardedMatch
+        ? careerState.lastRound
+        : { restoredAward: true, xpAward: 0 },
+      source: 'match',
+      returnRoute: 'loadout'
+    };
+    showCareerCrateClosed();
+    return true;
+  }
+
   function queuePendingStoreCrate() {
     const pending = careerState.pendingStoreCrate;
     if (!pending) return false;
@@ -4190,6 +4237,7 @@
     careerState.skins = Array.from(new Set(careerState.skins));
     careerState.cratesOpened++;
     if (careerCrateState.source === 'store') careerState.pendingStoreCrate = null;
+    else careerState.pendingMatchCrate = null;
     saveCareerState();
     careerCrateState.phase = 'idle';
     if (careerCrateOverlayEl) {
