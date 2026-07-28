@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.148 — Sidearm Rebuild
-- Standalone: `dist/strikewatch-build-12.148.html`
+- Build 12.149 — Grip Rake
+- Standalone: `dist/strikewatch-build-12.149.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.148 — Sidearm Rebuild
-Build ID: 12.148.0-sidearm-rebuild
+Build 12.149 — Grip Rake
+Build ID: 12.149.0-grip-rake
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.149 owns the grip rake convention: +x is toward the muzzle, +y is
+down, and a POSITIVE gripRz rakes the grip rearward. Verify by reading the
+rendered mag-base x against grip x, not by eye.
 Build 12.148 owns the sidearm silhouette and the rigid grip assembly; rz
 rotates about a part's own centre, and weaponGeometryIntegrityForTest must be
 re-run after moving any weapon geometry.

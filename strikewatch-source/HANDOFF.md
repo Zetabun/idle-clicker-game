@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.148 — Sidearm Rebuild**
-- Build ID: `12.148.0-sidearm-rebuild`
+- Build: **12.149 — Grip Rake**
+- Build ID: `12.149.0-grip-rake`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.148.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.149.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.149 corrects the grip rake direction on every sidearm. Model +x is toward the muzzle and +y is downward, and the transform is CSS `rotateZ`, so the grip bottom moves by `-sin(rz)` in x — a **negative** `gripRz` points the butt at the target. `scrap-p12` was -13, `service-p12` -1 and `viper-9` 0; all three are now positive (+14/+12/+12) so the butt trails away from the muzzle. The sign error predates 12.148, which only made it visible by raising the magnitude. Verified numerically: the mag base moved from x -61.3 to x -93.5 against a grip at -70. See `AUDIT-12.149.md`.
 
 Build 12.148 reshapes the P12 Scrapline. `addGripAssembly()` applied `gripRz` to each part about its **own** centre, so raking the grip sheared the assembly apart — which is why it only ever had two degrees. Sub-part positions are now rotated about the grip centre, making the assembly rigid, and the grip carries a real −13° rake. The slide is slimmer with cocking serrations over a distinct frame, the trigger guard is a three-piece bow instead of a flat bar, and the ejection port is recessed. `weaponGeometryIntegrityForTest()` caught a genuine break during the work — slimming the slide detached the entire lower assembly — so re-run it after moving any weapon part. See `AUDIT-12.148.md`.
 

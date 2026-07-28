@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.149 owns the grip rake convention: model +x is toward the muzzle, +y is downward, and a POSITIVE `gripRz` rakes the grip rearward, which is what a pistol wants. Check a rake by reading the rendered mag-base x against the grip x rather than by eye. See `AUDIT-12.149.md`.
+
 Build 12.148 owns the sidearm silhouette and the rigid grip assembly. `rz` rotates a part about its own centre, so any multi-part assembly that shares a rotation must also rotate its sub-part positions about the assembly origin or it shears apart. Always re-run `weaponGeometryIntegrityForTest()` after moving weapon geometry: a disconnected model still looks correct in a still render, so the audit is the only reliable check. See `AUDIT-12.148.md`.
 
 Build 12.147 owns weapon presentation. `careerWeaponVisualParts()` is the single geometry authority for every surface — never fork parts per renderer, and re-run `ar4WeaponModelForTest()` for the world/viewmodel connectivity check after touching a model. Surface detail must resolve at the scale it is viewed: the grip texture, the 12.145 scanlines and the 12.144 sandstone noise were all the same fault. See `AUDIT-12.147.md`.

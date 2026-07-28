@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.149 — Grip Rake
+
+- Fixes the pistol grips, which raked forward so the handle pointed at the target instead of trailing behind it.
+- The sign was wrong on every sidearm and predates the 12.148 reshape: scrap-p12 at -13 degrees, service-p12 at -1 and viper-9 at 0. Raising the magnitude in 12.148 is what made a long-standing error visible.
+- All three now rake rearward: +14, +12 and +12 degrees. The Viper had no rake at all before this.
+- Verified numerically rather than by eye — the magazine base now resolves 23.5 units behind the grip centre instead of 8.7 in front of it.
+- Model geometry only; weapon statistics, ranges, penetration and handling are untouched.
+- Evidence: `AUDIT-12.149.md`.
+
+
 ## 12.148 — Sidearm Rebuild
 
 - Reshapes the P12 Scrapline from a slab with a handle into a pistol: slimmer slide with cocking serrations over a distinct frame, a visible parting line, a three-piece trigger guard bow, cylindrical barrel and muzzle, and a recessed ejection port.

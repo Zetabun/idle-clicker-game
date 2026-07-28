@@ -3380,6 +3380,11 @@
       magBaseD = Math.max(24, magazineD - 2),
       magBaseRz = gripRz
     }) => {
+      // Rake convention: model +x is toward the muzzle and +y is downward, and
+      // the transform is CSS rotateZ. The grip bottom sits at local +y, so it
+      // moves by -sin(rz) in x — a POSITIVE gripRz rakes the grip rearward,
+      // which is what a pistol wants. Negative values point the butt at the
+      // target. Every sidearm carried a negative or zero rake before 12.149.
       // Build 12.148: `rz` rotates each part about its own centre, so a raked
       // grip used to shear its own assembly apart — the magazine sits far
       // below the grip centre and would swing out of the frame. Sub-part
@@ -3430,7 +3435,7 @@
         material: 'worn-polymer',
         // A real pistol rake rather than the previous 2 degrees. The assembly
         // is rigid now, so the magazine and base follow the grip.
-        gripX: -70, gripY: 68, gripW: 70, gripH: 116, gripD: 42, gripRz: -13,
+        gripX: -70, gripY: 68, gripW: 70, gripH: 116, gripD: 42, gripRz: 14,
         backstrapMaterial: 'dark-metal', backstrapX: -84, backstrapY: 69, backstrapW: 18, backstrapH: 106, backstrapD: 32,
         panelMaterial: 'rubber', panelX: -74, panelY: 70, panelW: 46, panelH: 80, panelD: 4, panelZ: 21.2,
         magazineMaterial: 'dark-metal', magazineX: -74, magazineY: 124, magazineW: 53, magazineH: 18, magazineD: 36,
@@ -3457,11 +3462,11 @@
       add('compensator', 'dark-metal', 168, -37, 0, 28, 29, 31);
       addGripAssembly({
         material: 'polymer',
-        gripX: -65, gripY: 64, gripW: 66, gripH: 122, gripD: 39, gripRz: 0,
+        gripX: -65, gripY: 64, gripW: 66, gripH: 122, gripD: 39, gripRz: 12,
         backstrapMaterial: 'dark-metal', backstrapX: -78, backstrapY: 66, backstrapW: 16, backstrapH: 112, backstrapD: 29,
         panelMaterial: 'rubber', panelX: -67, panelY: 67, panelW: 44, panelH: 88, panelD: 4, panelZ: 19.4,
         magazineMaterial: 'gunmetal', magazineX: -67, magazineY: 125, magazineW: 49, magazineH: 22, magazineD: 33,
-        magBaseMaterial: 'dark-metal', magBaseX: -69, magBaseY: 139, magBaseW: 56, magBaseH: 11, magBaseD: 29, magBaseRz: 0
+        magBaseMaterial: 'dark-metal', magBaseX: -69, magBaseY: 139, magBaseW: 56, magBaseH: 11, magBaseD: 29, magBaseRz: 12
       });
       add('trigger-guard', 'dark-metal', 24, 27, 0, 66, 11, 31);
       add('trigger', 'metal-edge', 13, 39, 0, 8, 32, 7, -15);
@@ -3549,11 +3554,11 @@
       add('muzzle', 'dark-metal', 178, -37, 0, 14, 27, 27);
       addGripAssembly({
         material: 'polymer',
-        gripX: -69, gripY: 65, gripW: 70, gripH: 120, gripD: 41, gripRz: -1,
+        gripX: -69, gripY: 65, gripW: 70, gripH: 120, gripD: 41, gripRz: 12,
         backstrapMaterial: 'dark-metal', backstrapX: -83, backstrapY: 67, backstrapW: 17, backstrapH: 110, backstrapD: 31,
         panelMaterial: 'rubber', panelX: -72, panelY: 68, panelW: 46, panelH: 86, panelD: 4, panelZ: 20.2,
         magazineMaterial: 'gunmetal', magazineX: -72, magazineY: 124, magazineW: 51, magazineH: 19, magazineD: 35,
-        magBaseMaterial: 'dark-metal', magBaseX: -75, magBaseY: 137, magBaseW: 58, magBaseH: 11, magBaseD: 31, magBaseRz: -1
+        magBaseMaterial: 'dark-metal', magBaseX: -75, magBaseY: 137, magBaseW: 58, magBaseH: 11, magBaseD: 31, magBaseRz: 12
       });
       add('trigger-guard', 'dark-metal', 30, 27, 0, 70, 12, 32);
       add('trigger', 'metal-edge', 18, 40, 0, 8, 33, 7, -16);
