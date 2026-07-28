@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.140 — Answered Actions**
-- Build ID: `12.140.0-answered-actions`
+- Build: **12.141 — Banked Progress**
+- Build ID: `12.141.0-banked-progress`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.140.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.141.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.141 stops earned progress being lost on closing the browser. `exitToMainMenu()` returned to HQ without writing a save and nothing saved on tab close, so Gold Coins banked since the last explicit save went with the session. `js/79-save-checkpoints.js` writes on any match/free-roam to menu transition, on exitToMainMenu, and on visibilitychange-hidden and pagehide. The reward crate now rotates on its own, and the awarded weapon is shown without the crate behind it. Weapon geometry has two independent authorities — `careerWeapon3dParts` for every menu surface and `operatorSharedWeaponRig`/`drawFirstPersonWeapon` for the live match — so a weapon change must be made on both sides. See `AUDIT-12.141.md`.
 
 Build 12.140 makes management actions answer back. `showStatus()` writes to `.status`, which is `display:none` in the menu, so roughly eighty management call sites explained refusals, confirmations and locks to nobody — pressing MATCH with the fixture days away routed to the league table in silence and read as a loop. Management messages now land in a live region in the menu shell. `careerMatchLaunchState()` is the single authority for whether a match can start, the MATCH control shows that state instead of hiding it in a title attribute, and refusals route to the control that clears the blocker. Compact readability floors that had been failing `typographyConsistencyForTest()` are raised. See `AUDIT-12.140.md`.
 

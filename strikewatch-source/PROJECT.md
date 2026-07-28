@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.140 gives management actions a reply: refusals and confirmations
-reach a visible surface, and a control that cannot act says so before it is
-pressed. See `HANDOFF.md` and `AUDIT-12.140.md`.
+Build 12.141 writes career progress at the points where a manager believes it
+is safe — returning to HQ, ending the day, and the page being hidden or closed.
+See `HANDOFF.md` and `AUDIT-12.141.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

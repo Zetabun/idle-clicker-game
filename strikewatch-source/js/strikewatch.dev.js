@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.140';
-  const BUILD_NAME = 'Answered Actions';
-  const BUILD_ID = '12.140.0-answered-actions';
+  const BUILD_VERSION = '12.141';
+  const BUILD_NAME = 'Banked Progress';
+  const BUILD_ID = '12.141.0-banked-progress';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -44908,9 +44908,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const rewardProjection = new Float32Array(16);
   const rewardView = new Float32Array(16);
   const rewardModel = new Float32Array(16);
+  // Build 12.141: the crate turns on its own while it is on screen. `spinBase`
+  // carries the manager's own rotation across the automatic spin, so releasing
+  // a drag resumes from where they left it instead of snapping back.
+  const REWARD_CRATE_SPIN_RATE = 0.42;
   const rewardRendererState = {
     yaw: -0.48,
     targetYaw: -0.48,
+    spinBase: -0.48,
     dragging: false,
     pointerId: null,
     lastX: 0,
@@ -45171,6 +45176,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const delta = event.clientX - rewardRendererState.lastX;
       rewardRendererState.lastX = event.clientX;
       rewardRendererState.targetYaw += delta * 0.012;
+      rewardRendererState.spinBase += delta * 0.012;
     });
     const release = event => {
       if (!rewardRendererState.dragging || (event && event.pointerId !== rewardRendererState.pointerId)) return;
@@ -45262,15 +45268,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const hostState = syncCareerCrateCanvasHost();
     if (!hostState?.overlayVisible && !hostState?.storePreview) return;
     const phase = hostState.overlayVisible ? (careerCrateState?.phase || 'idle') : 'closed';
-    if (!['closed', 'opening', 'revealed'].includes(phase)) return;
+    // Build 12.141: once the reward is revealed the awarded weapon is the
+    // subject. The crate is no longer drawn behind it — the canvas is hidden by
+    // the overlay's `revealed`/`cycling` classes so no stale frame remains.
+    if (!['closed', 'opening'].includes(phase)) return;
     if (!rewardReady) {
       if (!rewardGl) initCareerCrateRenderer();
       if (!rewardReady) return;
     }
     resizeCareerCrateRenderer();
     rewardRendererState.yaw += (rewardRendererState.targetYaw - rewardRendererState.yaw) * 0.11;
-    if (!rewardRendererState.dragging && phase === 'closed') {
-      rewardRendererState.targetYaw = -0.48 + Math.sin(timeSeconds * 0.34) * 0.16;
+    if (!rewardRendererState.dragging) {
+      // Drive the spin from the wall clock, not from a per-call increment: this
+      // function is only invoked while the overlay is up and is throttled with
+      // the animation frame, so a fixed step makes the rate frame-dependent.
+      rewardRendererState.targetYaw = rewardRendererState.spinBase + timeSeconds * REWARD_CRATE_SPIN_RATE;
     }
 
     const openingProgress = phase === 'opening' ? clamp(1 - (careerCrateState.timer || 0) / 0.82, 0, 1) : (phase === 'revealed' ? 1 : 0);
@@ -55863,5 +55875,94 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     showStatus(String(text || 'TEST MESSAGE'), { tone });
     return managementStatusForTest();
   };
+})();
+
+// Build 12.141: career save checkpoints.
+//
+// Earned Gold Coins could be lost by closing the browser after returning to
+// HQ. `exitToMainMenu()` calls `createMatch()` and drops straight back to the
+// menu without writing a save, and nothing wrote one when the tab was closed
+// or backgrounded, so anything banked into `careerState` since the last
+// explicit save went with it.
+//
+// Progress is now written at the points where the manager reasonably believes
+// it is safe: leaving a match for HQ, any match/free-roam to menu transition,
+// and the browser being hidden or closed. End Day already saved through
+// `advanceCareerDay()` and is left alone.
+
+(() => {
+  // Rapid transitions (exitToMainMenu also drives setAppState) must not write
+  // the same state repeatedly. A short floor keeps one save per checkpoint
+  // without risking a missed write.
+  const CHECKPOINT_FLOOR_MS = 400;
+  let lastCheckpointAt = 0;
+  let checkpointCount = 0;
+  let lastCheckpointReason = '';
+
+  function careerSaveCheckpoint(reason, options = {}) {
+    if (!careerState?.created) return false;
+    // A rejected write must still be retried at the next checkpoint, so a
+    // failed save does not update the floor.
+    const now = Date.now();
+    if (options.force !== true && now - lastCheckpointAt < CHECKPOINT_FLOOR_MS) return false;
+    const saved = saveCareerState({ reason: `checkpoint:${reason}` }) !== false;
+    if (saved) {
+      lastCheckpointAt = now;
+      checkpointCount += 1;
+      lastCheckpointReason = String(reason || '');
+    }
+    return saved;
+  }
+
+  const baseSetAppStateForCheckpoints = setAppState;
+  setAppState = function setAppStateWithCheckpoint(nextState) {
+    const previousState = appState;
+    const result = baseSetAppStateForCheckpoints(nextState);
+    // Returning to HQ from a match or free roam is the moment the manager
+    // treats their winnings as banked.
+    if (nextState === 'menu' && (previousState === 'match' || previousState === 'free-roam')) {
+      careerSaveCheckpoint('return-to-hq');
+    }
+    return result;
+  };
+
+  if (typeof exitToMainMenu === 'function') {
+    const baseExitToMainMenuForCheckpoints = exitToMainMenu;
+    exitToMainMenu = function exitToMainMenuWithCheckpoint() {
+      const result = baseExitToMainMenuForCheckpoints();
+      careerSaveCheckpoint('exit-to-hq');
+      return result;
+    };
+  }
+
+  // Closing, backgrounding or navigating away. `pagehide` is the reliable
+  // signal on iOS Safari, where `beforeunload` is unreliable; `visibilitychange`
+  // covers tab switches and app backgrounding. localStorage is synchronous, so
+  // the write completes inside the handler.
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') careerSaveCheckpoint('page-hidden', { force: true });
+  });
+  window.addEventListener('pagehide', () => careerSaveCheckpoint('page-hide', { force: true }));
+
+  window.__strikeDebug = window.__strikeDebug || {};
+  window.__strikeDebug.saveCheckpointForTest = () => ({
+    checkpointCount,
+    lastCheckpointReason,
+    lastCheckpointAt
+  });
+  // The crate canvas is created without preserveDrawingBuffer, so its rotation
+  // cannot be confirmed by reading pixels back. Expose the live pose instead.
+  // Registered here because 70-runtime.js reassigns window.__strikeDebug
+  // wholesale, discarding anything an earlier module attached.
+  window.__strikeDebug.crateSpinForTest = () => ({
+    yaw: Number(rewardRendererState.yaw.toFixed(4)),
+    targetYaw: Number(rewardRendererState.targetYaw.toFixed(4)),
+    spinBase: Number(rewardRendererState.spinBase.toFixed(4)),
+    dragging: rewardRendererState.dragging
+  });
+  window.__strikeDebug.forceSaveCheckpointForTest = reason => ({
+    saved: careerSaveCheckpoint(String(reason || 'manual'), { force: true }),
+    state: { checkpointCount, lastCheckpointReason }
+  });
 })();
 })();

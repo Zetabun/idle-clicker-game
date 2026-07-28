@@ -15,9 +15,14 @@
   const rewardProjection = new Float32Array(16);
   const rewardView = new Float32Array(16);
   const rewardModel = new Float32Array(16);
+  // Build 12.141: the crate turns on its own while it is on screen. `spinBase`
+  // carries the manager's own rotation across the automatic spin, so releasing
+  // a drag resumes from where they left it instead of snapping back.
+  const REWARD_CRATE_SPIN_RATE = 0.42;
   const rewardRendererState = {
     yaw: -0.48,
     targetYaw: -0.48,
+    spinBase: -0.48,
     dragging: false,
     pointerId: null,
     lastX: 0,
@@ -278,6 +283,7 @@
       const delta = event.clientX - rewardRendererState.lastX;
       rewardRendererState.lastX = event.clientX;
       rewardRendererState.targetYaw += delta * 0.012;
+      rewardRendererState.spinBase += delta * 0.012;
     });
     const release = event => {
       if (!rewardRendererState.dragging || (event && event.pointerId !== rewardRendererState.pointerId)) return;
@@ -369,15 +375,21 @@
     const hostState = syncCareerCrateCanvasHost();
     if (!hostState?.overlayVisible && !hostState?.storePreview) return;
     const phase = hostState.overlayVisible ? (careerCrateState?.phase || 'idle') : 'closed';
-    if (!['closed', 'opening', 'revealed'].includes(phase)) return;
+    // Build 12.141: once the reward is revealed the awarded weapon is the
+    // subject. The crate is no longer drawn behind it — the canvas is hidden by
+    // the overlay's `revealed`/`cycling` classes so no stale frame remains.
+    if (!['closed', 'opening'].includes(phase)) return;
     if (!rewardReady) {
       if (!rewardGl) initCareerCrateRenderer();
       if (!rewardReady) return;
     }
     resizeCareerCrateRenderer();
     rewardRendererState.yaw += (rewardRendererState.targetYaw - rewardRendererState.yaw) * 0.11;
-    if (!rewardRendererState.dragging && phase === 'closed') {
-      rewardRendererState.targetYaw = -0.48 + Math.sin(timeSeconds * 0.34) * 0.16;
+    if (!rewardRendererState.dragging) {
+      // Drive the spin from the wall clock, not from a per-call increment: this
+      // function is only invoked while the overlay is up and is throttled with
+      // the animation frame, so a fixed step makes the rate frame-dependent.
+      rewardRendererState.targetYaw = rewardRendererState.spinBase + timeSeconds * REWARD_CRATE_SPIN_RATE;
     }
 
     const openingProgress = phase === 'opening' ? clamp(1 - (careerCrateState.timer || 0) / 0.82, 0, 1) : (phase === 'revealed' ? 1 : 0);

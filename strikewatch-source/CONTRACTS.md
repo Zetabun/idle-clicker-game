@@ -60,6 +60,12 @@ current task. Release-specific implementation detail belongs in the matching
   its route-view flag was never set. The guide must never step backwards.
 - The guided `match` step must always expose a working action: start
   matchmaking when the fixture is due, otherwise point to End Day/calendar.
+- Earned progress must be written before the manager can plausibly leave.
+  Returning to HQ, ending the day and the page being hidden or closed are all
+  save checkpoints; no path back to HQ may skip one.
+- Weapon geometry has two authorities: `careerWeapon3dParts()` for every menu
+  surface and `operatorSharedWeaponRig()`/`drawFirstPersonWeapon()` for the
+  live match. A weapon change must be applied to both.
 - A control that can refuse must state that it will refuse before it is
   pressed, and a refused press must route to whatever clears the blocker.
   `careerMatchLaunchState()` is the single authority for match availability.

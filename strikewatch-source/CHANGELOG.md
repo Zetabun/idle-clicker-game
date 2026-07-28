@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.141 — Banked Progress
+
+- Fixes Gold Coins being lost by closing the browser after returning to HQ: the return-to-HQ path never wrote a save, and nothing saved on tab close or background.
+- Career progress is now written on returning to HQ from a match or free roam, and whenever the page is hidden or closed. End Day already saved and is unchanged.
+- The reward crate rotates automatically while it is on screen, and the awarded weapon is now shown on its own once revealed instead of sitting in front of the crate.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.141.md`. Dune visuals, the armour viewer and the weapon-model pass are not in this build.
+
+
 ## 12.140 — Answered Actions
 
 - Fixes the match control appearing to loop: pressing it when the fixture was days away routed to the league table and said nothing, because the message explaining that End Day was required went to an element hidden in the menu.

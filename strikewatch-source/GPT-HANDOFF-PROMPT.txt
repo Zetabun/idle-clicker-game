@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.140 — Answered Actions
-Build ID: 12.140.0-answered-actions
+Build 12.141 — Banked Progress
+Build ID: 12.141.0-banked-progress
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,10 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.141 owns career save checkpoints; no path back to HQ may skip a save,
+and page-hide/unload must write. Weapon geometry has two authorities:
+careerWeapon3dParts (menus) and operatorSharedWeaponRig/drawFirstPersonWeapon
+(live match) — change both.
 Build 12.140 owns the management status surface and careerMatchLaunchState();
 a control that can refuse must say so before it is pressed and route to what
 clears the blocker. showStatus() alone is invisible outside a match.
