@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.153';
-  const BUILD_NAME = 'Ground Shade';
-  const BUILD_ID = '12.153.0-ground-shade';
+  const BUILD_VERSION = '12.154';
+  const BUILD_NAME = 'Batch Reach';
+  const BUILD_ID = '12.154.0-batch-reach';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39752,8 +39752,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function drawMesh(mesh, colour, model, emissive = 0, alpha = 1, surface = 0, roughness = 0.76) {
     if (!mesh || alpha <= 0.001) return;
     if (staticWorldRenderActive) {
+      // Build 12.154: the arena restriction is gone from both gates — this one
+      // and the capture trigger in `drawWorld`. Batching now depends only on
+      // the draw being opaque and eligible. Translucent draws stay out on
+      // purpose: batching merges them into one mesh and blending is
+      // order-dependent.
       const batchable = STATIC_WORLD_BATCHING_ENABLED
-        && activeArenaId === 'citadel'
         && staticWorldBatchEligible
         && alpha >= 0.999;
       if (staticWorldBatchMode === 'capture') {
@@ -42253,10 +42257,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         drawSegment({ x: lamp.x, y: lampAnchorY, z: lamp.z }, { x: lamp.x, y: 1.78, z: lamp.z }, 0.012, [0.22, 0.13, 0.07], 0, 1, 7, 0.90);
         mat4TRS(glModel, lamp.x, 1.70, lamp.z, yaw, 0, 0, 0.16, 0.18, 0.16);
         drawMesh(glMeshes.cylinder, [0.32, 0.20, 0.11], glModel, 0, 1, 7, 0.86);
+        // Build 12.154: the glow bobs, so it must never be baked into a batch.
+        const previousLampBatchEligibility = setStaticWorldBatchEligibility(false);
         setBlendMode(true);
         mat4TRS(glModel, lamp.x, 1.70 + Math.sin(time * 2.2 + canopy.x) * 0.012, lamp.z, yaw, 0, 0, 0.07, 0.11, 0.07);
         drawMesh(glMeshes.sphere, [1.00, 0.52, 0.16], glModel, 1.35, 0.80, 4, 0.10);
         setBlendMode(false);
+        setStaticWorldBatchEligibility(previousLampBatchEligibility);
       }
 
       for (const arch of worldBatches.desertArches) {
@@ -42331,12 +42338,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const lowerRight = localToWorld(face.x, face.z, yaw, 0.28, 0);
         drawSegment({ x: lowerLeft.x, y: 1.45, z: lowerLeft.z }, { x: lowerRight.x, y: 1.45, z: lowerRight.z }, 0.012, [0.30, 0.18, 0.10], 0, 1, 7, 0.90);
         drawSegment({ x: mast.x, y: 1.45, z: mast.y }, { x: face.x, y: 1.45, z: face.z }, 0.012, [0.30, 0.18, 0.10], 0, 1, 7, 0.90);
+        // Build 12.154: the cloth flutters, so it must never be baked in.
+        const previousBannerBatchEligibility = setStaticWorldBatchEligibility(false);
         for (const side of [-1, 1]) {
           const tail = localToWorld(face.x, face.z, yaw, side * 0.15, 0);
           const flutter = Math.sin(time * 1.6 + banner.x * 0.3 + side) * 0.025;
           mat4TRS(glModel, tail.x, 1.36, tail.z, yaw, 0, side * 0.05 + flutter, 0.20, 0.18, 0.020);
           drawMesh(glMeshes.cube, banner.colour || [0.50, 0.18, 0.12], glModel, 0.01, 0.92, 7, 0.90);
         }
+        setStaticWorldBatchEligibility(previousBannerBatchEligibility);
       }
 
       for (const torch of worldBatches.desertTorches) {
@@ -42355,6 +42365,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         drawMesh(glMeshes.cylinder, [0.28, 0.17, 0.09], glModel, 0, 1, 7, 0.84);
         mat4TRS(glModel, bowl.x, height + 0.075, bowl.z, yaw, 0, 0, 0.22, 0.035, 0.22);
         drawMesh(glMeshes.ring, [0.58, 0.38, 0.18], glModel, 0.02, 1, 7, 0.80);
+        // Build 12.154: the flame flickers, so it must never be baked in. The
+        // outer halo is drawn in the same pass and shares the exclusion.
+        const previousTorchBatchEligibility = setStaticWorldBatchEligibility(false);
         setBlendMode(true);
         const flicker = 1 + Math.sin(time * 8.2 + torch.x * 1.7 + torch.z) * 0.10;
         mat4TRS(glModel, bowl.x, height + 0.19, bowl.z, yaw, 0, 0, 0.10 * flicker, 0.27 * flicker, 0.10 * flicker);
@@ -42362,6 +42375,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         mat4TRS(glModel, bowl.x, height + 0.20, bowl.z, yaw, 0, 0, 0.22, 0.38, 0.22);
         drawMesh(glMeshes.sphere, [1.00, 0.68, 0.24], glModel, 0.22, 0.10, 4, 0.05);
         setBlendMode(false);
+        setStaticWorldBatchEligibility(previousTorchBatchEligibility);
       }
     }
 
@@ -42984,11 +42998,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         drawMesh(glMeshes.cylinder, [0.40, 0.43, 0.42], glModel, 0, 1, 3, 0.68);
         mat4TRS(glModel, tank.x, 0.43, tank.z, 0, 0, 0, radius * 1.62, 0.10, radius * 1.62);
         drawMesh(glMeshes.ring, [0.66, 0.69, 0.67], glModel, 0.02, 1, 3, 0.58);
+        // Build 12.154: the coolant column pulses, so it must never be baked in.
+        const previousTankBatchEligibility = setStaticWorldBatchEligibility(false);
         setBlendMode(true);
         mat4TRS(glModel, tank.x, 0.37, tank.z, 0, 0, 0, radius * 1.52, 0.035, radius * 1.52);
         drawMesh(glMeshes.cylinder, tank.colour, glModel, 0.48, 0.30, 4, 0.08);
         drawSegment({ x: tank.x, y: 0.40, z: tank.z }, { x: tank.x, y: 1.18 + Math.sin(time * 2.0) * 0.08, z: tank.z }, 0.035, [0.48, 0.82, 0.92], 0.52, 0.25, 4, 0.08);
         setBlendMode(false);
+        setStaticWorldBatchEligibility(previousTankBatchEligibility);
         mat4TRS(glModel, tank.x, 0.68, tank.z, 0, 0, 0, radius * 0.42, 0.62, radius * 0.42);
         drawMesh(glMeshes.cylinder, [0.44, 0.47, 0.45], glModel, 0, 1, 3, 0.62);
       } else if (officeTheme && tank.kind === 'plant') {
@@ -45405,7 +45422,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (typeof drawArenaSky === 'function') drawArenaSky(eye, target);
     setBlendMode(false);
 
-    if (STATIC_WORLD_BATCHING_ENABLED && activeArenaId === 'citadel' && !staticWorldGpuBatchesReady) {
+    // Build 12.154: batching is no longer restricted to citadel. Every
+    // time-dependent draw in `drawStaticWorld` is now wrapped in
+    // `setStaticWorldBatchEligibility(false)` — the Dune lamp glow, banner
+    // cloth and torch flame, and the coolant tank pulse were the four that were
+    // not — so no animated decor can be baked into a batch and frozen.
+    // `resetStaticWorldGpuBatches()` runs from `buildWorldBatches()`, so an
+    // arena change discards the previous arena's batches before this rebuilds.
+    if (STATIC_WORLD_BATCHING_ENABLED && !staticWorldGpuBatchesReady) {
       beginStaticWorldBatchCapture();
       staticWorldRenderActive = true;
       try {

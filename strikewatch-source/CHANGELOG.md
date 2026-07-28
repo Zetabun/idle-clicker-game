@@ -1,5 +1,18 @@
 # Release history router
 
+## 12.154 — Batch Reach
+
+- Extends static world batching from Citadel to every arena: 58–75% fewer draw calls on Dune Bastion, Aurora Terminal and Skyline Offices, which had never been batched.
+- Wraps the four animated draws that were the real blocker — the Dune lamp glow, banner cloth and torch flame, and the coolant tank column — so batching cannot bake and freeze them.
+- Removes a **second**, independent Citadel gate inside `drawMesh()`. Clearing only the one in the render path produced no batches at all on the other arenas; both had to go.
+- Verified faithful against the renderer's own `?staticBatching=0` reference: 99% of pixels differ by at most 1/255, and the Offices view — which contains no animated decor — differs by at most 1 across the whole frame.
+- Verified nothing froze: on the pixels the unbatched build animates strongly, the batched build animates them by exactly the same amount, in all three views tested.
+- Verified batches follow the arena through repeated switching, so a stale batch can never draw the wrong arena.
+- Repays Build 12.153's floor-shading cost, which was 7–9% on those same arenas, many times over.
+- Collision, navigation, line of sight, gameplay, saves and match simulation are untouched; navigation graphs are identical to 12.153 on all four arenas.
+- Evidence: `AUDIT-12.154.md`.
+
+
 ## 12.153 — Ground Shade
 
 - Extends the Build 12.146 baked occlusion to the floor, which previously had none at all: it was a single flat draw for the whole map, and in a first-person view the floor is most of the screen.

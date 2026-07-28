@@ -77,6 +77,16 @@ current task. Release-specific implementation detail belongs in the matching
   override of the element it was moved off. Those overrides are usually more
   specific and will keep re-applying the old transform against variables that
   have become static defaults. Grep for the class before shipping the move.
+- Static world batching bakes model matrices at capture time and is enabled for
+  every arena. Any draw inside `drawStaticWorld` whose transform, colour or
+  scale depends on `time`, on door state, or on anything else that varies
+  between frames must be wrapped in `setStaticWorldBatchEligibility(false)` and
+  restored, or it will be frozen for the rest of the session. Batching is gated
+  in two places — the capture trigger and the per-draw `batchable` check in
+  `drawMesh()` — and both must agree. Prove a batching change against the
+  `?staticBatching=0` reference render, and prove nothing froze by comparing
+  motion on the pixels the unbatched build animates; a plain two-frame diff
+  cannot show it, because the shader's own `uTime` term moves nearly every pixel.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

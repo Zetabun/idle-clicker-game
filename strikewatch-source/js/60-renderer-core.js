@@ -1235,8 +1235,12 @@
   function drawMesh(mesh, colour, model, emissive = 0, alpha = 1, surface = 0, roughness = 0.76) {
     if (!mesh || alpha <= 0.001) return;
     if (staticWorldRenderActive) {
+      // Build 12.154: the arena restriction is gone from both gates — this one
+      // and the capture trigger in `drawWorld`. Batching now depends only on
+      // the draw being opaque and eligible. Translucent draws stay out on
+      // purpose: batching merges them into one mesh and blending is
+      // order-dependent.
       const batchable = STATIC_WORLD_BATCHING_ENABLED
-        && activeArenaId === 'citadel'
         && staticWorldBatchEligible
         && alpha >= 0.999;
       if (staticWorldBatchMode === 'capture') {

@@ -513,7 +513,14 @@
     if (typeof drawArenaSky === 'function') drawArenaSky(eye, target);
     setBlendMode(false);
 
-    if (STATIC_WORLD_BATCHING_ENABLED && activeArenaId === 'citadel' && !staticWorldGpuBatchesReady) {
+    // Build 12.154: batching is no longer restricted to citadel. Every
+    // time-dependent draw in `drawStaticWorld` is now wrapped in
+    // `setStaticWorldBatchEligibility(false)` — the Dune lamp glow, banner
+    // cloth and torch flame, and the coolant tank pulse were the four that were
+    // not — so no animated decor can be baked into a batch and frozen.
+    // `resetStaticWorldGpuBatches()` runs from `buildWorldBatches()`, so an
+    // arena change discards the previous arena's batches before this rebuilds.
+    if (STATIC_WORLD_BATCHING_ENABLED && !staticWorldGpuBatchesReady) {
       beginStaticWorldBatchCapture();
       staticWorldRenderActive = true;
       try {
