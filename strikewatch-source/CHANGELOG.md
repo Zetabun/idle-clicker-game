@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.156 — Durable Results
+
+- Makes completed match settlement a protected save boundary after every reward and league mutation has been applied.
+- Preserves a displaced stored career through Data & Recovery before a stale in-match session writes the completed result.
+- Keeps ordinary stale-session autosaves blocked, so background tabs still cannot overwrite newer progress.
+- Adds a save-and-reload regression covering Gold Coins, the played fixture, winner, backup and sequence advancement.
+- Save schema, reward values, league scoring, match simulation and responsive presentation are unchanged.
+- Evidence: `AUDIT-12.156.md`.
+
+
 ## 12.155 — Still Armoury
 
 - Replaces the Armoury's live 3D previews with still images: the loadout page goes from 804 CSS-3D quads and 1,361 DOM nodes to **zero quads and 387 nodes**.

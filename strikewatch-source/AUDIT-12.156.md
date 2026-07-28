@@ -1,66 +1,35 @@
-# Build 12.156 candidate — Durable Results
+# Build 12.156 — Durable Results
 
 ## Reported defect
 
-After a league match, the post-match report showed newly awarded Gold Coins and
-league points, but a later visit restored the pre-match balance and league table.
+A completed league match showed awarded Gold Coins and league points in the live report, but a later visit could restore the pre-match balance and table.
 
 ## Root cause
 
-The match settlement correctly updated live career state and called
-`saveCareerState()`. However, Build 12.134's stale-session guard can reject that
-write when another tab, restored page or same-origin session has advanced the
-save sequence while the match is live. The settlement call ignored the rejected
-write and the report rendered from live memory, so the awards looked banked even
-though browser storage still held the older career. Return-to-HQ and page-hide
-checkpoints then retried the same stale ordinary save and were rejected again.
+Match settlement updated live `careerState`, but the stale-session sequence guard could reject the write when another tab or restored same-origin session advanced the stored sequence during the match. The report continued rendering from live memory, while return-to-HQ and page-hide checkpoints retried the same stale ordinary save and were rejected again.
 
-This explains why both Gold Coins and league points disappeared together: both
-were present in one live `careerState`, while neither reached the stored career.
+## Fix
 
-## Candidate fix
+`js/80-durable-results.js` loads after the established save checkpoints and wraps the existing save and match-completion authorities.
 
-`js/80-durable-results.js` is loaded last and wraps the existing authorities
-without introducing a second career or league state.
+- Ordinary stale-session autosaves remain blocked.
+- After the base match completion applies finance, Gold Coins, league fixture state, player progression and any pending victory crate, one protected settlement write runs before the manager can leave the reward presentation.
+- If the sequence is stale, the displaced stored career is copied to the existing recovery-backup key before the complete settled state is written using the stored sequence as authority.
+- Storage rejection and read-back failures continue through the existing save-health notice path.
+- Save schema 19, league scoring, reward values and match simulation are unchanged.
 
-- Ordinary autosaves still use the established stale-session rejection.
-- A completed match performs one protected settlement write after the base match
-  completion has applied finance, Gold Coins, league fixture state, player
-  progression and any pending victory crate.
-- When a stale sequence is detected at that boundary, the displaced stored career
-  is copied to the existing recovery-backup key before the complete settled state
-  is written with the stored sequence as authority.
-- Storage rejection and read-back failures still flow through the existing
-  `saveCareerState()` error reporting.
-- `window.__strikeDebug.durableMatchSettlementForTest()` simulates a newer stored
-  session, proves an ordinary write remains blocked, performs the protected
-  settlement, reads it back and restores the user's original state and storage.
+## Verification
 
-`build.py` includes the final-order module after `79-save-checkpoints.js` so the
-runtime debug API is already present and all return-to-HQ checkpoints remain
-unchanged.
+- `durableMatchSettlementForTest()`: pass. An ordinary stale write was rejected; the protected result persisted 14 GC, a played winning fixture, the displaced 2 GC save as backup, and advanced sequence 25 to 26.
+- Wrapped `completeCareerMatch()` mock: pass with the same persisted and backup values.
+- Every modular JavaScript file parsed with `node --check`.
+- Generated `js/strikewatch.dev.js` parsed.
+- Standalone inline JavaScript parsed.
+- `python3 build.py` succeeded twice.
+- Deterministic bundle SHA-256: `32a746a36fde6d44e79c2d1f48a7b97ad22469381004bd9b0a23e4123e14904f`.
+- Deterministic standalone SHA-256: `f8acd2226a0434fee107e7c2275fc8b203d967d66c22752e9fd17952244492cf`.
+- Root `cod.html` is byte-identical to `dist/strikewatch-build-12.156.html`.
 
 ## Compatibility
 
-The candidate does not change save schema 19, league scoring, Gold Coin reward
-amounts, fixture generation, finance values or match simulation.
-
-## Verification completed
-
-- The new source module passes `node --check`.
-- A standalone mocked-storage regression reproduces a stale sequence and passes:
-  the ordinary write is rejected, the protected match result persists, the old
-  stored career remains available as backup, and the save sequence advances from
-  the newer stored authority.
-- A second inspection confirmed the protected write runs after the original match
-  completion, so it includes both the league result and all match rewards.
-
-## Release gate still required
-
-The connected GitHub app can read and write the repository, but GitHub Actions did
-not create a run for branch pushes or a merged default-branch trigger, and this
-execution environment cannot resolve GitHub hosts for a local clone. Therefore the
-candidate has deliberately not been merged to `main`: `py -3 build.py`, complete
-module/bundle parsing, deterministic double-build hashes, standalone generation,
-root `cod.html` byte parity and live GitHub Pages verification still need to run
-before this can be called Build 12.156.
+No responsive CSS, renderer, navigation, combat, economy values, fixture generation or save schema changed.

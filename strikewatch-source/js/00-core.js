@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.155';
-  const BUILD_NAME = 'Still Armoury';
-  const BUILD_ID = '12.155.0-still-armoury';
+  const BUILD_VERSION = '12.156';
+  const BUILD_NAME = 'Durable Results';
+  const BUILD_ID = '12.156.0-durable-results';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
