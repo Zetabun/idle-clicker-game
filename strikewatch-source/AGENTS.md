@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.140 owns the management status surface (`js/78-management-status.js`) and `careerMatchLaunchState()`. Any control that can refuse must state that before it is pressed and route to whatever clears the blocker; never rely on `showStatus()` alone, and never add a management message that only the match HUD could show. Keep `typographyConsistencyForTest()` green — it had been failing for several builds. See `AUDIT-12.140.md`.
+
 Build 12.139 owns the training requirement statement and the `.training-programmes-zone` wrapper: the workflow draft bar must stay adjacent to the roster it saves, and the panel head must state the outstanding requirement rather than describe the system. The wrapper is a `#menuContent` grid child and must never clip its overflow. A `*ForTest()` hook that mutates `careerState` must suppress persistence for the duration — `firstMatchGuidanceForTest()` blanked a live squad into the save before this build. See `AUDIT-12.139.md`.
 
 Build 12.138 owns guided scroll reachability. Every First Match Guide step whose control is not on the arrival screen needs a `scrollTarget` on the step and a matching `data-guide-target` anchor on the owning panel — the `training` step and `.training-roster-panel` are the current example. `menuHistoryScroller()` must keep resolving to the element that actually scrolls (`#menuContent` on compact, the `.menu-content` section on desktop); returning one of them unconditionally silently disables guided scrolling and history restore on the other target. Keep `firstMatchGuidanceForTest().ok` true — it had been permanently false because its journey-strip assertion was case-sensitive. See `AUDIT-12.138.md`.

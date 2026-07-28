@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.139 states an outstanding onboarding requirement at the point of
-action and keeps the control that commits it beside the control that sets it.
-See `HANDOFF.md` and `AUDIT-12.139.md`.
+Build 12.140 gives management actions a reply: refusals and confirmations
+reach a visible surface, and a control that cannot act says so before it is
+pressed. See `HANDOFF.md` and `AUDIT-12.140.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

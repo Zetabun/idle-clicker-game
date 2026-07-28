@@ -60,6 +60,12 @@ current task. Release-specific implementation detail belongs in the matching
   its route-view flag was never set. The guide must never step backwards.
 - The guided `match` step must always expose a working action: start
   matchmaking when the fixture is due, otherwise point to End Day/calendar.
+- A control that can refuse must state that it will refuse before it is
+  pressed, and a refused press must route to whatever clears the blocker.
+  `careerMatchLaunchState()` is the single authority for match availability.
+- Management feedback must reach a surface the management interface can show.
+  `showStatus()` alone is not sufficient: `.status` is match HUD chrome and is
+  hidden outside a match.
 - A guide step must land the player on a screen that contains the control it
   names *and* any control needed to commit it. Where a route uses a workflow
   draft bar, that bar belongs beside the controls it saves, and the owning

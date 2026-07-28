@@ -2400,12 +2400,22 @@
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
     if (startMatchBtn) {
       const deployLabel = careerDeployLabel();
+      // Build 12.140: the truthful state used to live only in the title
+      // attribute, which is invisible on touch and easy to miss on desktop, so
+      // the control read as "MATCH" even when it could only refuse. Show it.
+      const launch = typeof careerMatchLaunchState === 'function' ? careerMatchLaunchState() : { ready: true, short: '' };
       startMatchBtn.hidden = pauseMenu || !careerState.created;
       startMatchBtn.classList.toggle('needs-squad', careerState.created && !careerSquadReady());
       startMatchBtn.classList.toggle('matchday', Boolean(due));
       startMatchBtn.classList.toggle('active', menuTab === 'play');
+      startMatchBtn.classList.toggle('blocked', careerState.created && !launch.ready);
       startMatchBtn.setAttribute('aria-label', deployLabel);
       startMatchBtn.title = deployLabel;
+      const stateLabel = startMatchBtn.querySelector('.manager-topbar-action-state');
+      if (stateLabel) {
+        stateLabel.textContent = careerState.created ? launch.short : '';
+        stateLabel.hidden = !careerState.created || !launch.short;
+      }
     }
     syncMobilePageHelp({ persist: false });
     if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
@@ -2480,7 +2490,7 @@
     }
     if (!careerSquadReady()) {
       setMenuRoute('market');
-      showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`);
+      showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`, { tone: 'blocked' });
       return;
     }
     if (matchmakingState.active || deploymentSelectionState.active) return;
@@ -2489,7 +2499,7 @@
     }
     if (!(careerBetweenRounds && !careerMatchComplete) && typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) {
       setMenuRoute('tactics');
-      showStatus('REVIEW THE BRIEFING AND CONFIRM YOUR MATCH PLAN');
+      showStatus('CONFIRM YOUR MATCH PLAN BEFORE MATCHMAKING CAN BEGIN', { tone: 'blocked' });
       return;
     }
     resumeAudioFromGesture();
@@ -2521,8 +2531,12 @@
     if (typeof prepareCareerMatchContext === 'function') {
       const prepared = prepareCareerMatchContext(modeOverride);
       if (!prepared?.ok) {
-        setMenuRoute('league');
-        showStatus(String(prepared?.reason || 'LEAGUE FIXTURE UNAVAILABLE').toUpperCase());
+        // Build 12.140: send the manager to the control that clears the
+        // blocker. Routing every refusal to the league table left the actual
+        // requirement — usually END DAY — unstated and unreachable.
+        const launch = typeof careerMatchLaunchState === 'function' ? careerMatchLaunchState() : null;
+        setMenuRoute(launch && !launch.ready ? launch.route : 'league');
+        showStatus(String(launch && !launch.ready ? launch.reason : (prepared?.reason || 'LEAGUE FIXTURE UNAVAILABLE')).toUpperCase(), { tone: 'blocked' });
         return;
       }
     }

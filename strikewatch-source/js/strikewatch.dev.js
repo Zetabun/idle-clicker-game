@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.139';
-  const BUILD_NAME = 'Stated Requirement';
-  const BUILD_ID = '12.139.0-stated-requirement';
+  const BUILD_VERSION = '12.140';
+  const BUILD_NAME = 'Answered Actions';
+  const BUILD_ID = '12.140.0-answered-actions';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -15638,6 +15638,32 @@
           <div class="team-onboarding-finance"><strong>PROTECT YOUR STARTING CASH</strong><p>The opening 350,000 credits are a bank loan. You repay 400,000 in ten 40,000-credit instalments every four weeks, so leave room for wages and repayments.</p></div>
         </section>
       </div>`;
+  }
+
+  // Build 12.140: one authority for "can a match start, and if not, what does
+  // the manager actually have to do". Every surface that offers matchmaking
+  // reads this so the control can never invite an action it will refuse.
+  function careerMatchLaunchState() {
+    if (!careerState.created) return { ready: false, short: 'CREATE CLUB', reason: 'Create your club before entering a fixture.', route: 'play' };
+    if (!careerSquadReady()) {
+      const missing = Math.max(0, TEAM_REQUIRED_STARTERS - (careerState.squad?.length || 0));
+      return { ready: false, short: `RECRUIT ${missing}`, reason: `Recruit ${missing} more operator${missing === 1 ? '' : 's'} before a fixture can be played.`, route: 'market' };
+    }
+    if (careerBetweenRounds && !careerMatchComplete) return { ready: true, short: 'NEXT ROUND', reason: '', route: 'play' };
+    if (typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) {
+      return { ready: false, short: 'CONFIRM PLAN', reason: 'Confirm the match plan before matchmaking can begin.', route: 'tactics' };
+    }
+    if (typeof clubCanPlayMatchToday === 'function' && !clubCanPlayMatchToday()) {
+      return { ready: false, short: 'END DAY', reason: 'A match has already been played today. Use END DAY to advance the club calendar.', route: 'calendar' };
+    }
+    if (typeof leagueSeasonComplete === 'function' && leagueSeasonComplete()) {
+      return { ready: false, short: 'SEASON OVER', reason: 'The season is complete. Start the next season from the league table.', route: 'league' };
+    }
+    const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    if (Number(days) > 0) {
+      return { ready: false, short: `IN ${days} DAY${days === 1 ? '' : 'S'}`, reason: `The next league fixture is ${days} day${days === 1 ? '' : 's'} away. Use END DAY to advance the club calendar until matchday.`, route: 'calendar' };
+    }
+    return { ready: true, short: 'READY', reason: '', route: 'play' };
   }
 
   function careerDeployLabel() {
@@ -35387,12 +35413,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
     if (startMatchBtn) {
       const deployLabel = careerDeployLabel();
+      // Build 12.140: the truthful state used to live only in the title
+      // attribute, which is invisible on touch and easy to miss on desktop, so
+      // the control read as "MATCH" even when it could only refuse. Show it.
+      const launch = typeof careerMatchLaunchState === 'function' ? careerMatchLaunchState() : { ready: true, short: '' };
       startMatchBtn.hidden = pauseMenu || !careerState.created;
       startMatchBtn.classList.toggle('needs-squad', careerState.created && !careerSquadReady());
       startMatchBtn.classList.toggle('matchday', Boolean(due));
       startMatchBtn.classList.toggle('active', menuTab === 'play');
+      startMatchBtn.classList.toggle('blocked', careerState.created && !launch.ready);
       startMatchBtn.setAttribute('aria-label', deployLabel);
       startMatchBtn.title = deployLabel;
+      const stateLabel = startMatchBtn.querySelector('.manager-topbar-action-state');
+      if (stateLabel) {
+        stateLabel.textContent = careerState.created ? launch.short : '';
+        stateLabel.hidden = !careerState.created || !launch.short;
+      }
     }
     syncMobilePageHelp({ persist: false });
     if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
@@ -35467,7 +35503,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     if (!careerSquadReady()) {
       setMenuRoute('market');
-      showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`);
+      showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`, { tone: 'blocked' });
       return;
     }
     if (matchmakingState.active || deploymentSelectionState.active) return;
@@ -35476,7 +35512,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     if (!(careerBetweenRounds && !careerMatchComplete) && typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) {
       setMenuRoute('tactics');
-      showStatus('REVIEW THE BRIEFING AND CONFIRM YOUR MATCH PLAN');
+      showStatus('CONFIRM YOUR MATCH PLAN BEFORE MATCHMAKING CAN BEGIN', { tone: 'blocked' });
       return;
     }
     resumeAudioFromGesture();
@@ -35508,8 +35544,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (typeof prepareCareerMatchContext === 'function') {
       const prepared = prepareCareerMatchContext(modeOverride);
       if (!prepared?.ok) {
-        setMenuRoute('league');
-        showStatus(String(prepared?.reason || 'LEAGUE FIXTURE UNAVAILABLE').toUpperCase());
+        // Build 12.140: send the manager to the control that clears the
+        // blocker. Routing every refusal to the league table left the actual
+        // requirement — usually END DAY — unstated and unreachable.
+        const launch = typeof careerMatchLaunchState === 'function' ? careerMatchLaunchState() : null;
+        setMenuRoute(launch && !launch.ready ? launch.route : 'league');
+        showStatus(String(launch && !launch.ready ? launch.reason : (prepared?.reason || 'LEAGUE FIXTURE UNAVAILABLE')).toUpperCase(), { tone: 'blocked' });
         return;
       }
     }
@@ -55703,4 +55743,125 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refreshOverflowHints);
     else refreshOverflowHints();
   })();
+
+// Build 12.140: management status surface.
+//
+// `showStatus()` writes to `.status`, which lives inside the match stage and is
+// hidden by `body[data-app-state="menu"] .status { display: none }`. Roughly
+// eighty call sites across the management modules therefore explained a refusal
+// to nobody: pressing MATCH while the fixture was days away routed to the
+// league table and said nothing, so the control read as a dead loop.
+//
+// Every management-context message is now mirrored into a live region inside
+// the menu shell. This adds a surface; it does not change what any caller says.
+
+(() => {
+  const MANAGEMENT_STATUS_MS = 7200;
+  let managementStatusEl = null;
+  let managementStatusTextEl = null;
+  let managementStatusTimer = 0;
+  let managementStatusMessage = '';
+
+  function ensureManagementStatusSurface() {
+    if (managementStatusEl?.isConnected) return managementStatusEl;
+    const host = menuShellEl || document.getElementById('menuShell') || document.body;
+    if (!host) return null;
+    managementStatusEl = document.createElement('div');
+    managementStatusEl.className = 'management-status';
+    managementStatusEl.hidden = true;
+    // Advisory, not an alert: it must not steal focus mid-task.
+    managementStatusEl.setAttribute('role', 'status');
+    managementStatusEl.setAttribute('aria-live', 'polite');
+    managementStatusEl.innerHTML = '<i aria-hidden="true"></i><p></p><button type="button" aria-label="Dismiss message">DISMISS</button>';
+    managementStatusTextEl = managementStatusEl.querySelector('p');
+    managementStatusEl.querySelector('button').addEventListener('click', () => hideManagementStatus());
+    host.append(managementStatusEl);
+    return managementStatusEl;
+  }
+
+  function hideManagementStatus() {
+    managementStatusTimer = 0;
+    managementStatusMessage = '';
+    if (!managementStatusEl) return;
+    managementStatusEl.classList.remove('show');
+    managementStatusEl.hidden = true;
+  }
+
+  function presentManagementStatus(message, tone = 'info') {
+    const text = String(message || '').trim();
+    if (!text) {
+      hideManagementStatus();
+      return false;
+    }
+    const surface = ensureManagementStatusSurface();
+    if (!surface || !managementStatusTextEl) return false;
+    managementStatusMessage = text;
+    managementStatusTextEl.textContent = text;
+    surface.dataset.tone = tone === 'blocked' ? 'blocked' : 'info';
+    surface.hidden = false;
+    // Restart the entry transition when the same message repeats, so pressing a
+    // refused control twice still reads as a fresh response rather than a
+    // frozen page.
+    surface.classList.remove('show');
+    void surface.offsetWidth;
+    surface.classList.add('show');
+    managementStatusTimer = MANAGEMENT_STATUS_MS;
+    return true;
+  }
+
+  function managementStatusVisible() {
+    return Boolean(managementStatusEl && !managementStatusEl.hidden);
+  }
+
+  function managementStatusForTest() {
+    return {
+      visible: managementStatusVisible(),
+      message: managementStatusMessage,
+      tone: managementStatusEl?.dataset.tone || '',
+      rendered: managementStatusEl?.isConnected ? managementStatusTextEl?.textContent || '' : '',
+      onScreen: (() => {
+        if (!managementStatusVisible()) return false;
+        const rect = managementStatusEl.getBoundingClientRect();
+        const style = getComputedStyle(managementStatusEl);
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 1 && rect.height > 1;
+      })()
+    };
+  }
+
+  const baseShowStatusForManagement = showStatus;
+  showStatus = function showStatusWithManagementSurface(text, options = {}) {
+    const result = baseShowStatusForManagement(text);
+    // The match HUD owns its own status line during play.
+    if (appState !== 'menu') return result;
+    presentManagementStatus(text, options.tone);
+    return result;
+  };
+
+  const baseHideStatusForManagement = typeof hideStatus === 'function' ? hideStatus : null;
+  if (baseHideStatusForManagement) {
+    hideStatus = function hideStatusWithManagementSurface() {
+      hideManagementStatus();
+      return baseHideStatusForManagement();
+    };
+  }
+
+  function updateManagementStatus(dt) {
+    if (!managementStatusTimer) return;
+    managementStatusTimer -= Math.max(0, Number(dt) || 0) * 1000;
+    if (managementStatusTimer <= 0) hideManagementStatus();
+  }
+
+  const baseUpdateMenuForManagementStatus = updateMenu;
+  updateMenu = function updateMenuWithManagementStatus(dt) {
+    updateManagementStatus(dt);
+    return baseUpdateMenuForManagementStatus(dt);
+  };
+
+  window.__strikeDebug = window.__strikeDebug || {};
+  window.__strikeDebug.managementStatusForTest = managementStatusForTest;
+  window.__strikeDebug.showManagementStatusForTest = (text, tone) => {
+    showStatus(String(text || 'TEST MESSAGE'), { tone });
+    return managementStatusForTest();
+  };
+})();
 })();

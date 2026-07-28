@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.139 — Stated Requirement
-Build ID: 12.139.0-stated-requirement
+Build 12.140 — Answered Actions
+Build ID: 12.140.0-answered-actions
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.140 owns the management status surface and careerMatchLaunchState();
+a control that can refuse must say so before it is pressed and route to what
+clears the blocker. showStatus() alone is invisible outside a match.
 Build 12.139 owns the training requirement statement; the workflow draft bar
 stays beside the roster it saves, the panel head states what is outstanding,
 and a *ForTest() hook must suppress persistence while it mutates careerState.

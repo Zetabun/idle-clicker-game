@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.139 — Stated Requirement**
-- Build ID: `12.139.0-stated-requirement`
+- Build: **12.140 — Answered Actions**
+- Build ID: `12.140.0-answered-actions`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.139.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.140.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.140 makes management actions answer back. `showStatus()` writes to `.status`, which is `display:none` in the menu, so roughly eighty management call sites explained refusals, confirmations and locks to nobody — pressing MATCH with the fixture days away routed to the league table in silence and read as a loop. Management messages now land in a live region in the menu shell. `careerMatchLaunchState()` is the single authority for whether a match can start, the MATCH control shows that state instead of hiding it in a title attribute, and refusals route to the control that clears the blocker. Compact readability floors that had been failing `typographyConsistencyForTest()` are raised. See `AUDIT-12.140.md`.
 
 Build 12.139 states the training requirement where the controls are. Reaching the selects was not enough: the `SAVE CHANGES` bar sat ~630px above the fold once the manager scrolled to them, so a programme could be chosen with no visible way to commit it and no copy saying a second step existed. The draft bar and the roster now share one `.training-programmes-zone`, and the panel head states the requirement and tracks it. Two defects found alongside: `workflowSaveTrainingDrafts()` ignored a refused write, and `firstMatchGuidanceForTest()` could persist an empty squad over a real career. See `AUDIT-12.139.md`.
 

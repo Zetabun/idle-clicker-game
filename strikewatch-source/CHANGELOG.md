@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.140 — Answered Actions
+
+- Fixes the match control appearing to loop: pressing it when the fixture was days away routed to the league table and said nothing, because the message explaining that End Day was required went to an element hidden in the menu.
+- Management messages now appear in a dismissible live region, which un-silences roughly eighty call sites — refusals, confirmations such as MATCH PLAN CONFIRMED and WEAPON ISSUED & SAVED, and route lock explanations.
+- The MATCH control states its own availability (RECRUIT 2, CONFIRM PLAN, IN 5 DAYS, READY) instead of hiding it in a tooltip, and a refused press now routes to the control that clears the blocker rather than to the league table.
+- Raises four compact text sizes to the 12px readability floor, fixing a typography gate that had been failing for several builds.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.140.md`.
+
+
 ## 12.139 — Stated Requirement
 
 - Fixes the remaining onboarding wall at `SET ONE TRAINING FOCUS`: scrolling to the programme selects left the `SAVE CHANGES` bar ~630px above the fold, so a programme could be chosen with nothing on screen saying a second step existed or where to perform it.

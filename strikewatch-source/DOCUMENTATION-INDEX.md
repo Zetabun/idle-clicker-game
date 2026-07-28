@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.139 — Stated Requirement
-- Standalone: `dist/strikewatch-build-12.139.html`
+- Build 12.140 — Answered Actions
+- Standalone: `dist/strikewatch-build-12.140.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

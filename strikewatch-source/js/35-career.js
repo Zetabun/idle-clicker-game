@@ -4725,6 +4725,32 @@
       </div>`;
   }
 
+  // Build 12.140: one authority for "can a match start, and if not, what does
+  // the manager actually have to do". Every surface that offers matchmaking
+  // reads this so the control can never invite an action it will refuse.
+  function careerMatchLaunchState() {
+    if (!careerState.created) return { ready: false, short: 'CREATE CLUB', reason: 'Create your club before entering a fixture.', route: 'play' };
+    if (!careerSquadReady()) {
+      const missing = Math.max(0, TEAM_REQUIRED_STARTERS - (careerState.squad?.length || 0));
+      return { ready: false, short: `RECRUIT ${missing}`, reason: `Recruit ${missing} more operator${missing === 1 ? '' : 's'} before a fixture can be played.`, route: 'market' };
+    }
+    if (careerBetweenRounds && !careerMatchComplete) return { ready: true, short: 'NEXT ROUND', reason: '', route: 'play' };
+    if (typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) {
+      return { ready: false, short: 'CONFIRM PLAN', reason: 'Confirm the match plan before matchmaking can begin.', route: 'tactics' };
+    }
+    if (typeof clubCanPlayMatchToday === 'function' && !clubCanPlayMatchToday()) {
+      return { ready: false, short: 'END DAY', reason: 'A match has already been played today. Use END DAY to advance the club calendar.', route: 'calendar' };
+    }
+    if (typeof leagueSeasonComplete === 'function' && leagueSeasonComplete()) {
+      return { ready: false, short: 'SEASON OVER', reason: 'The season is complete. Start the next season from the league table.', route: 'league' };
+    }
+    const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    if (Number(days) > 0) {
+      return { ready: false, short: `IN ${days} DAY${days === 1 ? '' : 'S'}`, reason: `The next league fixture is ${days} day${days === 1 ? '' : 's'} away. Use END DAY to advance the club calendar until matchday.`, route: 'calendar' };
+    }
+    return { ready: true, short: 'READY', reason: '', route: 'play' };
+  }
+
   function careerDeployLabel() {
     if (!careerSquadReady()) return `RECRUIT SQUAD ${careerState.squad?.length || 0} / 5`;
     if (careerBetweenRounds && !careerMatchComplete) return typeof betweenRoundTacticsState !== 'undefined' && !betweenRoundTacticsState.resolved ? 'REVIEW ROUND TACTICS' : 'START NEXT ROUND';
