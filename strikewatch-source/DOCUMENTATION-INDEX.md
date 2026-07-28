@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.141 — Banked Progress
-- Standalone: `dist/strikewatch-build-12.141.html`
+- Build 12.142 — Armour Pass
+- Standalone: `dist/strikewatch-build-12.142.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

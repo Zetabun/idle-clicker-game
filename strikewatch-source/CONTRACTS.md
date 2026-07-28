@@ -60,6 +60,9 @@ current task. Release-specific implementation detail belongs in the matching
   its route-view flag was never set. The guide must never step backwards.
 - The guided `match` step must always expose a working action: start
   matchmaking when the fixture is due, otherwise point to End Day/calendar.
+- A per-frame animation must not be driven by writing an inherited custom
+  property onto an ancestor of a large CSS-3D subtree; that invalidates every
+  descendant. Animate a dedicated wrapper's own `transform`.
 - Earned progress must be written before the manager can plausibly leave.
   Returning to HQ, ending the day and the page being hidden or closed are all
   save checkpoints; no path back to HQ may skip one.

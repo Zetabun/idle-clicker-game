@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.142 — Armour Pass
+
+- Fixes the armour viewer lagging the game: rotating the model rewrote inherited CSS custom properties on the rig root, invalidating the computed style of all 384+ model faces every frame.
+- Rotation now uses a dedicated pivot element — measured 9.60ms per rotation step before, 0.01–0.03ms after (226–263x), or 0.1% of a 60fps frame.
+- Zoom, drag easing, per-model scaling and per-width scaling are unchanged.
+- Fixes a readability floor from 12.140 that lost a specificity contest and left compact lock copy at 10.5px against a 12px floor.
+- The armour models themselves still look bad; that is not addressed in this build.
+- No gameplay, economy or schema change; save schema stays at 19.
+- Evidence: `AUDIT-12.142.md`.
+
+
 ## 12.141 — Banked Progress
 
 - Fixes Gold Coins being lost by closing the browser after returning to HQ: the return-to-HQ path never wrote a save, and nothing saved on tab close or background.

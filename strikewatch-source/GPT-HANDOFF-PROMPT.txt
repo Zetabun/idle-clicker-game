@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.141 — Banked Progress
-Build ID: 12.141.0-banked-progress
+Build 12.142 — Armour Pass
+Build ID: 12.142.0-armour-pass
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,8 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.142 owns the armour viewer rotation pivot; never animate by writing
+an inherited custom property onto an ancestor of a big CSS-3D subtree.
 Build 12.141 owns career save checkpoints; no path back to HQ may skip a save,
 and page-hide/unload must write. Weapon geometry has two authorities:
 careerWeapon3dParts (menus) and operatorSharedWeaponRig/drawFirstPersonWeapon

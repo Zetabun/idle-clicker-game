@@ -31327,8 +31327,8 @@ body.mail-scroll-armed .club-mail-list {
 @media (max-width: 1023px) {
   #managerDateDay { font-size: 12px !important; }
   #managerDateMeta { font-size: 12px !important; }
-  .menu-subtab-lock { font-size: 12px !important; }
-  .menu-tab-access { font-size: 12px !important; }
+  .menu-shell .menu-subtab-lock { font-size: 12px !important; }
+  .menu-shell .menu-tab-access { font-size: 12px !important; }
   #menuContent .club-economy-guide article > span { font-size: 12px !important; }
   .manager-topbar-action-state { font-size: 12px; }
 }
@@ -31345,4 +31345,25 @@ body.mail-scroll-armed .club-mail-list {
 .career-crate-overlay.revealed .career-crate-model {
   grid-column: 1 / -1;
   justify-self: center;
+}
+
+/* --- Build 12.142: armour viewer rotation pivot ----------------------------
+   `--armour-viewer-yaw/pitch` are inherited custom properties, so writing them
+   on the rig root once per frame invalidated the computed style of all 384
+   cuboid faces beneath it: measured at 9.6ms per rotation step against 0.03ms
+   for a direct transform on one element. The live rotation now belongs to this
+   pivot, which nothing else styles, so it cannot collide with the per-model or
+   per-width scale factors that still ride on `--armour-viewer-scale`. */
+.career-armour-viewer-pivot {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.career-armour-inspector .career-armour-viewer-pivot {
+  transition: transform .15s ease-out;
+}
+.career-armour-inspector.dragging .career-armour-viewer-pivot,
+.career-armour-inspector.auto-rotating .career-armour-viewer-pivot {
+  transition: none;
 }

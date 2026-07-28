@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.141 — Banked Progress**
-- Build ID: `12.141.0-banked-progress`
+- Build: **12.142 — Armour Pass**
+- Build ID: `12.142.0-armour-pass`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.141.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.142.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.142 fixes the armour viewer lag. The rotation was written to `--armour-viewer-yaw/pitch` on the rig root, and those are inherited custom properties, so every frame invalidated the computed style of all 384+ cuboid faces beneath it — 9.60ms per rotation step against 0.03ms for a direct transform. Rotation now belongs to a dedicated `.career-armour-viewer-pivot`; zoom deliberately stays on the custom property because the per-model and per-width scale factors are layered on it in CSS and it only changes on a button press. The armour models still look bad — that half is not addressed. See `AUDIT-12.142.md`.
 
 Build 12.141 stops earned progress being lost on closing the browser. `exitToMainMenu()` returned to HQ without writing a save and nothing saved on tab close, so Gold Coins banked since the last explicit save went with the session. `js/79-save-checkpoints.js` writes on any match/free-roam to menu transition, on exitToMainMenu, and on visibilitychange-hidden and pagehide. The reward crate now rotates on its own, and the awarded weapon is shown without the crate behind it. Weapon geometry has two independent authorities — `careerWeapon3dParts` for every menu surface and `operatorSharedWeaponRig`/`drawFirstPersonWeapon` for the live match — so a weapon change must be made on both sides. See `AUDIT-12.141.md`.
 

@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.141 writes career progress at the points where a manager believes it
-is safe — returning to HQ, ending the day, and the page being hidden or closed.
-See `HANDOFF.md` and `AUDIT-12.141.md`.
+Build 12.142 removes the armour inspector's per-frame style invalidation, so
+rotating a model no longer costs most of a frame.
+See `HANDOFF.md` and `AUDIT-12.142.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

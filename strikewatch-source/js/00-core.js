@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.141';
-  const BUILD_NAME = 'Banked Progress';
-  const BUILD_ID = '12.141.0-banked-progress';
+  const BUILD_VERSION = '12.142';
+  const BUILD_NAME = 'Armour Pass';
+  const BUILD_ID = '12.142.0-armour-pass';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
