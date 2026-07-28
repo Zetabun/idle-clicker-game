@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.148 — Sidearm Rebuild
+
+- Reshapes the P12 Scrapline from a slab with a handle into a pistol: slimmer slide with cocking serrations over a distinct frame, a visible parting line, a three-piece trigger guard bow, cylindrical barrel and muzzle, and a recessed ejection port.
+- Gives the grip a real −13 degree rake. It previously had two degrees because anything more sheared the assembly apart: `rz` rotates each part about its own centre, so the magazine swung away from the grip. Sub-part positions now rotate about the grip centre, making the assembly rigid.
+- The geometry integrity audit caught a genuine break mid-build — slimming the slide detached the entire lower assembly — which a still render would not have shown.
+- Model geometry only; weapon statistics, ranges, penetration and handling are untouched.
+- Evidence: `AUDIT-12.148.md`.
+
+
 ## 12.147 — Weapon Form
 
 - Gives weapons a light direction: every face of every weapon box used the same gradient, so guns read as flat slabs at any angle. Per-face shading now runs from 0.50 on the bottom to 1.30 on the top, matching the armour rig.

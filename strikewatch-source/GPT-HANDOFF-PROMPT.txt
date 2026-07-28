@@ -5,8 +5,8 @@ to load the relevant section of `CONTRACTS.md`, `ARCHITECTURE.md` or one
 historical audit. Do not read every Markdown or `AUDIT-*.md` file.
 
 CURRENT RELEASE
-Build 12.147 — Weapon Form
-Build ID: 12.147.0-weapon-form
+Build 12.148 — Sidearm Rebuild
+Build ID: 12.148.0-sidearm-rebuild
 Save schema: 19
 Diagnostics schema: 1
 
@@ -16,6 +16,9 @@ SOURCE AND RELEASE
 copied release artifacts and must not be edited independently.
 
 CURRENT HAZARD
+Build 12.148 owns the sidearm silhouette and the rigid grip assembly; rz
+rotates about a part's own centre, and weaponGeometryIntegrityForTest must be
+re-run after moving any weapon geometry.
 Build 12.147 owns weapon presentation; careerWeaponVisualParts() is the single
 geometry authority for menus, operator weapon and viewmodel alike.
 Build 12.146 owns baked occlusion; keep it quantised or the static batcher

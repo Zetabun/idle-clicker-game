@@ -28,8 +28,8 @@ required reading.
 
 ## Current release
 
-- Build 12.147 — Weapon Form
-- Standalone: `dist/strikewatch-build-12.147.html`
+- Build 12.148 — Sidearm Rebuild
+- Standalone: `dist/strikewatch-build-12.148.html`
 - Live artifact: root `cod.html`
 - Save schema 19
 - Diagnostics schema 1

@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.148 owns the sidearm silhouette and the rigid grip assembly. `rz` rotates a part about its own centre, so any multi-part assembly that shares a rotation must also rotate its sub-part positions about the assembly origin or it shears apart. Always re-run `weaponGeometryIntegrityForTest()` after moving weapon geometry: a disconnected model still looks correct in a still render, so the audit is the only reliable check. See `AUDIT-12.148.md`.
+
 Build 12.147 owns weapon presentation. `careerWeaponVisualParts()` is the single geometry authority for every surface — never fork parts per renderer, and re-run `ar4WeaponModelForTest()` for the world/viewmodel connectivity check after touching a model. Surface detail must resolve at the scale it is viewed: the grip texture, the 12.145 scanlines and the 12.144 sandstone noise were all the same fault. See `AUDIT-12.147.md`.
 
 Build 12.146 owns baked occlusion (`staticOcclusionAt`/`applyStaticOcclusion` in `js/60-renderer-core.js`). Keep it quantised — the static batcher groups by exact material, so a continuous factor shatters merged batches. Do not enable `STATIC_WORLD_BATCHING_ENABLED` for another arena until every time-dependent draw in `drawStaticWorld` is wrapped in `setStaticWorldBatchEligibility()`, which currently exists but is never called; batching bakes model matrices, so animated decor would freeze. Renderer stats in `document.body.dataset` stall under a throttled animation frame — use `rendererFrameStatsForTest()` and fix the camera pose, since draw calls are view-dependent. See `AUDIT-12.146.md`.

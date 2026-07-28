@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.147 gives weapon models a light direction, so they resolve as solids
-rather than flat slabs on every menu surface.
-See `HANDOFF.md` and `AUDIT-12.147.md`.
+Build 12.148 reshapes the sidearm into a real pistol silhouette and makes the
+grip assembly rigid so it can carry a proper rake.
+See `HANDOFF.md` and `AUDIT-12.148.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.147';
-  const BUILD_NAME = 'Weapon Form';
-  const BUILD_ID = '12.147.0-weapon-form';
+  const BUILD_VERSION = '12.148';
+  const BUILD_NAME = 'Sidearm Rebuild';
+  const BUILD_ID = '12.148.0-sidearm-rebuild';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -14295,34 +14295,75 @@
       magBaseD = Math.max(24, magazineD - 2),
       magBaseRz = gripRz
     }) => {
+      // Build 12.148: `rz` rotates each part about its own centre, so a raked
+      // grip used to shear its own assembly apart — the magazine sits far
+      // below the grip centre and would swing out of the frame. Sub-part
+      // positions are now rotated about the grip centre as well, which makes
+      // the assembly rigid and lets the grip carry a real pistol rake.
+      const rake = (gripRz * Math.PI) / 180;
+      const cos = Math.cos(rake);
+      const sin = Math.sin(rake);
+      const aboutGrip = (px, py) => {
+        const dx = px - gripX;
+        const dy = py - gripY;
+        return { x: gripX + dx * cos - dy * sin, y: gripY + dx * sin + dy * cos };
+      };
+      const backstrap = aboutGrip(backstrapX, backstrapY);
+      const panel = aboutGrip(panelX, panelY);
+      const magazine = aboutGrip(magazineX, magazineY);
+      const magBase = aboutGrip(magBaseX, magBaseY);
       add('grip', material, gripX, gripY, 0, gripW, gripH, gripD, gripRz);
-      add('grip-backstrap', backstrapMaterial, backstrapX, backstrapY, 0, backstrapW, backstrapH, backstrapD, gripRz);
-      add('grip-panel-left', panelMaterial, panelX, panelY, panelZ, panelW, panelH, panelD, gripRz);
-      add('grip-panel-right', panelMaterial, panelX, panelY, -panelZ, panelW, panelH, panelD, gripRz);
-      add('magazine', magazineMaterial, magazineX, magazineY, 0, magazineW, magazineH, magazineD, gripRz);
-      add('mag-base', magBaseMaterial, magBaseX, magBaseY, 0, magBaseW, magBaseH, magBaseD, magBaseRz);
+      add('grip-backstrap', backstrapMaterial, backstrap.x, backstrap.y, 0, backstrapW, backstrapH, backstrapD, gripRz);
+      add('grip-panel-left', panelMaterial, panel.x, panel.y, panelZ, panelW, panelH, panelD, gripRz);
+      add('grip-panel-right', panelMaterial, panel.x, panel.y, -panelZ, panelW, panelH, panelD, gripRz);
+      add('magazine', magazineMaterial, magazine.x, magazine.y, 0, magazineW, magazineH, magazineD, gripRz);
+      add('mag-base', magBaseMaterial, magBase.x, magBase.y, 0, magBaseW, magBaseH, magBaseD, magBaseRz);
     };
     if (model === 'scrap-p12') {
-      add('slide', 'worn-metal', 0, -37, 0, 244, 48, 44);
-      add('upper-plate', 'dark-metal', -16, -63, 1, 172, 9, 36);
-      add('frame', 'worn-polymer', -18, 0, 0, 186, 34, 38);
-      add('barrel', 'metal-edge', 140, -36, 0, 56, 19, 22);
-      add('muzzle', 'dark-metal', 173, -36, 0, 13, 27, 28);
+      // Build 12.148: the slide was a single 48-tall slab spanning the whole
+      // weapon, which is what made this read as a block with a handle. It is
+      // now a slimmer slide over a distinct frame with a visible parting line,
+      // cocking serrations at the rear and a real trigger guard bow.
+      addRounded('slide', 'worn-metal', 0, -40, 0, 244, 38, 44);
+      add('slide-top', 'dark-metal', -16, -60, 1, 176, 9, 36);
+      // Cocking serrations. Purely additive ribs sitting on the slide flanks.
+      for (let index = 0; index < 5; index++) {
+        const serrationX = -104 + index * 13;
+        add('slide-serration', 'dark-metal', serrationX, -40, 22.4, 5, 30, 4);
+        add('slide-serration', 'dark-metal', serrationX, -40, -22.4, 5, 30, 4);
+      }
+      // The parting line between slide and frame reads as a mechanism, and it
+      // is the only thing joining them now that the slide is slimmer: the
+      // slide ends at -21 and the frame starts at -13, so this must span both
+      // or the whole lower assembly detaches. `weaponGeometryIntegrityForTest`
+      // catches it if this stops overlapping.
+      add('slide-rail', 'metal-edge', -14, -17, 0, 214, 12, 41);
+      addRounded('frame', 'worn-polymer', -18, 2, 0, 186, 30, 38);
+      addCylinder('barrel', 'metal-edge', 142, -40, 0, 58, 18, 18);
+      addCylinder('muzzle', 'dark-metal', 174, -40, 0, 12, 21, 21);
       addGripAssembly({
         material: 'worn-polymer',
-        gripX: -70, gripY: 66, gripW: 72, gripH: 118, gripD: 42, gripRz: -2,
+        // A real pistol rake rather than the previous 2 degrees. The assembly
+        // is rigid now, so the magazine and base follow the grip.
+        gripX: -70, gripY: 68, gripW: 70, gripH: 116, gripD: 42, gripRz: -13,
         backstrapMaterial: 'dark-metal', backstrapX: -84, backstrapY: 69, backstrapW: 18, backstrapH: 106, backstrapD: 32,
-        panelMaterial: 'rubber', panelX: -74, panelY: 68, panelW: 48, panelH: 82, panelD: 4, panelZ: 21.2,
+        panelMaterial: 'rubber', panelX: -74, panelY: 70, panelW: 46, panelH: 80, panelD: 4, panelZ: 21.2,
         magazineMaterial: 'dark-metal', magazineX: -74, magazineY: 124, magazineW: 53, magazineH: 18, magazineD: 36,
-        magBaseMaterial: 'worn-metal', magBaseX: -77, magBaseY: 137, magBaseW: 61, magBaseH: 10, magBaseD: 31, magBaseRz: -2
+        magBaseMaterial: 'worn-metal', magBaseX: -77, magBaseY: 137, magBaseW: 61, magBaseH: 10, magBaseD: 31
       });
-      add('trigger-guard', 'dark-metal', 31, 28, 0, 72, 12, 32);
-      add('trigger', 'metal-edge', 19, 40, 0, 9, 34, 8, -17);
-      add('rear-sight', 'metal-edge', -92, -68, 0, 22, 12, 38);
-      add('front-sight', 'metal-edge', 92, -67, 0, 14, 11, 34);
-      add('ejection-port', 'black', 27, -38, 21.2, 62, 20, 4);
-      add('wear-band', 'brass', -38, -34, 21.2, 58, 4, 4);
-      add('rail', 'dark-metal', 48, 19, 0, 88, 8, 32);
+      // A three-piece bow instead of one flat bar sticking out of the frame.
+      add('trigger-guard', 'dark-metal', 58, 24, 0, 15, 34, 30, -12);
+      add('trigger-guard-bow', 'dark-metal', 30, 44, 0, 72, 11, 30);
+      add('trigger-guard-rear', 'dark-metal', -6, 30, 0, 13, 30, 30, 8);
+      add('trigger', 'metal-edge', 24, 34, 0, 9, 28, 8, -17);
+      add('rear-sight', 'metal-edge', -92, -64, 0, 22, 12, 38);
+      add('front-sight', 'metal-edge', 92, -63, 0, 12, 11, 30);
+      // Recessed port: a shadowed well with the cut standing proud of it, so
+      // the opening reads as depth rather than as a black sticker.
+      add('ejection-well', 'black', 27, -42, 19.6, 62, 20, 5);
+      add('ejection-port', 'dark-metal', 27, -52, 21.4, 66, 5, 4);
+      add('wear-band', 'brass', -38, -32, 21.4, 58, 4, 4);
+      add('rail', 'dark-metal', 48, 21, 0, 88, 8, 32);
     } else if (model === 'viper-9') {
       add('slide', 'gunmetal', -6, -38, 0, 218, 44, 40);
       add('slide-cap', 'dark-metal', 98, -37, 0, 32, 42, 42);
