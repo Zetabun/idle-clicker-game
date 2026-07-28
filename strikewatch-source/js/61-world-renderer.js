@@ -908,9 +908,16 @@
     const desertTheme = arena.theme === 'desert';
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
 
+    // Build 12.153: the floor is shaded per cell and merged, instead of being
+    // one flat draw for the whole map. Sampled once here, like the walls, so
+    // nothing is paid per frame.
+    for (const tile of createFloorRectangles()) worldBatches.floorTiles.push(tile);
+
     for (const rect of createWallRectangles()) {
       // Build 12.146: sample enclosure once, here, so nothing is paid per frame.
-      rect.occlusion = staticOcclusionAt(rect.x, rect.z);
+      // Build 12.153: measured from the open cells facing the wall rather than
+      // from the wall's own centre, which was inside the wall.
+      rect.occlusion = staticWallOcclusion(rect);
       worldBatches.walls.push(rect);
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
@@ -931,6 +938,20 @@
         }
       }
     }
+
+    // Build 12.153: shading the base floor is not enough on its own. Zone
+    // plates, lane strips, patches and decals sit a few thousandths above it
+    // and cover most of the ground a camera actually sees, so a shaded floor
+    // under an unshaded plate reads as no change at all — measured at a mean
+    // difference of under 2/255 across a captured frame before this. They take
+    // the shading of the floor they sit on, sampled here with everything else
+    // so nothing is paid per frame. Deliberately excludes `floorLines`, which
+    // are map-length hairlines a single sample could not describe.
+    const shadeGroundDecor = () => {
+      for (const key of ['zoneFloors', 'floorPatches', 'laneStrips', 'floorDecals', 'officeRugs', 'officeFloorMarkings']) {
+        for (const item of worldBatches[key]) item.occlusion = staticFloorOcclusion(item.x, item.z);
+      }
+    };
 
     for (let x = 0; x <= MAP_W; x += 1) worldBatches.floorLines.push({ x, z: MAP_H / 2, width: 0.012, depth: MAP_H, major: x % 4 === 0 });
     for (let z = 0; z <= MAP_H; z += 1) worldBatches.floorLines.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.012, major: z % 4 === 0 });
@@ -1167,6 +1188,9 @@
 
     for (const spawn of spawnPoints[TEAM_BLUE]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_BLUE });
     for (const spawn of spawnPoints[TEAM_RED]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_RED });
+
+    // Last, so every ground plate exists by the time it is shaded.
+    shadeGroundDecor();
   }
 
   function showRendererFailure(error) {
@@ -1919,8 +1943,16 @@
     const hazardColour = officeTheme ? hexColour('#6d8794') : desertTheme ? hexColour('#7d2f21') : summitTheme ? hexColour('#23b9bd') : hexColour('#c0942f');
     const lineColour = officeTheme ? hexColour('#3a454d') : desertTheme ? hexColour('#6f573d') : summitTheme ? hexColour('#42555a') : hexColour('#233037');
 
-    mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
-    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, desertTheme ? 7 : 1, officeTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
+    // Build 12.153: one shaded rectangle per occlusion level instead of a
+    // single flat slab. The rectangles tile the whole map with no gaps, and the
+    // surface mode still reads world position, so every surface pattern stays
+    // continuous across the joins.
+    const floorRoughness = officeTheme ? 0.96 : desertTheme ? 0.98 : 0.78;
+    const floorSurface = desertTheme ? 7 : 1;
+    for (const tile of worldBatches.floorTiles) {
+      mat4TRS(glModel, tile.x, -0.035, tile.z, 0, 0, 0, tile.width, 0.07, tile.depth);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(floorColour, tile.occlusion, 0.50), glModel, 0, 1, floorSurface, floorRoughness);
+    }
     if (officeTheme) {
       // Broad alternating carpet-tile bands create a soft woven office floor
       // without introducing hundreds of per-cell draw calls on mobile. Wall
@@ -1929,7 +1961,7 @@
         const alternating = Math.floor(z) % 2 === 0;
         const carpetTone = OFFICE_CARPET_PRESENTATION.rowTones[alternating ? 0 : 1];
         mat4TRS(glModel, MAP_W * 0.5, 0.0015, z, 0, 0, 0, MAP_W, 0.006, 0.985);
-        drawMesh(glMeshes.cube, carpetTone, glModel, 0, 0.58, 1, OFFICE_CARPET_PRESENTATION.roughness);
+        drawMesh(glMeshes.cube, carpetTone, glModel, 0, 0.44, 1, OFFICE_CARPET_PRESENTATION.roughness);
       }
       for (let x = 0.5; x < MAP_W; x += 2) {
         mat4TRS(glModel, x, 0.005, MAP_H * 0.5, 0, 0, 0, 0.010, 0.006, MAP_H);
@@ -1971,7 +2003,7 @@
     if (summitTheme || desertTheme) setBlendMode(true);
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.006 : desertTheme ? 0.002 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : desertTheme ? 0.065 : 0.26, desertTheme ? 7 : 1, officeTheme ? 0.96 : summitTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(zone.colour, zone.occlusion, 0.50), glModel, summitTheme ? 0.006 : desertTheme ? 0.002 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : desertTheme ? 0.065 : 0.26, desertTheme ? 7 : 1, officeTheme ? 0.96 : summitTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
     }
     if (summitTheme || desertTheme) setBlendMode(false);
     drawArenaVerticalGeometry();
@@ -1986,7 +2018,7 @@
             : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
       const patchElevation = summitTheme ? arenaElevationAt(patch.x, patch.z) : 0;
       mat4TRS(glModel, patch.x, patchElevation + 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
-      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.004 : desertTheme ? 0.002 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : desertTheme ? 0.16 : 0.92, desertTheme ? 7 : 3, officeTheme ? 0.98 : summitTheme ? 0.94 : desertTheme ? 0.99 : 0.48);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(colour, patch.occlusion, 0.50), glModel, summitTheme ? 0.004 : desertTheme ? 0.002 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : desertTheme ? 0.16 : 0.92, desertTheme ? 7 : 3, officeTheme ? 0.98 : summitTheme ? 0.94 : desertTheme ? 0.99 : 0.48);
     }
     if (summitTheme || desertTheme) setBlendMode(false);
     for (const strip of worldBatches.laneStrips) {
@@ -1995,7 +2027,7 @@
         const p = localToWorld(strip.x, strip.z, strip.yaw, offset, 0);
         const stripElevation = summitTheme ? arenaElevationAt(p.x, p.z) : 0;
         mat4TRS(glModel, p.x, stripElevation + 0.014, p.z, strip.yaw, 0, 0, summitTheme ? 0.026 : 0.035, 0.012, 0.62);
-        drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.016 : 0.025, summitTheme ? 0.58 : 0.72, 3, summitTheme ? 0.72 : 0.52);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(colour, strip.occlusion, 0.50), glModel, summitTheme ? 0.016 : 0.025, summitTheme ? 0.58 : 0.72, 3, summitTheme ? 0.72 : 0.52);
       }
     }
 
@@ -2031,7 +2063,7 @@
         const along = marking.width >= marking.depth;
         const length = along ? marking.width : marking.depth;
         mat4TRS(glModel, marking.x, 0.009, marking.z, 0, 0, 0, marking.width, 0.010, marking.depth);
-        drawMesh(glMeshes.cube, marking.colour || [0.34, 0.52, 0.60], glModel, 0.02, 0.40, 3, 0.86);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(marking.colour || [0.34, 0.52, 0.60], marking.occlusion, 0.50), glModel, 0.02, 0.40, 3, 0.86);
         mat4TRS(glModel, marking.x, 0.016, marking.z, 0, 0, 0,
           along ? marking.width - 0.30 : marking.width * 0.42,
           0.008,
@@ -2049,7 +2081,7 @@
       }
       for (const rug of worldBatches.officeRugs) {
         mat4TRS(glModel, rug.x, 0.012, rug.z, 0, 0, 0, rug.width, 0.014, rug.depth);
-        drawMesh(glMeshes.cube, rug.colour, glModel, 0.01, 0.76, 1, 0.92);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(rug.colour, rug.occlusion, 0.50), glModel, 0.01, 0.76, 1, 0.92);
         for (let x = rug.x - rug.width * 0.42; x <= rug.x + rug.width * 0.42; x += 0.42) {
           mat4TRS(glModel, x, 0.021, rug.z, 0, 0, 0, 0.012, 0.008, rug.depth * 0.88);
           drawMesh(glMeshes.cube, [0.56, 0.61, 0.63], glModel, 0, 0.12, 3, 0.88);
@@ -3096,18 +3128,18 @@
 
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, sceneWallHeight / 2, wall.z, 0, 0, 0, wall.width, sceneWallHeight, wall.depth);
-      drawMesh(glMeshes.cube, applyStaticOcclusion(wall.variant ? wallA : wallB, wall.occlusion), glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(wall.variant ? wallA : wallB, wall.occlusion, 0.42), glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
       const kickColour = officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205];
       // The kick plate sits at floor level, so it carries the contact shading
       // more strongly than the wall above it.
-      drawMesh(glMeshes.cube, applyStaticOcclusion(kickColour, kick.occlusion, 0.30), glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(kickColour, kick.occlusion, 0.52), glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
-      drawMesh(glMeshes.cube, applyStaticOcclusion(trimColour, trim.occlusion, 0.26), glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(trimColour, trim.occlusion, 0.48), glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
     }
     for (const hazard of worldBatches.hazards) {
       mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);
@@ -3302,7 +3334,7 @@
       for (let i = -1; i <= 1; i++) {
         const p = localToWorld(decal.x, decal.z, decal.yaw, i * 0.12, 0);
         mat4TRS(glModel, p.x, 0.013, p.z, decal.yaw, 0, 0, 0.055, 0.012, 0.48 - Math.abs(i) * 0.10);
-        drawMesh(glMeshes.cube, colour, glModel, 0.03, 0.72, 3, 0.62);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(colour, decal.occlusion, 0.50), glModel, 0.03, 0.72, 3, 0.62);
       }
     }
 

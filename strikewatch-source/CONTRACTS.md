@@ -77,6 +77,14 @@ current task. Release-specific implementation detail belongs in the matching
   override of the element it was moved off. Those overrides are usually more
   specific and will keep re-applying the old transform against variables that
   have become static defaults. Grep for the class before shipping the move.
+- Baked occlusion is contact shading derived from map enclosure, never shadows;
+  nothing in the renderer traces occlusion from a light. Its sample radius is
+  the design decision: a radius wider than the space being shaded darkens that
+  space uniformly and reads as dimming, not shading. Every surface at ground
+  level must take the same value as the floor beneath it — plates drawn over an
+  unshaded floor, or a shaded floor under unshaded plates, both come out as no
+  visible change. Keep the value quantised: the step count sets how many merged
+  rectangles the floor becomes, which is its entire draw-call cost.
 - The CSS-3D menu models are **quad-bound**, not paint-bound: their frame cost
   tracks the number of face elements, near enough linearly, and is independent
   of what those faces are painted with. Detail must therefore be proportionate

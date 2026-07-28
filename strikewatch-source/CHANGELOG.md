@@ -1,5 +1,19 @@
 # Release history router
 
+## 12.153 — Ground Shade
+
+- Extends the Build 12.146 baked occlusion to the floor, which previously had none at all: it was a single flat draw for the whole map, and in a first-person view the floor is most of the screen.
+- Gives the occlusion a contact falloff. The first attempt reused the walls' 2.6-unit sample radius and did not read, because a three-wide corridor is entirely within range of a wall so every cell darkened equally. The floor now samples at 0.72 and 1.45 units, so only cells against a wall darken.
+- Remaps the raw enclosure ratio so open space is left completely alone, which is what makes a higher strength safe — the arena no longer dims as a whole, only corners deepen.
+- Samples walls from the open cells facing them instead of from the wall's own centre, which was inside the wall and measured wall length rather than enclosure. Aurora goes from three distinct levels across the whole arena to four with double the contrast.
+- Shades the zone plates, floor patches, lane strips and decals that sit on the floor and cover most of the ground a camera sees; a shaded floor under an unshaded plate was no change at all.
+- Wall contrast roughly doubles on every arena and the floor gains a 50% range. Costs +1.4% draw calls on batched Citadel and 7–9% on the three arenas static batching has never been extended to.
+- Corrects a false claim in the 12.146 notes: `setStaticWorldBatchEligibility()` is called, in five places. The real blocker to extending batching is four unwrapped animated draws, now named.
+- **This build does not add shadows.** There is still no shadow map or light-space pass anywhere in the renderer. Cast shadows remain outstanding.
+- Collision, navigation, line of sight, gameplay, saves and match simulation are untouched.
+- Evidence: `AUDIT-12.153.md`.
+
+
 ## 12.152 — Preview Fit
 
 - Fixes a Build 12.151 regression: a pre-existing `.career-weapon-inspector.ar4-sentinel` rule outranked the new pivot rule and kept re-applying the old rotation variables, so the AR-4 inspector rendered at a fixed compound angle and dragging turned an already-turned frame. It affected only the AR-4, because it is the only model with a per-class inspector override.

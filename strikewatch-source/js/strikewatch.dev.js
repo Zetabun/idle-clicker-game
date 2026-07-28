@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.152';
-  const BUILD_NAME = 'Preview Fit';
-  const BUILD_ID = '12.152.0-preview-fit';
+  const BUILD_VERSION = '12.153';
+  const BUILD_NAME = 'Ground Shade';
+  const BUILD_ID = '12.153.0-ground-shade';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -38549,7 +38549,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     beams: [], wallPanels: [], vents: [], pipes: [], grates: [], signs: [],
     columns: [], bulkheads: [], ceilingPanels: [], cableTrays: [],
     conduits: [], warningLights: [], floorDecals: [], wallNumbers: [],
-    floorPatches: [], laneStrips: [], wallKickPlates: [],
+    floorPatches: [], floorTiles: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [], hazardZones: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
     officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [], officeFloorMarkings: [],
@@ -39803,28 +39803,154 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const STATIC_OCCLUSION_STEPS = 6;
   const STATIC_OCCLUSION_RADIUS = 2.6;
 
-  function staticOcclusionAt(x, z) {
+  // Build 12.153: the raw enclosure ratio is remapped before it is used. The
+  // 12.146 version fed it straight in, so a typical wall came out around 0.34
+  // and every surface in the arena darkened by a similar small amount — a flat
+  // tint rather than shading, which is why it did not read. Below the floor
+  // threshold a point counts as genuinely open and is not darkened at all;
+  // above the ceiling threshold it is treated as fully enclosed. Only the
+  // middle produces contrast, which is where corners and corridors live.
+  //
+  // The result is still quantised: the static batcher groups draws by exact
+  // material, so a continuous factor would shatter one floor batch into
+  // hundreds.
+  const STATIC_OCCLUSION_OPEN = 0.20;
+  const STATIC_OCCLUSION_ENCLOSED = 0.86;
+
+  // The floor is quantised more coarsely than the walls on purpose. Every
+  // distinct level becomes its own merged rectangle, so step count is what
+  // decides the floor's draw-call cost: at six steps Citadel produced 294
+  // rectangles, at four it produces far fewer for the same visible gradient,
+  // because the extra levels were splitting bands only a cell or two wide.
+  const STATIC_FLOOR_OCCLUSION_STEPS = 4;
+
+  function staticOcclusionCurve(raw, steps = STATIC_OCCLUSION_STEPS) {
+    const t = clamp((raw - STATIC_OCCLUSION_OPEN) / (STATIC_OCCLUSION_ENCLOSED - STATIC_OCCLUSION_OPEN), 0, 1);
+    const shaped = t * t * (3 - 2 * t);
+    return Math.round(shaped * steps) / steps;
+  }
+
+  function staticOcclusionRaw(x, z, radii = [STATIC_OCCLUSION_RADIUS * 0.45, STATIC_OCCLUSION_RADIUS]) {
     let blocked = 0;
     let total = 0;
     // Two rings give a cheap approximation of how enclosed a point is without
     // the cost of a real hemisphere sample.
-    for (const radius of [STATIC_OCCLUSION_RADIUS * 0.45, STATIC_OCCLUSION_RADIUS]) {
+    for (const radius of radii) {
       for (let step = 0; step < 12; step++) {
         const angle = (step / 12) * Math.PI * 2;
         total++;
         if (isWall(x + Math.cos(angle) * radius, z + Math.sin(angle) * radius)) blocked++;
       }
     }
-    if (!total) return 0;
-    const raw = blocked / total;
-    return Math.round(raw * STATIC_OCCLUSION_STEPS) / STATIC_OCCLUSION_STEPS;
+    return total ? blocked / total : 0;
   }
 
-  // Occlusion darkens, it never brightens, and it is deliberately shallow:
-  // this is contact shading, not a lighting model.
-  function applyStaticOcclusion(colour, occlusion, strength = 0.22) {
+  function staticOcclusionAt(x, z) {
+    return staticOcclusionCurve(staticOcclusionRaw(x, z));
+  }
+
+  // The floor needs a much tighter reach than the walls do. At the 2.6-unit
+  // radius above, a three-wide corridor is entirely within range of a wall, so
+  // every cell in it darkens by the same amount and the result reads as the
+  // corridor simply being dimmer — not as shading. Contact shading has to hug
+  // the wall base, so the floor samples at well under a cell's width and the
+  // curve is re-centred on the lower values that produces. Ground level is also
+  // where a tight band is affordable: the floor is already shaded per cell.
+  const STATIC_FLOOR_OCCLUSION_RADII = Object.freeze([0.72, 1.45]);
+  const STATIC_FLOOR_OCCLUSION_OPEN = 0.08;
+  const STATIC_FLOOR_OCCLUSION_ENCLOSED = 0.62;
+
+  function staticFloorOcclusion(x, z) {
+    const raw = staticOcclusionRaw(x, z, STATIC_FLOOR_OCCLUSION_RADII);
+    const t = clamp((raw - STATIC_FLOOR_OCCLUSION_OPEN) / (STATIC_FLOOR_OCCLUSION_ENCLOSED - STATIC_FLOOR_OCCLUSION_OPEN), 0, 1);
+    const shaped = t * t * (3 - 2 * t);
+    return Math.round(shaped * STATIC_FLOOR_OCCLUSION_STEPS) / STATIC_FLOOR_OCCLUSION_STEPS;
+  }
+
+  // A wall rectangle's own centre is *inside* the wall, so sampling there
+  // mostly measures how long the wall is rather than how enclosed the space in
+  // front of it is. That is why Aurora's long straight walls all resolved to
+  // the same value and the arena came out with three distinct levels across the
+  // whole map. Sample the open cells that actually face the wall instead.
+  function staticWallOcclusion(rect) {
+    const halfWidth = rect.width / 2;
+    const halfDepth = rect.depth / 2;
+    let total = 0;
+    let samples = 0;
+    const probe = (x, z) => {
+      if (isWall(x, z)) return;
+      total += staticOcclusionRaw(x, z);
+      samples++;
+    };
+    const spanX = Math.max(1, Math.round(rect.width));
+    const spanZ = Math.max(1, Math.round(rect.depth));
+    for (let index = 0; index < spanX; index++) {
+      const x = rect.x - halfWidth + 0.5 + index;
+      probe(x, rect.z - halfDepth - 0.5);
+      probe(x, rect.z + halfDepth + 0.5);
+    }
+    for (let index = 0; index < spanZ; index++) {
+      const z = rect.z - halfDepth + 0.5 + index;
+      probe(rect.x - halfWidth - 0.5, z);
+      probe(rect.x + halfWidth + 0.5, z);
+    }
+    // A rectangle with no open neighbour is buried inside a wall mass; nothing
+    // can see it, so the value only has to be stable.
+    if (!samples) return 1;
+    return staticOcclusionCurve(total / samples);
+  }
+
+  // Occlusion darkens, it never brightens. With the curve above, open space
+  // resolves to exactly zero and is left untouched, so raising the strength
+  // deepens corners without dimming the arena as a whole.
+  function applyStaticOcclusion(colour, occlusion, strength = 0.42) {
     const factor = 1 - clamp(Number(occlusion) || 0, 0, 1) * strength;
     return [colour[0] * factor, colour[1] * factor, colour[2] * factor];
+  }
+
+  // Build 12.153: the floor was a single draw spanning the whole map, so every
+  // room had exactly the same ground tone however enclosed it was — and in a
+  // first-person view the floor is most of what is on screen, which is the main
+  // reason the 12.146 occlusion did not read as lighting.
+  //
+  // Each cell is shaded on its own and then merged, by the same greedy sweep
+  // the walls use, into the fewest rectangles that each hold one occlusion
+  // level. Quantisation is what makes that merge worth having: six levels
+  // collapse 864 cells into a few dozen rectangles and leave the batcher with
+  // six material groups instead of hundreds. Wall cells are shaded too rather
+  // than skipped, so the floor stays gap-free under every wall base.
+  function createFloorRectangles() {
+    const levels = Array.from({ length: MAP_H }, (_, y) =>
+      Array.from({ length: MAP_W }, (_, x) =>
+        staticFloorOcclusion(x + 0.5, y + 0.5)));
+    const visited = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(false));
+    const rectangles = [];
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (visited[y][x]) continue;
+        const level = levels[y][x];
+        let width = 1;
+        while (x + width < MAP_W && !visited[y][x + width] && levels[y][x + width] === level) width++;
+        let height = 1;
+        outer: while (y + height < MAP_H) {
+          for (let xx = x; xx < x + width; xx++) {
+            if (visited[y + height][xx] || levels[y + height][xx] !== level) break outer;
+          }
+          height++;
+        }
+        for (let yy = y; yy < y + height; yy++) {
+          for (let xx = x; xx < x + width; xx++) visited[yy][xx] = true;
+        }
+        rectangles.push({
+          x: x + width / 2,
+          z: y + height / 2,
+          width,
+          depth: height,
+          occlusion: level
+        });
+      }
+    }
+    return rectangles;
   }
 
   function createWallRectangles() {
@@ -40761,9 +40887,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const desertTheme = arena.theme === 'desert';
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
 
+    // Build 12.153: the floor is shaded per cell and merged, instead of being
+    // one flat draw for the whole map. Sampled once here, like the walls, so
+    // nothing is paid per frame.
+    for (const tile of createFloorRectangles()) worldBatches.floorTiles.push(tile);
+
     for (const rect of createWallRectangles()) {
       // Build 12.146: sample enclosure once, here, so nothing is paid per frame.
-      rect.occlusion = staticOcclusionAt(rect.x, rect.z);
+      // Build 12.153: measured from the open cells facing the wall rather than
+      // from the wall's own centre, which was inside the wall.
+      rect.occlusion = staticWallOcclusion(rect);
       worldBatches.walls.push(rect);
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
@@ -40784,6 +40917,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         }
       }
     }
+
+    // Build 12.153: shading the base floor is not enough on its own. Zone
+    // plates, lane strips, patches and decals sit a few thousandths above it
+    // and cover most of the ground a camera actually sees, so a shaded floor
+    // under an unshaded plate reads as no change at all — measured at a mean
+    // difference of under 2/255 across a captured frame before this. They take
+    // the shading of the floor they sit on, sampled here with everything else
+    // so nothing is paid per frame. Deliberately excludes `floorLines`, which
+    // are map-length hairlines a single sample could not describe.
+    const shadeGroundDecor = () => {
+      for (const key of ['zoneFloors', 'floorPatches', 'laneStrips', 'floorDecals', 'officeRugs', 'officeFloorMarkings']) {
+        for (const item of worldBatches[key]) item.occlusion = staticFloorOcclusion(item.x, item.z);
+      }
+    };
 
     for (let x = 0; x <= MAP_W; x += 1) worldBatches.floorLines.push({ x, z: MAP_H / 2, width: 0.012, depth: MAP_H, major: x % 4 === 0 });
     for (let z = 0; z <= MAP_H; z += 1) worldBatches.floorLines.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.012, major: z % 4 === 0 });
@@ -41020,6 +41167,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const spawn of spawnPoints[TEAM_BLUE]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_BLUE });
     for (const spawn of spawnPoints[TEAM_RED]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_RED });
+
+    // Last, so every ground plate exists by the time it is shaded.
+    shadeGroundDecor();
   }
 
   function showRendererFailure(error) {
@@ -41772,8 +41922,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const hazardColour = officeTheme ? hexColour('#6d8794') : desertTheme ? hexColour('#7d2f21') : summitTheme ? hexColour('#23b9bd') : hexColour('#c0942f');
     const lineColour = officeTheme ? hexColour('#3a454d') : desertTheme ? hexColour('#6f573d') : summitTheme ? hexColour('#42555a') : hexColour('#233037');
 
-    mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
-    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, desertTheme ? 7 : 1, officeTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
+    // Build 12.153: one shaded rectangle per occlusion level instead of a
+    // single flat slab. The rectangles tile the whole map with no gaps, and the
+    // surface mode still reads world position, so every surface pattern stays
+    // continuous across the joins.
+    const floorRoughness = officeTheme ? 0.96 : desertTheme ? 0.98 : 0.78;
+    const floorSurface = desertTheme ? 7 : 1;
+    for (const tile of worldBatches.floorTiles) {
+      mat4TRS(glModel, tile.x, -0.035, tile.z, 0, 0, 0, tile.width, 0.07, tile.depth);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(floorColour, tile.occlusion, 0.50), glModel, 0, 1, floorSurface, floorRoughness);
+    }
     if (officeTheme) {
       // Broad alternating carpet-tile bands create a soft woven office floor
       // without introducing hundreds of per-cell draw calls on mobile. Wall
@@ -41782,7 +41940,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const alternating = Math.floor(z) % 2 === 0;
         const carpetTone = OFFICE_CARPET_PRESENTATION.rowTones[alternating ? 0 : 1];
         mat4TRS(glModel, MAP_W * 0.5, 0.0015, z, 0, 0, 0, MAP_W, 0.006, 0.985);
-        drawMesh(glMeshes.cube, carpetTone, glModel, 0, 0.58, 1, OFFICE_CARPET_PRESENTATION.roughness);
+        drawMesh(glMeshes.cube, carpetTone, glModel, 0, 0.44, 1, OFFICE_CARPET_PRESENTATION.roughness);
       }
       for (let x = 0.5; x < MAP_W; x += 2) {
         mat4TRS(glModel, x, 0.005, MAP_H * 0.5, 0, 0, 0, 0.010, 0.006, MAP_H);
@@ -41824,7 +41982,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (summitTheme || desertTheme) setBlendMode(true);
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.006 : desertTheme ? 0.002 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : desertTheme ? 0.065 : 0.26, desertTheme ? 7 : 1, officeTheme ? 0.96 : summitTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(zone.colour, zone.occlusion, 0.50), glModel, summitTheme ? 0.006 : desertTheme ? 0.002 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : desertTheme ? 0.065 : 0.26, desertTheme ? 7 : 1, officeTheme ? 0.96 : summitTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
     }
     if (summitTheme || desertTheme) setBlendMode(false);
     drawArenaVerticalGeometry();
@@ -41839,7 +41997,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
       const patchElevation = summitTheme ? arenaElevationAt(patch.x, patch.z) : 0;
       mat4TRS(glModel, patch.x, patchElevation + 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
-      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.004 : desertTheme ? 0.002 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : desertTheme ? 0.16 : 0.92, desertTheme ? 7 : 3, officeTheme ? 0.98 : summitTheme ? 0.94 : desertTheme ? 0.99 : 0.48);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(colour, patch.occlusion, 0.50), glModel, summitTheme ? 0.004 : desertTheme ? 0.002 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : desertTheme ? 0.16 : 0.92, desertTheme ? 7 : 3, officeTheme ? 0.98 : summitTheme ? 0.94 : desertTheme ? 0.99 : 0.48);
     }
     if (summitTheme || desertTheme) setBlendMode(false);
     for (const strip of worldBatches.laneStrips) {
@@ -41848,7 +42006,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const p = localToWorld(strip.x, strip.z, strip.yaw, offset, 0);
         const stripElevation = summitTheme ? arenaElevationAt(p.x, p.z) : 0;
         mat4TRS(glModel, p.x, stripElevation + 0.014, p.z, strip.yaw, 0, 0, summitTheme ? 0.026 : 0.035, 0.012, 0.62);
-        drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.016 : 0.025, summitTheme ? 0.58 : 0.72, 3, summitTheme ? 0.72 : 0.52);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(colour, strip.occlusion, 0.50), glModel, summitTheme ? 0.016 : 0.025, summitTheme ? 0.58 : 0.72, 3, summitTheme ? 0.72 : 0.52);
       }
     }
 
@@ -41884,7 +42042,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const along = marking.width >= marking.depth;
         const length = along ? marking.width : marking.depth;
         mat4TRS(glModel, marking.x, 0.009, marking.z, 0, 0, 0, marking.width, 0.010, marking.depth);
-        drawMesh(glMeshes.cube, marking.colour || [0.34, 0.52, 0.60], glModel, 0.02, 0.40, 3, 0.86);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(marking.colour || [0.34, 0.52, 0.60], marking.occlusion, 0.50), glModel, 0.02, 0.40, 3, 0.86);
         mat4TRS(glModel, marking.x, 0.016, marking.z, 0, 0, 0,
           along ? marking.width - 0.30 : marking.width * 0.42,
           0.008,
@@ -41902,7 +42060,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
       for (const rug of worldBatches.officeRugs) {
         mat4TRS(glModel, rug.x, 0.012, rug.z, 0, 0, 0, rug.width, 0.014, rug.depth);
-        drawMesh(glMeshes.cube, rug.colour, glModel, 0.01, 0.76, 1, 0.92);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(rug.colour, rug.occlusion, 0.50), glModel, 0.01, 0.76, 1, 0.92);
         for (let x = rug.x - rug.width * 0.42; x <= rug.x + rug.width * 0.42; x += 0.42) {
           mat4TRS(glModel, x, 0.021, rug.z, 0, 0, 0, 0.012, 0.008, rug.depth * 0.88);
           drawMesh(glMeshes.cube, [0.56, 0.61, 0.63], glModel, 0, 0.12, 3, 0.88);
@@ -42949,18 +43107,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, sceneWallHeight / 2, wall.z, 0, 0, 0, wall.width, sceneWallHeight, wall.depth);
-      drawMesh(glMeshes.cube, applyStaticOcclusion(wall.variant ? wallA : wallB, wall.occlusion), glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(wall.variant ? wallA : wallB, wall.occlusion, 0.42), glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
       const kickColour = officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205];
       // The kick plate sits at floor level, so it carries the contact shading
       // more strongly than the wall above it.
-      drawMesh(glMeshes.cube, applyStaticOcclusion(kickColour, kick.occlusion, 0.30), glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(kickColour, kick.occlusion, 0.52), glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
-      drawMesh(glMeshes.cube, applyStaticOcclusion(trimColour, trim.occlusion, 0.26), glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
+      drawMesh(glMeshes.cube, applyStaticOcclusion(trimColour, trim.occlusion, 0.48), glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
     }
     for (const hazard of worldBatches.hazards) {
       mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);
@@ -43155,7 +43313,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (let i = -1; i <= 1; i++) {
         const p = localToWorld(decal.x, decal.z, decal.yaw, i * 0.12, 0);
         mat4TRS(glModel, p.x, 0.013, p.z, decal.yaw, 0, 0, 0.055, 0.012, 0.48 - Math.abs(i) * 0.10);
-        drawMesh(glMeshes.cube, colour, glModel, 0.03, 0.72, 3, 0.62);
+        drawMesh(glMeshes.cube, applyStaticOcclusion(colour, decal.occlusion, 0.50), glModel, 0.03, 0.72, 3, 0.62);
       }
     }
 
@@ -56745,25 +56903,56 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   // a rendered viewport, which varies with whatever the camera happens to face.
   window.__strikeDebug.staticOcclusionForTest = () => {
     const walls = (typeof worldBatches === 'object' && worldBatches?.walls) || [];
+    const floor = (typeof worldBatches === 'object' && worldBatches?.floorTiles) || [];
     if (!walls.length) return { ok: false, reason: 'No wall batches built.' };
-    const values = walls.map(w => Number(w.occlusion) || 0);
-    const buckets = {};
-    for (const v of values) {
-      const k = v.toFixed(3);
-      buckets[k] = (buckets[k] || 0) + 1;
-    }
-    const mean = values.reduce((a, v) => a + v, 0) / values.length;
+    const summarise = (list, strength) => {
+      const values = list.map(item => Number(item.occlusion) || 0);
+      if (!values.length) return null;
+      const buckets = {};
+      for (const v of values) {
+        const k = v.toFixed(3);
+        buckets[k] = (buckets[k] || 0) + 1;
+      }
+      const mean = values.reduce((a, v) => a + v, 0) / values.length;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      // What the surface is actually multiplied by, which is the number that
+      // decides whether any of this is visible.
+      const bright = Number((1 - min * strength).toFixed(3));
+      const dark = Number((1 - max * strength).toFixed(3));
+      return {
+        count: list.length,
+        distinctLevels: Object.keys(buckets).length,
+        min,
+        max,
+        mean: Number(mean.toFixed(4)),
+        histogram: buckets,
+        strength,
+        brightestMultiplier: bright,
+        darkestMultiplier: dark,
+        contrastRange: Number(((bright - dark) * 100).toFixed(1))
+      };
+    };
+    const wallSummary = summarise(walls, 0.42);
+    const floorSummary = summarise(floor, 0.50);
+    // Build 12.153: the floor carries most of the screen, so it has to be
+    // reported alongside the walls. Quantisation keeps the static batcher's
+    // material groups bounded on both.
+    const levels = Math.max(wallSummary.distinctLevels, floorSummary ? floorSummary.distinctLevels : 0);
     return {
       ok: true,
       arenaId: activeArenaId,
+      walls: wallSummary,
+      floor: floorSummary,
+      floorShaded: Boolean(floorSummary && floorSummary.count > 1),
+      // Retained for callers written against the 12.146 shape.
       wallRects: walls.length,
-      distinctLevels: Object.keys(buckets).length,
-      min: Math.min(...values),
-      max: Math.max(...values),
-      mean: Number(mean.toFixed(4)),
-      histogram: buckets,
-      // Quantisation keeps the static batcher's material groups bounded.
-      withinQuantisationBudget: Object.keys(buckets).length <= 8
+      distinctLevels: wallSummary.distinctLevels,
+      min: wallSummary.min,
+      max: wallSummary.max,
+      mean: wallSummary.mean,
+      histogram: wallSummary.histogram,
+      withinQuantisationBudget: levels <= 8
     };
   };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();

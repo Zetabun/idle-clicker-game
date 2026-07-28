@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.152 — Preview Fit**
-- Build ID: `12.152.0-preview-fit`
+- Build: **12.153 — Ground Shade**
+- Build ID: `12.153.0-ground-shade`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.152.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.153.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.153 makes the baked occlusion legible. **It does not add shadows** — there is still no shadow map, light-space pass or screen-space AO anywhere in the renderer, so nothing casts anything; that work remains outstanding. What 12.146 shipped was applied to three draw calls (wall, kick, trim) and fed the raw enclosure ratio into a 0.22 strength, so the floor had no occlusion at all and 76% of Citadel's walls sat inside a 3.7% brightness band. The floor is now shaded per cell and merged by the greedy sweep the walls use, walls are sampled from the open cells facing them rather than from their own centre, and the raw ratio is remapped so open space is left at exactly zero — which is what makes the higher strengths safe. **The contact radius is the thing that decides whether any of this reads:** the first attempt reused the walls' 2.6-unit radius, and because a three-wide corridor sits entirely within that, every cell darkened equally and a captured frame moved by 0.63/255. The floor samples at 0.72/1.45 instead. Ground plates (`zoneFloors`, `floorPatches`, `laneStrips`, `floorDecals`) had to be shaded too — they cover most of the ground a camera sees, and a shaded floor under an unshaded plate is no change. Wall contrast roughly doubles everywhere; floor gains a 50% range. Cost is **+1.4% draw calls on batched Citadel against 7–9% on the three unbatched arenas**, which is the clearest argument yet for finishing the batching work. `AGENTS.md`'s claim that `setStaticWorldBatchEligibility()` is never called was false and is corrected; the real blocker is four unwrapped animated draws, named in the audit. See `AUDIT-12.153.md`.
 
 Build 12.152 fixes a regression 12.151 shipped and finishes the preview work. **A pre-existing `.career-weapon-inspector.ar4-sentinel` rule is (0,3,0) and outranked the new (0,2,0) `.career-weapon-viewer-pivot > .career-weapon-rig` rule**, so it kept re-applying `rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw))` — variables that are now static defaults — and the AR-4 inspector rendered at a fixed compound angle while dragging turned an already-turned frame. Only that model was affected, because it is the only one with a per-class inspector override: when you move a transform to a wrapper, grep for every per-model override of the element you moved it off. The AR-4 magazine is now a computed chain of three segments rather than two hand-placed ones whose walls crossed. Weapon previews frame themselves — the rig publishes `--model-span`/`--model-centre-*` from the parts it actually draws and each context declares `--fit-span`, replacing four hand-tuned AR-4 scales that still left the thumbnail cropped at 1.6x its box. `careerWeaponThumbnailParts()` gives weapons the thumbnail LOD armour has had since 12.54, and `will-change` now sits only on elements that animate (seven promoted layers on the Armoury down to two). Armoury quads 1,270 to 1,046; the depot is unchanged at 1,268. **Frame rate is still unmeasured — `requestAnimationFrame` fires zero frames in a browser pane that is not displayed, confirmed with a probe.** See `AUDIT-12.152.md`.
 

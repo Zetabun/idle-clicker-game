@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.152';
-  const BUILD_NAME = 'Preview Fit';
-  const BUILD_ID = '12.152.0-preview-fit';
+  const BUILD_VERSION = '12.153';
+  const BUILD_NAME = 'Ground Shade';
+  const BUILD_ID = '12.153.0-ground-shade';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

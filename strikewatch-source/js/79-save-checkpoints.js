@@ -137,25 +137,56 @@
   // a rendered viewport, which varies with whatever the camera happens to face.
   window.__strikeDebug.staticOcclusionForTest = () => {
     const walls = (typeof worldBatches === 'object' && worldBatches?.walls) || [];
+    const floor = (typeof worldBatches === 'object' && worldBatches?.floorTiles) || [];
     if (!walls.length) return { ok: false, reason: 'No wall batches built.' };
-    const values = walls.map(w => Number(w.occlusion) || 0);
-    const buckets = {};
-    for (const v of values) {
-      const k = v.toFixed(3);
-      buckets[k] = (buckets[k] || 0) + 1;
-    }
-    const mean = values.reduce((a, v) => a + v, 0) / values.length;
+    const summarise = (list, strength) => {
+      const values = list.map(item => Number(item.occlusion) || 0);
+      if (!values.length) return null;
+      const buckets = {};
+      for (const v of values) {
+        const k = v.toFixed(3);
+        buckets[k] = (buckets[k] || 0) + 1;
+      }
+      const mean = values.reduce((a, v) => a + v, 0) / values.length;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      // What the surface is actually multiplied by, which is the number that
+      // decides whether any of this is visible.
+      const bright = Number((1 - min * strength).toFixed(3));
+      const dark = Number((1 - max * strength).toFixed(3));
+      return {
+        count: list.length,
+        distinctLevels: Object.keys(buckets).length,
+        min,
+        max,
+        mean: Number(mean.toFixed(4)),
+        histogram: buckets,
+        strength,
+        brightestMultiplier: bright,
+        darkestMultiplier: dark,
+        contrastRange: Number(((bright - dark) * 100).toFixed(1))
+      };
+    };
+    const wallSummary = summarise(walls, 0.42);
+    const floorSummary = summarise(floor, 0.50);
+    // Build 12.153: the floor carries most of the screen, so it has to be
+    // reported alongside the walls. Quantisation keeps the static batcher's
+    // material groups bounded on both.
+    const levels = Math.max(wallSummary.distinctLevels, floorSummary ? floorSummary.distinctLevels : 0);
     return {
       ok: true,
       arenaId: activeArenaId,
+      walls: wallSummary,
+      floor: floorSummary,
+      floorShaded: Boolean(floorSummary && floorSummary.count > 1),
+      // Retained for callers written against the 12.146 shape.
       wallRects: walls.length,
-      distinctLevels: Object.keys(buckets).length,
-      min: Math.min(...values),
-      max: Math.max(...values),
-      mean: Number(mean.toFixed(4)),
-      histogram: buckets,
-      // Quantisation keeps the static batcher's material groups bounded.
-      withinQuantisationBudget: Object.keys(buckets).length <= 8
+      distinctLevels: wallSummary.distinctLevels,
+      min: wallSummary.min,
+      max: wallSummary.max,
+      mean: wallSummary.mean,
+      histogram: wallSummary.histogram,
+      withinQuantisationBudget: levels <= 8
     };
   };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();

@@ -32,7 +32,7 @@
     beams: [], wallPanels: [], vents: [], pipes: [], grates: [], signs: [],
     columns: [], bulkheads: [], ceilingPanels: [], cableTrays: [],
     conduits: [], warningLights: [], floorDecals: [], wallNumbers: [],
-    floorPatches: [], laneStrips: [], wallKickPlates: [],
+    floorPatches: [], floorTiles: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [], hazardZones: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
     officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [], officeFloorMarkings: [],
@@ -1286,28 +1286,154 @@
   const STATIC_OCCLUSION_STEPS = 6;
   const STATIC_OCCLUSION_RADIUS = 2.6;
 
-  function staticOcclusionAt(x, z) {
+  // Build 12.153: the raw enclosure ratio is remapped before it is used. The
+  // 12.146 version fed it straight in, so a typical wall came out around 0.34
+  // and every surface in the arena darkened by a similar small amount — a flat
+  // tint rather than shading, which is why it did not read. Below the floor
+  // threshold a point counts as genuinely open and is not darkened at all;
+  // above the ceiling threshold it is treated as fully enclosed. Only the
+  // middle produces contrast, which is where corners and corridors live.
+  //
+  // The result is still quantised: the static batcher groups draws by exact
+  // material, so a continuous factor would shatter one floor batch into
+  // hundreds.
+  const STATIC_OCCLUSION_OPEN = 0.20;
+  const STATIC_OCCLUSION_ENCLOSED = 0.86;
+
+  // The floor is quantised more coarsely than the walls on purpose. Every
+  // distinct level becomes its own merged rectangle, so step count is what
+  // decides the floor's draw-call cost: at six steps Citadel produced 294
+  // rectangles, at four it produces far fewer for the same visible gradient,
+  // because the extra levels were splitting bands only a cell or two wide.
+  const STATIC_FLOOR_OCCLUSION_STEPS = 4;
+
+  function staticOcclusionCurve(raw, steps = STATIC_OCCLUSION_STEPS) {
+    const t = clamp((raw - STATIC_OCCLUSION_OPEN) / (STATIC_OCCLUSION_ENCLOSED - STATIC_OCCLUSION_OPEN), 0, 1);
+    const shaped = t * t * (3 - 2 * t);
+    return Math.round(shaped * steps) / steps;
+  }
+
+  function staticOcclusionRaw(x, z, radii = [STATIC_OCCLUSION_RADIUS * 0.45, STATIC_OCCLUSION_RADIUS]) {
     let blocked = 0;
     let total = 0;
     // Two rings give a cheap approximation of how enclosed a point is without
     // the cost of a real hemisphere sample.
-    for (const radius of [STATIC_OCCLUSION_RADIUS * 0.45, STATIC_OCCLUSION_RADIUS]) {
+    for (const radius of radii) {
       for (let step = 0; step < 12; step++) {
         const angle = (step / 12) * Math.PI * 2;
         total++;
         if (isWall(x + Math.cos(angle) * radius, z + Math.sin(angle) * radius)) blocked++;
       }
     }
-    if (!total) return 0;
-    const raw = blocked / total;
-    return Math.round(raw * STATIC_OCCLUSION_STEPS) / STATIC_OCCLUSION_STEPS;
+    return total ? blocked / total : 0;
   }
 
-  // Occlusion darkens, it never brightens, and it is deliberately shallow:
-  // this is contact shading, not a lighting model.
-  function applyStaticOcclusion(colour, occlusion, strength = 0.22) {
+  function staticOcclusionAt(x, z) {
+    return staticOcclusionCurve(staticOcclusionRaw(x, z));
+  }
+
+  // The floor needs a much tighter reach than the walls do. At the 2.6-unit
+  // radius above, a three-wide corridor is entirely within range of a wall, so
+  // every cell in it darkens by the same amount and the result reads as the
+  // corridor simply being dimmer — not as shading. Contact shading has to hug
+  // the wall base, so the floor samples at well under a cell's width and the
+  // curve is re-centred on the lower values that produces. Ground level is also
+  // where a tight band is affordable: the floor is already shaded per cell.
+  const STATIC_FLOOR_OCCLUSION_RADII = Object.freeze([0.72, 1.45]);
+  const STATIC_FLOOR_OCCLUSION_OPEN = 0.08;
+  const STATIC_FLOOR_OCCLUSION_ENCLOSED = 0.62;
+
+  function staticFloorOcclusion(x, z) {
+    const raw = staticOcclusionRaw(x, z, STATIC_FLOOR_OCCLUSION_RADII);
+    const t = clamp((raw - STATIC_FLOOR_OCCLUSION_OPEN) / (STATIC_FLOOR_OCCLUSION_ENCLOSED - STATIC_FLOOR_OCCLUSION_OPEN), 0, 1);
+    const shaped = t * t * (3 - 2 * t);
+    return Math.round(shaped * STATIC_FLOOR_OCCLUSION_STEPS) / STATIC_FLOOR_OCCLUSION_STEPS;
+  }
+
+  // A wall rectangle's own centre is *inside* the wall, so sampling there
+  // mostly measures how long the wall is rather than how enclosed the space in
+  // front of it is. That is why Aurora's long straight walls all resolved to
+  // the same value and the arena came out with three distinct levels across the
+  // whole map. Sample the open cells that actually face the wall instead.
+  function staticWallOcclusion(rect) {
+    const halfWidth = rect.width / 2;
+    const halfDepth = rect.depth / 2;
+    let total = 0;
+    let samples = 0;
+    const probe = (x, z) => {
+      if (isWall(x, z)) return;
+      total += staticOcclusionRaw(x, z);
+      samples++;
+    };
+    const spanX = Math.max(1, Math.round(rect.width));
+    const spanZ = Math.max(1, Math.round(rect.depth));
+    for (let index = 0; index < spanX; index++) {
+      const x = rect.x - halfWidth + 0.5 + index;
+      probe(x, rect.z - halfDepth - 0.5);
+      probe(x, rect.z + halfDepth + 0.5);
+    }
+    for (let index = 0; index < spanZ; index++) {
+      const z = rect.z - halfDepth + 0.5 + index;
+      probe(rect.x - halfWidth - 0.5, z);
+      probe(rect.x + halfWidth + 0.5, z);
+    }
+    // A rectangle with no open neighbour is buried inside a wall mass; nothing
+    // can see it, so the value only has to be stable.
+    if (!samples) return 1;
+    return staticOcclusionCurve(total / samples);
+  }
+
+  // Occlusion darkens, it never brightens. With the curve above, open space
+  // resolves to exactly zero and is left untouched, so raising the strength
+  // deepens corners without dimming the arena as a whole.
+  function applyStaticOcclusion(colour, occlusion, strength = 0.42) {
     const factor = 1 - clamp(Number(occlusion) || 0, 0, 1) * strength;
     return [colour[0] * factor, colour[1] * factor, colour[2] * factor];
+  }
+
+  // Build 12.153: the floor was a single draw spanning the whole map, so every
+  // room had exactly the same ground tone however enclosed it was — and in a
+  // first-person view the floor is most of what is on screen, which is the main
+  // reason the 12.146 occlusion did not read as lighting.
+  //
+  // Each cell is shaded on its own and then merged, by the same greedy sweep
+  // the walls use, into the fewest rectangles that each hold one occlusion
+  // level. Quantisation is what makes that merge worth having: six levels
+  // collapse 864 cells into a few dozen rectangles and leave the batcher with
+  // six material groups instead of hundreds. Wall cells are shaded too rather
+  // than skipped, so the floor stays gap-free under every wall base.
+  function createFloorRectangles() {
+    const levels = Array.from({ length: MAP_H }, (_, y) =>
+      Array.from({ length: MAP_W }, (_, x) =>
+        staticFloorOcclusion(x + 0.5, y + 0.5)));
+    const visited = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(false));
+    const rectangles = [];
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (visited[y][x]) continue;
+        const level = levels[y][x];
+        let width = 1;
+        while (x + width < MAP_W && !visited[y][x + width] && levels[y][x + width] === level) width++;
+        let height = 1;
+        outer: while (y + height < MAP_H) {
+          for (let xx = x; xx < x + width; xx++) {
+            if (visited[y + height][xx] || levels[y + height][xx] !== level) break outer;
+          }
+          height++;
+        }
+        for (let yy = y; yy < y + height; yy++) {
+          for (let xx = x; xx < x + width; xx++) visited[yy][xx] = true;
+        }
+        rectangles.push({
+          x: x + width / 2,
+          z: y + height / 2,
+          width,
+          depth: height,
+          occlusion: level
+        });
+      }
+    }
+    return rectangles;
   }
 
   function createWallRectangles() {
