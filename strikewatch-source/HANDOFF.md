@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.165 — CSS Ownership Baseline**
-- Build ID: `12.165.0-css-ownership-baseline`
+- Build: **12.166 — Armoury CSS Ownership**
+- Build ID: `12.166.0-armoury-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.165.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.166.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.166 continues the staged CSS ownership programme by moving the audited compact Armoury inventory layer into `css/armoury-inventory.css`. It also makes development and standalone stylesheet order identical and fails the build if a development stylesheet link survives standalone inlining. See `AUDIT-12.166.md`.
 
 Build 12.165 begins the staged CSS-debt cleanup by moving the compact navigator and mobile management-alert rules out of the 31k-line monolith into `css/compact-navigation.css` while preserving their final cascade position. The build now emits and enforces a CSS-debt report. See `AUDIT-12.165.md`.
 

@@ -1,0 +1,139 @@
+/* Compact Armoury inventory ownership.
+   Extracted from game.css in Build 12.166 without changing declarations. */
+
+/* --- Build 12.157: compact Armoury inventory reflow -----------------------
+   The portrait layout switched the inventory to a horizontal carousel at
+   widths up to 900px, but only assigned grid areas below 430px. Fold-class and
+   tablet-width phones therefore placed the fourth child (issue state) into an
+   implicit row while keeping its vertical writing mode; the row became
+   hundreds of pixels tall, the comparison badge collapsed to 38px and the
+   next card was clipped by the horizontal scroller. Compact inventory is now a
+   bounded grid at every supported phone width. */
+@media (max-width: 1023px) {
+  #menuContent .career-inventory-panel {
+    min-width: 0;
+    overflow: visible;
+  }
+  #menuContent .career-inventory-list {
+    grid-auto-flow: row;
+    grid-auto-columns: initial;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px;
+    overflow-x: visible;
+    overflow-y: visible;
+    scroll-snap-type: none;
+  }
+  #menuContent .career-inventory-item {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) minmax(62px, 76px);
+    grid-template-areas:
+      "thumb copy compare"
+      "state state state";
+    align-items: center;
+    gap: 9px 10px;
+    padding: 10px;
+    overflow: hidden;
+    scroll-snap-align: none;
+  }
+  #menuContent .career-inventory-thumb {
+    grid-area: thumb;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+  #menuContent .career-inventory-thumb .career-loadout-still.thumb {
+    width: min(100%, 104px);
+    height: auto;
+    max-height: 76px;
+    object-fit: contain;
+  }
+  #menuContent .career-inventory-copy {
+    grid-area: copy;
+    min-width: 0;
+    align-self: center;
+  }
+  #menuContent .career-inventory-copy small,
+  #menuContent .career-inventory-copy strong,
+  #menuContent .career-inventory-copy em {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #menuContent .career-inventory-compare {
+    grid-area: compare;
+    width: 100%;
+    min-width: 0;
+    min-height: 60px;
+    padding: 7px 5px;
+    overflow: hidden;
+  }
+  #menuContent .career-inventory-compare b,
+  #menuContent .career-inventory-compare small {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
+  }
+  #menuContent .career-inventory-state {
+    grid-area: state;
+    width: 100%;
+    min-width: 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(126, 170, 199, .16);
+    writing-mode: horizontal-tb;
+    transform: none;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35 !important;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 700px) and (max-width: 1023px) {
+  #menuContent .career-inventory-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #menuContent .career-inventory-item {
+    grid-template-columns: 82px minmax(0, 1fr) 72px;
+  }
+}
+
+@media (max-width: 430px) {
+  #menuContent .career-inventory-item {
+    grid-template-columns: 72px minmax(0, 1fr) 64px;
+    gap: 8px;
+    padding: 9px;
+  }
+  #menuContent .career-inventory-compare {
+    min-height: 56px;
+    padding-inline: 4px;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 1023px) {
+  #menuContent .career-inventory-item {
+    grid-template-columns: minmax(82px, 1fr) minmax(64px, 76px);
+    grid-template-areas:
+      "thumb compare"
+      "copy copy"
+      "state state";
+    align-items: center;
+  }
+  #menuContent .career-inventory-copy {
+    padding-top: 2px;
+  }
+}
+
+@media (max-width: 1023px) {
+  #menuContent .career-inventory-compare.current small {
+    font-size: 8px !important;
+    letter-spacing: -.04em;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+}
