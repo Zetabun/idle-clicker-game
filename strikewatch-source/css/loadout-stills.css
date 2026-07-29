@@ -1,0 +1,64 @@
+/* Loadout still and on-demand inspector presentation ownership.
+   Extracted from game.css in Build 12.167 without changing declarations. */
+
+/* --- Build 12.155: loadout still previews ---------------------------------
+   The Armoury drew every model as a live CSS-3D rig — the weapon inspector,
+   the armour inspector and every inventory thumbnail at once. None of them
+   move unless the manager asks, so they are now rasterised once and shown as
+   images; only the pane with INSPECT open costs a real rig. */
+.career-loadout-still-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 210px;
+  overflow: hidden;
+  border: 1px solid rgba(118,164,194,.16);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(101,190,239,.14), transparent 34%),
+    radial-gradient(ellipse at 50% 82%, rgba(4,12,17,.78), transparent 46%),
+    rgba(2,8,12,.62);
+}
+.career-loadout-still-stage.armour { min-height: 330px; }
+.career-loadout-still-stage > .career-inspector-grid,
+.career-loadout-still-stage > .career-armour-showcase-grid,
+.career-loadout-still-stage > .career-inspector-shadow,
+.career-loadout-still-stage > .career-armour-showcase-shadow { position: absolute; }
+.career-loadout-still {
+  position: relative;
+  z-index: 2;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: auto;
+  user-select: none;
+}
+.career-loadout-still.fallback {
+  width: 100%;
+  height: 120px;
+  background: repeating-linear-gradient(135deg, rgba(118,164,194,.06) 0 8px, transparent 8px 16px);
+}
+.career-inventory-thumb .career-loadout-still.thumb { width: 104px; height: 76px; object-fit: contain; }
+.career-armour-inventory-item .career-loadout-still.thumb.armour { width: 118px; height: 132px; object-fit: contain; }
+.career-inspect-bar {
+  display: grid;
+  padding: 8px;
+  border-top: 1px solid rgba(118,164,194,.16);
+  background: rgba(2,7,11,.76);
+}
+.career-inspect-toggle {
+  min-height: 34px;
+  border-radius: 0;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+.career-inspect-toggle.active {
+  border-color: rgba(244,185,66,.62);
+  background: linear-gradient(180deg, rgba(84,60,18,.84), rgba(31,23,10,.92));
+  color: #ffe7aa;
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .career-loadout-still-stage { min-height: 168px; }
+  .career-loadout-still-stage.armour { min-height: 260px; }
+}

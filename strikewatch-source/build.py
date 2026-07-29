@@ -9,7 +9,7 @@ import re
 ROOT = Path(__file__).resolve().parent
 MODULES = ['00-core.js', '10-audio.js', '20-navigation.js', '30-bot-ai.js', '31-match-diagnostics.js', '32-tactical-minimap.js', '33-season-narrative-state.js', '34-squad-dynamics.js', '35-career.js', '81-career-indexeddb.js', '39-medical.js', '36-team-management.js', '37-league.js', '38-development.js', '39-infrastructure.js', '39-club-operations.js', '39-opposition-intelligence.js', '39-matchday.js', '39-transfers.js', '39-recruitment-commercial.js', '39-dynamic-market-mail.js', '39-calendar-finance.js', '39-workflow-integrity.js', '40-match-flow.js', '41-live-command-pulses.js', '50-ui-menus.js', '52-season-narratives.js', '55-opening-week.js', '56-world-press-awards.js', '57-loadout-stills.js', '60-renderer-core.js', '61-world-renderer.js', '62-character-renderer.js', '63-viewmodel-renderer.js', '64-reward-renderer.js', '65-sky-dome.js', '70-runtime.js', '75-ui-clarity-hotfix.js', '76-tactical-selection-feedback.js', '77-mail-scroll-guard.js', '78-management-status.js', '79-save-checkpoints.js', '80-durable-results.js', '82-audit-recovery.js']
 BUNDLE_PATH = ROOT / "js" / "strikewatch.dev.js"
-CSS_PATHS = (ROOT / "css" / "game.css", ROOT / "css" / "12.161-audit-fixes.css", ROOT / "css" / "armoury-inventory.css", ROOT / "css" / "compact-navigation.css")
+CSS_PATHS = (ROOT / "css" / "game.css", ROOT / "css" / "loadout-stills.css", ROOT / "css" / "12.161-audit-fixes.css", ROOT / "css" / "armoury-inventory.css", ROOT / "css" / "compact-navigation.css")
 
 
 def build_metadata() -> tuple[str, str]:
@@ -148,11 +148,13 @@ def css_debt_report(version: str) -> dict:
         "game_css_lines": texts["game.css"].count("\n"),
         "important_declarations": combined.count("!important"),
         "media_queries": combined.count("@media"),
+        "stylesheet_order": list(texts),
+        "owned_loadout_stills_lines": texts["loadout-stills.css"].count("\n"),
         "owned_armoury_inventory_lines": texts["armoury-inventory.css"].count("\n"),
         "owned_compact_navigation_lines": texts["compact-navigation.css"].count("\n"),
     }
     budgets = {
-        "game_css_lines_max": 31560,
+        "game_css_lines_max": 31500,
         "important_declarations_max": 2182,
         "media_queries_max": 474,
     }
@@ -185,12 +187,18 @@ def main() -> None:
             raise RuntimeError(
                 f"{element_id} must show BUILD_VERSION {version} in index.html"
             )
-    html = re.sub(
-        r'<link rel="stylesheet" href="css/game\.css\?v=[^"]+"\s*/>\s*<link rel="stylesheet" href="css/12\.161-audit-fixes\.css\?v=[^"]+"\s*/>\s*<link rel="stylesheet" href="css/armoury-inventory\.css\?v=[^"]+"\s*/>\s*<link rel="stylesheet" href="css/compact-navigation\.css\?v=[^"]+"\s*/>',
-        lambda _match: '<style>\n' + release_css + '\n</style>',
-        html,
-        count=1,
+    expected_css_hrefs = [f"css/{path.name}?v={build_id}" for path in CSS_PATHS]
+    actual_css_hrefs = re.findall(r'<link rel="stylesheet" href="(css/[^"]+)"\s*/>', html)
+    if actual_css_hrefs != expected_css_hrefs:
+        raise RuntimeError(
+            f"index.html stylesheet order mismatch: expected {expected_css_hrefs}, got {actual_css_hrefs}"
+        )
+    stylesheet_block = "\n".join(
+        f'<link rel="stylesheet" href="{href}" />' for href in expected_css_hrefs
     )
+    if stylesheet_block not in html:
+        raise RuntimeError("Ordered development stylesheet block is not contiguous")
+    html = html.replace(stylesheet_block, '<style>\n' + release_css + '\n</style>', 1)
     html = re.sub(
         r'<script src="js/strikewatch\.dev\.js\?v=[^"]+"></script>',
         lambda _match: '<script>\n' + release_bundle.rstrip() + '\n</script>',

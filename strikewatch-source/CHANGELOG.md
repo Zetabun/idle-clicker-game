@@ -1,5 +1,43 @@
 # Release history router
 
+## 12.167 — Loadout CSS Ownership
+
+- Moves the Build 12.155 loadout-still and on-demand inspector presentation from `game.css` into `css/loadout-stills.css` without changing selectors or declarations.
+- Replaces the hard-coded standalone stylesheet regular expression with `CSS_PATHS`-derived order validation and inlining.
+- Documents stylesheet ownership in `ARCHITECTURE.md` and the stable release contract.
+- Evidence: `AUDIT-12.167.md`.
+
+## 12.166 — Armoury CSS Ownership
+
+- Moves the compact Armoury inventory layer into `css/armoury-inventory.css` and restores development/standalone CSS parity.
+- Evidence: `AUDIT-12.166.md`.
+
+## 12.165 — CSS Ownership Baseline
+
+- Establishes CSS debt reporting and moves compact navigation and mobile management-alert rules into `css/compact-navigation.css`.
+- Evidence: `AUDIT-12.165.md`.
+
+## 12.164 — Lean Standalone
+
+- Adds conservative release-only comment and redundant-blank stripping with deterministic size reporting.
+- Evidence: `AUDIT-12.164.md`.
+
+## 12.163 — Compact Navigation Alignment
+
+- Repairs compact club-navigation destination rows and the fixed management-alert mobile layout.
+- Evidence: `AUDIT-12.163.md`.
+
+## 12.162 — Dynamic Actor Culling
+
+- Adds conservative whole-operator frustum culling with a disabled reference path and deterministic guard.
+- Evidence: `AUDIT-12.162.md`.
+
+## 12.161 — Recovery & Readability
+
+- Fixes returning-career startup migration, restores browser zoom and hardens compact readability, wrapping and touch targets.
+- Evidence: `AUDIT-12.161.md`.
+
+
 ## 12.160 — Settled Operators
 
 - Removes the shimmering surface on operators. Build 12.145 fixed the same symptom on walls, but operators had a different cause: every surface mode reads world position, which is correct for a wall that stays put and wrong for a person who walks — the detail did not travel with them, the world swept across them.

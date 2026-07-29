@@ -9,7 +9,11 @@ share application scope in the listed order.
 | Path | Authority |
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
-| `css/game.css` | Complete responsive and visual presentation |
+| `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/loadout-stills.css` | Loadout still stages and on-demand 3D inspector controls |
+| `css/12.161-audit-fixes.css` | Cross-route compact readability and accessibility fixes from 12.161 |
+| `css/armoury-inventory.css` | Compact Armoury inventory card layout |
+| `css/compact-navigation.css` | Compact club navigation and fixed management-alert layout |
 | `build.py` | Module order, generated bundle and standalone packaging |
 | `js/strikewatch.dev.js` | Generated development bundle; never hand-edit |
 | `dist/strikewatch-build-*.html` | Generated standalone releases |
@@ -70,10 +74,12 @@ everything it consumes and before everything that consumes it.
 ## Presentation flow
 
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
-then inserted into the shell owned by `index.html`. `css/game.css` is one
-cascade; later build sections intentionally override older rules. Prefer
-component-scoped selectors and verify the final computed style, especially
-when pseudo-elements are reused.
+then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
+the cascade-order authority, and `index.html` must load the same files in the
+same order. The current order is `game.css`, `loadout-stills.css`,
+`12.161-audit-fixes.css`, `armoury-inventory.css`, then
+`compact-navigation.css`. Prefer component-scoped selectors and verify the
+final computed style, especially when pseudo-elements are reused.
 
 The live match loop is coordinated by `70-runtime.js`, with simulation in
 `30-bot-ai.js`/`40-match-flow.js` and rendering in `60-64-*.js`.

@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.166 — Armoury CSS Ownership**
-- Build ID: `12.166.0-armoury-css-ownership`
+- Build: **12.167 — Loadout CSS Ownership**
+- Build ID: `12.167.0-loadout-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.166.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.167.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.167 continues SW-020 by moving the Build 12.155 loadout-still and on-demand inspector presentation into `css/loadout-stills.css`, preserving its position before the 12.161 layer. `build.py` now derives and validates the development stylesheet block from `CSS_PATHS` instead of maintaining a brittle hard-coded regular expression. Architecture and stable contracts now document the stylesheet ownership order. See `AUDIT-12.167.md`.
 
 Build 12.166 continues the staged CSS ownership programme by moving the audited compact Armoury inventory layer into `css/armoury-inventory.css`. It also makes development and standalone stylesheet order identical and fails the build if a development stylesheet link survives standalone inlining. See `AUDIT-12.166.md`.
 

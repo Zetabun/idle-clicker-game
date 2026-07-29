@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.167 owns loadout still stages and on-demand inspector controls in `css/loadout-stills.css`. Keep it immediately after `game.css`, before the 12.161 audit layer. `CSS_PATHS` and `index.html` must remain identical in file order; the build checks this and standalone CSS-link removal. See `AUDIT-12.167.md`.
+
 Build 12.166 owns compact Armoury inventory layout in `css/armoury-inventory.css`, ordered after `12.161-audit-fixes.css` and before `compact-navigation.css`. The development link order and `CSS_PATHS` order must match, and standalone output must contain no external `css/` stylesheet link. See `AUDIT-12.166.md`.
 
 Build 12.165 owns the first CSS boundary: compact navigation and the phone management alert live in `css/compact-navigation.css`, loaded after the legacy and 12.161 layers. Do not move them back into `game.css`. Keep the CSS debt report within budget and preserve stylesheet order. See `AUDIT-12.165.md`.

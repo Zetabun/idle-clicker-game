@@ -32,9 +32,11 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.166 closes the grip-to-frame joint with a tang and seats each trigger
-inside its guard.
-See `HANDOFF.md` and `AUDIT-12.161.md`.
+Build 12.167 continues the staged CSS ownership programme by moving loadout
+still and on-demand inspector presentation into `css/loadout-stills.css` while
+preserving cascade order. The build now validates that `index.html` and
+`CSS_PATHS` declare the same stylesheet sequence. See `HANDOFF.md` and
+`AUDIT-12.167.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

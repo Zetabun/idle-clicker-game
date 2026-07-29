@@ -14,6 +14,7 @@ current task. Release-specific implementation detail belongs in the matching
   release.
 - Root `cod.html` is a byte-for-byte copy of the verified standalone.
 - Never fix generated files independently of their source.
+- `build.py`'s ordered `CSS_PATHS` and the development links in `index.html` must contain the same stylesheets in the same order. The standalone must inline that complete cascade and retain no external `css/` link. Component-owned stylesheets must not be folded back into `game.css` without an audited cascade migration.
 - A playable release updates source, current audit, concise handoff metadata,
   generated bundle, standalone and `cod.html` in one commit.
 - `BUILD_VERSION`, `BUILD_NAME` and `BUILD_ID` live in `js/00-core.js`.
