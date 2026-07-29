@@ -1,0 +1,81 @@
+name: Strikewatch 12.166 release
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  RELEASE_ATTEMPT: issue-or-manual
+
+jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.title == 'RUN STRIKEWATCH 12.166 RELEASE NOW'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply release patch
+        run: python3 .github/scripts/release-12-166.py
+
+      - name: Compile and build twice
+        working-directory: strikewatch-source
+        run: |
+          python3 -m py_compile build.py
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.166.html dist/strikewatch-build-12.166-size.json dist/strikewatch-build-12.166-css-debt.json > /tmp/build-a.sha
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.166.html dist/strikewatch-build-12.166-size.json dist/strikewatch-build-12.166-css-debt.json > /tmp/build-b.sha
+          diff -u /tmp/build-a.sha /tmp/build-b.sha
+
+      - name: Parse JavaScript and verify CSS ownership
+        run: |
+          for file in strikewatch-source/js/[0-9][0-9]-*.js strikewatch-source/js/strikewatch.dev.js; do
+            node --check "$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+          root = Path('strikewatch-source')
+          html = (root / 'dist/strikewatch-build-12.166.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
+          if not scripts:
+              raise SystemExit('No inline standalone JavaScript found')
+          Path('/tmp/strikewatch-12.166-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          game = (root / 'css/game.css').read_text(encoding='utf-8')
+          armoury = (root / 'css/armoury-inventory.css').read_text(encoding='utf-8')
+          marker = 'Build 12.157: compact Armoury inventory reflow'
+          if marker in game:
+              raise SystemExit('Compact Armoury layer still exists in game.css')
+          if armoury.count(marker) != 1:
+              raise SystemExit('Compact Armoury ownership marker missing or duplicated')
+          if '<link rel="stylesheet" href="css/' in html:
+              raise SystemExit('Standalone retained a development stylesheet link')
+          report = json.loads((root / 'dist/strikewatch-build-12.166-css-debt.json').read_text(encoding='utf-8'))
+          if not report.get('within_budget'):
+              raise SystemExit(f'CSS debt budget failed: {report}')
+          if report.get('stylesheets') != 4:
+              raise SystemExit(f'Unexpected stylesheet count: {report}')
+          if report.get('game_css_lines', 999999) > 31560:
+              raise SystemExit(f'game.css remains above budget: {report}')
+          print(json.dumps(report, indent=2))
+          PY
+          node --check /tmp/strikewatch-12.166-inline.js
+
+      - name: Publish verified release
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.166.html cod.html
+          cmp -s cod.html strikewatch-source/dist/strikewatch-build-12.166.html
+          rm -f .github/scripts/release-12-166.py .github/workflows/release-12-166.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strikewatch-source cod.html .github/scripts/release-12-166.py .github/workflows/release-12-166.yml
+          git commit -m 'Build 12.166: establish Armoury CSS ownership'
+          git push origin main
