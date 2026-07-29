@@ -223,6 +223,7 @@ current task. Release-specific implementation detail belongs in the matching
 - Baked occlusion is presentation only and must stay quantised, so the static
   batcher's material grouping is not fragmented. It may never influence
   collision, navigation or line of sight.
+- Dynamic actor culling is presentation-only. The complete living/fallen silhouette, shadow and equipped weapon must remain inside a conservative guard sphere, and the sphere must be wholly outside the camera before draws are skipped. `?dynamicCulling=0` is the visual reference.
 - Static world batching bakes model matrices at capture time. An arena may only
   be batched once every time-dependent draw in `drawStaticWorld` is excluded
   through `setStaticWorldBatchEligibility()`.

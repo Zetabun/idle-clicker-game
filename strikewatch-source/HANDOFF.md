@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.161 — Recovery & Readability**
-- Build ID: `12.161.0-recovery-readability`
+- Build: **12.162 — Visible Geometry**
+- Build ID: `12.162.0-visible-geometry`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.161.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.162.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.162 adds conservative whole-operator frustum culling before procedural body, armour and weapon assembly. A 1.85-unit guard sphere must be wholly outside the camera before any draw is skipped. Use `?dynamicCulling=0` as the visual reference and keep `dynamicActorCullingForTest()` green. See `AUDIT-12.162.md`.
 
 Build 12.161 fixes the returning-career startup migration crash by initialising the durable career store before finance modules. It restores pinch zoom, adds compact type and touch floors, improves wrapping in management and match interfaces, and makes scoreboard telemetry diagnostics side-effect free. See `AUDIT-12.161.md`.
 

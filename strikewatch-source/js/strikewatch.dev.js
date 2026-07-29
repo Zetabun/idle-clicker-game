@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.161';
-  const BUILD_NAME = 'Recovery & Readability';
-  const BUILD_ID = '12.161.0-recovery-readability';
+  const BUILD_VERSION = '12.162';
+  const BUILD_NAME = 'Visible Geometry';
+  const BUILD_ID = '12.162.0-visible-geometry';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39542,6 +39542,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return true;
     }
   })();
+  // Build 12.162: reject complete operator assemblies only when a generous
+  // guard sphere is wholly outside the camera. `?dynamicCulling=0` is the
+  // pixel-reference path and changes no simulation state.
+  const DYNAMIC_ACTOR_CULLING_ENABLED = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get('dynamicCulling') !== '0';
+    } catch (_) {
+      return true;
+    }
+  })();
   // Build 12.160: set while drawing geometry that travels through the world —
   // operators, corpses and the first-person viewmodel. World geometry never
   // sets it, and the static batcher replays with it clear, so a batch can never
@@ -39571,7 +39581,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     staticDrawCalls: 0,
     staticCulled: 0,
     staticSourceDraws: 0,
-    staticBatchDrawCalls: 0
+    staticBatchDrawCalls: 0,
+    dynamicActorCandidates: 0,
+    dynamicActorsCulled: 0
   };
   const rendererLastFrameStats = {
     drawCalls: 0,
@@ -39580,8 +39592,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     staticCulled: 0,
     staticSourceDraws: 0,
     staticBatchDrawCalls: 0,
+    dynamicActorCandidates: 0,
+    dynamicActorsCulled: 0,
     cullingEnabled: STATIC_WORLD_CULLING_ENABLED,
-    batchingEnabled: STATIC_WORLD_BATCHING_ENABLED
+    batchingEnabled: STATIC_WORLD_BATCHING_ENABLED,
+    dynamicActorCullingEnabled: DYNAMIC_ACTOR_CULLING_ENABLED
   };
   const tracers = [];
   // Build 12.155: impact decals. A shot that misses carries on until it hits
@@ -40728,6 +40743,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     rendererFrameStats.staticCulled = 0;
     rendererFrameStats.staticSourceDraws = 0;
     rendererFrameStats.staticBatchDrawCalls = 0;
+    rendererFrameStats.dynamicActorCandidates = 0;
+    rendererFrameStats.dynamicActorsCulled = 0;
   }
 
   function finishRendererFrameStats() {
@@ -40737,8 +40754,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     rendererLastFrameStats.staticCulled = rendererFrameStats.staticCulled;
     rendererLastFrameStats.staticSourceDraws = rendererFrameStats.staticSourceDraws;
     rendererLastFrameStats.staticBatchDrawCalls = rendererFrameStats.staticBatchDrawCalls;
+    rendererLastFrameStats.dynamicActorCandidates = rendererFrameStats.dynamicActorCandidates;
+    rendererLastFrameStats.dynamicActorsCulled = rendererFrameStats.dynamicActorsCulled;
     rendererLastFrameStats.cullingEnabled = STATIC_WORLD_CULLING_ENABLED;
     rendererLastFrameStats.batchingEnabled = STATIC_WORLD_BATCHING_ENABLED;
+    rendererLastFrameStats.dynamicActorCullingEnabled = DYNAMIC_ACTOR_CULLING_ENABLED;
     rendererStatsPublishCountdown--;
     if (rendererStatsPublishCountdown > 0 || !document.body) return;
     rendererStatsPublishCountdown = 30;
@@ -40748,6 +40768,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     document.body.dataset.rendererStaticCulled = String(rendererLastFrameStats.staticCulled);
     document.body.dataset.rendererStaticSourceDraws = String(rendererLastFrameStats.staticSourceDraws);
     document.body.dataset.rendererStaticBatchDrawCalls = String(rendererLastFrameStats.staticBatchDrawCalls);
+    document.body.dataset.rendererDynamicActorCandidates = String(rendererLastFrameStats.dynamicActorCandidates);
+    document.body.dataset.rendererDynamicActorsCulled = String(rendererLastFrameStats.dynamicActorsCulled);
+    document.body.dataset.rendererDynamicActorCulling = rendererLastFrameStats.dynamicActorCullingEnabled ? 'on' : 'off';
     document.body.dataset.rendererStaticCulling = rendererLastFrameStats.cullingEnabled ? 'on' : 'off';
     document.body.dataset.rendererStaticBatching = rendererLastFrameStats.batchingEnabled ? 'on' : 'off';
   }
@@ -40773,6 +40796,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const verticalAllowance = radius * Math.hypot(1, verticalSlope);
     return Math.abs(viewX) > depth * horizontalSlope + horizontalAllowance
       || Math.abs(viewY) > depth * verticalSlope + verticalAllowance;
+  }
+
+  function dynamicActorOutsideCameraView(worldX, worldY, worldZ, radius = 1.85) {
+    rendererFrameStats.dynamicActorCandidates++;
+    if (!DYNAMIC_ACTOR_CULLING_ENABLED) return false;
+    const viewX = glView[0] * worldX + glView[4] * worldY + glView[8] * worldZ + glView[12];
+    const viewY = glView[1] * worldX + glView[5] * worldY + glView[9] * worldZ + glView[13];
+    const viewZ = glView[2] * worldX + glView[6] * worldY + glView[10] * worldZ + glView[14];
+    const depth = -viewZ;
+    const safeRadius = Math.max(0.01, Number(radius) || 1.85);
+    let outside = depth + safeRadius < 0.025 || depth - safeRadius > GL_FAR;
+    if (!outside) {
+      const horizontalSlope = 1 / Math.max(0.0001, glProjection[0]);
+      const verticalSlope = 1 / Math.max(0.0001, glProjection[5]);
+      const horizontalAllowance = safeRadius * Math.hypot(1, horizontalSlope);
+      const verticalAllowance = safeRadius * Math.hypot(1, verticalSlope);
+      outside = Math.abs(viewX) > depth * horizontalSlope + horizontalAllowance
+        || Math.abs(viewY) > depth * verticalSlope + verticalAllowance;
+    }
+    if (outside) rendererFrameStats.dynamicActorsCulled++;
+    return outside;
   }
 
   function drawMesh(mesh, colour, model, emissive = 0, alpha = 1, surface = 0, roughness = 0.76) {
@@ -45357,6 +45401,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
     const corpseDistance = Math.hypot(dx, dz);
+    if (dynamicActorOutsideCameraView(bot.x, 0.82, bot.y, 1.85)) return;
     const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(corpseDistance) : 2;
     const mediumDetail = detailTier >= 1;
     const fullDetail = detailTier >= 2;
@@ -45589,6 +45634,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
     const operatorDistance = Math.hypot(dx, dz);
+    if (dynamicActorOutsideCameraView(bot.x, 0.92, bot.y, 1.85)) return;
     const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(operatorDistance) : 2;
     const mediumDetail = detailTier >= 1;
     const fullDetail = detailTier >= 2;
@@ -58182,6 +58228,39 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     return { ok: true, ...last };
   };
+  window.__strikeDebug.dynamicActorCullingForTest = () => {
+    const savedView = new Float32Array(glView);
+    const savedProjection = new Float32Array(glProjection);
+    const savedCandidates = rendererFrameStats.dynamicActorCandidates;
+    const savedCulled = rendererFrameStats.dynamicActorsCulled;
+    try {
+      mat4LookAt(glView, [0, 1, 0], [0, 1, -1], [0, 1, 0]);
+      mat4Perspective(glProjection, Math.PI / 3, 16 / 9, 0.025, GL_FAR);
+      rendererFrameStats.dynamicActorCandidates = 0;
+      rendererFrameStats.dynamicActorsCulled = 0;
+      const cases = {
+        centred: dynamicActorOutsideCameraView(0, 1, -6, 1.85),
+        edgeGuard: dynamicActorOutsideCameraView(5, 1, -6, 1.85),
+        behind: dynamicActorOutsideCameraView(0, 1, 6, 1.85),
+        farSide: dynamicActorOutsideCameraView(30, 1, -6, 1.85),
+        beyondFar: dynamicActorOutsideCameraView(0, 1, -(GL_FAR + 4), 1.85)
+      };
+      return {
+        ok: !cases.centred && !cases.edgeGuard && cases.behind && cases.farSide && cases.beyondFar,
+        enabled: DYNAMIC_ACTOR_CULLING_ENABLED,
+        cases,
+        candidates: rendererFrameStats.dynamicActorCandidates,
+        culled: rendererFrameStats.dynamicActorsCulled,
+        conservativeRadius: 1.85
+      };
+    } finally {
+      glView.set(savedView);
+      glProjection.set(savedProjection);
+      rendererFrameStats.dynamicActorCandidates = savedCandidates;
+      rendererFrameStats.dynamicActorsCulled = savedCulled;
+    }
+  };
+  // Build 12.162: deterministic whole-actor frustum guard.
   // Reports the baked occlusion actually assigned to the current arena's wall
   // rectangles, so the effect can be checked directly rather than inferred from
   // a rendered viewport, which varies with whatever the camera happens to face.

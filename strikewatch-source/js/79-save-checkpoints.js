@@ -132,6 +132,39 @@
     }
     return { ok: true, ...last };
   };
+  window.__strikeDebug.dynamicActorCullingForTest = () => {
+    const savedView = new Float32Array(glView);
+    const savedProjection = new Float32Array(glProjection);
+    const savedCandidates = rendererFrameStats.dynamicActorCandidates;
+    const savedCulled = rendererFrameStats.dynamicActorsCulled;
+    try {
+      mat4LookAt(glView, [0, 1, 0], [0, 1, -1], [0, 1, 0]);
+      mat4Perspective(glProjection, Math.PI / 3, 16 / 9, 0.025, GL_FAR);
+      rendererFrameStats.dynamicActorCandidates = 0;
+      rendererFrameStats.dynamicActorsCulled = 0;
+      const cases = {
+        centred: dynamicActorOutsideCameraView(0, 1, -6, 1.85),
+        edgeGuard: dynamicActorOutsideCameraView(5, 1, -6, 1.85),
+        behind: dynamicActorOutsideCameraView(0, 1, 6, 1.85),
+        farSide: dynamicActorOutsideCameraView(30, 1, -6, 1.85),
+        beyondFar: dynamicActorOutsideCameraView(0, 1, -(GL_FAR + 4), 1.85)
+      };
+      return {
+        ok: !cases.centred && !cases.edgeGuard && cases.behind && cases.farSide && cases.beyondFar,
+        enabled: DYNAMIC_ACTOR_CULLING_ENABLED,
+        cases,
+        candidates: rendererFrameStats.dynamicActorCandidates,
+        culled: rendererFrameStats.dynamicActorsCulled,
+        conservativeRadius: 1.85
+      };
+    } finally {
+      glView.set(savedView);
+      glProjection.set(savedProjection);
+      rendererFrameStats.dynamicActorCandidates = savedCandidates;
+      rendererFrameStats.dynamicActorsCulled = savedCulled;
+    }
+  };
+  // Build 12.162: deterministic whole-actor frustum guard.
   // Reports the baked occlusion actually assigned to the current arena's wall
   // rectangles, so the effect can be checked directly rather than inferred from
   // a rendered viewport, which varies with whatever the camera happens to face.

@@ -875,6 +875,7 @@
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
     const corpseDistance = Math.hypot(dx, dz);
+    if (dynamicActorOutsideCameraView(bot.x, 0.82, bot.y, 1.85)) return;
     const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(corpseDistance) : 2;
     const mediumDetail = detailTier >= 1;
     const fullDetail = detailTier >= 2;
@@ -1107,6 +1108,7 @@
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
     const operatorDistance = Math.hypot(dx, dz);
+    if (dynamicActorOutsideCameraView(bot.x, 0.92, bot.y, 1.85)) return;
     const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(operatorDistance) : 2;
     const mediumDetail = detailTier >= 1;
     const fullDetail = detailTier >= 2;
