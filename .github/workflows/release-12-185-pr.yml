@@ -85,6 +85,7 @@ jobs:
           cd ..
 
           python3 .github/scripts/release-12-185.py
+          python3 .github/scripts/release-12-185-runtime-hook.py
           cd strikewatch-source
           python3 -m py_compile build.py
           python3 build.py
@@ -155,8 +156,12 @@ jobs:
           if re.search(r'<link rel="stylesheet" href="css/', standalone):
               raise SystemExit('Standalone retained an external stylesheet')
 
+          audit = Path('AUDIT-12.185.md').read_text(encoding='utf-8')
+          if '390px' in audit or '390×844' in audit:
+              raise SystemExit('Audit retained the unsupported headless Chrome width')
+
           bundle = Path('js/strikewatch.dev.js').read_text(encoding='utf-8')
-          for hook in ('bloodSplatterForTest', 'impactDecalForTest', 'rendererFrameStatsForTest', 'mobileInterfaceAuditForTest', 'typographyConsistencyForTest', 'renderRouteForTest'):
+          for hook in ('bloodSplatterForTest', 'bloodDecalDrawPassForTest', 'impactDecalForTest', 'rendererFrameStatsForTest', 'mobileInterfaceAuditForTest', 'typographyConsistencyForTest', 'renderRouteForTest'):
               if hook not in bundle:
                   raise SystemExit(f'Missing retained hook: {hook}')
           PY
@@ -210,12 +215,12 @@ jobs:
           from pathlib import Path
           html = Path('dist/strikewatch-build-12.185.html').read_text(encoding='utf-8')
           early = '''<script>window.__swRuntimeFaults=[];window.addEventListener('error',event=>window.__swRuntimeFaults.push(String(event.message||event.error||'window error')));const __swConsoleError=console.error.bind(console);console.error=(...args)=>{window.__swRuntimeFaults.push(args.map(String).join(' '));__swConsoleError(...args);};</script>'''
-          probe = '''<pre id="runtime-result">WAITING</pre><script>(()=>{let attempts=0;const finish=value=>{document.getElementById('runtime-result').textContent=JSON.stringify(value);};const timer=setInterval(()=>{attempts++;try{const d=window.__strikeDebug;if(!d?.bloodSplatterForTest||!d?.rendererFrameStatsForTest||!d?.impactDecalForTest){if(attempts>100){clearInterval(timer);finish({ok:false,reason:'hooks unavailable',faults:window.__swRuntimeFaults});}return;}const ready=d.rendererFrameStatsForTest(1);if(!ready?.ok){if(attempts>100){clearInterval(timer);finish({ok:false,reason:'renderer unavailable',ready,faults:window.__swRuntimeFaults});}return;}clearInterval(timer);d.clearBloodSplatterForTest();const baseline=d.rendererFrameStatsForTest(1);const single=d.bloodSplatterForTest();d.clearBloodSplatterForTest();for(let i=0;i<24;i++)d.bloodSplatterForTest();const pool=d.bloodSplatterCountForTest();const bloodFrame=d.rendererFrameStatsForTest(1);const impact=d.impactDecalForTest();const cleared=d.clearBloodSplatterForTest();const afterClear=d.rendererFrameStatsForTest(1);finish({ok:Boolean(single?.ok)&&single.ignoredZeroDamage===true&&single.drips>=1&&single.coreToImpactRatio>=1.5&&pool.count===18&&pool.spots===90&&impact?.ok===true&&cleared.count===0&&bloodFrame.drawCalls-baseline.drawCalls>=pool.count&&bloodFrame.drawCalls-baseline.drawCalls<=pool.spots+2,faults:window.__swRuntimeFaults,single,pool,impact,baselineDrawCalls:baseline.drawCalls,bloodDrawCalls:bloodFrame.drawCalls,drawGrowth:bloodFrame.drawCalls-baseline.drawCalls,afterClearDrawCalls:afterClear.drawCalls,cleared});}catch(error){clearInterval(timer);finish({ok:false,reason:String(error?.stack||error),faults:window.__swRuntimeFaults});}},100);})();</script>'''
+          probe = '''<pre id="runtime-result">WAITING</pre><script>(()=>{let attempts=0;const finish=value=>{document.getElementById('runtime-result').textContent=JSON.stringify(value);};const timer=setInterval(()=>{attempts++;try{const d=window.__strikeDebug;if(!d?.bloodSplatterForTest||!d?.bloodDecalDrawPassForTest||!d?.impactDecalForTest){if(attempts>100){clearInterval(timer);finish({ok:false,reason:'hooks unavailable',faults:window.__swRuntimeFaults});}return;}const ready=d.rendererFrameStatsForTest(1);if(!ready?.ok){if(attempts>100){clearInterval(timer);finish({ok:false,reason:'renderer unavailable',ready,faults:window.__swRuntimeFaults});}return;}clearInterval(timer);d.clearBloodSplatterForTest();const single=d.bloodSplatterForTest();d.clearBloodSplatterForTest();for(let i=0;i<24;i++)d.bloodSplatterForTest();const pool=d.bloodSplatterCountForTest();const bloodPass=d.bloodDecalDrawPassForTest();const impact=d.impactDecalForTest();const cleared=d.clearBloodSplatterForTest();finish({ok:Boolean(single?.ok)&&single.ignoredZeroDamage===true&&single.drips>=1&&single.coreToImpactRatio>=1.5&&pool.count===18&&pool.spots===90&&bloodPass?.ok===true&&bloodPass.drawCalls===pool.spots&&impact?.ok===true&&cleared.count===0,faults:window.__swRuntimeFaults,single,pool,bloodPass,impact,cleared});}catch(error){clearInterval(timer);finish({ok:false,reason:String(error?.stack||error),faults:window.__swRuntimeFaults});}},100);})();</script>'''
           html = html.replace('<head>', '<head>' + early, 1).replace('</body>', probe + '</body>', 1)
           Path('runtime-probe.html').write_text(html, encoding='utf-8', newline='\n')
           PY
 
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --use-angle=swiftshader --enable-webgl --ignore-gpu-blocklist --allow-file-access-from-files --window-size="500,844" --virtual-time-budget=12000 --dump-dom "file://$(pwd)/runtime-probe.html" > /tmp/sw-12-185-runtime.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --use-angle=swiftshader --enable-webgl --ignore-gpu-blocklist --enable-unsafe-swiftshader --allow-file-access-from-files --window-size="500,844" --virtual-time-budget=12000 --dump-dom "file://$(pwd)/runtime-probe.html" > /tmp/sw-12-185-runtime.html
           python3 - <<'PY'
           from pathlib import Path
           import html
@@ -238,7 +243,7 @@ jobs:
           cmp dist/strikewatch-build-12.185.html ../cod.html
           cd ..
 
-          rm -f .github/scripts/release-12-185.py .github/workflows/release-12-185-pr.yml .github/release-12-185-pr.trigger
+          rm -f .github/scripts/release-12-185.py .github/scripts/release-12-185-runtime-hook.py .github/workflows/release-12-185-pr.yml .github/release-12-185-pr.trigger
           git add -A -- strikewatch-source cod.html .github
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
