@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.164 — Lean Standalone**
-- Build ID: `12.164.0-lean-standalone`
+- Build: **12.165 — CSS Ownership Baseline**
+- Build ID: `12.165.0-css-ownership-baseline`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.164.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.165.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.165 begins the staged CSS-debt cleanup by moving the compact navigator and mobile management-alert rules out of the 31k-line monolith into `css/compact-navigation.css` while preserving their final cascade position. The build now emits and enforces a CSS-debt report. See `AUDIT-12.165.md`.
 
 Build 12.164 reduces the shipped standalone without changing executable tokens or visual declarations: the release copy strips only whole-line comments and redundant blank runs, while the readable source modules and development bundle remain unchanged. `dist/strikewatch-build-12.164-size.json` records raw and deterministic gzip sizes. See `AUDIT-12.164.md`.
 

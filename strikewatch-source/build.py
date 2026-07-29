@@ -9,6 +9,7 @@ import re
 ROOT = Path(__file__).resolve().parent
 MODULES = ['00-core.js', '10-audio.js', '20-navigation.js', '30-bot-ai.js', '31-match-diagnostics.js', '32-tactical-minimap.js', '33-season-narrative-state.js', '34-squad-dynamics.js', '35-career.js', '81-career-indexeddb.js', '39-medical.js', '36-team-management.js', '37-league.js', '38-development.js', '39-infrastructure.js', '39-club-operations.js', '39-opposition-intelligence.js', '39-matchday.js', '39-transfers.js', '39-recruitment-commercial.js', '39-dynamic-market-mail.js', '39-calendar-finance.js', '39-workflow-integrity.js', '40-match-flow.js', '41-live-command-pulses.js', '50-ui-menus.js', '52-season-narratives.js', '55-opening-week.js', '56-world-press-awards.js', '57-loadout-stills.js', '60-renderer-core.js', '61-world-renderer.js', '62-character-renderer.js', '63-viewmodel-renderer.js', '64-reward-renderer.js', '65-sky-dome.js', '70-runtime.js', '75-ui-clarity-hotfix.js', '76-tactical-selection-feedback.js', '77-mail-scroll-guard.js', '78-management-status.js', '79-save-checkpoints.js', '80-durable-results.js', '82-audit-recovery.js']
 BUNDLE_PATH = ROOT / "js" / "strikewatch.dev.js"
+CSS_PATHS = (ROOT / "css" / "game.css", ROOT / "css" / "12.161-audit-fixes.css", ROOT / "css" / "compact-navigation.css")
 
 
 def build_metadata() -> tuple[str, str]:
@@ -136,12 +137,36 @@ def release_size_report(version: str, development_bundle: str, release_bundle: s
     return report
 
 
+
+def css_debt_report(version: str) -> dict:
+    texts = {path.name: path.read_text(encoding="utf-8") for path in CSS_PATHS}
+    combined = "\n".join(texts.values())
+    report = {
+        "version": version,
+        "stylesheets": len(texts),
+        "total_lines": sum(value.count("\n") for value in texts.values()),
+        "game_css_lines": texts["game.css"].count("\n"),
+        "important_declarations": combined.count("!important"),
+        "media_queries": combined.count("@media"),
+        "owned_compact_navigation_lines": texts["compact-navigation.css"].count("\n"),
+    }
+    budgets = {
+        "game_css_lines_max": 31700,
+        "important_declarations_max": 2182,
+        "media_queries_max": 474,
+    }
+    report["budgets"] = budgets
+    report["within_budget"] = (
+        report["game_css_lines"] <= budgets["game_css_lines_max"]
+        and report["important_declarations"] <= budgets["important_declarations_max"]
+        and report["media_queries"] <= budgets["media_queries_max"]
+    )
+    return report
+
 def main() -> None:
-    css_path = ROOT / "css" / "game.css"
-    release_css_path = ROOT / "css" / "12.161-audit-fixes.css"
     index_path = ROOT / "index.html"
-    if not css_path.exists() or not index_path.exists():
-        raise FileNotFoundError("index.html or css/game.css is missing")
+    if not all(path.exists() for path in CSS_PATHS) or not index_path.exists():
+        raise FileNotFoundError("index.html or an ordered CSS source is missing")
 
     version, build_id = build_metadata()
     dist_path = ROOT / "dist" / f"strikewatch-build-{version}.html"
@@ -150,7 +175,8 @@ def main() -> None:
     release_bundle = strip_release_comment_lines(bundle, javascript=True)
 
     html = index_path.read_text(encoding="utf-8")
-    css = css_path.read_text(encoding="utf-8").rstrip() + "\n\n" + release_css_path.read_text(encoding="utf-8").rstrip()
+    css_sources = [path.read_text(encoding="utf-8").rstrip() for path in CSS_PATHS]
+    css = "\n\n".join(css_sources)
     release_css = strip_release_comment_lines(css, javascript=False).rstrip()
     for element_id in ("managerBuildVersion", "mobileCommandBuildVersion"):
         label_match = re.search(rf'id="{element_id}">([^<]+)</b>', html)
@@ -159,7 +185,7 @@ def main() -> None:
                 f"{element_id} must show BUILD_VERSION {version} in index.html"
             )
     html = re.sub(
-        r'<link rel="stylesheet" href="css/game\.css\?v=[^"]+"\s*/>',
+        r'<link rel="stylesheet" href="css/game\.css\?v=[^"]+"\s*/>\s*<link rel="stylesheet" href="css/compact-navigation\.css\?v=[^"]+"\s*/>',
         lambda _match: '<style>\n' + release_css + '\n</style>',
         html,
         count=1,
@@ -179,11 +205,17 @@ def main() -> None:
     report = release_size_report(version, bundle, release_bundle, css, release_css, html)
     report_path = ROOT / "dist" / f"strikewatch-build-{version}-size.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    css_report = css_debt_report(version)
+    css_report_path = ROOT / "dist" / f"strikewatch-build-{version}-css-debt.json"
+    css_report_path.write_text(json.dumps(css_report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    if not css_report["within_budget"]:
+        raise RuntimeError(f"CSS debt budget exceeded: {css_report}")
     if report["javascript_raw_reduction_percent"] < 2.5:
         raise RuntimeError("Release JavaScript comment stripping saved less than the 2.5% minimum budget")
     print(f"Built development bundle: {BUNDLE_PATH}")
     print(f"Built standalone release: {dist_path}")
     print(f"Release size report: {report_path}")
+    print(f"CSS debt report: {css_report_path}")
     print(f"JavaScript raw reduction: {report['javascript_raw_reduction_percent']}%")
 
 

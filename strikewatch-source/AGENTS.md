@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.165 owns the first CSS boundary: compact navigation and the phone management alert live in `css/compact-navigation.css`, loaded after the legacy and 12.161 layers. Do not move them back into `game.css`. Keep the CSS debt report within budget and preserve stylesheet order. See `AUDIT-12.165.md`.
+
 Build 12.164 owns conservative release-only comment stripping in `build.py`. The development bundle must remain readable. Never broaden this into token rewriting without a real JavaScript/CSS parser; template-literal contents, CSS declarations and executable code must remain byte-for-byte apart from removed comment-only/blank lines. Keep the 2.5% minimum reduction gate and the deterministic size report green. See `AUDIT-12.164.md`.
 
 Build 12.162 owns whole-operator frustum culling. Keep the 1.85-unit guard radius conservative; `?dynamicCulling=0` is the reference path and `dynamicActorCullingForTest()` is the deterministic guard. See `AUDIT-12.162.md`.

@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.164';
-  const BUILD_NAME = 'Lean Standalone';
-  const BUILD_ID = '12.164.0-lean-standalone';
+  const BUILD_VERSION = '12.165';
+  const BUILD_NAME = 'CSS Ownership Baseline';
+  const BUILD_ID = '12.165.0-css-ownership-baseline';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
