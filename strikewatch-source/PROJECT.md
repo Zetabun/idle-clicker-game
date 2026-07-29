@@ -32,10 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.176 continues the staged CSS ownership programme by moving the league-
-table typography, compact row height and club-name wrapping into
-`css/league-table.css` without changing selectors, declarations, breakpoint or
-cascade order. See `HANDOFF.md` and `AUDIT-12.176.md`.
+Build 12.177 continues the staged CSS ownership programme by moving management-
+route grid track sizing into `css/management-grid.css` without changing the
+selector or declarations. See `HANDOFF.md` and `AUDIT-12.177.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

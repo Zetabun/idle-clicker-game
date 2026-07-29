@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.177 — Management Grid CSS Ownership
+
+- Moves the remaining Build 12.135/12.136 `#menuContent` grid-track sizing from `game.css` into `css/management-grid.css` without changing the selector or declarations.
+- Preserves the layer immediately after `game.css`, before league-table and all later presentation layers.
+- Keeps content-height management rows top-aligned, preventing the clipping/overlap regression the original row-sizing hotfix resolved.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.177.md`.
+
+
 ## 12.176 — League Table CSS Ownership
 
 - Moves the Build 12.135 league-table typography, compact row height and club-name wrapping rules from `game.css` into `css/league-table.css` without changing selectors, declarations or breakpoint.

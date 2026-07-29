@@ -56,7 +56,9 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.176 owns league-table typography, compact row height and club-name wrapping in `css/league-table.css`. Keep it immediately after `game.css`, before `calendar-agenda.css`. Preserve the 52px compact row, the 1023px breakpoint and the desktop/compact header, position, club-name and sub-line floors. Verify `leagueMatchFlowForTest()`, `orphanedLeagueFixtureForTest()`, `renderRouteForTest()`, `mobileInterfaceAuditForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.176.md`.
+Build 12.177 owns management-route grid track sizing in `css/management-grid.css`. Keep it immediately after `game.css`, before `league-table.css`. `#menuContent` must retain `grid-auto-rows: max-content` and `align-content: start`; item-level `min-height: max-content` reintroduces overlap and must not return. Verify `mobileInterfaceAuditForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.177.md`.
+
+Build 12.176 owns league-table typography, compact row height and club-name wrapping in `css/league-table.css`. Keep it after `management-grid.css`, before `calendar-agenda.css`. Preserve the 52px compact row, the 1023px breakpoint and the desktop/compact header, position, club-name and sub-line floors. Verify `leagueMatchFlowForTest()`, `orphanedLeagueFixtureForTest()`, `renderRouteForTest()`, `mobileInterfaceAuditForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.176.md`.
 
 Build 12.175 owns club calendar agenda typography, compact two-column reflow and action-target sizing in `css/calendar-agenda.css`. Keep it after `league-table.css`, before `training-readability.css`. Preserve the 62px date column, wrapped compact title/detail copy, second-column action placement and 44px compact target. Verify `clubCalendarAgendaActionMarkup`, `clubCalendarAgendaMarkup`, `renderClubCalendarTab`, `mobileInterfaceAuditForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.175.md`.
 

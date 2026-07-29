@@ -31177,33 +31177,3 @@ body.mail-scroll-armed .club-mail-list {
   #menuContent .career-attachment-slot,
   #menuContent .player-accolade-entry { min-width: 0; }
 }
-
-/* ==========================================================================
-   Build 12.135 - Container collapse, league table and agenda layer
-   ========================================================================== */
-
-/* --- Collapsed panels ------------------------------------------------------
-   #menuContent is a grid with a definite block size on compact viewports. A
-   grid item whose overflow is not visible gets an automatic minimum size of
-   zero, so any panel that clips its own overflow could be squashed to padding
-   height while its content still existed underneath. That is the reported
-   "cards are not loading" failure: Training Squad, Team XP Benefits, the
-   league table, squad dynamics, the calendar agenda, the loadout panel and the
-   tactical analysis all rendered as empty boxes.
-
-   Restoring a content-based minimum fixes every one of them at once. Measured
-   by __strikeDebug.mobileInterfaceAuditForTest().collapsed.
-   -------------------------------------------------------------------------- */
-
-/* Build 12.136 corrects this. `min-height: max-content` on the items stopped
-   the clipping but left the rows themselves undersized, so panels overflowed
-   their own row and printed on top of the next one. Sizing the rows is the
-   actual fix: with `max-content` rows the grid no longer distributes the
-   container's definite height across the tracks, so each panel gets a row as
-   tall as its content and nothing is clipped or overlapped. The item-level
-   minimum is no longer needed and is removed with it. */
-
-#menuContent {
-  grid-auto-rows: max-content;
-  align-content: start;
-}
