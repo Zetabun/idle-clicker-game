@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.184 — Economy Guide CSS Ownership
+
+- Moves the complete Build 12.133 after-action reward and economy-guide typography/reflow block from `game.css` into `css/economy-guide.css` without changing declarations or breakpoints.
+- Preserves the layer immediately after `game.css`, before Inbox scroll and all later presentation layers.
+- Keeps the desktop hierarchy, the two-column compact layout below 1024px and the one-column phone layout below 561px.
+- Retains the later `compact-readability.css` 12px floor for economy metadata on compact screens.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.184.md`.
+
+
 ## 12.183 — Surface Blood & Inbox CSS Ownership
 
 - Adds stylised blood splatters to nearby walls behind operators after real health damage, using the existing shared grid raycaster rather than a second collision authority.

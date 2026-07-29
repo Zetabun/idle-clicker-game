@@ -10,6 +10,7 @@ share application scope in the listed order.
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/economy-guide.css` | After-action reward/economy typography and compact card reflow |
 | `css/inbox-scroll.css` | Inbox nested-scroll arming, overscroll containment and overflow mask |
 | `css/operator-portrait.css` | Asset-free operator complexion, kit, headgear, rig and deployment portrait presentation |
 | `css/command-chrome.css` | Compact shared command typography floors and nowrap containment |
@@ -92,7 +93,7 @@ everything it consumes and before everything that consumes it.
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
 then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
 the cascade-order authority, and `index.html` must load the same files in the
-same order. The current order is `game.css`, `inbox-scroll.css`, `operator-portrait.css`, `command-chrome.css`,
+same order. The current order is `game.css`, `economy-guide.css`, `inbox-scroll.css`, `operator-portrait.css`, `command-chrome.css`,
 `combat-effectiveness.css`, `match-type.css`, `route-readability.css`, `management-grid.css`,
 `league-table.css`, `calendar-agenda.css`, `training-readability.css`,
 `training-programme.css`, `management-feedback.css`, `compact-readability.css`,

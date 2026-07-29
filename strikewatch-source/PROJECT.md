@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.183 adds bounded nearby-wall blood splatters to real body hits and
-continues the staged CSS ownership programme by moving Inbox scroll arming into
-`css/inbox-scroll.css` without changing its declarations. See `HANDOFF.md` and
-`AUDIT-12.183.md`.
+Build 12.184 continues the staged CSS ownership programme by moving the
+after-action reward and economy-guide typography/reflow into
+`css/economy-guide.css` without changing declarations or breakpoints. See
+`HANDOFF.md` and `AUDIT-12.184.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
