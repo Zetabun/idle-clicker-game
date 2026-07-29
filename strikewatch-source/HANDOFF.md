@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.163 — Compact Navigation Alignment**
-- Build ID: `12.163.0-compact-navigation-alignment`
+- Build: **12.164 — Lean Standalone**
+- Build ID: `12.164.0-lean-standalone`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.163.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.164.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.164 reduces the shipped standalone without changing executable tokens or visual declarations: the release copy strips only whole-line comments and redundant blank runs, while the readable source modules and development bundle remain unchanged. `dist/strikewatch-build-12.164-size.json` records raw and deterministic gzip sizes. See `AUDIT-12.164.md`.
 
 Build 12.163 fixes compact club-navigation destination rows that could overlap at phone widths and reflows the fixed management alert into a safe two-row mobile layout. See `AUDIT-12.163.md`.
 

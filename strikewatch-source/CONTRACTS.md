@@ -7,6 +7,7 @@ current task. Release-specific implementation detail belongs in the matching
 ## Release and generated artifacts
 
 - `strikewatch-source/` is the editable authority.
+- The development bundle remains readable. The standalone may remove only comment-only lines and redundant blank runs through the deterministic build path; executable tokens, strings, template-literal contents and CSS declarations must not be rewritten by the conservative stripper. A size report is generated beside each standalone.
 - `js/strikewatch.dev.js` is generated from the ordered module list in
   `build.py`.
 - `dist/strikewatch-build-<version>.html` is the self-contained generated

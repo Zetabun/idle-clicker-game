@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.164 owns conservative release-only comment stripping in `build.py`. The development bundle must remain readable. Never broaden this into token rewriting without a real JavaScript/CSS parser; template-literal contents, CSS declarations and executable code must remain byte-for-byte apart from removed comment-only/blank lines. Keep the 2.5% minimum reduction gate and the deterministic size report green. See `AUDIT-12.164.md`.
+
 Build 12.162 owns whole-operator frustum culling. Keep the 1.85-unit guard radius conservative; `?dynamicCulling=0` is the reference path and `dynamicActorCullingForTest()` is the deterministic guard. See `AUDIT-12.162.md`.
 
 Build 12.160 owns the surface-detail coordinate space. **World-space detail is only correct for geometry that stays put.** Anything that moves — operators, corpses, the viewmodel — must draw inside `withLocalSurfaceDetail()`, which switches the whole surface layer to model space; static geometry must never set it. Keep detail frequency under roughly 40 cycles per unit of whichever space is being sampled: the 12.145 threshold applies in model space too, and the operator kit had been running at 95. Operator AO is colour-baked and lives in `OPERATOR_AMBIENT_OCCLUSION.factors` — lower is darker, no meshes or draws involved. Two traps: **backticks inside the shader source terminate it**, because it is a JavaScript template literal, and a stray one in a GLSL comment produces a SyntaxError somewhere unrelated; and a pixel A/B is only meaningful when both sides are captured **back to back in one pass** — comparing capture sets from different turns produced a phantom 51% regression during this build. See `AUDIT-12.160.md`.

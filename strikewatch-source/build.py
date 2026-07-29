@@ -2,6 +2,8 @@
 """Build Strikewatch development and standalone distributions."""
 
 from pathlib import Path
+import gzip
+import json
 import re
 
 ROOT = Path(__file__).resolve().parent
@@ -28,6 +30,112 @@ def read_modules() -> str:
     return "(() => {\n  'use strict';\n\n" + "\n\n".join(chunks) + "\n})();\n"
 
 
+def _template_state_after(line: str, in_template: bool) -> bool:
+    """Track backtick template regions conservatively for release comment stripping."""
+    quote = None
+    escaped = False
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if escaped:
+            escaped = False
+            index += 1
+            continue
+        if char == "\\":
+            escaped = True
+            index += 1
+            continue
+        if in_template:
+            if char == "`":
+                in_template = False
+            index += 1
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            index += 1
+            continue
+        if char == "`":
+            in_template = True
+            index += 1
+            continue
+        if char == "/" and index + 1 < len(line) and line[index + 1] == "/":
+            break
+        index += 1
+    return in_template
+
+
+def strip_release_comment_lines(text: str, *, javascript: bool) -> str:
+    """Remove only whole-line comments and collapse blank runs.
+
+    Executable tokens, CSS declarations, strings and template-literal contents are
+    never rewritten. This is deliberately less aggressive than a general-purpose
+    minifier so the standalone stays behaviourally and visually identical.
+    """
+    lines = text.splitlines()
+    output = []
+    in_template = False
+    index = 0
+    while index < len(lines):
+        line = lines[index].rstrip()
+        stripped = line.lstrip()
+        if javascript and not in_template and stripped.startswith("//"):
+            index += 1
+            continue
+        if not in_template and stripped.startswith("/*"):
+            block = [line]
+            end = index
+            while "*/" not in block[-1] and end + 1 < len(lines):
+                end += 1
+                block.append(lines[end].rstrip())
+            close_position = block[-1].find("*/")
+            trailing = block[-1][close_position + 2:].strip() if close_position >= 0 else "content"
+            if close_position >= 0 and not trailing:
+                index = end + 1
+                continue
+        if javascript:
+            in_template = _template_state_after(line, in_template)
+        if not stripped:
+            if output and output[-1] != "":
+                output.append("")
+        else:
+            output.append(line)
+        index += 1
+    while output and output[-1] == "":
+        output.pop()
+    return "\n".join(output) + "\n"
+
+
+def release_size_report(version: str, development_bundle: str, release_bundle: str, source_css: str, release_css: str, standalone: str) -> dict:
+    def sizes(value: str) -> dict:
+        raw = value.encode("utf-8")
+        return {
+            "raw_bytes": len(raw),
+            "gzip_bytes": len(gzip.compress(raw, compresslevel=9, mtime=0)),
+        }
+    report = {
+        "version": version,
+        "development_bundle": sizes(development_bundle),
+        "release_bundle": sizes(release_bundle),
+        "source_css": sizes(source_css),
+        "release_css": sizes(release_css),
+        "standalone": sizes(standalone),
+    }
+    report["javascript_raw_reduction_percent"] = round(
+        (1 - report["release_bundle"]["raw_bytes"] / max(1, report["development_bundle"]["raw_bytes"])) * 100,
+        2,
+    )
+    report["css_raw_reduction_percent"] = round(
+        (1 - report["release_css"]["raw_bytes"] / max(1, report["source_css"]["raw_bytes"])) * 100,
+        2,
+    )
+    return report
+
+
 def main() -> None:
     css_path = ROOT / "css" / "game.css"
     release_css_path = ROOT / "css" / "12.161-audit-fixes.css"
@@ -39,9 +147,11 @@ def main() -> None:
     dist_path = ROOT / "dist" / f"strikewatch-build-{version}.html"
     bundle = read_modules()
     BUNDLE_PATH.write_text(bundle, encoding="utf-8", newline="\n")
+    release_bundle = strip_release_comment_lines(bundle, javascript=True)
 
     html = index_path.read_text(encoding="utf-8")
     css = css_path.read_text(encoding="utf-8").rstrip() + "\n\n" + release_css_path.read_text(encoding="utf-8").rstrip()
+    release_css = strip_release_comment_lines(css, javascript=False).rstrip()
     for element_id in ("managerBuildVersion", "mobileCommandBuildVersion"):
         label_match = re.search(rf'id="{element_id}">([^<]+)</b>', html)
         if not label_match or label_match.group(1) != version:
@@ -50,13 +160,13 @@ def main() -> None:
             )
     html = re.sub(
         r'<link rel="stylesheet" href="css/game\.css\?v=[^"]+"\s*/>',
-        lambda _match: '<style>\n' + css + '\n</style>',
+        lambda _match: '<style>\n' + release_css + '\n</style>',
         html,
         count=1,
     )
     html = re.sub(
         r'<script src="js/strikewatch\.dev\.js\?v=[^"]+"></script>',
-        lambda _match: '<script>\n' + bundle.rstrip() + '\n</script>',
+        lambda _match: '<script>\n' + release_bundle.rstrip() + '\n</script>',
         html,
         count=1,
     )
@@ -66,8 +176,15 @@ def main() -> None:
 
     dist_path.parent.mkdir(parents=True, exist_ok=True)
     dist_path.write_text(html, encoding="utf-8", newline="\n")
+    report = release_size_report(version, bundle, release_bundle, css, release_css, html)
+    report_path = ROOT / "dist" / f"strikewatch-build-{version}-size.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    if report["javascript_raw_reduction_percent"] < 2.5:
+        raise RuntimeError("Release JavaScript comment stripping saved less than the 2.5% minimum budget")
     print(f"Built development bundle: {BUNDLE_PATH}")
     print(f"Built standalone release: {dist_path}")
+    print(f"Release size report: {report_path}")
+    print(f"JavaScript raw reduction: {report['javascript_raw_reduction_percent']}%")
 
 
 if __name__ == "__main__":
