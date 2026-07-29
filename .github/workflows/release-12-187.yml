@@ -15,7 +15,6 @@ concurrency:
 
 jobs:
   release:
-    if: ${{ hashFiles('.github/triggers/release-12-187.txt') != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out main
