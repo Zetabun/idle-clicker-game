@@ -1,0 +1,39 @@
+name: Build Strikewatch 12.186 from PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-release-12-186-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Build, verify and update release branch
+        shell: bash
+        env:
+          RELEASE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          if [ ! -f .github/release-12-186.trigger ]; then
+            echo "Build 12.186 is already applied; nothing to do."
+            exit 0
+          fi
+          python3 .github/scripts/run-release-12-186.py
