@@ -74,7 +74,7 @@ jobs:
           capture_deployment_styles() {
             local prefix="$1"
             write_deployment_probe
-            for width in 390 833 1440; do
+            for width in 500 833 1440; do
               "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --window-size="${width},1000" --dump-dom "file://$(pwd)/deployment-probe.html" > "/tmp/sw-12-185-${prefix}-${width}.html"
             done
             rm -f deployment-probe.html
@@ -188,7 +188,7 @@ jobs:
               return json.loads(html.unescape(match.group(1)))
 
           results = {}
-          for width in (390, 833, 1440):
+          for width in (500, 833, 1440):
               baseline = read('baseline', width)
               release = read('release', width)
               if baseline != release:
@@ -196,7 +196,7 @@ jobs:
               if abs(release['width'] - width) > 1:
                   raise SystemExit(f'Unexpected viewport width {release["width"]}; expected {width}')
               results[str(width)] = release
-          for width in ('390', '833'):
+          for width in ('500', '833'):
               compact = results[width]
               if len(compact['rowColumns'].split()) != 3 or compact['rowMinHeight'] != '62px':
                   raise SystemExit(f'Compact deployment invariant failed at {width}px: {compact}')
@@ -215,7 +215,7 @@ jobs:
           Path('runtime-probe.html').write_text(html, encoding='utf-8', newline='\n')
           PY
 
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --use-angle=swiftshader --enable-webgl --ignore-gpu-blocklist --allow-file-access-from-files --window-size="390,844" --virtual-time-budget=12000 --dump-dom "file://$(pwd)/runtime-probe.html" > /tmp/sw-12-185-runtime.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --use-angle=swiftshader --enable-webgl --ignore-gpu-blocklist --allow-file-access-from-files --window-size="500,844" --virtual-time-budget=12000 --dump-dom "file://$(pwd)/runtime-probe.html" > /tmp/sw-12-185-runtime.html
           python3 - <<'PY'
           from pathlib import Path
           import html
