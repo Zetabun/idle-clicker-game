@@ -1,0 +1,80 @@
+name: Sync verified Strikewatch 12.186
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-sync-12-186
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: ${{ github.head_ref == 'agent/sw-002-storage-reporting-v2' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out verified release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Merge main and retain verified release tree
+        shell: bash
+        env:
+          RELEASE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          if [ ! -f .github/release-12-186-sync.trigger ]; then
+            echo "No sync marker; nothing to do."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+
+          git rm -f --ignore-unmatch \
+            .github/release-12-186.trigger \
+            .github/release-12-186-sync.trigger \
+            .github/scripts/release-12-186.py \
+            .github/scripts/run-release-12-186.py \
+            .github/workflows/release-12-186.yml \
+            .github/workflows/release-12-186-dispatch.yml \
+            .github/workflows/release-12-186-pr-runner.yml \
+            .github/workflows/sync-release-12-186.yml
+
+          unresolved="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$unresolved" ]; then
+            echo "Unexpected merge conflicts remain:"
+            echo "$unresolved"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.186',
+              'name': 'Accurate Storage Reporting',
+              'build_id': '12.186.0-accurate-storage-reporting',
+          }
+          if release != expected:
+              raise SystemExit(f'Verified release moved during sync: {release}')
+          standalone = Path('strikewatch-source/dist/strikewatch-build-12.186.html').read_bytes()
+          live = Path('cod.html').read_bytes()
+          if standalone != live:
+              raise SystemExit('cod.html is not byte-identical to the verified standalone')
+          PY
+
+          git add -A -- .github strikewatch-source cod.html
+          git commit -m "Merge main into verified Strikewatch 12.186 release"
+          git push origin HEAD:"$RELEASE_BRANCH"
