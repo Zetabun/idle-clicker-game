@@ -2,6 +2,7 @@ name: Strikewatch 12.166 release
 
 on:
   workflow_dispatch:
+  page_build:
   schedule:
     - cron: '*/5 * * * *'
 
@@ -89,9 +90,9 @@ jobs:
           cp dist/strikewatch-build-12.166.html ../cod.html
           cmp -s ../cod.html dist/strikewatch-build-12.166.html
           cd ..
-          rm -f .github/scripts/release-12-166.py .github/workflows/release-12-166.yml
+          rm -f .github/scripts/release-12-166.py .github/workflows/release-12-166.yml .github/release-triggers/12.166.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add strikewatch-source cod.html .github/scripts/release-12-166.py .github/workflows/release-12-166.yml
+          git add strikewatch-source cod.html .github/scripts/release-12-166.py .github/workflows/release-12-166.yml .github/release-triggers/12.166.txt
           git commit -m 'Build 12.166: establish Armoury CSS ownership'
           git push origin main
