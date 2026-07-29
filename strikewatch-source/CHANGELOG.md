@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.158 — Storage-Safe Results
+
+- Writes and verifies the new primary career before attempting to refresh the optional recovery backup.
+- Allows an unprotected backup to be skipped or evicted when mature-career storage pressure would otherwise discard Gold Coins, league points, fixtures or calendar progress.
+- Keeps protected recovery points protected and refuses stale-match overwrite unless the displaced newer career is safely backed up first.
+- Adds `storagePressureSaveForTest()` with the reported 18 GC, three league points and two-day advance scenario.
+- Save schema 19, match rewards, league scoring, IndexedDB usage and gameplay simulation are unchanged.
+- Evidence: `AUDIT-12.158.md`.
+
+
 ## 12.157 — Operator Depth
 
 - Adds baked contact ambient occlusion to operator models at the helmet, neck, joints, vest/webbing, belt equipment, ankles and gloves.

@@ -114,6 +114,7 @@ current task. Release-specific implementation detail belongs in the matching
 - Earned progress must be written before the manager can plausibly leave.
   Returning to HQ, ending the day and the page being hidden or closed are all
   save checkpoints; no path back to HQ may skip one.
+- The primary career write and read-back take precedence over refreshing an optional unprotected recovery backup. Storage pressure may skip or evict that backup with a visible warning, but must not discard earned primary progress. A protected backup may never be evicted automatically.
 - `careerWeaponVisualParts()` is the single authority for weapon geometry. The
   CSS-3D menu surfaces, the in-match operator weapon and the first-person
   viewmodel all consume it, and `careerWeaponGeometryIntegrityAudit()` verifies

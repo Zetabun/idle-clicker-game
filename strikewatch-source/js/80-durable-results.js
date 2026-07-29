@@ -22,16 +22,29 @@
     // Ordinary autosaves still use the original stale-session rejection path.
     try {
       const displaced = localStorage.getItem(CAREER_STORAGE_KEY);
-      if (displaced) localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, displaced);
+      if (displaced) {
+        careerStorageWriteVerified(localStorage, CAREER_BACKUP_STORAGE_KEY, displaced, 'Displaced career recovery backup');
+      }
     } catch (error) {
-      // The authoritative writer below reports storage failure through the
-      // existing career data notice. Do not claim durability here.
+      // A stale match must never overwrite a genuinely newer career unless the
+      // displaced primary has first been preserved and verified. Storage
+      // pressure therefore holds this settlement back instead of deleting the
+      // newer session's progress.
+      careerSaveFailure = {
+        code: 'protected-backup-failed',
+        savedAt: new Date().toISOString(),
+        detail: String(error?.message || 'The newer career could not be preserved as a recovery backup.')
+      };
+      setCareerDataNotice('danger', 'MATCH RESULT NEEDS RECOVERY SPACE',
+        'Another session has newer progress and this browser is too full to preserve it safely. Export the career, close other Strikewatch tabs and reload before continuing.');
+      return false;
     }
 
     return durableResultsBaseSaveCareerState({
       ...options,
       force: true,
       createBackup: false,
+      allowBackupEviction: false,
       reason: String(options.reason || 'protected-earned-progress')
     });
   };
