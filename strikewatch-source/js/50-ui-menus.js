@@ -1952,11 +1952,13 @@
           <div class="menu-setting-row"><span>LAST AUTOSAVE</span><strong>${escapeCareerHtml(saveLabel)}</strong></div>
           <div class="menu-setting-row"><span>CAREER SCHEMA</span><strong>VERSION ${Math.max(0, Number(careerState.version) || 0)}</strong></div>
           <div class="menu-setting-row"><span>RESTORE POINT</span><strong>${backupReady ? 'AVAILABLE' : 'CREATED AFTER NEXT CHANGE'}</strong></div>
-          <div class="menu-setting-row"><span>SAVE FILE SIZE</span><strong>${escapeCareerHtml(storage.saveSize)}</strong></div>
-          <div class="menu-setting-row"><span>RECOVERY BACKUP SIZE</span><strong>${escapeCareerHtml(storage.backupSize)}</strong></div>
-          <div class="menu-setting-row"><span>CAREER DATA TOTAL</span><strong>${escapeCareerHtml(storage.totalSize)}</strong></div>
-          <div class="menu-setting-row"><span>BROWSER ALLOWANCE USED</span><strong>${escapeCareerHtml(storage.usageLabel)}</strong></div>
-          <div class="menu-setting-row"><span>DURABLE STORAGE</span><strong>${escapeCareerHtml(storage.durableTier)}</strong></div>
+          <div class="menu-setting-row"><span>CAREER SAVE FILE</span><strong>${escapeCareerHtml(storage.saveSize)}</strong></div>
+          <div class="menu-setting-row"><span>RECOVERY BACKUP</span><strong>${escapeCareerHtml(storage.backupSize)}</strong></div>
+          <div class="menu-setting-row"><span>LOCAL CAREER DATA</span><strong>${escapeCareerHtml(storage.fastTierSize)}</strong></div>
+          <div class="menu-setting-row"><span>BROWSER ORIGIN STORAGE</span><strong>${escapeCareerHtml(storage.originUsageLabel)}</strong></div>
+          <div class="menu-setting-row"><span>PRIMARY SAVE TIER</span><strong>${escapeCareerHtml(storage.primaryTier === 'indexedDB' ? 'INDEXEDDB' : 'LOCAL STORAGE')}</strong></div>
+          <div class="menu-setting-row"><span>DURABLE MIRROR</span><strong>${escapeCareerHtml(storage.durableTier)}</strong></div>
+          <small>${escapeCareerHtml(storage.originScope)}</small>
           <div class="career-recovery-actions"><button class="primary" type="button" data-career-action="export-save" ${careerState.created ? '' : 'disabled'}>EXPORT CAREER</button><button type="button" data-career-action="import-save">IMPORT CAREER</button><button type="button" data-career-action="restore-backup" ${backupReady ? '' : 'disabled'}>RESTORE BACKUP</button></div>
           <small>Importing or restoring first preserves the active career as the next backup, so the replacement can be undone once.</small>
         </article>

@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.185 — Blood Visibility & Deployment CSS Ownership**
-- Build ID: `12.185.0-blood-visibility-deployment-css-ownership`
+- Build: **12.186 — Accurate Storage Reporting**
+- Build ID: `12.186.0-accurate-storage-reporting`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.185.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.186.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.186 closes SW-002. Configuration now measures the career save, recovery backup and local career records synchronously, while the asynchronous browser estimate has an explicit MEASURING state, refreshes the open route when settled and is labelled as all site-origin data rather than a career allowance. `saveCareerState()` remains synchronous and save schema 19 is unchanged. Keep `careerStorageReportingForTest()`, `careerIndexedDbForTest()` and the existing persistence gates green. See `AUDIT-12.186.md`.
 
 Build 12.185 makes nearby-wall blood read clearly on compact portrait screens without touching combat: the procedural core is larger and more saturated, every event includes a downward drip, placement still requires real health damage and a surface within 1.25m, and the pool remains capped at 18. The same release continues SW-020 by moving the complete Build 12.133 Confirm Deployment typography and roster-layout block into `css/deployment-readability.css` immediately after `game.css`. See `AUDIT-12.185.md`.
 
