@@ -4,17 +4,31 @@ This is the default project handoff. Read this file and `AGENTS.md` before
 editing. Load `ARCHITECTURE.md`, `CONTRACTS.md` or a historical audit only when
 the task-routing table below says they are relevant.
 
+## ChatGPT-only publishing preference
+
+This subsection is a user preference for ChatGPT sessions only. Other coding agents should ignore it and follow their normal supported publishing workflow.
+
+For ChatGPT releases when direct Git push is unavailable, prefer the proven separated GitHub workaround:
+
+1. Commit the release patch/script first.
+2. Commit the release workflow separately so it already exists on the default branch.
+3. Trigger it with a third, distinct commit.
+4. The workflow must build twice, require identical hashes, parse source/generated/standalone JavaScript, run targeted checks, copy the verified standalone to root `cod.html`, confirm byte identity, commit the complete release, and remove its temporary script/workflow/trigger files.
+5. Never claim deployment until the generated release commit is visible on `main` and `RELEASE.json` plus `cod.html` confirm the new build.
+
 ## Current release
 
-- Build: **12.162 — Visible Geometry**
-- Build ID: `12.162.0-visible-geometry`
+- Build: **12.163 — Compact Navigation Alignment**
+- Build ID: `12.163.0-compact-navigation-alignment`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.162.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.163.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.163 fixes compact club-navigation destination rows that could overlap at phone widths and reflows the fixed management alert into a safe two-row mobile layout. See `AUDIT-12.163.md`.
 
 Build 12.162 adds conservative whole-operator frustum culling before procedural body, armour and weapon assembly. A 1.85-unit guard sphere must be wholly outside the camera before any draw is skipped. Use `?dynamicCulling=0` as the visual reference and keep `dynamicActorCullingForTest()` green. See `AUDIT-12.162.md`.
 

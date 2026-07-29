@@ -1,4 +1,4 @@
-# Strikewatch Source 12.162
+# Strikewatch Source 12.163
 
 Strikewatch is an asset-free browser tactical-club management game with
 autonomous WebGL matches.
