@@ -1,0 +1,86 @@
+/* Management live-status surface and visible match-state ownership.
+   Extracted from game.css in Build 12.172 without changing declarations. */
+
+/* --- Build 12.140: management status surface and match-control state --------
+   `.status` is match HUD chrome and is display:none in the menu, so every
+   management-context showStatus() explained a refusal to nobody. This live
+   region gives those messages somewhere to land. It sits above the compact
+   bottom navigation and never covers it. */
+.management-status {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 90;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: min(620px, calc(100vw - 32px));
+  padding: 12px 14px;
+  transform: translate(-50%, 10px);
+  border: 1px solid rgba(120, 208, 233, .42);
+  border-left: 3px solid var(--accent, #f5bb49);
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(10, 26, 35, .98), rgba(6, 14, 20, .99));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.management-status.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.management-status[data-tone='blocked'] { border-color: rgba(245, 187, 73, .58); }
+.management-status > i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--accent, #f5bb49);
+  position: relative;
+}
+.management-status > i::after {
+  content: '!';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--accent, #f5bb49);
+  font-size: 13px;
+  font-weight: 950;
+}
+.management-status > p {
+  margin: 0;
+  min-width: 0;
+  color: #eef5f8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.management-status > button {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 11px;
+  letter-spacing: .1em;
+}
+
+@media (max-width: 1023px) {
+  .management-status {
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+    gap: 10px;
+    padding: 11px 12px;
+  }
+  .management-status > p { font-size: 12.5px; }
+}
+
+/* The match control states its own availability instead of hiding it in a
+   title attribute. */
+.manager-topbar-action-state {
+  display: block;
+  margin-top: 2px;
+  color: var(--accent, #f5bb49);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.manager-match-btn.blocked { opacity: .82; }
+.manager-match-btn.blocked .manager-topbar-action-state { color: #f0bd4e; }
+.manager-match-btn:not(.blocked) .manager-topbar-action-state { color: #8fe4c4; }

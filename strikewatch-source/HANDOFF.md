@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.171 — Compact Readability CSS Ownership**
-- Build ID: `12.171.0-compact-readability-css-ownership`
+- Build: **12.172 — Management Feedback CSS Ownership**
+- Build ID: `12.172.0-management-feedback-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.171.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.172.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.171 continues SW-020 by moving the Build 12.140 compact 12px typography floors into `css/compact-readability.css`. The date lines, subnav lock/access chips, economy-guide metadata and visible match-state label keep the same selectors, declarations and 1023px breakpoint. The sheet follows `game.css` before all later component layers. See `AUDIT-12.171.md`.
+Build 12.172 continues SW-020 by moving the complete Build 12.140 management live-status surface and visible match-control state into `css/management-feedback.css`. The banner positioning, compact safe-area offset, blocked tone, entry transition and blocked/ready state colours are unchanged. The sheet follows `game.css` before compact readability and all later component layers. See `AUDIT-12.172.md`.
+
+Build 12.171 continues SW-020 by moving the Build 12.140 compact 12px typography floors into `css/compact-readability.css`. The date lines, subnav lock/access chips, economy-guide metadata and visible match-state label keep the same selectors, declarations and 1023px breakpoint. The sheet follows `management-feedback.css` before all later component layers. See `AUDIT-12.171.md`.
 
 Build 12.170 continues SW-020 by moving the Build 12.141 reward-phase visibility rules into `css/reward-reveal.css`. During `cycling` and `revealed`, the crate core remains hidden and the awarded weapon model owns the full reveal grid. The declarations are unchanged; after the 12.171 extraction it follows `compact-readability.css` before the later component layers. See `AUDIT-12.170.md`.
 

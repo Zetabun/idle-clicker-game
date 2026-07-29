@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.171';
-  const BUILD_NAME = 'Compact Readability CSS Ownership';
-  const BUILD_ID = '12.171.0-compact-readability-css-ownership';
+  const BUILD_VERSION = '12.172';
+  const BUILD_NAME = 'Management Feedback CSS Ownership';
+  const BUILD_ID = '12.172.0-management-feedback-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.171 continues the staged CSS ownership programme by moving the compact
-12px management typography floors into `css/compact-readability.css` without
-changing selectors, declarations, breakpoint or cascade order. See `HANDOFF.md`
-and `AUDIT-12.171.md`.
+Build 12.172 continues the staged CSS ownership programme by moving the
+management live-status surface and visible blocked/ready match-state presentation
+into `css/management-feedback.css` without changing selectors, declarations or
+cascade order. See `HANDOFF.md` and `AUDIT-12.172.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

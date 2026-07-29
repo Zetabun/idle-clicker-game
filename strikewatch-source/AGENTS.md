@@ -56,7 +56,9 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.171 owns the compact 12px management typography floors in `css/compact-readability.css`. Keep it immediately after `game.css`, before `reward-reveal.css`. Do not weaken the 12px floors for the date lines, subnav lock/access chips, economy-guide metadata or match-state label below 1024px. Verify `typographyConsistencyForTest()`, `mobileInterfaceAuditForTest()` and `economyGuidanceForTest()` alongside the CSS ownership gates. See `AUDIT-12.171.md`.
+Build 12.172 owns the management live-status banner and visible blocked/ready match-state presentation in `css/management-feedback.css`. Keep it immediately after `game.css`, before `compact-readability.css`. The live region must remain above compact navigation, dismissible, and visible for repeated refusals; the match control must retain its visible state line and blocked/ready colours. Verify `managementStatusForTest()`, `showManagementStatusForTest()`, `typographyConsistencyForTest()` and `mobileInterfaceAuditForTest()` alongside the CSS ownership gates. See `AUDIT-12.172.md`.
+
+Build 12.171 owns the compact 12px management typography floors in `css/compact-readability.css`. Keep it after `management-feedback.css`, before `reward-reveal.css`. Do not weaken the 12px floors for the date lines, subnav lock/access chips, economy-guide metadata or match-state label below 1024px. Verify `typographyConsistencyForTest()`, `mobileInterfaceAuditForTest()` and `economyGuidanceForTest()` alongside the CSS ownership gates. See `AUDIT-12.171.md`.
 
 Build 12.170 owns crate-to-award phase visibility and full-width award placement in `css/reward-reveal.css`. Keep it after `compact-readability.css`, before `armour-viewer.css`. In `cycling` and `revealed`, the crate core must be hidden and the weapon model must span the reveal grid. Verify `crateSpinForTest()`, `crateAttachmentForTest()` and `firstMatchPayoffForTest()` alongside the CSS ownership gates. See `AUDIT-12.170.md`.
 
