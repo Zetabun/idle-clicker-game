@@ -36,6 +36,17 @@ jobs:
           fi
           test -f "$patch"
 
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/release-12-181.py')
+          text = path.read_text(encoding='utf-8')
+          old = "if block.count('#menuContent .command-hero-meta') != 2:"
+          new = "if block.count('#menuContent .command-hero-meta') != 3:"
+          if text.count(old) != 1:
+              raise SystemExit('Temporary 12.181 selector-count guard is not in the expected state')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+          PY
+
           python3 "$patch"
           cd strikewatch-source
 
@@ -70,7 +81,7 @@ jobs:
           legacy_marker = 'Build 12.134 — Compact readability and containment layer'
           assert legacy_marker not in game
           assert owned.count('@media (max-width: 1023px)') == 1
-          assert owned.count('#menuContent .command-hero-meta') == 2
+          assert owned.count('#menuContent .command-hero-meta') == 3
           required = (
               '#menuContent .menu-pill { font-size: 12px !important; line-height: 1.25 !important; }',
               '#menuContent .command-currency-link { font-size: 12px !important; }',
