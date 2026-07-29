@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.172 — Management Feedback CSS Ownership**
-- Build ID: `12.172.0-management-feedback-css-ownership`
+- Build: **12.173 — Training Programme CSS Ownership**
+- Build ID: `12.173.0-training-programme-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.172.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.173.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.172 continues SW-020 by moving the complete Build 12.140 management live-status surface and visible match-control state into `css/management-feedback.css`. The banner positioning, compact safe-area offset, blocked tone, entry transition and blocked/ready state colours are unchanged. The sheet follows `game.css` before compact readability and all later component layers. See `AUDIT-12.172.md`.
+Build 12.173 continues SW-020 by moving the Build 12.139 training-programme wrapper and outstanding-requirement accent rules into `css/training-programme.css`. The wrapper remains an unclipped grid that keeps the save control with the roster; `.needs-programme` still adds the accent rail and requirement kicker. The declarations are unchanged, and the sheet follows `game.css` before all later component layers. See `AUDIT-12.173.md`.
+
+Build 12.172 continues SW-020 by moving the complete Build 12.140 management live-status surface and visible match-control state into `css/management-feedback.css`. The banner positioning, compact safe-area offset, blocked tone, entry transition and blocked/ready state colours are unchanged. The sheet follows `training-programme.css` before compact readability and all later component layers. See `AUDIT-12.172.md`.
 
 Build 12.171 continues SW-020 by moving the Build 12.140 compact 12px typography floors into `css/compact-readability.css`. The date lines, subnav lock/access chips, economy-guide metadata and visible match-state label keep the same selectors, declarations and 1023px breakpoint. The sheet follows `management-feedback.css` before all later component layers. See `AUDIT-12.171.md`.
 

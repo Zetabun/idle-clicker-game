@@ -31296,22 +31296,3 @@ body.mail-scroll-armed .club-mail-list {
   #menuContent .development-intro-panel p { font-size: 12.5px !important; }
   #menuContent .development-intro-panel ol span { font-size: 11.5px !important; }
 }
-
-/* --- Build 12.139: training programme requirement ---------------------------
-   The programme selects are the last panel on the route, so the SAVE CHANGES
-   bar used to sit ~630px above the fold once the manager scrolled to them:
-   a selection could be made with no visible way to commit it. The bar now
-   travels with the roster it saves. The wrapper must not clip its overflow —
-   see AUDIT-12.135 for the grid container-collapse hazard. */
-.training-programmes-zone {
-  display: grid;
-  gap: inherit;
-  align-content: start;
-  min-width: 0;
-}
-.training-programmes-zone.needs-programme .training-roster-panel {
-  border-left: 2px solid var(--accent);
-}
-.training-programmes-zone.needs-programme .career-section-head > div > span {
-  color: var(--accent);
-}

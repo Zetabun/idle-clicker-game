@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.173 — Training Programme CSS Ownership
+
+- Moves the Build 12.139 training-programme wrapper and outstanding-requirement accent rules from `game.css` into `css/training-programme.css` without changing selectors or declarations.
+- Preserves the layer immediately after `game.css`, before management feedback and all later presentation layers.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.173.md`.
+
+
 ## 12.172 — Management Feedback CSS Ownership
 
 - Moves the complete Build 12.140 management live-status surface and visible blocked/ready match-state rules from `game.css` into `css/management-feedback.css` without changing selectors or declarations.
