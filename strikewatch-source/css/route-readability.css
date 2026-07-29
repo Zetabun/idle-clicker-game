@@ -1,0 +1,105 @@
+/* Route-specific compact typography and containment ownership.
+   Extracted from the Build 12.134 tail in Build 12.178 without changing declarations. */
+
+/* --------------------------------------------------------------------------
+   Build 12.134 — compact readability floor, part two.
+   Selectors taken directly from mobileInterfaceAuditForTest() output at 390px;
+   every rule below replaces measured 5.5–10px copy. Label-weight text lands on
+   11px and meaningful copy on 12px, matching the 12.118/12.120 floors.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+
+  /* League pyramid tier chips */
+  #menuContent .league-pyramid > div > span { font-size: 11px !important; }
+
+  /* Development alert strip */
+  #menuContent .development-alert-strip > button > span { font-size: 12px !important; }
+
+  /* Formation cards */
+  #menuContent .club-formation-card-head > b { font-size: 11px !important; }
+  #menuContent .club-formation-card > em { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* Squad cards */
+  #menuContent .team-player-card-head > span { font-size: 11px !important; }
+
+  /* Player profile: stat points */
+  #menuContent .player-stat-point-banner span,
+  #menuContent .player-stat-allocation-actions > span { font-size: 11.5px !important; }
+
+  /* Weapon inspector callout */
+  #menuContent .career-inspector-callout > span { font-size: 11px !important; }
+  #menuContent .career-inspector-callout > strong { font-size: 12px !important; }
+
+  /* Commercial partnerships */
+  #menuContent .commercial-offer-card > header > span,
+  #menuContent .commercial-deal-grid > div > span { font-size: 11px !important; }
+
+  /* Inbox view tabs */
+  #menuContent .club-mail-view-tabs button b { font-size: 11px !important; }
+
+  /* Squad dynamics */
+  #menuContent .squad-dynamics-policy > span,
+  #menuContent .squad-dynamics-pair > header > span,
+  #menuContent .squad-dynamics-profile-pairs > button > span { font-size: 11px !important; }
+  #menuContent .squad-dynamics-pair > footer { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* Opponent preparation */
+  #menuContent .opponent-preparation-recommendation > header span,
+  #menuContent .opponent-preparation-focus > div > span,
+  #menuContent .opponent-response-settings > span { font-size: 11px !important; }
+
+  /* Dashboard tiles */
+  #menuContent .menu-info-tile .menu-meta { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* Player telemetry */
+  #menuContent .player-profile-telemetry-status span { font-size: 11px !important; }
+
+  /* Armoury detail */
+  #menuContent .career-weapon-topline > span,
+  #menuContent .career-rarity { font-size: 11px !important; }
+  #menuContent .career-weapon-tradeoffs > article > strong { font-size: 11.5px !important; }
+  #menuContent .career-weapon-tradeoffs > article > ul > li { font-size: 11.5px !important; line-height: 1.5 !important; }
+
+  /* Supporters and coaching advice */
+  #menuContent .supporter-expectation-grid > div > span { font-size: 11px !important; }
+  #menuContent .opposition-counter-advice button b { font-size: 11.5px !important; }
+
+  /* Dense grids that now hold larger copy must be allowed to grow rather than
+     clip it. */
+  #menuContent .commercial-deal-grid > div,
+  #menuContent .supporter-expectation-grid > div,
+  #menuContent .player-profile-telemetry-status > div,
+  #menuContent .squad-dynamics-pair,
+  #menuContent .menu-info-tile { min-width: 0; }
+}
+
+/* Build 12.134 - compact readability floor, part three (second audit pass). */
+
+@media (max-width: 1023px) {
+  #menuContent .league-opponent-facts > div > span,
+  #menuContent .league-pyramid > div > strong { font-size: 11px !important; }
+
+  #menuContent .club-plan-option > em { font-size: 11px !important; line-height: 1.4 !important; }
+
+  #menuContent .team-trait-list > span { font-size: 11.5px !important; }
+
+  #menuContent .career-skin-option > span,
+  #menuContent .armour-rig-label { font-size: 11px !important; }
+
+  #menuContent .club-role-execution > strong { font-size: 11.5px !important; }
+
+  #menuContent .club-plan-confirm > div > span { font-size: 11px !important; }
+
+  #menuContent .player-accolade-entry > div > span { font-size: 11px !important; }
+
+  #menuContent .career-armour-guide-grid > article > strong { font-size: 12px !important; }
+
+  #menuContent .career-armour-inventory-item > span > em { font-size: 11px !important; }
+
+  #menuContent .career-attachment-slot > strong { font-size: 11.5px !important; }
+
+  #menuContent .league-opponent-facts > div,
+  #menuContent .career-attachment-slot,
+  #menuContent .player-accolade-entry { min-width: 0; }
+}

@@ -32,9 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.177 continues the staged CSS ownership programme by moving management-
-route grid track sizing into `css/management-grid.css` without changing the
-selector or declarations. See `HANDOFF.md` and `AUDIT-12.177.md`.
+Build 12.178 continues the staged CSS ownership programme by moving the Build
+12.134 route-specific compact typography floors and dense-grid containment into
+`css/route-readability.css` without changing declarations, breakpoint or cascade
+order. See `HANDOFF.md` and `AUDIT-12.178.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

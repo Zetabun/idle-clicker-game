@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.178 — Route Readability CSS Ownership
+
+- Moves the Build 12.134 route-specific compact typography floors and dense-grid containment from `game.css` into `css/route-readability.css` without changing declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before management-grid and all later presentation layers.
+- Keeps label-weight text at 11–11.5px, meaningful copy at 12px and dense route cards contained with `min-width: 0`.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.178.md`.
+
+
 ## 12.177 — Management Grid CSS Ownership
 
 - Moves the remaining Build 12.135/12.136 `#menuContent` grid-track sizing from `game.css` into `css/management-grid.css` without changing the selector or declarations.

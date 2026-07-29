@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.177';
-  const BUILD_NAME = 'Management Grid CSS Ownership';
-  const BUILD_ID = '12.177.0-management-grid-css-ownership';
+  const BUILD_VERSION = '12.178';
+  const BUILD_NAME = 'Route Readability CSS Ownership';
+  const BUILD_ID = '12.178.0-route-readability-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
