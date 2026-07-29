@@ -1400,6 +1400,95 @@
     }
   }
 
+
+  // Build 12.183: project a stylised blood cluster onto a nearby wall behind a
+  // struck operator. The continuation ray uses the same castRay authority as
+  // line of sight and bullet chips, so presentation can never invent a surface.
+  function spawnBloodSplatter(shooter, target, options = {}) {
+    const appliedDamage = Math.max(0, Number(options.appliedDamage) || 0);
+    if (!shooter || !target || appliedDamage <= 0 || typeof castRay !== 'function') return null;
+    const dx = target.x - shooter.x;
+    const dz = target.y - shooter.y;
+    const horizontal = Math.hypot(dx, dz);
+    if (horizontal < 0.05) return null;
+    const angle = Math.atan2(dz, dx);
+    const forwardX = Math.cos(angle);
+    const forwardZ = Math.sin(angle);
+    const originX = target.x + forwardX * 0.08;
+    const originZ = target.y + forwardZ * 0.08;
+    const hit = castRay(originX, originZ, angle);
+    if (!hit || !Number.isFinite(hit.d) || hit.d > BLOOD_SPLATTER_MAX_DISTANCE) return null;
+
+    const headshot = Boolean(options.headshot);
+    const fatal = Boolean(options.fatal);
+    const targetElevation = arenaElevationAt(target.x, target.y);
+    const wallHeight = Number(activeArenaMeta().ceilingHeight) || GL_WALL_HEIGHT;
+    const crouchDrop = target.crouched ? (headshot ? 0.43 : 0.38) : 0;
+    const centreHeight = targetElevation + (headshot ? 1.64 : 1.22) - crouchDrop + (Math.random() - 0.5) * 0.16;
+    if (centreHeight <= targetElevation + 0.10 || centreHeight >= targetElevation + wallHeight - 0.08) return null;
+
+    const nudge = 0.016;
+    const intensity = clamp(appliedDamage / 42 + (headshot ? 0.28 : 0) + (fatal ? 0.16 : 0), 0.30, 1.18);
+    const baseSize = 0.052 + intensity * 0.052 + Math.random() * 0.020;
+    const splatter = {
+      x: hit.hitX - (hit.side === 0 ? Math.sign(forwardX || 1) * nudge : 0),
+      y: centreHeight,
+      z: hit.hitY - (hit.side === 1 ? Math.sign(forwardZ || 1) * nudge : 0),
+      axis: hit.side === 0 ? 'x' : 'z',
+      distance: hit.d,
+      appliedDamage,
+      headshot,
+      fatal,
+      spots: []
+    };
+    splatter.spots.push({
+      u: 0,
+      v: 0,
+      sx: baseSize * (1.02 + Math.random() * 0.24),
+      sy: baseSize * (0.76 + Math.random() * 0.24),
+      tone: 0
+    });
+    const dropletCount = Math.min(4, 2 + (headshot ? 1 : 0) + (fatal ? 1 : 0));
+    for (let index = 0; index < dropletCount; index++) {
+      const theta = Math.random() * Math.PI * 2;
+      const travel = baseSize * (1.05 + Math.random() * 2.15);
+      const radius = baseSize * (0.18 + Math.random() * 0.27);
+      splatter.spots.push({
+        u: Math.cos(theta) * travel,
+        v: Math.sin(theta) * travel * 0.72,
+        sx: radius * (0.78 + Math.random() * 0.58),
+        sy: radius * (0.76 + Math.random() * 0.62),
+        tone: 1 + (index % 2)
+      });
+    }
+    bloodDecals.push(splatter);
+    if (bloodDecals.length > BLOOD_DECAL_LIMIT) bloodDecals.splice(0, bloodDecals.length - BLOOD_DECAL_LIMIT);
+    return splatter;
+  }
+
+  function clearBloodDecals() {
+    bloodDecals.length = 0;
+  }
+
+  function drawBloodDecals() {
+    if (!bloodDecals.length) return;
+    const colours = [
+      [0.205, 0.010, 0.015],
+      [0.125, 0.004, 0.008],
+      [0.265, 0.014, 0.019]
+    ];
+    for (const splatter of bloodDecals) {
+      for (const spot of splatter.spots) {
+        const x = splatter.x + (splatter.axis === 'z' ? spot.u : 0);
+        const y = splatter.y + spot.v;
+        const z = splatter.z + (splatter.axis === 'x' ? spot.u : 0);
+        if (splatter.axis === 'x') mat4TRS(glModel, x, y, z, 0, 0, 0, 0.012, spot.sy, spot.sx);
+        else mat4TRS(glModel, x, y, z, 0, 0, 0, spot.sx, spot.sy, 0.012);
+        drawMesh(glMeshes.sphere, colours[spot.tone] || colours[0], glModel, 0, 1, 3, 0.90);
+      }
+    }
+  }
+
   function drawGroundGlow(x, z, sx, sz, colour, alpha, yaw = 0, emissive = 0.0) {
     mat4TRS(glModel, x, 0.010, z, yaw, 0, 0, sx, 1, sz);
     drawMesh(glMeshes.disc, colour, glModel, emissive, alpha, 4, 0.08);

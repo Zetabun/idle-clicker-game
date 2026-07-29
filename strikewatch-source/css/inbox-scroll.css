@@ -1,0 +1,19 @@
+/* Inbox nested-scroll arming and overflow signposting ownership.
+   Extracted from the Build 12.133 tail in Build 12.183 without changing declarations. */
+
+/* --- Inbox feed: inert until the manager clicks into it --- */
+
+.club-mail-list {
+  overflow-y: hidden !important;
+  overscroll-behavior: contain;
+}
+
+body.mail-scroll-armed .club-mail-list {
+  overflow-y: auto !important;
+}
+
+/* Only shown while the feed is inert and actually has more rows below. */
+.club-mail-list.mail-scroll-overflow {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, .18) 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, .18) 100%);
+}

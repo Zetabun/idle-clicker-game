@@ -252,6 +252,54 @@
   };
   window.__strikeDebug.impactDecalCountForTest = () => ({ count: impactDecals.length, limit: IMPACT_DECAL_LIMIT });
   window.__strikeDebug.clearImpactDecalsForTest = () => { clearImpactDecals(); return { count: impactDecals.length }; };
+  // Build 12.183: finds an open cell with a solid surface directly behind it,
+  // then projects one real body-damage splatter without requiring a live duel.
+  window.__strikeDebug.bloodSplatterForTest = () => {
+    if (typeof spawnBloodSplatter !== 'function') return { ok: false, reason: 'spawnBloodSplatter unavailable' };
+    let setup = null;
+    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (let z = 2; z < MAP_H - 2 && !setup; z++) {
+      for (let x = 2; x < MAP_W - 2 && !setup; x++) {
+        if (MAP[z]?.[x] !== '0') continue;
+        for (const [dx, dz] of directions) {
+          const wallX = x + dx;
+          const wallZ = z + dz;
+          const shooterX = x - dx * 2;
+          const shooterZ = z - dz * 2;
+          const middleX = x - dx;
+          const middleZ = z - dz;
+          if (MAP[wallZ]?.[wallX] === '0') continue;
+          if (MAP[middleZ]?.[middleX] !== '0' || MAP[shooterZ]?.[shooterX] !== '0') continue;
+          setup = {
+            shooter: { x: shooterX + 0.5, y: shooterZ + 0.5, crouched: false },
+            target: { x: x + 0.5, y: z + 0.5, crouched: false }
+          };
+          break;
+        }
+      }
+    }
+    if (!setup) return { ok: false, reason: 'No adjacent wall test lane found.' };
+    const before = bloodDecals.length;
+    const splatter = spawnBloodSplatter(setup.shooter, setup.target, { appliedDamage: 34, headshot: false, fatal: false });
+    const solidBehind = splatter
+      ? isWall(splatter.x + (splatter.axis === 'x' ? 0.06 : 0), splatter.z + (splatter.axis === 'z' ? 0.06 : 0))
+        || isWall(splatter.x - (splatter.axis === 'x' ? 0.06 : 0), splatter.z - (splatter.axis === 'z' ? 0.06 : 0))
+      : false;
+    return {
+      ok: Boolean(splatter) && solidBehind && splatter.distance <= BLOOD_SPLATTER_MAX_DISTANCE,
+      arenaId: activeArenaId,
+      spawned: Boolean(splatter),
+      restsOnSolidSurface: solidBehind,
+      distance: splatter ? Number(splatter.distance.toFixed(3)) : null,
+      maximumDistance: BLOOD_SPLATTER_MAX_DISTANCE,
+      spots: splatter ? splatter.spots.length : 0,
+      count: bloodDecals.length,
+      grew: bloodDecals.length > before,
+      limit: BLOOD_DECAL_LIMIT
+    };
+  };
+  window.__strikeDebug.bloodSplatterCountForTest = () => ({ count: bloodDecals.length, limit: BLOOD_DECAL_LIMIT });
+  window.__strikeDebug.clearBloodSplatterForTest = () => { clearBloodDecals(); return { count: bloodDecals.length }; };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);
   window.__strikeDebug.forceSaveCheckpointForTest = reason => ({

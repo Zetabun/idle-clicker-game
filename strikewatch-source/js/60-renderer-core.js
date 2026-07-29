@@ -117,6 +117,12 @@
   // these appear and expire while the batch is live.
   const IMPACT_DECAL_LIMIT = 48;
   const impactDecals = [];
+  // Build 12.183: blood marks are transient presentation generated only after
+  // real health damage. Keep the pool bounded because each splatter contains a
+  // small authored cluster of flattened procedural spheres.
+  const BLOOD_DECAL_LIMIT = 18;
+  const BLOOD_SPLATTER_MAX_DISTANCE = 1.25;
+  const bloodDecals = [];
   let lastFrameDt = 1 / 60;
   const viewWeaponState = {
     initialised: false,

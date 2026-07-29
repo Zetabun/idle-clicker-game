@@ -10,6 +10,7 @@ share application scope in the listed order.
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/inbox-scroll.css` | Inbox nested-scroll arming, overscroll containment and overflow mask |
 | `css/operator-portrait.css` | Asset-free operator complexion, kit, headgear, rig and deployment portrait presentation |
 | `css/command-chrome.css` | Compact shared command typography floors and nowrap containment |
 | `css/combat-effectiveness.css` | Compact after-action score ring, caption and influence typography |
@@ -67,7 +68,7 @@ share application scope in the listed order.
 | `55-opening-week.js` | Opening-week agenda and safe advance-to-event flow |
 | `56-world-press-awards.js` | Press, awards and honours presentation |
 | `60-renderer-core.js` | WebGL setup and shared drawing primitives |
-| `61-world-renderer.js` | Arenas, props, decor, doors and world geometry |
+| `61-world-renderer.js` | Arenas, props, decor, doors, world geometry and transient surface decals |
 | `62-character-renderer.js` | Operators, corpses, armour fit and held weapons |
 | `63-viewmodel-renderer.js` | First-person weapon/viewmodel rendering |
 | `64-reward-renderer.js` | Reward and crate presentation |
@@ -91,7 +92,7 @@ everything it consumes and before everything that consumes it.
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
 then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
 the cascade-order authority, and `index.html` must load the same files in the
-same order. The current order is `game.css`, `operator-portrait.css`, `command-chrome.css`,
+same order. The current order is `game.css`, `inbox-scroll.css`, `operator-portrait.css`, `command-chrome.css`,
 `combat-effectiveness.css`, `match-type.css`, `route-readability.css`, `management-grid.css`,
 `league-table.css`, `calendar-agenda.css`, `training-readability.css`,
 `training-programme.css`, `management-feedback.css`, `compact-readability.css`,

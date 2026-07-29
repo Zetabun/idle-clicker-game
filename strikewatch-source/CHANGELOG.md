@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.183 — Surface Blood & Inbox CSS Ownership
+
+- Adds stylised blood splatters to nearby walls behind operators after real health damage, using the existing shared grid raycaster rather than a second collision authority.
+- Keeps blood presentation transient, outside static batching, capped at 18 splatters and cleared on round reset; armour-only hits do not create blood.
+- Moves the Build 12.133 Inbox scroll arming, overscroll containment and overflow mask from `game.css` into `css/inbox-scroll.css` without changing declarations.
+- Preserves the new stylesheet immediately after `game.css`, before operator portraits and every later presentation layer.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.183.md`.
+
+
 ## 12.182 — Operator Portrait CSS Ownership
 
 - Moves the Build 12.133 asset-free operator portrait palette, headgear, rig, comms and deployment sizing rules from `game.css` into `css/operator-portrait.css` without changing declarations or breakpoint.

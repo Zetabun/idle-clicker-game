@@ -229,6 +229,11 @@ current task. Release-specific implementation detail belongs in the matching
 - Static world batching bakes model matrices at capture time. An arena may only
   be batched once every time-dependent draw in `drawStaticWorld` is excluded
   through `setStaticWorldBatchEligibility()`.
+- Bullet chips and blood splatters are bounded transient presentation. They use
+  the shared wall raycaster, remain outside `drawStaticWorld`, clear on round
+  reset and must never change damage, hitboxes, collision, navigation or line of
+  sight. Blood appears only after real health damage and only on a nearby surface
+  behind the struck operator.
 - Open-air arenas draw their sky through `drawArenaSky()` before any world
   geometry, writing no depth and restoring renderer state. Sky colour and fog
   colour are separate decisions; the sky must not be derived from the fog.

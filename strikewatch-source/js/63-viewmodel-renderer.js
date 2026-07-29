@@ -554,10 +554,11 @@
       }
     }
 
-    // Build 12.155: impact marks are drawn after the world so they sit on the
-    // surface they hit, and outside the static pass so batching can never bake
-    // them. Opaque, so they need no blend state of their own.
+    // Surface marks are drawn after the world so they sit on the surface they
+    // hit, and outside the static pass so batching can never bake them. Opaque,
+    // so they need no blend state of their own.
     if (typeof drawImpactDecals === 'function') drawImpactDecals();
+    if (typeof drawBloodDecals === 'function') drawBloodDecals();
 
     if (tracers.length) {
       setBlendMode(true);

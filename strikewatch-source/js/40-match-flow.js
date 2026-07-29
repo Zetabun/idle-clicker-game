@@ -1044,6 +1044,7 @@
     roundReason = '';
     tracers.length = 0;
     if (typeof clearImpactDecals === 'function') clearImpactDecals();
+    if (typeof clearBloodDecals === 'function') clearBloodDecals();
     soundEvents = [];
     lastCombatContactAt = simulationClock;
     lateRoundMode = false;

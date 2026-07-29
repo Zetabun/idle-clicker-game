@@ -4660,6 +4660,9 @@
         }
         if (this === bots[spectatorIndex]) hitPulse = Math.max(hitPulse, 0.72);
         const fatalHit = target.health <= 0;
+        if (appliedDamage > 0 && typeof spawnBloodSplatter === 'function') {
+          spawnBloodSplatter(this, target, { appliedDamage, headshot: headshotHit, fatal: fatalHit });
+        }
         spawnDamageNumber(this, target, appliedDamage, fatalHit, criticalHit, headshotHit);
         if (fatalHit) {
           if (criticalHit) {

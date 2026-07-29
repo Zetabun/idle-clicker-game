@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.182 continues the staged CSS ownership programme by moving the Build
-12.133 asset-free operator portrait presentation into `css/operator-portrait.css`
-without changing declarations, deterministic identity generation or responsive
-sizing. See `HANDOFF.md` and `AUDIT-12.182.md`.
+Build 12.183 adds bounded nearby-wall blood splatters to real body hits and
+continues the staged CSS ownership programme by moving Inbox scroll arming into
+`css/inbox-scroll.css` without changing its declarations. See `HANDOFF.md` and
+`AUDIT-12.183.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
