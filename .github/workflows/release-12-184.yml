@@ -1,0 +1,213 @@
+name: Release Strikewatch 12.184
+
+on:
+  page_build:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-release-12-184
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out marked revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Build, verify and publish 12.184
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f .github/release-12-184.trigger ]; then
+            echo "No 12.184 trigger marker on this revision; nothing to do."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected = {
+              'version': '12.183',
+              'name': 'Surface Blood & Inbox CSS Ownership',
+              'build_id': '12.183.0-surface-blood-inbox-css-ownership',
+          }
+          actual = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          if actual != expected:
+              raise SystemExit(f'Predecessor guard failed: expected {expected}, got {actual}')
+          PY
+
+          python3 .github/scripts/release-12-184.py
+          cd strikewatch-source
+
+          python3 -m py_compile build.py
+          python3 build.py
+
+          find js -maxdepth 1 -type f -name '*.js' ! -name 'strikewatch.dev.js' -print0 | sort -z | xargs -0 -n1 node --check
+          node --check js/strikewatch.dev.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('dist/strikewatch-build-12.184.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S)
+          if not scripts:
+              raise SystemExit('No standalone inline scripts found')
+          for index, script in enumerate(scripts):
+              Path(f'/tmp/sw-12-184-inline-{index}.js').write_text(script, encoding='utf-8')
+          print(len(scripts))
+          PY
+          for script in /tmp/sw-12-184-inline-*.js; do node --check "$script"; done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          game = Path('css/game.css').read_text(encoding='utf-8')
+          owned = Path('css/economy-guide.css').read_text(encoding='utf-8')
+          marker = '/* --- After-action rewards / economy guide typography --- */'
+          if marker in game:
+              raise SystemExit('Economy guide marker remains in game.css')
+          if owned.count(marker) != 1:
+              raise SystemExit('Economy guide marker does not occur exactly once in owner')
+          required = [
+              '.club-economy-guide > header > span { font-size: 10px !important; }',
+              '.club-economy-guide > header > strong { font-size: 15px !important; }',
+              '.club-economy-guide article > span { font-size: 9.5px !important; letter-spacing: .1em !important; }',
+              '.club-economy-guide article > strong { font-size: 17px !important; }',
+              'grid-template-columns: repeat(2, minmax(0, 1fr)) !important;',
+              '.club-economy-guide article > strong { font-size: 19px !important; }',
+              '@media (max-width: 560px)',
+              '.club-economy-guide > div { grid-template-columns: 1fr !important; }',
+          ]
+          missing = [item for item in required if item not in owned]
+          if missing:
+              raise SystemExit(f'Missing economy declarations: {missing}')
+          if owned.count('@media (max-width: 1023px)') != 1 or owned.count('@media (max-width: 560px)') != 1:
+              raise SystemExit('Economy guide media-query ownership mismatch')
+
+          report = json.loads(Path('dist/strikewatch-build-12.184-css-debt.json').read_text(encoding='utf-8'))
+          if not report.get('within_budget'):
+              raise SystemExit(f'CSS report outside budget: {report}')
+          if report.get('stylesheet_order', [])[:3] != ['game.css', 'economy-guide.css', 'inbox-scroll.css']:
+              raise SystemExit(f'Unexpected leading stylesheet order: {report.get("stylesheet_order")}')
+          if report.get('owned_economy_guide_lines', 0) < 25:
+              raise SystemExit('Economy guide owner line count was not recorded')
+          if report.get('game_css_lines', 999999) > 30785:
+              raise SystemExit('game.css did not meet tightened line budget')
+
+          index = Path('index.html').read_text(encoding='utf-8')
+          build = Path('build.py').read_text(encoding='utf-8')
+          hrefs = re.findall(r'<link rel="stylesheet" href="css/([^?]+)\?v=[^"]+"\s*/>', index)
+          match = re.search(r'CSS_PATHS = \((.*?)\)\n', build, flags=re.S)
+          if not match:
+              raise SystemExit('CSS_PATHS not found')
+          paths = re.findall(r'ROOT / "css" / "([^"]+)"', match.group(1))
+          if hrefs != paths:
+              raise SystemExit(f'index/build CSS order mismatch: {hrefs} != {paths}')
+
+          standalone = Path('dist/strikewatch-build-12.184.html').read_text(encoding='utf-8')
+          if re.search(r'<link rel="stylesheet" href="css/', standalone):
+              raise SystemExit('Standalone retained an external CSS link')
+          for hook in ('economyGuidanceForTest', 'firstMatchPayoffForTest', 'typographyConsistencyForTest', 'mobileInterfaceAuditForTest', 'renderRouteForTest'):
+              if hook not in Path('js/strikewatch.dev.js').read_text(encoding='utf-8'):
+                  raise SystemExit(f'Missing retained hook: {hook}')
+          PY
+
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.184.html dist/strikewatch-build-12.184-size.json dist/strikewatch-build-12.184-css-debt.json > /tmp/sw-12-184-first.sha
+          cp js/strikewatch.dev.js /tmp/sw-12-184-first.dev.js
+          cp dist/strikewatch-build-12.184.html /tmp/sw-12-184-first.html
+          cp dist/strikewatch-build-12.184-size.json /tmp/sw-12-184-first-size.json
+          cp dist/strikewatch-build-12.184-css-debt.json /tmp/sw-12-184-first-css.json
+
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.184.html dist/strikewatch-build-12.184-size.json dist/strikewatch-build-12.184-css-debt.json > /tmp/sw-12-184-second.sha
+          cmp /tmp/sw-12-184-first.dev.js js/strikewatch.dev.js
+          cmp /tmp/sw-12-184-first.html dist/strikewatch-build-12.184.html
+          cmp /tmp/sw-12-184-first-size.json dist/strikewatch-build-12.184-size.json
+          cmp /tmp/sw-12-184-first-css.json dist/strikewatch-build-12.184-css-debt.json
+
+          npm install --prefix /tmp/sw-playwright playwright@1.52.0 --no-save
+          /tmp/sw-playwright/node_modules/.bin/playwright install chromium
+          python3 -m http.server 8124 --bind 127.0.0.1 >/tmp/sw-12-184-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          cat >/tmp/sw-12-184-browser.js <<'JS'
+          const { chromium } = require('/tmp/sw-playwright/node_modules/playwright');
+          (async () => {
+            const browser = await chromium.launch({headless: true, args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist']});
+            const page = await browser.newPage({viewport: {width: 1440, height: 1000}});
+            const faults = [];
+            page.on('pageerror', error => faults.push(`pageerror: ${error.message}`));
+            page.on('console', message => { if (message.type() === 'error') faults.push(`console: ${message.text()}`); });
+            await page.goto('http://127.0.0.1:8124/index.html', {waitUntil: 'networkidle'});
+            await page.evaluate(() => {
+              const probe = document.createElement('section');
+              probe.id = 'economyStyleProbe';
+              probe.className = 'club-economy-guide';
+              probe.innerHTML = '<header><span>REWARDS</span><strong>ECONOMY GUIDE</strong><p>Settlement explanation.</p></header><div><article><span>CLUB CASH</span><strong>£1,250</strong><b>RESULT</b><p>Operating reward.</p></article><article><span>GOLD COINS</span><strong>4</strong><b>BONUS</b><p>Milestone reward.</p></article></div><aside>Ledger note.</aside>';
+              document.body.appendChild(probe);
+            });
+            const sample = async width => {
+              await page.setViewportSize({width, height: 1000});
+              await page.waitForTimeout(80);
+              return page.evaluate(() => {
+                const root = document.getElementById('economyStyleProbe');
+                const style = selector => getComputedStyle(root.querySelector(selector));
+                const grid = style(':scope > div');
+                return {
+                  headerKicker: style(':scope > header > span').fontSize,
+                  headerTitle: style(':scope > header > strong').fontSize,
+                  headerCopy: style(':scope > header > p').fontSize,
+                  meta: style('article > span').fontSize,
+                  value: style('article > strong').fontSize,
+                  label: style('article > b').fontSize,
+                  body: style('article > p').fontSize,
+                  aside: style(':scope > aside').fontSize,
+                  columns: grid.gridTemplateColumns.split(/\s+/).filter(Boolean).length,
+                  gap: grid.columnGap
+                };
+              });
+            };
+            const desktop = await sample(1440);
+            const compact = await sample(1023);
+            const phone = await sample(560);
+            const expect = (condition, message) => { if (!condition) throw new Error(message); };
+            expect(desktop.headerKicker === '10px', `desktop kicker ${desktop.headerKicker}`);
+            expect(desktop.headerTitle === '15px', `desktop title ${desktop.headerTitle}`);
+            expect(desktop.headerCopy === '11px', `desktop copy ${desktop.headerCopy}`);
+            expect(desktop.meta === '9.5px', `desktop meta ${desktop.meta}`);
+            expect(desktop.value === '17px', `desktop value ${desktop.value}`);
+            expect(desktop.label === '11px' && desktop.body === '11px' && desktop.aside === '11px', `desktop body hierarchy ${JSON.stringify(desktop)}`);
+            expect(compact.headerTitle === '17px' && compact.headerCopy === '13px', `compact header ${JSON.stringify(compact)}`);
+            expect(compact.meta === '12px', `later compact metadata floor did not win: ${compact.meta}`);
+            expect(compact.value === '19px' && compact.label === '13px' && compact.body === '12px' && compact.aside === '12px', `compact hierarchy ${JSON.stringify(compact)}`);
+            expect(compact.columns === 2 && compact.gap === '8px', `compact grid ${JSON.stringify(compact)}`);
+            expect(phone.columns === 1, `phone grid ${JSON.stringify(phone)}`);
+            if (faults.length) throw new Error(faults.join('\n'));
+            console.log(JSON.stringify({desktop, compact, phone}));
+            await browser.close();
+          })().catch(error => { console.error(error); process.exit(1); });
+          JS
+          node /tmp/sw-12-184-browser.js
+          kill "$server_pid" 2>/dev/null || true
+          trap - EXIT
+
+          cp dist/strikewatch-build-12.184.html ../cod.html
+          cmp dist/strikewatch-build-12.184.html ../cod.html
+
+          cd ..
+          rm -f .github/scripts/release-12-184.py .github/workflows/release-12-184.yml .github/release-12-184.trigger
+          git add -A -- strikewatch-source cod.html .github
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Build 12.184: establish economy guide CSS ownership"
+          git push origin HEAD:main
