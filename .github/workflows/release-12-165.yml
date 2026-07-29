@@ -1,20 +1,19 @@
 name: Strikewatch 12.165 release
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [main]
-    paths: ['.github/release-triggers/12.165.txt']
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: write
 
 env:
-  RELEASE_ATTEMPT: pull-request-closed
+  RELEASE_ATTEMPT: issue-opened
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true
+    if: github.event.issue.title == 'RUN STRIKEWATCH 12.165 RELEASE'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
