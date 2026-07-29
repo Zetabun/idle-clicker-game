@@ -1,19 +1,17 @@
 name: Strikewatch 12.165 release
 
 on:
-  issues:
-    types: [opened]
+  schedule:
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: write
-  issues: write
 
 env:
-  RELEASE_ATTEMPT: issue-opened
+  RELEASE_ATTEMPT: github-scheduler
 
 jobs:
   release:
-    if: github.event.issue.title == 'RUN STRIKEWATCH 12.165 RELEASE'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
