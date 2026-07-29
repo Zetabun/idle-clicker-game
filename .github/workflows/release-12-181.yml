@@ -1,0 +1,174 @@
+name: Strikewatch Release 12.181
+
+on:
+  page_build:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-release-12-181
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out triggering revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Build, verify and publish 12.181
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          marker='.github/release-triggers/12.181.txt'
+          patch='.github/scripts/release-12-181.py'
+          workflow='.github/workflows/release-12-181.yml'
+
+          if [ ! -f "$marker" ]; then
+            echo '12.181 trigger marker is absent; nothing to release.'
+            exit 0
+          fi
+          test -f "$patch"
+
+          python3 "$patch"
+          cd strikewatch-source
+
+          python3 -m py_compile build.py
+          python3 build.py
+
+          first_dir="$(mktemp -d)"
+          cp js/strikewatch.dev.js "$first_dir/strikewatch.dev.js"
+          cp dist/strikewatch-build-12.181.html "$first_dir/strikewatch-build-12.181.html"
+          cp dist/strikewatch-build-12.181-size.json "$first_dir/strikewatch-build-12.181-size.json"
+          cp dist/strikewatch-build-12.181-css-debt.json "$first_dir/strikewatch-build-12.181-css-debt.json"
+
+          python3 build.py
+          cmp js/strikewatch.dev.js "$first_dir/strikewatch.dev.js"
+          cmp dist/strikewatch-build-12.181.html "$first_dir/strikewatch-build-12.181.html"
+          cmp dist/strikewatch-build-12.181-size.json "$first_dir/strikewatch-build-12.181-size.json"
+          cmp dist/strikewatch-build-12.181-css-debt.json "$first_dir/strikewatch-build-12.181-css-debt.json"
+
+          for file in js/*.js; do
+            node --check "$file"
+          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import importlib.util
+          import json
+          import re
+
+          root = Path('.')
+          game = (root / 'css/game.css').read_text(encoding='utf-8')
+          owned = (root / 'css/command-chrome.css').read_text(encoding='utf-8')
+          legacy_marker = 'Build 12.134 — Compact readability and containment layer'
+          assert legacy_marker not in game
+          assert owned.count('@media (max-width: 1023px)') == 1
+          assert owned.count('#menuContent .command-hero-meta') == 2
+          required = (
+              '#menuContent .menu-pill { font-size: 12px !important; line-height: 1.25 !important; }',
+              '#menuContent .command-currency-link { font-size: 12px !important; }',
+              '#menuContent .career-xp-panel .career-xp-footer > span { font-size: 12px !important; }',
+              '#menuContent .club-response-group button > span { font-size: 12px !important; }',
+              '#menuContent .club-response-group button > b { font-size: 11px !important; }',
+              '#menuContent .command-fixture-card > header > b { font-size: 11px !important; }',
+              '#menuContent .career-inventory-state { font-size: 11.5px !important; }',
+              '#menuContent .career-section-head > p { font-size: 12px !important; }',
+              '#menuContent .club-staff-card dd { font-size: 11px !important; }',
+              'min-width: 0;',
+              'max-width: 100%;',
+              'overflow-wrap: anywhere;',
+              'white-space: normal !important;',
+              'flex-wrap: wrap;',
+              'row-gap: 6px;',
+          )
+          for declaration in required:
+              assert declaration in owned, declaration
+
+          spec = importlib.util.spec_from_file_location('strikewatch_build', root / 'build.py')
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          expected = [
+              'game.css',
+              'command-chrome.css',
+              'combat-effectiveness.css',
+              'match-type.css',
+              'route-readability.css',
+              'management-grid.css',
+              'league-table.css',
+              'calendar-agenda.css',
+              'training-readability.css',
+              'training-programme.css',
+              'management-feedback.css',
+              'compact-readability.css',
+              'reward-reveal.css',
+              'armour-viewer.css',
+              'weapon-presentation.css',
+              'loadout-stills.css',
+              '12.161-audit-fixes.css',
+              'armoury-inventory.css',
+              'compact-navigation.css',
+          ]
+          assert [path.name for path in module.CSS_PATHS] == expected
+          html = (root / 'index.html').read_text(encoding='utf-8')
+          hrefs = re.findall(r'<link rel="stylesheet" href="css/([^?]+)\?v=[^"]+"\s*/>', html)
+          assert hrefs == expected
+          assert html.count('>12.181</b>') == 2
+
+          report = json.loads((root / 'dist/strikewatch-build-12.181-css-debt.json').read_text(encoding='utf-8'))
+          assert report['version'] == '12.181'
+          assert report['stylesheets'] == 19
+          assert report['stylesheet_order'] == expected
+          assert report['owned_command_chrome_lines'] > 0
+          assert report['game_css_lines'] <= 30930
+          assert report['important_declarations'] <= 2182
+          assert report['media_queries'] <= 474
+          assert report['within_budget'] is True
+
+          size = json.loads((root / 'dist/strikewatch-build-12.181-size.json').read_text(encoding='utf-8'))
+          assert size['version'] == '12.181'
+          assert size['javascript_raw_reduction_percent'] >= 2.5
+
+          release = json.loads((root / 'RELEASE.json').read_text(encoding='utf-8'))
+          assert release == {
+              'version': '12.181',
+              'name': 'Command Chrome CSS Ownership',
+              'build_id': '12.181.0-command-chrome-css-ownership',
+          }
+
+          standalone = (root / 'dist/strikewatch-build-12.181.html').read_text(encoding='utf-8')
+          assert not re.search(r'<link rel="stylesheet" href="css/', standalone)
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', standalone, re.S)
+          assert scripts
+          Path('/tmp/strikewatch-12.181-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+
+          bundle = (root / 'js/strikewatch.dev.js').read_text(encoding='utf-8')
+          for hook in ('mobileInterfaceAuditForTest', 'typographyConsistencyForTest', 'economyGuidanceForTest', 'renderRouteForTest'):
+              assert hook in bundle, hook
+
+          assert (root / 'AUDIT-12.181.md').exists()
+          assert '12.181 — Command Chrome CSS Ownership' in (root / 'HANDOFF.md').read_text(encoding='utf-8')
+          assert '12.181 — Command Chrome CSS Ownership' in (root / 'CHANGELOG.md').read_text(encoding='utf-8')
+          PY
+
+          node --check /tmp/strikewatch-12.181-inline.js
+
+          cd ..
+          cp strikewatch-source/dist/strikewatch-build-12.181.html cod.html
+          cmp cod.html strikewatch-source/dist/strikewatch-build-12.181.html
+
+          find strikewatch-source -type d -name __pycache__ -prune -exec rm -rf {} +
+          rm -f "$patch" "$workflow" "$marker"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- strikewatch-source cod.html .github
+          git diff --cached --check
+          git commit -m 'Build 12.181: establish command chrome CSS ownership'
+          git push origin HEAD:main
