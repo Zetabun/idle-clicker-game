@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.178 — Route Readability CSS Ownership**
-- Build ID: `12.178.0-route-readability-css-ownership`
+- Build: **12.179 — Match Type CSS Ownership**
+- Build ID: `12.179.0-match-type-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.178.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.179.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.178 continues SW-020 by moving the Build 12.134 route-specific compact typography floors and dense-grid containment into `css/route-readability.css`. The 11–12px label/copy floors, 1023px breakpoint and `min-width: 0` containment remain unchanged. The sheet follows `game.css` before all later component layers. See `AUDIT-12.178.md`.
+Build 12.179 continues SW-020 by moving the Build 12.134 post-match fixture-type presentation into `css/match-type.css`. The detailed report competition row and staged first-match type line keep the same font sizes, spacing and 1023px breakpoint. The sheet follows `game.css` before all later component layers. Match classification remains owned by `careerMatchTypeDescriptor(summary)`. See `AUDIT-12.179.md`.
+
+Build 12.178 continues SW-020 by moving the Build 12.134 route-specific compact typography floors and dense-grid containment into `css/route-readability.css`. The 11–12px label/copy floors, 1023px breakpoint and `min-width: 0` containment remain unchanged. After the 12.179 extraction, the sheet follows `match-type.css` before all later component layers. See `AUDIT-12.178.md`.
 
 Build 12.177 continues SW-020 by moving the Build 12.135/12.136 management grid-track sizing into `css/management-grid.css`. `grid-auto-rows: max-content` and `align-content: start` remain unchanged, so route panels keep content-height rows without clipping or overlap. After the 12.178 extraction, the sheet follows `route-readability.css` before all later component layers. See `AUDIT-12.177.md`.
 

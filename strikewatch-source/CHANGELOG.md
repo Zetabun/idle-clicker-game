@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.179 — Match Type CSS Ownership
+
+- Moves the Build 12.134 detailed-report competition row and staged first-match fixture-type line from `game.css` into `css/match-type.css` without changing declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before route readability and all later presentation layers.
+- Leaves league, exhibition and guided-orientation classification under `careerMatchTypeDescriptor(summary)` with no gameplay or settlement change.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.179.md`.
+
+
 ## 12.178 — Route Readability CSS Ownership
 
 - Moves the Build 12.134 route-specific compact typography floors and dense-grid containment from `game.css` into `css/route-readability.css` without changing declarations or breakpoint.

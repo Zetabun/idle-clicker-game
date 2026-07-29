@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.178 continues the staged CSS ownership programme by moving the Build
-12.134 route-specific compact typography floors and dense-grid containment into
-`css/route-readability.css` without changing declarations, breakpoint or cascade
-order. See `HANDOFF.md` and `AUDIT-12.178.md`.
+Build 12.179 continues the staged CSS ownership programme by moving the Build
+12.134 post-match fixture-type presentation into `css/match-type.css` without
+changing declarations, breakpoint or classification logic. See `HANDOFF.md` and
+`AUDIT-12.179.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
