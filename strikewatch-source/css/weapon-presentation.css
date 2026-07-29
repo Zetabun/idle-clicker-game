@@ -1,0 +1,42 @@
+/* CSS-3D weapon face lighting and grip-material presentation ownership.
+   Extracted from game.css in Build 12.168 without changing declarations. */
+
+/* --- Build 12.147: weapon form and grip texture ----------------------------
+   Weapon cuboids drew all six faces with the same gradient, so every model
+   read as a flat slab regardless of orientation. The armour rig already
+   proves directional face shading works here; weapons never received it.
+   These filters give each face a light direction so barrels, receivers and
+   magazines resolve as solids. WebGL surfaces are unaffected — they light the
+   shared parts for real — so this only lifts the CSS-3D menu surfaces:
+   the crate reveal, inventory thumbnails, the armoury inspector and store
+   cards. */
+.career-weapon-rig .career-weapon-cuboid .front {
+  filter: brightness(1.12) saturate(1.05);
+}
+.career-weapon-rig .career-weapon-cuboid .back {
+  filter: brightness(.80) saturate(.94);
+}
+.career-weapon-rig .career-weapon-cuboid .left {
+  filter: brightness(.84) saturate(.97);
+}
+.career-weapon-rig .career-weapon-cuboid .right {
+  filter: brightness(1.04) saturate(1.03);
+}
+.career-weapon-rig .career-weapon-cuboid .top {
+  filter: brightness(1.30) saturate(.97);
+  box-shadow: inset 0 1px rgba(255,255,255,.20), inset 0 -3px 6px rgba(0,0,0,.16);
+}
+.career-weapon-rig .career-weapon-cuboid .bottom {
+  filter: brightness(.50) saturate(.80);
+}
+/* Cylindrical runs — barrels, suppressors, gas blocks — need the same cue or
+   they read as flat bands against the shaded receiver. */
+.career-weapon-rig .career-weapon-cylinder .side:nth-child(3n + 1) { filter: brightness(1.14) saturate(1.03); }
+.career-weapon-rig .career-weapon-cylinder .side:nth-child(3n + 2) { filter: brightness(.84) saturate(.95); }
+.career-weapon-rig .career-weapon-cylinder .side:nth-child(3n) { filter: brightness(.64) saturate(.89); }
+
+/* The grip texture repeated every 5px, which aliased into hazard-tape banding
+   at inspection scale rather than reading as a textured grip. */
+.career-weapon-cuboid.rubber .face {
+  background: repeating-linear-gradient(135deg, #1a252a 0 2px, #131d22 2px 4px);
+}

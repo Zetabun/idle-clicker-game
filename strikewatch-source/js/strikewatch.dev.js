@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.167';
-  const BUILD_NAME = 'Loadout CSS Ownership';
-  const BUILD_ID = '12.167.0-loadout-css-ownership';
+  const BUILD_VERSION = '12.168';
+  const BUILD_NAME = 'Weapon Presentation CSS Ownership';
+  const BUILD_ID = '12.168.0-weapon-presentation-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

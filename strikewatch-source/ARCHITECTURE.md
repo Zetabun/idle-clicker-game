@@ -10,6 +10,7 @@ share application scope in the listed order.
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/weapon-presentation.css` | CSS-3D weapon face/cylinder lighting and grip-material presentation |
 | `css/loadout-stills.css` | Loadout still stages and on-demand 3D inspector controls |
 | `css/12.161-audit-fixes.css` | Cross-route compact readability and accessibility fixes from 12.161 |
 | `css/armoury-inventory.css` | Compact Armoury inventory card layout |
@@ -76,8 +77,8 @@ everything it consumes and before everything that consumes it.
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
 then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
 the cascade-order authority, and `index.html` must load the same files in the
-same order. The current order is `game.css`, `loadout-stills.css`,
-`12.161-audit-fixes.css`, `armoury-inventory.css`, then
+same order. The current order is `game.css`, `weapon-presentation.css`,
+`loadout-stills.css`, `12.161-audit-fixes.css`, `armoury-inventory.css`, then
 `compact-navigation.css`. Prefer component-scoped selectors and verify the
 final computed style, especially when pseudo-elements are reused.
 

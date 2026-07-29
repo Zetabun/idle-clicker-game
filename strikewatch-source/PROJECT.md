@@ -32,11 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.167 continues the staged CSS ownership programme by moving loadout
-still and on-demand inspector presentation into `css/loadout-stills.css` while
-preserving cascade order. The build now validates that `index.html` and
-`CSS_PATHS` declare the same stylesheet sequence. See `HANDOFF.md` and
-`AUDIT-12.167.md`.
+Build 12.168 continues the staged CSS ownership programme by moving shared
+CSS-3D weapon face lighting, cylinder shading and grip presentation into
+`css/weapon-presentation.css` without changing declarations or cascade order.
+See `HANDOFF.md` and `AUDIT-12.168.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.167 — Loadout CSS Ownership**
-- Build ID: `12.167.0-loadout-css-ownership`
+- Build: **12.168 — Weapon Presentation CSS Ownership**
+- Build ID: `12.168.0-weapon-presentation-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.167.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.168.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.168 continues SW-020 by moving the Build 12.147 CSS-3D weapon face lighting, cylinder shading and grip texture into `css/weapon-presentation.css`. The declarations are unchanged and the sheet remains immediately after `game.css`, preserving its position before all later component and audit layers. Keep weapon thumbnails, crate reveals, inspectors and store cards on the shared presentation layer. See `AUDIT-12.168.md`.
 
 Build 12.167 continues SW-020 by moving the Build 12.155 loadout-still and on-demand inspector presentation into `css/loadout-stills.css`, preserving its position before the 12.161 layer. `build.py` now derives and validates the development stylesheet block from `CSS_PATHS` instead of maintaining a brittle hard-coded regular expression. Architecture and stable contracts now document the stylesheet ownership order. See `AUDIT-12.167.md`.
 

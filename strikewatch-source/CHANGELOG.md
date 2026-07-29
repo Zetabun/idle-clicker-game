@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.168 — Weapon Presentation CSS Ownership
+
+- Moves the Build 12.147 CSS-3D weapon face lighting, cylinder shading and grip texture from `game.css` into `css/weapon-presentation.css` without changing declarations.
+- Preserves the layer immediately after `game.css`, before loadout and later audit/component overrides.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.168.md`.
+
+
 ## 12.167 — Loadout CSS Ownership
 
 - Moves the Build 12.155 loadout-still and on-demand inspector presentation from `game.css` into `css/loadout-stills.css` without changing selectors or declarations.
