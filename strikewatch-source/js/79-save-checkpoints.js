@@ -252,8 +252,9 @@
   };
   window.__strikeDebug.impactDecalCountForTest = () => ({ count: impactDecals.length, limit: IMPACT_DECAL_LIMIT });
   window.__strikeDebug.clearImpactDecalsForTest = () => { clearImpactDecals(); return { count: impactDecals.length }; };
-  // Build 12.183: finds an open cell with a solid surface directly behind it,
-  // then projects one real body-damage splatter without requiring a live duel.
+  // Build 12.185: finds an open cell with a solid surface directly behind it,
+  // verifies zero health damage remains ignored, then projects one readable
+  // body-damage splatter without requiring a live duel.
   window.__strikeDebug.bloodSplatterForTest = () => {
     if (typeof spawnBloodSplatter !== 'function') return { ok: false, reason: 'spawnBloodSplatter unavailable' };
     let setup = null;
@@ -279,26 +280,63 @@
       }
     }
     if (!setup) return { ok: false, reason: 'No adjacent wall test lane found.' };
+    const zeroDamageBefore = bloodDecals.length;
+    const zeroDamage = spawnBloodSplatter(setup.shooter, setup.target, { appliedDamage: 0, headshot: false, fatal: false });
+    const ignoredZeroDamage = !zeroDamage && bloodDecals.length === zeroDamageBefore;
     const before = bloodDecals.length;
     const splatter = spawnBloodSplatter(setup.shooter, setup.target, { appliedDamage: 34, headshot: false, fatal: false });
     const solidBehind = splatter
       ? isWall(splatter.x + (splatter.axis === 'x' ? 0.06 : 0), splatter.z + (splatter.axis === 'z' ? 0.06 : 0))
         || isWall(splatter.x - (splatter.axis === 'x' ? 0.06 : 0), splatter.z - (splatter.axis === 'z' ? 0.06 : 0))
       : false;
+    const core = splatter?.spots.find(spot => spot.kind === 'core') || splatter?.spots[0] || null;
+    const drips = splatter ? splatter.spots.filter(spot => spot.kind === 'drip').length : 0;
+    const largestSpan = splatter ? Math.max(...splatter.spots.map(spot => Math.max(spot.sx, spot.sy))) : 0;
+    const coreToImpactRatio = core ? core.sx / BLOOD_SPLATTER_PRESENTATION.impactRimMaximum : 0;
     return {
-      ok: Boolean(splatter) && solidBehind && splatter.distance <= BLOOD_SPLATTER_MAX_DISTANCE,
+      ok: Boolean(splatter)
+        && ignoredZeroDamage
+        && solidBehind
+        && splatter.distance <= BLOOD_SPLATTER_MAX_DISTANCE
+        && splatter.spots.length >= 5
+        && drips >= 1
+        && Boolean(core)
+        && core.sx >= BLOOD_SPLATTER_PRESENTATION.minimumReadableCoreWidth
+        && coreToImpactRatio >= 1.5,
       arenaId: activeArenaId,
       spawned: Boolean(splatter),
+      ignoredZeroDamage,
       restsOnSolidSurface: solidBehind,
       distance: splatter ? Number(splatter.distance.toFixed(3)) : null,
       maximumDistance: BLOOD_SPLATTER_MAX_DISTANCE,
       spots: splatter ? splatter.spots.length : 0,
+      drips,
+      coreWidth: core ? Number(core.sx.toFixed(4)) : null,
+      coreHeight: core ? Number(core.sy.toFixed(4)) : null,
+      largestSpan: Number(largestSpan.toFixed(4)),
+      minimumReadableCoreWidth: BLOOD_SPLATTER_PRESENTATION.minimumReadableCoreWidth,
+      impactRimMaximum: BLOOD_SPLATTER_PRESENTATION.impactRimMaximum,
+      coreToImpactRatio: Number(coreToImpactRatio.toFixed(3)),
       count: bloodDecals.length,
       grew: bloodDecals.length > before,
       limit: BLOOD_DECAL_LIMIT
     };
   };
-  window.__strikeDebug.bloodSplatterCountForTest = () => ({ count: bloodDecals.length, limit: BLOOD_DECAL_LIMIT });
+  window.__strikeDebug.bloodSplatterCountForTest = () => ({ count: bloodDecals.length, spots: bloodDecals.reduce((total, splatter) => total + splatter.spots.length, 0), limit: BLOOD_DECAL_LIMIT });
+  window.__strikeDebug.bloodDecalDrawPassForTest = () => {
+    if (typeof drawBloodDecals !== 'function' || !gl) return { ok: false, reason: 'Blood draw pass unavailable.' };
+    const spots = bloodDecals.reduce((total, splatter) => total + splatter.spots.length, 0);
+    const before = rendererFrameStats.drawCalls;
+    drawBloodDecals();
+    const drawCalls = rendererFrameStats.drawCalls - before;
+    return {
+      ok: drawCalls === spots,
+      events: bloodDecals.length,
+      spots,
+      drawCalls,
+      limit: BLOOD_DECAL_LIMIT
+    };
+  };
   window.__strikeDebug.clearBloodSplatterForTest = () => { clearBloodDecals(); return { count: bloodDecals.length }; };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);

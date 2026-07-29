@@ -1,0 +1,57 @@
+/* Confirm Deployment typography and roster-layout ownership.
+   Extracted from the Build 12.133 tail in Build 12.185 without changing declarations. */
+
+/* --- Confirm Deployment: readable at every width --- */
+
+.deployment-section-head span,
+.deployment-map-card em,
+.deployment-operator-row > span,
+.deployment-tactics span { font-size: 10px !important; letter-spacing: .11em !important; }
+
+.deployment-section-head strong { font-size: 17px !important; }
+.deployment-section-head small { font-size: 11px !important; line-height: 1.5 !important; }
+
+.deployment-map-card > span:not(.deployment-map-visual) b { font-size: 13px !important; }
+.deployment-map-card > span:not(.deployment-map-visual) small { font-size: 10px !important; line-height: 1.5 !important; }
+
+.deployment-operator-row {
+  grid-template-columns: 26px 54px minmax(0, 1fr) minmax(128px, .72fr) !important;
+  gap: 11px !important;
+  min-height: 60px !important;
+  padding: 9px 12px !important;
+}
+
+.deployment-operator-row strong { font-size: 12px !important; }
+.deployment-operator-row b { font-size: 11px !important; }
+.deployment-operator-row small { margin-top: 4px !important; font-size: 10px !important; }
+
+.deployment-tactics strong { font-size: 11px !important; }
+
+.deployment-lane-row strong { font-size: 12px !important; }
+.deployment-lane-row small,
+.deployment-lane-row b { font-size: 10px !important; }
+
+@media (max-width: 1023px) {
+  .deployment-section-head strong { font-size: 19px !important; }
+  .deployment-section-head small { font-size: 13px !important; }
+  .deployment-section-head span,
+  .deployment-map-card em,
+  .deployment-operator-row > span,
+  .deployment-tactics span { font-size: 11px !important; }
+
+  .deployment-map-card > span:not(.deployment-map-visual) b { font-size: 15px !important; }
+  .deployment-map-card > span:not(.deployment-map-visual) small { font-size: 12px !important; }
+
+  .deployment-operator-row {
+    grid-template-columns: 24px 50px minmax(0, 1fr) !important;
+    min-height: 62px !important;
+  }
+
+  .deployment-operator-row strong { font-size: 14px !important; }
+  .deployment-operator-row b { font-size: 12px !important; }
+  .deployment-operator-row small { font-size: 11px !important; }
+  .deployment-tactics strong { font-size: 12px !important; }
+  .deployment-lane-row strong { font-size: 14px !important; }
+  .deployment-lane-row small,
+  .deployment-lane-row b { font-size: 11px !important; }
+}

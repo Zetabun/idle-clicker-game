@@ -233,7 +233,9 @@ current task. Release-specific implementation detail belongs in the matching
   the shared wall raycaster, remain outside `drawStaticWorld`, clear on round
   reset and must never change damage, hitboxes, collision, navigation or line of
   sight. Blood appears only after real health damage and only on a nearby surface
-  behind the struck operator.
+  behind the struck operator. Its irregular red core and downward drip must stay
+  visually distinct from the smaller pale-rimmed bullet chip at compact portrait
+  widths.
 - Open-air arenas draw their sky through `drawArenaSky()` before any world
   geometry, writing no depth and restoring renderer state. Sky colour and fog
   colour are separate decisions; the sky must not be derived from the fog.

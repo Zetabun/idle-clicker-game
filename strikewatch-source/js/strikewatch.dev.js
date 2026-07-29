@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.184';
-  const BUILD_NAME = 'Economy Guide CSS Ownership';
-  const BUILD_ID = '12.184.0-economy-guide-css-ownership';
+  const BUILD_VERSION = '12.185';
+  const BUILD_NAME = 'Blood Visibility & Deployment CSS Ownership';
+  const BUILD_ID = '12.185.0-blood-visibility-deployment-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -42468,9 +42468,25 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
 
-  // Build 12.183: project a stylised blood cluster onto a nearby wall behind a
-  // struck operator. The continuation ray uses the same castRay authority as
-  // line of sight and bullet chips, so presentation can never invent a surface.
+  const BLOOD_SPLATTER_PRESENTATION = Object.freeze({
+    baseSize: 0.068,
+    damageScale: 0.060,
+    randomSize: 0.022,
+    minimumReadableCoreWidth: 0.14,
+    impactRimMaximum: 0.093,
+    depth: 0.008,
+    emissive: 0.018,
+    roughness: 0.82,
+    colours: Object.freeze([
+      Object.freeze([0.38, 0.006, 0.012]),
+      Object.freeze([0.23, 0.003, 0.006]),
+      Object.freeze([0.52, 0.012, 0.020])
+    ])
+  });
+
+  // Build 12.185: keep the existing nearby-wall projection authority, but make
+  // the cosmetic cluster read as blood on a portrait phone: a larger irregular
+  // core, stronger red separation and at least one downward drip.
   function spawnBloodSplatter(shooter, target, options = {}) {
     const appliedDamage = Math.max(0, Number(options.appliedDamage) || 0);
     if (!shooter || !target || appliedDamage <= 0 || typeof castRay !== 'function') return null;
@@ -42496,7 +42512,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     const nudge = 0.016;
     const intensity = clamp(appliedDamage / 42 + (headshot ? 0.28 : 0) + (fatal ? 0.16 : 0), 0.30, 1.18);
-    const baseSize = 0.052 + intensity * 0.052 + Math.random() * 0.020;
+    const baseSize = BLOOD_SPLATTER_PRESENTATION.baseSize
+      + intensity * BLOOD_SPLATTER_PRESENTATION.damageScale
+      + Math.random() * BLOOD_SPLATTER_PRESENTATION.randomSize;
     const splatter = {
       x: hit.hitX - (hit.side === 0 ? Math.sign(forwardX || 1) * nudge : 0),
       y: centreHeight,
@@ -42509,23 +42527,36 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       spots: []
     };
     splatter.spots.push({
+      kind: 'core',
       u: 0,
       v: 0,
-      sx: baseSize * (1.02 + Math.random() * 0.24),
-      sy: baseSize * (0.76 + Math.random() * 0.24),
+      sx: baseSize * (1.28 + Math.random() * 0.30),
+      sy: baseSize * (0.82 + Math.random() * 0.24),
       tone: 0
     });
-    const dropletCount = Math.min(4, 2 + (headshot ? 1 : 0) + (fatal ? 1 : 0));
+    const dropletCount = Math.min(5, 3 + (headshot ? 1 : 0) + (fatal ? 1 : 0));
     for (let index = 0; index < dropletCount; index++) {
       const theta = Math.random() * Math.PI * 2;
-      const travel = baseSize * (1.05 + Math.random() * 2.15);
-      const radius = baseSize * (0.18 + Math.random() * 0.27);
+      const travel = baseSize * (1.10 + Math.random() * 2.35);
+      const radius = baseSize * (0.18 + Math.random() * 0.28);
       splatter.spots.push({
+        kind: 'droplet',
         u: Math.cos(theta) * travel,
         v: Math.sin(theta) * travel * 0.72,
-        sx: radius * (0.78 + Math.random() * 0.58),
-        sy: radius * (0.76 + Math.random() * 0.62),
+        sx: radius * (0.80 + Math.random() * 0.62),
+        sy: radius * (0.78 + Math.random() * 0.66),
         tone: 1 + (index % 2)
+      });
+    }
+    const dripCount = 1 + (fatal ? 1 : 0);
+    for (let index = 0; index < dripCount; index++) {
+      splatter.spots.push({
+        kind: 'drip',
+        u: (Math.random() - 0.5) * baseSize * 0.62,
+        v: -baseSize * (0.82 + index * 0.44 + Math.random() * 0.48),
+        sx: baseSize * (0.13 + Math.random() * 0.09),
+        sy: baseSize * (0.58 + Math.random() * 0.34),
+        tone: index % 2 ? 2 : 1
       });
     }
     bloodDecals.push(splatter);
@@ -42539,19 +42570,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function drawBloodDecals() {
     if (!bloodDecals.length) return;
-    const colours = [
-      [0.205, 0.010, 0.015],
-      [0.125, 0.004, 0.008],
-      [0.265, 0.014, 0.019]
-    ];
+    const presentation = BLOOD_SPLATTER_PRESENTATION;
     for (const splatter of bloodDecals) {
       for (const spot of splatter.spots) {
         const x = splatter.x + (splatter.axis === 'z' ? spot.u : 0);
         const y = splatter.y + spot.v;
         const z = splatter.z + (splatter.axis === 'x' ? spot.u : 0);
-        if (splatter.axis === 'x') mat4TRS(glModel, x, y, z, 0, 0, 0, 0.012, spot.sy, spot.sx);
-        else mat4TRS(glModel, x, y, z, 0, 0, 0, spot.sx, spot.sy, 0.012);
-        drawMesh(glMeshes.sphere, colours[spot.tone] || colours[0], glModel, 0, 1, 3, 0.90);
+        if (splatter.axis === 'x') mat4TRS(glModel, x, y, z, 0, 0, 0, presentation.depth, spot.sy, spot.sx);
+        else mat4TRS(glModel, x, y, z, 0, 0, 0, spot.sx, spot.sy, presentation.depth);
+        drawMesh(
+          glMeshes.sphere,
+          presentation.colours[spot.tone] || presentation.colours[0],
+          glModel,
+          presentation.emissive,
+          1,
+          3,
+          presentation.roughness
+        );
       }
     }
   }
@@ -58448,8 +58483,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   };
   window.__strikeDebug.impactDecalCountForTest = () => ({ count: impactDecals.length, limit: IMPACT_DECAL_LIMIT });
   window.__strikeDebug.clearImpactDecalsForTest = () => { clearImpactDecals(); return { count: impactDecals.length }; };
-  // Build 12.183: finds an open cell with a solid surface directly behind it,
-  // then projects one real body-damage splatter without requiring a live duel.
+  // Build 12.185: finds an open cell with a solid surface directly behind it,
+  // verifies zero health damage remains ignored, then projects one readable
+  // body-damage splatter without requiring a live duel.
   window.__strikeDebug.bloodSplatterForTest = () => {
     if (typeof spawnBloodSplatter !== 'function') return { ok: false, reason: 'spawnBloodSplatter unavailable' };
     let setup = null;
@@ -58475,26 +58511,63 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
     }
     if (!setup) return { ok: false, reason: 'No adjacent wall test lane found.' };
+    const zeroDamageBefore = bloodDecals.length;
+    const zeroDamage = spawnBloodSplatter(setup.shooter, setup.target, { appliedDamage: 0, headshot: false, fatal: false });
+    const ignoredZeroDamage = !zeroDamage && bloodDecals.length === zeroDamageBefore;
     const before = bloodDecals.length;
     const splatter = spawnBloodSplatter(setup.shooter, setup.target, { appliedDamage: 34, headshot: false, fatal: false });
     const solidBehind = splatter
       ? isWall(splatter.x + (splatter.axis === 'x' ? 0.06 : 0), splatter.z + (splatter.axis === 'z' ? 0.06 : 0))
         || isWall(splatter.x - (splatter.axis === 'x' ? 0.06 : 0), splatter.z - (splatter.axis === 'z' ? 0.06 : 0))
       : false;
+    const core = splatter?.spots.find(spot => spot.kind === 'core') || splatter?.spots[0] || null;
+    const drips = splatter ? splatter.spots.filter(spot => spot.kind === 'drip').length : 0;
+    const largestSpan = splatter ? Math.max(...splatter.spots.map(spot => Math.max(spot.sx, spot.sy))) : 0;
+    const coreToImpactRatio = core ? core.sx / BLOOD_SPLATTER_PRESENTATION.impactRimMaximum : 0;
     return {
-      ok: Boolean(splatter) && solidBehind && splatter.distance <= BLOOD_SPLATTER_MAX_DISTANCE,
+      ok: Boolean(splatter)
+        && ignoredZeroDamage
+        && solidBehind
+        && splatter.distance <= BLOOD_SPLATTER_MAX_DISTANCE
+        && splatter.spots.length >= 5
+        && drips >= 1
+        && Boolean(core)
+        && core.sx >= BLOOD_SPLATTER_PRESENTATION.minimumReadableCoreWidth
+        && coreToImpactRatio >= 1.5,
       arenaId: activeArenaId,
       spawned: Boolean(splatter),
+      ignoredZeroDamage,
       restsOnSolidSurface: solidBehind,
       distance: splatter ? Number(splatter.distance.toFixed(3)) : null,
       maximumDistance: BLOOD_SPLATTER_MAX_DISTANCE,
       spots: splatter ? splatter.spots.length : 0,
+      drips,
+      coreWidth: core ? Number(core.sx.toFixed(4)) : null,
+      coreHeight: core ? Number(core.sy.toFixed(4)) : null,
+      largestSpan: Number(largestSpan.toFixed(4)),
+      minimumReadableCoreWidth: BLOOD_SPLATTER_PRESENTATION.minimumReadableCoreWidth,
+      impactRimMaximum: BLOOD_SPLATTER_PRESENTATION.impactRimMaximum,
+      coreToImpactRatio: Number(coreToImpactRatio.toFixed(3)),
       count: bloodDecals.length,
       grew: bloodDecals.length > before,
       limit: BLOOD_DECAL_LIMIT
     };
   };
-  window.__strikeDebug.bloodSplatterCountForTest = () => ({ count: bloodDecals.length, limit: BLOOD_DECAL_LIMIT });
+  window.__strikeDebug.bloodSplatterCountForTest = () => ({ count: bloodDecals.length, spots: bloodDecals.reduce((total, splatter) => total + splatter.spots.length, 0), limit: BLOOD_DECAL_LIMIT });
+  window.__strikeDebug.bloodDecalDrawPassForTest = () => {
+    if (typeof drawBloodDecals !== 'function' || !gl) return { ok: false, reason: 'Blood draw pass unavailable.' };
+    const spots = bloodDecals.reduce((total, splatter) => total + splatter.spots.length, 0);
+    const before = rendererFrameStats.drawCalls;
+    drawBloodDecals();
+    const drawCalls = rendererFrameStats.drawCalls - before;
+    return {
+      ok: drawCalls === spots,
+      events: bloodDecals.length,
+      spots,
+      drawCalls,
+      limit: BLOOD_DECAL_LIMIT
+    };
+  };
   window.__strikeDebug.clearBloodSplatterForTest = () => { clearBloodDecals(); return { count: bloodDecals.length }; };
   window.__strikeDebug.skyDomeForTest = () => skyDomeForTest();
   window.__strikeDebug.skyDomeSampleForTest = dir => skyDomeSampleForTest(dir);

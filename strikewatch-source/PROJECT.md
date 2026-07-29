@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.184 continues the staged CSS ownership programme by moving the
-after-action reward and economy-guide typography/reflow into
-`css/economy-guide.css` without changing declarations or breakpoints. See
-`HANDOFF.md` and `AUDIT-12.184.md`.
+Build 12.185 makes nearby-wall blood more legible on portrait phones while
+keeping it cosmetic and bounded, and continues staged CSS ownership by moving
+Confirm Deployment typography/layout into `css/deployment-readability.css`
+without changing its declarations. See `HANDOFF.md` and `AUDIT-12.185.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

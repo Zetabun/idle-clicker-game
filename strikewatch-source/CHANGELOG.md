@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.185 — Blood Visibility & Deployment CSS Ownership
+
+- Enlarges and brightens nearby-wall blood clusters so they remain recognisable on compact portrait screens rather than resembling bullet chips.
+- Gives every blood event a distinct downward drip while preserving positive-health-damage gating, shared-raycast placement, the 1.25m surface limit, the 18-event cap and round clearing.
+- Moves the complete Build 12.133 Confirm Deployment typography and roster-layout block from `game.css` into `css/deployment-readability.css` without changing declarations or breakpoints.
+- Preserves the new stylesheet immediately after `game.css`, before economy guidance and all later presentation layers.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.185.md`.
+
+
 ## 12.184 — Economy Guide CSS Ownership
 
 - Moves the complete Build 12.133 after-action reward and economy-guide typography/reflow block from `game.css` into `css/economy-guide.css` without changing declarations or breakpoints.
