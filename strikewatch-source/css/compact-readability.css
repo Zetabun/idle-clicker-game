@@ -1,0 +1,16 @@
+/* Compact management typography-floor ownership.
+   Extracted from game.css in Build 12.171 without changing declarations. */
+
+/* --- Build 12.140: compact readability floors -------------------------------
+   typographyConsistencyForTest() requires 12px on the compact target for the
+   End Day meta line and the subnav lock chip. Both had been rendering at 9px,
+   so the gate had been failing before this build. The match-control state
+   label is held to the same floor. */
+@media (max-width: 1023px) {
+  #managerDateDay { font-size: 12px !important; }
+  #managerDateMeta { font-size: 12px !important; }
+  .menu-shell .menu-subtab-lock { font-size: 12px !important; }
+  .menu-shell .menu-tab-access { font-size: 12px !important; }
+  #menuContent .club-economy-guide article > span { font-size: 12px !important; }
+  .manager-topbar-action-state { font-size: 12px; }
+}

@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.171 — Compact Readability CSS Ownership
+
+- Moves the Build 12.140 compact 12px management typography floors from `game.css` into `css/compact-readability.css` without changing selectors, declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before reward, armour, weapon and loadout presentation.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.171.md`.
+
+
 ## 12.170 — Reward Reveal CSS Ownership
 
 - Moves the Build 12.141 crate-to-award phase visibility and full-width weapon placement rules from `game.css` into `css/reward-reveal.css` without changing declarations.

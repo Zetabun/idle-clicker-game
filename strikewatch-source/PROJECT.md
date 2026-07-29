@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.170 continues the staged CSS ownership programme by moving the
-crate-to-award phase visibility and full-width weapon reveal placement into
-`css/reward-reveal.css` without changing declarations or cascade order. See
-`HANDOFF.md` and `AUDIT-12.170.md`.
+Build 12.171 continues the staged CSS ownership programme by moving the compact
+12px management typography floors into `css/compact-readability.css` without
+changing selectors, declarations, breakpoint or cascade order. See `HANDOFF.md`
+and `AUDIT-12.171.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
