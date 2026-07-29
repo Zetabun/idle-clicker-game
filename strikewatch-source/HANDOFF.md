@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.183 — Surface Blood & Inbox CSS Ownership**
-- Build ID: `12.183.0-surface-blood-inbox-css-ownership`
+- Build: **12.184 — Economy Guide CSS Ownership**
+- Build ID: `12.184.0-economy-guide-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.183.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.184.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.183 adds bounded wall blood splatters when real health damage lands with a solid surface within 1.25m behind the struck operator. The continuation ray reuses `castRay`, splatters stay in the dynamic pass, cap at 18 and clear on round reset. The same release continues SW-020 by moving the Build 12.133 Inbox scroll arming and overflow mask into `css/inbox-scroll.css` immediately after `game.css`. See `AUDIT-12.183.md`.
+Build 12.184 continues SW-020 by moving the complete Build 12.133 after-action reward and economy-guide typography into `css/economy-guide.css`. Desktop type, the two-column compact grid, the single-column phone grid and all 9.5–19px authored floors remain unchanged. The sheet follows `game.css` before Inbox and every later component layer; the later `compact-readability.css` 12px metadata floor still wins below 1024px. See `AUDIT-12.184.md`.
+
+Build 12.183 adds bounded wall blood splatters when real health damage lands with a solid surface within 1.25m behind the struck operator. The continuation ray reuses `castRay`, splatters stay in the dynamic pass, cap at 18 and clear on round reset. The same release continues SW-020 by moving the Build 12.133 Inbox scroll arming and overflow mask into `css/inbox-scroll.css`. After the 12.184 extraction, the Inbox sheet follows `economy-guide.css` before operator portraits and all later component layers. See `AUDIT-12.183.md`.
 
 Build 12.182 continues SW-020 by moving the Build 12.133 asset-free operator portrait presentation into `css/operator-portrait.css`. Independent complexion and kit variables, helmet and rig variants, comms accent, 54px desktop deployment portrait and 50px compact portrait remain unchanged. After the 12.183 extraction, the sheet follows `inbox-scroll.css` before all later component layers. Portrait identity generation remains owned by `teamPlayerVisualMarkup(player, role)`. See `AUDIT-12.182.md`.
 

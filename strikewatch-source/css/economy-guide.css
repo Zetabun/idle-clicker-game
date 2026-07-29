@@ -1,0 +1,29 @@
+/* After-action rewards and economy-guide presentation ownership.
+   Extracted from the Build 12.133 tail in Build 12.184 without changing declarations. */
+
+/* --- After-action rewards / economy guide typography --- */
+
+.club-economy-guide > header > span { font-size: 10px !important; }
+.club-economy-guide > header > strong { font-size: 15px !important; }
+.club-economy-guide > header > p { font-size: 11px !important; line-height: 1.55 !important; }
+
+.club-economy-guide article > span { font-size: 9.5px !important; letter-spacing: .1em !important; }
+.club-economy-guide article > strong { font-size: 17px !important; }
+.club-economy-guide article > b { font-size: 11px !important; line-height: 1.4 !important; }
+.club-economy-guide article > p { font-size: 11px !important; line-height: 1.55 !important; }
+.club-economy-guide > aside { font-size: 11px !important; line-height: 1.5 !important; }
+
+@media (max-width: 1023px) {
+  .club-economy-guide > div { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+  .club-economy-guide > header > strong { font-size: 17px !important; }
+  .club-economy-guide > header > p { font-size: 13px !important; }
+  .club-economy-guide article > span { font-size: 11px !important; }
+  .club-economy-guide article > strong { font-size: 19px !important; }
+  .club-economy-guide article > b { font-size: 13px !important; }
+  .club-economy-guide article > p { font-size: 12px !important; line-height: 1.55 !important; }
+  .club-economy-guide > aside { font-size: 12px !important; }
+}
+
+@media (max-width: 560px) {
+  .club-economy-guide > div { grid-template-columns: 1fr !important; }
+}

@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.183';
-  const BUILD_NAME = 'Surface Blood & Inbox CSS Ownership';
-  const BUILD_ID = '12.183.0-surface-blood-inbox-css-ownership';
+  const BUILD_VERSION = '12.184';
+  const BUILD_NAME = 'Economy Guide CSS Ownership';
+  const BUILD_ID = '12.184.0-economy-guide-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
