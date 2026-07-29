@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.157 — Operator Depth**
-- Build ID: `12.157.0-operator-depth`
+- Build: **12.158 — Storage-Safe Results**
+- Build ID: `12.158.0-storage-safe-results`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.157.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.158.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.158 makes the primary career save the durability authority under browser-storage pressure. The new primary is written and read back before the optional recovery backup is refreshed; an unprotected backup may be discarded only when it blocks the primary or its sequence metadata. A stale match still may not overwrite a newer career unless that displaced career has first been preserved and verified. Keep `storagePressureSaveForTest()`, `durableMatchSettlementForTest()` and `staleSaveGuardForTest()` green. See `AUDIT-12.158.md`.
 
 Build 12.157 adds baked contact ambient occlusion to living and fallen operator models by selecting darker variants from the existing procedural palette at authored overlap zones. It adds no meshes, draw calls, textures, shader passes or uniforms. The compact Armoury inventory is also a bounded card grid at every supported phone/Fold width: comparison badges remain visible, issue state is horizontal, and the list no longer relies on the broken portrait carousel. Keep `operatorAmbientOcclusionForTest()` and the loadout-only responsive matrix green. See `AUDIT-12.157.md`.
 

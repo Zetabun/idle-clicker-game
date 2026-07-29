@@ -1957,6 +1957,51 @@
     return storedSequence > careerSaveSequence;
   }
 
+  function careerStorageWriteVerified(storage, key, value, label = 'Career data') {
+    storage.setItem(key, value);
+    if (storage.getItem(key) !== value) throw new Error(`${label} did not read back identically.`);
+  }
+
+  // Build 12.158: the primary career is the durability authority. Older saves
+  // can be large enough that duplicating the complete primary into the recovery
+  // slot first exhausts localStorage and prevents the actual result from being
+  // written. Commit and verify the new primary before refreshing its optional
+  // backup. If an old, unprotected backup itself blocks the primary, discard
+  // that backup and retry once. A protected recovery point is never evicted.
+  function careerCommitPrimaryAndBackup(storage, options = {}) {
+    const serialised = String(options.serialised || '');
+    const existing = typeof options.existing === 'string' ? options.existing : null;
+    const refreshBackup = options.refreshBackup === true && Boolean(existing) && existing !== serialised;
+    const allowBackupEviction = options.allowBackupEviction === true;
+    let backupStatus = refreshBackup ? 'pending' : 'not-requested';
+    let backupDetail = '';
+    let backupEvictedForPrimary = false;
+
+    try {
+      careerStorageWriteVerified(storage, CAREER_STORAGE_KEY, serialised, 'Career save');
+    } catch (initialError) {
+      const currentBackup = storage.getItem(CAREER_BACKUP_STORAGE_KEY);
+      if (!allowBackupEviction || currentBackup === null) throw initialError;
+      storage.removeItem(CAREER_BACKUP_STORAGE_KEY);
+      backupEvictedForPrimary = true;
+      backupStatus = 'evicted-for-primary';
+      backupDetail = 'The previous recovery backup was removed because browser storage was full.';
+      careerStorageWriteVerified(storage, CAREER_STORAGE_KEY, serialised, 'Career save');
+    }
+
+    if (refreshBackup && !backupEvictedForPrimary) {
+      try {
+        careerStorageWriteVerified(storage, CAREER_BACKUP_STORAGE_KEY, existing, 'Career recovery backup');
+        backupStatus = 'updated';
+      } catch (backupError) {
+        backupStatus = storage.getItem(CAREER_BACKUP_STORAGE_KEY) === null ? 'skipped' : 'retained-older';
+        backupDetail = String(backupError?.message || 'The browser could not refresh the recovery backup.');
+      }
+    }
+
+    return { backupStatus, backupDetail, backupEvictedForPrimary };
+  }
+
   function saveCareerState(options = {}) {
     try {
       // Refuse to clobber a newer save written by another session. Losing this
@@ -1978,27 +2023,54 @@
       const previousMeta = careerSaveMetadata();
       const backupProtected = options.backupProtected === true
         || (options.backupProtected !== false && previousMeta?.backupProtected === true);
-      if (options.createBackup !== false && !backupProtected && existing && existing !== serialised) {
-        localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, existing);
-      }
-      localStorage.setItem(CAREER_STORAGE_KEY, serialised);
-
-      // Read back before claiming success. A rejected or truncated write must
-      // not be reported as a completed save.
-      if (localStorage.getItem(CAREER_STORAGE_KEY) !== serialised) {
-        throw new Error('Career save did not read back identically.');
-      }
+      const refreshBackup = options.createBackup !== false && !backupProtected;
+      const allowBackupEviction = options.allowBackupEviction !== false && !backupProtected;
+      const commit = careerCommitPrimaryAndBackup(localStorage, {
+        serialised,
+        existing,
+        refreshBackup,
+        allowBackupEviction
+      });
 
       careerSaveSequence = Math.max(0, Math.round(Number(previousMeta?.saveSequence) || 0)) + 1;
-      localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
+      const meta = JSON.stringify({
         savedAt: new Date().toISOString(),
         buildVersion: BUILD_VERSION,
         reason: String(options.reason || 'autosave'),
         saveSequence: careerSaveSequence,
-        backupProtected
-      }));
-      if (careerSaveFailure) {
-        careerSaveFailure = null;
+        backupProtected,
+        backupStatus: commit.backupStatus
+      });
+      try {
+        careerStorageWriteVerified(localStorage, CAREER_SAVE_META_STORAGE_KEY, meta, 'Career save metadata');
+      } catch (metaError) {
+        // Metadata is tiny. If an unprotected backup filled the final bytes,
+        // release that optional copy and retry so the saved primary receives a
+        // valid sequence and cannot be mistaken for stale progress on reload.
+        if (allowBackupEviction && localStorage.getItem(CAREER_BACKUP_STORAGE_KEY) !== null) {
+          localStorage.removeItem(CAREER_BACKUP_STORAGE_KEY);
+          commit.backupStatus = 'evicted-for-metadata';
+          commit.backupDetail = 'The recovery backup was removed so save metadata could be committed.';
+          careerStorageWriteVerified(localStorage, CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
+            savedAt: new Date().toISOString(),
+            buildVersion: BUILD_VERSION,
+            reason: String(options.reason || 'autosave'),
+            saveSequence: careerSaveSequence,
+            backupProtected,
+            backupStatus: commit.backupStatus
+          }), 'Career save metadata');
+        } else {
+          throw metaError;
+        }
+      }
+
+      const recoveredFromFailure = Boolean(careerSaveFailure);
+      careerSaveFailure = null;
+      if (commit.backupStatus === 'skipped' || commit.backupStatus === 'retained-older'
+          || commit.backupStatus === 'evicted-for-primary' || commit.backupStatus === 'evicted-for-metadata') {
+        setCareerDataNotice('warning', 'CAREER SAVED · BACKUP LIMITED',
+          'Your latest progress was saved and verified, but browser storage was too full to refresh the optional recovery backup. Export the career from Data & Recovery when convenient.');
+      } else if (recoveredFromFailure) {
         setCareerDataNotice('success', 'SAVING RESTORED', 'Career progress is being written to this browser again.');
       }
       return true;
@@ -2024,6 +2096,7 @@
       storedSequence: Math.max(0, Math.round(Number(meta?.saveSequence) || 0)),
       stale: careerSaveIsStale(),
       failure: careerSaveFailure ? { ...careerSaveFailure } : null,
+      backupStatus: meta?.backupStatus || null,
       savedAt: meta?.savedAt || null
     };
   }

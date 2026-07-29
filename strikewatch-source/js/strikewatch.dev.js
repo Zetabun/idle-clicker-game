@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.157';
-  const BUILD_NAME = 'Operator Depth';
-  const BUILD_ID = '12.157.0-operator-depth';
+  const BUILD_VERSION = '12.158';
+  const BUILD_NAME = 'Storage-Safe Results';
+  const BUILD_ID = '12.158.0-storage-safe-results';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -12878,6 +12878,51 @@
     return storedSequence > careerSaveSequence;
   }
 
+  function careerStorageWriteVerified(storage, key, value, label = 'Career data') {
+    storage.setItem(key, value);
+    if (storage.getItem(key) !== value) throw new Error(`${label} did not read back identically.`);
+  }
+
+  // Build 12.158: the primary career is the durability authority. Older saves
+  // can be large enough that duplicating the complete primary into the recovery
+  // slot first exhausts localStorage and prevents the actual result from being
+  // written. Commit and verify the new primary before refreshing its optional
+  // backup. If an old, unprotected backup itself blocks the primary, discard
+  // that backup and retry once. A protected recovery point is never evicted.
+  function careerCommitPrimaryAndBackup(storage, options = {}) {
+    const serialised = String(options.serialised || '');
+    const existing = typeof options.existing === 'string' ? options.existing : null;
+    const refreshBackup = options.refreshBackup === true && Boolean(existing) && existing !== serialised;
+    const allowBackupEviction = options.allowBackupEviction === true;
+    let backupStatus = refreshBackup ? 'pending' : 'not-requested';
+    let backupDetail = '';
+    let backupEvictedForPrimary = false;
+
+    try {
+      careerStorageWriteVerified(storage, CAREER_STORAGE_KEY, serialised, 'Career save');
+    } catch (initialError) {
+      const currentBackup = storage.getItem(CAREER_BACKUP_STORAGE_KEY);
+      if (!allowBackupEviction || currentBackup === null) throw initialError;
+      storage.removeItem(CAREER_BACKUP_STORAGE_KEY);
+      backupEvictedForPrimary = true;
+      backupStatus = 'evicted-for-primary';
+      backupDetail = 'The previous recovery backup was removed because browser storage was full.';
+      careerStorageWriteVerified(storage, CAREER_STORAGE_KEY, serialised, 'Career save');
+    }
+
+    if (refreshBackup && !backupEvictedForPrimary) {
+      try {
+        careerStorageWriteVerified(storage, CAREER_BACKUP_STORAGE_KEY, existing, 'Career recovery backup');
+        backupStatus = 'updated';
+      } catch (backupError) {
+        backupStatus = storage.getItem(CAREER_BACKUP_STORAGE_KEY) === null ? 'skipped' : 'retained-older';
+        backupDetail = String(backupError?.message || 'The browser could not refresh the recovery backup.');
+      }
+    }
+
+    return { backupStatus, backupDetail, backupEvictedForPrimary };
+  }
+
   function saveCareerState(options = {}) {
     try {
       // Refuse to clobber a newer save written by another session. Losing this
@@ -12899,27 +12944,54 @@
       const previousMeta = careerSaveMetadata();
       const backupProtected = options.backupProtected === true
         || (options.backupProtected !== false && previousMeta?.backupProtected === true);
-      if (options.createBackup !== false && !backupProtected && existing && existing !== serialised) {
-        localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, existing);
-      }
-      localStorage.setItem(CAREER_STORAGE_KEY, serialised);
-
-      // Read back before claiming success. A rejected or truncated write must
-      // not be reported as a completed save.
-      if (localStorage.getItem(CAREER_STORAGE_KEY) !== serialised) {
-        throw new Error('Career save did not read back identically.');
-      }
+      const refreshBackup = options.createBackup !== false && !backupProtected;
+      const allowBackupEviction = options.allowBackupEviction !== false && !backupProtected;
+      const commit = careerCommitPrimaryAndBackup(localStorage, {
+        serialised,
+        existing,
+        refreshBackup,
+        allowBackupEviction
+      });
 
       careerSaveSequence = Math.max(0, Math.round(Number(previousMeta?.saveSequence) || 0)) + 1;
-      localStorage.setItem(CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
+      const meta = JSON.stringify({
         savedAt: new Date().toISOString(),
         buildVersion: BUILD_VERSION,
         reason: String(options.reason || 'autosave'),
         saveSequence: careerSaveSequence,
-        backupProtected
-      }));
-      if (careerSaveFailure) {
-        careerSaveFailure = null;
+        backupProtected,
+        backupStatus: commit.backupStatus
+      });
+      try {
+        careerStorageWriteVerified(localStorage, CAREER_SAVE_META_STORAGE_KEY, meta, 'Career save metadata');
+      } catch (metaError) {
+        // Metadata is tiny. If an unprotected backup filled the final bytes,
+        // release that optional copy and retry so the saved primary receives a
+        // valid sequence and cannot be mistaken for stale progress on reload.
+        if (allowBackupEviction && localStorage.getItem(CAREER_BACKUP_STORAGE_KEY) !== null) {
+          localStorage.removeItem(CAREER_BACKUP_STORAGE_KEY);
+          commit.backupStatus = 'evicted-for-metadata';
+          commit.backupDetail = 'The recovery backup was removed so save metadata could be committed.';
+          careerStorageWriteVerified(localStorage, CAREER_SAVE_META_STORAGE_KEY, JSON.stringify({
+            savedAt: new Date().toISOString(),
+            buildVersion: BUILD_VERSION,
+            reason: String(options.reason || 'autosave'),
+            saveSequence: careerSaveSequence,
+            backupProtected,
+            backupStatus: commit.backupStatus
+          }), 'Career save metadata');
+        } else {
+          throw metaError;
+        }
+      }
+
+      const recoveredFromFailure = Boolean(careerSaveFailure);
+      careerSaveFailure = null;
+      if (commit.backupStatus === 'skipped' || commit.backupStatus === 'retained-older'
+          || commit.backupStatus === 'evicted-for-primary' || commit.backupStatus === 'evicted-for-metadata') {
+        setCareerDataNotice('warning', 'CAREER SAVED · BACKUP LIMITED',
+          'Your latest progress was saved and verified, but browser storage was too full to refresh the optional recovery backup. Export the career from Data & Recovery when convenient.');
+      } else if (recoveredFromFailure) {
         setCareerDataNotice('success', 'SAVING RESTORED', 'Career progress is being written to this browser again.');
       }
       return true;
@@ -12945,6 +13017,7 @@
       storedSequence: Math.max(0, Math.round(Number(meta?.saveSequence) || 0)),
       stale: careerSaveIsStale(),
       failure: careerSaveFailure ? { ...careerSaveFailure } : null,
+      backupStatus: meta?.backupStatus || null,
       savedAt: meta?.savedAt || null
     };
   }
@@ -51762,6 +51835,62 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const after = careerSaveHealth();
       return { before, guardedWrite, duringGuard, forcedWrite, after };
     },
+    // Build 12.158: reproduces a mature save that fits as the primary but not
+    // as primary plus a second full recovery copy. The transaction must retain
+    // the 18 GC / three-point result and report only a limited backup.
+    storagePressureSaveForTest: () => {
+      const oldCareer = {
+        created: true,
+        goldCoins: 0,
+        calendar: { absoluteDay: 0 },
+        league: { table: [{ id: LEAGUE_USER_CLUB_ID, points: 0 }], fixtures: [] },
+        matureHistory: 'x'.repeat(180000)
+      };
+      const nextCareer = {
+        ...oldCareer,
+        goldCoins: 18,
+        calendar: { absoluteDay: 2 },
+        league: { table: [{ id: LEAGUE_USER_CLUB_ID, points: 3 }], fixtures: [{ id: 'PRESSURE-MATCH', played: true }] }
+      };
+      const oldSerialised = JSON.stringify(oldCareer);
+      const nextSerialised = JSON.stringify(nextCareer);
+      const values = new Map([[CAREER_STORAGE_KEY, oldSerialised]]);
+      const quota = Math.max(oldSerialised.length, nextSerialised.length) + 256;
+      const storage = {
+        getItem(key) { return values.has(key) ? values.get(key) : null; },
+        removeItem(key) { values.delete(key); },
+        setItem(key, value) {
+          const next = new Map(values);
+          next.set(key, String(value));
+          const used = [...next.values()].reduce((sum, item) => sum + item.length, 0);
+          if (used > quota) throw new DOMException('Simulated storage quota reached.', 'QuotaExceededError');
+          values.clear();
+          for (const [entryKey, entryValue] of next) values.set(entryKey, entryValue);
+        }
+      };
+      const commit = careerCommitPrimaryAndBackup(storage, {
+        serialised: nextSerialised,
+        existing: oldSerialised,
+        refreshBackup: true,
+        allowBackupEviction: true
+      });
+      const persisted = JSON.parse(storage.getItem(CAREER_STORAGE_KEY) || 'null');
+      const result = {
+        persistedGoldCoins: Number(persisted?.goldCoins) || 0,
+        persistedDay: Number(persisted?.calendar?.absoluteDay) || 0,
+        persistedLeaguePoints: Number(persisted?.league?.table?.[0]?.points) || 0,
+        fixturePlayed: Boolean(persisted?.league?.fixtures?.[0]?.played),
+        backupStatus: commit.backupStatus,
+        primaryBytes: nextSerialised.length,
+        quota
+      };
+      result.ok = result.persistedGoldCoins === 18
+        && result.persistedDay === 2
+        && result.persistedLeaguePoints === 3
+        && result.fixturePlayed
+        && (result.backupStatus === 'skipped' || result.backupStatus === 'retained-older');
+      return result;
+    },
     currencyLedgerForTest: () => ({
       credits: Math.round(Number(careerState.credits) || 0),
       goldCoins: Math.max(0, Math.round(Number(careerState.goldCoins) || 0)),
@@ -57661,16 +57790,29 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     // Ordinary autosaves still use the original stale-session rejection path.
     try {
       const displaced = localStorage.getItem(CAREER_STORAGE_KEY);
-      if (displaced) localStorage.setItem(CAREER_BACKUP_STORAGE_KEY, displaced);
+      if (displaced) {
+        careerStorageWriteVerified(localStorage, CAREER_BACKUP_STORAGE_KEY, displaced, 'Displaced career recovery backup');
+      }
     } catch (error) {
-      // The authoritative writer below reports storage failure through the
-      // existing career data notice. Do not claim durability here.
+      // A stale match must never overwrite a genuinely newer career unless the
+      // displaced primary has first been preserved and verified. Storage
+      // pressure therefore holds this settlement back instead of deleting the
+      // newer session's progress.
+      careerSaveFailure = {
+        code: 'protected-backup-failed',
+        savedAt: new Date().toISOString(),
+        detail: String(error?.message || 'The newer career could not be preserved as a recovery backup.')
+      };
+      setCareerDataNotice('danger', 'MATCH RESULT NEEDS RECOVERY SPACE',
+        'Another session has newer progress and this browser is too full to preserve it safely. Export the career, close other Strikewatch tabs and reload before continuing.');
+      return false;
     }
 
     return durableResultsBaseSaveCareerState({
       ...options,
       force: true,
       createBackup: false,
+      allowBackupEviction: false,
       reason: String(options.reason || 'protected-earned-progress')
     });
   };

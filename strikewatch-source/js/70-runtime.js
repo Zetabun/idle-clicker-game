@@ -4863,6 +4863,62 @@
       const after = careerSaveHealth();
       return { before, guardedWrite, duringGuard, forcedWrite, after };
     },
+    // Build 12.158: reproduces a mature save that fits as the primary but not
+    // as primary plus a second full recovery copy. The transaction must retain
+    // the 18 GC / three-point result and report only a limited backup.
+    storagePressureSaveForTest: () => {
+      const oldCareer = {
+        created: true,
+        goldCoins: 0,
+        calendar: { absoluteDay: 0 },
+        league: { table: [{ id: LEAGUE_USER_CLUB_ID, points: 0 }], fixtures: [] },
+        matureHistory: 'x'.repeat(180000)
+      };
+      const nextCareer = {
+        ...oldCareer,
+        goldCoins: 18,
+        calendar: { absoluteDay: 2 },
+        league: { table: [{ id: LEAGUE_USER_CLUB_ID, points: 3 }], fixtures: [{ id: 'PRESSURE-MATCH', played: true }] }
+      };
+      const oldSerialised = JSON.stringify(oldCareer);
+      const nextSerialised = JSON.stringify(nextCareer);
+      const values = new Map([[CAREER_STORAGE_KEY, oldSerialised]]);
+      const quota = Math.max(oldSerialised.length, nextSerialised.length) + 256;
+      const storage = {
+        getItem(key) { return values.has(key) ? values.get(key) : null; },
+        removeItem(key) { values.delete(key); },
+        setItem(key, value) {
+          const next = new Map(values);
+          next.set(key, String(value));
+          const used = [...next.values()].reduce((sum, item) => sum + item.length, 0);
+          if (used > quota) throw new DOMException('Simulated storage quota reached.', 'QuotaExceededError');
+          values.clear();
+          for (const [entryKey, entryValue] of next) values.set(entryKey, entryValue);
+        }
+      };
+      const commit = careerCommitPrimaryAndBackup(storage, {
+        serialised: nextSerialised,
+        existing: oldSerialised,
+        refreshBackup: true,
+        allowBackupEviction: true
+      });
+      const persisted = JSON.parse(storage.getItem(CAREER_STORAGE_KEY) || 'null');
+      const result = {
+        persistedGoldCoins: Number(persisted?.goldCoins) || 0,
+        persistedDay: Number(persisted?.calendar?.absoluteDay) || 0,
+        persistedLeaguePoints: Number(persisted?.league?.table?.[0]?.points) || 0,
+        fixturePlayed: Boolean(persisted?.league?.fixtures?.[0]?.played),
+        backupStatus: commit.backupStatus,
+        primaryBytes: nextSerialised.length,
+        quota
+      };
+      result.ok = result.persistedGoldCoins === 18
+        && result.persistedDay === 2
+        && result.persistedLeaguePoints === 3
+        && result.fixturePlayed
+        && (result.backupStatus === 'skipped' || result.backupStatus === 'retained-older');
+      return result;
+    },
     currencyLedgerForTest: () => ({
       credits: Math.round(Number(careerState.credits) || 0),
       goldCoins: Math.max(0, Math.round(Number(careerState.goldCoins) || 0)),
