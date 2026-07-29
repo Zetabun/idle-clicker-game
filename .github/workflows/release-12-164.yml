@@ -1,0 +1,74 @@
+name: Strikewatch 12.164 release
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/release-triggers/12.164.txt']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply release patch
+        run: python3 .github/scripts/release-12-164.py
+
+      - name: Build twice and verify deterministic artifacts
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.164.html dist/strikewatch-build-12.164-size.json > /tmp/build-a.sha
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.164.html dist/strikewatch-build-12.164-size.json > /tmp/build-b.sha
+          diff -u /tmp/build-a.sha /tmp/build-b.sha
+
+      - name: Parse JavaScript
+        run: |
+          for file in strikewatch-source/js/[0-9][0-9]-*.js strikewatch-source/js/strikewatch.dev.js; do
+            node --check "$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('strikewatch-source/dist/strikewatch-build-12.164.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
+          if not scripts:
+              raise SystemExit('No inline standalone JavaScript found')
+          Path('/tmp/strikewatch-12.164-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/strikewatch-12.164-inline.js
+
+      - name: Verify release-size contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          report = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.164-size.json').read_text(encoding='utf-8'))
+          reduction = float(report['javascript_raw_reduction_percent'])
+          if reduction < 5:
+              raise SystemExit(f'JavaScript reduction below budget: {reduction}%')
+          if report['release_bundle']['raw_bytes'] >= report['development_bundle']['raw_bytes']:
+              raise SystemExit('Release bundle is not smaller than development bundle')
+          if report['release_css']['raw_bytes'] >= report['source_css']['raw_bytes']:
+              raise SystemExit('Release CSS is not smaller than source CSS')
+          if report['standalone']['raw_bytes'] <= 0 or report['standalone']['gzip_bytes'] <= 0:
+              raise SystemExit('Invalid standalone size report')
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Publish verified release
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.164.html cod.html
+          cmp -s cod.html strikewatch-source/dist/strikewatch-build-12.164.html
+          rm -f .github/scripts/release-12-164.py .github/workflows/release-12-164.yml .github/release-triggers/12.164.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strikewatch-source cod.html .github/scripts/release-12-164.py .github/workflows/release-12-164.yml .github/release-triggers/12.164.txt
+          git commit -m 'Build 12.164: reduce standalone release size'
+          git push origin main
