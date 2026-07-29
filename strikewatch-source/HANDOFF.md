@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.184 — Economy Guide CSS Ownership**
-- Build ID: `12.184.0-economy-guide-css-ownership`
+- Build: **12.185 — Blood Visibility & Deployment CSS Ownership**
+- Build ID: `12.185.0-blood-visibility-deployment-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.184.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.185.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.184 continues SW-020 by moving the complete Build 12.133 after-action reward and economy-guide typography into `css/economy-guide.css`. Desktop type, the two-column compact grid, the single-column phone grid and all 9.5–19px authored floors remain unchanged. The sheet follows `game.css` before Inbox and every later component layer; the later `compact-readability.css` 12px metadata floor still wins below 1024px. See `AUDIT-12.184.md`.
+Build 12.185 makes nearby-wall blood read clearly on compact portrait screens without touching combat: the procedural core is larger and more saturated, every event includes a downward drip, placement still requires real health damage and a surface within 1.25m, and the pool remains capped at 18. The same release continues SW-020 by moving the complete Build 12.133 Confirm Deployment typography and roster-layout block into `css/deployment-readability.css` immediately after `game.css`. See `AUDIT-12.185.md`.
+
+Build 12.184 continues SW-020 by moving the complete Build 12.133 after-action reward and economy-guide typography into `css/economy-guide.css`. Desktop type, the two-column compact grid, the single-column phone grid and all 9.5–19px authored floors remain unchanged. After the 12.185 extraction, the sheet follows `deployment-readability.css` before Inbox and every later component layer; the later `compact-readability.css` 12px metadata floor still wins below 1024px. See `AUDIT-12.184.md`.
 
 Build 12.183 adds bounded wall blood splatters when real health damage lands with a solid surface within 1.25m behind the struck operator. The continuation ray reuses `castRay`, splatters stay in the dynamic pass, cap at 18 and clear on round reset. The same release continues SW-020 by moving the Build 12.133 Inbox scroll arming and overflow mask into `css/inbox-scroll.css`. After the 12.184 extraction, the Inbox sheet follows `economy-guide.css` before operator portraits and all later component layers. See `AUDIT-12.183.md`.
 

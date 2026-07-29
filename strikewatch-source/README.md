@@ -1,4 +1,4 @@
-# Strikewatch Source 12.184
+# Strikewatch Source 12.185
 
 Strikewatch is an asset-free browser tactical-club management game with
 autonomous WebGL matches.
@@ -19,7 +19,7 @@ py -3 build.py
 This produces:
 
 - `js/strikewatch.dev.js`
-- `dist/strikewatch-build-12.184.html`
+- `dist/strikewatch-build-12.185.html`
 
 Do not edit either generated file directly. After verification, copy the
 standalone byte-for-byte to root `cod.html`.
