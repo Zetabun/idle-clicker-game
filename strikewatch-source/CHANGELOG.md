@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.159 — Durable Store
+
+- Adds IndexedDB as the career save's durable tier. Quota on the test machine is **5.54GB against localStorage's ~5MB**, so a career has room to grow for the life of the game.
+- Keeps localStorage as the synchronous write-through tier on purpose. IndexedDB is asynchronous, and Build 12.141's page-hide save checkpoints only land because `localStorage.setItem` completes inside the handler — converting the save path to async would reintroduce the defect 12.141 fixed and 12.158 hardened.
+- A career too large for localStorage is no longer lost. A quota rejection now falls through to the durable tier and the save succeeds; previously it reported "PROGRESS IS NOT BEING SAVED".
+- A career evicted from localStorage by the browser is recovered on the next boot from the durable mirror, guarded so it can only ever adopt a strictly newer save and never over a career this session has already been playing.
+- Adds save-size reporting to the configuration page: save file size, recovery backup size, career data total, browser allowance used, and durable storage state.
+- Save schema stays 19; no persisted field changed shape, so no migration is required.
+- Evidence: `AUDIT-12.159.md`.
+
+
 ## 12.158 — Storage-Safe Results
 
 - Writes and verifies the new primary career before attempting to refresh the optional recovery backup.

@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.158';
-  const BUILD_NAME = 'Storage-Safe Results';
-  const BUILD_ID = '12.158.0-storage-safe-results';
+  const BUILD_VERSION = '12.159';
+  const BUILD_NAME = 'Durable Store';
+  const BUILD_ID = '12.159.0-durable-store';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

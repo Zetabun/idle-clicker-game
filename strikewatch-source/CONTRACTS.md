@@ -237,6 +237,13 @@ current task. Release-specific implementation detail belongs in the matching
 ## Persistence and diagnostics
 
 - Current save schema is 19. Existing careers must normalise safely.
+- The career save has two tiers. localStorage is the synchronous write-through
+  and the only tier readable at boot; IndexedDB is the durable mirror and the
+  fallback when quota rejects a write. `saveCareerState()` must stay synchronous
+  through its verified commit, or unload-time checkpoints stop landing.
+  `saveSequence` is the sole arbiter when tiers disagree — higher is newer — and
+  adoption from the durable tier may only occur when its sequence is strictly
+  higher and the session has not yet saved.
 - Current diagnostics schema is 1. Preserve bounded event/sample storage and
   export compatibility.
 - New persistent fields require defaults, normalisation, save/export coverage

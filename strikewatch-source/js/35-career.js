@@ -2066,6 +2066,10 @@
 
       const recoveredFromFailure = Boolean(careerSaveFailure);
       careerSaveFailure = null;
+      // Build 12.159: the verified save is mirrored to the durable tier. This
+      // runs after the synchronous commit, so a mirror failure can only cost
+      // capacity, never the save itself.
+      if (typeof careerIdbMirrorCurrentSave === 'function') careerIdbMirrorCurrentSave();
       if (commit.backupStatus === 'skipped' || commit.backupStatus === 'retained-older'
           || commit.backupStatus === 'evicted-for-primary' || commit.backupStatus === 'evicted-for-metadata') {
         setCareerDataNotice('warning', 'CAREER SAVED · BACKUP LIMITED',
@@ -2075,6 +2079,19 @@
       }
       return true;
     } catch (error) {
+      // Build 12.159: the fast tier could not take this save — quota, private
+      // browsing or a full disk. Before reporting a lost save, try the durable
+      // tier, which has orders of magnitude more room and is the whole reason
+      // it exists. The career is only unsaved if both refuse it.
+      const durable = typeof careerIdbCommitPrimary === 'function'
+        ? careerIdbCommitPrimary(JSON.stringify(careerState), String(options.reason || 'autosave'))
+        : null;
+      if (durable) {
+        careerSaveFailure = null;
+        setCareerDataNotice('warning', 'CAREER SAVED TO DURABLE STORAGE',
+          'This career is now larger than the browser’s fast storage allowance, so it was written to durable storage instead. Progress is safe. Closing the tab mid-match may lose the last few seconds; export the career from Data & Recovery for a portable copy.');
+        return true;
+      }
       // Storage can be unavailable in private browsing or full. The live
       // session still works, but the manager has to know their progress is
       // not being kept.

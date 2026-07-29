@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.158 — Storage-Safe Results**
-- Build ID: `12.158.0-storage-safe-results`
+- Build: **12.159 — Durable Store**
+- Build ID: `12.159.0-durable-store`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.158.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.159.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.159 adds IndexedDB as the career's durable tier (`js/81-career-indexeddb.js`) and reports save size on the configuration page. **It is a tier, not a replacement, and that is deliberate**: IndexedDB is asynchronous, and Build 12.141's `pagehide`/`visibilitychange` checkpoints only land because `localStorage.setItem` completes inside the handler, so making the save path async would reintroduce the defect 12.141 fixed. localStorage stays the synchronous write-through and boot-read tier; IndexedDB holds every committed save and is the only tier that can still accept a career once localStorage is full — quota there measured 5.54GB against roughly 5MB. `saveSequence` is the sole arbiter when the tiers disagree: higher is newer. Two new behaviours: a quota rejection now falls through to the durable tier instead of reporting lost progress, and a career the browser evicted from localStorage is adopted back on the next boot, guarded so it can only take a strictly newer save and never overwrite one this session has already been playing. Save schema stays 19. See `AUDIT-12.159.md`.
 
 Build 12.158 makes the primary career save the durability authority under browser-storage pressure. The new primary is written and read back before the optional recovery backup is refreshed; an unprotected backup may be discarded only when it blocks the primary or its sequence metadata. A stale match still may not overwrite a newer career unless that displaced career has first been preserved and verified. Keep `storagePressureSaveForTest()`, `durableMatchSettlementForTest()` and `staleSaveGuardForTest()` green. See `AUDIT-12.158.md`.
 
