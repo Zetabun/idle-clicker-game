@@ -1,5 +1,11 @@
 # Release history router
 
+## 12.187 — Report XP Safety
+
+- Completes SW-003 by preventing missing or malformed historic report XP values from rendering as `undefined XP`.
+- Adds one shared XP formatter and deterministic diagnostic coverage without changing reward calculation, saves or schemas.
+- See `AUDIT-12.187.md`.
+
 ## 12.186 — Accurate Storage Reporting
 
 - Closes SW-002 by separating local career-record sizes from browser-origin storage usage.

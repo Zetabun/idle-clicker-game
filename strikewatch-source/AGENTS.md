@@ -56,7 +56,7 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.186 owns accurate storage reporting. Keep career-record byte measurement synchronous and separate from `navigator.storage.estimate()`, which is asynchronous and origin-wide. A pending estimate must say MEASURING, a settled value must say ALL SITE DATA, and the open Configuration route must refresh after settlement without making `saveCareerState()` asynchronous. Verify `careerStorageReportingForTest()`, `careerIndexedDbForTest()`, normal build/parse gates and Configuration at desktop and compact widths. See `AUDIT-12.186.md`.
+Build 12.187 owns report XP safety. Historic, imported and partial after-action summaries must route visible XP through `careerSafeXpAward()` so absent or malformed values cannot render as `undefined XP`. Keep match XP calculation and settlement unchanged, retain the browser-accessible `careerReportXpSafetyForTest()` diagnostic, and preserve save schema 19 plus diagnostics schema 1. See `AUDIT-12.187.md`.
 
 Build 12.185 owns Confirm Deployment typography and roster layout in `css/deployment-readability.css`. Keep it immediately after `game.css`, before `economy-guide.css`, with the 60px desktop four-column roster, 62px compact three-column roster and existing type floors unchanged. Blood visibility remains transient renderer presentation: preserve positive-health-damage gating, the 1.25m shared-raycast placement, the 18-event cap, round clearing, the larger irregular core and at least one downward drip. Verify the before/after deployment computed-style probe, `bloodSplatterForTest()`, `impactDecalForTest()`, renderer draw-call bounds, `mobileInterfaceAuditForTest()` and `typographyConsistencyForTest()`. See `AUDIT-12.185.md`.
 

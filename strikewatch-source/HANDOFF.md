@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.186 — Accurate Storage Reporting**
-- Build ID: `12.186.0-accurate-storage-reporting`
+- Build: **12.187 — Report XP Safety**
+- Build ID: `12.187.0-report-xp-safety`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.186.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.187.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.187 closes SW-003. Historic, imported and partial after-action summaries now pass visible XP through `careerSafeXpAward()`, preventing `undefined XP` while preserving the existing match-reward calculation and settlement path. Keep `careerReportXpSafetyForTest()` green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.187.md`.
 
 Build 12.186 closes SW-002. Configuration now measures the career save, recovery backup and local career records synchronously, while the asynchronous browser estimate has an explicit MEASURING state, refreshes the open route when settled and is labelled as all site-origin data rather than a career allowance. `saveCareerState()` remains synchronous and save schema 19 is unchanged. Keep `careerStorageReportingForTest()`, `careerIndexedDbForTest()` and the existing persistence gates green. See `AUDIT-12.186.md`.
 

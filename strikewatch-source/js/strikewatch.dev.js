@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.186';
-  const BUILD_NAME = 'Accurate Storage Reporting';
-  const BUILD_ID = '12.186.0-accurate-storage-reporting';
+  const BUILD_VERSION = '12.187';
+  const BUILD_NAME = 'Report XP Safety';
+  const BUILD_ID = '12.187.0-report-xp-safety';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -16552,13 +16552,30 @@
     return renderTeamPlayerProfileTab();
   }
 
+  function careerSafeXpAward(summary = null) {
+    return Math.max(0, Math.round(Number(summary?.xpAward) || 0));
+  }
+
+  function careerReportXpSafetyForTest() {
+    const cases = [
+      { input: null, expected: 0 },
+      { input: {}, expected: 0 },
+      { input: { xpAward: undefined }, expected: 0 },
+      { input: { xpAward: '48' }, expected: 48 },
+      { input: { xpAward: -12 }, expected: 0 },
+      { input: { xpAward: 19.6 }, expected: 20 }
+    ];
+    const results = cases.map(test => ({ ...test, actual: careerSafeXpAward(test.input) }));
+    return { ok: results.every(test => test.actual === test.expected), results };
+  }
+
   function renderCareerReportsTab() {
     if (!careerState.created) return renderCareerCreationTab();
     const summary = careerState.lastRound;
     return `
       <div class="menu-hero career-hero report-archive-hero" data-management-target-id="report:latest">
         <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">AFTER ACTION ARCHIVE</div><h2>${summary ? `${escapeCareerHtml(summary.blueTeamName || careerState.name)} ${summary.blueScore ?? 0} — ${summary.redScore ?? 0} ${escapeCareerHtml(summary.redTeamName || summary.league?.opponentName || 'Opposition')} // ${summary.grade || careerCombatGrade(summary.score)}` : 'NO DEBRIEF AVAILABLE'}</h2><p>Review the latest team result, competition impact, combined accuracy, player ratings and XP breakdown.</p></div>
-        <div class="menu-hero-side"><div class="menu-kicker">LATEST RESULT</div><div class="menu-side-operator">${summary ? `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} / 100` : '—'}</div><p>${summary ? `${summary.won ? 'VICTORY' : 'DEFEAT'} · ${summary.xpAward} XP` : 'COMPLETE A MATCH'}</p></div>
+        <div class="menu-hero-side"><div class="menu-kicker">LATEST RESULT</div><div class="menu-side-operator">${summary ? `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} / 100` : '—'}</div><p>${summary ? `${summary.won ? 'VICTORY' : 'DEFEAT'} · ${careerSafeXpAward(summary)} XP` : 'COMPLETE A MATCH'}</p></div>
       </div>
       ${careerReportMarkup(summary, true)}
       ${typeof renderTeamLastMatchBreakdown === 'function' ? renderTeamLastMatchBreakdown() : ''}
@@ -16597,7 +16614,7 @@
         ${menuCard('PROGRESSION', 'LEVEL-UP REWARD', 'Team Levels grant club benefit points in the Training Facility, while every player earns separate XP and allocatable stat points.')}
         ${menuCard('LOOT', 'CRATE COLLECTION', `${careerState.cratesOpened} crates opened. Repeated weapon drops add another assignable club copy; only duplicate cosmetic finishes convert into additional experience.`)}
         ${menuCard('LOADOUT', 'CURRENT SIDEARM', `${getCareerWeapon().name} · ${getCareerWeapon().quality} quality · ${getCareerWeapon().damageMin}–${getCareerWeapon().damageMax} damage.`)}
-        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerState.lastRound.xpAward} Team XP earned in a ${careerState.lastRound.blueScore ?? 0} — ${careerState.lastRound.redScore ?? 0} match.` : 'Complete a match to begin the record.')}
+        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerSafeXpAward(careerState.lastRound)} Team XP earned in a ${careerState.lastRound.blueScore ?? 0} — ${careerState.lastRound.redScore ?? 0} match.` : 'Complete a match to begin the record.')}
       </div>
       ${typeof renderWorldPressClubHonours === 'function' ? renderWorldPressClubHonours() : ''}
     `;
@@ -49096,6 +49113,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    careerReportXpSafetyForTest: () => typeof careerReportXpSafetyForTest === 'function' ? careerReportXpSafetyForTest() : null,
     infrastructureForTest: () => typeof clubInfrastructureForTest === 'function' ? clubInfrastructureForTest() : null,
     normaliseInfrastructureForTest: raw => {
       careerState.infrastructure = raw && typeof raw === 'object' ? raw : {};

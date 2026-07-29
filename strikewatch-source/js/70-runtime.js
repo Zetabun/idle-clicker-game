@@ -1353,6 +1353,7 @@
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    careerReportXpSafetyForTest: () => typeof careerReportXpSafetyForTest === 'function' ? careerReportXpSafetyForTest() : null,
     infrastructureForTest: () => typeof clubInfrastructureForTest === 'function' ? clubInfrastructureForTest() : null,
     normaliseInfrastructureForTest: raw => {
       careerState.infrastructure = raw && typeof raw === 'object' ? raw : {};

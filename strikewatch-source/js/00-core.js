@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.186';
-  const BUILD_NAME = 'Accurate Storage Reporting';
-  const BUILD_ID = '12.186.0-accurate-storage-reporting';
+  const BUILD_VERSION = '12.187';
+  const BUILD_NAME = 'Report XP Safety';
+  const BUILD_ID = '12.187.0-report-xp-safety';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
