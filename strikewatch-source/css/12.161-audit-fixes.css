@@ -1,0 +1,153 @@
+/* Build 12.161 — recovery, readability and compact interaction hardening. */
+:root {
+  --sw-copy-compact: 14px;
+  --sw-meta-compact: 12px;
+  --sw-touch-min: 44px;
+}
+
+/* Targeted touch behaviour prevents accidental gestures without disabling browser zoom. */
+button, [role="button"], a, input, select, textarea { touch-action: manipulation; }
+
+@media (max-width: 1100px) {
+  #menuContent p,
+  #menuContent li,
+  #menuContent .menu-setting-row,
+  #menuContent .team-onboarding-goal p,
+  #menuContent .team-onboarding-finance p,
+  #menuContent .team-onboarding-loop article small,
+  #menuContent .team-onboarding-first-demo p,
+  #menuContent .first-match-next-action p,
+  .between-round-tactics-card p,
+  .between-round-tactics-card small,
+  .between-round-tactics-card li {
+    font-size: var(--sw-copy-compact) !important;
+    line-height: 1.45 !important;
+  }
+
+  #menuContent small,
+  #menuContent .menu-kicker,
+  #menuContent [class*="meta"],
+  #menuContent [class*="date"],
+  #menuContent [class*="status"],
+  .match-hud small,
+  .between-round-tactics-card span,
+  .between-round-tactics-card label {
+    font-size: var(--sw-meta-compact) !important;
+    line-height: 1.3 !important;
+  }
+
+  button:not([hidden]),
+  [role="button"]:not([hidden]),
+  .menu-subtab,
+  .manager-calendar-btn,
+  .manager-account-btn,
+  .match-control-btn,
+  .management-status button {
+    min-width: var(--sw-touch-min);
+    min-height: var(--sw-touch-min) !important;
+  }
+
+  .manager-header button,
+  .manager-header a,
+  .manager-calendar-btn,
+  .manager-account-btn {
+    overflow: visible;
+    white-space: normal;
+    line-height: 1.15;
+  }
+
+  .management-status {
+    inset: auto max(10px, env(safe-area-inset-right)) max(76px, calc(env(safe-area-inset-bottom) + 68px)) auto;
+    max-width: min(420px, calc(100vw - 20px));
+  }
+  .management-status button { padding: 10px 12px; }
+}
+
+/* Exact 1024px no longer uses the over-compressed wide shell. */
+@media (min-width: 1024px) and (max-width: 1100px) {
+  .manager-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .manager-header .manager-header-secondary,
+  .manager-header .manager-header-copy small { display: none !important; }
+  .menu-subtabs { overflow-x: auto; scrollbar-width: thin; }
+  .menu-subtab { flex: 0 0 auto; padding-inline: 14px; }
+}
+
+@media (max-width: 430px) {
+  #menuContent [class*="mail"] [class*="meta"],
+  #menuContent [class*="mail"] [class*="date"],
+  #menuContent [class*="loadout"] [class*="meta"],
+  #menuContent .career-inventory-copy small,
+  #menuContent .career-inventory-state {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
+
+  .team-onboarding-first-steps article {
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    align-items: start;
+  }
+  .team-onboarding-first-steps article > b,
+  .team-onboarding-first-steps article > span:first-child {
+    position: static !important;
+    transform: none !important;
+    grid-column: 1;
+  }
+  .team-onboarding-first-steps article > div { grid-column: 2; min-width: 0; }
+
+  .team-onboarding-preview,
+  .first-match-next-action { padding-bottom: 72px !important; }
+  .team-onboarding-preview .menu-action-row,
+  .first-match-next-action button {
+    position: sticky;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 4;
+  }
+}
+
+/* Match HUD: preserve the decision-critical hierarchy and allow wrapping. */
+@media (orientation: portrait) and (max-width: 600px) {
+  .match-objective,
+  [class*="round-objective"],
+  [class*="operator-reason"],
+  [class*="scoreboard-operator"] {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  [class*="match-objective"], [class*="round-objective"] { grid-column: 1 / -1; }
+  [class*="scoreboard-operator"] strong,
+  [class*="scoreboard-operator"] span,
+  [class*="match-objective"],
+  [class*="round-objective"] { font-size: 12px !important; line-height: 1.3 !important; }
+  [class*="weapon"], [class*="ammo"] { min-width: 0; }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .commentary-dock,
+  [class*="commentary"] { max-height: 86px; overflow-y: auto; }
+  .match-stage, #gameViewport, canvas { min-height: 0; }
+  .match-hud small, .match-hud span, [class*="telemetry"] { font-size: 12px !important; }
+}
+
+/* Tactical intervention: concise first viewport, sticky decisions, evidence on demand. */
+@media (max-width: 900px), (max-height: 600px) {
+  .between-round-tactics-card { max-height: calc(100dvh - 16px); display: flex; flex-direction: column; }
+  .between-round-tactics-card > header { flex: 0 0 auto; }
+  .between-round-tactics-card > main,
+  .between-round-tactics-card .between-round-tactics-body { overflow-y: auto; min-height: 0; }
+  .between-round-diagnosis-grid,
+  .between-round-opponent-read,
+  .between-round-route-options { content-visibility: auto; }
+  .between-round-tactics-card > footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex: 0 0 auto;
+    background: #081119;
+    border-top: 1px solid rgba(126, 211, 239, .25);
+  }
+}
