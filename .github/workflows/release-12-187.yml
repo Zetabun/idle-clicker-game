@@ -37,6 +37,18 @@ jobs:
       - name: Apply release patch
         run: python3 .github/scripts/release-12-187.py
 
+      - name: Verify release patch updated canonical metadata
+        run: |
+          grep -F "const BUILD_VERSION = '12.187'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_ID = '12.187.0-report-xp-safety'" strikewatch-source/js/00-core.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          if release.get('version') != '12.187':
+              raise SystemExit(f"Unexpected RELEASE.json version: {release.get('version')}")
+          PY
+
       - name: Compile build script
         working-directory: strikewatch-source
         run: python3 -m py_compile build.py
@@ -45,6 +57,11 @@ jobs:
         working-directory: strikewatch-source
         run: |
           python3 build.py
+          echo "Dist contents:"
+          ls -la dist
+          test -f dist/strikewatch-build-12.187.html
+          test -f dist/strikewatch-build-12.187-size.json
+          test -f dist/strikewatch-build-12.187-css-debt.json
           cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
           cp dist/strikewatch-build-12.187.html /tmp/strikewatch-build.first.html
           cp dist/strikewatch-build-12.187-size.json /tmp/strikewatch-size.first.json
