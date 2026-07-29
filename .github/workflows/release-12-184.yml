@@ -1,6 +1,11 @@
 name: Release Strikewatch 12.184
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-12-184.yml
   page_build:
   workflow_dispatch:
 
@@ -116,8 +121,9 @@ jobs:
           standalone = Path('dist/strikewatch-build-12.184.html').read_text(encoding='utf-8')
           if re.search(r'<link rel="stylesheet" href="css/', standalone):
               raise SystemExit('Standalone retained an external CSS link')
+          bundle = Path('js/strikewatch.dev.js').read_text(encoding='utf-8')
           for hook in ('economyGuidanceForTest', 'firstMatchPayoffForTest', 'typographyConsistencyForTest', 'mobileInterfaceAuditForTest', 'renderRouteForTest'):
-              if hook not in Path('js/strikewatch.dev.js').read_text(encoding='utf-8'):
+              if hook not in bundle:
                   raise SystemExit(f'Missing retained hook: {hook}')
           PY
 
