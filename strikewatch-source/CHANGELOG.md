@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.182 — Operator Portrait CSS Ownership
+
+- Moves the Build 12.133 asset-free operator portrait palette, headgear, rig, comms and deployment sizing rules from `game.css` into `css/operator-portrait.css` without changing declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before command chrome and all later presentation layers.
+- Keeps independent complexion and kit variation, the headband variant, role-coloured comms detail, the 54×52px desktop deployment portrait and the 50×50px compact portrait.
+- Leaves deterministic portrait identity and class generation under `teamPlayerVisualMarkup(player, role)`.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.182.md`.
+
+
 ## 12.181 — Command Chrome CSS Ownership
 
 - Moves the remaining Build 12.134 compact shared command typography and nowrap containment from `game.css` into `css/command-chrome.css` without changing declarations or breakpoint.

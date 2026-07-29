@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.181 continues the staged CSS ownership programme by moving the
-remaining Build 12.134 compact shared command typography and containment into
-`css/command-chrome.css` without changing declarations or breakpoint. See
-`HANDOFF.md` and `AUDIT-12.181.md`.
+Build 12.182 continues the staged CSS ownership programme by moving the Build
+12.133 asset-free operator portrait presentation into `css/operator-portrait.css`
+without changing declarations, deterministic identity generation or responsive
+sizing. See `HANDOFF.md` and `AUDIT-12.182.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

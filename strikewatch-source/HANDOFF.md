@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.181 — Command Chrome CSS Ownership**
-- Build ID: `12.181.0-command-chrome-css-ownership`
+- Build: **12.182 — Operator Portrait CSS Ownership**
+- Build ID: `12.182.0-operator-portrait-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.181.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.182.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.181 continues SW-020 by moving the remaining Build 12.134 compact shared command typography and nowrap containment into `css/command-chrome.css`. The 11–12px floors, 11.5px Armoury state labels, wrapping and `min-width: 0` safeguards remain unchanged. The sheet follows `game.css` before all later component layers. See `AUDIT-12.181.md`.
+Build 12.182 continues SW-020 by moving the Build 12.133 asset-free operator portrait presentation into `css/operator-portrait.css`. Independent complexion and kit variables, helmet and rig variants, comms accent, 54px desktop deployment portrait and 50px compact portrait remain unchanged. The sheet follows `game.css` before all later component layers. Portrait identity generation remains owned by `teamPlayerVisualMarkup(player, role)`. See `AUDIT-12.182.md`.
+
+Build 12.181 continues SW-020 by moving the remaining Build 12.134 compact shared command typography and nowrap containment into `css/command-chrome.css`. The 11–12px floors, 11.5px Armoury state labels, wrapping and `min-width: 0` safeguards remain unchanged. After the 12.182 extraction, the sheet follows `operator-portrait.css` before all later component layers. See `AUDIT-12.181.md`.
 
 Build 12.180 continues SW-020 by moving the Build 12.134 compact Combat Effectiveness ring into `css/combat-effectiveness.css`. The 138px compact ring, 124px narrow-phone ring, caption below the dial, grade/score sizing and wrapped influence legend remain unchanged. After the 12.181 extraction, the sheet follows `command-chrome.css` before all later component layers. See `AUDIT-12.180.md`.
 
