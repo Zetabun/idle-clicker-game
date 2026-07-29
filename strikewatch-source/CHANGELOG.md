@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.169 — Armour Viewer CSS Ownership
+
+- Moves the Build 12.142/12.152 armour inspector rotation-pivot, transition and scoped compositor-promotion rules from `game.css` into `css/armour-viewer.css` without changing declarations.
+- Preserves the layer immediately after `game.css`, before weapon and loadout presentation.
+- Corrects current operational documentation so all extracted stylesheet-order notes agree.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.169.md`.
+
+
 ## 12.168 — Weapon Presentation CSS Ownership
 
 - Moves the Build 12.147 CSS-3D weapon face lighting, cylinder shading and grip texture from `game.css` into `css/weapon-presentation.css` without changing declarations.

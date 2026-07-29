@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.168 continues the staged CSS ownership programme by moving shared
-CSS-3D weapon face lighting, cylinder shading and grip presentation into
-`css/weapon-presentation.css` without changing declarations or cascade order.
-See `HANDOFF.md` and `AUDIT-12.168.md`.
+Build 12.169 continues the staged CSS ownership programme by moving the armour
+inspector rotation pivot, transition state and scoped compositor promotion into
+`css/armour-viewer.css` without changing declarations or cascade order. See
+`HANDOFF.md` and `AUDIT-12.169.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

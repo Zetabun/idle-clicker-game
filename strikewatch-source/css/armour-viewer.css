@@ -1,0 +1,28 @@
+/* Armour inspector rotation-pivot and compositor-promotion ownership.
+   Extracted from game.css in Build 12.169 without changing declarations. */
+
+/* --- Build 12.142: armour viewer rotation pivot ----------------------------
+   `--armour-viewer-yaw/pitch` are inherited custom properties, so writing them
+   on the rig root once per frame invalidated the computed style of all 384
+   cuboid faces beneath it: measured at 9.6ms per rotation step against 0.03ms
+   for a direct transform on one element. The live rotation now belongs to this
+   pivot, which nothing else styles, so it cannot collide with the per-model or
+   per-width scale factors that still ride on `--armour-viewer-scale`. */
+.career-armour-viewer-pivot {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+/* Build 12.152: every armour rig emits a pivot, but only the inspector's is
+   ever driven — `syncCareerArmourViewerTransform()` selects
+   `[data-career-armour-viewer] [data-career-armour-pivot]`. Promotion is
+   scoped to match, so thumbnails and product views stop being composited
+   layers that never move. */
+.career-armour-inspector .career-armour-viewer-pivot {
+  transition: transform .15s ease-out;
+  will-change: transform;
+}
+.career-armour-inspector.dragging .career-armour-viewer-pivot,
+.career-armour-inspector.auto-rotating .career-armour-viewer-pivot {
+  transition: none;
+}
