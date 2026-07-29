@@ -1,0 +1,246 @@
+name: Validate and Build Strikewatch 12.185
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-release-12-185-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Apply, verify and commit Build 12.185
+        shell: bash
+        env:
+          RELEASE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f .github/release-12-185-pr.trigger ]; then
+            echo "Build 12.185 is already applied or the release marker is absent."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected = {
+              'version': '12.184',
+              'name': 'Economy Guide CSS Ownership',
+              'build_id': '12.184.0-economy-guide-css-ownership',
+          }
+          actual = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          if actual != expected:
+              raise SystemExit(f'Predecessor guard failed: expected {expected}, got {actual}')
+          PY
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo "No headless Chrome binary is available." >&2
+            exit 1
+          fi
+
+          write_deployment_probe() {
+            python3 - <<'PY'
+          from pathlib import Path
+          import re
+          build = Path('build.py').read_text(encoding='utf-8')
+          match = re.search(r'CSS_PATHS = \((.*?)\)\n', build, flags=re.S)
+          if not match:
+              raise SystemExit('CSS_PATHS not found while creating deployment probe')
+          paths = re.findall(r'ROOT / "css" / "([^"]+)"', match.group(1))
+          links = '\n'.join(f'<link rel="stylesheet" href="css/{name}">' for name in paths)
+          Path('deployment-probe.html').write_text(f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{links}</head><body><section class="deployment-section-head"><span>CONFIRM DEPLOYMENT</span><strong>ACTIVE FIVE</strong><small>Review the selected operators.</small></section><article class="deployment-map-card"><em>MAP</em><span><b>OFFICE</b><small>Close lanes and rotations.</small></span></article><article id="deploymentRow" class="deployment-operator-row"><span>1</span><i></i><div><strong>OPERATOR</strong><small>ENTRY</small></div><b>SHORT RANGE</b></article><section class="deployment-tactics"><span>TACTICS</span><strong>CONTROL SPACE</strong></section><article class="deployment-lane-row"><strong>MAIN LANE</strong><small>Expected route</small><b>MEDIUM</b></article><pre id="result"></pre><script>const q=s=>document.querySelector(s);const cs=s=>getComputedStyle(q(s));document.getElementById('result').textContent=JSON.stringify({{width:innerWidth,headKicker:cs('.deployment-section-head span').fontSize,headTitle:cs('.deployment-section-head strong').fontSize,headCopy:cs('.deployment-section-head small').fontSize,mapKicker:cs('.deployment-map-card em').fontSize,mapTitle:cs('.deployment-map-card b').fontSize,mapCopy:cs('.deployment-map-card small').fontSize,rowColumns:cs('#deploymentRow').gridTemplateColumns,rowGap:cs('#deploymentRow').gap,rowMinHeight:cs('#deploymentRow').minHeight,rowName:cs('#deploymentRow strong').fontSize,rowBand:cs('#deploymentRow > b').fontSize,rowMeta:cs('#deploymentRow small').fontSize,tacticsKicker:cs('.deployment-tactics span').fontSize,tacticsTitle:cs('.deployment-tactics strong').fontSize,laneTitle:cs('.deployment-lane-row strong').fontSize,laneCopy:cs('.deployment-lane-row small').fontSize,laneBand:cs('.deployment-lane-row b').fontSize}});</script></body></html>''', encoding='utf-8', newline='\n')
+          PY
+          }
+
+          capture_deployment_styles() {
+            local prefix="$1"
+            write_deployment_probe
+            for width in 390 833 1440; do
+              "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --window-size="${width},1000" --dump-dom "file://$(pwd)/deployment-probe.html" > "/tmp/sw-12-185-${prefix}-${width}.html"
+            done
+            rm -f deployment-probe.html
+          }
+
+          cd strikewatch-source
+          capture_deployment_styles baseline
+          cd ..
+
+          python3 .github/scripts/release-12-185.py
+          cd strikewatch-source
+          python3 -m py_compile build.py
+          python3 build.py
+
+          find js -maxdepth 1 -type f -name '*.js' ! -name 'strikewatch.dev.js' -print0 | sort -z | xargs -0 -n1 node --check
+          node --check js/strikewatch.dev.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          standalone = Path('dist/strikewatch-build-12.185.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', standalone, flags=re.S)
+          if not scripts:
+              raise SystemExit('No standalone inline scripts found')
+          for index, script in enumerate(scripts):
+              Path(f'/tmp/sw-12-185-inline-{index}.js').write_text(script, encoding='utf-8')
+
+          game = Path('css/game.css').read_text(encoding='utf-8')
+          owned = Path('css/deployment-readability.css').read_text(encoding='utf-8')
+          marker = '/* --- Confirm Deployment: readable at every width --- */'
+          if marker in game or owned.count(marker) != 1:
+              raise SystemExit('Confirm Deployment ownership marker mismatch')
+          required = [
+              '.deployment-section-head strong { font-size: 17px !important; }',
+              '.deployment-section-head small { font-size: 11px !important; line-height: 1.5 !important; }',
+              'grid-template-columns: 26px 54px minmax(0, 1fr) minmax(128px, .72fr) !important;',
+              'min-height: 60px !important;',
+              '@media (max-width: 1023px)',
+              'grid-template-columns: 24px 50px minmax(0, 1fr) !important;',
+              'min-height: 62px !important;',
+              '.deployment-lane-row b { font-size: 11px !important; }',
+          ]
+          missing = [item for item in required if item not in owned]
+          if missing:
+              raise SystemExit(f'Missing deployment declarations: {missing}')
+          if owned.count('@media (max-width: 1023px)') != 1:
+              raise SystemExit('Deployment breakpoint ownership mismatch')
+
+          world = Path('js/61-world-renderer.js').read_text(encoding='utf-8')
+          for token in (
+              'const BLOOD_SPLATTER_PRESENTATION = Object.freeze({',
+              'minimumReadableCoreWidth: 0.14',
+              "kind: 'core'",
+              "kind: 'drip'",
+              'const dripCount = 1 + (fatal ? 1 : 0);',
+              'presentation.colours[spot.tone] || presentation.colours[0]',
+          ):
+              if token not in world:
+                  raise SystemExit(f'Missing blood visibility source token: {token}')
+
+          report = json.loads(Path('dist/strikewatch-build-12.185-css-debt.json').read_text(encoding='utf-8'))
+          if not report.get('within_budget'):
+              raise SystemExit(f'CSS report outside budget: {report}')
+          if report.get('stylesheet_order', [])[:3] != ['game.css', 'deployment-readability.css', 'economy-guide.css']:
+              raise SystemExit(f'Unexpected stylesheet order: {report.get("stylesheet_order")}')
+          if report.get('owned_deployment_readability_lines', 0) < 45 or report.get('game_css_lines', 999999) > 30730:
+              raise SystemExit(f'CSS ownership or line budget mismatch: {report}')
+
+          index = Path('index.html').read_text(encoding='utf-8')
+          build = Path('build.py').read_text(encoding='utf-8')
+          hrefs = re.findall(r'<link rel="stylesheet" href="css/([^?]+)\?v=[^"]+"\s*/>', index)
+          match = re.search(r'CSS_PATHS = \((.*?)\)\n', build, flags=re.S)
+          paths = re.findall(r'ROOT / "css" / "([^"]+)"', match.group(1)) if match else []
+          if hrefs != paths:
+              raise SystemExit(f'index/build stylesheet order mismatch: {hrefs} != {paths}')
+          if re.search(r'<link rel="stylesheet" href="css/', standalone):
+              raise SystemExit('Standalone retained an external stylesheet')
+
+          bundle = Path('js/strikewatch.dev.js').read_text(encoding='utf-8')
+          for hook in ('bloodSplatterForTest', 'impactDecalForTest', 'rendererFrameStatsForTest', 'mobileInterfaceAuditForTest', 'typographyConsistencyForTest', 'renderRouteForTest'):
+              if hook not in bundle:
+                  raise SystemExit(f'Missing retained hook: {hook}')
+          PY
+
+          for script in /tmp/sw-12-185-inline-*.js; do node --check "$script"; done
+
+          cp js/strikewatch.dev.js /tmp/sw-12-185-first.dev.js
+          cp dist/strikewatch-build-12.185.html /tmp/sw-12-185-first.html
+          cp dist/strikewatch-build-12.185-size.json /tmp/sw-12-185-first-size.json
+          cp dist/strikewatch-build-12.185-css-debt.json /tmp/sw-12-185-first-css.json
+          python3 build.py
+          cmp /tmp/sw-12-185-first.dev.js js/strikewatch.dev.js
+          cmp /tmp/sw-12-185-first.html dist/strikewatch-build-12.185.html
+          cmp /tmp/sw-12-185-first-size.json dist/strikewatch-build-12.185-size.json
+          cmp /tmp/sw-12-185-first-css.json dist/strikewatch-build-12.185-css-debt.json
+
+          capture_deployment_styles release
+          python3 - <<'PY'
+          from pathlib import Path
+          import html
+          import json
+          import re
+
+          def read(prefix, width):
+              raw = Path(f'/tmp/sw-12-185-{prefix}-{width}.html').read_text(encoding='utf-8')
+              match = re.search(r'<pre id="result">(.*?)</pre>', raw, flags=re.S)
+              if not match:
+                  raise SystemExit(f'Deployment computed-style result missing for {prefix} at {width}px')
+              return json.loads(html.unescape(match.group(1)))
+
+          results = {}
+          for width in (390, 833, 1440):
+              baseline = read('baseline', width)
+              release = read('release', width)
+              if baseline != release:
+                  raise SystemExit(f'Deployment computed style changed at {width}px:\nbaseline={baseline}\nrelease={release}')
+              if abs(release['width'] - width) > 1:
+                  raise SystemExit(f'Unexpected viewport width {release["width"]}; expected {width}')
+              results[str(width)] = release
+          for width in ('390', '833'):
+              compact = results[width]
+              if len(compact['rowColumns'].split()) != 3 or compact['rowMinHeight'] != '62px':
+                  raise SystemExit(f'Compact deployment invariant failed at {width}px: {compact}')
+          desktop = results['1440']
+          if len(desktop['rowColumns'].split()) != 4 or desktop['rowMinHeight'] != '60px':
+              raise SystemExit(f'Desktop deployment invariant failed: {desktop}')
+          print(json.dumps(results, indent=2))
+          PY
+
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('dist/strikewatch-build-12.185.html').read_text(encoding='utf-8')
+          early = '''<script>window.__swRuntimeFaults=[];window.addEventListener('error',event=>window.__swRuntimeFaults.push(String(event.message||event.error||'window error')));const __swConsoleError=console.error.bind(console);console.error=(...args)=>{window.__swRuntimeFaults.push(args.map(String).join(' '));__swConsoleError(...args);};</script>'''
+          probe = '''<pre id="runtime-result">WAITING</pre><script>(()=>{let attempts=0;const finish=value=>{document.getElementById('runtime-result').textContent=JSON.stringify(value);};const timer=setInterval(()=>{attempts++;try{const d=window.__strikeDebug;if(!d?.bloodSplatterForTest||!d?.rendererFrameStatsForTest||!d?.impactDecalForTest){if(attempts>100){clearInterval(timer);finish({ok:false,reason:'hooks unavailable',faults:window.__swRuntimeFaults});}return;}const ready=d.rendererFrameStatsForTest(1);if(!ready?.ok){if(attempts>100){clearInterval(timer);finish({ok:false,reason:'renderer unavailable',ready,faults:window.__swRuntimeFaults});}return;}clearInterval(timer);d.clearBloodSplatterForTest();const baseline=d.rendererFrameStatsForTest(1);const single=d.bloodSplatterForTest();d.clearBloodSplatterForTest();for(let i=0;i<24;i++)d.bloodSplatterForTest();const pool=d.bloodSplatterCountForTest();const bloodFrame=d.rendererFrameStatsForTest(1);const impact=d.impactDecalForTest();const cleared=d.clearBloodSplatterForTest();const afterClear=d.rendererFrameStatsForTest(1);finish({ok:Boolean(single?.ok)&&single.ignoredZeroDamage===true&&single.drips>=1&&single.coreToImpactRatio>=1.5&&pool.count===18&&pool.spots===90&&impact?.ok===true&&cleared.count===0&&bloodFrame.drawCalls-baseline.drawCalls>=pool.count&&bloodFrame.drawCalls-baseline.drawCalls<=pool.spots+2,faults:window.__swRuntimeFaults,single,pool,impact,baselineDrawCalls:baseline.drawCalls,bloodDrawCalls:bloodFrame.drawCalls,drawGrowth:bloodFrame.drawCalls-baseline.drawCalls,afterClearDrawCalls:afterClear.drawCalls,cleared});}catch(error){clearInterval(timer);finish({ok:false,reason:String(error?.stack||error),faults:window.__swRuntimeFaults});}},100);})();</script>'''
+          html = html.replace('<head>', '<head>' + early, 1).replace('</body>', probe + '</body>', 1)
+          Path('runtime-probe.html').write_text(html, encoding='utf-8', newline='\n')
+          PY
+
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --use-angle=swiftshader --enable-webgl --ignore-gpu-blocklist --allow-file-access-from-files --window-size="390,844" --virtual-time-budget=12000 --dump-dom "file://$(pwd)/runtime-probe.html" > /tmp/sw-12-185-runtime.html
+          python3 - <<'PY'
+          from pathlib import Path
+          import html
+          import json
+          import re
+          raw = Path('/tmp/sw-12-185-runtime.html').read_text(encoding='utf-8')
+          match = re.search(r'<pre id="runtime-result">(.*?)</pre>', raw, flags=re.S)
+          if not match:
+              raise SystemExit('Runtime probe result missing')
+          result = json.loads(html.unescape(match.group(1)))
+          if not result.get('ok'):
+              raise SystemExit(f'Runtime blood/impact probe failed: {result}')
+          if result.get('faults'):
+              raise SystemExit(f'Runtime console/page faults: {result["faults"]}')
+          print(json.dumps(result, indent=2))
+          PY
+          rm -f runtime-probe.html
+
+          cp dist/strikewatch-build-12.185.html ../cod.html
+          cmp dist/strikewatch-build-12.185.html ../cod.html
+          cd ..
+
+          rm -f .github/scripts/release-12-185.py .github/workflows/release-12-185-pr.yml .github/release-12-185-pr.trigger
+          git add -A -- strikewatch-source cod.html .github
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Build 12.185: improve blood visibility and own deployment CSS"
+          git push origin HEAD:"${RELEASE_BRANCH}"
