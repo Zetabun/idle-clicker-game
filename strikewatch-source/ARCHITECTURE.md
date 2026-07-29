@@ -10,6 +10,7 @@ share application scope in the listed order.
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/training-readability.css` | Training/development typography floors and programme-control sizing |
 | `css/training-programme.css` | Training workflow wrapper and outstanding-programme accent state |
 | `css/management-feedback.css` | Management live-status surface and visible blocked/ready match-state presentation |
 | `css/compact-readability.css` | Compact 12px management typography floors for dates, locks, access and action state |
@@ -82,10 +83,10 @@ everything it consumes and before everything that consumes it.
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
 then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
 the cascade-order authority, and `index.html` must load the same files in the
-same order. The current order is `game.css`, `training-programme.css`,
-`management-feedback.css`, `compact-readability.css`, `reward-reveal.css`,
-`armour-viewer.css`, `weapon-presentation.css`, `loadout-stills.css`,
-`12.161-audit-fixes.css`, `armoury-inventory.css`, then
+same order. The current order is `game.css`, `training-readability.css`,
+`training-programme.css`, `management-feedback.css`, `compact-readability.css`,
+`reward-reveal.css`, `armour-viewer.css`, `weapon-presentation.css`,
+`loadout-stills.css`, `12.161-audit-fixes.css`, `armoury-inventory.css`, then
 `compact-navigation.css`. Prefer component-scoped selectors and verify the
 final computed style, especially when pseudo-elements are reused.
 

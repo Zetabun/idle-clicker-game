@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.174 — Training Readability CSS Ownership
+
+- Moves the Build 12.135 training/development typography and programme-control sizing rules from `game.css` into `css/training-readability.css` without changing selectors, declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before training workflow and all later presentation layers.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.174.md`.
+
+
 ## 12.173 — Training Programme CSS Ownership
 
 - Moves the Build 12.139 training-programme wrapper and outstanding-requirement accent rules from `game.css` into `css/training-programme.css` without changing selectors or declarations.

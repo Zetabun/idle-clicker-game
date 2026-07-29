@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.173';
-  const BUILD_NAME = 'Training Programme CSS Ownership';
-  const BUILD_ID = '12.173.0-training-programme-css-ownership';
+  const BUILD_VERSION = '12.174';
+  const BUILD_NAME = 'Training Readability CSS Ownership';
+  const BUILD_ID = '12.174.0-training-readability-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

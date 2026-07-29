@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.173 continues the staged CSS ownership programme by moving the training
-workflow wrapper and outstanding-programme accent state into
-`css/training-programme.css` without changing selectors, declarations or cascade
-order. See `HANDOFF.md` and `AUDIT-12.173.md`.
+Build 12.174 continues the staged CSS ownership programme by moving the training
+and development typography floors and programme-control sizing into
+`css/training-readability.css` without changing selectors, declarations,
+breakpoint or cascade order. See `HANDOFF.md` and `AUDIT-12.174.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

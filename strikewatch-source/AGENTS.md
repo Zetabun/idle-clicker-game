@@ -56,7 +56,9 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.173 owns the training workflow wrapper and outstanding-programme accent state in `css/training-programme.css`. Keep it immediately after `game.css`, before `management-feedback.css`. The wrapper must stay an unclipped grid that inherits the route gap, and `.needs-programme` must retain the accent rail and kicker. Verify `firstMatchGuidanceForTest()`, `mobileInterfaceAuditForTest()`, `guidanceConsolidationForTest()` and the CSS ownership gates. See `AUDIT-12.173.md`.
+Build 12.174 owns training/development typography floors and programme-control sizing in `css/training-readability.css`. Keep it immediately after `game.css`, before `training-programme.css`. Preserve the 40px desktop and 46px compact select heights, the 1023px breakpoint and the existing card/intro copy floors. Verify `typographyConsistencyForTest()`, `mobileInterfaceAuditForTest()`, `firstMatchGuidanceForTest()` and the CSS ownership gates. See `AUDIT-12.174.md`.
+
+Build 12.173 owns the training workflow wrapper and outstanding-programme accent state in `css/training-programme.css`. Keep it after `training-readability.css`, before `management-feedback.css`. The wrapper must stay an unclipped grid that inherits the route gap, and `.needs-programme` must retain the accent rail and kicker. Verify `firstMatchGuidanceForTest()`, `mobileInterfaceAuditForTest()`, `guidanceConsolidationForTest()` and the CSS ownership gates. See `AUDIT-12.173.md`.
 
 Build 12.172 owns the management live-status banner and visible blocked/ready match-state presentation in `css/management-feedback.css`. Keep it after `training-programme.css`, before `compact-readability.css`. The live region must remain above compact navigation, dismissible, and visible for repeated refusals; the match control must retain its visible state line and blocked/ready colours. Verify `managementStatusForTest()`, `showManagementStatusForTest()`, `typographyConsistencyForTest()` and `mobileInterfaceAuditForTest()` alongside the CSS ownership gates. See `AUDIT-12.172.md`.
 
