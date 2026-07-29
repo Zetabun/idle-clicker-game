@@ -1,6 +1,7 @@
 name: Strikewatch 12.165 release
 
 on:
+  workflow_dispatch:
   issues:
     types: [opened]
 
@@ -9,11 +10,11 @@ permissions:
   issues: write
 
 env:
-  RELEASE_ATTEMPT: issue-opened-after-actions-enabled
+  RELEASE_ATTEMPT: manual-or-issue
 
 jobs:
   release:
-    if: github.event.issue.title == 'RUN STRIKEWATCH 12.165 RELEASE NOW'
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.title == 'RUN STRIKEWATCH 12.165 RELEASE NOW'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
