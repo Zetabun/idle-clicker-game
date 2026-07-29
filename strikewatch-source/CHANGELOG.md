@@ -1,5 +1,15 @@
 # Release history router
 
+## 12.186 — Accurate Storage Reporting
+
+- Closes SW-002 by separating local career-record sizes from browser-origin storage usage.
+- Shows MEASURING while the asynchronous browser estimate is pending, then refreshes the open Configuration route when it settles.
+- Labels the estimate as ALL SITE DATA and explains that it is not a career-specific allowance.
+- Preserves synchronous save commits, the localStorage/IndexedDB tier split, save sequence arbitration and save schema 19.
+- Adds `careerStorageReportingForTest()` to guard loading, ready, unavailable and scope labels.
+- Evidence: `AUDIT-12.186.md`.
+
+
 ## 12.185 — Blood Visibility & Deployment CSS Ownership
 
 - Enlarges and brightens nearby-wall blood clusters so they remain recognisable on compact portrait screens rather than resembling bullet chips.

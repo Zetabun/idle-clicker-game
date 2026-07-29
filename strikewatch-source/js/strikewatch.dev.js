@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.185';
-  const BUILD_NAME = 'Blood Visibility & Deployment CSS Ownership';
-  const BUILD_ID = '12.185.0-blood-visibility-deployment-css-ownership';
+  const BUILD_VERSION = '12.186';
+  const BUILD_NAME = 'Accurate Storage Reporting';
+  const BUILD_ID = '12.186.0-accurate-storage-reporting';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -17055,8 +17055,12 @@
     totalBytes: 0,
     quotaBytes: 0,
     usageBytes: 0,
-    measuredAt: null
+    estimateStatus: 'idle',
+    estimateError: null,
+    measuredAt: null,
+    quotaMeasuredAt: null
   };
+  let careerStorageEstimatePromise = null;
 
   function careerStorageByteLength(value) {
     if (typeof value !== 'string' || !value) return 0;
@@ -17089,38 +17093,110 @@
     return careerStorageReport;
   }
 
-  // `navigator.storage.estimate()` is asynchronous, so the figure shown is the
-  // last one measured. It is refreshed whenever the configuration page renders,
-  // which is often enough for a number that changes slowly.
-  function careerStorageRefreshQuota() {
-    if (!navigator.storage || typeof navigator.storage.estimate !== 'function') return Promise.resolve(null);
-    return navigator.storage.estimate().then(estimate => {
-      careerStorageReport.quotaBytes = Math.max(0, Number(estimate?.quota) || 0);
-      careerStorageReport.usageBytes = Math.max(0, Number(estimate?.usage) || 0);
-      return careerStorageReport;
-    }).catch(() => null);
+  function careerStorageOriginUsageLabel(report = careerStorageReport) {
+    const status = String(report?.estimateStatus || 'idle');
+    if (status === 'idle' || status === 'loading') return 'MEASURING...';
+    if (status !== 'ready') return 'NOT REPORTED BY BROWSER';
+    const quota = Math.max(0, Number(report?.quotaBytes) || 0);
+    const usage = Math.max(0, Number(report?.usageBytes) || 0);
+    if (quota > 0) return `${careerStorageFormatBytes(usage)} OF ${careerStorageFormatBytes(quota)} · ALL SITE DATA`;
+    if (usage > 0) return `${careerStorageFormatBytes(usage)} USED · ALL SITE DATA`;
+    return 'NOT REPORTED BY BROWSER';
   }
 
-  function careerStorageSummary() {
+  function careerStorageRefreshOpenSettings() {
+    if (typeof menuTab !== 'string' || menuTab !== 'settings' || typeof updateMenuUI !== 'function') return;
+    const refresh = () => {
+      if (typeof menuTab === 'string' && menuTab === 'settings' && typeof updateMenuUI === 'function') updateMenuUI();
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(refresh);
+    else setTimeout(refresh, 0);
+  }
+
+  // navigator.storage.estimate() describes every storage bucket owned by this
+  // site origin. It is asynchronous and is not the career's personal quota.
+  function careerStorageRefreshQuota(options = {}) {
+    const refreshUi = options.refreshUi !== false;
+    const force = options.force === true;
+    if (!navigator.storage || typeof navigator.storage.estimate !== 'function') {
+      careerStorageReport.estimateStatus = 'unavailable';
+      careerStorageReport.estimateError = 'Storage estimate API unavailable';
+      return Promise.resolve(null);
+    }
+    if (careerStorageEstimatePromise) return careerStorageEstimatePromise;
+    if (!force && careerStorageReport.estimateStatus === 'ready') return Promise.resolve(careerStorageReport);
+
+    careerStorageReport.estimateStatus = 'loading';
+    careerStorageReport.estimateError = null;
+    careerStorageEstimatePromise = navigator.storage.estimate().then(estimate => {
+      careerStorageReport.quotaBytes = Math.max(0, Number(estimate?.quota) || 0);
+      careerStorageReport.usageBytes = Math.max(0, Number(estimate?.usage) || 0);
+      careerStorageReport.estimateStatus = (careerStorageReport.quotaBytes > 0 || careerStorageReport.usageBytes > 0)
+        ? 'ready'
+        : 'unavailable';
+      careerStorageReport.quotaMeasuredAt = new Date().toISOString();
+      return careerStorageReport.estimateStatus === 'ready' ? careerStorageReport : null;
+    }).catch(error => {
+      careerStorageReport.estimateStatus = 'unavailable';
+      careerStorageReport.estimateError = String(error?.message || error || 'Storage estimate failed');
+      return null;
+    }).finally(() => {
+      careerStorageEstimatePromise = null;
+      if (refreshUi) careerStorageRefreshOpenSettings();
+    });
+    return careerStorageEstimatePromise;
+  }
+
+  function careerStorageSummary(options = {}) {
     careerStorageMeasure();
-    careerStorageRefreshQuota();
-    const quota = careerStorageReport.quotaBytes;
-    const usage = careerStorageReport.usageBytes;
+    if (options.refresh !== false && careerStorageReport.estimateStatus === 'idle') {
+      careerStorageRefreshQuota({ refreshUi: options.refreshUi !== false });
+    }
+    const quota = Math.max(0, Number(careerStorageReport.quotaBytes) || 0);
+    const usage = Math.max(0, Number(careerStorageReport.usageBytes) || 0);
+    const originUsageLabel = careerStorageOriginUsageLabel();
     return {
       saveSize: careerStorageFormatBytes(careerStorageReport.primaryBytes),
       backupSize: careerStorageReport.backupBytes
         ? careerStorageFormatBytes(careerStorageReport.backupBytes)
         : 'NONE STORED',
       totalSize: careerStorageFormatBytes(careerStorageReport.totalBytes),
-      usageLabel: quota
-        ? `${careerStorageFormatBytes(usage)} OF ${careerStorageFormatBytes(quota)}`
-        : 'NOT REPORTED BY BROWSER',
+      fastTierSize: careerStorageFormatBytes(careerStorageReport.totalBytes),
+      originUsageLabel,
+      originUsageStatus: careerStorageReport.estimateStatus,
+      originUsagePercent: quota ? Math.min(100, (usage / quota) * 100) : 0,
+      originScope: 'Includes all storage used by this site origin, not only this career and not a career-specific allowance.',
+      // Retain aliases for older diagnostics while making their scope truthful.
+      usageLabel: originUsageLabel,
       usagePercent: quota ? Math.min(100, (usage / quota) * 100) : 0,
       durableTier: careerIdbState.supported
         ? (careerIdbState.failedWrites > 0 && careerIdbState.writes === 0 ? 'UNAVAILABLE' : 'INDEXEDDB ACTIVE')
         : 'INDEXEDDB UNAVAILABLE',
       primaryTier: careerIdbState.primaryTier,
       bytes: { ...careerStorageReport }
+    };
+  }
+
+  function careerStorageReportingForTest() {
+    const loading = careerStorageOriginUsageLabel({ estimateStatus: 'loading', usageBytes: 0, quotaBytes: 0 });
+    const ready = careerStorageOriginUsageLabel({ estimateStatus: 'ready', usageBytes: 2 * 1024 * 1024, quotaBytes: 100 * 1024 * 1024 });
+    const unavailable = careerStorageOriginUsageLabel({ estimateStatus: 'unavailable', usageBytes: 0, quotaBytes: 0 });
+    const summary = careerStorageSummary({ refresh: false });
+    return {
+      ok: loading === 'MEASURING...'
+        && ready.includes('ALL SITE DATA')
+        && unavailable === 'NOT REPORTED BY BROWSER'
+        && !ready.includes('CAREER')
+        && !summary.originUsageLabel.startsWith('0 B OF 0 B')
+        && summary.fastTierSize === summary.totalSize
+        && summary.originScope.includes('not a career-specific allowance'),
+      loading,
+      ready,
+      unavailable,
+      currentStatus: summary.originUsageStatus,
+      currentLabel: summary.originUsageLabel,
+      fastTierSize: summary.fastTierSize,
+      originScope: summary.originScope
     };
   }
 
@@ -17174,12 +17250,13 @@
   window.__strikeDebug.careerIndexedDbForTest = () => careerIndexedDbAuditForTest();
   window.__strikeDebug.careerIndexedDbRoundTripForTest = () => careerIndexedDbRoundTripForTest();
   window.__strikeDebug.careerStorageSummaryForTest = () => careerStorageSummary();
+  window.__strikeDebug.careerStorageReportingForTest = () => careerStorageReportingForTest();
   window.__strikeDebug.careerIndexedDbAdoptForTest = () => careerIdbAdoptIfNewer();
 
   // Seed and reconcile once the rest of the game has booted. Deferred so a slow
   // or blocked database can never delay first paint.
   careerIdbAdoptIfNewer().catch(() => null);
-  careerStorageRefreshQuota();
+  careerStorageRefreshQuota({ refreshUi: false });
 
 /*
  * Strikewatch source module: 39-medical.js
@@ -35879,11 +35956,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           <div class="menu-setting-row"><span>LAST AUTOSAVE</span><strong>${escapeCareerHtml(saveLabel)}</strong></div>
           <div class="menu-setting-row"><span>CAREER SCHEMA</span><strong>VERSION ${Math.max(0, Number(careerState.version) || 0)}</strong></div>
           <div class="menu-setting-row"><span>RESTORE POINT</span><strong>${backupReady ? 'AVAILABLE' : 'CREATED AFTER NEXT CHANGE'}</strong></div>
-          <div class="menu-setting-row"><span>SAVE FILE SIZE</span><strong>${escapeCareerHtml(storage.saveSize)}</strong></div>
-          <div class="menu-setting-row"><span>RECOVERY BACKUP SIZE</span><strong>${escapeCareerHtml(storage.backupSize)}</strong></div>
-          <div class="menu-setting-row"><span>CAREER DATA TOTAL</span><strong>${escapeCareerHtml(storage.totalSize)}</strong></div>
-          <div class="menu-setting-row"><span>BROWSER ALLOWANCE USED</span><strong>${escapeCareerHtml(storage.usageLabel)}</strong></div>
-          <div class="menu-setting-row"><span>DURABLE STORAGE</span><strong>${escapeCareerHtml(storage.durableTier)}</strong></div>
+          <div class="menu-setting-row"><span>CAREER SAVE FILE</span><strong>${escapeCareerHtml(storage.saveSize)}</strong></div>
+          <div class="menu-setting-row"><span>RECOVERY BACKUP</span><strong>${escapeCareerHtml(storage.backupSize)}</strong></div>
+          <div class="menu-setting-row"><span>LOCAL CAREER DATA</span><strong>${escapeCareerHtml(storage.fastTierSize)}</strong></div>
+          <div class="menu-setting-row"><span>BROWSER ORIGIN STORAGE</span><strong>${escapeCareerHtml(storage.originUsageLabel)}</strong></div>
+          <div class="menu-setting-row"><span>PRIMARY SAVE TIER</span><strong>${escapeCareerHtml(storage.primaryTier === 'indexedDB' ? 'INDEXEDDB' : 'LOCAL STORAGE')}</strong></div>
+          <div class="menu-setting-row"><span>DURABLE MIRROR</span><strong>${escapeCareerHtml(storage.durableTier)}</strong></div>
+          <small>${escapeCareerHtml(storage.originScope)}</small>
           <div class="career-recovery-actions"><button class="primary" type="button" data-career-action="export-save" ${careerState.created ? '' : 'disabled'}>EXPORT CAREER</button><button type="button" data-career-action="import-save">IMPORT CAREER</button><button type="button" data-career-action="restore-backup" ${backupReady ? '' : 'disabled'}>RESTORE BACKUP</button></div>
           <small>Importing or restoring first preserves the active career as the next backup, so the replacement can be undone once.</small>
         </article>

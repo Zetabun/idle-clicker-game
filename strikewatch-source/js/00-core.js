@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.185';
-  const BUILD_NAME = 'Blood Visibility & Deployment CSS Ownership';
-  const BUILD_ID = '12.185.0-blood-visibility-deployment-css-ownership';
+  const BUILD_VERSION = '12.186';
+  const BUILD_NAME = 'Accurate Storage Reporting';
+  const BUILD_ID = '12.186.0-accurate-storage-reporting';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
