@@ -1,7 +1,8 @@
 name: Strikewatch 12.165 release
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches: [main]
     paths: ['.github/release-triggers/12.165.txt']
 
@@ -9,14 +10,16 @@ permissions:
   contents: write
 
 env:
-  RELEASE_ATTEMPT: registered-workflow
+  RELEASE_ATTEMPT: pull-request-closed
 
 jobs:
   release:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Apply release patch
