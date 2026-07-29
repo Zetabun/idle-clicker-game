@@ -1,2 +1,244 @@
-import base64,zlib
-exec(compile(zlib.decompress(base64.b64decode('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')).decode('utf-8'), __file__, 'exec'))
+from pathlib import Path
+import html as html_module
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+repo = Path.cwd()
+source = repo / 'strikewatch-source'
+branch = os.environ.get('RELEASE_BRANCH', '').strip()
+if not branch:
+    raise SystemExit('RELEASE_BRANCH is required')
+if not (repo / '.github/release-12-186.trigger').is_file():
+    print('Release marker absent; nothing to do.')
+    raise SystemExit(0)
+
+
+def run(*args, cwd=repo, env=None):
+    command = [str(arg) for arg in args]
+    print('+', ' '.join(command), flush=True)
+    subprocess.run(command, cwd=cwd, env=env, check=True)
+
+
+def read(path):
+    return Path(path).read_text(encoding='utf-8')
+
+
+expected = {
+    'version': '12.185',
+    'name': 'Blood Visibility & Deployment CSS Ownership',
+    'build_id': '12.185.0-blood-visibility-deployment-css-ownership',
+}
+actual = json.loads(read(source / 'RELEASE.json'))
+if actual != expected:
+    raise SystemExit(f'Predecessor guard failed: expected {expected}, got {actual}')
+
+patch_env = os.environ.copy()
+patch_env['SW_RELEASE_APPLY_ONLY'] = '1'
+run(sys.executable, '.github/scripts/release-12-186.py', env=patch_env)
+run(sys.executable, '-m', 'py_compile', 'build.py', cwd=source)
+run(sys.executable, 'build.py', cwd=source)
+
+for path in sorted((source / 'js').glob('*.js')):
+    if path.name == 'strikewatch.dev.js':
+        continue
+    run('node', '--check', path.name, cwd=source / 'js')
+run('node', '--check', 'strikewatch.dev.js', cwd=source / 'js')
+
+standalone_path = source / 'dist/strikewatch-build-12.186.html'
+standalone = read(standalone_path)
+scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', standalone, flags=re.S)
+if not scripts:
+    raise SystemExit('No standalone inline scripts found')
+for index, script in enumerate(scripts):
+    path = Path(f'/tmp/sw-12-186-inline-{index}.js')
+    path.write_text(script, encoding='utf-8')
+    run('node', '--check', path)
+
+storage = read(source / 'js/81-career-indexeddb.js')
+menus = read(source / 'js/50-ui-menus.js')
+contracts = read(source / 'CONTRACTS.md')
+bundle = read(source / 'js/strikewatch.dev.js')
+index = read(source / 'index.html')
+release = json.loads(read(source / 'RELEASE.json'))
+expected_release = {
+    'version': '12.186',
+    'name': 'Accurate Storage Reporting',
+    'build_id': '12.186.0-accurate-storage-reporting',
+}
+if release != expected_release:
+    raise SystemExit(f'Release metadata mismatch: {release}')
+
+required_storage = (
+    "estimateStatus: 'idle'",
+    "return 'MEASURING...'",
+    'ALL SITE DATA',
+    'function careerStorageRefreshOpenSettings()',
+    'function careerStorageReportingForTest()',
+    "originScope: 'Includes all storage used by this site origin",
+    'careerStorageRefreshQuota({ refreshUi: false });',
+)
+missing = [token for token in required_storage if token not in storage]
+if missing:
+    raise SystemExit(f'Missing storage reporting source tokens: {missing}')
+required_menu = (
+    'CAREER SAVE FILE',
+    'RECOVERY BACKUP',
+    'LOCAL CAREER DATA',
+    'BROWSER ORIGIN STORAGE',
+    'PRIMARY SAVE TIER',
+    'DURABLE MIRROR',
+)
+missing = [token for token in required_menu if token not in menus]
+if missing:
+    raise SystemExit(f'Missing Configuration labels: {missing}')
+if 'BROWSER ALLOWANCE USED' in menus:
+    raise SystemExit('Misleading browser allowance label remains')
+if 'career-specific allowance' not in contracts:
+    raise SystemExit('Storage scope contract was not documented')
+for hook in ('careerStorageReportingForTest', 'careerIndexedDbForTest', 'careerIndexedDbRoundTripForTest'):
+    if hook not in bundle:
+        raise SystemExit(f'Missing retained persistence hook: {hook}')
+if 'Strikewatch 12.186: Accurate Storage Reporting' not in index:
+    raise SystemExit('Development title was not updated')
+if index.count('12.186.0-accurate-storage-reporting') < 20:
+    raise SystemExit('Development cache keys were not updated')
+if re.search(r'<link rel="stylesheet" href="css/', standalone):
+    raise SystemExit('Standalone retained an external stylesheet')
+
+size_report = json.loads(read(source / 'dist/strikewatch-build-12.186-size.json'))
+css_report = json.loads(read(source / 'dist/strikewatch-build-12.186-css-debt.json'))
+if not css_report.get('within_budget'):
+    raise SystemExit(f'CSS report outside budget: {css_report}')
+if size_report.get('version') != '12.186' or css_report.get('version') != '12.186':
+    raise SystemExit('Generated reports carry the wrong version')
+
+first = {
+    'bundle': read(source / 'js/strikewatch.dev.js'),
+    'standalone': read(standalone_path),
+    'size': read(source / 'dist/strikewatch-build-12.186-size.json'),
+    'css': read(source / 'dist/strikewatch-build-12.186-css-debt.json'),
+}
+run(sys.executable, 'build.py', cwd=source)
+second = {
+    'bundle': read(source / 'js/strikewatch.dev.js'),
+    'standalone': read(standalone_path),
+    'size': read(source / 'dist/strikewatch-build-12.186-size.json'),
+    'css': read(source / 'dist/strikewatch-build-12.186-css-debt.json'),
+}
+if first != second:
+    raise SystemExit('Deterministic rebuild mismatch')
+
+chrome = next((shutil.which(name) for name in ('google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser') if shutil.which(name)), None)
+if not chrome:
+    raise SystemExit('No headless Chrome binary is available')
+
+storage_start = storage.index('  const careerStorageReport = {')
+storage_end = storage.index('  function careerIndexedDbAuditForTest() {', storage_start)
+storage_logic = storage[storage_start:storage_end].replace('navigator.storage', 'window.__storageApi')
+style_blocks = re.findall(r'<style(?:\s[^>]*)?>(.*?)</style>', standalone, flags=re.S)
+if not style_blocks:
+    raise SystemExit('Standalone CSS was not found for the browser probe')
+release_css = '\n'.join(style_blocks)
+
+probe_script = r'''
+window.__swReleaseFaults=[];
+window.addEventListener('error',event=>window.__swReleaseFaults.push(String(event.message||event.error||'window error')));
+const __swConsoleError=console.error.bind(console);
+console.error=(...args)=>{window.__swReleaseFaults.push(args.map(String).join(' '));__swConsoleError(...args);};
+const CAREER_STORAGE_KEY='career';
+const CAREER_BACKUP_STORAGE_KEY='backup';
+const CAREER_SAVE_META_STORAGE_KEY='meta';
+const __swRecords={career:'{"version":19,"name":"Storage Probe"}',backup:'{"version":19}',meta:'{"saveSequence":2}'};
+function careerStorageValue(key){return __swRecords[key]??null;}
+const careerIdbState={supported:true,failedWrites:0,writes:1,primaryTier:'localStorage'};
+let menuTab='settings';
+let __swRefreshes=0;
+function updateMenuUI(){__swRefreshes++;}
+let __swResolveEstimate;
+window.__storageApi={estimate:()=>new Promise(resolve=>{__swResolveEstimate=resolve;})};
+'''
+
+probe_after = r'''
+(async()=>{
+  const finish=value=>{document.getElementById('sw-release-result').textContent=JSON.stringify(value);};
+  try{
+    const initial=careerStorageSummary();
+    const diagnostic=careerStorageReportingForTest();
+    __swResolveEstimate({usage:2097152,quota:104857600});
+    await careerStorageEstimatePromise;
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    const settled=careerStorageSummary({refresh:false});
+    const card=document.getElementById('sw-storage-card-probe');
+    const rows=[...card.querySelectorAll('.menu-setting-row')];
+    const contained=card.scrollWidth<=card.clientWidth+1&&rows.every(row=>row.scrollWidth<=row.clientWidth+1);
+    finish({
+      ok:Boolean(diagnostic.ok)
+        &&initial.originUsageStatus==='loading'
+        &&initial.originUsageLabel==='MEASURING...'
+        &&settled.originUsageStatus==='ready'
+        &&settled.originUsageLabel.includes('ALL SITE DATA')
+        &&settled.originScope.includes('not a career-specific allowance')
+        &&settled.fastTierSize===settled.totalSize
+        &&__swRefreshes>=1
+        &&contained
+        &&window.__swReleaseFaults.length===0,
+      initial,settled,diagnostic,contained,refreshes:__swRefreshes,width:innerWidth,faults:window.__swReleaseFaults
+    });
+  }catch(error){finish({ok:false,reason:String(error&&error.stack||error),width:innerWidth,faults:window.__swReleaseFaults});}
+})();
+'''
+
+card_markup = '''<section id="sw-storage-card-probe" class="menu-setting-card career-recovery-card" style="position:relative;margin:12px;max-width:calc(100vw - 24px)">
+<div class="menu-kicker">SAVE &amp; RECOVERY</div><h3>PROTECT THIS CAREER</h3>
+<div class="menu-setting-row"><span>CAREER SAVE FILE</span><strong>12.0 KB</strong></div>
+<div class="menu-setting-row"><span>RECOVERY BACKUP</span><strong>11.9 KB</strong></div>
+<div class="menu-setting-row"><span>LOCAL CAREER DATA</span><strong>24.0 KB</strong></div>
+<div class="menu-setting-row"><span>BROWSER ORIGIN STORAGE</span><strong>2.00 MB OF 100.00 MB · ALL SITE DATA</strong></div>
+<div class="menu-setting-row"><span>PRIMARY SAVE TIER</span><strong>LOCALSTORAGE</strong></div>
+<div class="menu-setting-row"><span>DURABLE MIRROR</span><strong>INDEXEDDB ACTIVE</strong></div>
+<small>Includes all storage used by this site origin, not only this career and not a career-specific allowance.</small></section>
+<pre id="sw-release-result">WAITING</pre>'''
+
+for width in (500, 1440):
+    probe_document = f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>{release_css}</style></head><body>{card_markup}<script>{probe_script}\n{storage_logic}\n{probe_after}</script></body></html>'''
+    probe_path = Path(f'/tmp/sw-12-186-probe-{width}.html')
+    dump_path = Path(f'/tmp/sw-12-186-probe-{width}-dump.html')
+    probe_path.write_text(probe_document, encoding='utf-8')
+    with dump_path.open('w', encoding='utf-8') as output:
+        subprocess.run([
+            chrome, '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
+            '--allow-file-access-from-files', f'--window-size={width},1000', '--virtual-time-budget=5000',
+            '--dump-dom', probe_path.as_uri()
+        ], stdout=output, stderr=subprocess.STDOUT, check=True)
+    dumped = dump_path.read_text(encoding='utf-8')
+    match = re.search(r'<pre id="sw-release-result">(.*?)</pre>', dumped, flags=re.S)
+    if not match:
+        raise SystemExit(f'Browser result missing at {width}px')
+    result = json.loads(html_module.unescape(match.group(1)))
+    print(json.dumps(result, indent=2))
+    if not result.get('ok') or abs(int(result.get('width', 0)) - width) > 1:
+        raise SystemExit(f'Browser storage probe failed at {width}px: {result}')
+
+shutil.copyfile(standalone_path, repo / 'cod.html')
+if read(standalone_path) != read(repo / 'cod.html'):
+    raise SystemExit('Root cod.html is not byte-identical to standalone')
+
+for path in (
+    repo / '.github/scripts/release-12-186.py',
+    repo / '.github/scripts/run-release-12-186.py',
+    repo / '.github/workflows/release-12-186.yml',
+    repo / '.github/workflows/release-12-186-dispatch.yml',
+    repo / '.github/workflows/release-12-186-pr-runner.yml',
+    repo / '.github/release-12-186.trigger',
+):
+    path.unlink(missing_ok=True)
+
+run('git', 'add', '-A', '--', 'strikewatch-source', 'cod.html', '.github')
+run('git', 'config', 'user.name', 'github-actions[bot]')
+run('git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com')
+run('git', 'commit', '-m', 'Build 12.186: fix storage reporting')
+run('git', 'push', 'origin', f'HEAD:{branch}')
