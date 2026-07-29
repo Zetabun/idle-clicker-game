@@ -1,0 +1,138 @@
+name: Strikewatch 12.172 release
+
+on:
+  workflow_dispatch:
+  page_build:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: strikewatch-release-12-172
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Require dedicated trigger
+        id: trigger
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ -f .github/release-triggers/12.172.txt ]; then
+            echo "run_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run verified release
+        if: steps.trigger.outputs.run_release == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          exec > >(tee /tmp/release-12-172.log) 2>&1
+          report_failure() {
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              tail -c 50000 /tmp/release-12-172.log > /tmp/release-12-172-tail.log || true
+              {
+                echo 'The automated 12.172 release failed. Captured log:'
+                echo
+                echo '```text'
+                cat /tmp/release-12-172-tail.log
+                echo '```'
+              } > /tmp/release-12-172-issue.md
+              gh issue create --title 'STRIKEWATCH 12.172 RELEASE FAILURE' --body-file /tmp/release-12-172-issue.md || true
+            fi
+            exit "$status"
+          }
+          trap report_failure EXIT
+
+          python3 .github/scripts/release-12-172.py
+          cd strikewatch-source
+          python3 -m py_compile build.py
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.172.html dist/strikewatch-build-12.172-size.json dist/strikewatch-build-12.172-css-debt.json > /tmp/build-a.sha
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.172.html dist/strikewatch-build-12.172-size.json dist/strikewatch-build-12.172-css-debt.json > /tmp/build-b.sha
+          diff -u /tmp/build-a.sha /tmp/build-b.sha
+          for file in js/[0-9][0-9]-*.js js/strikewatch.dev.js; do
+            node --check "$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+          root = Path('.')
+          html = (root / 'dist/strikewatch-build-12.172.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
+          if not scripts:
+              raise SystemExit('No inline standalone JavaScript found')
+          Path('/tmp/strikewatch-12.172-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          game = (root / 'css/game.css').read_text(encoding='utf-8')
+          feedback = (root / 'css/management-feedback.css').read_text(encoding='utf-8')
+          marker = 'Build 12.140: management status surface and match-control state'
+          if marker in game:
+              raise SystemExit('Management feedback layer still exists in game.css')
+          if feedback.count(marker) != 1:
+              raise SystemExit('Management feedback ownership marker missing or duplicated')
+          required_rules = (
+              '.management-status {',
+              '.management-status.show',
+              ".management-status[data-tone='blocked']",
+              '.management-status > i::after',
+              '.management-status > p',
+              '.management-status > button',
+              '@media (max-width: 1023px)',
+              '.manager-topbar-action-state {',
+              '.manager-match-btn.blocked',
+              '.manager-match-btn:not(.blocked)',
+              "bottom: calc(104px + env(safe-area-inset-bottom, 0px))",
+              'pointer-events: auto',
+          )
+          if any(rule not in feedback for rule in required_rules):
+              raise SystemExit('Management feedback presentation rule missing')
+          if '<link rel="stylesheet" href="css/' in html:
+              raise SystemExit('Standalone retained a development stylesheet link')
+          report = json.loads((root / 'dist/strikewatch-build-12.172-css-debt.json').read_text(encoding='utf-8'))
+          expected_order = [
+              'game.css', 'management-feedback.css', 'compact-readability.css',
+              'reward-reveal.css', 'armour-viewer.css', 'weapon-presentation.css',
+              'loadout-stills.css', '12.161-audit-fixes.css',
+              'armoury-inventory.css', 'compact-navigation.css',
+          ]
+          if report.get('stylesheet_order') != expected_order:
+              raise SystemExit(f'Unexpected stylesheet order: {report}')
+          if report.get('stylesheets') != 10 or report.get('owned_management_feedback_lines', 0) < 80:
+              raise SystemExit(f'Unexpected management feedback ownership report: {report}')
+          if not report.get('within_budget') or report.get('game_css_lines', 999999) > 31320:
+              raise SystemExit(f'CSS debt budget failed: {report}')
+          bundle = (root / 'js/strikewatch.dev.js').read_text(encoding='utf-8')
+          hooks = (
+              'managementStatusForTest',
+              'showManagementStatusForTest',
+              'careerMatchLaunchState',
+              'typographyConsistencyForTest',
+              'mobileInterfaceAuditForTest',
+          )
+          if any(hook not in bundle for hook in hooks):
+              raise SystemExit('Expected management feedback regression hook missing')
+          print(json.dumps(report, indent=2))
+          PY
+          node --check /tmp/strikewatch-12.172-inline.js
+          cp dist/strikewatch-build-12.172.html ../cod.html
+          cmp -s ../cod.html dist/strikewatch-build-12.172.html
+          cd ..
+          rm -f .github/scripts/release-12-172.py .github/workflows/release-12-172.yml .github/release-triggers/12.172.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strikewatch-source cod.html .github
+          git commit -m 'Build 12.172: establish management feedback CSS ownership'
+          git push origin HEAD:main
