@@ -51,6 +51,39 @@ jobs:
               raise SystemExit(f'Predecessor guard failed: expected {expected}, got {actual}')
           PY
 
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo "No headless Chrome binary is available." >&2
+            exit 1
+          fi
+
+          write_economy_probe() {
+            python3 - <<'PY'
+          from pathlib import Path
+          import re
+          build = Path('build.py').read_text(encoding='utf-8')
+          match = re.search(r'CSS_PATHS = \((.*?)\)\n', build, flags=re.S)
+          if not match:
+              raise SystemExit('CSS_PATHS not found while creating style probe')
+          paths = re.findall(r'ROOT / "css" / "([^"]+)"', match.group(1))
+          links = '\n'.join(f'<link rel="stylesheet" href="css/{name}">' for name in paths)
+          Path('economy-probe.html').write_text(f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{links}</head><body><div id="menuContent"><section id="economyStyleProbe" class="club-economy-guide"><header><span>REWARDS</span><strong>ECONOMY GUIDE</strong><p>Settlement explanation.</p></header><div><article><span>CLUB CASH</span><strong>£1,250</strong><b>RESULT</b><p>Operating reward.</p></article><article><span>GOLD COINS</span><strong>4</strong><b>BONUS</b><p>Milestone reward.</p></article></div><aside>Ledger note.</aside></section></div><pre id="result"></pre><script>const root=document.getElementById('economyStyleProbe');const style=s=>getComputedStyle(root.querySelector(s));const grid=style(':scope > div');document.getElementById('result').textContent=JSON.stringify({{width:innerWidth,headerKicker:style(':scope > header > span').fontSize,headerTitle:style(':scope > header > strong').fontSize,headerCopy:style(':scope > header > p').fontSize,meta:style('article > span').fontSize,value:style('article > strong').fontSize,label:style('article > b').fontSize,body:style('article > p').fontSize,aside:style(':scope > aside').fontSize,columns:grid.gridTemplateColumns,gap:grid.columnGap}});</script></body></html>''', encoding='utf-8', newline='\n')
+          PY
+          }
+
+          capture_economy_styles() {
+            local prefix="$1"
+            write_economy_probe
+            for width in 1440 1023 560; do
+              "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --window-size="${width},1000" --dump-dom "file://$(pwd)/economy-probe.html" > "/tmp/sw-12-184-${prefix}-${width}.html"
+            done
+            rm -f economy-probe.html
+          }
+
+          cd strikewatch-source
+          capture_economy_styles baseline
+          cd ..
+
           python3 .github/scripts/release-12-184.py
           cd strikewatch-source
           python3 -m py_compile build.py
@@ -64,8 +97,8 @@ jobs:
           import json
           import re
 
-          html = Path('dist/strikewatch-build-12.184.html').read_text(encoding='utf-8')
-          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.S)
+          standalone = Path('dist/strikewatch-build-12.184.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', standalone, flags=re.S)
           if not scripts:
               raise SystemExit('No standalone inline scripts found')
           for index, script in enumerate(scripts):
@@ -79,8 +112,10 @@ jobs:
           required = [
               '.club-economy-guide > header > span { font-size: 10px !important; }',
               '.club-economy-guide > header > strong { font-size: 15px !important; }',
+              '.club-economy-guide > header > p { font-size: 11px !important; line-height: 1.55 !important; }',
               '.club-economy-guide article > span { font-size: 9.5px !important; letter-spacing: .1em !important; }',
               '.club-economy-guide article > strong { font-size: 17px !important; }',
+              '.club-economy-guide article > b { font-size: 11px !important; line-height: 1.4 !important; }',
               'grid-template-columns: repeat(2, minmax(0, 1fr)) !important;',
               '.club-economy-guide article > strong { font-size: 19px !important; }',
               '@media (max-width: 560px)',
@@ -107,7 +142,7 @@ jobs:
           paths = re.findall(r'ROOT / "css" / "([^"]+)"', match.group(1)) if match else []
           if hrefs != paths:
               raise SystemExit(f'index/build stylesheet order mismatch: {hrefs} != {paths}')
-          if re.search(r'<link rel="stylesheet" href="css/', html):
+          if re.search(r'<link rel="stylesheet" href="css/', standalone):
               raise SystemExit('Standalone retained an external stylesheet')
 
           bundle = Path('js/strikewatch.dev.js').read_text(encoding='utf-8')
@@ -128,60 +163,36 @@ jobs:
           cmp /tmp/sw-12-184-first-size.json dist/strikewatch-build-12.184-size.json
           cmp /tmp/sw-12-184-first-css.json dist/strikewatch-build-12.184-css-debt.json
 
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          build = Path('build.py').read_text(encoding='utf-8')
-          match = re.search(r'CSS_PATHS = \((.*?)\)\n', build, flags=re.S)
-          paths = re.findall(r'ROOT / "css" / "([^"]+)"', match.group(1))
-          links = '\n'.join(f'<link rel="stylesheet" href="css/{name}">' for name in paths)
-          Path('economy-probe.html').write_text(f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{links}</head><body><div id="menuContent"><section id="economyStyleProbe" class="club-economy-guide"><header><span>REWARDS</span><strong>ECONOMY GUIDE</strong><p>Settlement explanation.</p></header><div><article><span>CLUB CASH</span><strong>£1,250</strong><b>RESULT</b><p>Operating reward.</p></article><article><span>GOLD COINS</span><strong>4</strong><b>BONUS</b><p>Milestone reward.</p></article></div><aside>Ledger note.</aside></section></div><pre id="result"></pre><script>const root=document.getElementById('economyStyleProbe');const style=s=>getComputedStyle(root.querySelector(s));const grid=style(':scope > div');document.getElementById('result').textContent=JSON.stringify({{width:innerWidth,headerKicker:style(':scope > header > span').fontSize,headerTitle:style(':scope > header > strong').fontSize,headerCopy:style(':scope > header > p').fontSize,meta:style('article > span').fontSize,value:style('article > strong').fontSize,label:style('article > b').fontSize,body:style('article > p').fontSize,aside:style(':scope > aside').fontSize,columns:grid.gridTemplateColumns.split(/\\s+/).filter(Boolean).length,gap:grid.columnGap}});</script></body></html>''', encoding='utf-8', newline='\n')
-          PY
-
-          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$CHROME" ]; then
-            echo "No headless Chrome binary is available." >&2
-            exit 1
-          fi
-          for width in 1440 1023 560; do
-            "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --allow-file-access-from-files --window-size="${width},1000" --dump-dom "file://$(pwd)/economy-probe.html" > "/tmp/sw-12-184-economy-${width}.html"
-          done
-
+          capture_economy_styles release
           python3 - <<'PY'
           from pathlib import Path
           import html
           import json
           import re
 
-          def read(width):
-              raw = Path(f'/tmp/sw-12-184-economy-{width}.html').read_text(encoding='utf-8')
+          def read(prefix, width):
+              raw = Path(f'/tmp/sw-12-184-{prefix}-{width}.html').read_text(encoding='utf-8')
               match = re.search(r'<pre id="result">(.*?)</pre>', raw, flags=re.S)
               if not match:
-                  raise SystemExit(f'Computed-style result missing at {width}px')
+                  raise SystemExit(f'Computed-style result missing for {prefix} at {width}px')
               return json.loads(html.unescape(match.group(1)))
 
-          def px(value):
-              return float(str(value).removesuffix('px'))
-
-          def expect_px(sample, key, expected, context):
-              actual = px(sample[key])
-              if abs(actual - expected) > 0.6:
-                  raise SystemExit(f'{context} {key}: expected approximately {expected}px, got {sample[key]}')
-
-          desktop, compact, phone = read(1440), read(1023), read(560)
-          for actual, expected in ((desktop['width'], 1440), (compact['width'], 1023), (phone['width'], 560)):
-              if abs(actual - expected) > 1:
-                  raise SystemExit(f'Unexpected viewport width {actual}; expected {expected}')
-          for key, value in {'headerKicker':10,'headerTitle':15,'headerCopy':11,'meta':9.5,'value':17,'label':11,'body':11,'aside':11}.items():
-              expect_px(desktop, key, value, 'Desktop')
-          for key, value in {'headerTitle':17,'headerCopy':13,'meta':12,'value':19,'label':13,'body':12,'aside':12}.items():
-              expect_px(compact, key, value, 'Compact')
-          if compact['columns'] != 2 or compact['gap'] != '8px' or phone['columns'] != 1:
-              raise SystemExit(f'Responsive grid mismatch: compact={compact}, phone={phone}')
-          print(json.dumps({'desktop': desktop, 'compact': compact, 'phone': phone}, indent=2))
+          results = {}
+          for width in (1440, 1023, 560):
+              baseline = read('baseline', width)
+              release = read('release', width)
+              if baseline != release:
+                  raise SystemExit(f'Computed style changed at {width}px:\nbaseline={baseline}\nrelease={release}')
+              if abs(release['width'] - width) > 1:
+                  raise SystemExit(f'Unexpected viewport width {release["width"]}; expected {width}')
+              results[str(width)] = release
+          if len(results['1023']['columns'].split()) != 2 or results['1023']['gap'] != '8px':
+              raise SystemExit(f'Compact grid invariant failed: {results["1023"]}')
+          if len(results['560']['columns'].split()) != 1:
+              raise SystemExit(f'Phone grid invariant failed: {results["560"]}')
+          print(json.dumps(results, indent=2))
           PY
 
-          rm -f economy-probe.html
           cp dist/strikewatch-build-12.184.html ../cod.html
           cmp dist/strikewatch-build-12.184.html ../cod.html
           cd ..
