@@ -38,14 +38,13 @@ text = text.replace('Strikewatch 12.165: CSS Ownership Baseline', 'Strikewatch 1
 text = text.replace('12.165.0-css-ownership-baseline', build_id)
 text = text.replace('>12.165</b>', '>12.166</b>')
 old_links = '''<link rel="stylesheet" href="css/game.css?v=12.166.0-armoury-css-ownership" />
-<link rel="stylesheet" href="css/compact-navigation.css?v=12.166.0-armoury-css-ownership" />
-<link rel="stylesheet" href="css/12.161-audit-fixes.css?v=12.166.0-armoury-css-ownership" />'''
+<link rel="stylesheet" href="css/compact-navigation.css?v=12.166.0-armoury-css-ownership" />'''
 new_links = '''<link rel="stylesheet" href="css/game.css?v=12.166.0-armoury-css-ownership" />
 <link rel="stylesheet" href="css/12.161-audit-fixes.css?v=12.166.0-armoury-css-ownership" />
 <link rel="stylesheet" href="css/armoury-inventory.css?v=12.166.0-armoury-css-ownership" />
 <link rel="stylesheet" href="css/compact-navigation.css?v=12.166.0-armoury-css-ownership" />'''
 if old_links not in text:
-    raise SystemExit('Expected 12.165 stylesheet sequence missing')
+    raise SystemExit('Expected authoritative 12.165 stylesheet sequence missing')
 index.write_text(text.replace(old_links, new_links, 1), encoding='utf-8', newline='\n')
 
 build = root / 'build.py'
@@ -77,6 +76,8 @@ script_block = '''    html = re.sub(
         count=1,
     )
 '''
+if script_block not in text:
+    raise SystemExit('Standalone JavaScript replacement block missing')
 text = text.replace(script_block, script_block + '''    if re.search(r'<link rel="stylesheet" href="css/', html):
         raise RuntimeError("Standalone retained an external development stylesheet")
 ''', 1)
@@ -88,6 +89,8 @@ text = text.replace('Build: **12.165 — CSS Ownership Baseline**', 'Build: **12
 text = text.replace('Build ID: `12.165.0-css-ownership-baseline`', 'Build ID: `12.166.0-armoury-css-ownership`', 1)
 text = text.replace('strikewatch-build-12.165.html', 'strikewatch-build-12.166.html', 1)
 position = text.find('Build 12.165 begins the staged CSS-debt cleanup')
+if position < 0:
+    raise SystemExit('Build 12.165 handoff note missing')
 note = 'Build 12.166 continues the staged CSS ownership programme by moving the audited compact Armoury inventory layer into `css/armoury-inventory.css`. It also makes development and standalone stylesheet order identical and fails the build if a development stylesheet link survives standalone inlining. See `AUDIT-12.166.md`.\n\n'
 text = text[:position] + note + text[position:]
 handoff.write_text(text, encoding='utf-8', newline='\n')
@@ -124,7 +127,7 @@ Continues SW-020 as a staged ownership programme rather than a wholesale cascade
 
 The complete Build 12.157 compact Armoury block is removed from the tail of `css/game.css` and placed in `css/armoury-inventory.css`. Selectors and declarations are unchanged. Its effective order remains after the 12.161 audit layer and before the later compact-navigation layer.
 
-Build 12.165 exposed a development/build order mismatch: `index.html` loaded `compact-navigation.css` before `12.161-audit-fixes.css`, while `CSS_PATHS` concatenated them in the opposite order. The standalone replacement also matched only two links, leaving the 12.161 development stylesheet link behind. Build 12.166 makes the four-file order explicit in both places and fails if any external `css/` link survives standalone generation.
+Build 12.165 exposed a development/build parity defect: `CSS_PATHS` included `12.161-audit-fixes.css`, so standalone output contained that layer, but `index.html` omitted the stylesheet entirely. Development and standalone could therefore resolve different cascades. Build 12.166 makes the four-file order explicit in both places and fails if any external `css/` link survives standalone generation.
 
 ## Debt guardrails
 
