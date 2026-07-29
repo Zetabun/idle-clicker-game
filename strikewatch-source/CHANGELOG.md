@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.176 — League Table CSS Ownership
+
+- Moves the Build 12.135 league-table typography, compact row height and club-name wrapping rules from `game.css` into `css/league-table.css` without changing selectors, declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before the calendar agenda and all later presentation layers.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.176.md`.
+
+
 ## 12.175 — Calendar Agenda CSS Ownership
 
 - Moves the Build 12.135 club calendar agenda typography, compact two-column reflow and action-target sizing rules from `game.css` into `css/calendar-agenda.css` without changing selectors, declarations or breakpoint.

@@ -1,0 +1,42 @@
+{
+  "version": "12.176",
+  "stylesheets": 14,
+  "total_lines": 31962,
+  "game_css_lines": 31209,
+  "important_declarations": 2182,
+  "media_queries": 474,
+  "stylesheet_order": [
+    "game.css",
+    "league-table.css",
+    "calendar-agenda.css",
+    "training-readability.css",
+    "training-programme.css",
+    "management-feedback.css",
+    "compact-readability.css",
+    "reward-reveal.css",
+    "armour-viewer.css",
+    "weapon-presentation.css",
+    "loadout-stills.css",
+    "12.161-audit-fixes.css",
+    "armoury-inventory.css",
+    "compact-navigation.css"
+  ],
+  "owned_league_table_lines": 22,
+  "owned_calendar_agenda_lines": 45,
+  "owned_training_readability_lines": 28,
+  "owned_training_programme_lines": 21,
+  "owned_management_feedback_lines": 86,
+  "owned_compact_readability_lines": 16,
+  "owned_reward_reveal_lines": 16,
+  "owned_armour_viewer_lines": 28,
+  "owned_weapon_presentation_lines": 42,
+  "owned_loadout_stills_lines": 64,
+  "owned_armoury_inventory_lines": 139,
+  "owned_compact_navigation_lines": 93,
+  "budgets": {
+    "game_css_lines_max": 31210,
+    "important_declarations_max": 2182,
+    "media_queries_max": 474
+  },
+  "within_budget": true
+}

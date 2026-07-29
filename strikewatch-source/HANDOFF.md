@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.175 — Calendar Agenda CSS Ownership**
-- Build ID: `12.175.0-calendar-agenda-css-ownership`
+- Build: **12.176 — League Table CSS Ownership**
+- Build ID: `12.176.0-league-table-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.175.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.176.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.175 continues SW-020 by moving the Build 12.135 club calendar agenda typography, compact two-column reflow and action-target sizing into `css/calendar-agenda.css`. Date, title and detail floors, wrapped compact copy and the 44px action target are unchanged. The sheet follows `game.css` before all later component layers. See `AUDIT-12.175.md`.
+Build 12.176 continues SW-020 by moving the Build 12.135 league-table typography, compact row height and club-name wrapping into `css/league-table.css`. Desktop and compact type floors, the 52px compact row and wrapped club sub-line are unchanged. The sheet follows `game.css` before all later component layers. See `AUDIT-12.176.md`.
+
+Build 12.175 continues SW-020 by moving the Build 12.135 club calendar agenda typography, compact two-column reflow and action-target sizing into `css/calendar-agenda.css`. Date, title and detail floors, wrapped compact copy and the 44px action target are unchanged. The sheet follows `league-table.css` before all later component layers. See `AUDIT-12.175.md`.
 
 Build 12.174 continues SW-020 by moving the Build 12.135 training/development typography and programme-control floors into `css/training-readability.css`. Desktop and compact font sizes, the 40/46px select heights and the 1023px breakpoint are unchanged. The sheet follows `calendar-agenda.css` before the later training workflow and component layers. See `AUDIT-12.174.md`.
 

@@ -1,0 +1,22 @@
+/* League-table typography, compact row height and club-name wrapping ownership.
+   Extracted from the Build 12.135 release layer in Build 12.176 without changing declarations. */
+
+/* --- League table: readable at both targets --------------------------------
+   The table shipped at 6px headers and 7px rows, which is unreadable on a
+   phone and uncomfortable on desktop. Both targets now sit on the release
+   readability floors.
+   -------------------------------------------------------------------------- */
+
+#menuContent .league-table-head { font-size: 10px !important; letter-spacing: .1em !important; }
+#menuContent .league-table-row { font-size: 11px !important; }
+#menuContent .league-table-row .position { font-size: 14px !important; }
+#menuContent .league-table-row .club strong { font-size: 12px !important; }
+#menuContent .league-table-row .club small { font-size: 10.5px !important; }
+
+@media (max-width: 1023px) {
+  #menuContent .league-table-head { font-size: 11px !important; }
+  #menuContent .league-table-row { font-size: 12px !important; min-height: 52px; }
+  #menuContent .league-table-row .position { font-size: 15px !important; }
+  #menuContent .league-table-row .club strong { font-size: 13px !important; }
+  #menuContent .league-table-row .club small { font-size: 11px !important; white-space: normal; }
+}
