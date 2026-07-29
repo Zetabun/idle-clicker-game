@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.175 — Calendar Agenda CSS Ownership
+
+- Moves the Build 12.135 club calendar agenda typography, compact two-column reflow and action-target sizing rules from `game.css` into `css/calendar-agenda.css` without changing selectors, declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before training and all later presentation layers.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.175.md`.
+
+
 ## 12.174 — Training Readability CSS Ownership
 
 - Moves the Build 12.135 training/development typography and programme-control sizing rules from `game.css` into `css/training-readability.css` without changing selectors, declarations or breakpoint.

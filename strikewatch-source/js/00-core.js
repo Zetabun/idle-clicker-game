@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.174';
-  const BUILD_NAME = 'Training Readability CSS Ownership';
-  const BUILD_ID = '12.174.0-training-readability-css-ownership';
+  const BUILD_VERSION = '12.175';
+  const BUILD_NAME = 'Calendar Agenda CSS Ownership';
+  const BUILD_ID = '12.175.0-calendar-agenda-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
