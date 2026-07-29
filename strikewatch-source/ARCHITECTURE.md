@@ -10,6 +10,7 @@ share application scope in the listed order.
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/combat-effectiveness.css` | Compact after-action score ring, caption and influence typography |
 | `css/match-type.css` | Detailed-report competition row and first-match fixture-type line |
 | `css/route-readability.css` | Route-specific compact typography floors and dense-grid containment |
 | `css/management-grid.css` | Management-route grid track sizing and top-aligned content flow |
@@ -88,12 +89,13 @@ everything it consumes and before everything that consumes it.
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
 then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
 the cascade-order authority, and `index.html` must load the same files in the
-same order. The current order is `game.css`, `match-type.css`, `route-readability.css`,
-`management-grid.css`, `league-table.css`, `calendar-agenda.css`,
-`training-readability.css`, `training-programme.css`, `management-feedback.css`,
-`compact-readability.css`, `reward-reveal.css`, `armour-viewer.css`,
-`weapon-presentation.css`, `loadout-stills.css`, `12.161-audit-fixes.css`,
-`armoury-inventory.css`, then `compact-navigation.css`. Prefer component-scoped selectors and verify the
+same order. The current order is `game.css`, `combat-effectiveness.css`,
+`match-type.css`, `route-readability.css`, `management-grid.css`,
+`league-table.css`, `calendar-agenda.css`, `training-readability.css`,
+`training-programme.css`, `management-feedback.css`, `compact-readability.css`,
+`reward-reveal.css`, `armour-viewer.css`, `weapon-presentation.css`,
+`loadout-stills.css`, `12.161-audit-fixes.css`, `armoury-inventory.css`, then
+`compact-navigation.css`. Prefer component-scoped selectors and verify the
 final computed style, especially when pseudo-elements are reused.
 
 The live match loop is coordinated by `70-runtime.js`, with simulation in

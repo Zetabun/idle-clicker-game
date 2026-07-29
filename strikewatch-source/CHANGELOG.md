@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.180 — Combat Effectiveness CSS Ownership
+
+- Moves the Build 12.134 compact Combat Effectiveness ring, external caption and influence typography from `game.css` into `css/combat-effectiveness.css` without changing declarations or breakpoints.
+- Preserves the layer immediately after `game.css`, before match type and all later presentation layers.
+- Keeps the 138px compact dial, 124px narrow-phone dial, 40px grade, 21px score and caption below the ring rather than over its stroke.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.180.md`.
+
+
 ## 12.179 — Match Type CSS Ownership
 
 - Moves the Build 12.134 detailed-report competition row and staged first-match fixture-type line from `game.css` into `css/match-type.css` without changing declarations or breakpoint.

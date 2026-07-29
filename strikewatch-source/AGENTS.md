@@ -56,7 +56,9 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.179 owns post-match fixture-type presentation in `css/match-type.css`. Keep it immediately after `game.css`, before `route-readability.css`. Preserve the detailed-report competition kicker/name/detail floors and the staged first-match type line at the existing 1023px breakpoint; classification remains in `careerMatchTypeDescriptor(summary)`. Verify `firstMatchPayoffForTest()`, `leagueMatchFlowForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.179.md`.
+Build 12.180 owns the compact after-action Combat Effectiveness ring in `css/combat-effectiveness.css`. Keep it immediately after `game.css`, before `match-type.css`. Preserve the 138px ring and external 11px caption below 1024px, the 124px/10.5px narrow-phone adjustment below 381px, and the wrapped influence legend. Verify `firstMatchPayoffForTest()`, `mobileInterfaceAuditForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.180.md`.
+
+Build 12.179 owns post-match fixture-type presentation in `css/match-type.css`. Keep it after `combat-effectiveness.css`, before `route-readability.css`. Preserve the detailed-report competition kicker/name/detail floors and the staged first-match type line at the existing 1023px breakpoint; classification remains in `careerMatchTypeDescriptor(summary)`. Verify `firstMatchPayoffForTest()`, `leagueMatchFlowForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.179.md`.
 
 Build 12.178 owns the Build 12.134 route-specific compact typography floors and dense-grid containment in `css/route-readability.css`. Keep it after `match-type.css`, before `management-grid.css`. Preserve the two 1023px media blocks, 11–12px label/copy floors and `min-width: 0` containment for dense route cards. Verify `mobileInterfaceAuditForTest()`, `typographyConsistencyForTest()`, `economyGuidanceForTest()` and `renderRouteForTest()` alongside the CSS ownership gates. See `AUDIT-12.178.md`.
 
