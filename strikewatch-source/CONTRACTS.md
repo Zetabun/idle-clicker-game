@@ -95,6 +95,11 @@ current task. Release-specific implementation detail belongs in the matching
   `?staticBatching=0` reference render, and prove nothing froze by comparing
   motion on the pixels the unbatched build animates; a plain two-frame diff
   cannot show it, because the shader's own `uTime` term moves nearly every pixel.
+- Surface detail is sampled in the space the geometry belongs to. Static
+  geometry uses world space so detail stays pinned to the room; anything that
+  moves through the world uses model space so detail travels with it. Mixing
+  them makes a moving surface shimmer. Detail frequency stays under roughly 40
+  cycles per unit of whichever space is sampled.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

@@ -54,19 +54,25 @@
   // principle — fold occlusion into colour before drawing — but uses the
   // operator's authored overlap hierarchy instead of sampling the map grid.
   // It adds no meshes, draw calls, textures, framebuffer pass or shader work.
+  // Build 12.160: the 12.157 contact factors sat between 0.82 and 0.92, an 8-18%
+  // luminance drop. That is the same magnitude Build 12.153 measured as too
+  // shallow to read on arena walls, and operators are smaller and darker than a
+  // wall. Deepened so a joint, a strap or a collar separates from the panel it
+  // sits against. Still colour-baked: no extra meshes, draws, textures or
+  // shader work, and living and corpse paths share the palette.
   const OPERATOR_AMBIENT_OCCLUSION = Object.freeze({
-    revision: '12.157-baked-operator-contact-1',
+    revision: '12.160-baked-operator-contact-2',
     technique: 'per-part contact shading folded into existing material colours',
     factors: Object.freeze({
-      cloth: 0.88,
-      clothLight: 0.91,
-      armour: 0.90,
-      plate: 0.89,
-      polymer: 0.84,
-      webbing: 0.82,
-      utility: 0.85,
-      skin: 0.88,
-      metal: 0.92
+      cloth: 0.78,
+      clothLight: 0.82,
+      armour: 0.80,
+      plate: 0.79,
+      polymer: 0.72,
+      webbing: 0.68,
+      utility: 0.74,
+      skin: 0.80,
+      metal: 0.84
     })
   });
 
@@ -1083,7 +1089,15 @@
   }
 
 
+  // Build 12.160: an operator travels through the world, so its surface detail
+  // is anchored to the model rather than to the room. Wrapping the whole draw
+  // — living and fallen alike — is what stops the kit weave, the skin variation
+  // and the overhead light pools sweeping across them as they move.
   function drawSoldier(bot, cameraBot) {
+    return withLocalSurfaceDetail(() => drawSoldierGeometry(bot, cameraBot));
+  }
+
+  function drawSoldierGeometry(bot, cameraBot) {
     if (bot === cameraBot) return;
     if (!bot.alive) {
       drawCorpse(bot, cameraBot);

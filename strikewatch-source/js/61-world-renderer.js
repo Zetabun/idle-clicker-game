@@ -1233,6 +1233,7 @@
       glLocations.surface = gl.getUniformLocation(glProgram, 'uSurface');
       glLocations.roughness = gl.getUniformLocation(glProgram, 'uRoughness');
       glLocations.time = gl.getUniformLocation(glProgram, 'uTime');
+      glLocations.localDetail = gl.getUniformLocation(glProgram, 'uLocalDetail');
 
       // The locations must exist before the mesh buffers configure attributes.
       glMeshes.cube = makeCubeMesh();

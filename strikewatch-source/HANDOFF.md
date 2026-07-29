@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.159 — Durable Store**
-- Build ID: `12.159.0-durable-store`
+- Build: **12.160 — Settled Operators**
+- Build ID: `12.160.0-settled-operators`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.159.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.160.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.160 settles the operator surface and deepens their contact occlusion. **Surface detail for anything that moves must be anchored to the model, not the world** — that is the whole build. Every surface mode reads `vWorldPosition`, which is right for a wall and wrong for a person: the detail did not travel with them, so the room swept across them as they walked. The kit weave ran at 95 and 88 cycles per world unit against 12.145's roughly-40 aliasing threshold, the skin at 31 and 17, and the overhead light pools pulsed an operator several times a second as they crossed the room grid. The vertex shader now carries model space too and `withLocalSurfaceDetail()` selects it, wrapping exactly two things: the operator draw (living and fallen) and the viewmodel. `mix(a, b, 0.0)` returns `a` exactly, so the world takes the identical path — verified at **0.0000% pixels changed, max 1/255, in all four arenas back to back with identical draw calls**. Operator AO from 12.157 was already enabled but at 8–18%, too shallow to read; it is now 16–32%, still colour-baked, tunable via `OPERATOR_AMBIENT_OCCLUSION.factors`. **Never put backticks inside the shader source — it lives in a template literal and a backtick in a GLSL comment closes the string.** See `AUDIT-12.160.md`.
 
 Build 12.159 adds IndexedDB as the career's durable tier (`js/81-career-indexeddb.js`) and reports save size on the configuration page. **It is a tier, not a replacement, and that is deliberate**: IndexedDB is asynchronous, and Build 12.141's `pagehide`/`visibilitychange` checkpoints only land because `localStorage.setItem` completes inside the handler, so making the save path async would reintroduce the defect 12.141 fixed. localStorage stays the synchronous write-through and boot-read tier; IndexedDB holds every committed save and is the only tier that can still accept a career once localStorage is full — quota there measured 5.54GB against roughly 5MB. `saveSequence` is the sole arbiter when the tiers disagree: higher is newer. Two new behaviours: a quota rejection now falls through to the durable tier instead of reporting lost progress, and a career the browser evicted from localStorage is adopted back on the next boot, guarded so it can only take a strictly newer save and never overwrite one this session has already been playing. Save schema stays 19. See `AUDIT-12.159.md`.
 

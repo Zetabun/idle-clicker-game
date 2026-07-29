@@ -1,5 +1,16 @@
 # Release history router
 
+## 12.160 — Settled Operators
+
+- Removes the shimmering surface on operators. Build 12.145 fixed the same symptom on walls, but operators had a different cause: every surface mode reads world position, which is correct for a wall that stays put and wrong for a person who walks — the detail did not travel with them, the world swept across them.
+- Three terms were doing it: the kit weave at 95 and 88 cycles per world unit (12.145 established that anything above about 40 aliases), the skin variation at 31 and 17, and the overhead light pools, which brightened and dimmed an operator several times a second as they crossed the room grid.
+- Surface detail for moving geometry is now anchored to the model. Operators, corpses and the first-person viewmodel draw inside `withLocalSurfaceDetail()`; everything else, including batch replay, is unchanged.
+- The static world is provably untouched: the same free-roam viewpoint on both builds differs by **0.0000% of pixels, max 1/255**, in all four arenas, with identical draw calls.
+- Deepens the operator contact ambient occlusion added in 12.157. It was enabled but only 8–18% — the same magnitude 12.153 measured as too shallow to read on walls. Now 16–32%, still colour-baked with zero extra meshes, draws, textures or uniforms.
+- Geometry, collision, navigation, line of sight, gameplay, saves and match simulation are untouched.
+- Evidence: `AUDIT-12.160.md`.
+
+
 ## 12.159 — Durable Store
 
 - Adds IndexedDB as the career save's durable tier. Quota on the test machine is **5.54GB against localStorage's ~5MB**, so a career has room to grow for the life of the game.

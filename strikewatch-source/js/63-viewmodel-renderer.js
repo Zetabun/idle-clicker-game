@@ -565,7 +565,9 @@
       setBlendMode(false);
     }
 
-    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) drawFirstPersonWeapon(cam, eye, time);
+    // The viewmodel is welded to the camera, so world-space detail slid across
+    // it on every step. It takes model space for the same reason operators do.
+    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) withLocalSurfaceDetail(() => drawFirstPersonWeapon(cam, eye, time));
     if (gl.bindVertexArray) gl.bindVertexArray(null);
     finishRendererFrameStats();
 

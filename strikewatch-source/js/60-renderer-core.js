@@ -52,6 +52,22 @@
       return true;
     }
   })();
+  // Build 12.160: set while drawing geometry that travels through the world —
+  // operators, corpses and the first-person viewmodel. World geometry never
+  // sets it, and the static batcher replays with it clear, so a batch can never
+  // inherit a moving object's surface space.
+  let localSurfaceDetail = false;
+
+  function withLocalSurfaceDetail(draw) {
+    const previous = localSurfaceDetail;
+    localSurfaceDetail = true;
+    try {
+      return draw();
+    } finally {
+      localSurfaceDetail = previous;
+    }
+  }
+
   let staticWorldRenderActive = false;
   let staticWorldBatchEligible = true;
   let staticWorldBatchMode = 'none';
@@ -192,10 +208,16 @@
       uniform mat4 uView;
       uniform mat4 uModel;
       varying vec3 vWorldPosition;
+      varying vec3 vLocalPosition;
       varying vec3 vNormal;
       void main() {
         vec4 world = uModel * vec4(aPosition, 1.0);
         vWorldPosition = world.xyz;
+        // Build 12.160: surface detail on a MOVING object has to be anchored to
+        // the object, not to the room. Model space gives every operator a fixed
+        // pattern that travels with them instead of one the world sweeps across
+        // them as they walk.
+        vLocalPosition = aPosition;
         vNormal = normalize(mat3(uModel) * aNormal);
         gl_Position = uProjection * uView * world;
       }
@@ -203,6 +225,7 @@
     const fragmentSource = `
       precision mediump float;
       varying vec3 vWorldPosition;
+      varying vec3 vLocalPosition;
       varying vec3 vNormal;
       uniform vec3 uColour;
       uniform vec3 uCameraPosition;
@@ -212,6 +235,8 @@
       uniform float uSurface;
       uniform float uRoughness;
       uniform float uTime;
+      // 1 while drawing geometry that moves through the world.
+      uniform float uLocalDetail;
 
       float hash21(vec2 p) {
         p = fract(p * vec2(123.34, 456.21));
@@ -247,7 +272,12 @@
         // surface mode reads this term, so that single line was the quilted
         // mottling on office walls, industrial floors and metal alike.
         // Smoothly interpolated value noise on one coherent grid replaces it.
-        vec2 noiseCoord = vWorldPosition.xz * 1.7 + vec2(vWorldPosition.y * 0.55);
+        // Build 12.160: everything below reads detailPosition rather than the
+        // world position directly. For static geometry the two are identical.
+        // For an operator it switches the whole surface layer into model space,
+        // which is what stops the texture crawling as they move.
+        vec3 detailPosition = mix(vWorldPosition, vLocalPosition, clamp(uLocalDetail, 0.0, 1.0));
+        vec2 noiseCoord = detailPosition.xz * 1.7 + vec2(detailPosition.y * 0.55);
         float noise = valueNoise(noiseCoord);
         float materialRoughness = clamp(uRoughness, 0.04, 1.0);
         float materialAmbientLift = 0.0;
@@ -289,8 +319,8 @@
           // Build 12.145: 92 cycles per world unit aliased into visible bands
           // on anything larger than a handrail. A slower grain plus a broad
           // sheen reads as brushed metal at room scale.
-          float brushed = 0.965 + 0.035 * sin(vWorldPosition.y * 26.0 + vWorldPosition.x * 3.0 + vWorldPosition.z * 2.0);
-          float sheen = 0.98 + 0.02 * sin(vWorldPosition.y * 2.4);
+          float brushed = 0.965 + 0.035 * sin(detailPosition.y * 26.0 + detailPosition.x * 3.0 + detailPosition.z * 2.0);
+          float sheen = 0.98 + 0.02 * sin(detailPosition.y * 2.4);
           float edgeWear = smoothstep(0.80, 1.0, noise);
           base *= brushed * sheen;
           base = mix(base, min(base * 1.28, vec3(0.78)), edgeWear * 0.12);
@@ -305,7 +335,12 @@
           materialRoughness = 0.14;
         // Surface 5: tactical fabric and painted armour.
         } else if (uSurface > 4.5 && uSurface < 5.5) {
-          float weave = 0.93 + 0.07 * sin(vWorldPosition.x * 95.0) * sin(vWorldPosition.y * 88.0);
+          // Build 12.160: this ran at 95 and 88 cycles per world unit with a 7%
+          // swing. Build 12.145 established that anything above roughly 40
+          // aliases into banding, and on an operator — who is about 1.8 units
+          // tall and moving — it crawled across the kit every step. Anchored to
+          // the model and dropped to a rate that resolves as cloth.
+          float weave = 0.965 + 0.035 * sin(detailPosition.x * 26.0) * sin(detailPosition.y * 22.0);
           base *= weave * (0.96 + noise * 0.06);
           materialRoughness = max(materialRoughness, 0.72);
         // Surface 6: rubber, boots and soft polymer.
@@ -346,7 +381,7 @@
         // retain enough ambient response for pale skin to remain readable under
         // helmets, goggles and armour collars without making it self-luminous.
         } else if (uSurface > 7.5 && uSurface < 8.5) {
-          float skinVariation = 0.985 + 0.015 * sin(vWorldPosition.y * 31.0 + vWorldPosition.x * 17.0);
+          float skinVariation = 0.992 + 0.008 * sin(detailPosition.y * 18.0 + detailPosition.x * 11.0);
           base *= skinVariation;
           materialRoughness = max(materialRoughness, ${OPERATOR_SKIN_MATERIAL.roughness.toFixed(2)});
           materialAmbientLift = ${OPERATOR_SKIN_MATERIAL.ambientLift.toFixed(2)};
@@ -358,11 +393,21 @@
         float fill = max(dot(normal, fillDirection), 0.0);
         float hemi = mix(0.20, 0.50, normal.y * 0.5 + 0.5);
 
+        // These are overhead light pools laid out on the room grid. A wall or a
+        // floor sits still inside one, which is the point. An operator walking
+        // across the grid was being brightened and dimmed by it several times a
+        // second, and the floor() in the flicker phase made that a hard step
+        // rather than a fade — a large part of what read as shimmer. Moving
+        // geometry now takes a steady average instead of the pool it happens to
+        // be standing in.
         vec2 coolCell = abs(fract((vWorldPosition.xz - vec2(2.5)) / vec2(5.0, 4.0)) - 0.5);
         float coolPool = exp(-18.0 * dot(coolCell, coolCell));
         vec2 warmCell = abs(fract((vWorldPosition.xz + vec2(1.4, 0.6)) / vec2(8.0, 6.0)) - 0.5);
         float warmPool = exp(-30.0 * dot(warmCell, warmCell));
-        float flicker = 0.96 + 0.04 * sin(uTime * 2.1 + floor(vWorldPosition.x * 0.2) * 1.7);
+        float moving = clamp(uLocalDetail, 0.0, 1.0);
+        coolPool = mix(coolPool, 0.34, moving);
+        warmPool = mix(warmPool, 0.22, moving);
+        float flicker = mix(0.96 + 0.04 * sin(uTime * 2.1 + floor(vWorldPosition.x * 0.2) * 1.7), 1.0, moving);
         float overhead = coolPool * (0.12 + max(normal.y, 0.0) * 0.34) * flicker;
 
         vec3 viewDirection = normalize(uCameraPosition - vWorldPosition);
@@ -1277,6 +1322,10 @@
     gl.uniform1f(glLocations.alpha, alpha);
     gl.uniform1f(glLocations.surface, surface);
     gl.uniform1f(glLocations.roughness, roughness);
+    // Build 12.160: static geometry keeps world-space surface detail; anything
+    // that moves through the world is drawn inside
+    // `withLocalSurfaceDetail()` and takes model space instead.
+    if (glLocations.localDetail) gl.uniform1f(glLocations.localDetail, localSurfaceDetail ? 1 : 0);
     gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
