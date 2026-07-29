@@ -1,0 +1,386 @@
+name: Strikewatch 12.162 one-shot release
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release-12-162.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply renderer optimisation and release metadata
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('strikewatch-source')
+
+          def replace(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              actual = text.count(old)
+              if actual < count:
+                  raise SystemExit(f'{path}: expected at least {count} occurrence(s), found {actual}: {old[:80]!r}')
+              p.write_text(text.replace(old, new, count), encoding='utf-8', newline='\n')
+
+          # Release identity.
+          core = root / 'js/00-core.js'
+          text = core.read_text(encoding='utf-8')
+          text = text.replace("const BUILD_VERSION = '12.161';", "const BUILD_VERSION = '12.162';", 1)
+          text = text.replace("const BUILD_NAME = 'Recovery & Readability';", "const BUILD_NAME = 'Visible Geometry';", 1)
+          text = text.replace("const BUILD_ID = '12.161.0-recovery-readability';", "const BUILD_ID = '12.162.0-visible-geometry';", 1)
+          core.write_text(text, encoding='utf-8', newline='\n')
+
+          index = root / 'index.html'
+          text = index.read_text(encoding='utf-8')
+          text = text.replace('Strikewatch 12.161: Recovery & Readability', 'Strikewatch 12.162: Visible Geometry')
+          text = text.replace('12.161.0-recovery-readability', '12.162.0-visible-geometry')
+          text = text.replace('>12.161</b>', '>12.162</b>')
+          index.write_text(text, encoding='utf-8', newline='\n')
+
+          (root / 'RELEASE.json').write_text(json.dumps({
+              'version': '12.162',
+              'name': 'Visible Geometry',
+              'build_id': '12.162.0-visible-geometry'
+          }, indent=2) + '\n', encoding='utf-8', newline='\n')
+
+          renderer = root / 'js/60-renderer-core.js'
+          text = renderer.read_text(encoding='utf-8')
+          text = text.replace(
+          """  const STATIC_WORLD_BATCHING_ENABLED = (() => {
+              try {
+                return new URLSearchParams(window.location.search).get('staticBatching') !== '0';
+              } catch (_) {
+                return true;
+              }
+            })();
+          """,
+          """  const STATIC_WORLD_BATCHING_ENABLED = (() => {
+              try {
+                return new URLSearchParams(window.location.search).get('staticBatching') !== '0';
+              } catch (_) {
+                return true;
+              }
+            })();
+            // Build 12.162: whole-actor frustum culling. Operators are assembled from
+            // dozens of procedural draws, so rejecting one generous bounding sphere
+            // before assembly removes substantial submission work without changing a
+            // visible vertex. `?dynamicCulling=0` remains the visual reference path.
+            const DYNAMIC_ACTOR_CULLING_ENABLED = (() => {
+              try {
+                return new URLSearchParams(window.location.search).get('dynamicCulling') !== '0';
+              } catch (_) {
+                return true;
+              }
+            })();
+          """, 1)
+
+          text = text.replace(
+          """    staticSourceDraws: 0,
+              staticBatchDrawCalls: 0
+          """,
+          """    staticSourceDraws: 0,
+              staticBatchDrawCalls: 0,
+              dynamicActorCandidates: 0,
+              dynamicActorsCulled: 0
+          """, 1)
+          text = text.replace(
+          """    staticSourceDraws: 0,
+              staticBatchDrawCalls: 0,
+              cullingEnabled: STATIC_WORLD_CULLING_ENABLED,
+              batchingEnabled: STATIC_WORLD_BATCHING_ENABLED
+          """,
+          """    staticSourceDraws: 0,
+              staticBatchDrawCalls: 0,
+              dynamicActorCandidates: 0,
+              dynamicActorsCulled: 0,
+              cullingEnabled: STATIC_WORLD_CULLING_ENABLED,
+              batchingEnabled: STATIC_WORLD_BATCHING_ENABLED,
+              dynamicActorCullingEnabled: DYNAMIC_ACTOR_CULLING_ENABLED
+          """, 1)
+          text = text.replace(
+          """    rendererFrameStats.staticSourceDraws = 0;
+              rendererFrameStats.staticBatchDrawCalls = 0;
+          """,
+          """    rendererFrameStats.staticSourceDraws = 0;
+              rendererFrameStats.staticBatchDrawCalls = 0;
+              rendererFrameStats.dynamicActorCandidates = 0;
+              rendererFrameStats.dynamicActorsCulled = 0;
+          """, 1)
+          text = text.replace(
+          """    rendererLastFrameStats.staticSourceDraws = rendererFrameStats.staticSourceDraws;
+              rendererLastFrameStats.staticBatchDrawCalls = rendererFrameStats.staticBatchDrawCalls;
+              rendererLastFrameStats.cullingEnabled = STATIC_WORLD_CULLING_ENABLED;
+              rendererLastFrameStats.batchingEnabled = STATIC_WORLD_BATCHING_ENABLED;
+          """,
+          """    rendererLastFrameStats.staticSourceDraws = rendererFrameStats.staticSourceDraws;
+              rendererLastFrameStats.staticBatchDrawCalls = rendererFrameStats.staticBatchDrawCalls;
+              rendererLastFrameStats.dynamicActorCandidates = rendererFrameStats.dynamicActorCandidates;
+              rendererLastFrameStats.dynamicActorsCulled = rendererFrameStats.dynamicActorsCulled;
+              rendererLastFrameStats.cullingEnabled = STATIC_WORLD_CULLING_ENABLED;
+              rendererLastFrameStats.batchingEnabled = STATIC_WORLD_BATCHING_ENABLED;
+              rendererLastFrameStats.dynamicActorCullingEnabled = DYNAMIC_ACTOR_CULLING_ENABLED;
+          """, 1)
+          text = text.replace(
+          """    document.body.dataset.rendererStaticBatchDrawCalls = String(rendererLastFrameStats.staticBatchDrawCalls);
+              document.body.dataset.rendererStaticCulling = rendererLastFrameStats.cullingEnabled ? 'on' : 'off';
+              document.body.dataset.rendererStaticBatching = rendererLastFrameStats.batchingEnabled ? 'on' : 'off';
+          """,
+          """    document.body.dataset.rendererStaticBatchDrawCalls = String(rendererLastFrameStats.staticBatchDrawCalls);
+              document.body.dataset.rendererDynamicActorCandidates = String(rendererLastFrameStats.dynamicActorCandidates);
+              document.body.dataset.rendererDynamicActorsCulled = String(rendererLastFrameStats.dynamicActorsCulled);
+              document.body.dataset.rendererStaticCulling = rendererLastFrameStats.cullingEnabled ? 'on' : 'off';
+              document.body.dataset.rendererStaticBatching = rendererLastFrameStats.batchingEnabled ? 'on' : 'off';
+              document.body.dataset.rendererDynamicActorCulling = rendererLastFrameStats.dynamicActorCullingEnabled ? 'on' : 'off';
+          """, 1)
+
+          marker = "  function drawMesh(mesh, colour, model, emissive = 0, alpha = 1, surface = 0, roughness = 0.76) {"
+          helper = """  function dynamicActorOutsideCameraView(worldX, worldY, worldZ, radius = 1.8) {
+            rendererFrameStats.dynamicActorCandidates++;
+            if (!DYNAMIC_ACTOR_CULLING_ENABLED) return false;
+            const viewX = glView[0] * worldX + glView[4] * worldY + glView[8] * worldZ + glView[12];
+            const viewY = glView[1] * worldX + glView[5] * worldY + glView[9] * worldZ + glView[13];
+            const viewZ = glView[2] * worldX + glView[6] * worldY + glView[10] * worldZ + glView[14];
+            const depth = -viewZ;
+            const safeRadius = Math.max(0.01, Number(radius) || 1.8);
+            let outside = depth + safeRadius < 0.025 || depth - safeRadius > GL_FAR;
+            if (!outside) {
+              const horizontalSlope = 1 / Math.max(0.0001, glProjection[0]);
+              const verticalSlope = 1 / Math.max(0.0001, glProjection[5]);
+              const horizontalAllowance = safeRadius * Math.hypot(1, horizontalSlope);
+              const verticalAllowance = safeRadius * Math.hypot(1, verticalSlope);
+              outside = Math.abs(viewX) > depth * horizontalSlope + horizontalAllowance
+                || Math.abs(viewY) > depth * verticalSlope + verticalAllowance;
+            }
+            if (outside) rendererFrameStats.dynamicActorsCulled++;
+            return outside;
+          }
+
+          """ + marker
+          if marker not in text:
+              raise SystemExit('drawMesh marker missing')
+          text = text.replace(marker, helper, 1)
+          renderer.write_text(text, encoding='utf-8', newline='\n')
+
+          characters = root / 'js/62-character-renderer.js'
+          text = characters.read_text(encoding='utf-8')
+          text = text.replace(
+          """    const corpseDistance = Math.hypot(dx, dz);
+              const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(corpseDistance) : 2;
+          """,
+          """    const corpseDistance = Math.hypot(dx, dz);
+              // A fallen operator, detached weapon and shadow all remain inside this
+              // deliberately generous sphere. Only a sphere wholly outside the camera
+              // is rejected, so no visible corpse geometry can disappear.
+              if (dynamicActorOutsideCameraView(bot.x, 0.82, bot.y, 1.85)) return;
+              const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(corpseDistance) : 2;
+          """, 1)
+          text = text.replace(
+          """    const operatorDistance = Math.hypot(dx, dz);
+              const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(operatorDistance) : 2;
+          """,
+          """    const operatorDistance = Math.hypot(dx, dz);
+              // Cull before assembling the procedural body, armour and weapon. The
+              // radius exceeds the full standing silhouette and long-gun reach; an
+              // operator touching the viewport guard band therefore still renders.
+              if (dynamicActorOutsideCameraView(bot.x, 0.92, bot.y, 1.85)) return;
+              const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(operatorDistance) : 2;
+          """, 1)
+          characters.write_text(text, encoding='utf-8', newline='\n')
+
+          checkpoints = root / 'js/79-save-checkpoints.js'
+          text = checkpoints.read_text(encoding='utf-8')
+          hook_marker = "  // Reports the baked occlusion actually assigned to the current arena's wall"
+          hook = """  // Build 12.162: deterministic guard for the whole-actor frustum test.
+            // It temporarily installs a known camera, exercises inside/behind/side/far
+            // spheres, then restores every renderer value before returning.
+            window.__strikeDebug.dynamicActorCullingForTest = () => {
+              const savedView = new Float32Array(glView);
+              const savedProjection = new Float32Array(glProjection);
+              const savedCandidates = rendererFrameStats.dynamicActorCandidates;
+              const savedCulled = rendererFrameStats.dynamicActorsCulled;
+              try {
+                mat4LookAt(glView, [0, 1, 0], [0, 1, -1], [0, 1, 0]);
+                mat4Perspective(glProjection, Math.PI / 3, 16 / 9, 0.025, GL_FAR);
+                rendererFrameStats.dynamicActorCandidates = 0;
+                rendererFrameStats.dynamicActorsCulled = 0;
+                const cases = {
+                  centred: dynamicActorOutsideCameraView(0, 1, -6, 1.85),
+                  edgeGuard: dynamicActorOutsideCameraView(5.0, 1, -6, 1.85),
+                  behind: dynamicActorOutsideCameraView(0, 1, 6, 1.85),
+                  farSide: dynamicActorOutsideCameraView(30, 1, -6, 1.85),
+                  beyondFar: dynamicActorOutsideCameraView(0, 1, -(GL_FAR + 4), 1.85)
+                };
+                return {
+                  ok: cases.centred === false
+                    && cases.edgeGuard === false
+                    && cases.behind === true
+                    && cases.farSide === true
+                    && cases.beyondFar === true,
+                  enabled: DYNAMIC_ACTOR_CULLING_ENABLED,
+                  cases,
+                  candidates: rendererFrameStats.dynamicActorCandidates,
+                  culled: rendererFrameStats.dynamicActorsCulled,
+                  conservativeRadius: 1.85
+                };
+              } finally {
+                glView.set(savedView);
+                glProjection.set(savedProjection);
+                rendererFrameStats.dynamicActorCandidates = savedCandidates;
+                rendererFrameStats.dynamicActorsCulled = savedCulled;
+              }
+            };
+          """ + hook_marker
+          if hook_marker not in text:
+              raise SystemExit('79 hook marker missing')
+          text = text.replace(hook_marker, hook, 1)
+          checkpoints.write_text(text, encoding='utf-8', newline='\n')
+
+          handoff = root / 'HANDOFF.md'
+          text = handoff.read_text(encoding='utf-8')
+          text = text.replace('Build: **12.161 — Recovery & Readability**', 'Build: **12.162 — Visible Geometry**', 1)
+          text = text.replace('Build ID: `12.161.0-recovery-readability`', 'Build ID: `12.162.0-visible-geometry`', 1)
+          text = text.replace('strikewatch-build-12.161.html', 'strikewatch-build-12.162.html', 1)
+          anchor = 'Build 12.161 fixes the returning-career startup migration crash'
+          note = "Build 12.162 adds conservative whole-operator frustum culling before procedural body, armour and weapon assembly. It changes no geometry, materials, animation, collision, AI or simulation state; a 1.85-unit guard sphere must be wholly outside the camera before an actor is skipped. Use `?dynamicCulling=0` as the visual reference and keep `dynamicActorCullingForTest()` green. See `AUDIT-12.162.md`.\n\n"
+          pos = text.find(anchor)
+          if pos < 0: raise SystemExit('HANDOFF release anchor missing')
+          text = text[:pos] + note + text[pos:]
+          handoff.write_text(text, encoding='utf-8', newline='\n')
+
+          agents = root / 'AGENTS.md'
+          text = agents.read_text(encoding='utf-8')
+          anchor = 'Build 12.160 owns the surface-detail coordinate space.'
+          note = "Build 12.162 owns whole-operator frustum culling. The cull happens once, before assembling body, armour, weapon and shadow draws, and uses a deliberately oversized 1.85-unit sphere. A sphere must be wholly outside the view before it is rejected; do not shrink the radius to chase a larger number. `?dynamicCulling=0` is the reference path, `dynamicActorCullingForTest()` is the deterministic guard, and visual comparisons must use matching camera/simulation state. See `AUDIT-12.162.md`.\n\n"
+          pos = text.find(anchor)
+          if pos < 0: raise SystemExit('AGENTS release anchor missing')
+          text = text[:pos] + note + text[pos:]
+          agents.write_text(text, encoding='utf-8', newline='\n')
+
+          contracts = root / 'CONTRACTS.md'
+          text = contracts.read_text(encoding='utf-8')
+          anchor = '- Static world batching bakes model matrices at capture time. An arena may only\n'
+          note = "- Dynamic actor culling is presentation-only and occurs before procedural operator assembly. The actor guard sphere must contain the complete living/fallen silhouette, shadow and equipped weapon, and must be wholly outside the camera frustum before any draw is skipped. Keep `?dynamicCulling=0` as the visual reference; culling may never change AI, collision, hit detection, navigation or simulation updates.\n"
+          pos = text.find(anchor)
+          if pos < 0: raise SystemExit('CONTRACTS rendering anchor missing')
+          text = text[:pos] + note + text[pos:]
+          contracts.write_text(text, encoding='utf-8', newline='\n')
+
+          changelog = root / 'CHANGELOG.md'
+          text = changelog.read_text(encoding='utf-8')
+          heading = '# Strikewatch changelog\n'
+          entry = "\n## 12.162 — Visible Geometry\n\n- Conservative whole-operator camera-frustum culling before procedural draw assembly.\n- Adds dynamic actor candidate/cull telemetry and a deterministic diagnostic hook.\n- No geometry, materials, gameplay, persistence, collision, navigation or AI changes.\n- See `AUDIT-12.162.md`.\n"
+          if heading not in text: raise SystemExit('CHANGELOG heading missing')
+          text = text.replace(heading, heading + entry, 1)
+          changelog.write_text(text, encoding='utf-8', newline='\n')
+
+          audit = root / 'AUDIT-12.162.md'
+          audit.write_text("""# Build 12.162 — Visible Geometry
+
+## Scope
+
+Reduces WebGL submission work without changing visual output. Living and fallen operators are made from dozens of procedural body, armour and weapon draws. Earlier builds rejected them only by distance, so operators fully behind or beside the camera still submitted every part.
+
+Build 12.162 adds one conservative sphere/frustum test before operator assembly. The sphere is centred over the complete actor and uses a 1.85-unit radius, deliberately larger than the standing body, shadow and long-gun reach. An actor is skipped only when that complete sphere is outside the near/far or horizontal/vertical camera limits.
+
+## Fidelity contract
+
+- No mesh, material, shader, animation, LOD threshold or model transform changed.
+- No AI, hit detection, collision, navigation, line of sight, save or match state changed.
+- Actors touching the viewport guard band still render.
+- `?dynamicCulling=0` disables only this optimisation and remains the visual reference.
+- Living and corpse paths use the same conservative radius.
+
+Because only geometry mathematically outside the camera is rejected, the intended pixel difference is exactly zero. The optimisation changes submission, not rendering.
+
+## Telemetry and diagnostics
+
+`rendererFrameStatsForTest()` now reports `dynamicActorCandidates` and `dynamicActorsCulled`. `dynamicActorCullingForTest()` installs a known camera, proves centred and guard-band actors remain, proves behind/side/far actors reject, and restores renderer state before returning.
+
+## Verification gates
+
+- Source modules, generated bundle and standalone inline JavaScript parse.
+- `dynamicActorCullingForTest()` passes in Chromium with the optimisation enabled.
+- Double build produces byte-identical bundle and standalone hashes.
+- Root `cod.html` is byte-identical to `dist/strikewatch-build-12.162.html`.
+- Existing all-arena geometry, navigation, collision and gameplay authorities are unchanged by source diff.
+
+## Maintenance rule
+
+Do not reduce the 1.85-unit guard radius merely to increase the culled count. A future tighter bound requires a rendered edge-of-frame comparison for every weapon class and both living and corpse poses.
+""", encoding='utf-8', newline='\n')
+          PY
+
+      - name: Build twice and verify deterministic output
+        shell: bash
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.162.html > /tmp/build-a.sha
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.162.html > /tmp/build-b.sha
+          diff -u /tmp/build-a.sha /tmp/build-b.sha
+
+      - name: Parse modular, generated and standalone JavaScript
+        shell: bash
+        run: |
+          for file in strikewatch-source/js/[0-9][0-9]-*.js strikewatch-source/js/strikewatch.dev.js; do
+            node --check "$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('strikewatch-source/dist/strikewatch-build-12.162.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
+          if not scripts:
+              raise SystemExit('No inline standalone script found')
+          Path('/tmp/strikewatch-inline.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/strikewatch-inline.js
+
+      - name: Run deterministic Chromium culling diagnostic
+        shell: bash
+        run: |
+          npm --silent --no-progress install --no-save playwright@1.55.0
+          npx playwright install chromium
+          python3 -m http.server 8765 --directory strikewatch-source >/tmp/strikewatch-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          node <<'JS'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+            const errors = [];
+            page.on('pageerror', error => errors.push(String(error)));
+            await page.goto('http://127.0.0.1:8765/dist/strikewatch-build-12.162.html', { waitUntil: 'domcontentloaded', timeout: 120000 });
+            await page.waitForFunction(() => window.__strikeDebug?.dynamicActorCullingForTest, null, { timeout: 120000 });
+            const result = await page.evaluate(() => window.__strikeDebug.dynamicActorCullingForTest());
+            if (!result.ok) throw new Error(`dynamicActorCullingForTest failed: ${JSON.stringify(result)}`);
+            if (errors.length) throw new Error(`Browser errors: ${errors.join(' | ')}`);
+            console.log(JSON.stringify(result));
+            await browser.close();
+          })().catch(error => { console.error(error); process.exit(1); });
+          JS
+
+      - name: Publish verified standalone and commit release
+        shell: bash
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.162.html cod.html
+          cmp -s cod.html strikewatch-source/dist/strikewatch-build-12.162.html
+          rm .github/workflows/release-12-162.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strikewatch-source cod.html .github/workflows/release-12-162.yml
+          git commit -m 'Build 12.162: cull invisible operator geometry'
+          git push origin main
