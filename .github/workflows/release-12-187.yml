@@ -17,10 +17,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out main
+      - name: Check out marked revision
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -33,19 +33,59 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Verify predecessor and release inputs
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected = {
+              'version': '12.186',
+              'name': 'Accurate Storage Reporting',
+              'build_id': '12.186.0-accurate-storage-reporting',
+          }
+          actual = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          if actual != expected:
+              raise SystemExit(f'Predecessor guard failed: expected {expected}, got {actual}')
+          for path in (
+              Path('.github/scripts/release-12-187.py'),
+              Path('.github/workflows/release-12-187.yml'),
+              Path('.github/triggers/release-12-187.txt'),
+          ):
+              if not path.is_file():
+                  raise SystemExit(f'Missing release input: {path}')
+          PY
+
       - name: Apply release patch
         run: python3 .github/scripts/release-12-187.py
 
-      - name: Verify release patch updated canonical metadata
+      - name: Verify canonical release metadata
         run: |
           grep -F "const BUILD_VERSION = '12.187'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_NAME = 'Report XP Safety'" strikewatch-source/js/00-core.js
           grep -F "const BUILD_ID = '12.187.0-report-xp-safety'" strikewatch-source/js/00-core.js
           python3 - <<'PY'
           import json
           from pathlib import Path
+          expected = {
+              'version': '12.187',
+              'name': 'Report XP Safety',
+              'build_id': '12.187.0-report-xp-safety',
+          }
           release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
-          if release.get('version') != '12.187':
-              raise SystemExit(f"Unexpected RELEASE.json version: {release.get('version')}")
+          if release != expected:
+              raise SystemExit(f'Release metadata mismatch: {release}')
+          index = Path('strikewatch-source/index.html').read_text(encoding='utf-8')
+          required = (
+              '<title>Strikewatch 12.187: Report XP Safety</title>',
+              '12.187.0-report-xp-safety',
+              'id="managerBuildVersion">12.187</b>',
+              'id="mobileCommandBuildVersion">12.187</b>',
+          )
+          missing = [token for token in required if token not in index]
+          if missing:
+              raise SystemExit(f'Canonical development shell mismatch: {missing}')
+          if '12.186.0-accurate-storage-reporting' in index:
+              raise SystemExit('Old development cache key remains in index.html')
           PY
 
       - name: Compile build script
@@ -56,8 +96,6 @@ jobs:
         working-directory: strikewatch-source
         run: |
           python3 build.py
-          echo "Dist contents:"
-          ls -la dist
           test -f dist/strikewatch-build-12.187.html
           test -f dist/strikewatch-build-12.187-size.json
           test -f dist/strikewatch-build-12.187-css-debt.json
@@ -75,6 +113,8 @@ jobs:
           import re, subprocess, tempfile
           html = Path('strikewatch-source/dist/strikewatch-build-12.187.html').read_text(encoding='utf-8')
           scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          if not scripts:
+              raise SystemExit('No standalone inline scripts found')
           with tempfile.TemporaryDirectory() as temp:
               for index, script in enumerate(scripts):
                   path = Path(temp) / f'inline-{index}.js'
@@ -86,20 +126,61 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          text = Path('strikewatch-source/js/35-career.js').read_text(encoding='utf-8')
+          career = Path('strikewatch-source/js/35-career.js').read_text(encoding='utf-8')
+          runtime = Path('strikewatch-source/js/70-runtime.js').read_text(encoding='utf-8')
           required = [
               'function careerSafeXpAward(',
               'function careerReportXpSafetyForTest()',
               '${careerSafeXpAward(summary)} XP',
-              '${careerSafeXpAward(careerState.lastRound)} Team XP earned'
+              '${careerSafeXpAward(careerState.lastRound)} Team XP earned',
           ]
-          missing = [item for item in required if item not in text]
+          missing = [item for item in required if item not in career]
           if missing:
-              raise SystemExit(f'Missing XP safety hooks: {missing}')
+              raise SystemExit(f'Missing XP safety source: {missing}')
           forbidden = ['${summary.xpAward} XP', '${careerState.lastRound.xpAward} Team XP earned']
-          present = [item for item in forbidden if item in text]
+          present = [item for item in forbidden if item in career]
           if present:
               raise SystemExit(f'Unsafe XP interpolation remains: {present}')
+          debug_token = "careerReportXpSafetyForTest: () => typeof careerReportXpSafetyForTest === 'function' ? careerReportXpSafetyForTest() : null"
+          if debug_token not in runtime:
+              raise SystemExit('Browser debug API does not expose careerReportXpSafetyForTest')
+          PY
+          node - <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          const text = fs.readFileSync('strikewatch-source/js/35-career.js', 'utf8');
+          const start = text.indexOf('function careerSafeXpAward(');
+          const end = text.indexOf('function renderCareerReportsTab()', start);
+          if (start < 0 || end <= start) throw new Error('Could not isolate XP safety diagnostic');
+          const context = { result: null };
+          vm.runInNewContext(`${text.slice(start, end)}\nresult = careerReportXpSafetyForTest();`, context);
+          if (!context.result || context.result.ok !== true) {
+            throw new Error(`XP safety diagnostic failed: ${JSON.stringify(context.result)}`);
+          }
+          if (!Array.isArray(context.result.results) || context.result.results.length !== 6) {
+            throw new Error(`Unexpected XP diagnostic cases: ${JSON.stringify(context.result)}`);
+          }
+          console.log(JSON.stringify(context.result));
+          JS
+
+      - name: Verify concise release documentation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          checks = {
+              'strikewatch-source/HANDOFF.md': ['12.187 — Report XP Safety', 'AUDIT-12.187.md', 'careerReportXpSafetyForTest()'],
+              'strikewatch-source/AGENTS.md': ['Build 12.187 owns report XP safety', 'AUDIT-12.187.md'],
+              'strikewatch-source/README.md': ['# Strikewatch Source 12.187', 'dist/strikewatch-build-12.187.html'],
+              'strikewatch-source/PROJECT.md': ['Build 12.187 closes SW-003', 'AUDIT-12.187.md'],
+              'strikewatch-source/00-READ-FIRST-GPT.md': ['Strikewatch Build 12.187 — Report XP Safety'],
+              'strikewatch-source/CHANGELOG.md': ['## 12.187 — Report XP Safety', 'AUDIT-12.187.md'],
+              'strikewatch-source/AUDIT-12.187.md': ['# Build 12.187 — Report XP Safety', 'Save schema stays 19'],
+          }
+          for filename, tokens in checks.items():
+              text = Path(filename).read_text(encoding='utf-8')
+              missing = [token for token in tokens if token not in text]
+              if missing:
+                  raise SystemExit(f'{filename} is missing {missing}')
           PY
 
       - name: Build second deterministic candidate
@@ -128,7 +209,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add -A -- strikewatch-source cod.html .github
           git diff --cached --quiet && { echo 'No release changes produced.'; exit 1; }
           git commit -m 'Build 12.187: report XP safety'
           git push origin HEAD:main
