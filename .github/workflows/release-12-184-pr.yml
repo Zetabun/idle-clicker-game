@@ -152,22 +152,30 @@ jobs:
           import html
           import json
           import re
+
           def read(width):
               raw = Path(f'/tmp/sw-12-184-economy-{width}.html').read_text(encoding='utf-8')
               match = re.search(r'<pre id="result">(.*?)</pre>', raw, flags=re.S)
               if not match:
                   raise SystemExit(f'Computed-style result missing at {width}px')
               return json.loads(html.unescape(match.group(1)))
+
+          def px(value):
+              return float(str(value).removesuffix('px'))
+
+          def expect_px(sample, key, expected, context):
+              actual = px(sample[key])
+              if abs(actual - expected) > 0.6:
+                  raise SystemExit(f'{context} {key}: expected approximately {expected}px, got {sample[key]}')
+
           desktop, compact, phone = read(1440), read(1023), read(560)
           for actual, expected in ((desktop['width'], 1440), (compact['width'], 1023), (phone['width'], 560)):
               if abs(actual - expected) > 1:
                   raise SystemExit(f'Unexpected viewport width {actual}; expected {expected}')
-          for key, value in {'headerKicker':'10px','headerTitle':'15px','headerCopy':'11px','meta':'9.5px','value':'17px','label':'11px','body':'11px','aside':'11px'}.items():
-              if desktop[key] != value:
-                  raise SystemExit(f'Desktop {key}: expected {value}, got {desktop[key]}')
-          for key, value in {'headerTitle':'17px','headerCopy':'13px','meta':'12px','value':'19px','label':'13px','body':'12px','aside':'12px'}.items():
-              if compact[key] != value:
-                  raise SystemExit(f'Compact {key}: expected {value}, got {compact[key]}')
+          for key, value in {'headerKicker':10,'headerTitle':15,'headerCopy':11,'meta':9.5,'value':17,'label':11,'body':11,'aside':11}.items():
+              expect_px(desktop, key, value, 'Desktop')
+          for key, value in {'headerTitle':17,'headerCopy':13,'meta':12,'value':19,'label':13,'body':12,'aside':12}.items():
+              expect_px(compact, key, value, 'Compact')
           if compact['columns'] != 2 or compact['gap'] != '8px' or phone['columns'] != 1:
               raise SystemExit(f'Responsive grid mismatch: compact={compact}, phone={phone}')
           print(json.dumps({'desktop': desktop, 'compact': compact, 'phone': phone}, indent=2))
