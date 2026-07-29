@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.169 continues the staged CSS ownership programme by moving the armour
-inspector rotation pivot, transition state and scoped compositor promotion into
-`css/armour-viewer.css` without changing declarations or cascade order. See
-`HANDOFF.md` and `AUDIT-12.169.md`.
+Build 12.170 continues the staged CSS ownership programme by moving the
+crate-to-award phase visibility and full-width weapon reveal placement into
+`css/reward-reveal.css` without changing declarations or cascade order. See
+`HANDOFF.md` and `AUDIT-12.170.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

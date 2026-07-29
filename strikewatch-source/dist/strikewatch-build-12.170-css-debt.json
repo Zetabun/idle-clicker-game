@@ -1,0 +1,30 @@
+{
+  "version": "12.170",
+  "stylesheets": 8,
+  "total_lines": 31950,
+  "game_css_lines": 31415,
+  "important_declarations": 2182,
+  "media_queries": 474,
+  "stylesheet_order": [
+    "game.css",
+    "reward-reveal.css",
+    "armour-viewer.css",
+    "weapon-presentation.css",
+    "loadout-stills.css",
+    "12.161-audit-fixes.css",
+    "armoury-inventory.css",
+    "compact-navigation.css"
+  ],
+  "owned_reward_reveal_lines": 16,
+  "owned_armour_viewer_lines": 28,
+  "owned_weapon_presentation_lines": 42,
+  "owned_loadout_stills_lines": 64,
+  "owned_armoury_inventory_lines": 139,
+  "owned_compact_navigation_lines": 93,
+  "budgets": {
+    "game_css_lines_max": 31420,
+    "important_declarations_max": 2182,
+    "media_queries_max": 474
+  },
+  "within_budget": true
+}

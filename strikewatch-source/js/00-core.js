@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.169';
-  const BUILD_NAME = 'Armour Viewer CSS Ownership';
-  const BUILD_ID = '12.169.0-armour-viewer-css-ownership';
+  const BUILD_VERSION = '12.170';
+  const BUILD_NAME = 'Reward Reveal CSS Ownership';
+  const BUILD_ID = '12.170.0-reward-reveal-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

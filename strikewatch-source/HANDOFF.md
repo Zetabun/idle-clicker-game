@@ -18,17 +18,19 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.169 — Armour Viewer CSS Ownership**
-- Build ID: `12.169.0-armour-viewer-css-ownership`
+- Build: **12.170 — Reward Reveal CSS Ownership**
+- Build ID: `12.170.0-reward-reveal-css-ownership`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.169.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.170.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
 
-Build 12.169 continues SW-020 by moving the Build 12.142/12.152 armour inspector rotation-pivot rules into `css/armour-viewer.css`. The pivot still owns live rotation on one element, while transition removal and `will-change` remain scoped to the inspector so thumbnails and store products do not hold unused compositor layers. The sheet follows `game.css` and precedes weapon/loadout presentation, preserving the prior cascade. See `AUDIT-12.169.md`.
+Build 12.170 continues SW-020 by moving the Build 12.141 reward-phase visibility rules into `css/reward-reveal.css`. During `cycling` and `revealed`, the crate core remains hidden and the awarded weapon model owns the full reveal grid. The declarations are unchanged, and the new sheet follows `game.css` before all later component layers. See `AUDIT-12.170.md`.
+
+Build 12.169 continues SW-020 by moving the Build 12.142/12.152 armour inspector rotation-pivot rules into `css/armour-viewer.css`. The pivot still owns live rotation on one element, while transition removal and `will-change` remain scoped to the inspector so thumbnails and store products do not hold unused compositor layers. The sheet follows `reward-reveal.css` and precedes weapon/loadout presentation, preserving the prior cascade. See `AUDIT-12.169.md`.
 
 Build 12.168 continues SW-020 by moving the Build 12.147 CSS-3D weapon face lighting, cylinder shading and grip texture into `css/weapon-presentation.css`. The declarations are unchanged; after the 12.169 extraction it follows `armour-viewer.css` and remains before loadout and later audit layers. Keep weapon thumbnails, crate reveals, inspectors and store cards on the shared presentation layer. See `AUDIT-12.168.md`.
 

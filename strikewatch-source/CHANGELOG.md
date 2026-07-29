@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.170 — Reward Reveal CSS Ownership
+
+- Moves the Build 12.141 crate-to-award phase visibility and full-width weapon placement rules from `game.css` into `css/reward-reveal.css` without changing declarations.
+- Preserves the layer immediately after `game.css`, before armour, weapon and loadout presentation.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.170.md`.
+
+
 ## 12.169 — Armour Viewer CSS Ownership
 
 - Moves the Build 12.142/12.152 armour inspector rotation-pivot, transition and scoped compositor-promotion rules from `game.css` into `css/armour-viewer.css` without changing declarations.

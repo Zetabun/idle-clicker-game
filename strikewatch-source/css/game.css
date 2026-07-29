@@ -31413,17 +31413,3 @@ body.mail-scroll-armed .club-mail-list {
   #menuContent .club-economy-guide article > span { font-size: 12px !important; }
   .manager-topbar-action-state { font-size: 12px; }
 }
-
-/* --- Build 12.141: reward reveal shows the weapon alone --------------------
-   The crate canvas and the awarded weapon model are siblings inside
-   `.career-crate-display`, so the crate stayed behind the gun once the reward
-   was revealed. Retire the crate as soon as the scan begins. */
-.career-crate-overlay.cycling .career-crate-core,
-.career-crate-overlay.revealed .career-crate-core {
-  display: none;
-}
-.career-crate-overlay.cycling .career-crate-model,
-.career-crate-overlay.revealed .career-crate-model {
-  grid-column: 1 / -1;
-  justify-self: center;
-}

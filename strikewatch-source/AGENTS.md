@@ -56,7 +56,9 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.169 owns the armour inspector rotation pivot, drag/auto-rotate transition behaviour and inspector-only compositor promotion in `css/armour-viewer.css`. Keep it immediately after `game.css`, before `weapon-presentation.css`. Never move rotation back to inherited `--armour-viewer-yaw/pitch` properties on the rig root; that invalidates hundreds of face styles per frame. Verify `armour3dPresentationForTest()`, `armourSystemForTest()` and `loadoutStillForTest()` alongside the CSS ownership gates. See `AUDIT-12.169.md`.
+Build 12.170 owns crate-to-award phase visibility and full-width award placement in `css/reward-reveal.css`. Keep it immediately after `game.css`, before `armour-viewer.css`. In `cycling` and `revealed`, the crate core must be hidden and the weapon model must span the reveal grid. Verify `crateSpinForTest()`, `crateAttachmentForTest()` and `firstMatchPayoffForTest()` alongside the CSS ownership gates. See `AUDIT-12.170.md`.
+
+Build 12.169 owns the armour inspector rotation pivot, drag/auto-rotate transition behaviour and inspector-only compositor promotion in `css/armour-viewer.css`. Keep it after `reward-reveal.css`, before `weapon-presentation.css`. Never move rotation back to inherited `--armour-viewer-yaw/pitch` properties on the rig root; that invalidates hundreds of face styles per frame. Verify `armour3dPresentationForTest()`, `armourSystemForTest()` and `loadoutStillForTest()` alongside the CSS ownership gates. See `AUDIT-12.169.md`.
 
 Build 12.168 owns CSS-3D weapon face/cylinder lighting and grip texture in `css/weapon-presentation.css`. Keep it after `armour-viewer.css` and before `loadout-stills.css`; the extraction changes no declarations and must remain shared by crate reveals, inventory thumbnails, Armoury inspectors and store cards. Verify weapon geometry/presentation and loadout still gates. See `AUDIT-12.168.md`.
 
