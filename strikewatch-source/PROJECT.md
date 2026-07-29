@@ -32,10 +32,10 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.180 continues the staged CSS ownership programme by moving the Build
-12.134 compact Combat Effectiveness ring into `css/combat-effectiveness.css`
-without changing declarations, breakpoints or report behaviour. See `HANDOFF.md`
-and `AUDIT-12.180.md`.
+Build 12.181 continues the staged CSS ownership programme by moving the
+remaining Build 12.134 compact shared command typography and containment into
+`css/command-chrome.css` without changing declarations or breakpoint. See
+`HANDOFF.md` and `AUDIT-12.181.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

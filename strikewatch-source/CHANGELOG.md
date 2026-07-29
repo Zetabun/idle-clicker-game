@@ -1,5 +1,14 @@
 # Release history router
 
+## 12.181 — Command Chrome CSS Ownership
+
+- Moves the remaining Build 12.134 compact shared command typography and nowrap containment from `game.css` into `css/command-chrome.css` without changing declarations or breakpoint.
+- Preserves the layer immediately after `game.css`, before Combat Effectiveness and all later presentation layers.
+- Keeps shared labels and meaningful copy at their existing 11–12px floors while retaining `min-width: 0`, `overflow-wrap: anywhere` and wrapped command metadata.
+- Tightens the `game.css` line budget and records the new owner in the CSS debt report and architecture map.
+- Evidence: `AUDIT-12.181.md`.
+
+
 ## 12.180 — Combat Effectiveness CSS Ownership
 
 - Moves the Build 12.134 compact Combat Effectiveness ring, external caption and influence typography from `game.css` into `css/combat-effectiveness.css` without changing declarations or breakpoints.

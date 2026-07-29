@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.180';
-  const BUILD_NAME = 'Combat Effectiveness CSS Ownership';
-  const BUILD_ID = '12.180.0-combat-effectiveness-css-ownership';
+  const BUILD_VERSION = '12.181';
+  const BUILD_NAME = 'Command Chrome CSS Ownership';
+  const BUILD_ID = '12.181.0-command-chrome-css-ownership';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

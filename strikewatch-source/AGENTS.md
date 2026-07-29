@@ -56,7 +56,9 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
-Build 12.180 owns the compact after-action Combat Effectiveness ring in `css/combat-effectiveness.css`. Keep it immediately after `game.css`, before `match-type.css`. Preserve the 138px ring and external 11px caption below 1024px, the 124px/10.5px narrow-phone adjustment below 381px, and the wrapped influence legend. Verify `firstMatchPayoffForTest()`, `mobileInterfaceAuditForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.180.md`.
+Build 12.181 owns compact shared command typography and containment in `css/command-chrome.css`. Keep it immediately after `game.css`, before `combat-effectiveness.css`. Preserve the 11–12px floors, 11.5px Armoury labels, `overflow-wrap: anywhere`, normalised Armoury small-copy wrapping and wrapped command metadata. Verify `mobileInterfaceAuditForTest()`, `typographyConsistencyForTest()`, `economyGuidanceForTest()` and `renderRouteForTest()` alongside the CSS ownership gates. See `AUDIT-12.181.md`.
+
+Build 12.180 owns the compact after-action Combat Effectiveness ring in `css/combat-effectiveness.css`. Keep it after `command-chrome.css`, before `match-type.css`. Preserve the 138px ring and external 11px caption below 1024px, the 124px/10.5px narrow-phone adjustment below 381px, and the wrapped influence legend. Verify `firstMatchPayoffForTest()`, `mobileInterfaceAuditForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.180.md`.
 
 Build 12.179 owns post-match fixture-type presentation in `css/match-type.css`. Keep it after `combat-effectiveness.css`, before `route-readability.css`. Preserve the detailed-report competition kicker/name/detail floors and the staged first-match type line at the existing 1023px breakpoint; classification remains in `careerMatchTypeDescriptor(summary)`. Verify `firstMatchPayoffForTest()`, `leagueMatchFlowForTest()`, `renderRouteForTest()` and `typographyConsistencyForTest()` alongside the CSS ownership gates. See `AUDIT-12.179.md`.
 

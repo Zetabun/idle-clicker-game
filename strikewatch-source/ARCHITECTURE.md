@@ -10,6 +10,7 @@ share application scope in the listed order.
 | --- | --- |
 | `index.html` | Static shell, visible release labels and ordered bundle entry |
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
+| `css/command-chrome.css` | Compact shared command typography floors and nowrap containment |
 | `css/combat-effectiveness.css` | Compact after-action score ring, caption and influence typography |
 | `css/match-type.css` | Detailed-report competition row and first-match fixture-type line |
 | `css/route-readability.css` | Route-specific compact typography floors and dense-grid containment |
@@ -89,8 +90,8 @@ everything it consumes and before everything that consumes it.
 Management UI is assembled by `50-ui-menus.js` and route-specific renderers,
 then inserted into the shell owned by `index.html`. `build.py`'s `CSS_PATHS` is
 the cascade-order authority, and `index.html` must load the same files in the
-same order. The current order is `game.css`, `combat-effectiveness.css`,
-`match-type.css`, `route-readability.css`, `management-grid.css`,
+same order. The current order is `game.css`, `command-chrome.css`,
+`combat-effectiveness.css`, `match-type.css`, `route-readability.css`, `management-grid.css`,
 `league-table.css`, `calendar-agenda.css`, `training-readability.css`,
 `training-programme.css`, `management-feedback.css`, `compact-readability.css`,
 `reward-reveal.css`, `armour-viewer.css`, `weapon-presentation.css`,
