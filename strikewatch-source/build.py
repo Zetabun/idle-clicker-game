@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parent
-MODULES = ['00-core.js', '10-audio.js', '20-navigation.js', '30-bot-ai.js', '31-match-diagnostics.js', '32-tactical-minimap.js', '33-season-narrative-state.js', '34-squad-dynamics.js', '35-career.js', '39-medical.js', '36-team-management.js', '37-league.js', '38-development.js', '39-infrastructure.js', '39-club-operations.js', '39-opposition-intelligence.js', '39-matchday.js', '39-transfers.js', '39-recruitment-commercial.js', '39-dynamic-market-mail.js', '39-calendar-finance.js', '39-workflow-integrity.js', '40-match-flow.js', '41-live-command-pulses.js', '50-ui-menus.js', '52-season-narratives.js', '55-opening-week.js', '56-world-press-awards.js', '57-loadout-stills.js', '60-renderer-core.js', '61-world-renderer.js', '62-character-renderer.js', '63-viewmodel-renderer.js', '64-reward-renderer.js', '65-sky-dome.js', '70-runtime.js', '75-ui-clarity-hotfix.js', '76-tactical-selection-feedback.js', '77-mail-scroll-guard.js', '78-management-status.js', '79-save-checkpoints.js', '80-durable-results.js', '81-career-indexeddb.js']
+MODULES = ['00-core.js', '10-audio.js', '20-navigation.js', '30-bot-ai.js', '31-match-diagnostics.js', '32-tactical-minimap.js', '33-season-narrative-state.js', '34-squad-dynamics.js', '35-career.js', '81-career-indexeddb.js', '39-medical.js', '36-team-management.js', '37-league.js', '38-development.js', '39-infrastructure.js', '39-club-operations.js', '39-opposition-intelligence.js', '39-matchday.js', '39-transfers.js', '39-recruitment-commercial.js', '39-dynamic-market-mail.js', '39-calendar-finance.js', '39-workflow-integrity.js', '40-match-flow.js', '41-live-command-pulses.js', '50-ui-menus.js', '52-season-narratives.js', '55-opening-week.js', '56-world-press-awards.js', '57-loadout-stills.js', '60-renderer-core.js', '61-world-renderer.js', '62-character-renderer.js', '63-viewmodel-renderer.js', '64-reward-renderer.js', '65-sky-dome.js', '70-runtime.js', '75-ui-clarity-hotfix.js', '76-tactical-selection-feedback.js', '77-mail-scroll-guard.js', '78-management-status.js', '79-save-checkpoints.js', '80-durable-results.js', '82-audit-recovery.js']
 BUNDLE_PATH = ROOT / "js" / "strikewatch.dev.js"
 
 
@@ -30,6 +30,7 @@ def read_modules() -> str:
 
 def main() -> None:
     css_path = ROOT / "css" / "game.css"
+    release_css_path = ROOT / "css" / "12.161-audit-fixes.css"
     index_path = ROOT / "index.html"
     if not css_path.exists() or not index_path.exists():
         raise FileNotFoundError("index.html or css/game.css is missing")
@@ -37,10 +38,10 @@ def main() -> None:
     version, build_id = build_metadata()
     dist_path = ROOT / "dist" / f"strikewatch-build-{version}.html"
     bundle = read_modules()
-    BUNDLE_PATH.write_text(bundle, encoding="utf-8")
+    BUNDLE_PATH.write_text(bundle, encoding="utf-8", newline="\n")
 
     html = index_path.read_text(encoding="utf-8")
-    css = css_path.read_text(encoding="utf-8").rstrip()
+    css = css_path.read_text(encoding="utf-8").rstrip() + "\n\n" + release_css_path.read_text(encoding="utf-8").rstrip()
     for element_id in ("managerBuildVersion", "mobileCommandBuildVersion"):
         label_match = re.search(rf'id="{element_id}">([^<]+)</b>', html)
         if not label_match or label_match.group(1) != version:
@@ -64,7 +65,7 @@ def main() -> None:
         raise RuntimeError(f"index.html asset query does not match BUILD_ID {build_id}")
 
     dist_path.parent.mkdir(parents=True, exist_ok=True)
-    dist_path.write_text(html, encoding="utf-8")
+    dist_path.write_text(html, encoding="utf-8", newline="\n")
     print(f"Built development bundle: {BUNDLE_PATH}")
     print(f"Built standalone release: {dist_path}")
 

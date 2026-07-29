@@ -32,9 +32,9 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.150 closes the grip-to-frame joint with a tang and seats each trigger
+Build 12.161 closes the grip-to-frame joint with a tang and seats each trigger
 inside its guard.
-See `HANDOFF.md` and `AUDIT-12.150.md`.
+See `HANDOFF.md` and `AUDIT-12.161.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

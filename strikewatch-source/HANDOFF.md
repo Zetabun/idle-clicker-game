@@ -6,15 +6,17 @@ the task-routing table below says they are relevant.
 
 ## Current release
 
-- Build: **12.160 — Settled Operators**
-- Build ID: `12.160.0-settled-operators`
+- Build: **12.161 — Recovery & Readability**
+- Build ID: `12.161.0-recovery-readability`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.160.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.161.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.161 fixes the returning-career startup migration crash by initialising the durable career store before finance modules. It restores pinch zoom, adds compact type and touch floors, improves wrapping in management and match interfaces, and makes scoreboard telemetry diagnostics side-effect free. See `AUDIT-12.161.md`.
 
 Build 12.160 settles the operator surface and deepens their contact occlusion. **Surface detail for anything that moves must be anchored to the model, not the world** — that is the whole build. Every surface mode reads `vWorldPosition`, which is right for a wall and wrong for a person: the detail did not travel with them, so the room swept across them as they walked. The kit weave ran at 95 and 88 cycles per world unit against 12.145's roughly-40 aliasing threshold, the skin at 31 and 17, and the overhead light pools pulsed an operator several times a second as they crossed the room grid. The vertex shader now carries model space too and `withLocalSurfaceDetail()` selects it, wrapping exactly two things: the operator draw (living and fallen) and the viewmodel. `mix(a, b, 0.0)` returns `a` exactly, so the world takes the identical path — verified at **0.0000% pixels changed, max 1/255, in all four arenas back to back with identical draw calls**. Operator AO from 12.157 was already enabled but at 8–18%, too shallow to read; it is now 16–32%, still colour-baked, tunable via `OPERATOR_AMBIENT_OCCLUSION.factors`. **Never put backticks inside the shader source — it lives in a template literal and a backtick in a GLSL comment closes the string.** See `AUDIT-12.160.md`.
 

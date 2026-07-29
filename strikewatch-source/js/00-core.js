@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.160';
-  const BUILD_NAME = 'Settled Operators';
-  const BUILD_ID = '12.160.0-settled-operators';
+  const BUILD_VERSION = '12.161';
+  const BUILD_NAME = 'Recovery & Readability';
+  const BUILD_ID = '12.161.0-recovery-readability';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
