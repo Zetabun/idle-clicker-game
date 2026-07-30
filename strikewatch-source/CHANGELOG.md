@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.193 — Operator Muzzle-Light Response
+
+- Adds a brief warm material response to the living third-person operator that has actually fired, using the authoritative existing muzzle-flash signal and authored muzzle anchor.
+- Reuses current colour/emissive uniforms with bounded CPU distance falloff; static geometry, shadows, corpses, transparent effects and the first-person viewmodel remain unchanged.
+- Adds no draws, meshes, textures, passes, uniforms or gameplay state and leaves saves and schemas unchanged.
+- See `AUDIT-12.193.md`.
+
 ## 12.192 — Directional Operator Contact Shadows
 
 - Reuses the existing one/two-disc operator shadow budget as a directional cast component plus a tighter contact component.

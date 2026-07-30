@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.192';
-  const BUILD_NAME = 'Directional Operator Contact Shadows';
-  const BUILD_ID = '12.192.0-directional-operator-contact-shadows';
+  const BUILD_VERSION = '12.193';
+  const BUILD_NAME = 'Operator Muzzle-Light Response';
+  const BUILD_ID = '12.193.0-operator-muzzle-light-response';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39732,6 +39732,115 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
   }
 
+  // Build 12.193: a valid third-person muzzle flash can warm nearby opaque
+  // operator materials by reusing each draw's existing colour and emissive
+  // uniforms. The response is CPU-scoped to the firing operator and adds no
+  // light object, shader uniform, pass, texture, mesh or draw.
+  const OPERATOR_MUZZLE_LIGHT_RESPONSE = Object.freeze({
+    revision: '12.193-scoped-muzzle-light-1',
+    radius: 1.20,
+    emissiveLift: 0.42,
+    warmMix: 0.30,
+    warmColour: Object.freeze([1.00, 0.42, 0.10]),
+    minimumSurface: 3,
+    maximumSurface: 8,
+    opaqueAlpha: 0.999
+  });
+
+  const operatorMuzzleLightState = {
+    active: false,
+    x: 0,
+    y: 0,
+    z: 0,
+    strength: 0
+  };
+  const operatorMuzzleLightColourScratch = new Float32Array(3);
+
+  function setOperatorMuzzleLight(position, strength = 0) {
+    const resolvedStrength = clamp(Number(strength) || 0, 0, 1);
+    operatorMuzzleLightState.active = Boolean(position) && resolvedStrength > 0;
+    operatorMuzzleLightState.x = Number(position?.x) || 0;
+    operatorMuzzleLightState.y = Number(position?.y) || 0;
+    operatorMuzzleLightState.z = Number(position?.z) || 0;
+    operatorMuzzleLightState.strength = resolvedStrength;
+    return operatorMuzzleLightState.active;
+  }
+
+  function clearOperatorMuzzleLight() {
+    operatorMuzzleLightState.active = false;
+    operatorMuzzleLightState.strength = 0;
+  }
+
+  function operatorMuzzleLightContribution(
+    model,
+    alpha = 1,
+    surface = 0,
+    state = operatorMuzzleLightState,
+    detailMode = localSurfaceDetailMode,
+    elevationOffset = renderElevationOffset
+  ) {
+    const policy = OPERATOR_MUZZLE_LIGHT_RESPONSE;
+    if (!state?.active || (Number(state.strength) || 0) <= 0) return 0;
+    if (detailMode !== OPERATOR_SILHOUETTE_LIGHTING.operatorMode) return 0;
+    if (alpha < policy.opaqueAlpha) return 0;
+    if (surface < policy.minimumSurface || surface > policy.maximumSurface) return 0;
+    const dx = (Number(model?.[12]) || 0) - state.x;
+    const dy = (Number(model?.[13]) || 0) + (Number(elevationOffset) || 0) - state.y;
+    const dz = (Number(model?.[14]) || 0) - state.z;
+    const distance = Math.hypot(dx, dy, dz);
+    const radial = clamp(1 - distance / policy.radius, 0, 1);
+    return clamp(state.strength, 0, 1) * radial * radial;
+  }
+
+  function operatorMuzzleLightResponseForTest() {
+    const policy = OPERATOR_MUZZLE_LIGHT_RESPONSE;
+    const modelAt = (x, y, z) => {
+      const model = new Float32Array(16);
+      model[12] = x;
+      model[13] = y;
+      model[14] = z;
+      return model;
+    };
+    const active = { active: true, x: 0, y: 1, z: 0, strength: 1 };
+    const inactive = { active: false, x: 0, y: 1, z: 0, strength: 0 };
+    const near = operatorMuzzleLightContribution(modelAt(0, 1, 0), 1, 5, active, 1, 0);
+    const middle = operatorMuzzleLightContribution(modelAt(policy.radius * 0.5, 1, 0), 1, 5, active, 1, 0);
+    const outside = operatorMuzzleLightContribution(modelAt(policy.radius * 1.05, 1, 0), 1, 5, active, 1, 0);
+    const transparent = operatorMuzzleLightContribution(modelAt(0, 1, 0), 0.92, 5, active, 1, 0);
+    const shadowSurface = operatorMuzzleLightContribution(modelAt(0, 1, 0), 1, 0, active, 1, 0);
+    const staticMode = operatorMuzzleLightContribution(modelAt(0, 1, 0), 1, 5, active, 0, 0);
+    const viewmodelMode = operatorMuzzleLightContribution(modelAt(0, 1, 0), 1, 5, active, 2, 0);
+    const noShot = operatorMuzzleLightContribution(modelAt(0, 1, 0), 1, 5, inactive, 1, 0);
+    return {
+      ok: policy.radius >= 1 && policy.radius <= 1.4
+        && policy.emissiveLift > 0 && policy.emissiveLift <= 0.5
+        && policy.warmMix > 0 && policy.warmMix <= 0.35
+        && near > middle && middle > outside && outside === 0
+        && transparent === 0 && shadowSurface === 0
+        && staticMode === 0 && viewmodelMode === 0 && noShot === 0,
+      revision: policy.revision,
+      radius: policy.radius,
+      emissiveLift: policy.emissiveLift,
+      warmMix: policy.warmMix,
+      near,
+      middle,
+      outside,
+      transparentExcluded: transparent === 0,
+      shadowExcluded: shadowSurface === 0,
+      staticWorldUnchanged: staticMode === 0,
+      viewmodelUnchanged: viewmodelMode === 0,
+      requiresAuthoritativeShotSignal: noShot === 0,
+      usesExistingColourUniform: true,
+      usesExistingEmissiveUniform: true,
+      additionalDrawCalls: 0,
+      additionalMeshes: 0,
+      additionalTextures: 0,
+      additionalShaderPasses: 0,
+      additionalShaderUniforms: 0,
+      additionalPerDrawAllocations: 0
+    };
+  }
+
   let gl = null;
   let glProgram = null;
   let glReady = false;
@@ -41092,8 +41201,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (renderElevationOffset) model[13] = originalModelY + renderElevationOffset;
     gl.uniformMatrix4fv(glLocations.model, false, model);
     if (renderElevationOffset) model[13] = originalModelY;
-    gl.uniform3fv(glLocations.colour, colour);
-    gl.uniform1f(glLocations.emissive, emissive);
+    const muzzleResponse = operatorMuzzleLightContribution(model, alpha, surface);
+    let renderColour = colour;
+    let renderEmissive = emissive;
+    if (muzzleResponse > 0) {
+      const policy = OPERATOR_MUZZLE_LIGHT_RESPONSE;
+      const warmAmount = clamp(muzzleResponse * policy.warmMix, 0, 1);
+      operatorMuzzleLightColourScratch[0] = colour[0] + (policy.warmColour[0] - colour[0]) * warmAmount;
+      operatorMuzzleLightColourScratch[1] = colour[1] + (policy.warmColour[1] - colour[1]) * warmAmount;
+      operatorMuzzleLightColourScratch[2] = colour[2] + (policy.warmColour[2] - colour[2]) * warmAmount;
+      renderColour = operatorMuzzleLightColourScratch;
+      renderEmissive += muzzleResponse * policy.emissiveLift;
+    }
+    gl.uniform3fv(glLocations.colour, renderColour);
+    gl.uniform1f(glLocations.emissive, renderEmissive);
     gl.uniform1f(glLocations.alpha, alpha);
     gl.uniform1f(glLocations.surface, surface);
     gl.uniform1f(glLocations.roughness, roughness);
@@ -46168,6 +46289,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const pelvisYaw = moveYaw + gaitSway * (0.020 + run * 0.014) + strafe * 0.008;
     const pelvisRoll = locomotionLean * 0.72 + hitLean * 0.28 + gaitSway * 0.018;
     const pelvisOrigin = worldPoint(bot.x, 0, bot.y, moveYaw, gaitSway * 0.010, 0, 0);
+    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob + breath * 0.72 - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
+    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - flinchWave * 0.022 - (1 - footPlant) * run * 0.012;
+    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + flinchWave * (bot.hitDirection || 1) * 0.12 + bodyLean * 0.24;
+    const activeWeapon = bot.weapon || bot.primaryWeapon;
+    const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
+    const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
+    const weaponRig = operatorSharedWeaponRig(activeWeapon, rifleY, rifleForward, isSidearm, recoil, rifleRoll);
+    let muzzleLightOrigin = null;
+    if (bot.flash > 0) {
+      const flashDistance = isSidearm ? 0.42 : 0.80;
+      const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
+      muzzleLightOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+      setOperatorMuzzleLight(muzzleLightOrigin, bot.flash);
+    }
+    try {
     const palette = getOperatorPalette(bot);
     const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, team, teamSoft, metal } = palette;
     const ao = palette.occluded;
@@ -46365,13 +46501,6 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
-    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob + breath * 0.72 - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
-    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - flinchWave * 0.022 - (1 - footPlant) * run * 0.012;
-    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + flinchWave * (bot.hitDirection || 1) * 0.12 + bodyLean * 0.24;
-    const activeWeapon = bot.weapon || bot.primaryWeapon;
-    const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
-    const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
-    const weaponRig = operatorSharedWeaponRig(activeWeapon, rifleY, rifleForward, isSidearm, recoil, rifleRoll);
     for (const side of [-1, 1]) {
       const shoulderLocal = operatorShoulderLocalPose(side, { stanceDrop, torsoRoll, walk, phase, turn });
       const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, shoulderLocal.x, shoulderLocal.y, shoulderLocal.z);
@@ -46489,15 +46618,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.cube, teamSoft, glModel, 0.14, 1, 4, 0.18);
     }
 
-    if (bot.flash > 0) {
-      const flashDistance = isSidearm ? 0.42 : 0.80;
-      const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
-      const flash = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+    if (muzzleLightOrigin) {
       const flashScale = 0.14 + bot.flash * 0.10;
       setBlendMode(true);
-      mat4TRS(glModel, flash.x, flash.y, flash.z, upperYaw, 0, rifleRoll, flashScale, flashScale, flashScale * 1.45);
+      mat4TRS(glModel, muzzleLightOrigin.x, muzzleLightOrigin.y, muzzleLightOrigin.z, upperYaw, 0, rifleRoll, flashScale, flashScale, flashScale * 1.45);
       drawMesh(glMeshes.sphere, [1, 0.58, 0.10], glModel, 2.6, clamp(bot.flash, 0, 0.92), 4, 0.08);
       setBlendMode(false);
+    }
+    } finally {
+      if (muzzleLightOrigin) clearOperatorMuzzleLight();
     }
   }
 

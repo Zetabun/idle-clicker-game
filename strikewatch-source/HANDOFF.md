@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.192 — Directional Operator Contact Shadows**
-- Build ID: `12.192.0-directional-operator-contact-shadows`
+- Build: **12.193 — Operator Muzzle-Light Response**
+- Build ID: `12.193.0-operator-muzzle-light-response`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.192.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.193.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.193 owns the scoped third-person operator muzzle-light response across `js/60-renderer-core.js` and `js/62-character-renderer.js`. Preserve `OPERATOR_MUZZLE_LIGHT_RESPONSE`, `operatorMuzzleLightResponseForTest()`, the persistent state/colour scratch buffers and the exact authored muzzle anchor. Only a living mode-1 operator with authoritative `bot.flash > 0` may warm opaque surfaces 3-8 inside the 1.20-unit radius. Static geometry, shadows, transparent effects, corpses, other operators and mode-2 viewmodels remain unchanged. Do not add lights, draws, meshes, textures, passes or uniforms. Keep Builds 12.190-12.192, operator AO, culling and arena/navigation integrity green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.193.md`.
 
 Build 12.192 owns directional living-operator contact shadows in `js/62-character-renderer.js`. Preserve `OPERATOR_CONTACT_SHADOW`, the reusable `operatorContactShadowScratch`, `operatorContactShadowProfile()` and `operatorContactShadowForTest()`. Low detail remains one disc and medium/full remain two; the broad component offsets away from the shared key light, the inner component stays contact-weighted, crouch is wider/denser and run is longer/softer. Corpse shadows remain unchanged. Do not add shadow maps, meshes, textures, passes, uniforms or draw calls. Keep Builds 12.190/12.191 lighting gates, operator AO, culling and arena/navigation integrity green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.192.md`.
 

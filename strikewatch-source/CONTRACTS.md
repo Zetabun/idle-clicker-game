@@ -118,6 +118,12 @@ current task. Release-specific implementation detail belongs in the matching
   opacity may respond to key-light direction, movement and stance, but no shadow
   map, light trace, mesh, texture, pass, uniform or additional draw is permitted
   without an explicit measured budget. Corpse shadow ownership remains separate.
+- A third-person operator muzzle-light response may reuse only the authoritative
+  real-shot flash signal, authored muzzle anchor, per-draw model transform and the
+  existing colour/emissive uniforms. It remains bounded to nearby opaque living
+  operator surfaces; static geometry, shadows, transparent effects, corpses and
+  the first-person viewmodel receive zero. No light object, mesh, texture, pass,
+  uniform or additional draw is permitted without an explicit measured budget.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.192 improves battle grounding by reusing the existing operator shadow discs as a directional cast component and a tighter contact component, with stance and movement shaping but no additional draw calls. Corpse rendering, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.192.md`.
+Build 12.193 improves firefight cohesion by warming nearby opaque materials on the living third-person operator that has actually fired, using the existing shot signal, authored muzzle anchor and colour/emissive uniforms with no additional draw calls. Static geometry, corpses, viewmodels, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.193.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

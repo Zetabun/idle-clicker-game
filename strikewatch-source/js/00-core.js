@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.192';
-  const BUILD_NAME = 'Directional Operator Contact Shadows';
-  const BUILD_ID = '12.192.0-directional-operator-contact-shadows';
+  const BUILD_VERSION = '12.193';
+  const BUILD_NAME = 'Operator Muzzle-Light Response';
+  const BUILD_ID = '12.193.0-operator-muzzle-light-response';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

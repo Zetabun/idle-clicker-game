@@ -1278,6 +1278,21 @@
     const pelvisYaw = moveYaw + gaitSway * (0.020 + run * 0.014) + strafe * 0.008;
     const pelvisRoll = locomotionLean * 0.72 + hitLean * 0.28 + gaitSway * 0.018;
     const pelvisOrigin = worldPoint(bot.x, 0, bot.y, moveYaw, gaitSway * 0.010, 0, 0);
+    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob + breath * 0.72 - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
+    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - flinchWave * 0.022 - (1 - footPlant) * run * 0.012;
+    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + flinchWave * (bot.hitDirection || 1) * 0.12 + bodyLean * 0.24;
+    const activeWeapon = bot.weapon || bot.primaryWeapon;
+    const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
+    const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
+    const weaponRig = operatorSharedWeaponRig(activeWeapon, rifleY, rifleForward, isSidearm, recoil, rifleRoll);
+    let muzzleLightOrigin = null;
+    if (bot.flash > 0) {
+      const flashDistance = isSidearm ? 0.42 : 0.80;
+      const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
+      muzzleLightOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+      setOperatorMuzzleLight(muzzleLightOrigin, bot.flash);
+    }
+    try {
     const palette = getOperatorPalette(bot);
     const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, team, teamSoft, metal } = palette;
     const ao = palette.occluded;
@@ -1475,13 +1490,6 @@
 
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
-    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob + breath * 0.72 - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop - hitCompression;
-    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12 - hitWave * 0.035 - flinchWave * 0.022 - (1 - footPlant) * run * 0.012;
-    const rifleRoll = reloadPhases.lower * 0.38 + reloadPhases.rack * 0.16 + swapWave * 0.82 + shoulderBias * 0.035 + hitLean * 0.50 + flinchWave * (bot.hitDirection || 1) * 0.12 + bodyLean * 0.24;
-    const activeWeapon = bot.weapon || bot.primaryWeapon;
-    const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
-    const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
-    const weaponRig = operatorSharedWeaponRig(activeWeapon, rifleY, rifleForward, isSidearm, recoil, rifleRoll);
     for (const side of [-1, 1]) {
       const shoulderLocal = operatorShoulderLocalPose(side, { stanceDrop, torsoRoll, walk, phase, turn });
       const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, shoulderLocal.x, shoulderLocal.y, shoulderLocal.z);
@@ -1599,15 +1607,15 @@
       drawMesh(glMeshes.cube, teamSoft, glModel, 0.14, 1, 4, 0.18);
     }
 
-    if (bot.flash > 0) {
-      const flashDistance = isSidearm ? 0.42 : 0.80;
-      const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
-      const flash = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+    if (muzzleLightOrigin) {
       const flashScale = 0.14 + bot.flash * 0.10;
       setBlendMode(true);
-      mat4TRS(glModel, flash.x, flash.y, flash.z, upperYaw, 0, rifleRoll, flashScale, flashScale, flashScale * 1.45);
+      mat4TRS(glModel, muzzleLightOrigin.x, muzzleLightOrigin.y, muzzleLightOrigin.z, upperYaw, 0, rifleRoll, flashScale, flashScale, flashScale * 1.45);
       drawMesh(glMeshes.sphere, [1, 0.58, 0.10], glModel, 2.6, clamp(bot.flash, 0, 0.92), 4, 0.08);
       setBlendMode(false);
+    }
+    } finally {
+      if (muzzleLightOrigin) clearOperatorMuzzleLight();
     }
   }
 
