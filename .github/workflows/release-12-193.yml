@@ -1,0 +1,183 @@
+name: Release Strikewatch 12.193
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/release-12-193.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-strikewatch-12-193
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply Build 12.193 source patch
+        run: python3 .github/scripts/release-12-193.py
+
+      - name: Compile build script
+        run: python3 -m py_compile strikewatch-source/build.py
+
+      - name: Build first deterministic copy
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.193.html > /tmp/strikewatch-12.193-first.sha256
+          cp js/strikewatch.dev.js /tmp/strikewatch-12.193-first.js
+          cp dist/strikewatch-build-12.193.html /tmp/strikewatch-12.193-first.html
+
+      - name: Parse source modules and generated JavaScript
+        run: |
+          set -eu
+          for file in strikewatch-source/js/*.js; do
+            node --check "$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+
+          html = Path('strikewatch-source/dist/strikewatch-build-12.193.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline scripts found in standalone')
+          for index, script in enumerate(scripts):
+              with tempfile.NamedTemporaryFile('w', suffix='.js', encoding='utf-8', delete=False) as handle:
+                  handle.write(script)
+                  path = handle.name
+              subprocess.run(['node', '--check', path], check=True)
+          print(f'Parsed {len(scripts)} standalone inline script(s).')
+          PY
+
+      - name: Verify targeted renderer and gameplay safeguards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          src = Path('strikewatch-source')
+          renderer = (src / 'js/60-renderer-core.js').read_text(encoding='utf-8')
+          character = (src / 'js/62-character-renderer.js').read_text(encoding='utf-8')
+          ai = (src / 'js/30-bot-ai.js').read_text(encoding='utf-8')
+          contracts = (src / 'CONTRACTS.md').read_text(encoding='utf-8')
+          release = json.loads((src / 'RELEASE.json').read_text(encoding='utf-8'))
+
+          expected_release = {
+              'version': '12.193',
+              'name': 'Operator Muzzle-Light Response',
+              'build_id': '12.193.0-operator-muzzle-light-response'
+          }
+          assert release == expected_release, release
+          for token in (
+              "revision: '12.193-scoped-muzzle-light-1'",
+              'radius: 1.20',
+              'emissiveLift: 0.42',
+              'warmMix: 0.30',
+              'function operatorMuzzleLightResponseForTest()',
+              'const muzzleResponse = operatorMuzzleLightContribution(model, alpha, surface)',
+              'operatorMuzzleLightColourScratch[0]',
+              'additionalDrawCalls: 0',
+              'additionalShaderUniforms: 0'
+          ):
+              assert token in renderer, token
+          for token in (
+              'let muzzleLightOrigin = null',
+              'setOperatorMuzzleLight(muzzleLightOrigin, bot.flash)',
+              'if (muzzleLightOrigin) clearOperatorMuzzleLight()',
+              'drawMesh(glMeshes.sphere, [1, 0.58, 0.10]'
+          ):
+              assert token in character, token
+          assert character.count('drawMesh(glMeshes.sphere, [1, 0.58, 0.10]') == 1
+          assert character.count('setOperatorMuzzleLight(muzzleLightOrigin, bot.flash)') == 1
+          assert ai.count('this.flash = 1;') == 1
+          assert 'Do not start a muzzle flash, consume a burst round or apply damage' in ai
+          assert 'this.flash = Math.max(0, this.flash - dt * 9);' in ai
+          for regression in (
+              'operatorEnvironmentalLightPickupForTest',
+              'operatorSilhouetteSeparationForTest',
+              'operatorMuzzleLightResponseForTest'
+          ):
+              assert regression in renderer, regression
+          for regression in (
+              'operatorContactShadowForTest',
+              'operatorAmbientOcclusionForTest',
+              'operatorAnimationPresentationAudit'
+          ):
+              assert regression in character, regression
+          assert 'A third-person operator muzzle-light response may reuse only the authoritative' in contracts
+          assert 'Current save schema is 19.' in contracts
+          assert 'Current diagnostics schema is 1.' in contracts
+          print('Targeted Build 12.193 safeguards passed.')
+          PY
+
+      - name: Build second deterministic copy
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          cmp -s js/strikewatch.dev.js /tmp/strikewatch-12.193-first.js
+          cmp -s dist/strikewatch-build-12.193.html /tmp/strikewatch-12.193-first.html
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.193.html > /tmp/strikewatch-12.193-second.sha256
+          diff -u /tmp/strikewatch-12.193-first.sha256 /tmp/strikewatch-12.193-second.sha256
+
+      - name: Publish verified standalone and verify reports
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.193.html cod.html
+          cmp -s cod.html strikewatch-source/dist/strikewatch-build-12.193.html
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+
+          src = Path('strikewatch-source')
+          standalone = src / 'dist/strikewatch-build-12.193.html'
+          root = Path('cod.html')
+          assert standalone.read_bytes() == root.read_bytes()
+          css = json.loads((src / 'dist/strikewatch-build-12.193-css-debt.json').read_text(encoding='utf-8'))
+          size = json.loads((src / 'dist/strikewatch-build-12.193-size.json').read_text(encoding='utf-8'))
+          assert css['version'] == '12.193' and css['within_budget'] is True
+          assert css['stylesheets'] == 23
+          assert size['version'] == '12.193'
+          assert size['javascript_raw_reduction_percent'] >= 2.5
+          digest = hashlib.sha256(root.read_bytes()).hexdigest()
+          print('Standalone SHA256:', digest)
+          print('CSS debt:', json.dumps(css, sort_keys=True))
+          print('Size report:', json.dumps(size, sort_keys=True))
+          PY
+
+      - name: Remove temporary release machinery
+        run: |
+          rm -f .github/scripts/release-12-193.py
+          rm -f .github/workflows/release-12-193.yml
+          rm -f .github/release-12-193.trigger
+
+      - name: Commit complete Build 12.193 release
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Build 12.193: operator muzzle-light response'
+          git push origin HEAD:main
