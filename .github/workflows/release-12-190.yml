@@ -1,0 +1,216 @@
+name: Release Strikewatch 12.190
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/release-12-190.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-strikewatch-12-190
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build, verify and publish
+        shell: bash
+        run: |
+          cat > /tmp/release-12-190.sh <<'BASH'
+          set -Eeuo pipefail
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.189',
+              'name': 'Mobile Equipment Preview Framing',
+              'build_id': '12.189.0-mobile-equipment-preview-framing'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected predecessor release: {release!r}')
+          PY
+
+          python3 -m py_compile .github/scripts/release-12-190.py
+          python3 .github/scripts/release-12-190.py
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.190',
+              'name': 'Operator Environmental Light Pickup',
+              'build_id': '12.190.0-operator-environmental-light-pickup'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected release metadata: {release!r}')
+
+          required_docs = {
+              'HANDOFF.md': '- Build: **12.190 — Operator Environmental Light Pickup**',
+              'AGENTS.md': 'Build 12.190 owns operator environmental light pickup',
+              'README.md': '# Strikewatch Source 12.190',
+              'PROJECT.md': 'Build 12.190 improves battle presentation',
+              'CHANGELOG.md': '## 12.190 — Operator Environmental Light Pickup',
+              '00-READ-FIRST-GPT.md': 'Current release: **Strikewatch Build 12.190 — Operator Environmental Light Pickup**.',
+              'CONTRACTS.md': 'Moving local-detail geometry may take only a bounded smooth share'
+          }
+          for name, expected_text in required_docs.items():
+              text = Path('strikewatch-source', name).read_text(encoding='utf-8')
+              if expected_text not in text:
+                  raise SystemExit(f'{name} missing release requirement: {expected_text}')
+          PY
+
+          grep -F "const BUILD_VERSION = '12.190'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_NAME = 'Operator Environmental Light Pickup'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_ID = '12.190.0-operator-environmental-light-pickup'" strikewatch-source/js/00-core.js
+          grep -F '<title>Strikewatch 12.190: Operator Environmental Light Pickup</title>' strikewatch-source/index.html
+          grep -F 'id="managerBuildVersion">12.190</b>' strikewatch-source/index.html
+          grep -F 'id="mobileCommandBuildVersion">12.190</b>' strikewatch-source/index.html
+          test -f strikewatch-source/AUDIT-12.190.md
+
+          python3 - <<'PY'
+          from pathlib import Path
+          renderer = Path('strikewatch-source/js/60-renderer-core.js').read_text(encoding='utf-8')
+          required = [
+              "const OPERATOR_ENVIRONMENT_LIGHTING = Object.freeze({",
+              "revision: '12.190-stable-local-pickup-1'",
+              'localShare: 0.25',
+              'stableShare: 0.75',
+              'coolAverage: 0.34',
+              'warmAverage: 0.22',
+              'movingFlicker: 1',
+              'function operatorEnvironmentalLightPickupForTest()',
+              'float movingCoolPool = mix(${OPERATOR_ENVIRONMENT_LIGHTING.coolAverage.toFixed(2)}, coolPool, ${OPERATOR_ENVIRONMENT_LIGHTING.localShare.toFixed(2)});',
+              'float movingWarmPool = mix(${OPERATOR_ENVIRONMENT_LIGHTING.warmAverage.toFixed(2)}, warmPool, ${OPERATOR_ENVIRONMENT_LIGHTING.localShare.toFixed(2)});',
+              'coolPool = mix(coolPool, movingCoolPool, moving);',
+              'warmPool = mix(warmPool, movingWarmPool, moving);',
+              '${OPERATOR_ENVIRONMENT_LIGHTING.movingFlicker.toFixed(1)}, moving);',
+              'additionalDrawCalls: 0',
+              'additionalShaderUniforms: 0'
+          ]
+          missing = [value for value in required if value not in renderer]
+          if missing:
+              raise SystemExit(f'Missing environmental-light source requirements: {missing}')
+          if renderer.count('function operatorEnvironmentalLightPickupForTest()') != 1:
+              raise SystemExit('Environmental-light diagnostic count is not one')
+          if 'coolPool = mix(coolPool, 0.34, moving);' in renderer or 'warmPool = mix(warmPool, 0.22, moving);' in renderer:
+              raise SystemExit('Legacy fixed moving-light replacement remains active')
+          if '`' in renderer[renderer.index('// Build 12.190: moving geometry'):renderer.index('function operatorEnvironmentalLightPickupForTest()')]:
+              raise SystemExit('Backtick found in Build 12.190 shader-adjacent comment')
+          PY
+
+          for hook in operatorEnvironmentalLightPickupForTest operatorAmbientOcclusionForTest dynamicActorCullingForTest allArenaGeometryIntegrityForTest arenaGeometryIntegrityForTest arenaSurfaceSampleForTest staticOcclusionForTest operatorViewOcclusionForTest weaponGeometryIntegrityForTest operatorWeaponAttachmentForTest; do
+            grep -R -F "$hook" strikewatch-source/js >/dev/null
+          done
+
+          cd strikewatch-source
+          python3 -m py_compile build.py
+          python3 build.py
+          test -f dist/strikewatch-build-12.190.html
+          test -f dist/strikewatch-build-12.190-size.json
+          test -f dist/strikewatch-build-12.190-css-debt.json
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.190.html /tmp/strikewatch-build.first.html
+          cp dist/strikewatch-build-12.190-size.json /tmp/strikewatch-size.first.json
+          cp dist/strikewatch-build-12.190-css-debt.json /tmp/strikewatch-css.first.json
+          cd ..
+
+          modular_count=0
+          for file in strikewatch-source/js/*.js; do
+            [ "$(basename "$file")" = 'strikewatch.dev.js' ] && continue
+            node --check "$file"
+            modular_count=$((modular_count + 1))
+          done
+          node --check strikewatch-source/js/strikewatch.dev.js
+          echo "Parsed ${modular_count} modular scripts and the generated bundle."
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+          html = Path('strikewatch-source/dist/strikewatch-build-12.190.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          if not scripts:
+              raise SystemExit('No standalone inline scripts found')
+          with tempfile.TemporaryDirectory() as temp:
+              for index, script in enumerate(scripts):
+                  path = Path(temp) / f'inline-{index}.js'
+                  path.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(path)], check=True)
+          print(f'Parsed {len(scripts)} standalone inline scripts.')
+          PY
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.190-css-debt.json').read_text(encoding='utf-8'))
+          if not report.get('within_budget'):
+              raise SystemExit(f'CSS debt report is outside budget: {report!r}')
+          if report.get('important_declarations') != 2182:
+              raise SystemExit(f'Unexpected !important count: {report.get("important_declarations")}')
+          if report.get('media_queries') != 474:
+              raise SystemExit(f'Unexpected media-query count: {report.get("media_queries")}')
+          PY
+
+          cd strikewatch-source
+          python3 build.py
+          cd ..
+          cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build.first.html strikewatch-source/dist/strikewatch-build-12.190.html
+          cmp /tmp/strikewatch-size.first.json strikewatch-source/dist/strikewatch-build-12.190-size.json
+          cmp /tmp/strikewatch-css.first.json strikewatch-source/dist/strikewatch-build-12.190-css-debt.json
+
+          cp strikewatch-source/dist/strikewatch-build-12.190.html cod.html
+          cmp cod.html strikewatch-source/dist/strikewatch-build-12.190.html
+          git diff --check
+          BASH
+
+          LOG=.github/release-12-190-last.log
+          set +e
+          bash /tmp/release-12-190.sh 2>&1 | tee "$LOG"
+          release_status=${PIPESTATUS[0]}
+          set -e
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$release_status" -ne 0 ]; then
+            printf '\nFAILED_EXIT_CODE=%s\n' "$release_status" >> "$LOG"
+            git add "$LOG"
+            git commit -m 'Record Build 12.190 release failure'
+            git push origin HEAD:main
+            exit "$release_status"
+          fi
+
+          rm -f "$LOG"
+          rm -f .github/scripts/release-12-190.py
+          rm -f .github/workflows/release-12-190.yml
+          rm -f .github/triggers/release-12-190.txt
+          git add -A
+          git diff --cached --quiet && { echo 'No release changes produced.'; exit 1; }
+          git commit -m 'Build 12.190: operator environmental light pickup'
+          git push origin HEAD:main
