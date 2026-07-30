@@ -53,6 +53,7 @@ jobs:
           PY
 
           python3 .github/scripts/release-12-188.py
+          python3 .github/scripts/release-12-188-docs.py
 
           grep -F "const BUILD_VERSION = '12.188'" strikewatch-source/js/00-core.js
           grep -F "const BUILD_NAME = 'Armour Preview Optimisation'" strikewatch-source/js/00-core.js
@@ -76,10 +77,18 @@ jobs:
           }
           if release != expected:
               raise SystemExit(f'Unexpected release metadata: {release!r}')
-          for path in ['HANDOFF.md', 'AGENTS.md', 'README.md', 'PROJECT.md', 'CHANGELOG.md']:
+          required_docs = {
+              'HANDOFF.md': '- Build: **12.188 — Armour Preview Optimisation**',
+              'AGENTS.md': 'Build 12.188 owns armour preview framing and Supply Depot armour-card performance.',
+              'README.md': '# Strikewatch Source 12.188',
+              'PROJECT.md': 'Build 12.188 improves armour presentation and Supply Depot performance',
+              'CHANGELOG.md': '## 12.188 — Armour Preview Optimisation',
+              '00-READ-FIRST-GPT.md': 'Current release: **Strikewatch Build 12.188 — Armour Preview Optimisation**.'
+          }
+          for path, expected_text in required_docs.items():
               text = Path('strikewatch-source', path).read_text(encoding='utf-8')
-              if '12.188' not in text:
-                  raise SystemExit(f'{path} does not reference 12.188')
+              if expected_text not in text:
+                  raise SystemExit(f'{path} missing current release identity: {expected_text}')
           PY
 
           cd strikewatch-source
@@ -173,6 +182,7 @@ jobs:
 
           rm -f "$LOG"
           rm -f .github/scripts/release-12-188.py
+          rm -f .github/scripts/release-12-188-docs.py
           rm -f .github/workflows/release-12-188.yml
           rm -f .github/triggers/release-12-188.txt
           git add -A
