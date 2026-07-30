@@ -1,0 +1,305 @@
+name: Release Strikewatch 12.197
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/release-12-197.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-strikewatch-12-197
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPYCACHEPREFIX: /tmp/strikewatch-pycache
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build, verify and publish
+        shell: bash
+        run: |
+          cat > /tmp/release-12-197.sh <<'BASH'
+          set -Eeuo pipefail
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.196',
+              'name': 'Clean Spectator Handoffs',
+              'build_id': '12.196.0-clean-spectator-handoffs'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected predecessor release: {release!r}')
+          PY
+
+          python3 -m py_compile .github/scripts/release-12-197.py
+          python3 .github/scripts/release-12-197.py
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.197',
+              'name': 'Device-Independent Match Simulation',
+              'build_id': '12.197.0-device-independent-match-simulation'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected prepared release: {release!r}')
+          required_docs = {
+              'HANDOFF.md': '- Build: **12.197 — Device-Independent Match Simulation**',
+              'AGENTS.md': 'Build 12.197 owns device-independent match work scheduling',
+              'README.md': '# Strikewatch Source 12.197',
+              'PROJECT.md': 'Build 12.197 separates adaptive presentation quality from match intelligence',
+              'CHANGELOG.md': '## 12.197 — Device-Independent Match Simulation',
+              '00-READ-FIRST-GPT.md': 'Current release: **Strikewatch Build 12.197 — Device-Independent Match Simulation**.',
+              'CONTRACTS.md': '- Adaptive device quality is presentation-only.',
+              'ARCHITECTURE.md': 'fixed simulation-window planning budgets'
+          }
+          for name, required in required_docs.items():
+              text = Path('strikewatch-source', name).read_text(encoding='utf-8')
+              if required not in text:
+                  raise SystemExit(f'{name} missing release requirement: {required}')
+          if not Path('strikewatch-source/AUDIT-12.197.md').is_file():
+              raise SystemExit('AUDIT-12.197.md was not created')
+          PY
+
+          grep -F "const BUILD_VERSION = '12.197'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_NAME = 'Device-Independent Match Simulation'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_ID = '12.197.0-device-independent-match-simulation'" strikewatch-source/js/00-core.js
+          grep -F '<title>Strikewatch 12.197: Device-Independent Match Simulation</title>' strikewatch-source/index.html
+          grep -F 'id="managerBuildVersion">12.197</b>' strikewatch-source/index.html
+          grep -F 'id="mobileCommandBuildVersion">12.197</b>' strikewatch-source/index.html
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          core = Path('strikewatch-source/js/00-core.js').read_text(encoding='utf-8')
+          nav = Path('strikewatch-source/js/20-navigation.js').read_text(encoding='utf-8')
+          bot = Path('strikewatch-source/js/30-bot-ai.js').read_text(encoding='utf-8')
+          flow = Path('strikewatch-source/js/40-match-flow.js').read_text(encoding='utf-8')
+          runtime = Path('strikewatch-source/js/70-runtime.js').read_text(encoding='utf-8')
+
+          required_core = [
+              "revision: '12.197-device-independent-simulation-1'",
+              'windowSeconds: 1 / 60',
+              'perceptionIdleSeconds: 0.068',
+              'perceptionCombatSeconds: 0.045',
+              'perceptionPerWindow: 4',
+              'tacticalPerWindow: 4',
+              'navigationNormalPerWindow: 2',
+              'navigationUrgentPerWindow: 3',
+              'function simulationWorkWindowIndexForTime(',
+              'function resetSimulationWorkWindow(',
+              'function beginSimulationWorkWindow()',
+              'function simulationQualityIndependenceForTest()'
+          ]
+          missing = [item for item in required_core if item not in core]
+          if missing:
+              raise SystemExit(f'Missing simulation policy requirements: {missing}')
+
+          perception = core[core.index('  function runtimePerceptionInterval'):core.index('  function runtimeOperatorDetailTier')]
+          if 'runtimeQualityTier' in perception:
+              raise SystemExit('Render quality still changes perception cadence')
+          if 'SIMULATION_WORK_POLICY.perceptionCombatSeconds' not in perception or 'SIMULATION_WORK_POLICY.perceptionIdleSeconds' not in perception:
+              raise SystemExit('Perception cadence is not fixed to the simulation policy')
+
+          bot_limits = bot[bot.index('  function botWorkLimits'):bot.index('  function beginBotWorkFrame')]
+          if 'runtimeQualityTier' in bot_limits:
+              raise SystemExit('Render quality still changes bot work limits')
+          if 'return BOT_WORK_LIMITS;' not in bot_limits:
+              raise SystemExit('Bot work limits are not fixed')
+
+          nav_limits = nav[nav.index('  function consumeNavigationPlanSlot'):nav.index('  function navigationPlannerSnapshot')]
+          if 'runtimeQualityTier' in nav_limits:
+              raise SystemExit('Render quality still changes navigation limits')
+          if 'NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME : NAVIGATION_PLAN_BUDGET_PER_FRAME' not in nav_limits:
+              raise SystemExit('Navigation work is not using fixed limits')
+
+          if runtime.count('beginSimulationWorkWindow();') != 1:
+              raise SystemExit('Simulation work-window entry is missing or duplicated')
+          if 'const step = Math.min(SIMULATION_WORK_POLICY.windowSeconds, remaining);' not in runtime:
+              raise SystemExit('Match simulation is not split to the fixed 60Hz work window')
+          if 'One navigation budget spans every fixed simulation substep produced by' in runtime:
+              raise SystemExit('Legacy display-frame budget reset survived')
+          update_start = runtime.index('  function update(dt)')
+          update_end = runtime.index('  function render(', update_start)
+          update_block = runtime[update_start:update_end]
+          if 'beginNavigationPlanningFrame()' in update_block or 'beginBotWorkFrame()' in update_block:
+              raise SystemExit('Display-frame work reset survived in update()')
+          if "resetSimulationWorkWindow('round-start')" not in flow:
+              raise SystemExit('Round start does not invalidate the work window')
+          if 'simulationQualityIndependenceForTest: () => simulationQualityIndependenceForTest()' not in runtime:
+              raise SystemExit('Public simulation-independence diagnostic is missing')
+          if 'simulationWorkPolicyForTest: () => simulationWorkPolicySnapshot()' not in runtime:
+              raise SystemExit('Public simulation-policy diagnostic is missing')
+
+          if 'runtimeQualityTier <= 0' not in core[core.index('  function runtimeOperatorDetailTier'):core.index('  function simulationQualityIndependenceForTest')]:
+              # The function now normalises a passed tier rather than directly comparing the global.
+              if 'renderTier <= 0' not in core[core.index('  function runtimeOperatorDetailTier'):core.index('  function simulationQualityIndependenceForTest')]:
+                  raise SystemExit('Adaptive operator LOD was removed unexpectedly')
+          if 'runtimeQualityTier <= 0' not in runtime[runtime.index('  function updateAdaptiveRenderResolution'):runtime.index('  function recordRuntimePerformance')]:
+              raise SystemExit('Adaptive render-resolution tiering was removed unexpectedly')
+
+          for marker in [
+              "revision: '12.196-clean-spectator-handoff-1'",
+              "revision: '12.195-combat-aware-director-1'",
+              'spectatorDeathSwitchTimer = 2;'
+          ]:
+              if marker not in (core + runtime + Path('strikewatch-source/js/60-renderer-core.js').read_text(encoding='utf-8')):
+                  raise SystemExit(f'Adjacent spectator invariant missing: {marker}')
+          PY
+
+          node - <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          const source = fs.readFileSync('strikewatch-source/js/00-core.js', 'utf8');
+          const start = source.indexOf('  const SIMULATION_WORK_POLICY');
+          const end = source.indexOf('  let soundEvents', start);
+          if (start < 0 || end < 0) throw new Error('Could not isolate simulation work policy source');
+          const snippet = source.slice(start, end);
+          const context = {
+            runtimeQualityTier: 2,
+            clamp: (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value)),
+            beginNavigationPlanningFrame: () => true,
+            beginBotWorkFrame: () => true
+          };
+          vm.createContext(context);
+          vm.runInContext(`${snippet}\nthis.__result = simulationQualityIndependenceForTest();\nthis.__windows = [0, 1/120, 1/60, 1/40, 2/60].map(simulationWorkWindowIndexForTime);`, context);
+          const result = context.__result;
+          if (!result?.ok) throw new Error(`simulationQualityIndependenceForTest failed: ${JSON.stringify(result)}`);
+          if (result.workWindowHz !== 60) throw new Error(`Unexpected work-window frequency: ${result.workWindowHz}`);
+          if (result.simulationDependsOnRenderTier !== false || result.renderQualityStillAdaptive !== true) {
+            throw new Error('Render/simulation separation failed');
+          }
+          if (result.saveSchemaChanged !== false || result.diagnosticsSchemaChanged !== false) {
+            throw new Error('Schema boundary changed');
+          }
+          if (JSON.stringify(context.__windows) !== JSON.stringify([0, 0, 1, 1, 2])) {
+            throw new Error(`Simulation-time window indexing failed: ${JSON.stringify(context.__windows)}`);
+          }
+          console.log(JSON.stringify(result));
+          JS
+
+          for hook in simulationQualityIndependenceForTest simulationWorkPolicyForTest runtimeQualityGovernorForTest adaptiveResolutionForTest spectatorHandoffPresentationForTest spectatorDirectorForTest spectatorHandoffForTest operatorTracerOriginForTest operatorMuzzleLightResponseForTest operatorEnvironmentalLightPickupForTest operatorSilhouetteSeparationForTest operatorContactShadowForTest operatorAmbientOcclusionForTest dynamicActorCullingForTest arenaSurfaceSampleForTest navigationPlannerSnapshot botWorkBudgetSnapshot; do
+            grep -R -F "$hook" strikewatch-source/js >/dev/null
+          done
+
+          cd strikewatch-source
+          python3 -m py_compile build.py
+          python3 build.py
+          test -f dist/strikewatch-build-12.197.html
+          test -f dist/strikewatch-build-12.197-size.json
+          test -f dist/strikewatch-build-12.197-css-debt.json
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.197.html /tmp/strikewatch-build.first.html
+          cp dist/strikewatch-build-12.197-size.json /tmp/strikewatch-size.first.json
+          cp dist/strikewatch-build-12.197-css-debt.json /tmp/strikewatch-css.first.json
+          cd ..
+
+          for file in strikewatch-source/js/*.js; do
+            [ "$(basename "$file")" = 'strikewatch.dev.js' ] && continue
+            node --check "$file"
+          done
+          node --check strikewatch-source/js/strikewatch.dev.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+          html = Path('strikewatch-source/dist/strikewatch-build-12.197.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          if not scripts:
+              raise SystemExit('No standalone inline scripts found')
+          with tempfile.TemporaryDirectory() as temp:
+              for index, script in enumerate(scripts):
+                  path = Path(temp) / f'inline-{index}.js'
+                  path.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(path)], check=True)
+          print(f'Parsed {len(scripts)} standalone inline scripts.')
+          PY
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.197-css-debt.json').read_text(encoding='utf-8'))
+          if not report.get('within_budget'):
+              raise SystemExit(f'CSS debt report is outside budget: {report!r}')
+          if report.get('stylesheets') != 23:
+              raise SystemExit(f'Unexpected stylesheet count: {report.get("stylesheets")}')
+          size = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.197-size.json').read_text(encoding='utf-8'))
+          if size.get('version') != '12.197':
+              raise SystemExit(f'Unexpected size report version: {size!r}')
+          if size.get('javascript_raw_reduction_percent', 0) < 2.5:
+              raise SystemExit(f'JavaScript release reduction below budget: {size!r}')
+          PY
+
+          cd strikewatch-source
+          python3 build.py
+          cd ..
+          cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build.first.html strikewatch-source/dist/strikewatch-build-12.197.html
+          cmp /tmp/strikewatch-size.first.json strikewatch-source/dist/strikewatch-build-12.197-size.json
+          cmp /tmp/strikewatch-css.first.json strikewatch-source/dist/strikewatch-build-12.197-css-debt.json
+
+          cp strikewatch-source/dist/strikewatch-build-12.197.html cod.html
+          cmp cod.html strikewatch-source/dist/strikewatch-build-12.197.html
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f -name '*.pyc' -delete
+          test ! -e .github/scripts/__pycache__
+          test ! -e strikewatch-source/__pycache__
+          git diff --check
+          BASH
+
+          mkdir -p .github/release-failures
+          LOG=.github/release-failures/release-12-197.log
+          set +e
+          bash /tmp/release-12-197.sh 2>&1 | tee "$LOG"
+          release_status=${PIPESTATUS[0]}
+          set -e
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$release_status" -ne 0 ]; then
+            printf '\nFAILED_EXIT_CODE=%s\n' "$release_status" >> "$LOG"
+            git add "$LOG"
+            git commit -m 'Record Build 12.197 release failure'
+            git push origin HEAD:main
+            exit "$release_status"
+          fi
+
+          rm -f "$LOG"
+          rm -f .github/scripts/release-12-197.py
+          rm -f .github/workflows/release-12-197.yml
+          rm -f .github/triggers/release-12-197.txt
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f -name '*.pyc' -delete
+          git add -A
+          git diff --cached --quiet && { echo 'No release changes produced.'; exit 1; }
+          git diff --cached --check
+          git commit -m 'Build 12.197: device-independent match simulation'
+          git push origin HEAD:main
