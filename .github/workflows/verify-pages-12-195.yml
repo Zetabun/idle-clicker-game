@@ -1,0 +1,97 @@
+name: Verify Strikewatch Pages 12.195
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/verify-pages-12-195.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-strikewatch-pages-12-195
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify public Build 12.195
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base_url='https://zetabun.github.io/idle-clicker-game/cod.html'
+          expected_title='<title>Strikewatch 12.195: Combat-Aware Spectator Director</title>'
+          expected_build="const BUILD_ID = '12.195.0-combat-aware-spectator-director'"
+          log=/tmp/pages-12-195.log
+          : > "$log"
+          verified=0
+
+          for attempt in $(seq 1 30); do
+            url="${base_url}?v=12.195&release=587bbbc35a612a20e3040975a3dc3bf300802750&attempt=${attempt}"
+            printf 'ATTEMPT=%s URL=%s\n' "$attempt" "$url" >> "$log"
+            if curl -fsSL --connect-timeout 15 --max-time 60 \
+              -H 'Cache-Control: no-cache, no-store, max-age=0' \
+              -H 'Pragma: no-cache' \
+              -D /tmp/pages-12-195.headers \
+              "$url" -o /tmp/pages-12-195.html; then
+              title_ok=0
+              build_ok=0
+              grep -F "$expected_title" /tmp/pages-12-195.html >/dev/null && title_ok=1
+              grep -F "$expected_build" /tmp/pages-12-195.html >/dev/null && build_ok=1
+              printf 'HTTP_OK=1 TITLE_OK=%s BUILD_OK=%s\n' "$title_ok" "$build_ok" >> "$log"
+              if [ "$title_ok" -eq 1 ] && [ "$build_ok" -eq 1 ]; then
+                verified=1
+                break
+              fi
+            else
+              printf 'HTTP_OK=0\n' >> "$log"
+            fi
+            sleep 5
+          done
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$verified" -ne 1 ]; then
+            mkdir -p .github/release-failures
+            cp "$log" .github/release-failures/pages-12-195.log
+            if [ -f /tmp/pages-12-195.headers ]; then
+              printf '\nLAST_HEADERS\n' >> .github/release-failures/pages-12-195.log
+              sed -n '1,40p' /tmp/pages-12-195.headers >> .github/release-failures/pages-12-195.log
+            fi
+            git add .github/release-failures/pages-12-195.log
+            git commit -m 'Record Build 12.195 Pages verification failure'
+            git push origin HEAD:main
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          audit = Path('strikewatch-source/AUDIT-12.195.md')
+          text = audit.read_text(encoding='utf-8')
+          heading = '## Public deployment verification'
+          if heading not in text:
+              text = text.rstrip() + '''
+
+## Public deployment verification
+
+GitHub Pages was requested directly after the separate user-authored publish push. The public `cod.html` response returned the exact Build 12.195 title and `12.195.0-combat-aware-spectator-director` build ID. The verified release commit is `587bbbc35a612a20e3040975a3dc3bf300802750`.
+'''
+              audit.write_text(text, encoding='utf-8', newline='\n')
+          PY
+
+          rm -f .github/release-failures/pages-12-195.log
+          rm -f .github/workflows/verify-pages-12-195.yml
+          rm -f .github/triggers/verify-pages-12-195.txt
+          git add -A
+          git diff --cached --check
+          git commit -m 'Verify Build 12.195 live on GitHub Pages'
+          git push origin HEAD:main
