@@ -15,18 +15,21 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 3. Trigger it with a third, distinct commit.
 4. The workflow must build twice, require identical hashes, parse source/generated/standalone JavaScript, run targeted checks, copy the verified standalone to root `cod.html`, confirm byte identity, commit the complete release, and remove its temporary script/workflow/trigger files.
 5. Never claim deployment until the generated release commit is visible on `main` and `RELEASE.json` plus `cod.html` confirm the new build.
+6. A release commit created by the workflow must be followed by a distinct user-authored push so branch-based GitHub Pages rebuilds; verify the public `cod.html` build identity before calling it live.
 
 ## Current release
 
-- Build: **12.194 — Muzzle-Anchored Tracers**
-- Build ID: `12.194.0-muzzle-anchored-tracers`
+- Build: **12.195 — Combat-Aware Spectator Director**
+- Build ID: `12.195.0-combat-aware-spectator-director`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.194.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.195.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.195 owns the AUTO spectator director in `js/70-runtime.js`. Preserve `SPECTATOR_CAMERA_DIRECTOR`, `spectatorDirectorForTest()`, the 3.2-second ordinary hold, 1.25-second live-fire exception, 8.5-second maximum hold and current-view stability bias. Rank only already-computed bot presentation state; never call perception, LOS, navigation or combat from the director. Manual previous/next must disable AUTO and the existing two-second death handoff must remain unchanged. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.195.md`.
 
 Build 12.194 owns muzzle-anchored third-person tracers across `js/61-world-renderer.js` and `js/62-character-renderer.js`. Preserve `OPERATOR_TRACER_ORIGIN`, `operatorTracerOriginForTest()`, the one reusable `bot.renderMuzzlePoint` and the exact `operatorSharedWeaponRig(...).muzzle` transform. `spawnTracer()` must prefer the rendered muzzle and retain the old torso origin only as a bounded startup fallback. Keep the 28-tracer cap, 0.085 lifetime, endpoint spread, misses, impacts and all combat authority unchanged. Do not add draws, meshes, textures, passes, uniforms or per-frame allocations. Keep Builds 12.190-12.193 and arena/navigation integrity green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.194.md`.
 

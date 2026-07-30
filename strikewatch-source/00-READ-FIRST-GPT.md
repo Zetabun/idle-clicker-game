@@ -11,6 +11,6 @@ Read:
 Then load only the task-specific section or audit selected by the routing table
 in `HANDOFF.md`. Do not read every Markdown file or every historical audit.
 
-Current release: **Strikewatch Build 12.194 — Muzzle-Anchored Tracers**.
+Current release: **Strikewatch Build 12.195 — Combat-Aware Spectator Director**.
 Editable source is this directory; root `cod.html` is the deployed copy of the
 verified generated standalone.

@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.194';
-  const BUILD_NAME = 'Muzzle-Anchored Tracers';
-  const BUILD_ID = '12.194.0-muzzle-anchored-tracers';
+  const BUILD_VERSION = '12.195';
+  const BUILD_NAME = 'Combat-Aware Spectator Director';
+  const BUILD_ID = '12.195.0-combat-aware-spectator-director';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -48545,6 +48545,172 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (changed) renderFeed();
   }
 
+  // Build 12.195: AUTO spectating now ranks already-computed presentation
+  // state instead of rotating blindly through the Active Five. This director
+  // never asks AI for new perception work and never writes simulation state.
+  const SPECTATOR_CAMERA_DIRECTOR = Object.freeze({
+    revision: '12.195-combat-aware-director-1',
+    sampleInterval: 0.22,
+    urgentMinimumHold: 1.25,
+    minimumHold: 3.2,
+    maximumHold: 8.5,
+    switchMargin: 18,
+    urgentMargin: 26,
+    maximumHoldTolerance: 4,
+    currentViewBias: 7
+  });
+  const spectatorDirectorState = {
+    sampleTimer: 0,
+    holdTime: 0,
+    lastIndex: -1,
+    switches: 0,
+    lastReason: 'initial',
+    lastScore: 0
+  };
+
+  function resetSpectatorDirectorState(index = spectatorIndex, reason = 'reset') {
+    spectatorDirectorState.sampleTimer = SPECTATOR_CAMERA_DIRECTOR.sampleInterval;
+    spectatorDirectorState.holdTime = 0;
+    spectatorDirectorState.lastIndex = Number.isFinite(Number(index)) ? Number(index) : -1;
+    spectatorDirectorState.lastReason = String(reason || 'reset');
+    spectatorDirectorState.lastScore = 0;
+    autoTimer = SPECTATOR_CAMERA_DIRECTOR.sampleInterval;
+    return { ...spectatorDirectorState };
+  }
+
+  function spectatorDirectorInterest(bot, current = false) {
+    if (!bot || !bot.alive || bot.team !== CAREER_OWNED_TEAM) {
+      return { score: -Infinity, eligible: false, visibleTarget: false, firing: false, underFire: false, reloading: false, targetDistance: Infinity };
+    }
+    const visibleTarget = Boolean(bot.target?.alive);
+    const sightCandidate = !visibleTarget && Boolean(bot.sightCandidate?.alive);
+    const target = visibleTarget ? bot.target : (sightCandidate ? bot.sightCandidate : null);
+    const targetDistance = target
+      ? Math.hypot((Number(bot.x) || 0) - (Number(target.x) || 0), (Number(bot.y) || 0) - (Number(target.y) || 0))
+      : Infinity;
+    const firing = (Number(bot.flash) || 0) > 0.05 || (Number(bot.recoil) || 0) > 0.12;
+    const underFire = (Number(bot.hurt) || 0) > 0.08 || (Number(bot.hitReactionStrength) || 0) > 0.08 || (Number(bot.flinchTimer) || 0) > 0;
+    const reloading = (Number(bot.reloadTimer) || 0) > 0;
+    const swapping = (Number(bot.weaponSwapTimer) || 0) > 0;
+    const movement = clamp(Number(bot.motion) || Number(bot.visualMoveVelocity) || Number(bot.moveVelocity) || 0, 0, 1);
+    const maximumHealth = Math.max(1, Number(bot.maxHealth) || 100);
+    const healthRatio = clamp((Number(bot.health) || 0) / maximumHealth, 0, 1);
+    const weaponRange = Math.max(1, Number(bot.weapon?.range) || 10);
+    let score = 8;
+    if (visibleTarget) score += 52;
+    else if (sightCandidate) score += 25;
+    if (Number.isFinite(targetDistance)) score += clamp(16 - targetDistance, 0, 16);
+    if (visibleTarget && targetDistance <= weaponRange + 0.5) score += 8;
+    if (firing) score += 34;
+    if (underFire) score += 22;
+    if (bot.lastSeen?.alive && !visibleTarget) score += 10;
+    if (bot.heardSound && !visibleTarget && !sightCandidate) score += 5;
+    score += movement * 4;
+    if (healthRatio <= 0.35 && (visibleTarget || underFire)) score += 10;
+    if (reloading) score -= visibleTarget ? 12 : 5;
+    if (swapping) score -= 7;
+    if (current) score += SPECTATOR_CAMERA_DIRECTOR.currentViewBias;
+    return {
+      score,
+      eligible: true,
+      visibleTarget,
+      sightCandidate,
+      firing,
+      underFire,
+      reloading,
+      swapping,
+      targetDistance,
+      healthRatio,
+      movement
+    };
+  }
+
+  function spectatorDirectorDecision(entries, currentIndex, holdTime) {
+    const candidates = Array.isArray(entries) ? entries.filter(entry => entry?.interest?.eligible) : [];
+    const current = candidates.find(entry => entry.index === currentIndex) || null;
+    const best = candidates.slice().sort((a, b) => b.interest.score - a.interest.score || a.index - b.index)[0] || null;
+    const currentScore = current?.interest?.score ?? -Infinity;
+    if (!best || best.index === currentIndex) return { switch: false, reason: 'current-best', best, current, currentScore };
+    const held = Math.max(0, Number(holdTime) || 0);
+    const urgent = best.interest.firing
+      && !current?.interest?.firing
+      && !current?.interest?.visibleTarget
+      && best.interest.score >= currentScore + SPECTATOR_CAMERA_DIRECTOR.urgentMargin;
+    if (urgent && held >= SPECTATOR_CAMERA_DIRECTOR.urgentMinimumHold) {
+      return { switch: true, reason: 'live-fire', best, current, currentScore };
+    }
+    if (held < SPECTATOR_CAMERA_DIRECTOR.minimumHold) {
+      return { switch: false, reason: 'minimum-hold', best, current, currentScore };
+    }
+    if (best.interest.score >= currentScore + SPECTATOR_CAMERA_DIRECTOR.switchMargin) {
+      return { switch: true, reason: 'higher-interest', best, current, currentScore };
+    }
+    if (held >= SPECTATOR_CAMERA_DIRECTOR.maximumHold
+        && best.interest.score >= currentScore - SPECTATOR_CAMERA_DIRECTOR.maximumHoldTolerance) {
+      return { switch: true, reason: 'rotation-window', best, current, currentScore };
+    }
+    return { switch: false, reason: 'hold-current', best, current, currentScore };
+  }
+
+  function updateAutoSpectatorDirector(dt) {
+    if (!autoSpectate || roundEnding || matchEnding) return false;
+    const current = bots[spectatorIndex];
+    if (!current || !current.alive || current.team !== CAREER_OWNED_TEAM) return false;
+    if (spectatorDirectorState.lastIndex !== spectatorIndex) resetSpectatorDirectorState(spectatorIndex, 'view-changed');
+    spectatorDirectorState.holdTime += Math.max(0, Number(dt) || 0);
+    spectatorDirectorState.sampleTimer -= Math.max(0, Number(dt) || 0);
+    if (spectatorDirectorState.sampleTimer > 0) return false;
+    spectatorDirectorState.sampleTimer = SPECTATOR_CAMERA_DIRECTOR.sampleInterval;
+    const entries = bots
+      .map((bot, index) => ({ bot, index }))
+      .filter(entry => entry.bot.team === CAREER_OWNED_TEAM && entry.bot.alive)
+      .map(entry => ({ ...entry, interest: spectatorDirectorInterest(entry.bot, entry.index === spectatorIndex) }));
+    const decision = spectatorDirectorDecision(entries, spectatorIndex, spectatorDirectorState.holdTime);
+    spectatorDirectorState.lastScore = decision.currentScore;
+    spectatorDirectorState.lastReason = decision.reason;
+    if (!decision.switch || !decision.best) return false;
+    spectatorIndex = decision.best.index;
+    spectatorDirectorState.lastIndex = spectatorIndex;
+    spectatorDirectorState.holdTime = 0;
+    spectatorDirectorState.switches++;
+    spectatorDirectorState.lastScore = decision.best.interest.score;
+    autoTimer = SPECTATOR_CAMERA_DIRECTOR.sampleInterval;
+    updateHud();
+    return true;
+  }
+
+  function spectatorDirectorForTest() {
+    const idle = { alive: true, team: CAREER_OWNED_TEAM, x: 0, y: 0, health: 100, maxHealth: 100, motion: 0, weapon: { range: 10 } };
+    const aiming = { ...idle, x: 1, target: { alive: true, x: 8, y: 0 } };
+    const firing = { ...idle, x: 2, flash: 1, recoil: 0.6, target: { alive: true, x: 6, y: 0 } };
+    const reloading = { ...aiming, x: 3, reloadTimer: 0.8 };
+    const entries = [idle, aiming, firing, reloading].map((bot, index) => ({ bot, index, interest: spectatorDirectorInterest(bot, index === 0) }));
+    const early = spectatorDirectorDecision(entries, 0, 0.5);
+    const urgent = spectatorDirectorDecision(entries, 0, SPECTATOR_CAMERA_DIRECTOR.urgentMinimumHold + 0.01);
+    const settled = spectatorDirectorDecision(entries, 0, SPECTATOR_CAMERA_DIRECTOR.minimumHold + 0.01);
+    return {
+      ok: SPECTATOR_CAMERA_DIRECTOR.sampleInterval >= 0.18
+        && SPECTATOR_CAMERA_DIRECTOR.minimumHold >= 3
+        && SPECTATOR_CAMERA_DIRECTOR.maximumHold <= 9
+        && entries[2].interest.score > entries[1].interest.score
+        && entries[1].interest.score > entries[0].interest.score
+        && entries[2].interest.score > entries[3].interest.score
+        && early.switch === false
+        && urgent.switch === true && urgent.best.index === 2
+        && settled.switch === true && settled.best.index === 2,
+      revision: SPECTATOR_CAMERA_DIRECTOR.revision,
+      scores: entries.map(entry => Number(entry.interest.score.toFixed(2))),
+      earlyReason: early.reason,
+      urgentReason: urgent.reason,
+      settledReason: settled.reason,
+      manualControlsRemainAuthoritative: true,
+      deathHandoffSeconds: 2,
+      aiPerceptionCallsAdded: 0,
+      simulationWritesAdded: 0,
+      saveSchemaChanged: false
+    };
+  }
+
   function updateSpectatorDeathHandoff(dt) {
     if (roundEnding || matchEnding) {
       spectatorDeathSwitchTimer = 0;
@@ -48636,16 +48802,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     updateSpectatorDeathHandoff(dt);
-    if (autoSpectate && !roundEnding && !matchEnding) {
-      const current = bots[spectatorIndex];
-      if (current?.alive && current.team === CAREER_OWNED_TEAM) {
-        autoTimer -= dt;
-        if (autoTimer <= 0) {
-          selectLiving(1);
-          autoTimer = 4 + Math.random() * 3;
-        }
-      }
-    }
+    updateAutoSpectatorDirector(dt);
   }
 
   function update(dt) {
@@ -48854,6 +49011,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     autoBtn.textContent = 'AUTO: OFF';
     if (portraitAutoBtn) portraitAutoBtn.textContent = 'AUTO: OFF';
     selectLiving(direction);
+    resetSpectatorDirectorState(spectatorIndex, 'manual-selection');
   }
 
   function toggleAutoSpectate() {
@@ -48862,7 +49020,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     autoSpectate = !autoSpectate;
     autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`;
     if (portraitAutoBtn) portraitAutoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`;
-    autoTimer = 1;
+    resetSpectatorDirectorState(spectatorIndex, autoSpectate ? 'auto-enabled' : 'auto-disabled');
   }
 
   prevBtn.addEventListener('click', () => chooseSpectator(-1));
@@ -50252,6 +50410,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       state.lastState = state.openAmount >= 0.92 ? 'open' : (state.openAmount <= 0.08 ? 'closed' : 'opening');
       return doorStateSnapshot().find(door => door.id === state.id);
     },
+    spectatorDirectorForTest: () => spectatorDirectorForTest(),
     spectatorHandoffForTest: (deadIndex = spectatorIndex, seconds = 2.05) => {
       const safeIndex = clamp(Math.floor(Number(deadIndex) || 0), 0, Math.max(0, bots.length - 1));
       const current = bots[safeIndex];

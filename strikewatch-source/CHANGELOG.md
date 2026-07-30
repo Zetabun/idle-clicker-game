@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.195 — Combat-Aware Spectator Director
+
+- Replaces blind 4–7 second AUTO camera rotation with a combat-aware, stability-biased spectator director.
+- Prioritises visible contact, real firing and incoming pressure using already-computed bot presentation state only.
+- Preserves manual selection, the two-second death handoff, gameplay authority, saves and schemas.
+- See `AUDIT-12.195.md`.
+
 ## 12.194 — Muzzle-Anchored Tracers
 
 - Starts third-person tracer streaks at the exact reusable held-weapon muzzle point maintained by the renderer instead of the operator torso.

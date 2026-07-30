@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.194 aligns third-person tracer streaks with the exact held-weapon muzzle point maintained by the renderer, while preserving the previous torso origin only as a startup fallback. Combat, impact handling, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.194.md`.
+Build 12.195 replaces blind AUTO spectator rotation with a stable combat-aware director that follows visible contact and real firing while preserving manual controls, the death handoff, gameplay, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.195.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
