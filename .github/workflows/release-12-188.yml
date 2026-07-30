@@ -23,8 +23,22 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Require expected predecessor
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build, verify and publish
+        shell: bash
         run: |
+          cat > /tmp/release-12-188.sh <<'BASH'
+          set -Eeuo pipefail
+
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -38,21 +52,8 @@ jobs:
               raise SystemExit(f'Unexpected predecessor release: {release!r}')
           PY
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+          python3 .github/scripts/release-12-188.py
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Apply release patch
-        run: python3 .github/scripts/release-12-188.py
-
-      - name: Verify release identity and source routing
-        run: |
           grep -F "const BUILD_VERSION = '12.188'" strikewatch-source/js/00-core.js
           grep -F "const BUILD_NAME = 'Armour Preview Optimisation'" strikewatch-source/js/00-core.js
           grep -F "const BUILD_ID = '12.188.0-armour-preview-optimisation'" strikewatch-source/js/00-core.js
@@ -61,8 +62,9 @@ jobs:
           grep -F 'id="managerBuildVersion">12.188</b>' strikewatch-source/index.html
           grep -F "careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80" strikewatch-source/js/38-development.js
           ! grep -F "careerArmourVisualMarkup(armour, 'store')" strikewatch-source/js/38-development.js
-          grep -F "function armourPreviewOptimisationForTest()" strikewatch-source/js/57-loadout-stills.js
+          grep -F 'function armourPreviewOptimisationForTest()' strikewatch-source/js/57-loadout-stills.js
           test -f strikewatch-source/AUDIT-12.188.md
+
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -80,25 +82,19 @@ jobs:
                   raise SystemExit(f'{path} does not reference 12.188')
           PY
 
-      - name: Compile build script
-        working-directory: strikewatch-source
-        run: python3 -m py_compile build.py
-
-      - name: Build first deterministic candidate
-        working-directory: strikewatch-source
-        run: |
+          cd strikewatch-source
+          python3 -m py_compile build.py
           python3 build.py
           test -f dist/strikewatch-build-12.188.html
           test -f dist/strikewatch-build-12.188-size.json
           test -f dist/strikewatch-build-12.188-css-debt.json
-          grep -F "function armourPreviewOptimisationForTest()" js/strikewatch.dev.js
+          grep -F 'function armourPreviewOptimisationForTest()' js/strikewatch.dev.js
           cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
           cp dist/strikewatch-build-12.188.html /tmp/strikewatch-build.first.html
           cp dist/strikewatch-build-12.188-size.json /tmp/strikewatch-size.first.json
           cp dist/strikewatch-build-12.188-css-debt.json /tmp/strikewatch-css.first.json
+          cd ..
 
-      - name: Parse source and generated JavaScript
-        run: |
           for file in strikewatch-source/js/*.js; do node --check "$file"; done
           node --check strikewatch-source/js/strikewatch.dev.js
           python3 - <<'PY'
@@ -113,8 +109,6 @@ jobs:
                   subprocess.run(['node', '--check', str(path)], check=True)
           PY
 
-      - name: Verify armour preview optimisation boundaries
-        run: |
           python3 - <<'PY'
           from pathlib import Path
           stills = Path('strikewatch-source/js/57-loadout-stills.js').read_text(encoding='utf-8')
@@ -143,38 +137,44 @@ jobs:
                   raise SystemExit(f'Existing still-renderer authority missing: {existing}')
           PY
 
-      - name: Verify existing diagnostic hooks remain
-        run: |
           for hook in loadoutStillAuditForTest armour3dPresentationForTest armourSystemForTest loadoutStillForTest; do
             grep -R -F "$hook" strikewatch-source/js >/dev/null
           done
 
-      - name: Build second deterministic candidate
-        working-directory: strikewatch-source
-        run: python3 build.py
-
-      - name: Compare deterministic outputs
-        run: |
+          cd strikewatch-source
+          python3 build.py
+          cd ..
           cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
           cmp /tmp/strikewatch-build.first.html strikewatch-source/dist/strikewatch-build-12.188.html
           cmp /tmp/strikewatch-size.first.json strikewatch-source/dist/strikewatch-build-12.188-size.json
           cmp /tmp/strikewatch-css.first.json strikewatch-source/dist/strikewatch-build-12.188-css-debt.json
 
-      - name: Publish verified standalone
-        run: |
           cp strikewatch-source/dist/strikewatch-build-12.188.html cod.html
           cmp cod.html strikewatch-source/dist/strikewatch-build-12.188.html
+          git diff --check
+          BASH
 
-      - name: Remove temporary release files
-        run: |
+          LOG=.github/release-12-188-last.log
+          set +e
+          bash /tmp/release-12-188.sh 2>&1 | tee "$LOG"
+          release_status=${PIPESTATUS[0]}
+          set -e
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$release_status" -ne 0 ]; then
+            printf '\nFAILED_EXIT_CODE=%s\n' "$release_status" >> "$LOG"
+            git add "$LOG"
+            git commit -m 'Record Build 12.188 release failure'
+            git push origin HEAD:main
+            exit "$release_status"
+          fi
+
+          rm -f "$LOG"
           rm -f .github/scripts/release-12-188.py
           rm -f .github/workflows/release-12-188.yml
           rm -f .github/triggers/release-12-188.txt
-
-      - name: Commit completed release to main
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --cached --quiet && { echo 'No release changes produced.'; exit 1; }
           git commit -m 'Build 12.188: armour preview optimisation'
