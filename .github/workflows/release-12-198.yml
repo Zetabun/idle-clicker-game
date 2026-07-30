@@ -1,0 +1,288 @@
+name: Release Strikewatch 12.198
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/release-12-198.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-strikewatch-12-198
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPYCACHEPREFIX: /tmp/strikewatch-pycache
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build, verify and publish
+        shell: bash
+        run: |
+          cat > /tmp/release-12-198.sh <<'BASH'
+          set -Eeuo pipefail
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.197',
+              'name': 'Device-Independent Match Simulation',
+              'build_id': '12.197.0-device-independent-match-simulation'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected predecessor release: {release!r}')
+          PY
+
+          python3 -m py_compile .github/scripts/release-12-198.py
+          python3 .github/scripts/release-12-198.py
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.198',
+              'name': 'Fixed-Step Match Clock & Stutter Recovery',
+              'build_id': '12.198.0-fixed-step-match-clock-stutter-recovery'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected prepared release: {release!r}')
+          required_docs = {
+              'HANDOFF.md': '- Build: **12.198 — Fixed-Step Match Clock & Stutter Recovery**',
+              'AGENTS.md': 'Build 12.198 owns fixed-step match elapsed time',
+              'README.md': '# Strikewatch Source 12.198',
+              'PROJECT.md': 'Build 12.198 preserves actual visible match time',
+              'CHANGELOG.md': '## 12.198 — Fixed-Step Match Clock & Stutter Recovery',
+              '00-READ-FIRST-GPT.md': 'Current release: **Strikewatch Build 12.198 — Fixed-Step Match Clock & Stutter Recovery**.',
+              'CONTRACTS.md': '- Visible match elapsed time is accumulated independently of presentation animation',
+              'ARCHITECTURE.md': 'fixed-step match clock'
+          }
+          for name, required in required_docs.items():
+              text = Path('strikewatch-source', name).read_text(encoding='utf-8')
+              if required not in text:
+                  raise SystemExit(f'{name} missing release requirement: {required}')
+          if not Path('strikewatch-source/AUDIT-12.198.md').is_file():
+              raise SystemExit('AUDIT-12.198.md was not created')
+          PY
+
+          grep -F "const BUILD_VERSION = '12.198'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_NAME = 'Fixed-Step Match Clock & Stutter Recovery'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_ID = '12.198.0-fixed-step-match-clock-stutter-recovery'" strikewatch-source/js/00-core.js
+          grep -F '<title>Strikewatch 12.198: Fixed-Step Match Clock & Stutter Recovery</title>' strikewatch-source/index.html
+          grep -F 'id="managerBuildVersion">12.198</b>' strikewatch-source/index.html
+          grep -F 'id="mobileCommandBuildVersion">12.198</b>' strikewatch-source/index.html
+
+          python3 - <<'PY'
+          from pathlib import Path
+          core = Path('strikewatch-source/js/00-core.js').read_text(encoding='utf-8')
+          flow = Path('strikewatch-source/js/40-match-flow.js').read_text(encoding='utf-8')
+          menus = Path('strikewatch-source/js/50-ui-menus.js').read_text(encoding='utf-8')
+          runtime = Path('strikewatch-source/js/70-runtime.js').read_text(encoding='utf-8')
+
+          required_runtime = [
+              "revision: '12.198-fixed-step-match-clock-1'",
+              'stepSeconds: SIMULATION_WORK_POLICY.windowSeconds',
+              'presentationFrameCapSeconds: 0.033',
+              'maxStepsPerFrame: 8',
+              'maxAccumulatorSeconds: 0.5',
+              'backgroundGapSeconds: 0.75',
+              'function matchClockSnapshot()',
+              'function resetMatchClockAccumulator(',
+              'function advanceMatchClock(',
+              'function matchClockModelForTest(',
+              'function matchClockIntegrityForTest()',
+              'update(frameDt, rawFrameSeconds)',
+              "document.addEventListener('visibilitychange'",
+              "window.addEventListener('pageshow'",
+              'matchClockIntegrityForTest: () => matchClockIntegrityForTest()',
+              'matchClockModelForTest: (frames = [], speed = 1) => matchClockModelForTest(frames, speed)'
+          ]
+          missing = [item for item in required_runtime if item not in runtime]
+          if missing:
+              raise SystemExit(f'Missing fixed-clock requirements: {missing}')
+          if 'const dt = Math.min(0.033, rawFrameIntervalMs / 1000);' in runtime:
+              raise SystemExit('Legacy 33ms match-time truncation survived')
+          if 'let remaining = dt * matchSpeedMultiplier;' in runtime:
+              raise SystemExit('Legacy render-frame simulation loop survived')
+          if runtime.count('advanceMatchClock(rawFrameSeconds, matchSpeedMultiplier)') != 1:
+              raise SystemExit('Match clock is not entered exactly once from update()')
+          if 'const frameDt = Math.min(MATCH_CLOCK_POLICY.presentationFrameCapSeconds, rawFrameSeconds);' not in runtime:
+              raise SystemExit('Presentation delta is not separated from raw visible time')
+          if "resetMatchClockAccumulator('round-start')" not in flow:
+              raise SystemExit('Round start does not clear clock debt')
+          for marker in [
+              "resetMatchClockAccumulator('speed-change')",
+              "'manual-pause' : 'manual-resume'",
+              "resetMatchClockAccumulator('resume-match')",
+              "resetMatchClockAccumulator('exit-match')"
+          ]:
+              if marker not in menus:
+                  raise SystemExit(f'Missing match-clock lifecycle reset: {marker}')
+          for marker in [
+              "revision: '12.197-device-independent-simulation-1'",
+              'windowSeconds: 1 / 60',
+              'perceptionPerWindow: 4',
+              'tacticalPerWindow: 4',
+              'navigationNormalPerWindow: 2',
+              'navigationUrgentPerWindow: 3'
+          ]:
+              if marker not in core:
+                  raise SystemExit(f'Build 12.197 simulation invariant changed: {marker}')
+          PY
+
+          node - <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          const source = fs.readFileSync('strikewatch-source/js/70-runtime.js', 'utf8');
+          const start = source.indexOf('  const MATCH_CLOCK_POLICY');
+          const end = source.indexOf('  let runtimeStatsPublishCountdown', start);
+          if (start < 0 || end < 0) throw new Error('Could not isolate match clock source');
+          const snippet = source.slice(start, end);
+          const context = {
+            SIMULATION_WORK_POLICY: { windowSeconds: 1 / 60 },
+            matchSpeedMultiplier: 1,
+            updateMatchStep: () => true
+          };
+          vm.createContext(context);
+          vm.runInContext(`${snippet}\nthis.__result = matchClockIntegrityForTest();`, context);
+          const result = context.__result;
+          if (!result?.ok) throw new Error(`matchClockIntegrityForTest failed: ${JSON.stringify(result)}`);
+          if (result.profiles.length !== 8 || !result.profiles.every(profile => profile.exact)) {
+            throw new Error(`FPS/speed matrix failed: ${JSON.stringify(result.profiles)}`);
+          }
+          if (result.shortStutter.droppedSeconds !== 0 || result.shortStutter.maxStepsObserved !== 8) {
+            throw new Error(`Short-stutter recovery failed: ${JSON.stringify(result.shortStutter)}`);
+          }
+          if (result.backgroundGap.backgroundGaps !== 1 || result.backgroundGap.discardedBackgroundSeconds !== 2) {
+            throw new Error(`Background-gap safety failed: ${JSON.stringify(result.backgroundGap)}`);
+          }
+          if (result.pauseResume.resets !== 1 || Math.abs(result.pauseResume.simulatedSeconds - 0.2) > 0.000001) {
+            throw new Error(`Pause/resume safety failed: ${JSON.stringify(result.pauseResume)}`);
+          }
+          if (result.saveSchemaChanged !== false || result.diagnosticsSchemaChanged !== false) {
+            throw new Error('Schema boundary changed');
+          }
+          console.log(JSON.stringify(result));
+          JS
+
+          for hook in matchClockIntegrityForTest matchClockModelForTest matchClockForTest simulationQualityIndependenceForTest simulationWorkPolicyForTest runtimeQualityGovernorForTest adaptiveResolutionForTest spectatorHandoffPresentationForTest spectatorDirectorForTest spectatorHandoffForTest operatorTracerOriginForTest operatorMuzzleLightResponseForTest operatorEnvironmentalLightPickupForTest operatorSilhouetteSeparationForTest operatorContactShadowForTest operatorAmbientOcclusionForTest dynamicActorCullingForTest arenaSurfaceSampleForTest navigationPlannerSnapshot botWorkBudgetSnapshot; do
+            grep -R -F "$hook" strikewatch-source/js >/dev/null
+          done
+
+          cd strikewatch-source
+          python3 -m py_compile build.py
+          python3 build.py
+          test -f dist/strikewatch-build-12.198.html
+          test -f dist/strikewatch-build-12.198-size.json
+          test -f dist/strikewatch-build-12.198-css-debt.json
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.198.html /tmp/strikewatch-build.first.html
+          cp dist/strikewatch-build-12.198-size.json /tmp/strikewatch-size.first.json
+          cp dist/strikewatch-build-12.198-css-debt.json /tmp/strikewatch-css.first.json
+          cd ..
+
+          for file in strikewatch-source/js/*.js; do
+            [ "$(basename "$file")" = 'strikewatch.dev.js' ] && continue
+            node --check "$file"
+          done
+          node --check strikewatch-source/js/strikewatch.dev.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+          html = Path('strikewatch-source/dist/strikewatch-build-12.198.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          if not scripts:
+              raise SystemExit('No standalone inline scripts found')
+          with tempfile.TemporaryDirectory() as temp:
+              for index, script in enumerate(scripts):
+                  path = Path(temp) / f'inline-{index}.js'
+                  path.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(path)], check=True)
+          print(f'Parsed {len(scripts)} standalone inline scripts.')
+          PY
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.198-css-debt.json').read_text(encoding='utf-8'))
+          if not report.get('within_budget'):
+              raise SystemExit(f'CSS debt report is outside budget: {report!r}')
+          if report.get('stylesheets') != 23:
+              raise SystemExit(f'Unexpected stylesheet count: {report.get("stylesheets")}')
+          size = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.198-size.json').read_text(encoding='utf-8'))
+          if size.get('version') != '12.198':
+              raise SystemExit(f'Unexpected size report version: {size!r}')
+          if size.get('javascript_raw_reduction_percent', 0) < 2.5:
+              raise SystemExit(f'JavaScript release reduction below budget: {size!r}')
+          PY
+
+          cd strikewatch-source
+          python3 build.py
+          cd ..
+          cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build.first.html strikewatch-source/dist/strikewatch-build-12.198.html
+          cmp /tmp/strikewatch-size.first.json strikewatch-source/dist/strikewatch-build-12.198-size.json
+          cmp /tmp/strikewatch-css.first.json strikewatch-source/dist/strikewatch-build-12.198-css-debt.json
+
+          cp strikewatch-source/dist/strikewatch-build-12.198.html cod.html
+          cmp cod.html strikewatch-source/dist/strikewatch-build-12.198.html
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f -name '*.pyc' -delete
+          test ! -e .github/scripts/__pycache__
+          test ! -e strikewatch-source/__pycache__
+          git diff --check
+          BASH
+
+          mkdir -p .github/release-failures
+          LOG=.github/release-failures/release-12-198.log
+          set +e
+          bash /tmp/release-12-198.sh 2>&1 | tee "$LOG"
+          release_status=${PIPESTATUS[0]}
+          set -e
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$release_status" -ne 0 ]; then
+            printf '\nFAILED_EXIT_CODE=%s\n' "$release_status" >> "$LOG"
+            git add "$LOG"
+            git commit -m 'Record Build 12.198 release failure'
+            git push origin HEAD:main
+            exit "$release_status"
+          fi
+
+          rm -f "$LOG"
+          rm -f .github/scripts/release-12-198.py
+          rm -f .github/workflows/release-12-198.yml
+          rm -f .github/triggers/release-12-198.txt
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f -name '*.pyc' -delete
+          git add -A
+          git diff --cached --quiet && { echo 'No release changes produced.'; exit 1; }
+          git diff --cached --check
+          git commit -m 'Build 12.198: fixed-step match clock and stutter recovery'
+          git push origin HEAD:main
