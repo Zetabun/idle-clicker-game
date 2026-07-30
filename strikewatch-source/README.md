@@ -8,6 +8,8 @@ autonomous WebGL matches.
 Open `index.html` through a local HTTP server. The editable project is this
 directory; root `cod.html` is the GitHub Pages artifact.
 
+Live game: https://zetabun.github.io/idle-clicker-game/cod.html
+
 ## Build
 
 From `strikewatch-source/`:
