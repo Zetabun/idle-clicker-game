@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: verify-strikewatch-pages-12-195
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -34,10 +34,10 @@ jobs:
           : > "$log"
           verified=0
 
-          for attempt in $(seq 1 30); do
+          for attempt in $(seq 1 6); do
             url="${base_url}?v=12.195&release=587bbbc35a612a20e3040975a3dc3bf300802750&attempt=${attempt}"
             printf 'ATTEMPT=%s URL=%s\n' "$attempt" "$url" >> "$log"
-            if curl -fsSL --connect-timeout 15 --max-time 60 \
+            if curl -4 -fsSL --connect-timeout 5 --max-time 15 \
               -H 'Cache-Control: no-cache, no-store, max-age=0' \
               -H 'Pragma: no-cache' \
               -D /tmp/pages-12-195.headers \
@@ -54,7 +54,7 @@ jobs:
             else
               printf 'HTTP_OK=0\n' >> "$log"
             fi
-            sleep 5
+            sleep 3
           done
 
           git config user.name 'github-actions[bot]'
