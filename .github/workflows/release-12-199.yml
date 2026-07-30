@@ -4,10 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/release-triggers/12.199.txt'
+      - '.github/triggers/release-12.199.txt'
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-build-12-199
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -23,33 +27,55 @@ jobs:
           git config user.name "Zetabun"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Apply source-first Build 12.199 patch
+      - name: Apply, build and verify Build 12.199
+        id: release
+        shell: bash
         run: |
+          set -Eeuo pipefail
+          exec > >(tee /tmp/release-12.199.log) 2>&1
+
           test -f strikewatch-source/HANDOFF.md
           test -f strikewatch-source/AGENTS.md
           test -f strikewatch-source/CONTRACTS.md
           test -f strikewatch-source/AUDIT-12.185.md
+          test -f strikewatch-source/AUDIT-12.198.md
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          expected = {
+              'version': '12.198',
+              'name': 'Fixed-Step Match Clock & Stutter Recovery',
+              'build_id': '12.198.0-fixed-step-match-clock-stutter-recovery'
+          }
+          actual = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          if actual != expected:
+              raise SystemExit(f'Unexpected predecessor release: {actual!r}')
+          print('Predecessor release verified:', actual)
+          PY
+
           python3 -m py_compile .github/scripts/release-12-199.py
           python3 .github/scripts/release-12-199.py
 
-      - name: Build twice and prove determinism
-        working-directory: strikewatch-source
-        run: |
+          cd strikewatch-source
           python3 -m py_compile build.py
           python3 build.py
-          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.199.html dist/strikewatch-build-12.199-size-report.txt dist/strikewatch-build-12.199-css-debt-report.txt > /tmp/build-first.sha256
-          python3 build.py
-          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.199.html dist/strikewatch-build-12.199-size-report.txt dist/strikewatch-build-12.199-css-debt-report.txt > /tmp/build-second.sha256
-          diff -u /tmp/build-first.sha256 /tmp/build-second.sha256
+          sha256sum \
+            js/strikewatch.dev.js \
+            dist/strikewatch-build-12.199.html \
+            dist/strikewatch-build-12.199-size-report.txt \
+            dist/strikewatch-build-12.199-css-debt-report.txt \
+            > /tmp/build-12.199-first.sha256
 
-      - name: Parse all JavaScript outputs
-        run: |
-          for file in strikewatch-source/js/*.js; do node --check "$file"; done
-          node --check strikewatch-source/js/strikewatch.dev.js
+          for file in js/*.js; do node --check "$file"; done
+          node --check js/strikewatch.dev.js
           python3 - <<'PY'
           from pathlib import Path
-          import re, subprocess, tempfile
-          html = Path('strikewatch-source/dist/strikewatch-build-12.199.html').read_text(encoding='utf-8')
+          import re
+          import subprocess
+          import tempfile
+
+          html = Path('dist/strikewatch-build-12.199.html').read_text(encoding='utf-8')
           scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
           if not scripts:
               raise SystemExit('No inline JavaScript found in standalone')
@@ -60,19 +86,31 @@ jobs:
           print(f'Parsed {len(scripts)} standalone inline script block(s)')
           PY
 
-      - name: Run targeted release and regression gates
-        run: |
+          python3 build.py
+          sha256sum \
+            js/strikewatch.dev.js \
+            dist/strikewatch-build-12.199.html \
+            dist/strikewatch-build-12.199-size-report.txt \
+            dist/strikewatch-build-12.199-css-debt-report.txt \
+            > /tmp/build-12.199-second.sha256
+          diff -u /tmp/build-12.199-first.sha256 /tmp/build-12.199-second.sha256
+          cd ..
+
           python3 - <<'PY'
           from pathlib import Path
           import json
+
           root = Path('.')
           src = root / 'strikewatch-source'
           release = json.loads((src / 'RELEASE.json').read_text(encoding='utf-8'))
-          assert release == {
+          expected = {
               'version': '12.199',
               'name': 'Surface-Anchored Blood Decals',
               'build_id': '12.199.0-surface-anchored-blood-decals'
-          }, release
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected completed release metadata: {release!r}')
+
           world = (src / 'js/61-world-renderer.js').read_text(encoding='utf-8')
           runtime = (src / 'js/70-runtime.js').read_text(encoding='utf-8')
           core = (src / 'js/00-core.js').read_text(encoding='utf-8')
@@ -93,34 +131,60 @@ jobs:
               'function drawImpactDecals()'
           ]
           missing = [item for item in required if item not in world]
-          assert not missing, missing
-          assert 'bloodSurfaceAttachmentForTest: () => bloodSurfaceAttachmentForTest()' in runtime
-          assert 'bloodSplatterForTest: () => bloodSplatterForTest()' in runtime
-          assert 'impactDecalForTest: () => impactDecalForTest()' in runtime
-          assert "revision: '12.198-fixed-step-match-clock-1'" in runtime
-          assert "revision: '12.197-device-independent-simulation-1'" in core
-          assert (src / 'AUDIT-12.199.md').exists()
+          if missing:
+              raise SystemExit(f'Missing Build 12.199 renderer anchors: {missing!r}')
+          if 'bloodSurfaceAttachmentForTest: () => bloodSurfaceAttachmentForTest()' not in runtime:
+              raise SystemExit('Missing current debug API insertion for bloodSurfaceAttachmentForTest')
+          if 'bloodSplatterForTest: () => bloodSplatterForTest()' not in runtime:
+              raise SystemExit('Missing existing bloodSplatterForTest debug API')
+          if 'impactDecalForTest: () => impactDecalForTest()' not in runtime:
+              raise SystemExit('Missing existing impactDecalForTest debug API')
+          if "revision: '12.198-fixed-step-match-clock-1'" not in runtime:
+              raise SystemExit('Build 12.198 match-clock regression anchor missing')
+          if "revision: '12.197-device-independent-simulation-1'" not in core:
+              raise SystemExit('Build 12.197 simulation regression anchor missing')
+          if not (src / 'AUDIT-12.199.md').exists():
+              raise SystemExit('AUDIT-12.199.md was not created')
           for name in ['HANDOFF.md', 'AGENTS.md', 'CHANGELOG.md', 'README.md', 'PROJECT.md', 'ARCHITECTURE.md', 'CONTRACTS.md', '00-READ-FIRST-GPT.md']:
-              assert '12.199' in (src / name).read_text(encoding='utf-8'), name
-          assert '12.199' in (src / 'index.html').read_text(encoding='utf-8')
+              text = (src / name).read_text(encoding='utf-8')
+              if '12.199' not in text:
+                  raise SystemExit(f'{name} was not updated for Build 12.199')
+
           standalone = src / 'dist/strikewatch-build-12.199.html'
           cod = root / 'cod.html'
           cod.write_bytes(standalone.read_bytes())
-          assert cod.read_bytes() == standalone.read_bytes()
-          print('Build 12.199 targeted source, regression and artifact gates passed')
+          if cod.read_bytes() != standalone.read_bytes():
+              raise SystemExit('cod.html is not byte-identical to the verified standalone')
+          print('Build 12.199 source, regression and artifact gates passed')
           PY
 
-      - name: Remove temporary release machinery
-        run: |
+          rm -f .github/release-failures/release-12.199.log
+          rmdir .github/release-failures 2>/dev/null || true
           rm -f .github/scripts/release-12-199.py
           rm -f .github/workflows/release-12-199.yml
+          rm -f .github/triggers/release-12.199.txt
+          rmdir .github/triggers 2>/dev/null || true
           rm -f .github/release-triggers/12.199.txt
           rmdir .github/release-triggers 2>/dev/null || true
 
-      - name: Commit complete verified release to main
-        run: |
           git add -A
           git diff --cached --check
           git status --short
-          git commit -m "Release Build 12.199 surface-anchored blood decals"
+          git commit -m "Build 12.199: Surface-Anchored Blood Decals"
+          git push origin main
+
+      - name: Publish failure ledger
+        if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git reset --hard HEAD
+          mkdir -p .github/release-failures
+          if test -f /tmp/release-12.199.log; then
+            cp /tmp/release-12.199.log .github/release-failures/release-12.199.log
+          else
+            printf '%s\n' 'Build 12.199 failed before the release log was initialised.' > .github/release-failures/release-12.199.log
+          fi
+          git add .github/release-failures/release-12.199.log
+          git commit -m "Record Build 12.199 release failure"
           git push origin main
