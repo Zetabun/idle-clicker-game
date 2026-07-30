@@ -25,14 +25,11 @@ def replace_regex(path, pattern, replacement, label):
     write(path, updated)
 
 
-# Canonical release metadata.
 core = SRC / 'js' / '00-core.js'
 replace_regex(core, r"const BUILD_VERSION = '[^']+'", "const BUILD_VERSION = '12.188'", 'BUILD_VERSION')
 replace_regex(core, r"const BUILD_ID = '[^']+'", "const BUILD_ID = '12.188.0-armour-preview-optimisation'", 'BUILD_ID')
 replace_regex(core, r"const BUILD_NAME = '[^']+'", "const BUILD_NAME = 'Armour Preview Optimisation'", 'BUILD_NAME')
 
-# Pull every non-interactive armour still back slightly so the complete set has
-# consistent breathing room in the Armoury and other still-image surfaces.
 stills = SRC / 'js' / '57-loadout-stills.js'
 text = stills.read_text(encoding='utf-8')
 old = """    const thumbnail = Boolean(options.thumbnail);\n    const key = `a|${id}|${width}x${height}|${thumbnail ? 't' : 'd'}`;\n    return loadoutStillDataUrl(key, () => loadoutStillRender(\n      thumbnail && typeof careerArmourThumbnailParts === 'function'\n        ? careerArmourThumbnailParts(armour)\n        : careerArmour3dParts(armour),\n      { width, height, fixedHeight: thumbnail, yaw: LOADOUT_STILL_ARMOUR_VIEW.yaw, pitch: LOADOUT_STILL_ARMOUR_VIEW.pitch, armour: true }\n    ));"""
@@ -48,8 +45,6 @@ if 'function armourPreviewOptimisationForTest()' not in text:
     text = text.replace(anchor, diagnostic + anchor, 1)
 write(stills, text)
 
-# The Field Crate Exchange armour stock was still mounting four live CSS-3D
-# rigs. It now consumes the existing cached canvas renderer used by Armoury.
 development = SRC / 'js' / '38-development.js'
 replace_once(
     development,
@@ -58,7 +53,6 @@ replace_once(
     'Field Crate Exchange armour preview'
 )
 
-# Give the cached store still a stable bounded box while preserving the card.
 css = SRC / 'css' / 'loadout-stills.css'
 css_text = css.read_text(encoding='utf-8')
 css_block = """
@@ -76,18 +70,6 @@ if 'Build 12.188: Field Crate Exchange cached armour stills' not in css_text:
     css_text += css_block
 write(css, css_text)
 
-# Expose the deterministic browser diagnostic with the established debug API.
-runtime = SRC / 'js' / '70-runtime.js'
-runtime_text = runtime.read_text(encoding='utf-8')
-needle = "careerReportXpSafetyForTest: () => (typeof careerReportXpSafetyForTest === 'function' ? careerReportXpSafetyForTest() : null),"
-addition = needle + "\n      armourPreviewOptimisationForTest: () => (typeof armourPreviewOptimisationForTest === 'function' ? armourPreviewOptimisationForTest() : null),"
-if 'armourPreviewOptimisationForTest: () =>' not in runtime_text:
-    if needle not in runtime_text:
-        raise SystemExit('Could not locate debug API insertion point')
-    runtime_text = runtime_text.replace(needle, addition, 1)
-write(runtime, runtime_text)
-
-# Static HTML metadata, cache keys and visible version labels.
 index = SRC / 'index.html'
 index_text = index.read_text(encoding='utf-8')
 index_text = index_text.replace('STRIKEWATCH BUILD 12.187', 'STRIKEWATCH BUILD 12.188')
@@ -135,7 +117,6 @@ Save schema remains 19 and diagnostics schema remains 1. Armour inventory, durab
 """
 write(SRC / 'AUDIT-12.188.md', audit)
 
-# Concise release routing documentation.
 changelog = SRC / 'CHANGELOG.md'
 ch = changelog.read_text(encoding='utf-8')
 entry = """## 12.188 — Armour Preview Optimisation
@@ -179,7 +160,6 @@ for name in ['README.md', 'PROJECT.md', '00-READ-FIRST-GPT.md']:
     value = value.replace('strikewatch-build-12.187.html', 'strikewatch-build-12.188.html')
     write(path, value)
 
-# Final source assertions before the build starts.
 if "careerArmourVisualMarkup(armour, 'store')" in development.read_text(encoding='utf-8'):
     raise SystemExit('Live store armour rig call remains')
 if "careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80" not in development.read_text(encoding='utf-8'):
