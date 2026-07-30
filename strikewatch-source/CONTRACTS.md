@@ -267,7 +267,10 @@ current task. Release-specific implementation detail belongs in the matching
   sight. Blood appears only after real health damage and only on a nearby surface
   behind the struck operator. Its irregular red core and downward drip must stay
   visually distinct from the smaller pale-rimmed bullet chip at compact portrait
-  widths.
+  widths. A blood spot must retain solid backing across its visible footprint;
+  corner overhang is rejected. Blood landing on a moving door belongs to panel-
+  local material coordinates, follows that panel and is concealed when the marked
+  material enters the wall pocket.
 - Open-air arenas draw their sky through `drawArenaSky()` before any world
   geometry, writing no depth and restoring renderer state. Sky colour and fog
   colour are separate decisions; the sky must not be derived from the fog.

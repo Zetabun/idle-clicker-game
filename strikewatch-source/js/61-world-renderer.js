@@ -1473,10 +1473,205 @@
       Object.freeze([0.52, 0.012, 0.020])
     ])
   });
+  const BLOOD_SURFACE_ATTACHMENT = Object.freeze({
+    revision: '12.199-surface-anchored-blood-1',
+    surfaceNudge: 0.016,
+    supportProbe: 0.038,
+    edgeInset: 0.008,
+    doorApertureHalfWidth: 0.47
+  });
 
-  // Build 12.185: keep the existing nearby-wall projection authority, but make
-  // the cosmetic cluster read as blood on a portrait phone: a larger irregular
-  // core, stronger red separation and at least one downward drip.
+  function bloodRayBoxFaceHit(originX, originZ, directionX, directionZ, maximumDistance, box) {
+    const yaw = Number(box?.yaw) || 0;
+    const c = Math.cos(yaw);
+    const s = Math.sin(yaw);
+    const dx = originX - (Number(box?.x) || 0);
+    const dz = originZ - (Number(box?.y) || 0);
+    const localOriginX = c * dx - s * dz;
+    const localOriginZ = s * dx + c * dz;
+    const localDirectionX = c * directionX - s * directionZ;
+    const localDirectionZ = s * directionX + c * directionZ;
+    const halfWidth = Math.max(0.001, (Number(box?.width) || 0.43) * 0.5);
+    const halfDepth = Math.max(0.001, (Number(box?.depth) || 0.11) * 0.5);
+    let near = 0;
+    let far = Math.max(0, Number(maximumDistance) || 0);
+    let nearAxis = '';
+    for (const entry of [
+      { axis: 'u', origin: localOriginX, direction: localDirectionX, half: halfWidth },
+      { axis: 'normal', origin: localOriginZ, direction: localDirectionZ, half: halfDepth }
+    ]) {
+      if (Math.abs(entry.direction) < 0.000001) {
+        if (entry.origin < -entry.half || entry.origin > entry.half) return null;
+        continue;
+      }
+      let first = (-entry.half - entry.origin) / entry.direction;
+      let second = (entry.half - entry.origin) / entry.direction;
+      if (first > second) [first, second] = [second, first];
+      if (first > near) {
+        near = first;
+        nearAxis = entry.axis;
+      }
+      far = Math.min(far, second);
+      if (near > far) return null;
+    }
+    if (nearAxis !== 'normal' || near < 0 || near > maximumDistance) return null;
+    const localU = localOriginX + localDirectionX * near;
+    const localNormal = localOriginZ + localDirectionZ * near;
+    return { distance: near, localU, normalSign: localNormal >= 0 ? 1 : -1 };
+  }
+
+  function bloodDoorRayHit(originX, originZ, directionX, directionZ, maximumDistance = BLOOD_SPLATTER_MAX_DISTANCE) {
+    let nearest = null;
+    for (const state of ACTIVE_DOOR_STATES || []) {
+      for (const visible of visibleDoorPanelDescriptors(state, BLOOD_SURFACE_ATTACHMENT.doorApertureHalfWidth)) {
+        const hit = bloodRayBoxFaceHit(originX, originZ, directionX, directionZ, maximumDistance, visible);
+        if (!hit || (nearest && hit.distance >= nearest.distance)) continue;
+        const fullCentre = visible.side * (0.215 + clamp(Number(state.openAmount) || 0, 0, 1) * 0.47);
+        const doorLocalU = visible.localCentre + hit.localU;
+        nearest = {
+          distance: hit.distance,
+          doorId: state.id,
+          panelSide: visible.side,
+          panelLocalU: doorLocalU - fullCentre,
+          normalSign: hit.normalSign
+        };
+      }
+    }
+    return nearest;
+  }
+
+  function bloodDoorSurfaceSnapshot(splatter, stateOverride = null) {
+    const surface = splatter?.surface;
+    if (!surface || surface.type !== 'door-panel') return null;
+    const state = stateOverride || (ACTIVE_DOOR_STATES || []).find(door => door.id === surface.doorId);
+    if (!state) return null;
+    const panel = doorPanelDescriptors(state).find(candidate => candidate.side === surface.panelSide);
+    const visible = visibleDoorPanelDescriptors(state, BLOOD_SURFACE_ATTACHMENT.doorApertureHalfWidth)
+      .find(candidate => candidate.side === surface.panelSide);
+    if (!panel || !visible) return null;
+    const fullCentre = panel.side * (0.215 + panel.openAmount * 0.47);
+    const baseDoorU = fullCentre + (Number(surface.panelLocalU) || 0);
+    const normalSign = Number(surface.normalSign) < 0 ? -1 : 1;
+    const point = propLocalPoint(
+      state,
+      baseDoorU,
+      normalSign * ((Number(panel.depth) || 0.11) * 0.5 + BLOOD_SURFACE_ATTACHMENT.surfaceNudge)
+    );
+    const yaw = Number(state.yaw) || 0;
+    const tangentX = Math.cos(yaw);
+    const tangentZ = -Math.sin(yaw);
+    const normalX = Math.sin(yaw) * normalSign;
+    const normalZ = Math.cos(yaw) * normalSign;
+    return {
+      type: 'door-panel',
+      x: point.x,
+      z: point.y,
+      axis: Math.abs(normalX) >= Math.abs(normalZ) ? 'x' : 'z',
+      tangentX,
+      tangentZ,
+      normalX,
+      normalZ,
+      doorLocalU: baseDoorU,
+      visibleMin: visible.localCentre - visible.width * 0.5,
+      visibleMax: visible.localCentre + visible.width * 0.5
+    };
+  }
+
+  function bloodStaticSurfaceSnapshot(splatter) {
+    const surface = splatter?.surface;
+    if (!surface || surface.type !== 'static-wall') return null;
+    const axis = surface.axis === 'x' ? 'x' : 'z';
+    const normalSign = Number(surface.normalSign) < 0 ? -1 : 1;
+    return {
+      type: 'static-wall',
+      x: Number(surface.x) || 0,
+      z: Number(surface.z) || 0,
+      axis,
+      tangentX: axis === 'z' ? 1 : 0,
+      tangentZ: axis === 'x' ? 1 : 0,
+      normalX: axis === 'x' ? normalSign : 0,
+      normalZ: axis === 'z' ? normalSign : 0
+    };
+  }
+
+  function bloodSplatterSurfaceSnapshot(splatter, stateOverride = null) {
+    return splatter?.surface?.type === 'door-panel'
+      ? bloodDoorSurfaceSnapshot(splatter, stateOverride)
+      : bloodStaticSurfaceSnapshot(splatter);
+  }
+
+  function bloodStaticSpotSupported(snapshot, spot, wallAt = isWall) {
+    if (!snapshot || snapshot.type !== 'static-wall' || typeof wallAt !== 'function') return false;
+    const halfWidth = Math.max(BLOOD_SURFACE_ATTACHMENT.edgeInset, (Number(spot?.sx) || 0) * 0.88);
+    const centre = Number(spot?.u) || 0;
+    for (const offset of [centre - halfWidth, centre, centre + halfWidth]) {
+      const x = snapshot.x + snapshot.tangentX * offset;
+      const z = snapshot.z + snapshot.tangentZ * offset;
+      const frontX = x + snapshot.normalX * BLOOD_SURFACE_ATTACHMENT.supportProbe;
+      const frontZ = z + snapshot.normalZ * BLOOD_SURFACE_ATTACHMENT.supportProbe;
+      const backX = x - snapshot.normalX * (BLOOD_SURFACE_ATTACHMENT.supportProbe + BLOOD_SURFACE_ATTACHMENT.surfaceNudge);
+      const backZ = z - snapshot.normalZ * (BLOOD_SURFACE_ATTACHMENT.supportProbe + BLOOD_SURFACE_ATTACHMENT.surfaceNudge);
+      if (wallAt(frontX, frontZ) || !wallAt(backX, backZ)) return false;
+    }
+    return true;
+  }
+
+  function bloodDoorSpotSupported(snapshot, spot) {
+    if (!snapshot || snapshot.type !== 'door-panel') return false;
+    const halfWidth = Math.max(BLOOD_SURFACE_ATTACHMENT.edgeInset, (Number(spot?.sx) || 0) * 0.88);
+    const centre = snapshot.doorLocalU + (Number(spot?.u) || 0);
+    return centre - halfWidth >= snapshot.visibleMin + BLOOD_SURFACE_ATTACHMENT.edgeInset
+      && centre + halfWidth <= snapshot.visibleMax - BLOOD_SURFACE_ATTACHMENT.edgeInset;
+  }
+
+  function bloodSpotSupported(splatter, spot, snapshot = bloodSplatterSurfaceSnapshot(splatter), wallAt = isWall) {
+    if (!snapshot) return false;
+    return snapshot.type === 'door-panel'
+      ? bloodDoorSpotSupported(snapshot, spot)
+      : bloodStaticSpotSupported(snapshot, spot, wallAt);
+  }
+
+  function bloodAddSupportedSpot(splatter, spot) {
+    const snapshot = bloodSplatterSurfaceSnapshot(splatter);
+    if (!bloodSpotSupported(splatter, spot, snapshot)) return false;
+    splatter.spots.push(spot);
+    return true;
+  }
+
+  function bloodSurfaceAttachmentForTest() {
+    const door = { id: 'test-door', x: 10, y: 8, yaw: 0, openAmount: 0, colour: [1, 1, 1] };
+    const splatter = {
+      surface: { type: 'door-panel', doorId: door.id, panelSide: 1, panelLocalU: 0, normalSign: -1 }
+    };
+    const closed = bloodDoorSurfaceSnapshot(splatter, door);
+    const moving = bloodDoorSurfaceSnapshot(splatter, { ...door, openAmount: 0.5 });
+    const pocketed = bloodDoorSurfaceSnapshot(splatter, { ...door, openAmount: 1 });
+    const staticSnapshot = {
+      type: 'static-wall', x: 0.016, z: 0.5, axis: 'x',
+      tangentX: 0, tangentZ: 1, normalX: 1, normalZ: 0
+    };
+    const wallAt = (x, z) => x < 0 && z >= 0 && z < 1;
+    const centreSupported = bloodStaticSpotSupported(staticSnapshot, { u: 0, sx: 0.07 }, wallAt);
+    const cornerRejected = !bloodStaticSpotSupported(staticSnapshot, { u: 0.48, sx: 0.08 }, wallAt);
+    const movement = closed && moving ? Math.hypot(moving.x - closed.x, moving.z - closed.z) : 0;
+    return {
+      ok: Boolean(closed && moving && movement > 0.20 && pocketed === null && centreSupported && cornerRejected),
+      revision: BLOOD_SURFACE_ATTACHMENT.revision,
+      movement: Number(movement.toFixed(3)),
+      pocketed: pocketed === null,
+      centreSupported,
+      cornerRejected,
+      poolLimit: BLOOD_DECAL_LIMIT,
+      maximumDistance: BLOOD_SPLATTER_MAX_DISTANCE,
+      simulationWritesAdded: 0,
+      saveSchemaChanged: false,
+      diagnosticsSchemaChanged: false
+    };
+  }
+
+  // Build 12.199: the cosmetic cluster now remembers the surface it belongs
+  // to. Sliding-door blood follows the panel into its wall pocket, while every
+  // static-wall spot must retain solid backing across its complete width.
   function spawnBloodSplatter(shooter, target, options = {}) {
     const appliedDamage = Math.max(0, Number(options.appliedDamage) || 0);
     if (!shooter || !target || appliedDamage <= 0 || typeof castRay !== 'function') return null;
@@ -1489,8 +1684,12 @@
     const forwardZ = Math.sin(angle);
     const originX = target.x + forwardX * 0.08;
     const originZ = target.y + forwardZ * 0.08;
-    const hit = castRay(originX, originZ, angle);
-    if (!hit || !Number.isFinite(hit.d) || hit.d > BLOOD_SPLATTER_MAX_DISTANCE) return null;
+    const wallHit = castRay(originX, originZ, angle);
+    const wallDistance = wallHit && Number.isFinite(wallHit.d) ? wallHit.d : Infinity;
+    const doorHit = bloodDoorRayHit(originX, originZ, forwardX, forwardZ, BLOOD_SPLATTER_MAX_DISTANCE);
+    const useDoor = Boolean(doorHit && doorHit.distance <= wallDistance + 0.004);
+    const surfaceDistance = useDoor ? doorHit.distance : wallDistance;
+    if (!Number.isFinite(surfaceDistance) || surfaceDistance > BLOOD_SPLATTER_MAX_DISTANCE) return null;
 
     const headshot = Boolean(options.headshot);
     const fatal = Boolean(options.fatal);
@@ -1500,53 +1699,82 @@
     const centreHeight = targetElevation + (headshot ? 1.64 : 1.22) - crouchDrop + (Math.random() - 0.5) * 0.16;
     if (centreHeight <= targetElevation + 0.10 || centreHeight >= targetElevation + wallHeight - 0.08) return null;
 
-    const nudge = 0.016;
     const intensity = clamp(appliedDamage / 42 + (headshot ? 0.28 : 0) + (fatal ? 0.16 : 0), 0.30, 1.18);
     const baseSize = BLOOD_SPLATTER_PRESENTATION.baseSize
       + intensity * BLOOD_SPLATTER_PRESENTATION.damageScale
       + Math.random() * BLOOD_SPLATTER_PRESENTATION.randomSize;
+    const surface = useDoor
+      ? {
+          type: 'door-panel',
+          doorId: doorHit.doorId,
+          panelSide: doorHit.panelSide,
+          panelLocalU: doorHit.panelLocalU,
+          normalSign: doorHit.normalSign
+        }
+      : {
+          type: 'static-wall',
+          x: wallHit.hitX - (wallHit.side === 0 ? Math.sign(forwardX || 1) * BLOOD_SURFACE_ATTACHMENT.surfaceNudge : 0),
+          z: wallHit.hitY - (wallHit.side === 1 ? Math.sign(forwardZ || 1) * BLOOD_SURFACE_ATTACHMENT.surfaceNudge : 0),
+          axis: wallHit.side === 0 ? 'x' : 'z',
+          normalSign: wallHit.side === 0 ? -Math.sign(forwardX || 1) : -Math.sign(forwardZ || 1)
+        };
     const splatter = {
-      x: hit.hitX - (hit.side === 0 ? Math.sign(forwardX || 1) * nudge : 0),
+      x: Number(surface.x) || 0,
       y: centreHeight,
-      z: hit.hitY - (hit.side === 1 ? Math.sign(forwardZ || 1) * nudge : 0),
-      axis: hit.side === 0 ? 'x' : 'z',
-      distance: hit.d,
+      z: Number(surface.z) || 0,
+      axis: surface.axis || 'z',
+      surface,
+      distance: surfaceDistance,
       appliedDamage,
       headshot,
       fatal,
       spots: []
     };
-    splatter.spots.push({
-      kind: 'core',
-      u: 0,
-      v: 0,
+    const firstSnapshot = bloodSplatterSurfaceSnapshot(splatter);
+    if (!firstSnapshot) return null;
+    splatter.x = firstSnapshot.x;
+    splatter.z = firstSnapshot.z;
+    splatter.axis = firstSnapshot.axis;
+    const core = {
+      kind: 'core', u: 0, v: 0,
       sx: baseSize * (1.28 + Math.random() * 0.30),
       sy: baseSize * (0.82 + Math.random() * 0.24),
       tone: 0
-    });
+    };
+    if (!bloodAddSupportedSpot(splatter, core)) return null;
+
     const dropletCount = Math.min(5, 3 + (headshot ? 1 : 0) + (fatal ? 1 : 0));
-    for (let index = 0; index < dropletCount; index++) {
+    let droplets = 0;
+    for (let attempt = 0; attempt < dropletCount * 6 && droplets < dropletCount; attempt++) {
       const theta = Math.random() * Math.PI * 2;
       const travel = baseSize * (1.10 + Math.random() * 2.35);
       const radius = baseSize * (0.18 + Math.random() * 0.28);
-      splatter.spots.push({
+      if (bloodAddSupportedSpot(splatter, {
         kind: 'droplet',
         u: Math.cos(theta) * travel,
         v: Math.sin(theta) * travel * 0.72,
         sx: radius * (0.80 + Math.random() * 0.62),
         sy: radius * (0.78 + Math.random() * 0.66),
-        tone: 1 + (index % 2)
-      });
+        tone: 1 + (droplets % 2)
+      })) droplets++;
     }
+
     const dripCount = 1 + (fatal ? 1 : 0);
-    for (let index = 0; index < dripCount; index++) {
-      splatter.spots.push({
+    let drips = 0;
+    for (let attempt = 0; attempt < dripCount * 6 && drips < dripCount; attempt++) {
+      if (bloodAddSupportedSpot(splatter, {
         kind: 'drip',
         u: (Math.random() - 0.5) * baseSize * 0.62,
-        v: -baseSize * (0.82 + index * 0.44 + Math.random() * 0.48),
+        v: -baseSize * (0.82 + drips * 0.44 + Math.random() * 0.48),
         sx: baseSize * (0.13 + Math.random() * 0.09),
         sy: baseSize * (0.58 + Math.random() * 0.34),
-        tone: index % 2 ? 2 : 1
+        tone: drips % 2 ? 2 : 1
+      })) drips++;
+    }
+    if (!drips) {
+      bloodAddSupportedSpot(splatter, {
+        kind: 'drip', u: 0, v: -baseSize * 0.92,
+        sx: baseSize * 0.14, sy: baseSize * 0.64, tone: 1
       });
     }
     bloodDecals.push(splatter);
@@ -1562,11 +1790,14 @@
     if (!bloodDecals.length) return;
     const presentation = BLOOD_SPLATTER_PRESENTATION;
     for (const splatter of bloodDecals) {
+      const surface = bloodSplatterSurfaceSnapshot(splatter);
+      if (!surface) continue;
       for (const spot of splatter.spots) {
-        const x = splatter.x + (splatter.axis === 'z' ? spot.u : 0);
+        if (!bloodSpotSupported(splatter, spot, surface)) continue;
+        const x = surface.x + surface.tangentX * spot.u;
         const y = splatter.y + spot.v;
-        const z = splatter.z + (splatter.axis === 'x' ? spot.u : 0);
-        if (splatter.axis === 'x') mat4TRS(glModel, x, y, z, 0, 0, 0, presentation.depth, spot.sy, spot.sx);
+        const z = surface.z + surface.tangentZ * spot.u;
+        if (surface.axis === 'x') mat4TRS(glModel, x, y, z, 0, 0, 0, presentation.depth, spot.sy, spot.sx);
         else mat4TRS(glModel, x, y, z, 0, 0, 0, spot.sx, spot.sy, presentation.depth);
         drawMesh(
           glMeshes.sphere,

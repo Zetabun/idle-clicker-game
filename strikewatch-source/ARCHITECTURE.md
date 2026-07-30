@@ -70,7 +70,7 @@ share application scope in the listed order.
 | `55-opening-week.js` | Opening-week agenda and safe advance-to-event flow |
 | `56-world-press-awards.js` | Press, awards and honours presentation |
 | `60-renderer-core.js` | WebGL setup, shared drawing primitives and transient first-person presentation state |
-| `61-world-renderer.js` | Arenas, props, decor, doors, world geometry and transient surface decals |
+| `61-world-renderer.js` | Arenas, props, decor, doors, world geometry and surface-supported transient decals |
 | `62-character-renderer.js` | Operators, corpses, armour fit and held weapons |
 | `63-viewmodel-renderer.js` | First-person weapon/viewmodel rendering and viewed-subject change detection |
 | `64-reward-renderer.js` | Reward and crate presentation |

@@ -2452,6 +2452,7 @@
       state.lastState = state.openAmount >= 0.92 ? 'open' : (state.openAmount <= 0.08 ? 'closed' : 'opening');
       return doorStateSnapshot().find(door => door.id === state.id);
     },
+    bloodSurfaceAttachmentForTest: () => bloodSurfaceAttachmentForTest(),
     spectatorDirectorForTest: () => spectatorDirectorForTest(),
     spectatorHandoffPresentationForTest: () => spectatorHandoffPresentationForTest(),
     spectatorHandoffForTest: (deadIndex = spectatorIndex, seconds = 2.05) => {

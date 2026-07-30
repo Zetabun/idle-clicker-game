@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.198';
-  const BUILD_NAME = 'Fixed-Step Match Clock & Stutter Recovery';
-  const BUILD_ID = '12.198.0-fixed-step-match-clock-stutter-recovery';
+  const BUILD_VERSION = '12.199';
+  const BUILD_NAME = 'Surface-Anchored Blood Decals';
+  const BUILD_ID = '12.199.0-surface-anchored-blood-decals';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

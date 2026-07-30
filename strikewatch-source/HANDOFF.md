@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.198 — Fixed-Step Match Clock & Stutter Recovery**
-- Build ID: `12.198.0-fixed-step-match-clock-stutter-recovery`
+- Build: **12.199 — Surface-Anchored Blood Decals**
+- Build ID: `12.199.0-surface-anchored-blood-decals`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.198.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.199.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.199 owns blood surface attachment in `js/61-world-renderer.js`. Preserve `BLOOD_SURFACE_ATTACHMENT`, nearest visible-door-panel selection, material-local door coordinates, wall-pocket clipping, three-point static backing checks and `bloodSurfaceAttachmentForTest()`. Blood remains positive-health-damage-only, shared-raycast, within 1.25m, capped at 18 events, transient and cleared each round. Do not move collision, navigation, line of sight or damage authority into the renderer. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.199.md`.
 
 Build 12.198 owns the visible-time match clock in `js/70-runtime.js`, with lifecycle resets in `js/40-match-flow.js` and `js/50-ui-menus.js`. Preserve `MATCH_CLOCK_POLICY`, the 1/60 fixed step, eight-step frame cap, 500ms debt bound, 750ms background-gap discard, capped presentation delta and `matchClockIntegrityForTest()`. Normal visible intervals must be conserved at 60/30/20/15 FPS in both speed modes; hidden pages, pauses, round changes, speed changes and match exits must not replay stale debt. Build 12.197 remains the intelligence-quality authority. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.198.md`.
 

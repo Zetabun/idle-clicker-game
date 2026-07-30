@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.199 — Surface-Anchored Blood Decals
+
+- Anchors blood decals to sliding door panels so they move into the wall pocket with the door.
+- Rejects unsupported blood footprints at wall corners, removing floating specks.
+- Preserves positive-damage placement, 1.25m range, readable core/drip styling and the 18-event cap.
+- Adds deterministic door-motion, pocket-concealment and corner-support diagnostics.
+- See `AUDIT-12.199.md`.
+
 ## 12.198 — Fixed-Step Match Clock & Stutter Recovery
 
 - Replaces the 33ms match-time truncation with a bounded 1/60 fixed-step accumulator.

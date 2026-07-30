@@ -11,6 +11,6 @@ Read:
 Then load only the task-specific section or audit selected by the routing table
 in `HANDOFF.md`. Do not read every Markdown file or every historical audit.
 
-Current release: **Strikewatch Build 12.198 — Fixed-Step Match Clock & Stutter Recovery**.
+Current release: **Strikewatch Build 12.199 — Surface-Anchored Blood Decals**.
 Editable source is this directory; root `cod.html` is the deployed copy of the
 verified generated standalone.

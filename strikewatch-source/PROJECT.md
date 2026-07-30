@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.198 preserves actual visible match time through a bounded 1/60 fixed-step accumulator, keeping 60/30/20/15 FPS exact at 1× and 2× while discarding hidden/background gaps safely. See `HANDOFF.md` and `AUDIT-12.198.md`.
+Build 12.199 anchors nearby-wall blood to the surface that owns it: sliding-door marks move into their wall pockets, and unsupported corner specks are rejected without changing combat. See `HANDOFF.md` and `AUDIT-12.199.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
