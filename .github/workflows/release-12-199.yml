@@ -1,0 +1,126 @@
+name: Release Build 12.199
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/release-triggers/12.199.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure release identity
+        run: |
+          git config user.name "Zetabun"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply source-first Build 12.199 patch
+        run: |
+          test -f strikewatch-source/HANDOFF.md
+          test -f strikewatch-source/AGENTS.md
+          test -f strikewatch-source/CONTRACTS.md
+          test -f strikewatch-source/AUDIT-12.185.md
+          python3 -m py_compile .github/scripts/release-12-199.py
+          python3 .github/scripts/release-12-199.py
+
+      - name: Build twice and prove determinism
+        working-directory: strikewatch-source
+        run: |
+          python3 -m py_compile build.py
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.199.html dist/strikewatch-build-12.199-size-report.txt dist/strikewatch-build-12.199-css-debt-report.txt > /tmp/build-first.sha256
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.199.html dist/strikewatch-build-12.199-size-report.txt dist/strikewatch-build-12.199-css-debt-report.txt > /tmp/build-second.sha256
+          diff -u /tmp/build-first.sha256 /tmp/build-second.sha256
+
+      - name: Parse all JavaScript outputs
+        run: |
+          for file in strikewatch-source/js/*.js; do node --check "$file"; done
+          node --check strikewatch-source/js/strikewatch.dev.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          html = Path('strikewatch-source/dist/strikewatch-build-12.199.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          if not scripts:
+              raise SystemExit('No inline JavaScript found in standalone')
+          for index, script in enumerate(scripts):
+              path = Path(tempfile.gettempdir()) / f'strikewatch-12-199-inline-{index}.js'
+              path.write_text(script, encoding='utf-8')
+              subprocess.run(['node', '--check', str(path)], check=True)
+          print(f'Parsed {len(scripts)} standalone inline script block(s)')
+          PY
+
+      - name: Run targeted release and regression gates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('.')
+          src = root / 'strikewatch-source'
+          release = json.loads((src / 'RELEASE.json').read_text(encoding='utf-8'))
+          assert release == {
+              'version': '12.199',
+              'name': 'Surface-Anchored Blood Decals',
+              'build_id': '12.199.0-surface-anchored-blood-decals'
+          }, release
+          world = (src / 'js/61-world-renderer.js').read_text(encoding='utf-8')
+          runtime = (src / 'js/70-runtime.js').read_text(encoding='utf-8')
+          core = (src / 'js/00-core.js').read_text(encoding='utf-8')
+          required = [
+              "revision: '12.199-surface-anchored-blood-1'",
+              'function bloodDoorRayHit(',
+              'function bloodDoorSurfaceSnapshot(',
+              'function bloodStaticSpotSupported(',
+              'function bloodSurfaceAttachmentForTest()',
+              'const doorHit = bloodDoorRayHit(',
+              "type: 'door-panel'",
+              'bloodAddSupportedSpot(splatter, core)',
+              'if (!bloodSpotSupported(splatter, spot, surface)) continue;',
+              'BLOOD_SPLATTER_MAX_DISTANCE',
+              'BLOOD_DECAL_LIMIT',
+              "kind: 'drip'",
+              'function clearBloodDecals()',
+              'function drawImpactDecals()'
+          ]
+          missing = [item for item in required if item not in world]
+          assert not missing, missing
+          assert 'bloodSurfaceAttachmentForTest: () => bloodSurfaceAttachmentForTest()' in runtime
+          assert 'bloodSplatterForTest: () => bloodSplatterForTest()' in runtime
+          assert 'impactDecalForTest: () => impactDecalForTest()' in runtime
+          assert "revision: '12.198-fixed-step-match-clock-1'" in runtime
+          assert "revision: '12.197-device-independent-simulation-1'" in core
+          assert (src / 'AUDIT-12.199.md').exists()
+          for name in ['HANDOFF.md', 'AGENTS.md', 'CHANGELOG.md', 'README.md', 'PROJECT.md', 'ARCHITECTURE.md', 'CONTRACTS.md', '00-READ-FIRST-GPT.md']:
+              assert '12.199' in (src / name).read_text(encoding='utf-8'), name
+          assert '12.199' in (src / 'index.html').read_text(encoding='utf-8')
+          standalone = src / 'dist/strikewatch-build-12.199.html'
+          cod = root / 'cod.html'
+          cod.write_bytes(standalone.read_bytes())
+          assert cod.read_bytes() == standalone.read_bytes()
+          print('Build 12.199 targeted source, regression and artifact gates passed')
+          PY
+
+      - name: Remove temporary release machinery
+        run: |
+          rm -f .github/scripts/release-12-199.py
+          rm -f .github/workflows/release-12-199.yml
+          rm -f .github/release-triggers/12.199.txt
+          rmdir .github/release-triggers 2>/dev/null || true
+
+      - name: Commit complete verified release to main
+        run: |
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "Release Build 12.199 surface-anchored blood decals"
+          git push origin main
