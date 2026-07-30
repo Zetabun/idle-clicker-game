@@ -89,7 +89,7 @@ new_quality = r'''  let runtimeQualityPressure = 0;
     : 2;
   const SIMULATION_WORK_POLICY = Object.freeze({
     revision: '12.197-device-independent-simulation-1',
-    windowSeconds: 0.033,
+    windowSeconds: 1 / 60,
     perceptionIdleSeconds: 0.068,
     perceptionCombatSeconds: 0.045,
     perceptionSlotJitterSeconds: 0.004,
@@ -192,7 +192,7 @@ new_quality = r'''  let runtimeQualityPressure = 0;
     return {
       ok: sameSimulation
         && renderStillAdaptive
-        && policy.windowSeconds === 0.033
+        && policy.windowSeconds === 1 / 60
         && policy.perceptionCombatSeconds === 0.045
         && policy.perceptionIdleSeconds === 0.068
         && policy.perceptionPerWindow === 4
@@ -378,6 +378,12 @@ new_frame_budget = '''        // AI and route work reset from simulationClock in
         let remaining = dt * matchSpeedMultiplier;
 '''
 text = one(text, old_frame_budget, new_frame_budget, 'render-frame work reset block')
+text = one(
+    text,
+    '          const step = Math.min(0.033, remaining);',
+    '          const step = Math.min(SIMULATION_WORK_POLICY.windowSeconds, remaining);',
+    'fixed simulation substep'
+)
 profile_pattern = r'''    runtimeQualityProfileForTest: \(\) => \{.*?\n    \},\n    adaptiveResolutionForTest:'''
 profile_replacement = '''    runtimeQualityProfileForTest: () => simulationQualityIndependenceForTest(),
     simulationQualityIndependenceForTest: () => simulationQualityIndependenceForTest(),
@@ -403,22 +409,22 @@ The adaptive runtime tier previously controlled both presentation cost and match
 
 ## Changes
 
-- Added the fixed `SIMULATION_WORK_POLICY` in `js/00-core.js`: 33ms simulation windows, 45ms combat perception, 68ms idle perception, four perception scans, four tactical decisions, two normal route plans and three urgent route plans per window.
+- Added the fixed `SIMULATION_WORK_POLICY` in `js/00-core.js`: 1/60-second simulation windows, 45ms combat perception, 68ms idle perception, four perception scans, four tactical decisions, two normal route plans and three urgent route plans per window.
 - `runtimeQualityTier` remains adaptive but is now render-only. It still controls operator LOD and resolution floors; it no longer enters perception, tactical or navigation policy.
 - Added `simulationWorkWindowIndexForTime()`, `beginSimulationWorkWindow()` and `resetSimulationWorkWindow()`. Work budgets reset from `simulationClock`, not `requestAnimationFrame` frequency.
-- `updateMatchStep()` now opens the relevant simulation-time window before advancing the match. The display-loop reset was removed, and round starts explicitly invalidate the prior work window.
+- `updateMatchStep()` opens the relevant simulation-time window before advancing the match. Low-refresh frames are split into 1/60-second substeps, the display-loop reset was removed, and round starts explicitly invalidate the prior work window.
 - `js/30-bot-ai.js` and `js/20-navigation.js` consume only the fixed policy. Their snapshots report the current simulation window, policy revision and render tier separately.
 - Added `simulationQualityIndependenceForTest()` plus `simulationWorkPolicyForTest()`. The legacy `runtimeQualityProfileForTest()` now routes to the independence diagnostic.
 
 ## Behaviour boundaries
 
-The former Full-tier intelligence policy becomes the one match policy on every device. Weapon values, player statistics, tactics, movement rules, path scoring, line of sight, damage, rewards, saves and schemas are unchanged. Slow devices may still lower resolution and model detail, and the existing 33ms frame-delta cap may slow wall-clock match progress rather than skipping simulation work.
+The former Full-tier perception, tactical and navigation throughput becomes the one match policy on every device. Weapon values, player statistics, tactics, movement rules, path scoring, line of sight, damage, rewards, saves and schemas are unchanged. Slow devices may still lower resolution and model detail, and the existing rendered-frame delta cap may slow wall-clock match progress rather than skipping simulation work.
 
 ## Verification
 
 - The independence diagnostic proves all three render tiers expose identical perception, tactical and navigation policy while operator detail remains tier-sensitive.
 - Source gates prove `runtimeQualityTier` is absent from perception, bot-budget and route-budget decision functions.
-- The simulation window is opened only from `updateMatchStep()` and the old display-frame budget reset is absent.
+- The simulation window is opened only from `updateMatchStep()`, substeps are capped at 1/60 second and the old display-frame budget reset is absent.
 - Every modular JavaScript file, generated bundle and standalone inline script parses with Node.
 - Existing spectator, renderer, navigation, arena, persistence and loadout hooks remain present.
 - Two builds produce identical outputs and root `cod.html` is byte-identical to the standalone.
@@ -429,8 +435,8 @@ text = read(changelog)
 entry = f'''## {VERSION} — {NAME}
 
 - Separates adaptive render quality from match intelligence and route planning.
-- Uses one fixed Full-policy perception/tactical/navigation budget on every device.
-- Resets AI work from 33ms simulation-time windows instead of displayed frames.
+- Uses one fixed former-Full perception/tactical/navigation policy on every device.
+- Resets AI work from 1/60-second simulation windows instead of displayed frames.
 - Adds `simulationQualityIndependenceForTest()` and preserves adaptive resolution/LOD.
 - See `AUDIT-{VERSION}.md`.
 
@@ -448,7 +454,7 @@ text = one(text, '- Build: **12.196 — Clean Spectator Handoffs**', f'- Build: 
 text = one(text, '- Build ID: `12.196.0-clean-spectator-handoffs`', f'- Build ID: `{BUILD_ID}`', 'HANDOFF build id')
 text = one(text, 'strikewatch-source/dist/strikewatch-build-12.196.html', f'strikewatch-source/dist/strikewatch-build-{VERSION}.html', 'HANDOFF standalone path')
 anchor = 'Build 12.196 owns clean first-person subject handoffs across `js/60-renderer-core.js` and `js/63-viewmodel-renderer.js`.'
-note = f'''Build {VERSION} owns the device-independent simulation-work boundary across `js/00-core.js`, `js/20-navigation.js`, `js/30-bot-ai.js`, `js/40-match-flow.js` and `js/70-runtime.js`. Preserve `SIMULATION_WORK_POLICY`, the 0.033-second simulation window, fixed former-Full perception/tactical/navigation limits, render-only `runtimeQualityTier`, round invalidation and `simulationQualityIndependenceForTest()`. Budget resets must originate from `updateMatchStep()`/`simulationClock`, never the display frame. Adaptive resolution and operator LOD may vary by device; match intelligence may not. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-{VERSION}.md`.
+note = f'''Build {VERSION} owns the device-independent simulation-work boundary across `js/00-core.js`, `js/20-navigation.js`, `js/30-bot-ai.js`, `js/40-match-flow.js` and `js/70-runtime.js`. Preserve `SIMULATION_WORK_POLICY`, the 1/60-second simulation window, fixed former-Full perception/tactical/navigation limits, render-only `runtimeQualityTier`, round invalidation and `simulationQualityIndependenceForTest()`. Budget resets must originate from `updateMatchStep()`/`simulationClock`, never the display frame. Adaptive resolution and operator LOD may vary by device; match intelligence may not. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-{VERSION}.md`.
 
 '''
 text = one(text, anchor, note + anchor, 'HANDOFF current release anchor')
@@ -457,7 +463,7 @@ write(handoff, text)
 agents = SRC / 'AGENTS.md'
 text = read(agents)
 anchor = 'Build 12.196 owns clean spectator subject handoffs in `js/60-renderer-core.js` and `js/63-viewmodel-renderer.js`.'
-note = f'''Build {VERSION} owns device-independent match work scheduling. `runtimeQualityTier` is render-only; do not use it in perception intervals, bot work limits, tactical decisions or navigation limits. Keep `SIMULATION_WORK_POLICY` fixed at the former Full policy and reset work through `beginSimulationWorkWindow()` from `updateMatchStep()`, with `startRound()` invalidating the old window. Verify `simulationQualityIndependenceForTest()`, `runtimeQualityGovernorForTest()`, navigation/bot snapshots and adjacent gameplay gates. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-{VERSION}.md`.
+note = f'''Build {VERSION} owns device-independent match work scheduling. `runtimeQualityTier` is render-only; do not use it in perception intervals, bot work limits, tactical decisions or navigation limits. Keep `SIMULATION_WORK_POLICY` fixed at the former Full policy, cap simulation substeps at 1/60 second and reset work through `beginSimulationWorkWindow()` from `updateMatchStep()`, with `startRound()` invalidating the old window. Verify `simulationQualityIndependenceForTest()`, `runtimeQualityGovernorForTest()`, navigation/bot snapshots and adjacent gameplay gates. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-{VERSION}.md`.
 
 '''
 text = one(text, anchor, note + anchor, 'AGENTS current release anchor')
@@ -466,7 +472,7 @@ write(agents, text)
 contracts = SRC / 'CONTRACTS.md'
 text = read(contracts)
 anchor = '- First-person spectator presentation belongs to the currently viewed camera object.'
-contract = '''- Adaptive device quality is presentation-only. Resolution, render LOD and other visual cost may respond to frame pressure, but perception cadence, tactical work and navigation planning use one fixed policy scheduled from simulation time. Their work windows must not reset from `requestAnimationFrame`, refresh rate, hardware concurrency, device memory or render tier. An overloaded device may display fewer frames or advance wall-clock match time more slowly; it must not receive weaker operator intelligence.\n'''
+contract = '''- Adaptive device quality is presentation-only. Resolution, render LOD and other visual cost may respond to frame pressure, but perception cadence, tactical work and navigation planning use one fixed former-Full policy scheduled in 1/60-second simulation windows. Their work windows must not reset from `requestAnimationFrame`, refresh rate, hardware concurrency, device memory or render tier. An overloaded device may display fewer frames or advance wall-clock match time more slowly; it must not receive weaker operator intelligence.\n'''
 text = one(text, anchor, contract + anchor, 'simulation quality contract anchor')
 write(contracts, text)
 
@@ -492,7 +498,7 @@ write(readme, text)
 project = SRC / 'PROJECT.md'
 text = read(project)
 old_project = 'Build 12.196 resets transient first-person weapon and camera-response presentation whenever the viewed operator changes, then applies a reduced-motion-aware canvas handoff while preserving selection timing, gameplay, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.196.md`.'
-new_project = f'Build {VERSION} separates adaptive presentation quality from match intelligence, using fixed simulation-time perception, tactical and navigation budgets on every device while preserving adaptive resolution, persistence and schemas. See `HANDOFF.md` and `AUDIT-{VERSION}.md`.'
+new_project = f'Build {VERSION} separates adaptive presentation quality from match intelligence, using fixed 1/60-second perception, tactical and navigation work windows on every device while preserving adaptive resolution, persistence and schemas. See `HANDOFF.md` and `AUDIT-{VERSION}.md`.'
 text = one(text, old_project, new_project, 'PROJECT current release')
 write(project, text)
 
@@ -506,7 +512,7 @@ flow_text = read(match_flow)
 runtime_text = read(runtime)
 required_core = [
     "revision: '12.197-device-independent-simulation-1'",
-    'windowSeconds: 0.033',
+    'windowSeconds: 1 / 60',
     'perceptionIdleSeconds: 0.068',
     'perceptionCombatSeconds: 0.045',
     'perceptionPerWindow: 4',
@@ -531,5 +537,7 @@ if runtime_text.count('beginSimulationWorkWindow();') != 1:
     raise SystemExit('Simulation work window entry is missing or duplicated')
 if 'One navigation budget spans every fixed simulation substep' in runtime_text:
     raise SystemExit('Legacy display-frame work reset survived')
+if 'const step = Math.min(SIMULATION_WORK_POLICY.windowSeconds, remaining);' not in runtime_text:
+    raise SystemExit('Simulation substeps are not capped by the fixed work window')
 if 'simulationQualityIndependenceForTest: () => simulationQualityIndependenceForTest()' not in runtime_text:
     raise SystemExit('Public simulation independence hook is missing')
