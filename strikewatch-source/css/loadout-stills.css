@@ -61,6 +61,24 @@
 @media (orientation: portrait) and (max-width: 900px) {
   .career-loadout-still-stage { min-height: 168px; }
   .career-loadout-still-stage.armour { min-height: 260px; }
+
+  /* --- Build 12.189: compact equipment preview framing ---------------------
+     Shared JavaScript zoom handles every compact width. On portrait phones,
+     keep the bottom-left interaction label above long guns and armour. */
+  #menuContent .career-inspector-stage,
+  #menuContent .career-armour-inspector-stage {
+    isolation: isolate;
+  }
+
+  #menuContent .career-inspector-callout {
+    z-index: 20;
+    max-width: calc(100% - 24px);
+    padding: 7px 9px;
+    background: linear-gradient(90deg, rgba(2, 8, 12, .96), rgba(2, 8, 12, .84) 76%, rgba(2, 8, 12, 0));
+    box-shadow: 0 0 18px rgba(0, 0, 0, .34);
+    text-shadow: 0 1px 2px #000;
+    pointer-events: none;
+  }
 }
 
 /* --- Build 12.188: Field Crate Exchange cached armour stills ---------------

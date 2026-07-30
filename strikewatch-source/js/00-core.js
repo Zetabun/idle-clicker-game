@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.188';
-  const BUILD_NAME = 'Armour Preview Optimisation';
-  const BUILD_ID = '12.188.0-armour-preview-optimisation';
+  const BUILD_VERSION = '12.189';
+  const BUILD_NAME = 'Mobile Equipment Preview Framing';
+  const BUILD_ID = '12.189.0-mobile-equipment-preview-framing';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

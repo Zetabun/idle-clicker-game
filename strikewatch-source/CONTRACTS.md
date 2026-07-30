@@ -34,6 +34,7 @@ current task. Release-specific implementation detail belongs in the matching
   density.
 - Require no document-level horizontal overflow at supported widths.
 - Compact Armoury inventory cards use explicit thumbnail, copy, comparison and issue-state areas. The issue state remains horizontal and the list must not become a document-level or nested horizontal carousel at supported compact widths.
+- Compact weapon and armour inspectors open at 0.78 zoom below 1024px and at 1.0 on desktop; on portrait phones, their interaction callout remains above model geometry with a bounded readable backing. Keep the shared derived fit authority and existing manual zoom bounds rather than adding per-item scale overrides.
 - Touch actions affected by a change should remain at least 44px.
 - Meaningful mobile microcopy has a 12px floor; explanatory paragraphs and
   decision-support copy use at least 14px. Decorative glyphs, transient damage

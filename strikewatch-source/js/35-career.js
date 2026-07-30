@@ -4297,10 +4297,16 @@
     for (const rig of rigs) rig.style.setProperty('--viewer-zoom', String(careerWeaponViewerState.zoom));
   }
 
+  const CAREER_COMPACT_LOADOUT_VIEWER_ZOOM = 0.78;
+
+  function careerLoadoutViewerDefaultZoom(viewportWidth = window.innerWidth) {
+    return Number(viewportWidth) < 1024 ? CAREER_COMPACT_LOADOUT_VIEWER_ZOOM : 1;
+  }
+
   function resetCareerWeaponViewer(stopAuto = true) {
     careerWeaponViewerState.yaw = -28;
     careerWeaponViewerState.pitch = -10;
-    careerWeaponViewerState.zoom = 1;
+    careerWeaponViewerState.zoom = careerLoadoutViewerDefaultZoom();
     if (stopAuto) careerWeaponViewerState.autoRotate = false;
     syncCareerWeaponViewerTransform();
     syncCareerWeaponViewerZoom();
@@ -4396,7 +4402,7 @@
   function resetCareerArmourViewer(stopAuto = true) {
     careerArmourViewerState.yaw = -30;
     careerArmourViewerState.pitch = -7;
-    careerArmourViewerState.zoom = 1;
+    careerArmourViewerState.zoom = careerLoadoutViewerDefaultZoom();
     if (stopAuto) careerArmourViewerState.autoRotate = false;
     syncCareerArmourViewerTransform();
   }
@@ -4462,6 +4468,21 @@
     if (bounds.bottom <= 0 || bounds.top >= window.innerHeight || bounds.right <= 0 || bounds.left >= window.innerWidth) return;
     careerArmourViewerState.yaw += dt * 18;
     syncCareerArmourViewerTransform();
+  }
+
+  function mobileLoadoutPreviewFramingForTest() {
+    const phoneZoom = careerLoadoutViewerDefaultZoom(390);
+    const foldZoom = careerLoadoutViewerDefaultZoom(768);
+    const desktopZoom = careerLoadoutViewerDefaultZoom(1024);
+    return {
+      ok: phoneZoom === 0.78 && foldZoom === 0.78 && desktopZoom === 1,
+      breakpoint: 1024,
+      phoneZoom,
+      foldZoom,
+      desktopZoom,
+      sharedByWeaponAndArmour: true,
+      desktopUnchanged: desktopZoom === 1
+    };
   }
 
   // Build 12.137: re-offer an unclaimed victory crate. Called when the manager

@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.188 — Armour Preview Optimisation**
-- Build ID: `12.188.0-armour-preview-optimisation`
+- Build: **12.189 — Mobile Equipment Preview Framing**
+- Build ID: `12.189.0-mobile-equipment-preview-framing`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.188.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.189.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.189 owns compact weapon and armour inspector framing. Below 1024px both inspectors open at 0.78 zoom through shared `careerLoadoutViewerDefaultZoom()` logic; desktop remains at 1.0 and the manual 0.72–1.35 range stays intact. The portrait-mobile callout remains above the model with a bounded backing. Keep `mobileLoadoutPreviewFramingForTest()`, `mobileInterfaceAuditForTest()`, `typographyConsistencyForTest()` and the Build 12.188 armour/still gates green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.189.md`.
 
 Build 12.188 owns armour preview framing and Supply Depot armour-card performance. Large cached armour stills use a 0.82 fit margin, thumbnails retain 0.94, and Field Crate Exchange stock uses forward-facing `careerArmourStillMarkup()` renders at 0.80 instead of live `careerArmourVisualMarkup()` rigs. Keep the yaw 0 / pitch -6 view, on-demand Inspect in 3D path and `armourPreviewOptimisationForTest()` green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.188.md`.
 

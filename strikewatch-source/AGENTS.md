@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.189 owns compact equipment inspector framing. Below 1024px weapon and armour inspectors open through `careerLoadoutViewerDefaultZoom()` at 0.78; desktop remains at 1.0. Preserve the manual 0.72–1.35 range, derived fit authority, single-inspector mounting and Build 12.188 still margins. Keep the portrait-mobile callout above the model with a bounded backing. Verify `mobileLoadoutPreviewFramingForTest()`, `mobileInterfaceAuditForTest()`, `typographyConsistencyForTest()`, `armourPreviewOptimisationForTest()` and the loadout/armour gates. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-12.189.md`.
+
 Build 12.188 owns armour preview framing and Supply Depot armour-card performance. Large cached armour stills use a 0.82 fit margin, thumbnails retain 0.94, and Field Crate Exchange stock must use forward-facing `careerArmourStillMarkup()` renders at 0.80 rather than live `careerArmourVisualMarkup()` rigs. The on-demand interactive Armoury inspector remains unchanged. Keep `armourPreviewOptimisationForTest()`, `loadoutStillAuditForTest()`, `armour3dPresentationForTest()`, `armourSystemForTest()` and `loadoutStillForTest()` green. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-12.188.md`.
 
 Build 12.187 owns report XP safety. Historic, imported and partial after-action summaries must route visible XP through `careerSafeXpAward()` so absent or malformed values cannot render as `undefined XP`. Keep match XP calculation and settlement unchanged, retain the browser-accessible `careerReportXpSafetyForTest()` diagnostic, and preserve save schema 19 plus diagnostics schema 1. See `AUDIT-12.187.md`.

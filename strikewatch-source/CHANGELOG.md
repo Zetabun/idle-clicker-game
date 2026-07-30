@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.189 — Mobile Equipment Preview Framing
+
+- Pulls weapon and armour Inspect in 3D views back on compact screens while preserving desktop framing.
+- Keeps the bottom-left interaction label readable above large armour and long-gun models on portrait phones.
+- Leaves model geometry, manual zoom bounds, cached stills, gameplay and schemas unchanged.
+- See `AUDIT-12.189.md`.
+
 ## 12.188 — Armour Preview Optimisation
 
 - Pulls large cached Armoury armour stills back for complete-set framing while retaining the established thumbnail fit.
