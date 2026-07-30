@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.187 closes SW-003 by routing historic and partial after-action XP through one safe formatter, so absent or malformed values cannot render as `undefined XP`. Match rewards, settlement, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.187.md`.
+Build 12.188 improves armour presentation and Supply Depot performance by pulling large cached armour stills back for complete-set framing and replacing four live store armour rigs with forward-facing cached renders. The on-demand interactive inspector, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.188.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.187 — Report XP Safety**
-- Build ID: `12.187.0-report-xp-safety`
+- Build: **12.188 — Armour Preview Optimisation**
+- Build ID: `12.188.0-armour-preview-optimisation`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.187.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.188.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.188 owns armour preview framing and Supply Depot armour-card performance. Large cached armour stills use a 0.82 fit margin, thumbnails retain 0.94, and Field Crate Exchange stock uses forward-facing `careerArmourStillMarkup()` renders at 0.80 instead of live `careerArmourVisualMarkup()` rigs. Keep the yaw 0 / pitch -6 view, on-demand Inspect in 3D path and `armourPreviewOptimisationForTest()` green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.188.md`.
 
 Build 12.187 closes SW-003. Historic, imported and partial after-action summaries now pass visible XP through `careerSafeXpAward()`, preventing `undefined XP` while preserving the existing match-reward calculation and settlement path. Keep `careerReportXpSafetyForTest()` green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.187.md`.
 

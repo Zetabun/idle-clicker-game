@@ -972,7 +972,7 @@
         ? (purchaseLocked ? `PURCHASED · OWNED ${owned}` : (affordable ? `BUY ANOTHER · ${teamCredits(armour.price)}` : 'INSUFFICIENT CASH'))
         : (owned > 0 ? `BUY ANOTHER · ${teamCredits(armour.price)}` : `BUY ${teamCredits(armour.price)}`);
       return `<article class="cash-armour-offer ${escapeCareerHtml(armour.classId)} ${feedback ? 'purchase-confirmed' : ''}" data-store-armour-id="${escapeCareerHtml(armour.id)}" data-store-owned-count="${owned}" tabindex="-1">
-        <div class="cash-armour-visual">${typeof careerArmourVisualMarkup === 'function' ? careerArmourVisualMarkup(armour, 'store') : ''}</div>
+        <div class="cash-armour-visual">${typeof careerArmourStillMarkup === 'function' ? careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80, className: 'field-crate-armour-still armour' }) : ''}</div>
         <span>${escapeCareerHtml(armour.quality)} · ${escapeCareerHtml(armour.coverage)}</span>
         <strong>${escapeCareerHtml(armour.name)}</strong>
         <p>${escapeCareerHtml(armour.description)}</p>

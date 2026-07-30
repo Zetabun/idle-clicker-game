@@ -344,12 +344,14 @@
     const width = Number(options.width) || 240;
     const height = Number(options.height) || 260;
     const thumbnail = Boolean(options.thumbnail);
-    const key = `a|${id}|${width}x${height}|${thumbnail ? 't' : 'd'}`;
+    const defaultMargin = thumbnail ? 0.94 : 0.82;
+    const margin = Number.isFinite(Number(options.margin)) ? Number(options.margin) : defaultMargin;
+    const key = `a|${id}|${width}x${height}|${thumbnail ? 't' : 'd'}|m${margin.toFixed(3)}`;
     return loadoutStillDataUrl(key, () => loadoutStillRender(
       thumbnail && typeof careerArmourThumbnailParts === 'function'
         ? careerArmourThumbnailParts(armour)
         : careerArmour3dParts(armour),
-      { width, height, fixedHeight: thumbnail, yaw: LOADOUT_STILL_ARMOUR_VIEW.yaw, pitch: LOADOUT_STILL_ARMOUR_VIEW.pitch, armour: true }
+      { width, height, fixedHeight: thumbnail, margin, yaw: LOADOUT_STILL_ARMOUR_VIEW.yaw, pitch: LOADOUT_STILL_ARMOUR_VIEW.pitch, armour: true }
     ));
   }
 
@@ -367,6 +369,23 @@
     const extra = options.className ? ` ${options.className}` : '';
     if (!url) return `<span class="career-loadout-still fallback${extra}" role="img" aria-label="${label}"></span>`;
     return `<img class="career-loadout-still${extra}" src="${url}" alt="${label}" draggable="false">`;
+  }
+
+  function armourPreviewOptimisationForTest() {
+    const sample = typeof getCareerArmour === 'function' ? getCareerArmour('response-carrier') : null;
+    const first = sample ? careerArmourStillDataUrl(sample, { width: 240, height: 280 }) : null;
+    const second = sample ? careerArmourStillDataUrl(sample, { width: 240, height: 280 }) : null;
+    const store = sample ? careerArmourStillDataUrl(sample, { width: 240, height: 280, margin: 0.80 }) : null;
+    return {
+      ok: Boolean(sample && first && second && store && first === second),
+      detailMargin: 0.82,
+      thumbnailMargin: 0.94,
+      storeMargin: 0.80,
+      forwardFacingYaw: LOADOUT_STILL_ARMOUR_VIEW.yaw,
+      forwardFacingPitch: LOADOUT_STILL_ARMOUR_VIEW.pitch,
+      cacheReused: Boolean(first && first === second),
+      cachedStills: LOADOUT_STILL_CACHE.size
+    };
   }
 
   function loadoutStillAuditForTest() {

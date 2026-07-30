@@ -62,3 +62,13 @@
   .career-loadout-still-stage { min-height: 168px; }
   .career-loadout-still-stage.armour { min-height: 260px; }
 }
+
+/* --- Build 12.188: Field Crate Exchange cached armour stills ---------------
+   Store cards use the same forward-facing cached canvas renderer as Armoury,
+   rather than keeping four continuously composited CSS-3D rigs alive. */
+.cash-armour-visual .career-loadout-still.field-crate-armour-still {
+  width: min(100%, 240px);
+  max-height: 280px;
+  margin: 0 auto;
+  object-fit: contain;
+}

@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.187';
-  const BUILD_NAME = 'Report XP Safety';
-  const BUILD_ID = '12.187.0-report-xp-safety';
+  const BUILD_VERSION = '12.188';
+  const BUILD_NAME = 'Armour Preview Optimisation';
+  const BUILD_ID = '12.188.0-armour-preview-optimisation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

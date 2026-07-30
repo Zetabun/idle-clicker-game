@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.187';
-  const BUILD_NAME = 'Report XP Safety';
-  const BUILD_ID = '12.187.0-report-xp-safety';
+  const BUILD_VERSION = '12.188';
+  const BUILD_NAME = 'Armour Preview Optimisation';
+  const BUILD_ID = '12.188.0-armour-preview-optimisation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -21810,7 +21810,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         ? (purchaseLocked ? `PURCHASED · OWNED ${owned}` : (affordable ? `BUY ANOTHER · ${teamCredits(armour.price)}` : 'INSUFFICIENT CASH'))
         : (owned > 0 ? `BUY ANOTHER · ${teamCredits(armour.price)}` : `BUY ${teamCredits(armour.price)}`);
       return `<article class="cash-armour-offer ${escapeCareerHtml(armour.classId)} ${feedback ? 'purchase-confirmed' : ''}" data-store-armour-id="${escapeCareerHtml(armour.id)}" data-store-owned-count="${owned}" tabindex="-1">
-        <div class="cash-armour-visual">${typeof careerArmourVisualMarkup === 'function' ? careerArmourVisualMarkup(armour, 'store') : ''}</div>
+        <div class="cash-armour-visual">${typeof careerArmourStillMarkup === 'function' ? careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80, className: 'field-crate-armour-still armour' }) : ''}</div>
         <span>${escapeCareerHtml(armour.quality)} · ${escapeCareerHtml(armour.coverage)}</span>
         <strong>${escapeCareerHtml(armour.name)}</strong>
         <p>${escapeCareerHtml(armour.description)}</p>
@@ -39535,12 +39535,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const width = Number(options.width) || 240;
     const height = Number(options.height) || 260;
     const thumbnail = Boolean(options.thumbnail);
-    const key = `a|${id}|${width}x${height}|${thumbnail ? 't' : 'd'}`;
+    const defaultMargin = thumbnail ? 0.94 : 0.82;
+    const margin = Number.isFinite(Number(options.margin)) ? Number(options.margin) : defaultMargin;
+    const key = `a|${id}|${width}x${height}|${thumbnail ? 't' : 'd'}|m${margin.toFixed(3)}`;
     return loadoutStillDataUrl(key, () => loadoutStillRender(
       thumbnail && typeof careerArmourThumbnailParts === 'function'
         ? careerArmourThumbnailParts(armour)
         : careerArmour3dParts(armour),
-      { width, height, fixedHeight: thumbnail, yaw: LOADOUT_STILL_ARMOUR_VIEW.yaw, pitch: LOADOUT_STILL_ARMOUR_VIEW.pitch, armour: true }
+      { width, height, fixedHeight: thumbnail, margin, yaw: LOADOUT_STILL_ARMOUR_VIEW.yaw, pitch: LOADOUT_STILL_ARMOUR_VIEW.pitch, armour: true }
     ));
   }
 
@@ -39558,6 +39560,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const extra = options.className ? ` ${options.className}` : '';
     if (!url) return `<span class="career-loadout-still fallback${extra}" role="img" aria-label="${label}"></span>`;
     return `<img class="career-loadout-still${extra}" src="${url}" alt="${label}" draggable="false">`;
+  }
+
+  function armourPreviewOptimisationForTest() {
+    const sample = typeof getCareerArmour === 'function' ? getCareerArmour('response-carrier') : null;
+    const first = sample ? careerArmourStillDataUrl(sample, { width: 240, height: 280 }) : null;
+    const second = sample ? careerArmourStillDataUrl(sample, { width: 240, height: 280 }) : null;
+    const store = sample ? careerArmourStillDataUrl(sample, { width: 240, height: 280, margin: 0.80 }) : null;
+    return {
+      ok: Boolean(sample && first && second && store && first === second),
+      detailMargin: 0.82,
+      thumbnailMargin: 0.94,
+      storeMargin: 0.80,
+      forwardFacingYaw: LOADOUT_STILL_ARMOUR_VIEW.yaw,
+      forwardFacingPitch: LOADOUT_STILL_ARMOUR_VIEW.pitch,
+      cacheReused: Boolean(first && first === second),
+      cachedStills: LOADOUT_STILL_CACHE.size
+    };
   }
 
   function loadoutStillAuditForTest() {

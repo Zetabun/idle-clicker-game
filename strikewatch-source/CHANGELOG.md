@@ -1,5 +1,11 @@
 # Release history router
 
+## 12.188 — Armour Preview Optimisation
+
+- Pulls large cached Armoury armour stills back for complete-set framing while retaining the established thumbnail fit.
+- Replaces four live Field Crate Exchange armour rigs with forward-facing cached still renders while leaving Inspect in 3D unchanged.
+- See `AUDIT-12.188.md`.
+
 ## 12.187 — Report XP Safety
 
 - Completes SW-003 by preventing missing or malformed historic report XP values from rendering as `undefined XP`.
