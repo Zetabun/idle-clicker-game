@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.189 improves compact Armoury readability by opening weapon and armour inspectors at a pulled-back mobile zoom and protecting the interaction label from model overlap. Desktop framing, manual zoom bounds, cached stills, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.189.md`.
+Build 12.190 improves battle presentation by letting moving operators retain a restrained smooth response to arena cool and warm light pools while preserving the shimmer-safe stable average and disabled moving flicker. It adds no render pass or draw calls and leaves gameplay, persistence and schemas unchanged. See `HANDOFF.md` and `AUDIT-12.190.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

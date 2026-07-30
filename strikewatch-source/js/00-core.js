@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.189';
-  const BUILD_NAME = 'Mobile Equipment Preview Framing';
-  const BUILD_ID = '12.189.0-mobile-equipment-preview-framing';
+  const BUILD_VERSION = '12.190';
+  const BUILD_NAME = 'Operator Environmental Light Pickup';
+  const BUILD_ID = '12.190.0-operator-environmental-light-pickup';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

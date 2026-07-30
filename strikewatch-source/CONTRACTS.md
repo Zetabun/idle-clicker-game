@@ -103,6 +103,11 @@ current task. Release-specific implementation detail belongs in the matching
   moves through the world uses model space so detail travels with it. Mixing
   them makes a moving surface shimmer. Detail frequency stays under roughly 40
   cycles per unit of whichever space is sampled.
+- Moving local-detail geometry may take only a bounded smooth share of the
+  existing positional overhead pools, blended against the stable averages.
+  Stepped moving flicker remains disabled, static geometry keeps the original
+  pool values exactly, and this response must not add a pass, texture, uniform
+  or draw call without an explicit measured budget.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

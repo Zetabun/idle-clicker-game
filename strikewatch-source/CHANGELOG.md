@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.190 — Operator Environmental Light Pickup
+
+- Restores restrained environmental light response to operators, corpses and the first-person viewmodel without reintroducing moving-surface flicker.
+- Blends 25% smooth local cool/warm light with 75% of the established stable averages, using the existing shader pass and light-pool calculations.
+- Adds no draw calls, meshes, textures, passes or uniforms and leaves gameplay, saves and schemas unchanged.
+- See `AUDIT-12.190.md`.
+
 ## 12.189 — Mobile Equipment Preview Framing
 
 - Pulls weapon and armour Inspect in 3D views back on compact screens while preserving desktop framing.

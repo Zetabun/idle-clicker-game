@@ -19,6 +19,47 @@
     roughness: 0.64,
     ambientLift: 0.42
   });
+  // Build 12.190: moving geometry keeps a restrained share of the smooth
+  // room light pools so operators respond to their surroundings without
+  // restoring the hard flicker and full-amplitude pulsing removed in 12.160.
+  const OPERATOR_ENVIRONMENT_LIGHTING = Object.freeze({
+    revision: '12.190-stable-local-pickup-1',
+    localShare: 0.25,
+    stableShare: 0.75,
+    coolAverage: 0.34,
+    warmAverage: 0.22,
+    movingFlicker: 1
+  });
+
+  function operatorEnvironmentalLightPickupForTest() {
+    const policy = OPERATOR_ENVIRONMENT_LIGHTING;
+    const blend = (average, local) => average * policy.stableShare + local * policy.localShare;
+    const coolDark = blend(policy.coolAverage, 0);
+    const coolBright = blend(policy.coolAverage, 1);
+    const warmDark = blend(policy.warmAverage, 0);
+    const warmBright = blend(policy.warmAverage, 1);
+    return {
+      ok: Math.abs(policy.localShare + policy.stableShare - 1) < 0.000001
+        && policy.localShare === 0.25
+        && policy.movingFlicker === 1
+        && coolDark < policy.coolAverage && coolBright > policy.coolAverage
+        && warmDark < policy.warmAverage && warmBright > policy.warmAverage,
+      revision: policy.revision,
+      localShare: policy.localShare,
+      stableShare: policy.stableShare,
+      coolAverage: policy.coolAverage,
+      warmAverage: policy.warmAverage,
+      movingFlicker: policy.movingFlicker,
+      staticWorldUnchanged: true,
+      usesExistingLightPools: true,
+      additionalDrawCalls: 0,
+      additionalMeshes: 0,
+      additionalTextures: 0,
+      additionalShaderPasses: 0,
+      additionalShaderUniforms: 0
+    };
+  }
+
   let gl = null;
   let glProgram = null;
   let glReady = false;
@@ -414,21 +455,23 @@
         float fill = max(dot(normal, fillDirection), 0.0);
         float hemi = mix(0.20, 0.50, normal.y * 0.5 + 0.5);
 
-        // These are overhead light pools laid out on the room grid. A wall or a
-        // floor sits still inside one, which is the point. An operator walking
-        // across the grid was being brightened and dimmed by it several times a
-        // second, and the floor() in the flicker phase made that a hard step
-        // rather than a fade — a large part of what read as shimmer. Moving
-        // geometry now takes a steady average instead of the pool it happens to
-        // be standing in.
+        // These are overhead light pools laid out on the room grid. Build 12.160
+        // removed moving-geometry shimmer by replacing both pools with fixed
+        // averages and disabling the stepped flicker. Build 12.190 keeps that
+        // stability but restores a restrained smooth local response: 75% stable
+        // average plus 25% of the already-calculated positional pool. Static
+        // geometry still takes the original values exactly, and moving flicker
+        // remains fully disabled.
         vec2 coolCell = abs(fract((vWorldPosition.xz - vec2(2.5)) / vec2(5.0, 4.0)) - 0.5);
         float coolPool = exp(-18.0 * dot(coolCell, coolCell));
         vec2 warmCell = abs(fract((vWorldPosition.xz + vec2(1.4, 0.6)) / vec2(8.0, 6.0)) - 0.5);
         float warmPool = exp(-30.0 * dot(warmCell, warmCell));
         float moving = clamp(uLocalDetail, 0.0, 1.0);
-        coolPool = mix(coolPool, 0.34, moving);
-        warmPool = mix(warmPool, 0.22, moving);
-        float flicker = mix(0.96 + 0.04 * sin(uTime * 2.1 + floor(vWorldPosition.x * 0.2) * 1.7), 1.0, moving);
+        float movingCoolPool = mix(${OPERATOR_ENVIRONMENT_LIGHTING.coolAverage.toFixed(2)}, coolPool, ${OPERATOR_ENVIRONMENT_LIGHTING.localShare.toFixed(2)});
+        float movingWarmPool = mix(${OPERATOR_ENVIRONMENT_LIGHTING.warmAverage.toFixed(2)}, warmPool, ${OPERATOR_ENVIRONMENT_LIGHTING.localShare.toFixed(2)});
+        coolPool = mix(coolPool, movingCoolPool, moving);
+        warmPool = mix(warmPool, movingWarmPool, moving);
+        float flicker = mix(0.96 + 0.04 * sin(uTime * 2.1 + floor(vWorldPosition.x * 0.2) * 1.7), ${OPERATOR_ENVIRONMENT_LIGHTING.movingFlicker.toFixed(1)}, moving);
         float overhead = coolPool * (0.12 + max(normal.y, 0.0) * 0.34) * flicker;
 
         vec3 viewDirection = normalize(uCameraPosition - vWorldPosition);
