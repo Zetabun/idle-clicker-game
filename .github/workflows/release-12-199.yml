@@ -113,6 +113,7 @@ jobs:
 
           world = (src / 'js/61-world-renderer.js').read_text(encoding='utf-8')
           runtime = (src / 'js/70-runtime.js').read_text(encoding='utf-8')
+          checkpoints = (src / 'js/79-save-checkpoints.js').read_text(encoding='utf-8')
           core = (src / 'js/00-core.js').read_text(encoding='utf-8')
           required = [
               "revision: '12.199-surface-anchored-blood-1'",
@@ -135,10 +136,10 @@ jobs:
               raise SystemExit(f'Missing Build 12.199 renderer anchors: {missing!r}')
           if 'bloodSurfaceAttachmentForTest: () => bloodSurfaceAttachmentForTest()' not in runtime:
               raise SystemExit('Missing current debug API insertion for bloodSurfaceAttachmentForTest')
-          if 'bloodSplatterForTest: () => bloodSplatterForTest()' not in runtime:
-              raise SystemExit('Missing existing bloodSplatterForTest debug API')
-          if 'impactDecalForTest: () => impactDecalForTest()' not in runtime:
-              raise SystemExit('Missing existing impactDecalForTest debug API')
+          if 'window.__strikeDebug.bloodSplatterForTest = () =>' not in checkpoints:
+              raise SystemExit('Missing existing bloodSplatterForTest checkpoint diagnostic')
+          if 'window.__strikeDebug.impactDecalForTest = (' not in checkpoints:
+              raise SystemExit('Missing existing impactDecalForTest checkpoint diagnostic')
           if "revision: '12.198-fixed-step-match-clock-1'" not in runtime:
               raise SystemExit('Build 12.198 match-clock regression anchor missing')
           if "revision: '12.197-device-independent-simulation-1'" not in core:
