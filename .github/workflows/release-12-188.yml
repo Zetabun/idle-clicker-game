@@ -61,7 +61,6 @@ jobs:
           grep -F "careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80" strikewatch-source/js/38-development.js
           ! grep -F "careerArmourVisualMarkup(armour, 'store')" strikewatch-source/js/38-development.js
           grep -F "function armourPreviewOptimisationForTest()" strikewatch-source/js/57-loadout-stills.js
-          grep -F "armourPreviewOptimisationForTest: () =>" strikewatch-source/js/70-runtime.js
           test -f strikewatch-source/AUDIT-12.188.md
           python3 - <<'PY'
           import json
@@ -91,6 +90,7 @@ jobs:
           test -f dist/strikewatch-build-12.188.html
           test -f dist/strikewatch-build-12.188-size.json
           test -f dist/strikewatch-build-12.188-css-debt.json
+          grep -F "function armourPreviewOptimisationForTest()" js/strikewatch.dev.js
           cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
           cp dist/strikewatch-build-12.188.html /tmp/strikewatch-build.first.html
           cp dist/strikewatch-build-12.188-size.json /tmp/strikewatch-size.first.json
