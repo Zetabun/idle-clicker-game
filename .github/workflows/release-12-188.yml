@@ -51,13 +51,14 @@ jobs:
       - name: Apply release patch
         run: python3 .github/scripts/release-12-188.py
 
-      - name: Verify release metadata and source routing
+      - name: Verify release identity and source routing
         run: |
           grep -F "const BUILD_VERSION = '12.188'" strikewatch-source/js/00-core.js
           grep -F "const BUILD_NAME = 'Armour Preview Optimisation'" strikewatch-source/js/00-core.js
           grep -F "const BUILD_ID = '12.188.0-armour-preview-optimisation'" strikewatch-source/js/00-core.js
-          grep -F "STRIKEWATCH BUILD 12.188" strikewatch-source/index.html
-          grep -F "BUILD 12.188" strikewatch-source/index.html
+          grep -F '<title>Strikewatch 12.188: Armour Preview Optimisation</title>' strikewatch-source/index.html
+          grep -F 'css/loadout-stills.css?v=12.188.0-armour-preview-optimisation' strikewatch-source/index.html
+          grep -F 'id="managerBuildVersion">12.188</b>' strikewatch-source/index.html
           grep -F "careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80" strikewatch-source/js/38-development.js
           ! grep -F "careerArmourVisualMarkup(armour, 'store')" strikewatch-source/js/38-development.js
           grep -F "function armourPreviewOptimisationForTest()" strikewatch-source/js/57-loadout-stills.js
@@ -121,9 +122,11 @@ jobs:
           css = Path('strikewatch-source/css/loadout-stills.css').read_text(encoding='utf-8')
           required_stills = [
               "const LOADOUT_STILL_ARMOUR_VIEW = Object.freeze({ yaw: 0, pitch: -6 })",
-              "const margin = Number.isFinite(Number(options.margin)) ? Number(options.margin) : 0.82",
+              "const defaultMargin = thumbnail ? 0.94 : 0.82",
+              "const margin = Number.isFinite(Number(options.margin)) ? Number(options.margin) : defaultMargin",
               "|m${margin.toFixed(3)}`",
               'function armourPreviewOptimisationForTest()',
+              'storeMargin: 0.80',
               'cacheReused: Boolean(first && first === second)'
           ]
           missing = [value for value in required_stills if value not in stills]
@@ -135,13 +138,9 @@ jobs:
               raise SystemExit('Expected exactly one cached store-armour still call')
           if 'Build 12.188: Field Crate Exchange cached armour stills' not in css:
               raise SystemExit('Store still CSS boundary missing')
-          required_existing = [
-              'function loadoutStillAuditForTest()',
-              'careerArmour3dParts(armour)'
-          ]
-          missing_existing = [value for value in required_existing if value not in stills]
-          if missing_existing:
-              raise SystemExit(f'Existing still-renderer authority missing: {missing_existing}')
+          for existing in ['function loadoutStillAuditForTest()', 'careerArmour3dParts(armour)']:
+              if existing not in stills:
+                  raise SystemExit(f'Existing still-renderer authority missing: {existing}')
           PY
 
       - name: Verify existing diagnostic hooks remain
