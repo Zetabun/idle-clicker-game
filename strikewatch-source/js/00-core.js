@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.191';
-  const BUILD_NAME = 'Operator Silhouette Separation';
-  const BUILD_ID = '12.191.0-operator-silhouette-separation';
+  const BUILD_VERSION = '12.192';
+  const BUILD_NAME = 'Directional Operator Contact Shadows';
+  const BUILD_ID = '12.192.0-directional-operator-contact-shadows';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

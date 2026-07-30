@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.191 — Operator Silhouette Separation**
-- Build ID: `12.191.0-operator-silhouette-separation`
+- Build: **12.192 — Directional Operator Contact Shadows**
+- Build ID: `12.192.0-directional-operator-contact-shadows`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.191.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.192.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.192 owns directional living-operator contact shadows in `js/62-character-renderer.js`. Preserve `OPERATOR_CONTACT_SHADOW`, the reusable `operatorContactShadowScratch`, `operatorContactShadowProfile()` and `operatorContactShadowForTest()`. Low detail remains one disc and medium/full remain two; the broad component offsets away from the shared key light, the inner component stays contact-weighted, crouch is wider/denser and run is longer/softer. Corpse shadows remain unchanged. Do not add shadow maps, meshes, textures, passes, uniforms or draw calls. Keep Builds 12.190/12.191 lighting gates, operator AO, culling and arena/navigation integrity green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.192.md`.
 
 Build 12.191 owns third-person operator silhouette separation. The existing local-detail uniform now carries mode 0 for static geometry, 1 for living/fallen operators and 2 for the first-person viewmodel. Only mode 1 receives the bounded 0.028 base plus 0.052 edge lift; static geometry and viewmodels remain unchanged. Preserve `OPERATOR_SILHOUETTE_LIGHTING`, `operatorSilhouetteSeparationForTest()`, Build 12.190 environmental pickup, model-space surface detail, operator AO and culling. No new draws, meshes, textures, passes or uniforms are allowed. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.191.md`.
 

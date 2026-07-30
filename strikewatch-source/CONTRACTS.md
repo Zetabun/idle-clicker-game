@@ -113,6 +113,11 @@ current task. Release-specific implementation detail belongs in the matching
   and edge lift. Static geometry and the first-person viewmodel remain unchanged;
   no additional pass, texture, uniform, mesh or draw call is permitted without
   an explicit measured budget.
+- Living-operator contact shadows remain inside the established LOD budget: one
+  existing disc at low detail and two at medium/full detail. Their transforms and
+  opacity may respond to key-light direction, movement and stance, but no shadow
+  map, light trace, mesh, texture, pass, uniform or additional draw is permitted
+  without an explicit measured budget. Corpse shadow ownership remains separate.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

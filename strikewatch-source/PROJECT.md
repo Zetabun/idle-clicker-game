@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.191 improves battle readability with a restrained third-person operator fill and edge lift that excludes static arena geometry and the first-person viewmodel. It reuses the existing shader and local-detail uniform, adds no render pass or draw calls, and leaves gameplay, persistence and schemas unchanged. See `HANDOFF.md` and `AUDIT-12.191.md`.
+Build 12.192 improves battle grounding by reusing the existing operator shadow discs as a directional cast component and a tighter contact component, with stance and movement shaping but no additional draw calls. Corpse rendering, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.192.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

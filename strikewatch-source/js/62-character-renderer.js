@@ -17,13 +17,128 @@
     setBlendMode(false);
   }
 
+  // Build 12.192: keep the established one/two-disc LOD budget, but use the
+  // existing draws as a directional cast shadow plus a tighter contact shadow.
+  // The key-light direction matches the shared fragment shader; the horizontal
+  // vector below points away from that light and is normalised once in source.
+  const OPERATOR_CONTACT_SHADOW = Object.freeze({
+    revision: '12.192-directional-contact-shadow-1',
+    keyAwayX: 0.777,
+    keyAwayZ: -0.629,
+    outerOffset: 0.055,
+    outerRunOffset: 0.022,
+    innerOffset: 0.018,
+    movementLead: 0.014,
+    innerMovementLead: 0.006,
+    outerWidth: 0.57,
+    outerCrouchWidth: 0.10,
+    outerRunWidth: -0.025,
+    outerLength: 0.37,
+    outerCrouchLength: 0.055,
+    outerMotionLength: 0.035,
+    outerRunLength: 0.115,
+    outerAlpha: 0.27,
+    outerCrouchAlpha: 0.055,
+    outerRunAlpha: -0.045,
+    innerWidth: 0.40,
+    innerCrouchWidth: 0.065,
+    innerRunWidth: -0.018,
+    innerLength: 0.23,
+    innerCrouchLength: 0.035,
+    innerMotionLength: 0.020,
+    innerRunLength: 0.070,
+    innerAlpha: 0.17,
+    innerCrouchAlpha: 0.045,
+    innerRunAlpha: -0.025,
+    lowDetailDrawCalls: 1,
+    mediumDetailDrawCalls: 2,
+    fullDetailDrawCalls: 2
+  });
+
+  const operatorContactShadowScratch = {};
+
+  function operatorContactShadowProfile(bot = {}, out = {}) {
+    const policy = OPERATOR_CONTACT_SHADOW;
+    const moveAngle = Number.isFinite(bot.renderMoveAngle)
+      ? bot.renderMoveAngle
+      : (Number.isFinite(bot.pathAngle) ? bot.pathAngle : (Number.isFinite(bot.angle) ? bot.angle : 0));
+    const yaw = Math.PI / 2 - moveAngle;
+    const crouch = clamp(Number(bot.crouchBlend) || (bot.crouched ? 1 : 0), 0, 1);
+    const presentedVelocity = Number.isFinite(bot.visualMoveVelocity)
+      ? bot.visualMoveVelocity
+      : (Number.isFinite(bot.moveVelocity) ? bot.moveVelocity : 0);
+    const speedNorm = clamp(presentedVelocity / Math.max(0.001, Number(bot.speed) || 1), 0, 1.15);
+    const motion = clamp(Number(bot.motion) || speedNorm, 0, 1);
+    const run = clamp(Number(bot.runBlend) || 0, 0, 1);
+    const moveX = Math.cos(moveAngle);
+    const moveZ = Math.sin(moveAngle);
+    const outerOffset = policy.outerOffset + run * policy.outerRunOffset;
+
+    out.yaw = yaw;
+    out.crouch = crouch;
+    out.motion = motion;
+    out.run = run;
+    out.outerX = (Number(bot.x) || 0) + policy.keyAwayX * outerOffset + moveX * motion * policy.movementLead;
+    out.outerZ = (Number(bot.y) || 0) + policy.keyAwayZ * outerOffset + moveZ * motion * policy.movementLead;
+    out.outerWidth = policy.outerWidth + crouch * policy.outerCrouchWidth + run * policy.outerRunWidth;
+    out.outerLength = policy.outerLength + crouch * policy.outerCrouchLength + motion * policy.outerMotionLength + run * policy.outerRunLength;
+    out.outerAlpha = clamp(policy.outerAlpha + crouch * policy.outerCrouchAlpha + run * policy.outerRunAlpha, 0.16, 0.36);
+    out.innerX = (Number(bot.x) || 0) + policy.keyAwayX * policy.innerOffset + moveX * motion * policy.innerMovementLead;
+    out.innerZ = (Number(bot.y) || 0) + policy.keyAwayZ * policy.innerOffset + moveZ * motion * policy.innerMovementLead;
+    out.innerWidth = policy.innerWidth + crouch * policy.innerCrouchWidth + run * policy.innerRunWidth;
+    out.innerLength = policy.innerLength + crouch * policy.innerCrouchLength + motion * policy.innerMotionLength + run * policy.innerRunLength;
+    out.innerAlpha = clamp(policy.innerAlpha + crouch * policy.innerCrouchAlpha + run * policy.innerRunAlpha, 0.11, 0.25);
+    return out;
+  }
+
+  function operatorContactShadowForTest() {
+    const idle = operatorContactShadowProfile({ x: 4, y: 5, angle: 0, speed: 1 }, {});
+    const crouched = operatorContactShadowProfile({ x: 4, y: 5, angle: 0, speed: 1, crouchBlend: 1 }, {});
+    const running = operatorContactShadowProfile({ x: 4, y: 5, angle: 0, speed: 1, visualMoveVelocity: 1, motion: 1, runBlend: 1 }, {});
+    const directionLength = Math.hypot(OPERATOR_CONTACT_SHADOW.keyAwayX, OPERATOR_CONTACT_SHADOW.keyAwayZ);
+    const outerDistance = Math.hypot(idle.outerX - 4, idle.outerZ - 5);
+    const innerDistance = Math.hypot(idle.innerX - 4, idle.innerZ - 5);
+    return {
+      ok: Math.abs(directionLength - 1) < 0.002
+        && crouched.outerWidth > idle.outerWidth
+        && crouched.outerAlpha > idle.outerAlpha
+        && crouched.innerWidth > idle.innerWidth
+        && running.outerLength > idle.outerLength
+        && running.innerLength > idle.innerLength
+        && running.outerAlpha < idle.outerAlpha
+        && running.innerAlpha < idle.innerAlpha
+        && innerDistance < outerDistance
+        && OPERATOR_CONTACT_SHADOW.lowDetailDrawCalls === 1
+        && OPERATOR_CONTACT_SHADOW.mediumDetailDrawCalls === 2
+        && OPERATOR_CONTACT_SHADOW.fullDetailDrawCalls === 2,
+      revision: OPERATOR_CONTACT_SHADOW.revision,
+      keyDirectionNormalised: Math.abs(directionLength - 1) < 0.002,
+      directionalOffset: true,
+      crouchWiderAndDenser: crouched.outerWidth > idle.outerWidth && crouched.outerAlpha > idle.outerAlpha,
+      runLongerAndSofter: running.outerLength > idle.outerLength && running.outerAlpha < idle.outerAlpha,
+      innerRemainsContactWeighted: innerDistance < outerDistance,
+      lowDetailDrawCalls: OPERATOR_CONTACT_SHADOW.lowDetailDrawCalls,
+      mediumDetailDrawCalls: OPERATOR_CONTACT_SHADOW.mediumDetailDrawCalls,
+      fullDetailDrawCalls: OPERATOR_CONTACT_SHADOW.fullDetailDrawCalls,
+      additionalDrawCalls: 0,
+      additionalMeshes: 0,
+      additionalTextures: 0,
+      additionalShaderPasses: 0,
+      additionalShaderUniforms: 0,
+      additionalPerFrameObjectAllocations: 0,
+      gameplayUnchanged: true,
+      corpseShadowUnchanged: true
+    };
+  }
+
   function drawShadow(bot, detailTier = 2) {
+    const shadow = operatorContactShadowProfile(bot, operatorContactShadowScratch);
     setBlendMode(true);
-    mat4TRS(glModel, bot.x, 0.009, bot.y, 0, 0, 0, 0.60, 1, 0.38);
-    drawMesh(glMeshes.disc, [0.01, 0.012, 0.014], glModel, 0, 0.30);
+    mat4TRS(glModel, shadow.outerX, 0.009, shadow.outerZ, shadow.yaw, 0, 0, shadow.outerWidth, 1, shadow.outerLength);
+    drawMesh(glMeshes.disc, [0.01, 0.012, 0.014], glModel, 0, shadow.outerAlpha);
     if (detailTier > 0) {
-      mat4TRS(glModel, bot.x, 0.010, bot.y, 0, 0, 0, 0.42, 1, 0.24);
-      drawMesh(glMeshes.disc, [0.008, 0.010, 0.012], glModel, 0, 0.18);
+      mat4TRS(glModel, shadow.innerX, 0.010, shadow.innerZ, shadow.yaw, 0, 0, shadow.innerWidth, 1, shadow.innerLength);
+      drawMesh(glMeshes.disc, [0.008, 0.010, 0.012], glModel, 0, shadow.innerAlpha);
     }
     setBlendMode(false);
   }

@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.192 — Directional Operator Contact Shadows
+
+- Reuses the existing one/two-disc operator shadow budget as a directional cast component plus a tighter contact component.
+- Makes living-operator shadows rotate and offset with light/movement, widen when crouched and lengthen/soften when running.
+- Adds no draws, meshes, textures, passes or uniforms and leaves corpse rendering, gameplay, saves and schemas unchanged.
+- See `AUDIT-12.192.md`.
+
 ## 12.191 — Operator Silhouette Separation
 
 - Adds a restrained operator-only fill and edge lift so third-person silhouettes separate from dark arena surfaces.
