@@ -63,8 +63,8 @@ jobs:
           sha256sum \
             js/strikewatch.dev.js \
             dist/strikewatch-build-12.199.html \
-            dist/strikewatch-build-12.199-size-report.txt \
-            dist/strikewatch-build-12.199-css-debt-report.txt \
+            dist/strikewatch-build-12.199-size.json \
+            dist/strikewatch-build-12.199-css-debt.json \
             > /tmp/build-12.199-first.sha256
 
           for file in js/*.js; do node --check "$file"; done
@@ -90,8 +90,8 @@ jobs:
           sha256sum \
             js/strikewatch.dev.js \
             dist/strikewatch-build-12.199.html \
-            dist/strikewatch-build-12.199-size-report.txt \
-            dist/strikewatch-build-12.199-css-debt-report.txt \
+            dist/strikewatch-build-12.199-size.json \
+            dist/strikewatch-build-12.199-css-debt.json \
             > /tmp/build-12.199-second.sha256
           diff -u /tmp/build-12.199-first.sha256 /tmp/build-12.199-second.sha256
           cd ..
