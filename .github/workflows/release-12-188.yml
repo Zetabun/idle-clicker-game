@@ -1,0 +1,182 @@
+name: Release Strikewatch 12.188
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/release-12-188.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-strikewatch-12-188
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Require expected predecessor
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.187',
+              'name': 'Report XP Safety',
+              'build_id': '12.187.0-report-xp-safety'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected predecessor release: {release!r}')
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply release patch
+        run: python3 .github/scripts/release-12-188.py
+
+      - name: Verify release metadata and source routing
+        run: |
+          grep -F "const BUILD_VERSION = '12.188'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_NAME = 'Armour Preview Optimisation'" strikewatch-source/js/00-core.js
+          grep -F "const BUILD_ID = '12.188.0-armour-preview-optimisation'" strikewatch-source/js/00-core.js
+          grep -F "STRIKEWATCH BUILD 12.188" strikewatch-source/index.html
+          grep -F "BUILD 12.188" strikewatch-source/index.html
+          grep -F "careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80" strikewatch-source/js/38-development.js
+          ! grep -F "careerArmourVisualMarkup(armour, 'store')" strikewatch-source/js/38-development.js
+          grep -F "function armourPreviewOptimisationForTest()" strikewatch-source/js/57-loadout-stills.js
+          grep -F "armourPreviewOptimisationForTest: () =>" strikewatch-source/js/70-runtime.js
+          test -f strikewatch-source/AUDIT-12.188.md
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          expected = {
+              'version': '12.188',
+              'name': 'Armour Preview Optimisation',
+              'build_id': '12.188.0-armour-preview-optimisation'
+          }
+          if release != expected:
+              raise SystemExit(f'Unexpected release metadata: {release!r}')
+          for path in ['HANDOFF.md', 'AGENTS.md', 'README.md', 'PROJECT.md', 'CHANGELOG.md']:
+              text = Path('strikewatch-source', path).read_text(encoding='utf-8')
+              if '12.188' not in text:
+                  raise SystemExit(f'{path} does not reference 12.188')
+          PY
+
+      - name: Compile build script
+        working-directory: strikewatch-source
+        run: python3 -m py_compile build.py
+
+      - name: Build first deterministic candidate
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          test -f dist/strikewatch-build-12.188.html
+          test -f dist/strikewatch-build-12.188-size.json
+          test -f dist/strikewatch-build-12.188-css-debt.json
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.188.html /tmp/strikewatch-build.first.html
+          cp dist/strikewatch-build-12.188-size.json /tmp/strikewatch-size.first.json
+          cp dist/strikewatch-build-12.188-css-debt.json /tmp/strikewatch-css.first.json
+
+      - name: Parse source and generated JavaScript
+        run: |
+          for file in strikewatch-source/js/*.js; do node --check "$file"; done
+          node --check strikewatch-source/js/strikewatch.dev.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          html = Path('strikewatch-source/dist/strikewatch-build-12.188.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          with tempfile.TemporaryDirectory() as temp:
+              for index, script in enumerate(scripts):
+                  path = Path(temp) / f'inline-{index}.js'
+                  path.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(path)], check=True)
+          PY
+
+      - name: Verify armour preview optimisation boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          stills = Path('strikewatch-source/js/57-loadout-stills.js').read_text(encoding='utf-8')
+          development = Path('strikewatch-source/js/38-development.js').read_text(encoding='utf-8')
+          css = Path('strikewatch-source/css/loadout-stills.css').read_text(encoding='utf-8')
+          required_stills = [
+              "const LOADOUT_STILL_ARMOUR_VIEW = Object.freeze({ yaw: 0, pitch: -6 })",
+              "const margin = Number.isFinite(Number(options.margin)) ? Number(options.margin) : 0.82",
+              "|m${margin.toFixed(3)}`",
+              'function armourPreviewOptimisationForTest()',
+              'cacheReused: Boolean(first && first === second)'
+          ]
+          missing = [value for value in required_stills if value not in stills]
+          if missing:
+              raise SystemExit(f'Missing still-renderer requirements: {missing}')
+          if "careerArmourVisualMarkup(armour, 'store')" in development:
+              raise SystemExit('Live Field Crate Exchange armour rig call remains')
+          if development.count('careerArmourStillMarkup(armour, { width: 240, height: 280, margin: 0.80') != 1:
+              raise SystemExit('Expected exactly one cached store-armour still call')
+          if 'Build 12.188: Field Crate Exchange cached armour stills' not in css:
+              raise SystemExit('Store still CSS boundary missing')
+          required_existing = [
+              'function loadoutStillAuditForTest()',
+              'careerArmour3dParts(armour)'
+          ]
+          missing_existing = [value for value in required_existing if value not in stills]
+          if missing_existing:
+              raise SystemExit(f'Existing still-renderer authority missing: {missing_existing}')
+          PY
+
+      - name: Verify existing diagnostic hooks remain
+        run: |
+          for hook in loadoutStillAuditForTest armour3dPresentationForTest armourSystemForTest loadoutStillForTest; do
+            grep -R -F "$hook" strikewatch-source/js >/dev/null
+          done
+
+      - name: Build second deterministic candidate
+        working-directory: strikewatch-source
+        run: python3 build.py
+
+      - name: Compare deterministic outputs
+        run: |
+          cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build.first.html strikewatch-source/dist/strikewatch-build-12.188.html
+          cmp /tmp/strikewatch-size.first.json strikewatch-source/dist/strikewatch-build-12.188-size.json
+          cmp /tmp/strikewatch-css.first.json strikewatch-source/dist/strikewatch-build-12.188-css-debt.json
+
+      - name: Publish verified standalone
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.188.html cod.html
+          cmp cod.html strikewatch-source/dist/strikewatch-build-12.188.html
+
+      - name: Remove temporary release files
+        run: |
+          rm -f .github/scripts/release-12-188.py
+          rm -f .github/workflows/release-12-188.yml
+          rm -f .github/triggers/release-12-188.txt
+
+      - name: Commit completed release to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && { echo 'No release changes produced.'; exit 1; }
+          git commit -m 'Build 12.188: armour preview optimisation'
+          git push origin HEAD:main
