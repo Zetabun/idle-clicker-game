@@ -2226,6 +2226,7 @@
       syncMatchSpeedControls();
       return matchSpeedMultiplier;
     }
+    if (typeof resetMatchClockAccumulator === 'function') resetMatchClockAccumulator('speed-change');
     matchSpeedMultiplier = next;
     combatDebug.fastForwardToggles++;
     syncMatchSpeedControls();
@@ -2260,6 +2261,7 @@
   function toggleMatchSimulationPause() {
     if (!liveMatchMenuActive() || matchEnding) return;
     matchSimulationPaused = !matchSimulationPaused;
+    if (typeof resetMatchClockAccumulator === 'function') resetMatchClockAccumulator(matchSimulationPaused ? 'manual-pause' : 'manual-resume');
     liveMenuRefreshTimer = 0;
     syncLiveMenuControls();
     renderMenuContent();
@@ -2473,6 +2475,7 @@
 
   function resumeMatch() {
     resumeAudioFromGesture();
+    if (typeof resetMatchClockAccumulator === 'function') resetMatchClockAccumulator('resume-match');
     matchSimulationPaused = false;
     document.body.dataset.matchSimulation = 'running';
     setAppState('match');
@@ -2482,6 +2485,7 @@
   }
 
   function exitToMainMenu() {
+    if (typeof resetMatchClockAccumulator === 'function') resetMatchClockAccumulator('exit-match');
     createMatch();
     menuContext = 'main';
     canResumeMatch = false;

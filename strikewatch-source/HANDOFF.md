@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.197 — Device-Independent Match Simulation**
-- Build ID: `12.197.0-device-independent-match-simulation`
+- Build: **12.198 — Fixed-Step Match Clock & Stutter Recovery**
+- Build ID: `12.198.0-fixed-step-match-clock-stutter-recovery`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.197.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.198.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.198 owns the visible-time match clock in `js/70-runtime.js`, with lifecycle resets in `js/40-match-flow.js` and `js/50-ui-menus.js`. Preserve `MATCH_CLOCK_POLICY`, the 1/60 fixed step, eight-step frame cap, 500ms debt bound, 750ms background-gap discard, capped presentation delta and `matchClockIntegrityForTest()`. Normal visible intervals must be conserved at 60/30/20/15 FPS in both speed modes; hidden pages, pauses, round changes, speed changes and match exits must not replay stale debt. Build 12.197 remains the intelligence-quality authority. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.198.md`.
 
 Build 12.197 owns the device-independent simulation-work boundary across `js/00-core.js`, `js/20-navigation.js`, `js/30-bot-ai.js`, `js/40-match-flow.js` and `js/70-runtime.js`. Preserve `SIMULATION_WORK_POLICY`, the 1/60-second simulation window, fixed former-Full perception/tactical/navigation limits, render-only `runtimeQualityTier`, round invalidation and `simulationQualityIndependenceForTest()`. Budget resets must originate from `updateMatchStep()`/`simulationClock`, never the display frame. Adaptive resolution and operator LOD may vary by device; match intelligence may not. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.197.md`.
 

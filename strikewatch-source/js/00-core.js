@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.197';
-  const BUILD_NAME = 'Device-Independent Match Simulation';
-  const BUILD_ID = '12.197.0-device-independent-match-simulation';
+  const BUILD_VERSION = '12.198';
+  const BUILD_NAME = 'Fixed-Step Match Clock & Stutter Recovery';
+  const BUILD_ID = '12.198.0-fixed-step-match-clock-stutter-recovery';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

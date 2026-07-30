@@ -63,7 +63,7 @@ share application scope in the listed order.
 | `39-dynamic-market-mail.js` | Market simulation and organic Inbox messages |
 | `39-calendar-finance.js` | Calendar events, contracts and finance/loan settlement |
 | `39-workflow-integrity.js` | Blockers, pending decisions and routed integrity checks |
-| `40-match-flow.js` | Round/match lifecycle, feed events and career settlement |
+| `40-match-flow.js` | Round/match lifecycle, clock/work-window reset boundaries, feed events and career settlement |
 | `41-live-command-pulses.js` | Explicit live manager command system |
 | `50-ui-menus.js` | Menu shell, sections, subtabs, guidance and route rendering |
 | `52-season-narratives.js` | Story recognition, presentation and narrative settlement |
@@ -74,7 +74,7 @@ share application scope in the listed order.
 | `62-character-renderer.js` | Operators, corpses, armour fit and held weapons |
 | `63-viewmodel-renderer.js` | First-person weapon/viewmodel rendering and viewed-subject change detection |
 | `64-reward-renderer.js` | Reward and crate presentation |
-| `70-runtime.js` | DOM binding, main loop, simulation-time work-window coordination, input, startup and public test hooks |
+| `70-runtime.js` | DOM binding, fixed-step match clock, simulation-time work-window coordination, input, startup and public test hooks |
 
 `build.py` is the module-order authority. When adding a module, place it after
 everything it consumes and before everything that consumes it.

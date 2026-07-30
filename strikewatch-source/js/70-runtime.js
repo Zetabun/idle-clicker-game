@@ -20,6 +20,256 @@
     skippedMenuRenders: 0,
     lastSampleAt: performance.now()
   };
+  const MATCH_CLOCK_POLICY = Object.freeze({
+    revision: '12.198-fixed-step-match-clock-1',
+    stepSeconds: SIMULATION_WORK_POLICY.windowSeconds,
+    presentationFrameCapSeconds: 0.033,
+    maxStepsPerFrame: 8,
+    maxAccumulatorSeconds: 0.5,
+    backgroundGapSeconds: 0.75
+  });
+  const matchClockState = {
+    accumulatorSeconds: 0,
+    totalObservedWallSeconds: 0,
+    totalAcceptedSimulationSeconds: 0,
+    totalSimulatedSeconds: 0,
+    totalDroppedSimulationSeconds: 0,
+    totalDiscardedBackgroundSeconds: 0,
+    totalSteps: 0,
+    catchUpFrames: 0,
+    catchUpSteps: 0,
+    maxStepsObserved: 0,
+    lastFrameSteps: 0,
+    resetCount: 0,
+    backgroundGaps: 0,
+    overloadDrops: 0,
+    lastResetReason: 'initial'
+  };
+
+  function matchClockSnapshot() {
+    const accepted = Math.max(0, Number(matchClockState.totalAcceptedSimulationSeconds) || 0);
+    const simulated = Math.max(0, Number(matchClockState.totalSimulatedSeconds) || 0);
+    const debt = Math.max(0, Number(matchClockState.accumulatorSeconds) || 0);
+    const dropped = Math.max(0, Number(matchClockState.totalDroppedSimulationSeconds) || 0);
+    return {
+      revision: MATCH_CLOCK_POLICY.revision,
+      stepSeconds: MATCH_CLOCK_POLICY.stepSeconds,
+      maxStepsPerFrame: MATCH_CLOCK_POLICY.maxStepsPerFrame,
+      maxAccumulatorSeconds: MATCH_CLOCK_POLICY.maxAccumulatorSeconds,
+      backgroundGapSeconds: MATCH_CLOCK_POLICY.backgroundGapSeconds,
+      accumulatorSeconds: Number(debt.toFixed(6)),
+      accumulatorMs: Number((debt * 1000).toFixed(2)),
+      acceptedSimulationSeconds: Number(accepted.toFixed(6)),
+      simulatedSeconds: Number(simulated.toFixed(6)),
+      droppedSimulationSeconds: Number(dropped.toFixed(6)),
+      discardedBackgroundSeconds: Number(matchClockState.totalDiscardedBackgroundSeconds.toFixed(6)),
+      totalObservedWallSeconds: Number(matchClockState.totalObservedWallSeconds.toFixed(6)),
+      totalSteps: matchClockState.totalSteps,
+      catchUpFrames: matchClockState.catchUpFrames,
+      catchUpSteps: matchClockState.catchUpSteps,
+      maxStepsObserved: matchClockState.maxStepsObserved,
+      lastFrameSteps: matchClockState.lastFrameSteps,
+      resetCount: matchClockState.resetCount,
+      backgroundGaps: matchClockState.backgroundGaps,
+      overloadDrops: matchClockState.overloadDrops,
+      lastResetReason: matchClockState.lastResetReason,
+      matchSpeed: typeof matchSpeedMultiplier === 'number' ? matchSpeedMultiplier : 1,
+      conservationError: Number((accepted - simulated - debt - dropped).toFixed(9))
+    };
+  }
+
+  function resetMatchClockAccumulator(reason = 'reset') {
+    const debt = Math.max(0, Number(matchClockState.accumulatorSeconds) || 0);
+    const nextReason = String(reason || 'reset');
+    const changed = debt > 1e-9 || matchClockState.lastResetReason !== nextReason;
+    if (debt > 1e-9) matchClockState.totalDroppedSimulationSeconds += debt;
+    matchClockState.accumulatorSeconds = 0;
+    matchClockState.lastFrameSteps = 0;
+    matchClockState.lastResetReason = nextReason;
+    if (changed) matchClockState.resetCount++;
+    return matchClockSnapshot();
+  }
+
+  function matchClockPauseReason(liveMenu = false, demoPaused = false, introPaused = false) {
+    if (typeof document !== 'undefined' && document.hidden) return 'document-hidden';
+    if (demoPaused) return 'guided-demo-paused';
+    if (introPaused) return 'match-intro';
+    if (typeof matchSimulationPaused !== 'undefined' && matchSimulationPaused) return 'manual-pause';
+    if (typeof appState !== 'undefined' && appState === 'free-roam') return 'free-roam';
+    if (typeof appState !== 'undefined' && appState === 'menu' && !liveMenu) return 'left-match';
+    return 'match-not-running';
+  }
+
+  function advanceMatchClock(rawFrameSeconds, speed = matchSpeedMultiplier) {
+    const raw = Math.max(0, Number(rawFrameSeconds) || 0);
+    matchClockState.totalObservedWallSeconds += raw;
+    const hidden = typeof document !== 'undefined' && Boolean(document.hidden);
+    if (hidden || raw > MATCH_CLOCK_POLICY.backgroundGapSeconds) {
+      matchClockState.backgroundGaps++;
+      matchClockState.totalDiscardedBackgroundSeconds += raw;
+      resetMatchClockAccumulator(hidden ? 'document-hidden' : 'background-gap');
+      return 0;
+    }
+
+    const multiplier = Number(speed) >= 2 ? 2 : 1;
+    const incoming = raw * multiplier;
+    matchClockState.totalAcceptedSimulationSeconds += incoming;
+    matchClockState.accumulatorSeconds += incoming;
+    if (matchClockState.accumulatorSeconds > MATCH_CLOCK_POLICY.maxAccumulatorSeconds) {
+      const overflow = matchClockState.accumulatorSeconds - MATCH_CLOCK_POLICY.maxAccumulatorSeconds;
+      matchClockState.accumulatorSeconds = MATCH_CLOCK_POLICY.maxAccumulatorSeconds;
+      matchClockState.totalDroppedSimulationSeconds += overflow;
+      matchClockState.overloadDrops++;
+    }
+
+    let steps = 0;
+    while (matchClockState.accumulatorSeconds + 1e-9 >= MATCH_CLOCK_POLICY.stepSeconds && steps < MATCH_CLOCK_POLICY.maxStepsPerFrame) {
+      matchClockState.accumulatorSeconds = Math.max(0, matchClockState.accumulatorSeconds - MATCH_CLOCK_POLICY.stepSeconds);
+      updateMatchStep(MATCH_CLOCK_POLICY.stepSeconds);
+      steps++;
+      matchClockState.totalSteps++;
+      matchClockState.totalSimulatedSeconds += MATCH_CLOCK_POLICY.stepSeconds;
+    }
+    matchClockState.lastFrameSteps = steps;
+    matchClockState.maxStepsObserved = Math.max(matchClockState.maxStepsObserved, steps);
+    if (steps > 1) {
+      matchClockState.catchUpFrames++;
+      matchClockState.catchUpSteps += steps - 1;
+    }
+    return steps;
+  }
+
+  function matchClockModelForTest(frames = [], speed = 1) {
+    const multiplier = Number(speed) >= 2 ? 2 : 1;
+    let accumulator = 0;
+    let accepted = 0;
+    let simulated = 0;
+    let dropped = 0;
+    let discardedBackground = 0;
+    let totalSteps = 0;
+    let catchUpSteps = 0;
+    let maxStepsObserved = 0;
+    let backgroundGaps = 0;
+    let overloadDrops = 0;
+    let resets = 0;
+    for (const frame of frames || []) {
+      const spec = typeof frame === 'number' ? { seconds: frame, running: true, hidden: false } : (frame || {});
+      const raw = Math.max(0, Number(spec.seconds) || 0);
+      if (spec.running === false) {
+        if (accumulator > 1e-9) dropped += accumulator;
+        accumulator = 0;
+        resets++;
+        continue;
+      }
+      if (spec.hidden || raw > MATCH_CLOCK_POLICY.backgroundGapSeconds) {
+        if (accumulator > 1e-9) dropped += accumulator;
+        accumulator = 0;
+        discardedBackground += raw;
+        backgroundGaps++;
+        resets++;
+        continue;
+      }
+      const incoming = raw * multiplier;
+      accepted += incoming;
+      accumulator += incoming;
+      if (accumulator > MATCH_CLOCK_POLICY.maxAccumulatorSeconds) {
+        const overflow = accumulator - MATCH_CLOCK_POLICY.maxAccumulatorSeconds;
+        accumulator = MATCH_CLOCK_POLICY.maxAccumulatorSeconds;
+        dropped += overflow;
+        overloadDrops++;
+      }
+      let frameSteps = 0;
+      while (accumulator + 1e-9 >= MATCH_CLOCK_POLICY.stepSeconds && frameSteps < MATCH_CLOCK_POLICY.maxStepsPerFrame) {
+        accumulator = Math.max(0, accumulator - MATCH_CLOCK_POLICY.stepSeconds);
+        simulated += MATCH_CLOCK_POLICY.stepSeconds;
+        frameSteps++;
+        totalSteps++;
+      }
+      maxStepsObserved = Math.max(maxStepsObserved, frameSteps);
+      if (frameSteps > 1) catchUpSteps += frameSteps - 1;
+    }
+    return {
+      speed: multiplier,
+      acceptedSeconds: Number(accepted.toFixed(9)),
+      simulatedSeconds: Number(simulated.toFixed(9)),
+      accumulatorSeconds: Number(accumulator.toFixed(9)),
+      droppedSeconds: Number(dropped.toFixed(9)),
+      discardedBackgroundSeconds: Number(discardedBackground.toFixed(9)),
+      totalSteps,
+      catchUpSteps,
+      maxStepsObserved,
+      backgroundGaps,
+      overloadDrops,
+      resets,
+      conservationError: Number((accepted - simulated - accumulator - dropped).toFixed(9))
+    };
+  }
+
+  function matchClockIntegrityForTest() {
+    const tolerance = 0.000001;
+    const profiles = [];
+    for (const fps of [60, 30, 20, 15]) {
+      for (const speed of [1, 2]) {
+        const result = matchClockModelForTest(Array.from({ length: fps }, () => 1 / fps), speed);
+        const expected = speed;
+        profiles.push({
+          fps,
+          speed,
+          expectedSeconds: expected,
+          ...result,
+          exact: Math.abs(result.simulatedSeconds - expected) <= tolerance
+            && result.accumulatorSeconds <= tolerance
+            && result.droppedSeconds <= tolerance
+        });
+      }
+    }
+    const shortStutter = matchClockModelForTest([
+      ...Array.from({ length: 12 }, () => 1 / 60),
+      0.12,
+      ...Array.from({ length: 48 }, () => 1 / 60)
+    ], 2);
+    const backgroundGap = matchClockModelForTest([
+      ...Array.from({ length: 10 }, () => 1 / 60),
+      2,
+      ...Array.from({ length: 10 }, () => 1 / 60)
+    ], 1);
+    const pauseResume = matchClockModelForTest([
+      ...Array.from({ length: 6 }, () => ({ seconds: 1 / 60, running: true })),
+      { seconds: 0.5, running: false },
+      ...Array.from({ length: 6 }, () => ({ seconds: 1 / 60, running: true }))
+    ], 1);
+    const profilesExact = profiles.every(profile => profile.exact && profile.maxStepsObserved <= MATCH_CLOCK_POLICY.maxStepsPerFrame);
+    const shortStutterSafe = shortStutter.droppedSeconds <= tolerance
+      && Math.abs(shortStutter.conservationError) <= tolerance
+      && shortStutter.accumulatorSeconds < MATCH_CLOCK_POLICY.stepSeconds
+      && shortStutter.maxStepsObserved === MATCH_CLOCK_POLICY.maxStepsPerFrame;
+    const backgroundSafe = backgroundGap.backgroundGaps === 1
+      && Math.abs(backgroundGap.discardedBackgroundSeconds - 2) <= tolerance
+      && backgroundGap.maxStepsObserved <= MATCH_CLOCK_POLICY.maxStepsPerFrame
+      && backgroundGap.simulatedSeconds < 0.35;
+    const pauseSafe = pauseResume.resets === 1
+      && Math.abs(pauseResume.simulatedSeconds - 0.2) <= tolerance
+      && pauseResume.accumulatorSeconds <= tolerance;
+    return {
+      ok: profilesExact
+        && shortStutterSafe
+        && backgroundSafe
+        && pauseSafe
+        && MATCH_CLOCK_POLICY.stepSeconds === 1 / 60
+        && MATCH_CLOCK_POLICY.maxStepsPerFrame === 8
+        && MATCH_CLOCK_POLICY.maxAccumulatorSeconds === 0.5
+        && MATCH_CLOCK_POLICY.backgroundGapSeconds === 0.75,
+      revision: MATCH_CLOCK_POLICY.revision,
+      profiles,
+      shortStutter,
+      backgroundGap,
+      pauseResume,
+      presentationFrameCapSeconds: MATCH_CLOCK_POLICY.presentationFrameCapSeconds,
+      saveSchemaChanged: false,
+      diagnosticsSchemaChanged: false
+    };
+  }
+
   let runtimeStatsPublishCountdown = 0;
   let runtimeFrameStages = {};
   let runtimeLastFrameStages = {};
@@ -601,34 +851,27 @@
     updateAutoSpectatorDirector(dt);
   }
 
-  function update(dt) {
+  function update(frameDt, rawFrameSeconds = frameDt) {
     runtimeFrameStages = {};
-    measureRuntimeStage('career', () => updateCareerSystem(dt));
+    measureRuntimeStage('career', () => updateCareerSystem(frameDt));
     measureRuntimeStage('effects', () => {
-      updateDamageNumbers(dt);
-      if (typeof updateMultiKillBanner === 'function') updateMultiKillBanner(dt);
-      if (typeof updateCareerMatchMoment === 'function') updateCareerMatchMoment(dt);
+      updateDamageNumbers(frameDt);
+      if (typeof updateMultiKillBanner === 'function') updateMultiKillBanner(frameDt);
+      if (typeof updateCareerMatchMoment === 'function') updateCareerMatchMoment(frameDt);
     });
-    if (typeof updateNewPlayerDemo === 'function') updateNewPlayerDemo(dt);
+    if (typeof updateNewPlayerDemo === 'function') updateNewPlayerDemo(frameDt);
     const liveMenu = appState === 'menu' && menuContext === 'pause' && canResumeMatch;
-    if (appState === 'menu') measureRuntimeStage('menu', () => updateMenu(dt));
-    if (appState === 'free-roam') measureRuntimeStage('freeRoam', () => updateFreeRoam(dt));
+    if (appState === 'menu') measureRuntimeStage('menu', () => updateMenu(frameDt));
+    if (appState === 'free-roam') measureRuntimeStage('freeRoam', () => updateFreeRoam(frameDt));
     const demoPaused = typeof newPlayerDemoSimulationPaused === 'function' && newPlayerDemoSimulationPaused();
     const introPaused = typeof careerMatchIntroActive === 'function' && careerMatchIntroActive();
     const shouldSimulateMatch = (appState === 'match' && !demoPaused && !introPaused) || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
-      measureRuntimeStage('matchSimulation', () => {
-        // AI and route work reset from simulationClock inside updateMatchStep().
-        // Display refresh rate and render pressure therefore cannot change budgets.
-        let remaining = dt * matchSpeedMultiplier;
-        while (remaining > 0.00001) {
-          const step = Math.min(SIMULATION_WORK_POLICY.windowSeconds, remaining);
-          updateMatchStep(step);
-          remaining -= step;
-        }
-      });
+      measureRuntimeStage('matchSimulation', () => advanceMatchClock(rawFrameSeconds, matchSpeedMultiplier));
+    } else {
+      resetMatchClockAccumulator(matchClockPauseReason(liveMenu, demoPaused, introPaused));
     }
-    hudRefreshAccumulator += dt;
+    hudRefreshAccumulator += frameDt;
     if (hudRefreshAccumulator >= 0.05 || (!shouldSimulateMatch && appState !== 'free-roam')) {
       hudRefreshAccumulator = 0;
       if (appState !== 'free-roam') measureRuntimeStage('hud', () => updateHud());
@@ -757,6 +1000,11 @@
       document.body.dataset.runtimeLongFrames = String(runtimePerformance.longFrames);
       document.body.dataset.runtimeStutterFrames = String(runtimePerformance.stutterFrames);
       document.body.dataset.runtimeSevereFrames = String(runtimePerformance.severeFrames);
+      document.body.dataset.runtimeMatchClockDebtMs = (matchClockState.accumulatorSeconds * 1000).toFixed(2);
+      document.body.dataset.runtimeMatchClockSteps = String(matchClockState.lastFrameSteps);
+      document.body.dataset.runtimeMatchClockCatchUpSteps = String(matchClockState.catchUpSteps);
+      document.body.dataset.runtimeMatchClockDroppedMs = (matchClockState.totalDroppedSimulationSeconds * 1000).toFixed(2);
+      document.body.dataset.runtimeMatchClockBackgroundGaps = String(matchClockState.backgroundGaps);
     }
     updateRuntimeQualityGovernor(frameMs, updateMs, renderMs);
     updateAdaptiveRenderResolution(frameMs, renderMs);
@@ -768,12 +1016,13 @@
     try {
       const frameStart = performance.now();
       const rawFrameIntervalMs = Math.max(0, now - lastTime) || 16.667;
-      const dt = Math.min(0.033, rawFrameIntervalMs / 1000);
+      const rawFrameSeconds = rawFrameIntervalMs / 1000;
+      const frameDt = Math.min(MATCH_CLOCK_POLICY.presentationFrameCapSeconds, rawFrameSeconds);
       lastTime = now;
-      lastFrameDt = dt;
+      lastFrameDt = frameDt;
       const updateStart = performance.now();
       phase = 'update';
-      update(dt);
+      update(frameDt, rawFrameSeconds);
       if (typeof maintainAudioHealth === 'function') {
         phase = 'audio';
         const audioStart = performance.now();
@@ -7310,6 +7559,7 @@
       hardwareConcurrency: runtimeHardwareConcurrency,
       deviceMemoryGb: runtimeDeviceMemoryGb || null,
       matchSpeed: matchSpeedMultiplier,
+      matchClock: matchClockSnapshot(),
       damageNumbers: damageNumberEffects.length,
       damageNumbersSpawned: combatDebug.damageNumbersSpawned,
       damageNumbersExpired: combatDebug.damageNumbersExpired,
@@ -7455,6 +7705,9 @@
     runtimeQualityProfileForTest: () => simulationQualityIndependenceForTest(),
     simulationQualityIndependenceForTest: () => simulationQualityIndependenceForTest(),
     simulationWorkPolicyForTest: () => simulationWorkPolicySnapshot(),
+    matchClockForTest: () => matchClockSnapshot(),
+    matchClockIntegrityForTest: () => matchClockIntegrityForTest(),
+    matchClockModelForTest: (frames = [], speed = 1) => matchClockModelForTest(frames, speed),
     adaptiveResolutionForTest: (frameMs = 30, renderMs = 22, frames = 40) => {
       const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
       for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);
@@ -10243,6 +10496,14 @@
       }, 0);
     }
   } catch (_) {}
+  document.addEventListener('visibilitychange', () => {
+    resetMatchClockAccumulator(document.hidden ? 'document-hidden' : 'document-visible');
+    lastTime = performance.now();
+  });
+  window.addEventListener('pageshow', () => {
+    resetMatchClockAccumulator('page-show');
+    lastTime = performance.now();
+  });
   requestAnimationFrame(() => {
     if (!operatorPreviewRequested && typeof openNewPlayerIntro === 'function') openNewPlayerIntro();
   });

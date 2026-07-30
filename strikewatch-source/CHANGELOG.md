@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.198 — Fixed-Step Match Clock & Stutter Recovery
+
+- Replaces the 33ms match-time truncation with a bounded 1/60 fixed-step accumulator.
+- Keeps 60/30/20/15 FPS exact at 1× and 2×, with up to eight steps per displayed frame.
+- Carries short-stutter debt safely and discards hidden/background gaps instead of replaying combat.
+- Adds match-clock telemetry and deterministic integrity diagnostics.
+- See `AUDIT-12.198.md`.
+
 ## 12.197 — Device-Independent Match Simulation
 
 - Separates adaptive render quality from match intelligence and route planning.

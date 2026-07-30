@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.197 separates adaptive presentation quality from match intelligence, using fixed simulation-time perception, tactical and navigation budgets on every device while preserving adaptive resolution, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.197.md`.
+Build 12.198 preserves actual visible match time through a bounded 1/60 fixed-step accumulator, keeping 60/30/20/15 FPS exact at 1× and 2× while discarding hidden/background gaps safely. See `HANDOFF.md` and `AUDIT-12.198.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
