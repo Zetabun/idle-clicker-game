@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/release-12-193.trigger'
+      - '.github/triggers/release-12-193.txt'
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,33 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+
+      - name: Set up failure ledger
+        run: |
+          mkdir -p .github/release-failures
+          rm -f .github/release-failures/release-12-193.log
+          cat > /tmp/release-12-193-failure.sh <<'SH'
+          #!/bin/sh
+          status=$?
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          set +e
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p .github/release-failures
+          {
+            echo "Build 12.193 release failed"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_attempt=$GITHUB_RUN_ATTEMPT"
+            echo "sha=$GITHUB_SHA"
+            echo "exit_status=$status"
+          } > .github/release-failures/release-12-193.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/release-failures/release-12-193.log
+          git commit -m 'Record Build 12.193 release failure' || true
+          git push origin HEAD:main || true
+          exit "$status"
+          SH
+          chmod +x /tmp/release-12-193-failure.sh
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,12 +75,13 @@ jobs:
           cp js/strikewatch.dev.js /tmp/strikewatch-12.193-first.js
           cp dist/strikewatch-build-12.193.html /tmp/strikewatch-12.193-first.html
 
-      - name: Parse source modules and generated JavaScript
+      - name: Parse source modules, generated bundle and standalone JavaScript
         run: |
           set -eu
           for file in strikewatch-source/js/*.js; do
             node --check "$file"
           done
+          node --check strikewatch-source/js/strikewatch.dev.js
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -64,7 +92,7 @@ jobs:
           scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, flags=re.I | re.S)
           if not scripts:
               raise SystemExit('No inline scripts found in standalone')
-          for index, script in enumerate(scripts):
+          for script in scripts:
               with tempfile.NamedTemporaryFile('w', suffix='.js', encoding='utf-8', delete=False) as handle:
                   handle.write(script)
                   path = handle.name
@@ -161,8 +189,7 @@ jobs:
           assert css['stylesheets'] == 23
           assert size['version'] == '12.193'
           assert size['javascript_raw_reduction_percent'] >= 2.5
-          digest = hashlib.sha256(root.read_bytes()).hexdigest()
-          print('Standalone SHA256:', digest)
+          print('Standalone SHA256:', hashlib.sha256(root.read_bytes()).hexdigest())
           print('CSS debt:', json.dumps(css, sort_keys=True))
           print('Size report:', json.dumps(size, sort_keys=True))
           PY
@@ -171,7 +198,9 @@ jobs:
         run: |
           rm -f .github/scripts/release-12-193.py
           rm -f .github/workflows/release-12-193.yml
+          rm -f .github/triggers/release-12-193.txt
           rm -f .github/release-12-193.trigger
+          rm -f .github/release-failures/release-12-193.log
 
       - name: Commit complete Build 12.193 release
         run: |
@@ -181,3 +210,7 @@ jobs:
           git diff --cached --check
           git commit -m 'Build 12.193: operator muzzle-light response'
           git push origin HEAD:main
+
+      - name: Commit failure ledger if needed
+        if: failure()
+        run: /tmp/release-12-193-failure.sh
