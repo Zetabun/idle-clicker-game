@@ -146,17 +146,31 @@ jobs:
               raise SystemExit('Build 12.197 simulation regression anchor missing')
           if not (src / 'AUDIT-12.199.md').exists():
               raise SystemExit('AUDIT-12.199.md was not created')
-          for name in ['HANDOFF.md', 'AGENTS.md', 'CHANGELOG.md', 'README.md', 'PROJECT.md', 'ARCHITECTURE.md', 'CONTRACTS.md', '00-READ-FIRST-GPT.md']:
+
+          for name in ['HANDOFF.md', 'AGENTS.md', 'CHANGELOG.md', 'README.md', 'PROJECT.md', '00-READ-FIRST-GPT.md']:
               text = (src / name).read_text(encoding='utf-8')
               if '12.199' not in text:
                   raise SystemExit(f'{name} was not updated for Build 12.199')
+
+          architecture = (src / 'ARCHITECTURE.md').read_text(encoding='utf-8')
+          if '| `61-world-renderer.js` | Arenas, props, decor, doors, world geometry and surface-supported transient decals |' not in architecture:
+              raise SystemExit('ARCHITECTURE.md renderer ownership wording was not updated')
+
+          contracts = (src / 'CONTRACTS.md').read_text(encoding='utf-8')
+          for marker in [
+              'A blood spot must retain solid backing across its visible footprint;',
+              'corner overhang is rejected.',
+              'material enters the wall pocket.'
+          ]:
+              if marker not in contracts:
+                  raise SystemExit(f'CONTRACTS.md blood attachment marker missing: {marker}')
 
           standalone = src / 'dist/strikewatch-build-12.199.html'
           cod = root / 'cod.html'
           cod.write_bytes(standalone.read_bytes())
           if cod.read_bytes() != standalone.read_bytes():
               raise SystemExit('cod.html is not byte-identical to the verified standalone')
-          print('Build 12.199 source, regression and artifact gates passed')
+          print('Build 12.199 source, documentation, regression and artifact gates passed')
           PY
 
           rm -f .github/release-failures/release-12.199.log
