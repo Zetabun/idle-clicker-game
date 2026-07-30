@@ -22,11 +22,8 @@
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
     const dt = clamp(lastFrameDt || 1 / 60, 1 / 240, 0.05);
-    const presentedAngle = Number.isFinite(cam.renderAimAngle) ? cam.renderAimAngle : cam.angle;
-    if (!viewWeaponState.initialised) {
-      viewWeaponState.initialised = true;
-      viewWeaponState.lastAngle = presentedAngle;
-    }
+    ensureViewWeaponPresentationSubject(cam);
+    const presentedAngle = viewWeaponPresentedAngle(cam);
     const angularVelocity = angleDiff(presentedAngle, viewWeaponState.lastAngle) / dt;
     viewWeaponState.lastAngle = presentedAngle;
     const targetTurnSway = clamp(-angularVelocity * 0.0105, -0.075, 0.075);

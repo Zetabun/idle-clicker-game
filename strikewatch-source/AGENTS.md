@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.196 owns clean spectator subject handoffs in `js/60-renderer-core.js` and `js/63-viewmodel-renderer.js`. Keep detection renderer-owned through camera-object identity, seed `lastAngle` from the incoming rendered aim angle, clear every inherited first-person motion signal and retain the reduced-motion-aware 140ms canvas-only recovery. Do not delay selection or change AUTO/manual/death-handoff authority. Verify `spectatorHandoffPresentationForTest()`, `spectatorDirectorForTest()` and `spectatorHandoffForTest()` plus the existing renderer gates. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-12.196.md`.
+
 Build 12.195 owns the combat-aware AUTO spectator director in `js/70-runtime.js`. Keep it presentation-only and fed exclusively by already-computed bot state. Preserve the 3.2-second normal hold, 1.25-second live-fire exception, 8.5-second maximum hold, manual AUTO-off behaviour and two-second death handoff. Verify `spectatorDirectorForTest()`, `spectatorHandoffForTest()` and the existing combat/renderer gates. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-12.195.md`.
 
 Build 12.194 owns muzzle-anchored third-person tracers in `js/61-world-renderer.js` and `js/62-character-renderer.js`. Keep the exact shared weapon-rig muzzle transform, reusable `bot.renderMuzzlePoint`, bounded torso fallback, 28-tracer cap and 0.085 lifetime. Combat, spread, endpoints, misses and impacts remain authoritative and unchanged. Verify `operatorTracerOriginForTest()` plus Builds 12.190-12.193 and arena/navigation integrity. Save schema 19 and diagnostics schema 1 remain unchanged. See `AUDIT-12.194.md`.

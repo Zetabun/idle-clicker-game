@@ -69,10 +69,10 @@ share application scope in the listed order.
 | `52-season-narratives.js` | Story recognition, presentation and narrative settlement |
 | `55-opening-week.js` | Opening-week agenda and safe advance-to-event flow |
 | `56-world-press-awards.js` | Press, awards and honours presentation |
-| `60-renderer-core.js` | WebGL setup and shared drawing primitives |
+| `60-renderer-core.js` | WebGL setup, shared drawing primitives and transient first-person presentation state |
 | `61-world-renderer.js` | Arenas, props, decor, doors, world geometry and transient surface decals |
 | `62-character-renderer.js` | Operators, corpses, armour fit and held weapons |
-| `63-viewmodel-renderer.js` | First-person weapon/viewmodel rendering |
+| `63-viewmodel-renderer.js` | First-person weapon/viewmodel rendering and viewed-subject change detection |
 | `64-reward-renderer.js` | Reward and crate presentation |
 | `70-runtime.js` | DOM binding, main loop, input, startup and public test hooks |
 

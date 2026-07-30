@@ -2206,6 +2206,7 @@
       return doorStateSnapshot().find(door => door.id === state.id);
     },
     spectatorDirectorForTest: () => spectatorDirectorForTest(),
+    spectatorHandoffPresentationForTest: () => spectatorHandoffPresentationForTest(),
     spectatorHandoffForTest: (deadIndex = spectatorIndex, seconds = 2.05) => {
       const safeIndex = clamp(Math.floor(Number(deadIndex) || 0), 0, Math.max(0, bots.length - 1));
       const current = bots[safeIndex];

@@ -124,6 +124,7 @@ current task. Release-specific implementation detail belongs in the matching
   operator surfaces; static geometry, shadows, transparent effects, corpses and
   the first-person viewmodel receive zero. No light object, mesh, texture, pass,
   uniform or additional draw is permitted without an explicit measured budget.
+- First-person spectator presentation belongs to the currently viewed camera object. On a subject change, seed angular history from the incoming rendered aim angle and clear inherited sway, recoil spring/impulse/roll, smoke, locomotion bob, muzzle, shake and hit-pulse presentation. Any handoff transition must be canvas-only, reduced-motion aware, bounded to 100–160ms and must not delay or influence spectator selection.
 - AUTO spectator selection may rank only already-computed operator presentation state. It must not call perception, line-of-sight, navigation or combat routines, and must not write simulation state. Manual previous/next remains authoritative and disables AUTO; the existing two-second death handoff remains separate. Use bounded hold times and a stability bias so the camera follows action without rapid cuts.
 - Third-person tracer presentation must start from the reusable world-space muzzle
   point produced by the same authored weapon-rig transform as the muzzle flash.

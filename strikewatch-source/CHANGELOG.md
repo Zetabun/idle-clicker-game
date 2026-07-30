@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.196 — Clean Spectator Handoffs
+
+- Resets first-person sway, recoil, smoke, bob and shared impact presentation whenever the viewed operator changes.
+- Seeds the new view from the incoming operator's rendered aim angle, preventing exaggerated turn impulses.
+- Adds a reduced-motion-aware 140ms canvas-only handoff without delaying camera selection or changing gameplay.
+- See `AUDIT-12.196.md`.
+
 ## 12.195 — Combat-Aware Spectator Director
 
 - Replaces blind 4–7 second AUTO camera rotation with a combat-aware, stability-biased spectator director.

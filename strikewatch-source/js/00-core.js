@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.195';
-  const BUILD_NAME = 'Combat-Aware Spectator Director';
-  const BUILD_ID = '12.195.0-combat-aware-spectator-director';
+  const BUILD_VERSION = '12.196';
+  const BUILD_NAME = 'Clean Spectator Handoffs';
+  const BUILD_ID = '12.196.0-clean-spectator-handoffs';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

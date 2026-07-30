@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.195 replaces blind AUTO spectator rotation with a stable combat-aware director that follows visible contact and real firing while preserving manual controls, the death handoff, gameplay, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.195.md`.
+Build 12.196 resets transient first-person weapon and camera-response presentation whenever the viewed operator changes, then applies a reduced-motion-aware canvas handoff while preserving selection timing, gameplay, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.196.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

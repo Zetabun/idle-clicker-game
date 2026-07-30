@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.195 — Combat-Aware Spectator Director**
-- Build ID: `12.195.0-combat-aware-spectator-director`
+- Build: **12.196 — Clean Spectator Handoffs**
+- Build ID: `12.196.0-clean-spectator-handoffs`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.195.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.196.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.196 owns clean first-person subject handoffs across `js/60-renderer-core.js` and `js/63-viewmodel-renderer.js`. Preserve `SPECTATOR_HANDOFF_PRESENTATION`, `spectatorHandoffPresentationForTest()`, incoming rendered-angle seeding, complete clearing of sway/recoil/smoke/bob plus shared muzzle/shake/hit-pulse signals, the 140ms canvas-only opacity recovery and reduced-motion bypass. The renderer observes subject changes only; it must not write spectator selection, delay a cut or alter the Build 12.195 director and two-second death handoff. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.196.md`.
 
 Build 12.195 owns the AUTO spectator director in `js/70-runtime.js`. Preserve `SPECTATOR_CAMERA_DIRECTOR`, `spectatorDirectorForTest()`, the 3.2-second ordinary hold, 1.25-second live-fire exception, 8.5-second maximum hold and current-view stability bias. Rank only already-computed bot presentation state; never call perception, LOS, navigation or combat from the director. Manual previous/next must disable AUTO and the existing two-second death handoff must remain unchanged. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.195.md`.
 

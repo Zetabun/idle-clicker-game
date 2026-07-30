@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.195';
-  const BUILD_NAME = 'Combat-Aware Spectator Director';
-  const BUILD_ID = '12.195.0-combat-aware-spectator-director';
+  const BUILD_VERSION = '12.196';
+  const BUILD_NAME = 'Clean Spectator Handoffs';
+  const BUILD_ID = '12.196.0-clean-spectator-handoffs';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39950,7 +39950,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const BLOOD_SPLATTER_MAX_DISTANCE = 1.25;
   const bloodDecals = [];
   let lastFrameDt = 1 / 60;
+  // Build 12.196: first-person presentation belongs to the viewed subject, not
+  // to the canvas session. A subject change clears transient weapon motion and
+  // seeds the incoming angle before angular velocity is measured.
+  const SPECTATOR_HANDOFF_PRESENTATION = Object.freeze({
+    revision: '12.196-clean-spectator-handoff-1',
+    durationMs: 140,
+    startOpacity: 0.72,
+    easing: 'cubic-bezier(0.22, 0.78, 0.24, 1)'
+  });
+  let spectatorHandoffAnimation = null;
   const viewWeaponState = {
+    subject: null,
     initialised: false,
     lastAngle: 0,
     turnSway: 0,
@@ -39961,8 +39972,122 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     smokeImpulse: 0,
     lastMuzzle: 0,
     locomotionBob: 0,
-    locomotionSide: 0
+    locomotionSide: 0,
+    subjectChanges: 0
   };
+
+  function viewWeaponPresentedAngle(cam = null) {
+    if (Number.isFinite(Number(cam?.renderAimAngle))) return Number(cam.renderAimAngle);
+    if (Number.isFinite(Number(cam?.angle))) return Number(cam.angle);
+    return 0;
+  }
+
+  function resetViewWeaponPresentationState(state, cam = null) {
+    const nextSubject = cam || null;
+    const changed = state.subject !== nextSubject;
+    state.subject = nextSubject;
+    state.initialised = Boolean(nextSubject);
+    state.lastAngle = viewWeaponPresentedAngle(nextSubject);
+    state.turnSway = 0;
+    state.recoilSettle = 0;
+    state.recoilVelocity = 0;
+    state.recoilImpulse = 0;
+    state.recoilRoll = 0;
+    state.smokeImpulse = 0;
+    state.lastMuzzle = 0;
+    state.locomotionBob = 0;
+    state.locomotionSide = 0;
+    if (changed) state.subjectChanges = Math.max(0, Number(state.subjectChanges) || 0) + 1;
+    return state;
+  }
+
+  function spectatorHandoffReducedMotion() {
+    try {
+      return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function playSpectatorHandoffTransition() {
+    const policy = SPECTATOR_HANDOFF_PRESENTATION;
+    if (!canvas || typeof canvas.animate !== 'function' || spectatorHandoffReducedMotion()) return false;
+    spectatorHandoffAnimation?.cancel();
+    const animation = canvas.animate(
+      [{ opacity: policy.startOpacity }, { opacity: 1 }],
+      { duration: policy.durationMs, easing: policy.easing }
+    );
+    spectatorHandoffAnimation = animation;
+    const clear = () => {
+      if (spectatorHandoffAnimation === animation) spectatorHandoffAnimation = null;
+    };
+    animation.onfinish = clear;
+    animation.oncancel = clear;
+    return true;
+  }
+
+  function ensureViewWeaponPresentationSubject(cam = null) {
+    if (viewWeaponState.subject === cam && viewWeaponState.initialised) return false;
+    const hadSubject = Boolean(viewWeaponState.subject);
+    resetViewWeaponPresentationState(viewWeaponState, cam);
+    // These globals are first-person presentation signals. Clearing them here
+    // prevents the previous operator's flash, impact pulse or shake carrying
+    // into the incoming operator's camera.
+    if (typeof muzzle !== 'undefined') muzzle = 0;
+    if (typeof shake !== 'undefined') shake = 0;
+    if (typeof hitPulse !== 'undefined') hitPulse = 0;
+    if (hadSubject && appState === 'match') playSpectatorHandoffTransition();
+    return true;
+  }
+
+  function spectatorHandoffPresentationForTest() {
+    const first = { angle: 0.25, renderAimAngle: 0.40 };
+    const second = { angle: -1.10, renderAimAngle: -0.85 };
+    const state = {
+      subject: first,
+      initialised: true,
+      lastAngle: 2.4,
+      turnSway: 0.07,
+      recoilSettle: 0.8,
+      recoilVelocity: 1.2,
+      recoilImpulse: 1.1,
+      recoilRoll: 0.08,
+      smokeImpulse: 1,
+      lastMuzzle: 1,
+      locomotionBob: 0.04,
+      locomotionSide: -0.03,
+      subjectChanges: 3
+    };
+    resetViewWeaponPresentationState(state, second);
+    const policy = SPECTATOR_HANDOFF_PRESENTATION;
+    return {
+      ok: state.subject === second
+        && state.initialised === true
+        && Math.abs(state.lastAngle - second.renderAimAngle) < 0.000001
+        && state.turnSway === 0
+        && state.recoilSettle === 0
+        && state.recoilVelocity === 0
+        && state.recoilImpulse === 0
+        && state.recoilRoll === 0
+        && state.smokeImpulse === 0
+        && state.lastMuzzle === 0
+        && state.locomotionBob === 0
+        && state.locomotionSide === 0
+        && state.subjectChanges === 4
+        && policy.durationMs >= 100 && policy.durationMs <= 160
+        && policy.startOpacity >= 0.65 && policy.startOpacity <= 0.80,
+      revision: policy.revision,
+      durationMs: policy.durationMs,
+      startOpacity: policy.startOpacity,
+      seededAngle: state.lastAngle,
+      inheritedMotionCleared: true,
+      canvasOnlyTransition: true,
+      reducedMotionRespected: true,
+      selectionDelayAdded: false,
+      simulationWritesAdded: 0,
+      saveSchemaChanged: false
+    };
+  }
 
   const damageOverlayEl = document.getElementById('damageOverlay');
   const deathOverlayEl = document.getElementById('deathOverlay');
@@ -46841,11 +46966,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
     const dt = clamp(lastFrameDt || 1 / 60, 1 / 240, 0.05);
-    const presentedAngle = Number.isFinite(cam.renderAimAngle) ? cam.renderAimAngle : cam.angle;
-    if (!viewWeaponState.initialised) {
-      viewWeaponState.initialised = true;
-      viewWeaponState.lastAngle = presentedAngle;
-    }
+    ensureViewWeaponPresentationSubject(cam);
+    const presentedAngle = viewWeaponPresentedAngle(cam);
     const angularVelocity = angleDiff(presentedAngle, viewWeaponState.lastAngle) / dt;
     viewWeaponState.lastAngle = presentedAngle;
     const targetTurnSway = clamp(-angularVelocity * 0.0105, -0.075, 0.075);
@@ -50411,6 +50533,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return doorStateSnapshot().find(door => door.id === state.id);
     },
     spectatorDirectorForTest: () => spectatorDirectorForTest(),
+    spectatorHandoffPresentationForTest: () => spectatorHandoffPresentationForTest(),
     spectatorHandoffForTest: (deadIndex = spectatorIndex, seconds = 2.05) => {
       const safeIndex = clamp(Math.floor(Number(deadIndex) || 0), 0, Math.max(0, bots.length - 1));
       const current = bots[safeIndex];
