@@ -1,0 +1,124 @@
+name: Verify Build 12.199 on GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/verify-pages-12-199.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-pages-build-12-199
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify deployed cod.html and publish evidence
+        shell: bash
+        run: |
+          set -uo pipefail
+          git config user.name "Zetabun"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          live_url='https://zetabun.github.io/idle-clicker-game/cod.html'
+          expected_version='12.199'
+          expected_build_id='12.199.0-surface-anchored-blood-decals'
+          local_sha="$(sha256sum cod.html | awk '{print $1}')"
+          remote_sha=''
+          http_status=''
+          verified='false'
+          attempts=0
+          error_message=''
+
+          for attempt in $(seq 1 36); do
+            attempts="$attempt"
+            cache_bust="${GITHUB_SHA}-${attempt}-$(date +%s)"
+            http_status="$(curl -L -sS \
+              -H 'Cache-Control: no-cache' \
+              -H 'Pragma: no-cache' \
+              -w '%{http_code}' \
+              -o /tmp/strikewatch-live-cod.html \
+              "${live_url}?verify=${cache_bust}" 2>/tmp/strikewatch-pages-curl.err || true)"
+
+            if test -f /tmp/strikewatch-live-cod.html; then
+              remote_sha="$(sha256sum /tmp/strikewatch-live-cod.html | awk '{print $1}')"
+              if test "$http_status" = '200' \
+                && grep -Fq "$expected_version" /tmp/strikewatch-live-cod.html \
+                && grep -Fq "$expected_build_id" /tmp/strikewatch-live-cod.html \
+                && cmp -s cod.html /tmp/strikewatch-live-cod.html; then
+                verified='true'
+                break
+              fi
+            fi
+            sleep 5
+          done
+
+          if test "$verified" != 'true'; then
+            error_message="$(cat /tmp/strikewatch-pages-curl.err 2>/dev/null || true)"
+            if test -z "$error_message"; then
+              error_message='Public cod.html did not become byte-identical to main within the bounded verification window.'
+            fi
+          fi
+
+          mkdir -p .github/pages-verification
+          export LIVE_URL="$live_url"
+          export EXPECTED_VERSION="$expected_version"
+          export EXPECTED_BUILD_ID="$expected_build_id"
+          export LOCAL_SHA="$local_sha"
+          export REMOTE_SHA="$remote_sha"
+          export HTTP_STATUS="$http_status"
+          export VERIFIED="$verified"
+          export ATTEMPTS="$attempts"
+          export ERROR_MESSAGE="$error_message"
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import json
+          import os
+
+          payload = {
+              'version': os.environ['EXPECTED_VERSION'],
+              'build_id': os.environ['EXPECTED_BUILD_ID'],
+              'live_url': os.environ['LIVE_URL'],
+              'verified': os.environ['VERIFIED'] == 'true',
+              'http_status': int(os.environ['HTTP_STATUS'] or 0),
+              'local_sha256': os.environ['LOCAL_SHA'],
+              'remote_sha256': os.environ['REMOTE_SHA'],
+              'byte_identical': bool(os.environ['REMOTE_SHA']) and os.environ['LOCAL_SHA'] == os.environ['REMOTE_SHA'],
+              'attempts': int(os.environ['ATTEMPTS'] or 0),
+              'verified_at': datetime.now(timezone.utc).isoformat(),
+              'trigger_commit': os.environ.get('GITHUB_SHA', ''),
+              'error': os.environ['ERROR_MESSAGE'] or None,
+          }
+          Path('.github/pages-verification/12.199.json').write_text(
+              json.dumps(payload, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(payload, indent=2))
+          PY
+
+          if test "$verified" = 'true'; then
+            rm -f .github/workflows/verify-pages-12-199.yml
+            rm -f .github/triggers/verify-pages-12-199.txt
+            rm -f .github/triggers/pages-refresh-12-199.txt
+            rmdir .github/triggers 2>/dev/null || true
+            git add -A
+            git diff --cached --check
+            git commit -m "Verify Build 12.199 live on GitHub Pages"
+            git push origin main
+            exit 0
+          fi
+
+          git add .github/pages-verification/12.199.json
+          git diff --cached --check
+          git commit -m "Record Build 12.199 Pages verification failure"
+          git push origin main
+          exit 1
