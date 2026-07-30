@@ -566,9 +566,14 @@
       setBlendMode(false);
     }
 
-    // The viewmodel is welded to the camera, so world-space detail slid across
-    // it on every step. It takes model space for the same reason operators do.
-    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) withLocalSurfaceDetail(() => drawFirstPersonWeapon(cam, eye, time));
+    // The viewmodel still takes model-space detail, but mode 2 keeps the
+    // third-person silhouette lift off the weapon held in front of the camera.
+    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) {
+      withLocalSurfaceDetail(
+        () => drawFirstPersonWeapon(cam, eye, time),
+        OPERATOR_SILHOUETTE_LIGHTING.viewmodelMode
+      );
+    }
     if (gl.bindVertexArray) gl.bindVertexArray(null);
     finishRendererFrameStats();
 

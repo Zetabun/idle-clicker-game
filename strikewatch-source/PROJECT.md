@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.190 improves battle presentation by letting moving operators retain a restrained smooth response to arena cool and warm light pools while preserving the shimmer-safe stable average and disabled moving flicker. It adds no render pass or draw calls and leaves gameplay, persistence and schemas unchanged. See `HANDOFF.md` and `AUDIT-12.190.md`.
+Build 12.191 improves battle readability with a restrained third-person operator fill and edge lift that excludes static arena geometry and the first-person viewmodel. It reuses the existing shader and local-detail uniform, adds no render pass or draw calls, and leaves gameplay, persistence and schemas unchanged. See `HANDOFF.md` and `AUDIT-12.191.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

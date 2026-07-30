@@ -108,6 +108,11 @@ current task. Release-specific implementation detail belongs in the matching
   Stepped moving flicker remains disabled, static geometry keeps the original
   pool values exactly, and this response must not add a pass, texture, uniform
   or draw call without an explicit measured budget.
+- Third-person operator silhouette separation may reuse the local-detail uniform
+  as a mode value, but only living/fallen operators may receive the bounded fill
+  and edge lift. Static geometry and the first-person viewmodel remain unchanged;
+  no additional pass, texture, uniform, mesh or draw call is permitted without
+  an explicit measured budget.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

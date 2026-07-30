@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.191 — Operator Silhouette Separation
+
+- Adds a restrained operator-only fill and edge lift so third-person silhouettes separate from dark arena surfaces.
+- Uses three states on the existing local-detail uniform to exclude static geometry and the first-person viewmodel.
+- Adds no draws, meshes, textures, passes or uniforms and leaves gameplay, saves and schemas unchanged.
+- See `AUDIT-12.191.md`.
+
 ## 12.190 — Operator Environmental Light Pickup
 
 - Restores restrained environmental light response to operators, corpses and the first-person viewmodel without reintroducing moving-surface flicker.

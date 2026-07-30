@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.190';
-  const BUILD_NAME = 'Operator Environmental Light Pickup';
-  const BUILD_ID = '12.190.0-operator-environmental-light-pickup';
+  const BUILD_VERSION = '12.191';
+  const BUILD_NAME = 'Operator Silhouette Separation';
+  const BUILD_ID = '12.191.0-operator-silhouette-separation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39690,6 +39690,48 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
   }
 
+  // Build 12.191: third-person operators receive a restrained neutral fill and
+  // edge lift so their silhouette separates from dark arena surfaces. The mode
+  // travels through the existing local-detail uniform: 0 static, 1 operator,
+  // 2 viewmodel. No new render resource is introduced.
+  const OPERATOR_SILHOUETTE_LIGHTING = Object.freeze({
+    revision: '12.191-operator-silhouette-1',
+    staticMode: 0,
+    operatorMode: 1,
+    viewmodelMode: 2,
+    fillLift: 0.028,
+    rimLift: 0.052
+  });
+
+  function operatorSilhouetteSeparationForTest() {
+    const policy = OPERATOR_SILHOUETTE_LIGHTING;
+    const actorWeight = mode => mode === policy.operatorMode ? 1 : 0;
+    return {
+      ok: policy.staticMode === 0
+        && policy.operatorMode === 1
+        && policy.viewmodelMode === 2
+        && actorWeight(policy.operatorMode) === 1
+        && actorWeight(policy.staticMode) === 0
+        && actorWeight(policy.viewmodelMode) === 0
+        && policy.fillLift > 0 && policy.fillLift <= 0.04
+        && policy.rimLift > policy.fillLift && policy.rimLift <= 0.07,
+      revision: policy.revision,
+      staticMode: policy.staticMode,
+      operatorMode: policy.operatorMode,
+      viewmodelMode: policy.viewmodelMode,
+      fillLift: policy.fillLift,
+      rimLift: policy.rimLift,
+      livingAndFallenOperators: true,
+      viewmodelUnchanged: true,
+      staticWorldUnchanged: true,
+      additionalDrawCalls: 0,
+      additionalMeshes: 0,
+      additionalTextures: 0,
+      additionalShaderPasses: 0,
+      additionalShaderUniforms: 0
+    };
+  }
+
   let gl = null;
   let glProgram = null;
   let glReady = false;
@@ -39733,19 +39775,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return true;
     }
   })();
-  // Build 12.160: set while drawing geometry that travels through the world —
-  // operators, corpses and the first-person viewmodel. World geometry never
-  // sets it, and the static batcher replays with it clear, so a batch can never
-  // inherit a moving object's surface space.
-  let localSurfaceDetail = false;
+  // Build 12.160 anchored moving surface detail to model space. Build 12.191
+  // extends the same existing uniform into a compact mode value: 0 static,
+  // 1 third-person operator/corpse and 2 first-person viewmodel. Static batches
+  // always replay with mode 0.
+  let localSurfaceDetailMode = 0;
 
-  function withLocalSurfaceDetail(draw) {
-    const previous = localSurfaceDetail;
-    localSurfaceDetail = true;
+  function withLocalSurfaceDetail(draw, requestedMode = OPERATOR_SILHOUETTE_LIGHTING.operatorMode) {
+    const previous = localSurfaceDetailMode;
+    const numericMode = Math.round(Number(requestedMode) || OPERATOR_SILHOUETTE_LIGHTING.operatorMode);
+    localSurfaceDetailMode = Math.min(
+      OPERATOR_SILHOUETTE_LIGHTING.viewmodelMode,
+      Math.max(OPERATOR_SILHOUETTE_LIGHTING.operatorMode, numericMode)
+    );
     try {
       return draw();
     } finally {
-      localSurfaceDetail = previous;
+      localSurfaceDetailMode = previous;
     }
   }
 
@@ -39968,7 +40014,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         // world position directly. For static geometry the two are identical.
         // For an operator it switches the whole surface layer into model space,
         // which is what stops the texture crawling as they move.
-        vec3 detailPosition = mix(vWorldPosition, vLocalPosition, clamp(uLocalDetail, 0.0, 1.0));
+        float movingDetail = step(0.5, uLocalDetail);
+        float operatorActor = movingDetail * (1.0 - step(1.5, uLocalDetail));
+        vec3 detailPosition = mix(vWorldPosition, vLocalPosition, movingDetail);
         vec2 noiseCoord = detailPosition.xz * 1.7 + vec2(detailPosition.y * 0.55);
         float noise = valueNoise(noiseCoord);
         float materialRoughness = clamp(uRoughness, 0.04, 1.0);
@@ -40096,7 +40144,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         float coolPool = exp(-18.0 * dot(coolCell, coolCell));
         vec2 warmCell = abs(fract((vWorldPosition.xz + vec2(1.4, 0.6)) / vec2(8.0, 6.0)) - 0.5);
         float warmPool = exp(-30.0 * dot(warmCell, warmCell));
-        float moving = clamp(uLocalDetail, 0.0, 1.0);
+        float moving = movingDetail;
         float movingCoolPool = mix(${OPERATOR_ENVIRONMENT_LIGHTING.coolAverage.toFixed(2)}, coolPool, ${OPERATOR_ENVIRONMENT_LIGHTING.localShare.toFixed(2)});
         float movingWarmPool = mix(${OPERATOR_ENVIRONMENT_LIGHTING.warmAverage.toFixed(2)}, warmPool, ${OPERATOR_ENVIRONMENT_LIGHTING.localShare.toFixed(2)});
         coolPool = mix(coolPool, movingCoolPool, moving);
@@ -40108,13 +40156,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         vec3 halfDirection = normalize(keyDirection + viewDirection);
         float specPower = mix(8.0, 68.0, 1.0 - materialRoughness);
         float specular = pow(max(dot(normal, halfDirection), 0.0), specPower) * (1.0 - materialRoughness) * 0.68;
-        float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.8) * 0.095;
+        float rimShape = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.8);
+        float rim = rimShape * 0.095;
+        // Build 12.191: only third-person operator mode receives this modest
+        // neutral lift. Static geometry and mode-2 viewmodels multiply by zero.
+        float operatorSilhouetteLift = operatorActor * (${OPERATOR_SILHOUETTE_LIGHTING.fillLift.toFixed(3)} + rimShape * ${OPERATOR_SILHOUETTE_LIGHTING.rimLift.toFixed(3)});
         float groundAO = 0.76 + 0.24 * smoothstep(0.02, 0.42, vWorldPosition.y);
 
         vec3 lit = base * (hemi + diffuse * 0.66 + fill * 0.10 + overhead + materialAmbientLift + uEmissive);
         lit += vec3(0.66, 0.82, 0.98) * specular;
         lit += vec3(0.48, 0.18, 0.07) * warmPool * 0.14;
-        lit += base * rim;
+        lit += base * (rim + operatorSilhouetteLift);
         lit *= groundAO;
 
         float distanceToCamera = distance(vWorldPosition, uCameraPosition);
@@ -41045,10 +41097,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     gl.uniform1f(glLocations.alpha, alpha);
     gl.uniform1f(glLocations.surface, surface);
     gl.uniform1f(glLocations.roughness, roughness);
-    // Build 12.160: static geometry keeps world-space surface detail; anything
-    // that moves through the world is drawn inside
-    // `withLocalSurfaceDetail()` and takes model space instead.
-    if (glLocations.localDetail) gl.uniform1f(glLocations.localDetail, localSurfaceDetail ? 1 : 0);
+    // Mode 0 keeps static world-space detail, mode 1 identifies third-person
+    // operators/corpses and mode 2 identifies the first-person viewmodel.
+    if (glLocations.localDetail) gl.uniform1f(glLocations.localDetail, localSurfaceDetailMode);
     gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
@@ -47028,9 +47079,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       setBlendMode(false);
     }
 
-    // The viewmodel is welded to the camera, so world-space detail slid across
-    // it on every step. It takes model space for the same reason operators do.
-    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) withLocalSurfaceDetail(() => drawFirstPersonWeapon(cam, eye, time));
+    // The viewmodel still takes model-space detail, but mode 2 keeps the
+    // third-person silhouette lift off the weapon held in front of the camera.
+    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) {
+      withLocalSurfaceDetail(
+        () => drawFirstPersonWeapon(cam, eye, time),
+        OPERATOR_SILHOUETTE_LIGHTING.viewmodelMode
+      );
+    }
     if (gl.bindVertexArray) gl.bindVertexArray(null);
     finishRendererFrameStats();
 
