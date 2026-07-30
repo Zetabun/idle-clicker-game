@@ -1285,11 +1285,16 @@
     const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
     const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
     const weaponRig = operatorSharedWeaponRig(activeWeapon, rifleY, rifleForward, isSidearm, recoil, rifleRoll);
+    const flashDistance = isSidearm ? 0.42 : 0.80;
+    const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
+    const renderedMuzzleOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+    const renderMuzzlePoint = bot.renderMuzzlePoint || (bot.renderMuzzlePoint = { x: 0, y: 0, z: 0 });
+    renderMuzzlePoint.x = renderedMuzzleOrigin.x;
+    renderMuzzlePoint.y = renderedMuzzleOrigin.y;
+    renderMuzzlePoint.z = renderedMuzzleOrigin.z;
     let muzzleLightOrigin = null;
     if (bot.flash > 0) {
-      const flashDistance = isSidearm ? 0.42 : 0.80;
-      const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
-      muzzleLightOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+      muzzleLightOrigin = renderedMuzzleOrigin;
       setOperatorMuzzleLight(muzzleLightOrigin, bot.flash);
     }
     try {

@@ -18,15 +18,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.193 — Operator Muzzle-Light Response**
-- Build ID: `12.193.0-operator-muzzle-light-response`
+- Build: **12.194 — Muzzle-Anchored Tracers**
+- Build ID: `12.194.0-muzzle-anchored-tracers`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.193.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.194.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.194 owns muzzle-anchored third-person tracers across `js/61-world-renderer.js` and `js/62-character-renderer.js`. Preserve `OPERATOR_TRACER_ORIGIN`, `operatorTracerOriginForTest()`, the one reusable `bot.renderMuzzlePoint` and the exact `operatorSharedWeaponRig(...).muzzle` transform. `spawnTracer()` must prefer the rendered muzzle and retain the old torso origin only as a bounded startup fallback. Keep the 28-tracer cap, 0.085 lifetime, endpoint spread, misses, impacts and all combat authority unchanged. Do not add draws, meshes, textures, passes, uniforms or per-frame allocations. Keep Builds 12.190-12.193 and arena/navigation integrity green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.194.md`.
 
 Build 12.193 owns the scoped third-person operator muzzle-light response across `js/60-renderer-core.js` and `js/62-character-renderer.js`. Preserve `OPERATOR_MUZZLE_LIGHT_RESPONSE`, `operatorMuzzleLightResponseForTest()`, the persistent state/colour scratch buffers and the exact authored muzzle anchor. Only a living mode-1 operator with authoritative `bot.flash > 0` may warm opaque surfaces 3-8 inside the 1.20-unit radius. Static geometry, shadows, transparent effects, corpses, other operators and mode-2 viewmodels remain unchanged. Do not add lights, draws, meshes, textures, passes or uniforms. Keep Builds 12.190-12.192, operator AO, culling and arena/navigation integrity green. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.193.md`.
 

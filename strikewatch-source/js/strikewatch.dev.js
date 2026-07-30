@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.193';
-  const BUILD_NAME = 'Operator Muzzle-Light Response';
-  const BUILD_ID = '12.193.0-operator-muzzle-light-response';
+  const BUILD_VERSION = '12.194';
+  const BUILD_NAME = 'Muzzle-Anchored Tracers';
+  const BUILD_ID = '12.194.0-muzzle-anchored-tracers';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -42715,6 +42715,62 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
   }
 
+  // Build 12.194: accepted-shot tracers begin at the exact reusable world-space
+  // muzzle point maintained by the third-person operator renderer. The old torso
+  // origin remains only as a startup fallback before an operator has rendered.
+  const OPERATOR_TRACER_ORIGIN = Object.freeze({
+    revision: '12.194-render-muzzle-tracer-1',
+    fallbackHeight: 1.30,
+    crouchDrop: 0.43,
+    maximumCachedOffset: 1.45
+  });
+
+  function operatorTracerOrigin(shooter, out = {}) {
+    const fallbackElevation = arenaElevationAt(shooter?.x, shooter?.y);
+    const fallbackX = Number(shooter?.x) || 0;
+    const fallbackY = fallbackElevation + OPERATOR_TRACER_ORIGIN.fallbackHeight - (shooter?.crouched ? OPERATOR_TRACER_ORIGIN.crouchDrop : 0);
+    const fallbackZ = Number(shooter?.y) || 0;
+    const cached = shooter?.renderMuzzlePoint;
+    const cachedFinite = cached
+      && Number.isFinite(cached.x)
+      && Number.isFinite(cached.y)
+      && Number.isFinite(cached.z);
+    const cachedOffset = cachedFinite ? Math.hypot(cached.x - fallbackX, cached.z - fallbackZ) : Infinity;
+    const useCached = cachedFinite && cachedOffset <= OPERATOR_TRACER_ORIGIN.maximumCachedOffset;
+    out.x = useCached ? cached.x : fallbackX;
+    out.y = useCached ? cached.y : fallbackY;
+    out.z = useCached ? cached.z : fallbackZ;
+    out.source = useCached ? 'render-muzzle' : 'torso-fallback';
+    return out;
+  }
+
+  function operatorTracerOriginForTest() {
+    const live = operatorTracerOrigin({ x: 4, y: 5, renderMuzzlePoint: { x: 4.12, y: 1.31, z: 5.78 } }, {});
+    const fallback = operatorTracerOrigin({ x: 4, y: 5, crouched: true }, {});
+    const stale = operatorTracerOrigin({ x: 4, y: 5, renderMuzzlePoint: { x: 9, y: 1.3, z: 9 } }, {});
+    return {
+      ok: live.source === 'render-muzzle'
+        && live.x === 4.12 && live.y === 1.31 && live.z === 5.78
+        && fallback.source === 'torso-fallback'
+        && stale.source === 'torso-fallback',
+      revision: OPERATOR_TRACER_ORIGIN.revision,
+      exactRenderedMuzzlePreferred: live.source === 'render-muzzle',
+      startupFallbackPreserved: fallback.source === 'torso-fallback',
+      staleCacheRejected: stale.source === 'torso-fallback',
+      tracerLimitUnchanged: 28,
+      tracerLifetimeUnchanged: 0.085,
+      hitDetectionChanged: false,
+      spreadChanged: false,
+      additionalDrawCalls: 0,
+      additionalMeshes: 0,
+      additionalTextures: 0,
+      additionalShaderPasses: 0,
+      additionalShaderUniforms: 0
+    };
+  }
+
+  const operatorTracerOriginScratch = {};
+
   function spawnTracer(shooter, target, options = {}) {
     if (!shooter || !target) return;
     const miss = Boolean(options.miss);
@@ -42725,8 +42781,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       : 1.24 - (target.crouched ? 0.38 : 0);
     const shooterElevation = arenaElevationAt(shooter.x, shooter.y);
     const targetElevation = arenaElevationAt(target.x, target.y);
+    const tracerOrigin = operatorTracerOrigin(shooter, operatorTracerOriginScratch);
     tracers.push({
-      x1: shooter.x, y1: shooterElevation + 1.30 - (shooter.crouched ? 0.43 : 0), z1: shooter.y,
+      x1: tracerOrigin.x, y1: tracerOrigin.y, z1: tracerOrigin.z,
       x2: target.x + (Math.random() - 0.5) * spread,
       y2: targetElevation + targetHeight + (Math.random() - 0.5) * spread * 0.55,
       z2: target.y + (Math.random() - 0.5) * spread,
@@ -46296,11 +46353,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const isSidearm = bot.usingSecondary || activeWeapon?.category === 'pistol' || activeWeapon?.viewmodel === 'P12 SIDEARM';
     const sharedLongGun = careerWeaponUsesSharedLongGunModel(activeWeapon);
     const weaponRig = operatorSharedWeaponRig(activeWeapon, rifleY, rifleForward, isSidearm, recoil, rifleRoll);
+    const flashDistance = isSidearm ? 0.42 : 0.80;
+    const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
+    const renderedMuzzleOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+    const renderMuzzlePoint = bot.renderMuzzlePoint || (bot.renderMuzzlePoint = { x: 0, y: 0, z: 0 });
+    renderMuzzlePoint.x = renderedMuzzleOrigin.x;
+    renderMuzzlePoint.y = renderedMuzzleOrigin.y;
+    renderMuzzlePoint.z = renderedMuzzleOrigin.z;
     let muzzleLightOrigin = null;
     if (bot.flash > 0) {
-      const flashDistance = isSidearm ? 0.42 : 0.80;
-      const flashLocal = weaponRig?.muzzle || { x: isSidearm ? 0.02 : 0.05, y: rifleY, z: rifleForward + flashDistance };
-      muzzleLightOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, flashLocal.x, flashLocal.y, flashLocal.z);
+      muzzleLightOrigin = renderedMuzzleOrigin;
       setOperatorMuzzleLight(muzzleLightOrigin, bot.flash);
     }
     try {

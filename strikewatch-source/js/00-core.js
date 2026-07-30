@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.193';
-  const BUILD_NAME = 'Operator Muzzle-Light Response';
-  const BUILD_ID = '12.193.0-operator-muzzle-light-response';
+  const BUILD_VERSION = '12.194';
+  const BUILD_NAME = 'Muzzle-Anchored Tracers';
+  const BUILD_ID = '12.194.0-muzzle-anchored-tracers';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

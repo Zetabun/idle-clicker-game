@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.193 improves firefight cohesion by warming nearby opaque materials on the living third-person operator that has actually fired, using the existing shot signal, authored muzzle anchor and colour/emissive uniforms with no additional draw calls. Static geometry, corpses, viewmodels, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.193.md`.
+Build 12.194 aligns third-person tracer streaks with the exact held-weapon muzzle point maintained by the renderer, while preserving the previous torso origin only as a startup fallback. Combat, impact handling, gameplay, persistence and schemas are unchanged. See `HANDOFF.md` and `AUDIT-12.194.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

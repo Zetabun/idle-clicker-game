@@ -124,6 +124,11 @@ current task. Release-specific implementation detail belongs in the matching
   operator surfaces; static geometry, shadows, transparent effects, corpses and
   the first-person viewmodel receive zero. No light object, mesh, texture, pass,
   uniform or additional draw is permitted without an explicit measured budget.
+- Third-person tracer presentation must start from the reusable world-space muzzle
+  point produced by the same authored weapon-rig transform as the muzzle flash.
+  The legacy torso origin may remain only as a bounded startup fallback. Tracer
+  count, lifetime, endpoint spread, impact handling and combat authority must not
+  change as part of presentation alignment.
 - Baked occlusion is contact shading derived from map enclosure, never shadows;
   nothing in the renderer traces occlusion from a light. Its sample radius is
   the design decision: a radius wider than the space being shaded darkens that

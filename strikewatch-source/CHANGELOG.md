@@ -1,5 +1,12 @@
 # Release history router
 
+## 12.194 — Muzzle-Anchored Tracers
+
+- Starts third-person tracer streaks at the exact reusable held-weapon muzzle point maintained by the renderer instead of the operator torso.
+- Keeps the old torso origin only as a bounded startup fallback; tracer count, lifetime, spread, impact handling and all combat authority remain unchanged.
+- Adds no draw calls, meshes, textures, passes, uniforms or per-frame allocations.
+- See `AUDIT-12.194.md`.
+
 ## 12.193 — Operator Muzzle-Light Response
 
 - Adds a brief warm material response to the living third-person operator that has actually fired, using the authoritative existing muzzle-flash signal and authored muzzle anchor.
