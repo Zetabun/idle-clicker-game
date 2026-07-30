@@ -543,6 +543,7 @@
   }
 
   function updateMatchStep(dt) {
+    beginSimulationWorkWindow();
     simulationClock += dt;
     if (matchEnding) {
       // The final match report and reward crate control the return to HQ.
@@ -617,14 +618,11 @@
     const shouldSimulateMatch = (appState === 'match' && !demoPaused && !introPaused) || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
       measureRuntimeStage('matchSimulation', () => {
-        // One navigation budget spans every fixed simulation substep produced by
-        // this rendered frame, preventing catch-up updates or higher match speed
-        // from concentrating several full A* searches into the same frame.
-        if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
-        if (typeof beginBotWorkFrame === 'function') beginBotWorkFrame();
+        // AI and route work reset from simulationClock inside updateMatchStep().
+        // Display refresh rate and render pressure therefore cannot change budgets.
         let remaining = dt * matchSpeedMultiplier;
         while (remaining > 0.00001) {
-          const step = Math.min(0.033, remaining);
+          const step = Math.min(SIMULATION_WORK_POLICY.windowSeconds, remaining);
           updateMatchStep(step);
           remaining -= step;
         }
@@ -7454,32 +7452,9 @@
       }
       return { before, after, lowered: after.tier < before.tier || after.target < before.target, stateRestored: appState === preserved.appState && runtimeQualityTier === preserved.tier };
     },
-    runtimeQualityProfileForTest: () => {
-      const preservedTier = runtimeQualityTier;
-      const profiles = [];
-      try {
-        for (let tier = 0; tier <= 2; tier++) {
-          runtimeQualityTier = tier;
-          profiles.push({
-            tier,
-            label: runtimeQualityLabel(),
-            perception: {
-              idle: runtimePerceptionInterval({ slot: 0, target: null, sightCandidate: null, lastSeen: null }),
-              combat: runtimePerceptionInterval({ slot: 0, target: {}, sightCandidate: null, lastSeen: null })
-            },
-            detail: {
-              near: runtimeOperatorDetailTier(3),
-              medium: runtimeOperatorDetailTier(8),
-              far: runtimeOperatorDetailTier(16)
-            },
-            navigation: navigationPlannerSnapshot()
-          });
-        }
-      } finally {
-        runtimeQualityTier = preservedTier;
-      }
-      return { activeTier: preservedTier, profiles };
-    },
+    runtimeQualityProfileForTest: () => simulationQualityIndependenceForTest(),
+    simulationQualityIndependenceForTest: () => simulationQualityIndependenceForTest(),
+    simulationWorkPolicyForTest: () => simulationWorkPolicySnapshot(),
     adaptiveResolutionForTest: (frameMs = 30, renderMs = 22, frames = 40) => {
       const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
       for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);

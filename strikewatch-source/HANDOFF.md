@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.196 — Clean Spectator Handoffs**
-- Build ID: `12.196.0-clean-spectator-handoffs`
+- Build: **12.197 — Device-Independent Match Simulation**
+- Build ID: `12.197.0-device-independent-match-simulation`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.196.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.197.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.197 owns the device-independent simulation-work boundary across `js/00-core.js`, `js/20-navigation.js`, `js/30-bot-ai.js`, `js/40-match-flow.js` and `js/70-runtime.js`. Preserve `SIMULATION_WORK_POLICY`, the 1/60-second simulation window, fixed former-Full perception/tactical/navigation limits, render-only `runtimeQualityTier`, round invalidation and `simulationQualityIndependenceForTest()`. Budget resets must originate from `updateMatchStep()`/`simulationClock`, never the display frame. Adaptive resolution and operator LOD may vary by device; match intelligence may not. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.197.md`.
 
 Build 12.196 owns clean first-person subject handoffs across `js/60-renderer-core.js` and `js/63-viewmodel-renderer.js`. Preserve `SPECTATOR_HANDOFF_PRESENTATION`, `spectatorHandoffPresentationForTest()`, incoming rendered-angle seeding, complete clearing of sway/recoil/smoke/bob plus shared muzzle/shake/hit-pulse signals, the 140ms canvas-only opacity recovery and reduced-motion bypass. The renderer observes subject changes only; it must not write spectator selection, delay a cut or alter the Build 12.195 director and two-second death handoff. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.196.md`.
 

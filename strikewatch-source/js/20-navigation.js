@@ -8,8 +8,9 @@
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
   const SQRT2 = Math.SQRT2;
-  const NAVIGATION_PLAN_BUDGET_PER_FRAME = 2;
-  const NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME = 3;
+  // Fixed per simulation-time window. Render quality may not change routes.
+  const NAVIGATION_PLAN_BUDGET_PER_FRAME = SIMULATION_WORK_POLICY.navigationNormalPerWindow;
+  const NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME = SIMULATION_WORK_POLICY.navigationUrgentPerWindow;
   let navigationPlanningFrame = 0;
   let navigationPlansUsedThisFrame = 0;
   var navigationGraphCache = null;
@@ -158,10 +159,7 @@
   }
 
   function consumeNavigationPlanSlot(bot = null, urgent = false) {
-    const quality = typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2;
-    const normalLimit = quality <= 0 ? 1 : NAVIGATION_PLAN_BUDGET_PER_FRAME;
-    const urgentLimit = quality <= 0 ? 2 : (quality === 1 ? 2 : NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME);
-    const limit = urgent ? urgentLimit : normalLimit;
+    const limit = urgent ? NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME : NAVIGATION_PLAN_BUDGET_PER_FRAME;
     if (navigationPlansUsedThisFrame >= limit) {
       combatDebug.navigationPlanDeferrals++;
       if (bot) bot.navigationPlanDeferredFrame = navigationPlanningFrame;
@@ -176,10 +174,12 @@
   function navigationPlannerSnapshot() {
     return {
       frame: navigationPlanningFrame,
+      workWindow: typeof simulationWorkWindowIndex === 'number' ? simulationWorkWindowIndex : -1,
       used: navigationPlansUsedThisFrame,
-      normalBudget: (typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0) ? 1 : NAVIGATION_PLAN_BUDGET_PER_FRAME,
-      urgentBudget: (typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0) ? 2 : ((typeof runtimeQualityTier === 'number' && runtimeQualityTier === 1) ? 2 : NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME),
-      qualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
+      normalBudget: NAVIGATION_PLAN_BUDGET_PER_FRAME,
+      urgentBudget: NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME,
+      policyRevision: SIMULATION_WORK_POLICY.revision,
+      renderQualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
       executed: Number(combatDebug.navigationPlansExecuted) || 0,
       deferred: Number(combatDebug.navigationPlanDeferrals) || 0,
       pathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0,

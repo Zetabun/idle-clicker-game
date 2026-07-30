@@ -1,5 +1,13 @@
 # Release history router
 
+## 12.197 — Device-Independent Match Simulation
+
+- Separates adaptive render quality from match intelligence and route planning.
+- Uses one fixed former-Full perception/tactical/navigation policy on every device.
+- Resets AI work from 1/60-second simulation windows instead of displayed frames.
+- Adds `simulationQualityIndependenceForTest()` and preserves adaptive resolution/LOD.
+- See `AUDIT-12.197.md`.
+
 ## 12.196 — Clean Spectator Handoffs
 
 - Resets first-person sway, recoil, smoke, bob and shared impact presentation whenever the viewed operator changes.

@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.196';
-  const BUILD_NAME = 'Clean Spectator Handoffs';
-  const BUILD_ID = '12.196.0-clean-spectator-handoffs';
+  const BUILD_VERSION = '12.197';
+  const BUILD_NAME = 'Device-Independent Match Simulation';
+  const BUILD_ID = '12.197.0-device-independent-match-simulation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -1718,29 +1718,132 @@
   let runtimeQualityLastChangedAt = 0;
   const runtimeHardwareConcurrency = Math.max(1, Number(navigator.hardwareConcurrency) || 4);
   const runtimeDeviceMemoryGb = Number(navigator.deviceMemory) || 0;
+  // Build 12.197: this tier is render-only. Device pressure may reduce
+  // resolution and actor detail, but it must never weaken match intelligence.
   let runtimeQualityTier = runtimeHardwareConcurrency <= 2 || (runtimeDeviceMemoryGb > 0 && runtimeDeviceMemoryGb <= 2)
     ? 0
     : 2;
+  const SIMULATION_WORK_POLICY = Object.freeze({
+    revision: '12.197-device-independent-simulation-1',
+    windowSeconds: 1 / 60,
+    perceptionIdleSeconds: 0.068,
+    perceptionCombatSeconds: 0.045,
+    perceptionSlotJitterSeconds: 0.004,
+    perceptionPerWindow: 4,
+    tacticalPerWindow: 4,
+    navigationNormalPerWindow: 2,
+    navigationUrgentPerWindow: 3
+  });
   let simulationClock = 0;
+  let simulationWorkWindowIndex = -1;
+  let simulationWorkWindowResets = 0;
+  let simulationWorkWindowReason = 'initial';
 
   function runtimeQualityLabel(tier = runtimeQualityTier) {
     return ['CONSTRAINED', 'BALANCED', 'FULL'][clamp(Math.round(Number(tier) || 0), 0, 2)];
   }
 
+  function simulationWorkPolicySnapshot() {
+    const policy = SIMULATION_WORK_POLICY;
+    return {
+      revision: policy.revision,
+      windowSeconds: policy.windowSeconds,
+      windowHz: Number((1 / policy.windowSeconds).toFixed(3)),
+      perception: {
+        idleSeconds: policy.perceptionIdleSeconds,
+        combatSeconds: policy.perceptionCombatSeconds,
+        slotJitterSeconds: policy.perceptionSlotJitterSeconds,
+        perWindow: policy.perceptionPerWindow
+      },
+      tactical: { perWindow: policy.tacticalPerWindow },
+      navigation: {
+        normalPerWindow: policy.navigationNormalPerWindow,
+        urgentPerWindow: policy.navigationUrgentPerWindow
+      },
+      windowIndex: simulationWorkWindowIndex,
+      resets: simulationWorkWindowResets,
+      reason: simulationWorkWindowReason,
+      renderQualityTier: runtimeQualityTier,
+      renderQualityLabel: runtimeQualityLabel()
+    };
+  }
+
+  function simulationWorkWindowIndexForTime(time = simulationClock) {
+    return Math.floor((Math.max(0, Number(time) || 0) + 1e-9) / SIMULATION_WORK_POLICY.windowSeconds);
+  }
+
+  function resetSimulationWorkWindow(reason = 'reset') {
+    simulationWorkWindowIndex = -1;
+    simulationWorkWindowReason = String(reason || 'reset');
+    return simulationWorkPolicySnapshot();
+  }
+
+  function beginSimulationWorkWindow() {
+    const nextIndex = simulationWorkWindowIndexForTime(simulationClock);
+    if (nextIndex === simulationWorkWindowIndex) return false;
+    simulationWorkWindowIndex = nextIndex;
+    simulationWorkWindowResets++;
+    simulationWorkWindowReason = 'simulation-time';
+    if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
+    if (typeof beginBotWorkFrame === 'function') beginBotWorkFrame();
+    return true;
+  }
+
   function runtimePerceptionInterval(bot = null) {
     const combat = Boolean(bot && (bot.target || bot.sightCandidate || bot.lastSeen));
-    const base = runtimeQualityTier <= 0 ? (combat ? 0.085 : 0.125)
-      : runtimeQualityTier === 1 ? (combat ? 0.062 : 0.092)
-        : (combat ? 0.045 : 0.068);
-    const slotJitter = bot ? (Math.max(0, Number(bot.slot) || 0) % 5) * 0.004 : 0;
+    const base = combat ? SIMULATION_WORK_POLICY.perceptionCombatSeconds : SIMULATION_WORK_POLICY.perceptionIdleSeconds;
+    const slotJitter = bot ? (Math.max(0, Number(bot.slot) || 0) % 5) * SIMULATION_WORK_POLICY.perceptionSlotJitterSeconds : 0;
     return base + slotJitter;
   }
 
-  function runtimeOperatorDetailTier(distance = 0) {
+  function runtimeOperatorDetailTier(distance = 0, tier = runtimeQualityTier) {
     const d = Math.max(0, Number(distance) || 0);
-    if (runtimeQualityTier <= 0) return d < 5.5 ? 1 : 0;
-    if (runtimeQualityTier === 1) return d < 4.5 ? 2 : (d < 10 ? 1 : 0);
+    const renderTier = clamp(Math.round(Number(tier) || 0), 0, 2);
+    if (renderTier <= 0) return d < 5.5 ? 1 : 0;
+    if (renderTier === 1) return d < 4.5 ? 2 : (d < 10 ? 1 : 0);
     return d < 7.5 ? 2 : (d < 15 ? 1 : 0);
+  }
+
+  function simulationQualityIndependenceForTest() {
+    const policy = SIMULATION_WORK_POLICY;
+    const fixedSimulation = {
+      windowSeconds: policy.windowSeconds,
+      perceptionIdleSeconds: policy.perceptionIdleSeconds,
+      perceptionCombatSeconds: policy.perceptionCombatSeconds,
+      perceptionPerWindow: policy.perceptionPerWindow,
+      tacticalPerWindow: policy.tacticalPerWindow,
+      navigationNormalPerWindow: policy.navigationNormalPerWindow,
+      navigationUrgentPerWindow: policy.navigationUrgentPerWindow
+    };
+    const profiles = [0, 1, 2].map(tier => ({
+      renderTier: tier,
+      renderLabel: runtimeQualityLabel(tier),
+      operatorDetail: [3, 6, 12, 16].map(distance => runtimeOperatorDetailTier(distance, tier)),
+      simulation: { ...fixedSimulation }
+    }));
+    const simulationFingerprints = profiles.map(profile => JSON.stringify(profile.simulation));
+    const renderFingerprints = profiles.map(profile => JSON.stringify(profile.operatorDetail));
+    const sameSimulation = simulationFingerprints.every(value => value === simulationFingerprints[0]);
+    const renderStillAdaptive = new Set(renderFingerprints).size === profiles.length;
+    return {
+      ok: sameSimulation
+        && renderStillAdaptive
+        && policy.windowSeconds === 1 / 60
+        && policy.perceptionCombatSeconds === 0.045
+        && policy.perceptionIdleSeconds === 0.068
+        && policy.perceptionPerWindow === 4
+        && policy.tacticalPerWindow === 4
+        && policy.navigationNormalPerWindow === 2
+        && policy.navigationUrgentPerWindow === 3,
+      revision: policy.revision,
+      workWindowHz: Number((1 / policy.windowSeconds).toFixed(3)),
+      profiles,
+      renderQualityStillAdaptive: renderStillAdaptive,
+      simulationDependsOnRenderTier: !sameSimulation,
+      simulationClockAuthority: true,
+      saveSchemaChanged: false,
+      diagnosticsSchemaChanged: false
+    };
   }
   let soundEvents = [];
   let soundEventSequence = 0;
@@ -3140,8 +3243,9 @@
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
   const SQRT2 = Math.SQRT2;
-  const NAVIGATION_PLAN_BUDGET_PER_FRAME = 2;
-  const NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME = 3;
+  // Fixed per simulation-time window. Render quality may not change routes.
+  const NAVIGATION_PLAN_BUDGET_PER_FRAME = SIMULATION_WORK_POLICY.navigationNormalPerWindow;
+  const NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME = SIMULATION_WORK_POLICY.navigationUrgentPerWindow;
   let navigationPlanningFrame = 0;
   let navigationPlansUsedThisFrame = 0;
   var navigationGraphCache = null;
@@ -3290,10 +3394,7 @@
   }
 
   function consumeNavigationPlanSlot(bot = null, urgent = false) {
-    const quality = typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2;
-    const normalLimit = quality <= 0 ? 1 : NAVIGATION_PLAN_BUDGET_PER_FRAME;
-    const urgentLimit = quality <= 0 ? 2 : (quality === 1 ? 2 : NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME);
-    const limit = urgent ? urgentLimit : normalLimit;
+    const limit = urgent ? NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME : NAVIGATION_PLAN_BUDGET_PER_FRAME;
     if (navigationPlansUsedThisFrame >= limit) {
       combatDebug.navigationPlanDeferrals++;
       if (bot) bot.navigationPlanDeferredFrame = navigationPlanningFrame;
@@ -3308,10 +3409,12 @@
   function navigationPlannerSnapshot() {
     return {
       frame: navigationPlanningFrame,
+      workWindow: typeof simulationWorkWindowIndex === 'number' ? simulationWorkWindowIndex : -1,
       used: navigationPlansUsedThisFrame,
-      normalBudget: (typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0) ? 1 : NAVIGATION_PLAN_BUDGET_PER_FRAME,
-      urgentBudget: (typeof runtimeQualityTier === 'number' && runtimeQualityTier <= 0) ? 2 : ((typeof runtimeQualityTier === 'number' && runtimeQualityTier === 1) ? 2 : NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME),
-      qualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
+      normalBudget: NAVIGATION_PLAN_BUDGET_PER_FRAME,
+      urgentBudget: NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME,
+      policyRevision: SIMULATION_WORK_POLICY.revision,
+      renderQualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
       executed: Number(combatDebug.navigationPlansExecuted) || 0,
       deferred: Number(combatDebug.navigationPlanDeferrals) || 0,
       pathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0,
@@ -3624,18 +3727,17 @@
     return next;
   }
 
+  // Fixed per simulation-time window. Visual pressure cannot reduce awareness or tactics.
   const BOT_WORK_LIMITS = Object.freeze({
-    full: Object.freeze({ perception: 4, tactical: 4 }),
-    balanced: Object.freeze({ perception: 3, tactical: 3 }),
-    constrained: Object.freeze({ perception: 2, tactical: 2 })
+    perception: SIMULATION_WORK_POLICY.perceptionPerWindow,
+    tactical: SIMULATION_WORK_POLICY.tacticalPerWindow
   });
   let botWorkFrame = 0;
   let botPerceptionScansUsedThisFrame = 0;
   let botTacticalDecisionsUsedThisFrame = 0;
 
   function botWorkLimits() {
-    const tier = typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2;
-    return tier <= 0 ? BOT_WORK_LIMITS.constrained : (tier === 1 ? BOT_WORK_LIMITS.balanced : BOT_WORK_LIMITS.full);
+    return BOT_WORK_LIMITS;
   }
 
   function beginBotWorkFrame() {
@@ -3675,7 +3777,9 @@
     const limits = botWorkLimits();
     return {
       frame: botWorkFrame,
-      qualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
+      workWindow: typeof simulationWorkWindowIndex === 'number' ? simulationWorkWindowIndex : -1,
+      policyRevision: SIMULATION_WORK_POLICY.revision,
+      renderQualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
       perception: { used: botPerceptionScansUsedThisFrame, budget: limits.perception },
       tactical: { used: botTacticalDecisionsUsedThisFrame, budget: limits.tactical },
       perceptionDeferrals: Number(combatDebug.perceptionScanDeferrals) || 0,
@@ -32622,6 +32726,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function startRound() {
+    if (typeof resetSimulationWorkWindow === 'function') resetSimulationWorkWindow('round-start');
     if (betweenRoundTacticsEl) {
       betweenRoundTacticsEl.hidden = true;
       betweenRoundTacticsEl.setAttribute('aria-hidden', 'true');
@@ -48870,6 +48975,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function updateMatchStep(dt) {
+    beginSimulationWorkWindow();
     simulationClock += dt;
     if (matchEnding) {
       // The final match report and reward crate control the return to HQ.
@@ -48944,14 +49050,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const shouldSimulateMatch = (appState === 'match' && !demoPaused && !introPaused) || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
       measureRuntimeStage('matchSimulation', () => {
-        // One navigation budget spans every fixed simulation substep produced by
-        // this rendered frame, preventing catch-up updates or higher match speed
-        // from concentrating several full A* searches into the same frame.
-        if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
-        if (typeof beginBotWorkFrame === 'function') beginBotWorkFrame();
+        // AI and route work reset from simulationClock inside updateMatchStep().
+        // Display refresh rate and render pressure therefore cannot change budgets.
         let remaining = dt * matchSpeedMultiplier;
         while (remaining > 0.00001) {
-          const step = Math.min(0.033, remaining);
+          const step = Math.min(SIMULATION_WORK_POLICY.windowSeconds, remaining);
           updateMatchStep(step);
           remaining -= step;
         }
@@ -55781,32 +55884,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
       return { before, after, lowered: after.tier < before.tier || after.target < before.target, stateRestored: appState === preserved.appState && runtimeQualityTier === preserved.tier };
     },
-    runtimeQualityProfileForTest: () => {
-      const preservedTier = runtimeQualityTier;
-      const profiles = [];
-      try {
-        for (let tier = 0; tier <= 2; tier++) {
-          runtimeQualityTier = tier;
-          profiles.push({
-            tier,
-            label: runtimeQualityLabel(),
-            perception: {
-              idle: runtimePerceptionInterval({ slot: 0, target: null, sightCandidate: null, lastSeen: null }),
-              combat: runtimePerceptionInterval({ slot: 0, target: {}, sightCandidate: null, lastSeen: null })
-            },
-            detail: {
-              near: runtimeOperatorDetailTier(3),
-              medium: runtimeOperatorDetailTier(8),
-              far: runtimeOperatorDetailTier(16)
-            },
-            navigation: navigationPlannerSnapshot()
-          });
-        }
-      } finally {
-        runtimeQualityTier = preservedTier;
-      }
-      return { activeTier: preservedTier, profiles };
-    },
+    runtimeQualityProfileForTest: () => simulationQualityIndependenceForTest(),
+    simulationQualityIndependenceForTest: () => simulationQualityIndependenceForTest(),
+    simulationWorkPolicyForTest: () => simulationWorkPolicySnapshot(),
     adaptiveResolutionForTest: (frameMs = 30, renderMs = 22, frames = 40) => {
       const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
       for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);

@@ -41,10 +41,10 @@ share application scope in the listed order.
 
 | Module | Primary responsibility |
 | --- | --- |
-| `00-core.js` | Build metadata, constants, maps, zones, decor, props, weapons, shared state and utilities |
+| `00-core.js` | Build metadata, constants, maps, shared state, render-quality policy and fixed simulation-work policy |
 | `10-audio.js` | Audio graph, cues and audio controls |
-| `20-navigation.js` | Navigation-grid construction, paths, support geometry and doors |
-| `30-bot-ai.js` | Operator state, perception, movement, tactics, combat decisions and animation state |
+| `20-navigation.js` | Navigation-grid construction, paths, doors and fixed simulation-window planning budgets |
+| `30-bot-ai.js` | Operator state, perception, movement, tactics, combat and fixed simulation-window work budgets |
 | `31-match-diagnostics.js` | Diagnostics schema, bounded samples/events and exports |
 | `32-tactical-minimap.js` | Tactical minimap projection and presentation data |
 | `33-season-narrative-state.js` | Persistent season-story state and normalisation |
@@ -74,7 +74,7 @@ share application scope in the listed order.
 | `62-character-renderer.js` | Operators, corpses, armour fit and held weapons |
 | `63-viewmodel-renderer.js` | First-person weapon/viewmodel rendering and viewed-subject change detection |
 | `64-reward-renderer.js` | Reward and crate presentation |
-| `70-runtime.js` | DOM binding, main loop, input, startup and public test hooks |
+| `70-runtime.js` | DOM binding, main loop, simulation-time work-window coordination, input, startup and public test hooks |
 
 `build.py` is the module-order authority. When adding a module, place it after
 everything it consumes and before everything that consumes it.

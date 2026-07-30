@@ -19,18 +19,17 @@
     return next;
   }
 
+  // Fixed per simulation-time window. Visual pressure cannot reduce awareness or tactics.
   const BOT_WORK_LIMITS = Object.freeze({
-    full: Object.freeze({ perception: 4, tactical: 4 }),
-    balanced: Object.freeze({ perception: 3, tactical: 3 }),
-    constrained: Object.freeze({ perception: 2, tactical: 2 })
+    perception: SIMULATION_WORK_POLICY.perceptionPerWindow,
+    tactical: SIMULATION_WORK_POLICY.tacticalPerWindow
   });
   let botWorkFrame = 0;
   let botPerceptionScansUsedThisFrame = 0;
   let botTacticalDecisionsUsedThisFrame = 0;
 
   function botWorkLimits() {
-    const tier = typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2;
-    return tier <= 0 ? BOT_WORK_LIMITS.constrained : (tier === 1 ? BOT_WORK_LIMITS.balanced : BOT_WORK_LIMITS.full);
+    return BOT_WORK_LIMITS;
   }
 
   function beginBotWorkFrame() {
@@ -70,7 +69,9 @@
     const limits = botWorkLimits();
     return {
       frame: botWorkFrame,
-      qualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
+      workWindow: typeof simulationWorkWindowIndex === 'number' ? simulationWorkWindowIndex : -1,
+      policyRevision: SIMULATION_WORK_POLICY.revision,
+      renderQualityTier: typeof runtimeQualityTier === 'number' ? runtimeQualityTier : 2,
       perception: { used: botPerceptionScansUsedThisFrame, budget: limits.perception },
       tactical: { used: botTacticalDecisionsUsedThisFrame, budget: limits.tactical },
       perceptionDeferrals: Number(combatDebug.perceptionScanDeferrals) || 0,

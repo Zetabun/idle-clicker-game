@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.196 resets transient first-person weapon and camera-response presentation whenever the viewed operator changes, then applies a reduced-motion-aware canvas handoff while preserving selection timing, gameplay, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.196.md`.
+Build 12.197 separates adaptive presentation quality from match intelligence, using fixed 1/60-second perception, tactical and navigation work windows on every device while preserving adaptive resolution, persistence and schemas. See `HANDOFF.md` and `AUDIT-12.197.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

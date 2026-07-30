@@ -1030,6 +1030,7 @@
   }
 
   function startRound() {
+    if (typeof resetSimulationWorkWindow === 'function') resetSimulationWorkWindow('round-start');
     if (betweenRoundTacticsEl) {
       betweenRoundTacticsEl.hidden = true;
       betweenRoundTacticsEl.setAttribute('aria-hidden', 'true');
