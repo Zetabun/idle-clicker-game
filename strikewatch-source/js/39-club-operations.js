@@ -821,12 +821,11 @@
         showStatus(mail.saved ? 'EMAIL SAVED' : 'EMAIL REMOVED FROM SAVED');
       } else if (mail && modalAction.dataset.mailModalAction === 'mark-read') {
         mail.read = true;
+        if (careerState.selectedMailId === mail.id) careerState.selectedMailId = null;
         saveCareerState();
-        closeTeamNoteModal();
         updateMenuUI();
+        closeTeamNoteModal({ restoreFocus: false });
         showStatus('EMAIL MARKED AS READ');
-        requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
-        showStatus('MESSAGE RETURNED TO INBOX');
       }
       return true;
     }

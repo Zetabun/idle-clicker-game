@@ -93,7 +93,7 @@
         { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history', contextOnly: true },
         { id: 'commercial', label: 'COMMERCIAL', hint: 'Sponsors and partner income' },
         { id: 'supporters', label: 'FANS', hint: 'Supporter expectations, popularity and reactions' },
-        { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio', contextOnly: true }
+        { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }
       ]
     }
   };

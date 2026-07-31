@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.228';
-  const BUILD_NAME = 'Desktop Inbox Badge Containment';
-  const BUILD_ID = '12.228.0-desktop-inbox-badge-containment';
+  const BUILD_VERSION = '12.229';
+  const BUILD_NAME = 'Configuration Access & Mobile Mail Dismissal';
+  const BUILD_ID = '12.229.0-configuration-access-mobile-mail-dismissal';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -23651,12 +23651,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         showStatus(mail.saved ? 'EMAIL SAVED' : 'EMAIL REMOVED FROM SAVED');
       } else if (mail && modalAction.dataset.mailModalAction === 'mark-read') {
         mail.read = true;
+        if (careerState.selectedMailId === mail.id) careerState.selectedMailId = null;
         saveCareerState();
-        closeTeamNoteModal();
         updateMenuUI();
+        closeTeamNoteModal({ restoreFocus: false });
         showStatus('EMAIL MARKED AS READ');
-        requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
-        showStatus('MESSAGE RETURNED TO INBOX');
       }
       return true;
     }
@@ -34328,7 +34327,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history', contextOnly: true },
         { id: 'commercial', label: 'COMMERCIAL', hint: 'Sponsors and partner income' },
         { id: 'supporters', label: 'FANS', hint: 'Supporter expectations, popularity and reactions' },
-        { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio', contextOnly: true }
+        { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }
       ]
     }
   };

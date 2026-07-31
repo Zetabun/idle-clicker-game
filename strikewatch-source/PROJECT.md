@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.228 contains every desktop Inbox row-status indicator inside a shared inset slot, preventing decision, saved and important badges from clipping or covering message copy. See `HANDOFF.md` and `AUDIT-12.228.md`.
+Build 12.229 restores Configuration to normal Club navigation and makes compact/mobile MARK AS READ close its mail dialog after the Inbox refresh. See `HANDOFF.md` and `AUDIT-12.229.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

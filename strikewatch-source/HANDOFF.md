@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.228 — Desktop Inbox Badge Containment**
-- Build ID: `12.228.0-desktop-inbox-badge-containment`
+- Build: **12.229 — Configuration Access & Mobile Mail Dismissal**
+- Build ID: `12.229.0-configuration-access-mobile-mail-dismissal`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.228.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.229.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.229 restores Configuration as a normal Club route rather than a hidden context-only page, so it appears in the desktop subsection navigation, compact contextual navigation and Club overview cards. Compact/mobile MARK AS READ now clears the transient mail selection, refreshes the Inbox and closes the shared dialog afterwards with focus restoration disabled because the read row may no longer exist. The legacy second status message and removed-row focus attempt are gone. Desktop inline selection and automatic read behaviour remain unchanged. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.229.md`.
 
 Build 12.228 owns desktop Inbox row-status containment in `css/inbox-scroll.css`. The DECISION chip, saved star and important star now share an inset right-edge slot, while decision rows reserve the wider label space and star rows reserve only their smaller icon space. The correction is scoped to `data-mail-presentation="inline"`, so compact/mobile modal mail is unchanged. Verify all three states at 1024, 1280, 1440 and 1920px with no badge clipping, copy overlap or horizontal overflow. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.228.md`.
 

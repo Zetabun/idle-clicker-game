@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.228';
-  const BUILD_NAME = 'Desktop Inbox Badge Containment';
-  const BUILD_ID = '12.228.0-desktop-inbox-badge-containment';
+  const BUILD_VERSION = '12.229';
+  const BUILD_NAME = 'Configuration Access & Mobile Mail Dismissal';
+  const BUILD_ID = '12.229.0-configuration-access-mobile-mail-dismissal';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

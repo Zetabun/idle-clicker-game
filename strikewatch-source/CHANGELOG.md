@@ -4,6 +4,16 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.229 — Configuration Access & Mobile Mail Dismissal
+
+- Restores Configuration as a normal Club route in desktop and compact/mobile navigation.
+- Returns Configuration to the Club overview route cards instead of leaving it reachable only through hidden context state.
+- Makes compact/mobile MARK AS READ clear the transient selected message, refresh the Inbox and then dismiss the mail dialog.
+- Removes the stale removed-row focus attempt and contradictory MESSAGE RETURNED TO INBOX status.
+- Preserves desktop inline mail selection and automatic read-on-open behaviour.
+- Leaves mail persistence, gameplay, save schema 19 and diagnostics schema 1 unchanged.
+- See `AUDIT-12.229.md`.
+
 ## 12.228 — Desktop Inbox Badge Containment
 
 - Moves the desktop DECISION chip fully inside the mail-row border.

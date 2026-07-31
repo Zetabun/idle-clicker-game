@@ -45,6 +45,8 @@ current task. Release-specific implementation detail belongs in the matching
   focus inside, trap Tab/Shift+Tab and restore background state on close.
 - Primary navigation, subsection navigation, previous/next history, Inbox,
   Calendar, End Day and Help controls must remain reachable.
+- Club Configuration is a normal Club subsection route and section-hub destination on both presentation targets; do not hide it as context-only without another visible entry point.
+- In compact/mobile mail dialogs, MARK AS READ writes the mail state, clears a matching transient selection, refreshes the Inbox and then closes the dialog without restoring focus to a row that may have been filtered out. Desktop inline mail retains automatic read-on-selection.
 - `.menu-subtab::after` owns the active-route bottom rail. On an inactive
   `.guided-target`, it may draw `NEXT` only after resetting inherited rail
   inset, size and transition geometry.
