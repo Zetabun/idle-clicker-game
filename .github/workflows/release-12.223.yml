@@ -120,6 +120,7 @@ jobs:
           rm .github/triggers/release-12.223.txt
           rm -f .github/diagnostics/12.223.txt
           rm -f .github/diagnostics/12.223-retry.txt
+          rm -f .github/diagnostics/12.223-final.txt
 
       - name: Commit release
         run: |
