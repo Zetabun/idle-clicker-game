@@ -1,3 +1,4 @@
 Release Build 12.227
-Triggered: 2026-07-31T21:49:00Z
-Nonce: desktop-inbox-preview-stability-1
+Triggered: 2026-07-31T21:52:00Z
+Nonce: desktop-inbox-preview-stability-2
+Correction: standalone assertions now check executable content, not stripped comments.
