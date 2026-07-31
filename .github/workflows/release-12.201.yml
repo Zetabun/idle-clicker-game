@@ -52,6 +52,19 @@ jobs:
           python3 -m py_compile .github/scripts/release-12.201.py
           python3 .github/scripts/release-12.201.py
 
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('strikewatch-source/css/compact-navigation.css')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('@media (max-width: 1023px) {\n  #menuContent.has-urgent-management-action', '#menuContent.has-urgent-management-action', 1)
+          text = text.replace('  .club-must-respond-body > header small {\n    max-width: 52ch;\n  }\n}\n\n@media (orientation: portrait) and (max-width: 430px) {', '  .club-must-respond-body > header small {\n    max-width: 52ch;\n  }', 1)
+          tail = '  .club-must-respond-body > header small {\n    display: none;\n  }\n}\n'
+          if not text.endswith(tail):
+              raise SystemExit('Build 12.201 CSS budget-normalisation tail anchor missing')
+          text = text[:-len(tail)] + '  .club-must-respond-body > header small {\n    display: none;\n  }\n'
+          path.write_text(text, encoding='utf-8')
+          PY
+
           cd strikewatch-source
           python3 -m py_compile build.py
           python3 build.py
