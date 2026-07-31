@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+SOURCE = ROOT / "strikewatch-source"
+OLD_VERSION = "12.199"
+NEW_VERSION = "12.200"
+OLD_NAME = "Surface-Anchored Blood Decals"
+NEW_NAME = "Single-Source Management Prompts"
+OLD_BUILD_ID = "12.199.0-surface-anchored-blood-decals"
+NEW_BUILD_ID = "12.200.0-single-source-management-prompts"
+
+
+def fail(message: str) -> None:
+    raise SystemExit(f"release-12.200: {message}")
+
+
+def read(path: pathlib.Path) -> str:
+    if not path.exists():
+        fail(f"missing required file: {path.relative_to(ROOT)}")
+    return path.read_text(encoding="utf-8")
+
+
+def write(path: pathlib.Path, text: str) -> None:
+    path.write_text(text, encoding="utf-8")
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        fail(f"expected exactly one {label} anchor, found {count}")
+    return text.replace(old, new, 1)
+
+
+release_path = SOURCE / "RELEASE.json"
+release = json.loads(read(release_path))
+if release.get("version") != OLD_VERSION:
+    fail(f"expected predecessor {OLD_VERSION}, found {release.get('version')!r}")
+release.update(version=NEW_VERSION, name=NEW_NAME, build_id=NEW_BUILD_ID)
+write(release_path, json.dumps(release, indent=2) + "\n")
+
+ui_path = SOURCE / "js/50-ui-menus.js"
+ui = read(ui_path)
+old_render = """    const contextTutorial = renderMenuContextTutorial(menuTab);
+    const priorityStrip = renderMenuPriorityStrip();
+    if (priorityStrip) menuContentEl.insertAdjacentHTML('afterbegin', priorityStrip);
+    if (contextTutorial) menuContentEl.insertAdjacentHTML('afterbegin', contextTutorial);
+    const mustRespond = menuTab === 'play' && typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
+    if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+"""
+new_render = """    const contextTutorial = renderMenuContextTutorial(menuTab);
+    const mustRespond = menuTab === 'play' && typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
+    const priorityStrip = mustRespond ? '' : renderMenuPriorityStrip();
+    if (priorityStrip) menuContentEl.insertAdjacentHTML('afterbegin', priorityStrip);
+    if (contextTutorial) menuContentEl.insertAdjacentHTML('afterbegin', contextTutorial);
+    if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+"""
+ui = replace_once(ui, old_render, new_render, "management prompt insertion")
+
+# The overview already contains the actionable dashboard card. When the calendar is
+# locked, the blocker list is the single authoritative prompt, so remove any later
+# duplicate card that repeats a blocker label. This is intentionally label-based and
+# scoped to the rendered management page, covering matchday, transfer, sponsor and
+# other blocker types without changing their underlying actions.
+anchor = """    if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+    const arrivalBanner = typeof renderManagementArrivalBanner === 'function' ? renderManagementArrivalBanner() : '';
+"""
+replacement = """    if (mustRespond) {
+      menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+      const blockerLabels = new Set((typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : []).map(item => String(item?.label || '').trim().toUpperCase()).filter(Boolean));
+      for (const candidate of menuContentEl.querySelectorAll('.management-priority-strip, .career-next-action, .manager-next-action, [data-management-priority]')) {
+        if (candidate.closest('.club-must-respond-strip')) continue;
+        const candidateLabel = String(candidate.querySelector('strong')?.textContent || '').trim().toUpperCase();
+        if (candidateLabel && blockerLabels.has(candidateLabel)) candidate.remove();
+      }
+    }
+    const arrivalBanner = typeof renderManagementArrivalBanner === 'function' ? renderManagementArrivalBanner() : '';
+"""
+ui = replace_once(ui, anchor, replacement, "post-render duplicate suppression")
+write(ui_path, ui)
+
+index_path = SOURCE / "index.html"
+index = read(index_path)
+for old, new, label in [
+    (f"Strikewatch {OLD_VERSION}: {OLD_NAME}", f"Strikewatch {NEW_VERSION}: {NEW_NAME}", "document title"),
+    (OLD_BUILD_ID, NEW_BUILD_ID, "asset build id"),
+]:
+    if old not in index:
+        fail(f"missing {label} anchor in index.html")
+    index = index.replace(old, new)
+write(index_path, index)
+
+# Update concise current-release wording without rewriting historical entries.
+release_note = (
+    f"Build {NEW_VERSION} makes management blockers single-source on the Operations overview. "
+    "When MUST RESPOND is present, the generic priority strip is not rendered and later action cards "
+    "that repeat the same blocker label are removed. The blocker list remains authoritative for matchday, "
+    "transfer, sponsorship and other end-day locks; routes and actions are unchanged. "
+    f"See `AUDIT-{NEW_VERSION}.md`.\n\n"
+)
+
+handoff_path = SOURCE / "HANDOFF.md"
+handoff = read(handoff_path)
+handoff = replace_once(handoff, f"- Build: **{OLD_VERSION} — {OLD_NAME}**", f"- Build: **{NEW_VERSION} — {NEW_NAME}**", "HANDOFF build line")
+handoff = replace_once(handoff, f"- Build ID: `{OLD_BUILD_ID}`", f"- Build ID: `{NEW_BUILD_ID}`", "HANDOFF build id")
+handoff = replace_once(handoff, f"strikewatch-build-{OLD_VERSION}.html", f"strikewatch-build-{NEW_VERSION}.html", "HANDOFF standalone path")
+current_marker = f"Build {OLD_VERSION} owns"
+if current_marker not in handoff:
+    fail("missing HANDOFF current-release narrative anchor")
+handoff = handoff.replace(current_marker, release_note + current_marker, 1)
+write(handoff_path, handoff)
+
+agents_path = SOURCE / "AGENTS.md"
+agents = read(agents_path)
+marker = f"Build {OLD_VERSION} owns"
+if marker not in agents:
+    fail("missing AGENTS current-release note anchor")
+agents = agents.replace(marker, release_note + marker, 1)
+write(agents_path, agents)
+
+for filename in ("README.md", "PROJECT.md"):
+    path = SOURCE / filename
+    text = read(path)
+    text = text.replace(OLD_BUILD_ID, NEW_BUILD_ID).replace(f"Build {OLD_VERSION}", f"Build {NEW_VERSION}", 1)
+    if NEW_VERSION not in text:
+        fail(f"failed to update {filename}")
+    write(path, text)
+
+audit = f"""# Build {NEW_VERSION} audit — {NEW_NAME}
+
+## Scope
+
+Mobile Operations overview repeated the same required action in the MUST RESPOND blocker list, the generic priority strip and, for some states, a later dashboard action card.
+
+## Change
+
+- `js/50-ui-menus.js` now resolves the Operations blocker markup before the generic priority strip and suppresses that strip whenever MUST RESPOND is active.
+- After the blocker list is inserted, later known management-priority cards are removed only when their primary label exactly matches a current end-day blocker.
+- The canonical blocker list keeps the existing route/action wiring. Matchday, transfer, sponsorship and future blocker categories share the same label-based rule.
+- No gameplay, economy, save, schema, calendar or match simulation authority changed.
+
+## Verification
+
+- Predecessor `RELEASE.json` version checked before patching.
+- Python build script compiled.
+- Two complete builds compared byte-for-byte.
+- Every modular JavaScript file, the generated development bundle and all standalone inline scripts parsed with Node.
+- Root `cod.html` copied from and verified byte-identical to the generated standalone.
+- Source assertions confirm blocker resolution precedes priority rendering and duplicate suppression stays scoped outside `.club-must-respond-strip`.
+
+Save schema 19 and diagnostics schema 1 are unchanged.
+"""
+write(SOURCE / f"AUDIT-{NEW_VERSION}.md", audit)
+
+# Source-level release assertions fail clearly if the intended behaviour drifts.
+updated_ui = read(ui_path)
+required_fragments = [
+    "const priorityStrip = mustRespond ? '' : renderMenuPriorityStrip();",
+    "candidate.closest('.club-must-respond-strip')",
+    "blockerLabels.has(candidateLabel)",
+]
+for fragment in required_fragments:
+    if fragment not in updated_ui:
+        fail(f"missing source assertion after patch: {fragment}")
+
+print(f"Applied Build {NEW_VERSION}: {NEW_NAME}")
