@@ -4,8 +4,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 import html
 import json
-import os
-import re
 import shutil
 import subprocess
 
@@ -93,14 +91,19 @@ def source_contracts() -> None:
     for value in (BUILD_ID, visible, 'closeTeamNoteModal({ restoreFocus: false });'):
         assert value in standalone, value
 
-    required_docs = (
+    release_docs = (
         SRC / 'HANDOFF.md', SRC / 'AGENTS.md', SRC / 'PROJECT.md',
-        SRC / 'CONTRACTS.md', SRC / 'CHANGELOG.md', SRC / f'AUDIT-{VERSION}.md',
+        SRC / 'CHANGELOG.md', SRC / f'AUDIT-{VERSION}.md',
     )
-    for path in required_docs:
+    for path in release_docs:
         text = path.read_text(encoding='utf-8')
         assert text.strip(), f'{path.name} is empty'
         assert VERSION in text, f'{path.name} does not record {VERSION}'
+
+    contracts = (SRC / 'CONTRACTS.md').read_text(encoding='utf-8')
+    assert contracts.strip(), 'CONTRACTS.md is empty'
+    assert 'Club Configuration is a normal Club subsection route' in contracts
+    assert 'MARK AS READ writes the mail state' in contracts
 
 
 def make_fixture() -> Path:
