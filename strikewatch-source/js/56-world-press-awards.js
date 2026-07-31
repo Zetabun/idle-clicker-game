@@ -906,6 +906,38 @@
     return true;
   }
 
+  function worldPressLeaguePulseSnapshot(limit = 6) {
+    const state = ensureWorldPressState();
+    const league = typeof ensureLeagueState === 'function' ? ensureLeagueState() : null;
+    if (!state || !league) return { reports: [], leaders: [], next: null };
+    const reports = state.fixtureOrder.map(id => state.fixtureReports[id]).filter(report => report && report.mode === 'league' && !report.historical).slice(0, Math.max(1, limit));
+    const leaders = Object.values(state.playerRecords).map(record => {
+      const seasonEntries = (record.entries || []).filter(entry => Number(entry.season) === Number(league.season));
+      const motm = seasonEntries.filter(entry => entry.title === 'MAN OF THE MATCH');
+      const latest = motm[0] || null;
+      return { playerId: record.playerId, playerName: record.playerName, clubName: latest?.clubName || record.currentClub, motm: motm.length, rating: motm.length ? motm.reduce((sum, entry) => sum + (Number(entry.rating) || 0), 0) / motm.length : 0 };
+    }).filter(item => item.motm > 0).sort((a, b) => b.motm - a.motm || b.rating - a.rating || a.playerName.localeCompare(b.playerName)).slice(0, 5);
+    const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+    const opponent = fixture && typeof leagueClubById === 'function' && typeof leagueFixtureOpponentId === 'function' ? leagueClubById(leagueFixtureOpponentId(fixture)) : null;
+    const next = fixture && opponent ? {
+      fixtureId: fixture.id,
+      matchday: fixture.matchday,
+      opponentName: opponent.name,
+      opponentShort: opponent.short,
+      style: opponent.style,
+      days: typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null
+    } : null;
+    return { reports, leaders, next };
+  }
+
+  function renderWorldPressLeaguePulse() {
+    const pulse = worldPressLeaguePulseSnapshot(6);
+    const reportMarkup = pulse.reports.length ? pulse.reports.map(report => `<article class="league-pulse-report"><header><span>MATCHDAY ${Math.max(1, Number(report.matchday) || 1)}</span><strong>${escapeCareerHtml(report.homeShort || report.homeName)} ${report.homeScore} — ${report.awayScore} ${escapeCareerHtml(report.awayShort || report.awayName)}</strong></header><p>${escapeCareerHtml(report.writeup || '')}</p><small>★ ${escapeCareerHtml(report.motm?.playerName || 'Award pending')} · ${escapeCareerHtml(report.motm?.clubName || '')} · ${Number(report.motm?.rating || 0).toFixed(2)} RATING</small></article>`).join('') : '<div class="league-pulse-empty"><strong>NO RIVAL REPORTS YET</strong><p>Completed matchdays will generate results, write-ups and Man of the Match coverage.</p></div>';
+    const leadersMarkup = pulse.leaders.length ? pulse.leaders.map((item, index) => `<article><b>${index + 1}</b><div><strong>${escapeCareerHtml(item.playerName)}</strong><small>${escapeCareerHtml(item.clubName || 'DIVISION')} · ${item.rating.toFixed(2)} AVG</small></div><em>${item.motm} MOTM</em></article>`).join('') : '<p>No award leader has emerged yet.</p>';
+    const nextMarkup = pulse.next ? `<button class="league-pulse-next" data-team-route="tactics"><span>NEXT OPPOSITION</span><strong>${escapeCareerHtml(pulse.next.opponentName)}</strong><small>MATCHDAY ${pulse.next.matchday} · ${escapeCareerHtml(pulse.next.style || 'BALANCED')}${Number.isFinite(Number(pulse.next.days)) ? ` · ${pulse.next.days === 0 ? 'TODAY' : `${pulse.next.days}D`}` : ''}</small><b>OPEN PREPARATION →</b></button>` : '<div class="league-pulse-next complete"><span>SEASON STATUS</span><strong>CAMPAIGN COMPLETE</strong><small>Review the final table and awards.</small></div>';
+    return `<section class="league-pulse-panel"><div class="career-section-head"><div><span>THE STRIKEWATCH WIRE</span><strong>LEAGUE PULSE</strong></div><p>Recent rival results, award leaders and the next opposition in one living-world feed.</p></div><div class="league-pulse-layout"><section><header><span>RECENT COVERAGE</span><strong>AROUND THE DIVISION</strong></header><div class="league-pulse-reports">${reportMarkup}</div></section><aside><section><header><span>AWARD WATCH</span><strong>MAN OF THE MATCH LEADERS</strong></header><div class="league-pulse-leaders">${leadersMarkup}</div></section>${nextMarkup}</aside></div></section>`;
+  }
+
   function renderWorldPressMatchAward(summary) {
     const award = summary?.manOfTheMatch;
     if (!award) return '';

@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.203 adds League Pulse to the League page, exposing recent rival reports, scorelines, Man of the Match coverage, seasonal award leaders and the next opposition from the existing living press authority. It adds no fixture or award simulation path and does not duplicate Inbox stories. Gameplay and schemas are unchanged. See `AUDIT-12.203.md`.
+
 Build 12.202 adds the Operations Today timeline: a compact, live summary of the next fixture, active-five readiness, unread mail, scheduled commitments and end-day readiness. It links into existing routes and deliberately points mandatory decisions back to the authoritative MUST RESPOND surface instead of creating another action authority. Gameplay, calendar rules and schemas are unchanged. See `AUDIT-12.202.md`.
 
 Build 12.201 establishes a compact management action hierarchy. MUST RESPOND is the single urgent surface, uses a native disclosure summary on compact screens and can collapse without losing the blocker count or first action. When no urgent blocker exists, the existing priority strip is marked as the recommended action. Routes, blocker authority, gameplay and schemas are unchanged. See `AUDIT-12.201.md`.

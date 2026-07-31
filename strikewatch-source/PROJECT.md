@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.202 adds a live Today timeline to the Operations overview, summarising fixtures, readiness, inbox, commitments and end-day state without duplicating blocker authority. See `HANDOFF.md` and `AUDIT-12.202.md`.
+Build 12.203 adds a living-world League Pulse with rival reports, Man of the Match leaders and next-opponent context sourced from the existing press system. See `HANDOFF.md` and `AUDIT-12.203.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

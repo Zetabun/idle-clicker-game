@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.202 — Today Timeline**
-- Build ID: `12.202.0-today-timeline`
+- Build: **12.203 — League Pulse**
+- Build ID: `12.203.0-league-pulse`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.202.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.203.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.203 adds League Pulse to the League page, exposing recent rival reports, scorelines, Man of the Match coverage, seasonal award leaders and the next opposition from the existing living press authority. It adds no fixture or award simulation path and does not duplicate Inbox stories. Gameplay and schemas are unchanged. See `AUDIT-12.203.md`.
 
 Build 12.202 adds the Operations Today timeline: a compact, live summary of the next fixture, active-five readiness, unread mail, scheduled commitments and end-day readiness. It links into existing routes and deliberately points mandatory decisions back to the authoritative MUST RESPOND surface instead of creating another action authority. Gameplay, calendar rules and schemas are unchanged. See `AUDIT-12.202.md`.
 

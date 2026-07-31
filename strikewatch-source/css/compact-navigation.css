@@ -248,3 +248,33 @@
 .command-today-item.urgent > b { color: #ffab9f; }
 .command-today-item.attention > b { color: #f0d17d; }
 .command-today-item.complete > b { color: #79dfbd; }
+
+/* --- Build 12.203: living-world League Pulse ------------------------------ */
+.league-pulse-panel { display:grid; gap:14px; padding:16px; border:1px solid rgba(112,190,219,.24); background:linear-gradient(145deg,rgba(10,28,42,.97),rgba(11,19,33,.97)); }
+.league-pulse-panel .career-section-head { margin:0; }
+.league-pulse-layout { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(240px,.85fr); gap:12px; }
+.league-pulse-layout > section,.league-pulse-layout > aside > section,.league-pulse-next { border:1px solid rgba(130,164,190,.2); background:rgba(17,29,46,.84); }
+.league-pulse-layout header { display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border-bottom:1px solid rgba(130,164,190,.16); }
+.league-pulse-layout header span,.league-pulse-next span { font-size:10px; letter-spacing:.15em; color:#83cbe6; }
+.league-pulse-layout header strong { font-size:11px; color:#e7f2f7; }
+.league-pulse-reports { display:grid; gap:8px; padding:10px; }
+.league-pulse-report { display:grid; gap:5px; padding:10px; border-left:3px solid #4b9abd; background:rgba(23,38,58,.72); }
+.league-pulse-report header { padding:0; border:0; }
+.league-pulse-report p { margin:0; font-size:11px; line-height:1.4; color:#b8c7d2; }
+.league-pulse-report small { font-size:10px; color:#e7c873; }
+.league-pulse-layout > aside { display:grid; align-content:start; gap:12px; }
+.league-pulse-leaders { display:grid; gap:1px; }
+.league-pulse-leaders article { display:grid; grid-template-columns:24px minmax(0,1fr) auto; align-items:center; gap:8px; padding:9px 10px; border-top:1px solid rgba(130,164,190,.12); }
+.league-pulse-leaders article:first-child { border-top:0; }
+.league-pulse-leaders article b,.league-pulse-leaders article em { font-size:10px; color:#e7c873; }
+.league-pulse-leaders article div { display:grid; gap:2px; min-width:0; }
+.league-pulse-leaders article strong { font-size:11px; color:#edf5f8; overflow-wrap:anywhere; }
+.league-pulse-leaders article small { font-size:9.5px; color:#9eb1bf; }
+.league-pulse-next { display:grid; gap:5px; padding:12px; text-align:left; }
+.league-pulse-next strong { font-size:14px; color:#f2f7fa; }
+.league-pulse-next small { font-size:10px; color:#aebdca; }
+.league-pulse-next b { margin-top:5px; font-size:10px; color:#e7c873; }
+.league-pulse-empty { padding:14px; }
+.league-pulse-empty strong { font-size:11px; }
+.league-pulse-empty p { margin:5px 0 0; font-size:10px; color:#aebdca; }
+@media (max-width: 760px) { .league-pulse-layout { grid-template-columns:1fr; } .league-pulse-report header { display:grid; } }
