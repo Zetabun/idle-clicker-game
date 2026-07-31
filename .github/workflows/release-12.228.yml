@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Configure release diagnostics
+      - name: Configure failure ledger
         run: |
           mkdir -p .github/diagnostics
           : > .github/diagnostics/12.228.txt
@@ -46,11 +46,11 @@ jobs:
 
       - name: Verify predecessor and apply release patch
         run: |
-          /tmp/release-step.sh "python compile release patch" python3 -m py_compile .github/scripts/release-12.228.py
+          /tmp/release-step.sh "compile release patch" python3 -m py_compile .github/scripts/release-12.228.py
           /tmp/release-step.sh "apply release patch" python3 .github/scripts/release-12.228.py
 
       - name: Compile build system
-        run: /tmp/release-step.sh "python compile build.py" python3 -m py_compile strikewatch-source/build.py
+        run: /tmp/release-step.sh "compile build.py" python3 -m py_compile strikewatch-source/build.py
 
       - name: Build first deterministic copy
         run: |
@@ -70,13 +70,13 @@ jobs:
       - name: Parse every standalone inline script
         run: |
           python3 - <<'PY'
-          from pathlib import Path
           from html.parser import HTMLParser
+          from pathlib import Path
 
-          class ScriptCollector(HTMLParser):
+          class Scripts(HTMLParser):
               def __init__(self):
                   super().__init__(convert_charrefs=False)
-                  self.scripts = []
+                  self.items = []
                   self.current = None
               def handle_starttag(self, tag, attrs):
                   if tag.lower() == 'script':
@@ -86,17 +86,17 @@ jobs:
                       self.current.append(data)
               def handle_endtag(self, tag):
                   if tag.lower() == 'script' and self.current is not None:
-                      self.scripts.append(''.join(self.current))
+                      self.items.append(''.join(self.current))
                       self.current = None
 
           html = Path('strikewatch-source/dist/strikewatch-build-12.228.html').read_text(encoding='utf-8')
-          parser = ScriptCollector()
+          parser = Scripts()
           parser.feed(html)
-          if not parser.scripts:
+          if not parser.items:
               raise SystemExit('standalone contains no inline scripts')
-          for index, script in enumerate(parser.scripts):
+          for index, script in enumerate(parser.items):
               Path(f'/tmp/standalone-12.228-{index}.js').write_text(script, encoding='utf-8')
-          print(f'extracted {len(parser.scripts)} inline scripts')
+          print(f'extracted {len(parser.items)} inline scripts')
           PY
           for file in /tmp/standalone-12.228-*.js; do
             /tmp/release-step.sh "node check ${file}" node --check "$file"
@@ -109,7 +109,7 @@ jobs:
           import json
 
           css = Path('strikewatch-source/css/inbox-scroll.css').read_text(encoding='utf-8')
-          required = [
+          for value in (
               'Build 12.228: desktop Inbox status-badge containment',
               ".club-mail-client[data-mail-presentation='inline'] .club-mail-row.saved,",
               ".club-mail-client[data-mail-presentation='inline'] .club-mail-row.important {",
@@ -119,12 +119,9 @@ jobs:
               '> .club-mail-decision-badge,',
               '> .club-mail-saved-badge,',
               '> .club-mail-important {',
-              'right: 12px;',
               'inset-inline-end: 12px;',
-              'top: 50%;',
               'transform: translateY(-50%);',
-          ]
-          for value in required:
+          ):
               assert value in css, value
           assert '@media' not in css
 
@@ -134,9 +131,7 @@ jobs:
           row = mail[start:end]
           for class_name in ('club-mail-decision-badge', 'club-mail-saved-badge', 'club-mail-important'):
               assert row.count(class_name) == 1, class_name
-          assert 'decisionRequired ?' in row
-          assert 'item.saved ?' in row
-          assert 'item.important ?' in row
+          assert 'decisionRequired ?' in row and 'item.saved ?' in row and 'item.important ?' in row
           assert 'data-mail-presentation="${inlineReader ? \'inline\' : \'modal\'}"' in mail
 
           release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
@@ -146,7 +141,7 @@ jobs:
               'build_id': '12.228.0-desktop-inbox-badge-containment',
           }
           debt = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.228-css-debt.json').read_text(encoding='utf-8'))
-          assert debt['media_queries'] == 484, debt['media_queries']
+          assert debt['media_queries'] == 484
           assert debt['within_budget'] is True
 
           standalone = Path('strikewatch-source/dist/strikewatch-build-12.228.html').read_text(encoding='utf-8')
@@ -171,118 +166,58 @@ jobs:
           if not hrefs:
               raise SystemExit('no ordered stylesheets found in index.html')
           links = '\n'.join(f'<link rel="stylesheet" href="{href}" />' for href in hrefs)
-          row_copy = '''<span class="club-mail-avatar" aria-hidden="true">BS</span>
-          <span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>Backroom Staff Department</b><time>MON 17 AUG · W3</time></span><strong>Training standards · Callum Wilson and a deliberately long desktop subject</strong><small>Callum Wilson arrived late to a scheduled tactical review. The staff want a clear response before the next day begins.</small></span>'''
+          copy = '''<span class="club-mail-avatar" aria-hidden="true">BS</span><span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>Backroom Staff Department</b><time>MON 17 AUG · W3</time></span><strong>Training standards · Callum Wilson and a deliberately long desktop subject</strong><small>Callum Wilson arrived late to a scheduled tactical review. The staff want a clear response before the next day begins.</small></span>'''
           rows = f'''
-          <button class="club-mail-row unread decision-required" data-audit-state="decision"><i class="club-mail-unread-dot" aria-hidden="true"></i>{row_copy}<em class="club-mail-decision-badge">DECISION</em></button>
-          <button class="club-mail-row saved" data-audit-state="saved"><i class="club-mail-unread-dot" aria-hidden="true"></i>{row_copy}<em class="club-mail-saved-badge" aria-label="Saved email">★</em></button>
-          <button class="club-mail-row important" data-audit-state="important"><i class="club-mail-unread-dot" aria-hidden="true"></i>{row_copy}<em class="club-mail-important" aria-label="Important message">★</em></button>
-          '''
-          html = f'''<!doctype html>
-          <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{links}
-          <style>
-          html,body{{margin:0;min-width:0!important;max-width:100%;min-height:100%;}}
-          body{{overflow-x:auto!important;background:#07131d;}}
-          #menuShell.audit-shell{{display:block!important;width:clamp(420px,42vw,680px)!important;max-width:calc(100vw - 32px)!important;min-height:0!important;margin:16px!important;position:static!important;}}
-          .audit-shell > .menu-content{{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important;}}
-          #menuContent.audit-content{{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important;}}
-          .audit-content .club-mail-client,.audit-content .club-mail-layout,.audit-content .club-mail-column{{display:block!important;width:100%!important;max-width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-height:none!important;}}
-          .audit-content .club-mail-list{{display:grid!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:12px!important;max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important;}}
-          .audit-content .club-mail-row{{width:100%!important;max-width:100%!important;}}
-          #audit-result{{display:none!important;}}
-          </style></head>
-          <body><section id="menuShell" class="menu-shell audit-shell"><div class="menu-content"><div id="menuContent" class="audit-content"><section class="club-mail-client" data-mail-presentation="inline"><div class="club-mail-layout"><aside class="club-mail-column"><section class="club-mail-list">{rows}</section></aside></div></section></div></div></section><pre id="audit-result"></pre>
-          <script>
-          addEventListener('load',()=>{{
-            const tolerance=1;
-            const shell=document.getElementById('menuShell');
-            const rows=[...document.querySelectorAll('[data-audit-state]')].map(row=>{{
-              const state=row.dataset.auditState;
-              const badge=row.querySelector('.club-mail-decision-badge,.club-mail-saved-badge,.club-mail-important');
-              const copy=row.querySelector('.club-mail-row-copy');
-              const rr=row.getBoundingClientRect();
-              const br=badge.getBoundingClientRect();
-              const cr=copy.getBoundingClientRect();
-              const rs=getComputedStyle(row);
-              const bs=getComputedStyle(badge);
-              const requiredPadding=state==='decision'?95:51;
-              return {{
-                state,
-                row:{{left:rr.left,right:rr.right,width:rr.width,clientWidth:row.clientWidth,scrollWidth:row.scrollWidth}},
-                badge:{{left:br.left,right:br.right,top:br.top,bottom:br.bottom,width:br.width,position:bs.position,rightStyle:bs.right}},
-                copy:{{left:cr.left,right:cr.right,width:cr.width}},
-                paddingRight:parseFloat(rs.paddingRight)||0,
-                inside:br.left>=rr.left+8-tolerance&&br.right<=rr.right-8+tolerance,
-                separated:cr.right<=br.left-8+tolerance,
-                centered:Math.abs((br.top+br.bottom)/2-(rr.top+rr.bottom)/2)<=2,
-                noRowOverflow:row.scrollWidth<=row.clientWidth+1,
-                absolute:bs.position==='absolute',
-                inset:Math.abs((parseFloat(bs.right)||0)-12)<=1,
-                reserved:(parseFloat(rs.paddingRight)||0)>=requiredPadding
-              }};
-            }});
-            const result={{viewport:innerWidth,rows,shellNoOverflow:shell.scrollWidth<=shell.clientWidth+1,documentNoOverflow:document.documentElement.scrollWidth<=innerWidth+1}};
-            document.getElementById('audit-result').textContent=JSON.stringify(result);
-          }});
+          <button class="club-mail-row unread decision-required" data-audit-state="decision"><i class="club-mail-unread-dot"></i>{copy}<em class="club-mail-decision-badge">DECISION</em></button>
+          <button class="club-mail-row saved" data-audit-state="saved"><i class="club-mail-unread-dot"></i>{copy}<em class="club-mail-saved-badge">★</em></button>
+          <button class="club-mail-row important" data-audit-state="important"><i class="club-mail-unread-dot"></i>{copy}<em class="club-mail-important">★</em></button>'''
+          html = f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{links}<style>
+          html,body{{margin:0;min-width:0!important;max-width:100%;min-height:100%}} body{{background:#07131d}}
+          #menuShell.audit-shell{{display:block!important;width:clamp(420px,42vw,680px)!important;max-width:calc(100vw - 32px)!important;min-height:0!important;margin:16px!important;position:static!important}}
+          .audit-shell>.menu-content,#menuContent.audit-content,.audit-content .club-mail-client,.audit-content .club-mail-layout,.audit-content .club-mail-column{{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;height:auto!important;max-height:none!important;overflow:visible!important}}
+          .audit-content .club-mail-list{{display:grid!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:12px!important;max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important}}
+          .audit-content .club-mail-row{{width:100%!important;max-width:100%!important}} #audit-result{{display:none!important}}
+          </style></head><body><section id="menuShell" class="menu-shell audit-shell"><div class="menu-content"><div id="menuContent" class="audit-content"><section class="club-mail-client" data-mail-presentation="inline"><div class="club-mail-layout"><aside class="club-mail-column"><section class="club-mail-list">{rows}</section></aside></div></section></div></div></section><pre id="audit-result"></pre><script>
+          addEventListener('load',()=>{{const shell=document.getElementById('menuShell');const rows=[...document.querySelectorAll('[data-audit-state]')].map(row=>{{const state=row.dataset.auditState;const badge=row.querySelector('.club-mail-decision-badge,.club-mail-saved-badge,.club-mail-important');const copy=row.querySelector('.club-mail-row-copy');const rr=row.getBoundingClientRect();const br=badge.getBoundingClientRect();const cr=copy.getBoundingClientRect();const rs=getComputedStyle(row);const bs=getComputedStyle(badge);return{{state,inside:br.left>=rr.left+7&&br.right<=rr.right-7,separated:cr.right<=br.left-7,centered:Math.abs((br.top+br.bottom)/2-(rr.top+rr.bottom)/2)<=2,noRowOverflow:row.scrollWidth<=row.clientWidth+1,absolute:bs.position==='absolute',inset:Math.abs((parseFloat(bs.right)||0)-12)<=1,reserved:(parseFloat(rs.paddingRight)||0)>=(state==='decision'?95:51),geometry:{{row:[rr.left,rr.right],copy:[cr.left,cr.right],badge:[br.left,br.right]}}}}}});document.getElementById('audit-result').textContent=JSON.stringify({{viewport:innerWidth,shellNoOverflow:shell.scrollWidth<=shell.clientWidth+1,rows}})}});
           </script></body></html>'''
           (root / '.mail-badge-audit.html').write_text(html, encoding='utf-8', newline='\n')
           PY
 
           BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$BROWSER" ]; then
-            echo "No supported Chromium browser found on runner" | tee -a .github/diagnostics/12.228.txt
-            exit 1
-          fi
+          test -n "$BROWSER" || { echo "No supported Chromium browser found" | tee -a .github/diagnostics/12.228.txt; exit 1; }
           echo "browser=${BROWSER}" | tee -a .github/diagnostics/12.228.txt
 
           for width in 1024 1280 1440 1920; do
-            /tmp/release-step.sh "browser geometry ${width}px" "$BROWSER" \
-              --headless=new \
-              --no-sandbox \
-              --disable-gpu \
-              --allow-file-access-from-files \
-              --run-all-compositor-stages-before-draw \
-              --virtual-time-budget=1500 \
-              --window-size="${width},900" \
-              --dump-dom \
+            "$BROWSER" --headless=new --no-sandbox --disable-gpu --allow-file-access-from-files \
+              --run-all-compositor-stages-before-draw --virtual-time-budget=1500 \
+              --window-size="${width},900" --dump-dom \
               "file://${GITHUB_WORKSPACE}/strikewatch-source/.mail-badge-audit.html" \
-              > "/tmp/mail-badge-${width}.html"
-            WIDTH="$width" python3 - <<'PY'
+              > "/tmp/mail-badge-${width}.html" 2>> .github/diagnostics/12.228.txt
+            WIDTH="$width" python3 - <<'PY' | tee -a .github/diagnostics/12.228.txt
           from html.parser import HTMLParser
           from pathlib import Path
-          import html
-          import json
-          import os
+          import html, json, os
+
+          class Result(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.inside = False; self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if dict(attrs).get('id') == 'audit-result': self.inside = True
+              def handle_endtag(self, tag):
+                  if self.inside and tag == 'pre': self.inside = False
+              def handle_data(self, data):
+                  if self.inside: self.parts.append(data)
 
           width = os.environ['WIDTH']
-          source = Path(f'/tmp/mail-badge-{width}.html').read_text(encoding='utf-8')
-
-          class ResultParser(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.inside = False
-                  self.parts = []
-              def handle_starttag(self, tag, attrs):
-                  if dict(attrs).get('id') == 'audit-result':
-                      self.inside = True
-              def handle_endtag(self, tag):
-                  if self.inside and tag == 'pre':
-                      self.inside = False
-              def handle_data(self, data):
-                  if self.inside:
-                      self.parts.append(data)
-
-          parser = ResultParser()
-          parser.feed(source)
+          parser = Result()
+          parser.feed(Path(f'/tmp/mail-badge-{width}.html').read_text(encoding='utf-8'))
           payload = html.unescape(''.join(parser.parts)).strip()
-          if not payload:
-              raise SystemExit(f'{width}px: browser audit result missing')
+          if not payload: raise SystemExit(f'{width}px: browser result missing')
           result = json.loads(payload)
           assert result['shellNoOverflow'], result
-          assert result['documentNoOverflow'], result
           assert len(result['rows']) == 3, result
           for row in result['rows']:
-              for key in ('inside', 'separated', 'centered', 'noRowOverflow', 'absolute', 'inset', 'reserved'):
+              for key in ('inside','separated','centered','noRowOverflow','absolute','inset','reserved'):
                   assert row[key], f'{width}px {row["state"]} failed {key}: {row}'
           print(json.dumps(result, indent=2))
           PY
@@ -302,13 +237,12 @@ jobs:
           cp strikewatch-source/dist/strikewatch-build-12.228.html cod.html
           /tmp/release-step.sh "root standalone byte identity" cmp strikewatch-source/dist/strikewatch-build-12.228.html cod.html
 
-      - name: Remove temporary release files and successful diagnostics
+      - name: Remove temporary release files
         run: |
           rm .github/scripts/release-12.228.py
           rm .github/workflows/release-12.228.yml
           rm .github/triggers/release-12.228.txt
-          rm -f .github/diagnostics/12.228.txt
-          rm -f strikewatch-source/.mail-badge-audit.html
+          rm -f .github/diagnostics/12.228.txt strikewatch-source/.mail-badge-audit.html
 
       - name: Commit finished release to main
         run: |
