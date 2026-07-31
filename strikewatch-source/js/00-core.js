@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.224';
-  const BUILD_NAME = 'Image Grade and Ceiling Lights';
-  const BUILD_ID = '12.224.0-image-grade-and-ceiling-lights';
+  const BUILD_VERSION = '12.225';
+  const BUILD_NAME = 'Match Surface Gesture Containment';
+  const BUILD_ID = '12.225.0-match-surface-gesture-containment';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

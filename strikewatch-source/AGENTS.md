@@ -56,6 +56,23 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.225 owns play-surface gesture containment in `css/match-gestures.css`,
+last in `CSS_PATHS` and `index.html`. Keep `#game` at `touch-action: pan-y` in
+the windowed match — the page scrolls there (12.128 puts commentary below the
+arena in normal flow and only free-roam sets `overflow: hidden`), so `none`
+would strand it — and `none` when maximised or in free roam. **Never move this
+to `body` or `html`**: menus and league tables must stay zoomable, and blocking
+zoom app-wide fails WCAG 2.1 SC 1.4.4. **Never satisfy this with the viewport
+meta**: iOS Safari has ignored `user-scalable=no` and `maximum-scale` since
+iOS 10, so that route turns the gate green without changing iPhone behaviour.
+Two facts worth keeping: `touch-action: manipulation` suppresses only double-tap
+zoom and leaves **pinch fully enabled** — misreading that is why the arena was
+zoomable for every build up to this one — and any value that is neither `auto`
+nor `manipulation`, and does not name `pinch-zoom`, removes the zoom gesture.
+Verify with `matchGestureForTest()` and `typographyConsistencyForTest()`, which
+is now green for the first time in many builds. Save schema 19 and diagnostics
+schema 1 are unchanged. See `AUDIT-12.225.md`.
+
 Build 12.224 owns the image grade and the ceiling lights. **Every value in both
 systems must stay a per-frame uniform** — the static batcher groups by exact
 material (`colour|emissive|alpha|surface|roughness`), so a per-draw grade or
@@ -82,10 +99,9 @@ Build 12.224 also registers five renderer audits that had never been runnable.
 `window.__strikeDebug`. **Before citing a gate in this file, check it is
 actually registered** — `js/70-runtime.js` assigns `__strikeDebug` wholesale, so
 a hook attached by an earlier module is discarded and must be registered from
-`js/79-save-checkpoints.js` or later. Note also that
-`typographyConsistencyForTest()` reports `ok: false` for a reason that is not a
-real fault: its `pinchZoomDisabled` check treats pinch zoom being *enabled* —
-which Build 12.161 deliberately restored — as a failure.
+`js/79-save-checkpoints.js` or later. (The `pinchZoomDisabled` false negative
+noted here in 12.224 turned out to be masking a real fault; Build 12.225
+resolved both.)
 
 Build 12.223 repairs the expanded desktop MUST RESPOND disclosure. Its summary now occupies the full row, the action groups open beneath it, duplicate explanatory copy is suppressed on desktop, and the compact/mobile disclosure rules remain unchanged. See `AUDIT-12.223.md`.
 

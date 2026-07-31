@@ -165,6 +165,13 @@ in `js/79-save-checkpoints.js` and all five pass.
 
 ## Known pre-existing failure, not introduced here
 
+> **Corrected by Build 12.225.** The conclusion below — that the state was
+> correct and only the audit was wrong — was half right. The audit *was* testing
+> something it could not enforce, but pinch zoom was also genuinely reaching the
+> play surface: `#game` inherited `body { touch-action: manipulation }`, which
+> despite its name leaves pinch fully enabled. So the arena really was zoomable.
+> See `AUDIT-12.225.md`.
+
 `typographyConsistencyForTest()` returns `ok: false`. The sole failing check is
 `pinchZoomDisabled: false` — and the viewport is
 `width=device-width,initial-scale=1,viewport-fit=cover`, with no

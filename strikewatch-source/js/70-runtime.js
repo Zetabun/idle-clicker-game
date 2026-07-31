@@ -1752,6 +1752,39 @@
     return bots.map(bot => ({ bot, values: Object.fromEntries(fields.map(field => [field, bot[field]])) }));
   }
 
+  // Build 12.225: whether the browser can still pinch-zoom the play surface.
+  //
+  // `touch-action` is the only mechanism that answers this on every platform.
+  // The viewport meta route was tested here until 12.225 and could not work:
+  // iOS Safari has ignored `user-scalable=no` and `maximum-scale` since iOS 10.
+  //
+  // Pinch survives exactly two values. `auto` is the default, and
+  // `manipulation` — despite the name — suppresses only double-tap zoom and
+  // leaves pinch fully enabled, which is why `body { touch-action: manipulation }`
+  // in game.css never protected the arena. Any other value disables pinch
+  // unless it explicitly names `pinch-zoom`.
+  function matchSurfacePinchState() {
+    const surface = document.getElementById('game');
+    if (!surface) return { blocked: false, reason: 'Match canvas not present.', touchAction: null };
+    const touchAction = String(getComputedStyle(surface).touchAction || 'auto').trim().toLowerCase();
+    const permissive = touchAction === 'auto' || touchAction === 'manipulation';
+    const namesPinch = /\bpinch-zoom\b/.test(touchAction);
+    const blocked = !permissive && !namesPinch;
+    return {
+      // `ok` mirrors `blocked` so this reads like every other gate in a sweep.
+      ok: blocked,
+      blocked,
+      touchAction,
+      appState: document.body.dataset.appState || null,
+      viewMode: document.body.dataset.viewMode || null,
+      // Recorded so a future reader can see why the meta tag is not the test.
+      viewportMeta: document.querySelector('meta[name="viewport"]')?.getAttribute('content') || '',
+      viewportMetaIgnoredOnIos: true,
+      // Menus must stay zoomable; blocking zoom app-wide fails WCAG 2.1 SC 1.4.4.
+      bodyTouchAction: String(getComputedStyle(document.body).touchAction || 'auto').trim().toLowerCase()
+    };
+  }
+
   function restoreCombatTestBots(snapshot) {
     for (const item of snapshot || []) Object.assign(item.bot, item.values);
   }
@@ -3967,6 +4000,7 @@
     advanceNewPlayerDemoForTest: () => ({ ok: advanceNewPlayerDemo(), state: { ...newPlayerDemoState }, coachHidden: Boolean(newPlayerDemoCoachEl?.hidden) }),
     finishNewPlayerDemoForTest: (winner = TEAM_BLUE, reason = 'Test orientation complete') => ({ ok: finishNewPlayerDemoRound(Number(winner), String(reason)), state: { ...newPlayerDemoState } }),
     completeNewPlayerDemoForTest: (skipped = false) => ({ ok: completeNewPlayerDemo(Boolean(skipped)), state: { ...newPlayerDemoState }, appState, route: menuTab, totals: { matches: careerState.totalMatches, rounds: careerState.totalRounds, wins: careerState.totalWins } }),
+    matchGestureForTest: () => matchSurfacePinchState(),
     typographyConsistencyForTest: () => {
       const viewport = document.querySelector('meta[name="viewport"]')?.getAttribute('content') || '';
       const styleSample = selector => {
@@ -4019,7 +4053,21 @@
       };
       const visibleFloor = (sample, floor) => !sample.visible || sample.fontSize >= floor;
       const checks = {
-        pinchZoomDisabled: /user-scalable\s*=\s*no/i.test(viewport) && /maximum-scale\s*=\s*1(?:\D|$)/i.test(viewport),
+        // Build 12.225: this used to test the viewport meta string for
+        // user-scalable=no plus maximum-scale=1. That check could not do its
+        // job. iOS Safari has ignored both attributes since iOS 10, as a
+        // deliberate accessibility decision, so satisfying it would have turned
+        // the gate green while iPhones carried on pinch-zooming the arena.
+        //
+        // It had also been asserting a requirement Build 12.161 deliberately
+        // reversed — SW-011 restored browser pinch zoom — so the gate had been
+        // red ever since without describing a real fault.
+        //
+        // The property the browser actually honours is touch-action, and the
+        // only surface that must not zoom is the play surface. Pinch survives
+        // `auto` and `manipulation` (which suppresses double-tap zoom only, not
+        // pinch); any other value that does not name pinch-zoom removes it.
+        matchSurfacePinchBlocked: matchSurfacePinchState().blocked,
         mainNavReadable: samples.mainNav >= (mobileViewport ? 10 : 9),
         subnavReadable: samples.subnav >= (mobileViewport ? 10 : 9.5),
         dateReadable: samples.datePrimary >= (mobileViewport ? 12 : 9) && visibleFloor(dateSecondary, mobileViewport ? 12 : 6.5),

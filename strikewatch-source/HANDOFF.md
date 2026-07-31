@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.224 — Image Grade and Ceiling Lights**
-- Build ID: `12.224.0-image-grade-and-ceiling-lights`
+- Build: **12.225 — Match Surface Gesture Containment**
+- Build ID: `12.225.0-match-surface-gesture-containment`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.224.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.225.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.225 stops the browser pinch-zooming the play surface, and fixes the audit that claimed to check for it. Three faults, not one. The check tested the viewport meta for `user-scalable=no` — **which iOS Safari has ignored since iOS 10**, so satisfying it would have gone green while iPhones kept zooming. `#game` had no `touch-action` of its own and inherited `body { touch-action: manipulation }`; **`manipulation` suppresses only double-tap zoom and leaves pinch fully enabled**, so the arena really was zoomable. And 12.161's SW-011 had deliberately restored pinch zoom while leaving the opposite assertion in place, so the gate had been red for many builds without describing a real fault. `css/match-gestures.css` now sets `touch-action: pan-y` on `#game` — blocking pinch while keeping the vertical page scroll the windowed match needs, since 12.128 puts commentary below the arena in normal flow and only free-roam sets `overflow: hidden` — and `none` when maximised or in free roam. Scope is the play surface only; `body` stays `manipulation` so menus and league tables remain zoomable, because blocking zoom app-wide fails WCAG 2.1 SC 1.4.4. The check is now `matchSurfacePinchBlocked`, reading computed `touch-action` rather than a declaration Safari discards. `typographyConsistencyForTest()` is **green for the first time in many builds**. See `AUDIT-12.225.md`.
 
 Build 12.224 adds the image-presentation layer the renderer never had and gives the roofed arenas real ceiling lights. There was **no tone curve at all** — the lit value went straight to `gl_FragColor`, so every highlight clipped flat and lost its hue. A filmic curve, a per-arena lift/gain/saturation, a vignette, an output dither and height fog now run as one block at the end of the fragment shader, and the same block runs in the sky program so Dune's horizon join survives. **Exposure is a measured quantity, not a taste setting**: the Narkowicz ACES fit lifts midtones for this renderer's roughly 0-1 input rather than darkening them, so the first value (1.06) brightened mean luma by nearly 50% and washed the blacks out; sweeping against the ungraded mean luma of all four arenas put the crossover at 0.68, which holds every arena within 5.2%. Ceiling fixtures are placed from the same `staticOcclusionRaw()` enclosure sampler that drives baked occlusion, so they land where the map measured dark; bounded at 14 per arena, nearest 4 active per frame, Dune excluded as open-air. Lights only ever brighten — zero pixels darken in any arena — and both changes add **zero draw calls**. Every added value is a per-frame uniform, so the static batch key is untouched. See `AUDIT-12.224.md`.
 

@@ -1,0 +1,45 @@
+/*
+ * Strikewatch stylesheet: match-gestures.css
+ * Owner: Build 12.225 — Match Surface Gesture Containment
+ *
+ * Blocks browser pinch zoom on the play surface, and only on the play surface.
+ *
+ * Why this is CSS and not a viewport attribute: the viewport meta route
+ * (user-scalable=no, maximum-scale=1) has been ignored by iOS Safari since
+ * iOS 10, deliberately, as an accessibility decision. Declaring it would make
+ * the audit pass while iPhones carried on zooming — a gate that lies. The
+ * touch-action property is honoured on every current mobile browser, so it is
+ * the only place this can actually be enforced.
+ *
+ * Why the canvas and not the body: menus, league tables and dense report copy
+ * must stay zoomable. Blocking zoom app-wide is a WCAG 2.1 SC 1.4.4 failure and
+ * there is no product reason for it here — the problem was only ever the arena
+ * moving under a stray two-finger touch mid-match.
+ *
+ * Run `python3 build.py` to regenerate js/strikewatch.dev.js and dist/.
+ */
+
+/* Base state for the play surface. `pan-y` permits the vertical page scroll the
+ * windowed match still needs — Build 12.128 puts commentary in normal document
+ * flow beneath the arena, and body[data-app-state='match'] deliberately does
+ * NOT set overflow: hidden — while still disabling pinch zoom, because any
+ * touch-action value that neither is `auto`/`manipulation` nor names
+ * `pinch-zoom` removes the zoom gesture.
+ *
+ * This must stay more specific than `body { touch-action: manipulation }` in
+ * game.css. `manipulation` sounds restrictive but only suppresses double-tap
+ * zoom; it leaves pinch zoom fully enabled, which is what left the arena
+ * zoomable for every build up to this one.
+ */
+#game {
+  touch-action: pan-y;
+}
+
+/* Maximised match and free roam have nothing to scroll — free roam already sets
+ * overflow: hidden — so the surface takes every touch. Free roam also drives
+ * look control from drag, which needs the browser to stop claiming the gesture.
+ */
+body[data-app-state='match'][data-view-mode='maximized'] #game,
+body[data-app-state='free-roam'] #game {
+  touch-action: none;
+}

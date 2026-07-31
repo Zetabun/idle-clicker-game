@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.225 — Match Surface Gesture Containment
+
+- Blocks browser pinch zoom on the play surface; `#game` had inherited `touch-action: manipulation`, which leaves pinch enabled.
+- Uses `pan-y` in the windowed match so the page still scrolls, `none` when maximised or in free roam.
+- Keeps menus and league tables zoomable; blocking zoom app-wide would fail WCAG 2.1 SC 1.4.4.
+- Replaces the `pinchZoomDisabled` viewport-meta check, which iOS Safari makes unenforceable, with `matchSurfacePinchBlocked` reading computed `touch-action`.
+- Turns `typographyConsistencyForTest()` green for the first time in many builds.
+- See `AUDIT-12.225.md`.
+
 ## 12.224 — Image Grade and Ceiling Lights
 
 - Adds the renderer's first tone curve; highlights previously clipped flat and lost their hue.
