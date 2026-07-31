@@ -1,0 +1,50 @@
+/*
+ * Strikewatch stylesheet: version-label.css
+ * Owner: Build 12.226 — Desktop Version Label Legibility
+ *
+ * The desktop build badge computed to 7.5px, which is smaller than every other
+ * label in the command chrome (those run 8.5-9.5px) and below the 10.75px
+ * desktop secondary floor `typographyConsistencyForTest()` enforces elsewhere.
+ * The badge simply was not covered by that audit's sample set, so nothing
+ * caught it.
+ *
+ * The winning rule was `.manager-context-topline > .manager-build-version` at
+ * (0,2,1) inside a min-width: 1024px block, so these need the same selector
+ * shape; this sheet loads last, which is what carries them.
+ *
+ * Compact/mobile is untouched. The mobile badge lives on
+ * `.mobile-command-build-version` and already sits inside the 12px compact
+ * floors Build 12.171 owns.
+ *
+ * Run `python3 build.py` to regenerate js/strikewatch.dev.js and dist/.
+ */
+
+/* One media query, deliberately. The build enforces a CSS-debt budget that
+ * caps total media queries, and a second breakpoint here would have pushed it
+ * over. `clamp()` covers the same ground better anyway: the badge sits at its
+ * floor across the tight 1024-1300 band, where the topline still has to hold
+ * the breadcrumb beside it, then scales up to its ceiling by 1440.
+ */
+@media (min-width: 1024px) {
+  .manager-context-topline > .manager-build-version {
+    /* The rule this replaces is `font-size: 7.5px !important` in game.css, so
+     * source order alone cannot beat it — matching the flag is required, not
+     * decorative. Only the font-size needs it; min-height and padding below
+     * are unflagged there and win on order.
+     */
+    font-size: clamp(10px, .764vw, 11px) !important;
+    letter-spacing: .06em;
+    /* Raised with the type so the chip cannot clip its own copy. */
+    min-height: 22px;
+    padding: 3px 9px;
+  }
+  /* The number is the part anyone actually reads, so it carries the increase.
+   * The base rule sets `font: inherit` on this element, so this depends on
+   * source order at equal specificity — the sheet must stay last.
+   */
+  .manager-context-topline > .manager-build-version b {
+    font-size: clamp(12px, .903vw, 13px);
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+}

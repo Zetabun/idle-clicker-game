@@ -56,6 +56,24 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.226 owns the compact navigation breakpoint and the desktop version
+badge. **The compact interface is everything below 1024px, and the contextual
+navigation blocks in `css/compact-navigation.css` must span that whole range** —
+they were authored at 760px, which left 761-1023px unowned and falling through
+to `.menu-shell button { font-size: max(7px, 0.44rem) }` as an unstyled block.
+Do not narrow them again. Note that `touch-action: manipulation`-style
+misreadings are not the only trap here: **`.menu-shell button` is a broad
+fallback, so any navigation element without its own size rule silently inherits
+7.04px.** The desktop badge lives in `css/version-label.css`, last in
+`CSS_PATHS`, and needs `!important` on font-size because the rule it replaces
+carries the flag. **Media queries are capped by the CSS-debt gate** — this build
+collapsed two breakpoints into one `clamp()` and raised the ceiling by exactly
+one; prefer `clamp()` over a second breakpoint. Verify with
+`navigationSubmenuForTest()` across the responsive matrix, and call
+`confirmMatchdayPlanForTest()` first or League reads as broken when it is only
+gated behind a confirmed match plan. Save schema 19 and diagnostics schema 1 are
+unchanged. See `AUDIT-12.226.md`.
+
 Build 12.225 owns play-surface gesture containment in `css/match-gestures.css`,
 last in `CSS_PATHS` and `index.html`. Keep `#game` at `touch-action: pan-y` in
 the windowed match — the page scrolls there (12.128 puts commentary below the

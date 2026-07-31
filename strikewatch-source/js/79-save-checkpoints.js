@@ -244,6 +244,85 @@
   // both sides in one pass (Build 12.160), and two page loads are not one pass.
   window.__strikeDebug.setImageGradeForTest = (enabled = true) => setImageGradeEnabled(enabled);
   window.__strikeDebug.setCeilingLightsForTest = (enabled = true) => setCeilingLightsEnabled(enabled);
+  // Build 12.226: the department submenu, measured at the current viewport.
+  //
+  // The gap this guards against is specific and was invisible to every existing
+  // audit: the contextual navigation rules were authored at max-width:760px
+  // while the compact interface is defined as anything below 1024px, so
+  // 761-1023px fell through to the generic `.menu-shell button` size of
+  // 7.04px and lost its flex row entirely. Nothing caught it because
+  // `mobileInterfaceAuditForTest()` samples routes rather than the header, and
+  // `typographyConsistencyForTest()` does not sample the submenu at all.
+  //
+  // Run this at each width in the responsive matrix; it reports the state of
+  // whichever submenu is authoritative there.
+  window.__strikeDebug.navigationSubmenuForTest = () => {
+    const width = window.innerWidth;
+    const desktop = width >= 1024;
+    const shell = document.getElementById('menuShell');
+    const contextual = Boolean(shell && shell.classList.contains('mobile-contextual-navigation'));
+    const nav = desktop
+      ? document.querySelector('.menu-subnav')
+      : document.querySelector('.mobile-header-submenu');
+    if (!nav) return { ok: false, reason: 'No submenu element for this presentation target.', width, desktop };
+
+    const navRect = nav.getBoundingClientRect();
+    const navStyle = getComputedStyle(nav);
+    const visible = [...nav.children].filter(el => el.getBoundingClientRect().width > 0);
+    const rows = new Set();
+    let overlaps = 0;
+    let minFont = Infinity;
+    let clipped = 0;
+    const boxes = visible.map(el => {
+      const rect = el.getBoundingClientRect();
+      const label = el.querySelector('.menu-subtab-label') || el;
+      minFont = Math.min(minFont, Number.parseFloat(getComputedStyle(label).fontSize) || 0);
+      rows.add(Math.round(rect.top));
+      if (rect.left < navRect.left - 0.5 || rect.right > navRect.right + 0.5) clipped++;
+      return rect;
+    });
+    for (let a = 0; a < boxes.length; a++) {
+      for (let b = a + 1; b < boxes.length; b++) {
+        if (Math.abs(boxes[a].top - boxes[b].top) > 2) continue;
+        if (boxes[a].left < boxes[b].right - 0.5 && boxes[b].left < boxes[a].right - 0.5) overlaps++;
+      }
+    }
+    const scrollable = navStyle.overflowX === 'auto' || navStyle.overflowX === 'scroll';
+    // Operations Overview keeps its own shortcut header instead of the
+    // contextual strip, so a hidden submenu is correct there and only there.
+    const hiddenByDesign = !desktop && !contextual;
+    const rendered = navRect.width > 0;
+
+    const checks = {
+      presentWhenExpected: hiddenByDesign ? !rendered : rendered,
+      // The compact strip must be a single scrollable row, never a wrapped
+      // block; a wrapped block is what the 761-1023px fall-through produced.
+      singleRowWhenCompact: desktop || !rendered || rows.size <= 1,
+      flexWhenCompact: desktop || !rendered || navStyle.display === 'flex',
+      // 7.04px was the fall-through value; 9.5px is the desktop subnav size.
+      readableLabels: !rendered || minFont >= (desktop ? 9 : 10),
+      noOverlap: overlaps === 0,
+      everyItemReachable: clipped === 0 || scrollable
+    };
+
+    return {
+      ok: Object.values(checks).every(Boolean),
+      width,
+      target: desktop ? 'desktop' : 'compact',
+      contextualNavigation: contextual,
+      hiddenByDesign,
+      rendered,
+      items: visible.length,
+      display: navStyle.display,
+      navWidth: Number(navRect.width.toFixed(1)),
+      rowCount: rows.size,
+      minFontPx: minFont === Infinity ? null : Number(minFont.toFixed(2)),
+      clipped,
+      scrollable,
+      overlaps,
+      checks
+    };
+  };
   // Build 12.224: the image grade. Nothing here needs a composited frame, which
   // matters because the browser pane frequently is not compositing — every
   // assertion is arithmetic on the same curve the shader runs.

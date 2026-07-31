@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.225';
-  const BUILD_NAME = 'Match Surface Gesture Containment';
-  const BUILD_ID = '12.225.0-match-surface-gesture-containment';
+  const BUILD_VERSION = '12.226';
+  const BUILD_NAME = 'Desktop Version Label and Submenu Sweep';
+  const BUILD_ID = '12.226.0-desktop-version-label-and-submenu-sweep';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

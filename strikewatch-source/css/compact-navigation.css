@@ -285,8 +285,19 @@
 /* --- Build 12.205: board expectations ------------------------------------ */
 .board-expectations-panel{display:grid;gap:12px;padding:16px;border:1px solid rgba(201,172,90,.28);background:linear-gradient(145deg,rgba(29,30,39,.97),rgba(12,23,37,.97))}.board-expectations-panel .career-section-head{margin:0}.board-confidence{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid rgba(201,172,90,.2);background:rgba(24,35,49,.78)}.board-confidence span{font-size:10px;letter-spacing:.14em;color:#d8bd79}.board-confidence strong{justify-self:end;font-size:11px;color:#f1f5f7}.board-confidence>div,.board-objective-card>div{grid-column:1/-1;height:5px;background:rgba(255,255,255,.08);overflow:hidden}.board-confidence i,.board-objective-card i{display:block;height:100%;background:#d8bd79}.board-objectives-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px}.board-objective-card{display:grid;grid-template-rows:auto auto 1fr auto auto;gap:5px;min-width:0;padding:11px 12px;text-align:left;border:1px solid rgba(134,163,187,.2);background:rgba(20,33,50,.84)}.board-objective-card span{font-size:9.5px;letter-spacing:.12em;color:#9fcde0}.board-objective-card strong{font-size:12px;line-height:1.3;color:#f2f6f8}.board-objective-card p{margin:0;font-size:10.5px;line-height:1.4;color:#adbdc8}.board-objective-card small{font-size:10px;color:#d8bd79}.board-objective-card.complete{border-color:rgba(82,198,158,.35)}.board-objective-card.complete i{background:#55c9a6}.board-objective-card.risk i{background:#e0b551}.board-objective-card.behind i{background:#df7f70}.board-expectations-panel.compact .career-section-head p{display:none}
 
-/* --- Build 12.206: contextual mobile navigation -------------------------- */
-@media (max-width:760px){
+/* --- Build 12.206: contextual mobile navigation --------------------------
+   Build 12.226: these blocks were authored at max-width:760px, but the compact
+   interface is defined as anything below 1024px and the guard at line 99 uses
+   1023px. That left 761-1023px unowned: `.mobile-header-submenu` kept no
+   display rule, so it fell back to `display:block` and to the generic
+   `.menu-shell button { font-size: max(7px, 0.44rem) }` — measured at 844x390
+   as a 228px-wide, 88px-tall wrapped block with 7.04px labels, in an 844px
+   viewport. That band is not an edge case: it covers the 844x390 landscape
+   phone named as a primary check in HANDOFF.md, and 768px tablet portrait.
+   Raised to 1023px so the whole compact range is styled by one owner. No new
+   media queries were added; the existing bounds were corrected.
+   -------------------------------------------------------------------------- */
+@media (max-width:1023px){
   #menuShell.mobile-contextual-navigation .manager-topbar{grid-template-columns:42px minmax(0,1fr) 42px;min-height:50px;padding:6px 8px;gap:6px}
   #menuShell.mobile-contextual-navigation .manager-balance-brand,
   #menuShell.mobile-contextual-navigation .manager-context,
@@ -311,7 +322,7 @@
 }
 
 /* --- Build 12.207: populate contextual mobile header --------------------- */
-@media (max-width:760px){
+@media (max-width:1023px){
   #menuShell .mobile-header-submenu{display:none}
   #menuShell.mobile-contextual-navigation .manager-topbar{grid-template-columns:42px minmax(0,1fr) 42px}
   #menuShell.mobile-contextual-navigation .mobile-header-submenu{display:flex;grid-column:2;grid-row:1;min-width:0;gap:6px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;padding:1px 2px;align-items:center}
@@ -322,7 +333,7 @@
 }
 
 /* --- Build 12.208: mobile header layout correction ----------------------- */
-@media (max-width:760px){
+@media (max-width:1023px){
   #menuShell.mobile-contextual-navigation .manager-topbar{display:grid!important;grid-template-columns:48px minmax(0,1fr) 48px!important;grid-template-rows:52px!important;align-items:stretch!important;width:100%!important;max-width:none!important;overflow:hidden!important;padding:0!important;gap:0!important}
   #menuShell.mobile-contextual-navigation .manager-history-back{display:grid!important;grid-column:1!important;grid-row:1!important;position:static!important;width:48px!important;min-width:48px!important;height:52px!important;z-index:3!important}
   #menuShell.mobile-contextual-navigation .manager-history-forward{display:grid!important;grid-column:3!important;grid-row:1!important;position:static!important;width:48px!important;min-width:48px!important;height:52px!important;z-index:3!important}
@@ -333,7 +344,7 @@
 /* --- Build 12.217: Ops blocker badge and compact header gap fix ---------- */
 .menu-tab[data-section="operations"]{position:relative}
 .menu-tab[data-section="operations"].has-must-respond::before{content:"!";position:absolute;inset:6px auto auto 6px;z-index:4;display:flex;align-items:center;justify-content:center;box-sizing:border-box;inline-size:18px;block-size:18px;min-inline-size:18px;max-inline-size:18px;min-block-size:18px;max-block-size:18px;padding:0;border:1px solid #ffd0c9;border-radius:999px;background:#c84439;color:#fff;font:900 12px/1 Arial,sans-serif;letter-spacing:0;writing-mode:horizontal-tb;transform:none;box-shadow:0 0 0 2px #07131d,0 2px 7px rgba(0,0,0,.4)}
-@media(max-width:760px){
+@media(max-width:1023px){
   #menuShell.mobile-operations-overview .manager-topbar{grid-template-columns:48px auto auto minmax(118px,1fr) 48px!important;gap:0!important}
   #menuShell.mobile-operations-overview .manager-history-back{grid-column:1!important}
   #menuShell.mobile-operations-overview .manager-balance-brand{grid-column:2!important}
@@ -349,7 +360,7 @@
 .league-section-jumps button{flex:0 0 auto;min-height:38px;padding:8px 12px;border:1px solid rgba(116,170,198,.28);background:rgba(13,31,47,.88);color:#b9cad5;font-size:10px;letter-spacing:.11em;scroll-snap-align:start}
 .league-section-jumps button:first-child{border-color:rgba(222,190,106,.55);color:#fff1c8}
 #leagueOverview,#leagueObjectives,#leaguePulse,#leagueTable,#leagueFixtures{scroll-margin-top:62px}
-@media(max-width:760px){.league-section-jumps{position:sticky;top:52px;z-index:16;margin:0 -10px;padding:6px 10px;background:rgba(7,18,29,.96);border-bottom:1px solid rgba(116,170,198,.2)}.league-section-jumps button{min-height:40px}.menu-tab[data-section="operations"].has-must-respond::before{inset:5px auto auto 5px}}
+@media(max-width:1023px){.league-section-jumps{position:sticky;top:52px;z-index:16;margin:0 -10px;padding:6px 10px;background:rgba(7,18,29,.96);border-bottom:1px solid rgba(116,170,198,.2)}.league-section-jumps button{min-height:40px}.menu-tab[data-section="operations"].has-must-respond::before{inset:5px auto auto 5px}}
 
 /* --- Build 12.221: desktop management layout restoration -----------------
    Desktop management must occupy the full viewport. This guard is deliberately

@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.226 — Desktop Version Label and Submenu Sweep
+
+- Closes a 761-1023px gap where the department submenu lost its layout and rendered at 7.04px, affecting 844x390 landscape phones and 768px tablets.
+- Raises the desktop version badge from 7.5px to 10-11px with a 12-13px number, in `css/version-label.css`.
+- Confirms blood splatter works on all four arenas and that the 12.224 grade improves rather than weakens its contrast.
+- Adds `navigationSubmenuForTest()`, verified against the defect it guards.
+- Adds no new media queries; corrects existing bounds and collapses two breakpoints into one `clamp()`.
+- See `AUDIT-12.226.md`.
+
 ## 12.225 — Match Surface Gesture Containment
 
 - Blocks browser pinch zoom on the play surface; `#game` had inherited `touch-action: manipulation`, which leaves pinch enabled.

@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.225 — Match Surface Gesture Containment**
-- Build ID: `12.225.0-match-surface-gesture-containment`
+- Build: **12.226 — Desktop Version Label and Submenu Sweep**
+- Build ID: `12.226.0-desktop-version-label-and-submenu-sweep`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.225.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.226.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.226 raises the desktop version badge off a 7.5px floor and closes a responsive gap in the department submenu. **The contextual navigation was authored at `max-width: 760px` while the compact interface is defined as anything below 1024px**, leaving 761-1023px with no owner: the submenu fell back to `display: block` and to the generic `.menu-shell button { font-size: max(7px, 0.44rem) }` — measured at 844×390 as a 228px-wide, 88px-tall wrapped block with 7.04px labels inside an 844px viewport. That band covers the 844×390 landscape phone named as a primary check here and 768px tablet portrait. The four contextual blocks now run to 1023px; **no new media queries were added, the existing bounds were corrected**, because the CSS-debt gate caps the total. The desktop badge moves to `css/version-label.css` at 10-11px with a 12-13px number, using one `clamp()` breakpoint rather than two for the same reason, and needing `!important` because the rule it replaces carries the flag. Blood splatter was verified unchanged on all four arenas and the 12.224 grade in fact *improves* its separation from the wall, most on Dune (127-170%). New gate `navigationSubmenuForTest()`, verified against the defect rather than only the fix. See `AUDIT-12.226.md`.
 
 Build 12.225 stops the browser pinch-zooming the play surface, and fixes the audit that claimed to check for it. Three faults, not one. The check tested the viewport meta for `user-scalable=no` — **which iOS Safari has ignored since iOS 10**, so satisfying it would have gone green while iPhones kept zooming. `#game` had no `touch-action` of its own and inherited `body { touch-action: manipulation }`; **`manipulation` suppresses only double-tap zoom and leaves pinch fully enabled**, so the arena really was zoomable. And 12.161's SW-011 had deliberately restored pinch zoom while leaving the opposite assertion in place, so the gate had been red for many builds without describing a real fault. `css/match-gestures.css` now sets `touch-action: pan-y` on `#game` — blocking pinch while keeping the vertical page scroll the windowed match needs, since 12.128 puts commentary below the arena in normal flow and only free-roam sets `overflow: hidden` — and `none` when maximised or in free roam. Scope is the play surface only; `body` stays `manipulation` so menus and league tables remain zoomable, because blocking zoom app-wide fails WCAG 2.1 SC 1.4.4. The check is now `matchSurfacePinchBlocked`, reading computed `touch-action` rather than a declaration Safari discards. `typographyConsistencyForTest()` is **green for the first time in many builds**. See `AUDIT-12.225.md`.
 
