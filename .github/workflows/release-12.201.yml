@@ -54,13 +54,15 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('strikewatch-source/build.py')
-          text = path.read_text(encoding='utf-8')
+          build_path = Path('strikewatch-source/build.py')
+          text = build_path.read_text(encoding='utf-8')
           old = '"media_queries_max": 474,'
           new = '"media_queries_max": 476,'
           if text.count(old) != 1:
               raise SystemExit(f'Expected one CSS media-query budget anchor, found {text.count(old)}')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          build_path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          css_path = Path('strikewatch-source/css/compact-navigation.css')
+          css_path.write_text(css_path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
           PY
 
           cd strikewatch-source
