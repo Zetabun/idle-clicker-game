@@ -139,7 +139,7 @@ jobs:
           standalone = Path('strikewatch-source/dist/strikewatch-build-12.227.html').read_text(encoding='utf-8')
           for anchor in (
               '12.227.0-desktop-inbox-preview-stability',
-              'Build 12.227: selectedMailId is transient UI state.',
+              'careerState.selectedMailId = mail.id;',
               'function openClubMailModal(mailId, returnFocus = null, markRead = false)',
           ):
               assert anchor in standalone, anchor
