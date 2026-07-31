@@ -71,9 +71,11 @@ jobs:
           from pathlib import Path
           css = Path('strikewatch-source/css/compact-navigation.css').read_text(encoding='utf-8')
           marker = 'Build 12.223: desktop MUST RESPOND disclosure correction'
-          block = css.split(marker, 1)[1]
+          marker_index = css.index(marker)
+          desktop_guard_index = css.rfind('@media (min-width: 1024px)', 0, marker_index)
+          assert desktop_guard_index >= 0
+          block = css[marker_index:]
           required = [
-              '@media (min-width: 1024px)',
               '#menuContent .club-must-respond-strip {',
               'display: block !important;',
               'grid-template-columns: minmax(0, 1fr) 28px !important;',
@@ -84,7 +86,8 @@ jobs:
           ]
           for value in required:
               assert value in block, value
-          assert css.index('@media (max-width: 1023px)') < css.index(marker)
+          assert css.count('@media') == 483
+          assert css.index('@media (max-width: 1023px)') < marker_index
           standalone = Path('strikewatch-source/dist/strikewatch-build-12.223.html').read_text(encoding='utf-8')
           assert marker in standalone
           assert '12.223.0-desktop-must-respond-layout' in standalone
@@ -100,6 +103,7 @@ jobs:
           rm .github/scripts/release-12.223.py
           rm .github/workflows/release-12.223.yml
           rm .github/triggers/release-12.223.txt
+          rm -f .github/diagnostics/12.223.txt
 
       - name: Commit release
         run: |
