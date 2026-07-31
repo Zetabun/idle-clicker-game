@@ -66,7 +66,7 @@ block=r'''
 }
 '''
 w(cssp,css.rstrip()+block)
-build=SRC/'build.py'; t=r(build); t=one(t,'"game_css_lines_max": 30930,','"game_css_lines_max": 30960,','css lines'); t=one(t,'"important_declarations_max": 2186,','"important_declarations_max": 2187,','important budget'); t=one(t,'"media_queries_max": 478,','"media_queries_max": 479,','media budget'); w(build,t)
+build=SRC/'build.py'; t=r(build); t=one(t,'"game_css_lines_max": 30930,','"game_css_lines_max": 30960,','css lines'); t=one(t,'"important_declarations_max": 2184,','"important_declarations_max": 2185,','important budget'); t=one(t,'"media_queries_max": 478,','"media_queries_max": 479,','media budget'); w(build,t)
 idx=SRC/'index.html'; t=r(idx).replace(f'Strikewatch {OLD}: {OLD_NAME}',f'Strikewatch {NEW}: {NEW_NAME}').replace(OLD_ID,NEW_ID); t=one(t,f'id="managerBuildVersion">{OLD}</b>',f'id="managerBuildVersion">{NEW}</b>','desktop'); t=one(t,f'id="mobileCommandBuildVersion">{OLD}</b>',f'id="mobileCommandBuildVersion">{NEW}</b>','mobile'); w(idx,t)
 note=f"Build {NEW} fixes the empty compact header introduced in 12.206 by rendering the active department's real route buttons directly between the Back and Forward controls. The active page is centred and highlighted; Operations Overview still retains its original shortcut header. See `AUDIT-{NEW}.md`.\n\n"
 for p in [SRC/'HANDOFF.md',SRC/'AGENTS.md']:
