@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.207 — Mobile Header Submenu Fix**.
+Current deployed build: **12.209 — Mobile Header Button Fix**.
 
 ## Concise agent workflow
 
