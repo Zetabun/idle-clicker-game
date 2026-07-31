@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.217 — Ops Alert Badge and Header Gap Fix**
-- Build ID: `12.217.0-ops-alert-header-gap`
+- Build: **12.218 — Mobile Information Architecture**
+- Build ID: `12.218.0-mobile-information-architecture`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.217.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.218.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.218 adds a sticky League section navigator, clarifies Equipment labels, reduces Club submenu crowding, and suppresses the duplicate recommended-action card whenever MUST RESPOND is active. See `AUDIT-12.218.md`.
 
 Build 12.217 adds a compact red exclamation badge to the Ops bottom-navigation item whenever an End Day blocker exists, and removes the unused compact-header grid track between Help and End Day. See `AUDIT-12.217.md`.
 

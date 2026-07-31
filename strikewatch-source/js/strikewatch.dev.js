@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.217';
-  const BUILD_NAME = 'Ops Alert Badge and Header Gap Fix';
-  const BUILD_ID = '12.217.0-ops-alert-header-gap';
+  const BUILD_VERSION = '12.218';
+  const BUILD_NAME = 'Mobile Information Architecture';
+  const BUILD_ID = '12.218.0-mobile-information-architecture';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -20984,14 +20984,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const keyPlayer = opponent?.roster?.slice().sort((a, b) => teamPlayerOverall(b) - teamPlayerOverall(a))[0] || null;
     const positionLabel = user?.played ? user.position : '—';
     return `${renderLeagueIntroduction()}
-      <div class="menu-hero career-hero league-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">${escapeCareerHtml(leagueCompetitionName())} · SEASON ${league.season}</div><h2>${complete ? 'FINAL TABLE' : `MATCHDAY ${fixture.matchday} · ${escapeCareerHtml(opponent?.name || 'TBD')}`}</h2><p>${complete ? 'The season is complete. Review the final standings, then begin a new campaign when the squad is ready.' : 'Play one scheduled fixture at a time. A match win earns three points; the highest total after 38 fixtures wins the division.'}</p><div class="menu-pill-row"><span class="menu-pill">POSITION ${positionLabel} / ${league.clubs.length}</span><span class="menu-pill">${user?.points || 0} POINTS</span><span class="menu-pill">${user?.played || 0} / ${leagueSeasonMatchCount(league.clubs.length)} PLAYED</span><span class="menu-pill">ROUND DIFF ${user?.roundDifference >= 0 ? '+' : ''}${user?.roundDifference || 0}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">${complete ? 'SEASON WINNER' : 'NEXT OPPONENT'}</div><div class="menu-side-operator">${complete ? escapeCareerHtml(leagueChampion()?.short || 'TBD') : escapeCareerHtml(opponent?.short || 'TBD')}</div><p>${complete ? escapeCareerHtml(leagueChampion()?.name || 'Finalising') : `${escapeCareerHtml(opponent?.style || 'BALANCED')} · RATING ${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}`}</p></div></div>
+      <nav class="league-section-jumps" aria-label="League page sections"><button type="button" data-team-scroll-target="#leagueOverview">OVERVIEW</button><button type="button" data-team-scroll-target="#leagueObjectives">OBJECTIVES</button><button type="button" data-team-scroll-target="#leaguePulse">PULSE</button><button type="button" data-team-scroll-target="#leagueTable">TABLE</button><button type="button" data-team-scroll-target="#leagueFixtures">FIXTURES</button></nav>
+      <div id="leagueOverview" class="menu-hero career-hero league-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">${escapeCareerHtml(leagueCompetitionName())} · SEASON ${league.season}</div><h2>${complete ? 'FINAL TABLE' : `MATCHDAY ${fixture.matchday} · ${escapeCareerHtml(opponent?.name || 'TBD')}`}</h2><p>${complete ? 'The season is complete. Review the final standings, then begin a new campaign when the squad is ready.' : 'Play one scheduled fixture at a time. A match win earns three points; the highest total after 38 fixtures wins the division.'}</p><div class="menu-pill-row"><span class="menu-pill">POSITION ${positionLabel} / ${league.clubs.length}</span><span class="menu-pill">${user?.points || 0} POINTS</span><span class="menu-pill">${user?.played || 0} / ${leagueSeasonMatchCount(league.clubs.length)} PLAYED</span><span class="menu-pill">ROUND DIFF ${user?.roundDifference >= 0 ? '+' : ''}${user?.roundDifference || 0}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">${complete ? 'SEASON WINNER' : 'NEXT OPPONENT'}</div><div class="menu-side-operator">${complete ? escapeCareerHtml(leagueChampion()?.short || 'TBD') : escapeCareerHtml(opponent?.short || 'TBD')}</div><p>${complete ? escapeCareerHtml(leagueChampion()?.name || 'Finalising') : `${escapeCareerHtml(opponent?.style || 'BALANCED')} · RATING ${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}`}</p></div></div>
       ${renderLeaguePyramid()}
-      ${typeof renderBoardExpectations === 'function' ? renderBoardExpectations(false) : ''}
-      ${typeof renderWorldPressLeaguePulse === 'function' ? renderWorldPressLeaguePulse() : ''}
-      <section class="league-table-panel"><div class="career-section-head"><div><span>LIVE STANDINGS</span><strong>${escapeCareerHtml(leagueCompetitionName())} TABLE</strong></div><p>Wins are worth ${LEAGUE_POINTS_WIN} points. Round difference breaks ties.</p></div><div class="league-table-head"><span>#</span><span>CLUB</span><span>P</span><span>W</span><span>L</span><span>RD</span><span>FORM</span><span>PTS</span></div>${renderLeagueTableRows()}</section>
+      <div id="leagueObjectives">${typeof renderBoardExpectations === 'function' ? renderBoardExpectations(false) : ''}</div>
+      <div id="leaguePulse">${typeof renderWorldPressLeaguePulse === 'function' ? renderWorldPressLeaguePulse() : ''}</div>
+      <section id="leagueTable" class="league-table-panel"><div class="career-section-head"><div><span>LIVE STANDINGS</span><strong>${escapeCareerHtml(leagueCompetitionName())} TABLE</strong></div><p>Wins are worth ${LEAGUE_POINTS_WIN} points. Round difference breaks ties.</p></div><div class="league-table-head"><span>#</span><span>CLUB</span><span>P</span><span>W</span><span>L</span><span>RD</span><span>FORM</span><span>PTS</span></div>${renderLeagueTableRows()}</section>
       <div class="league-detail-grid">
         <section class="league-opponent-panel" ${complete ? 'data-management-target-id="league:season-transition"' : ''}><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : escapeCareerHtml(opponent?.name || 'TBD')}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
-        <section class="league-fixture-panel"><div class="career-section-head compact"><div><span>SEASON CALENDAR</span><strong>YOUR FIXTURES</strong></div></div><div class="league-fixture-list">${renderLeagueFixtures()}</div></section>
+        <section id="leagueFixtures" class="league-fixture-panel"><div class="career-section-head compact"><div><span>SEASON CALENDAR</span><strong>YOUR FIXTURES</strong></div></div><div class="league-fixture-list">${renderLeagueFixtures()}</div></section>
       </div>`;
   }
 
@@ -34282,9 +34283,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       defaultRoute: 'armoury-hub',
       routes: [
         { id: 'armoury-hub', label: 'OVERVIEW', hint: 'Inventory and issue status', overview: true },
-        { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, armour and individual player loadouts' },
+        { id: 'loadout', label: 'LOADOUTS', hint: 'Compare and assign weapons and armour' },
         { id: 'supplies-hub', label: 'SUPPLY OVERVIEW', hint: 'Balances, stock and purchasing shortcuts', contextOnly: true },
-        { id: 'store', label: 'SUPPLY DEPOT', hint: 'Field crates, weapons, armour and future ammunition' }
+        { id: 'store', label: 'DEPOT', hint: 'Purchase crates, weapons and armour' }
       ]
     },
     systems: {
@@ -34296,7 +34297,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       routes: [
         { id: 'club-hub', label: 'OVERVIEW', hint: 'Club systems and current priorities', overview: true },
         { id: 'training', label: 'TRAINING', hint: 'Player and team development' },
-        { id: 'infrastructure', label: 'INFRASTRUCTURE', hint: 'Permanent club facilities and specialisation' },
+        { id: 'infrastructure', label: 'INFRASTRUCTURE', hint: 'Permanent club facilities and specialisation', contextOnly: true },
         { id: 'staff', label: 'STAFF', hint: 'Assistant manager recruitment' },
         { id: 'barracks', label: 'FINANCES', hint: 'Cashflow, analytics and ledger' },
         { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history', contextOnly: true },
@@ -35155,6 +35156,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const guideCollapsed = Boolean(guidance && mobileFirstMatchGuideCollapsed);
     const guideToggle = guidance ? `<button type="button" class="first-match-guide-toggle" data-first-match-guide-toggle aria-expanded="${guideCollapsed ? 'false' : 'true'}" aria-label="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide" title="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide"><span class="first-match-guide-summary"><b>First match ${guidance.milestoneIndex + 1}/${guidance.milestoneTotal}</b><strong>${escapeCareerHtml(primary.label)}</strong><em>${guidance.milestoneStepTotal > 1 ? `Step ${guidance.milestoneStep}/${guidance.milestoneStepTotal}` : escapeCareerHtml(milestoneLabel)}</em></span><i aria-hidden="true"></i></button>` : '';
     if (menuTab !== 'play') return '';
+    if (typeof clubEndDayBlockers === 'function' && clubEndDayBlockers().length) return '';
     return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''} ${guideCollapsed ? 'is-collapsed' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" class="management-priority-action" ${actionAttribute}${scrollAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${guideToggle}${!guidance && items.length > 1 ? `<details><summary>View plan</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(secondaryCase(item.kind))}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
   }
 

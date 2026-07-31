@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.217';
-  const BUILD_NAME = 'Ops Alert Badge and Header Gap Fix';
-  const BUILD_ID = '12.217.0-ops-alert-header-gap';
+  const BUILD_VERSION = '12.218';
+  const BUILD_NAME = 'Mobile Information Architecture';
+  const BUILD_ID = '12.218.0-mobile-information-architecture';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

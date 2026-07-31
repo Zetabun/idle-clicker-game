@@ -342,3 +342,11 @@
   #menuShell.mobile-operations-overview .manager-end-day-slot{grid-column:4!important;margin:0!important}
   #menuShell.mobile-operations-overview .manager-history-forward{grid-column:5!important}
 }
+
+/* --- Build 12.218: mobile information architecture ----------------------- */
+.league-section-jumps{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:2px 0 8px;scroll-snap-type:x proximity}
+.league-section-jumps::-webkit-scrollbar{display:none}
+.league-section-jumps button{flex:0 0 auto;min-height:38px;padding:8px 12px;border:1px solid rgba(116,170,198,.28);background:rgba(13,31,47,.88);color:#b9cad5;font-size:10px;letter-spacing:.11em;scroll-snap-align:start}
+.league-section-jumps button:first-child{border-color:rgba(222,190,106,.55);color:#fff1c8}
+#leagueOverview,#leagueObjectives,#leaguePulse,#leagueTable,#leagueFixtures{scroll-margin-top:62px}
+@media(max-width:760px){.league-section-jumps{position:sticky;top:52px;z-index:16;margin:0 -10px;padding:6px 10px;background:rgba(7,18,29,.96);border-bottom:1px solid rgba(116,170,198,.2)}.league-section-jumps button{min-height:40px}.menu-tab[data-section="operations"].has-must-respond::before{left:5px;top:5px}}

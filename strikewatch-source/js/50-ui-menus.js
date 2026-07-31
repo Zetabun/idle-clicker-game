@@ -72,9 +72,9 @@
       defaultRoute: 'armoury-hub',
       routes: [
         { id: 'armoury-hub', label: 'OVERVIEW', hint: 'Inventory and issue status', overview: true },
-        { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, armour and individual player loadouts' },
+        { id: 'loadout', label: 'LOADOUTS', hint: 'Compare and assign weapons and armour' },
         { id: 'supplies-hub', label: 'SUPPLY OVERVIEW', hint: 'Balances, stock and purchasing shortcuts', contextOnly: true },
-        { id: 'store', label: 'SUPPLY DEPOT', hint: 'Field crates, weapons, armour and future ammunition' }
+        { id: 'store', label: 'DEPOT', hint: 'Purchase crates, weapons and armour' }
       ]
     },
     systems: {
@@ -86,7 +86,7 @@
       routes: [
         { id: 'club-hub', label: 'OVERVIEW', hint: 'Club systems and current priorities', overview: true },
         { id: 'training', label: 'TRAINING', hint: 'Player and team development' },
-        { id: 'infrastructure', label: 'INFRASTRUCTURE', hint: 'Permanent club facilities and specialisation' },
+        { id: 'infrastructure', label: 'INFRASTRUCTURE', hint: 'Permanent club facilities and specialisation', contextOnly: true },
         { id: 'staff', label: 'STAFF', hint: 'Assistant manager recruitment' },
         { id: 'barracks', label: 'FINANCES', hint: 'Cashflow, analytics and ledger' },
         { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history', contextOnly: true },
@@ -945,6 +945,7 @@
     const guideCollapsed = Boolean(guidance && mobileFirstMatchGuideCollapsed);
     const guideToggle = guidance ? `<button type="button" class="first-match-guide-toggle" data-first-match-guide-toggle aria-expanded="${guideCollapsed ? 'false' : 'true'}" aria-label="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide" title="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide"><span class="first-match-guide-summary"><b>First match ${guidance.milestoneIndex + 1}/${guidance.milestoneTotal}</b><strong>${escapeCareerHtml(primary.label)}</strong><em>${guidance.milestoneStepTotal > 1 ? `Step ${guidance.milestoneStep}/${guidance.milestoneStepTotal}` : escapeCareerHtml(milestoneLabel)}</em></span><i aria-hidden="true"></i></button>` : '';
     if (menuTab !== 'play') return '';
+    if (typeof clubEndDayBlockers === 'function' && clubEndDayBlockers().length) return '';
     return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''} ${guideCollapsed ? 'is-collapsed' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" class="management-priority-action" ${actionAttribute}${scrollAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${guideToggle}${!guidance && items.length > 1 ? `<details><summary>View plan</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(secondaryCase(item.kind))}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
   }
 

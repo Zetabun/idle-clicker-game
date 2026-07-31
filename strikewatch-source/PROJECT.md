@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.217 adds an Ops blocker badge and removes the wasted compact-header gap beside End Day. See `HANDOFF.md` and `AUDIT-12.217.md`.
+Build 12.218 improves mobile information architecture across League, Equipment, Club and Operations. See `HANDOFF.md` and `AUDIT-12.218.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
