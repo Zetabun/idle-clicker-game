@@ -44,8 +44,9 @@ jobs:
           print('Predecessor release verified:', actual)
           PY
 
-          python3 -m py_compile .github/scripts/release-12.206.py
+          python3 -m py_compile .github/scripts/release-12.206.py .github/scripts/release-12.206-budget.py
           python3 .github/scripts/release-12.206.py
+          python3 .github/scripts/release-12.206-budget.py
 
           cd strikewatch-source
           python3 -m py_compile build.py
@@ -97,6 +98,7 @@ jobs:
 
           rm -f .github/release-12.206-failure.log
           rm -f .github/scripts/release-12.206.py
+          rm -f .github/scripts/release-12.206-budget.py
           rm -f .github/workflows/release-12.206.yml
           rm -f .github/triggers/release-12.206.txt
           git add -A
