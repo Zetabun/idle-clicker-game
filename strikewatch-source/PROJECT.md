@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.215 keeps the collapsible required-action panel only on Operations Overview while preserving the global End Day lock. See `HANDOFF.md` and `AUDIT-12.215.md`.
+Build 12.216 keeps both required-action presentations exclusively on Operations Overview. See `HANDOFF.md` and `AUDIT-12.216.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

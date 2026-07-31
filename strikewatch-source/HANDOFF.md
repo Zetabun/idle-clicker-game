@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.215 — Ops-Only Required Action**
-- Build ID: `12.215.0-ops-only-required-action`
+- Build: **12.216 — Ops-Only Priority Card**
+- Build ID: `12.216.0-ops-only-priority-card`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.215.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.216.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.216 removes the separate global Required Action priority card from every non-Ops page. Both the priority card and the collapsible MUST RESPOND panel now have one home on Operations Overview only. See `AUDIT-12.216.md`.
 
 Build 12.215 keeps the collapsible MUST RESPOND panel on Operations Overview only. It starts collapsed and no longer repeats on Team, League, Equipment, Club or their subpages; the global End Day lock and blocker authority remain unchanged. See `AUDIT-12.215.md`.
 

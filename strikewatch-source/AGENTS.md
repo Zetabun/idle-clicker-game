@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.216 removes the separate global Required Action priority card from every non-Ops page. Both the priority card and the collapsible MUST RESPOND panel now have one home on Operations Overview only. See `AUDIT-12.216.md`.
+
 Build 12.215 keeps the collapsible MUST RESPOND panel on Operations Overview only. It starts collapsed and no longer repeats on Team, League, Equipment, Club or their subpages; the global End Day lock and blocker authority remain unchanged. See `AUDIT-12.215.md`.
 
 Build 12.214 removes repeated red required-action panels from every route except Team > Squad (the operator page). The End Day lock and blocker authority remain global, but the detailed warning card now has one intentional home. See `AUDIT-12.214.md`.

@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.215';
-  const BUILD_NAME = 'Ops-Only Required Action';
-  const BUILD_ID = '12.215.0-ops-only-required-action';
+  const BUILD_VERSION = '12.216';
+  const BUILD_NAME = 'Ops-Only Priority Card';
+  const BUILD_ID = '12.216.0-ops-only-priority-card';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -35148,6 +35148,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const scrollAttribute = guidance?.scrollTarget ? ` data-team-scroll-target="${escapeCareerHtml(guidance.scrollTarget)}"` : '';
     const guideCollapsed = Boolean(guidance && mobileFirstMatchGuideCollapsed);
     const guideToggle = guidance ? `<button type="button" class="first-match-guide-toggle" data-first-match-guide-toggle aria-expanded="${guideCollapsed ? 'false' : 'true'}" aria-label="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide" title="${guideCollapsed ? 'Expand' : 'Collapse'} first match guide"><span class="first-match-guide-summary"><b>First match ${guidance.milestoneIndex + 1}/${guidance.milestoneTotal}</b><strong>${escapeCareerHtml(primary.label)}</strong><em>${guidance.milestoneStepTotal > 1 ? `Step ${guidance.milestoneStep}/${guidance.milestoneStepTotal}` : escapeCareerHtml(milestoneLabel)}</em></span><i aria-hidden="true"></i></button>` : '';
+    if (menuTab !== 'play') return '';
     return `<section class="management-priority-strip ${escapeCareerHtml(primary.kind)} ${guidance ? 'first-match-guide' : ''} ${guideCollapsed ? 'is-collapsed' : ''}"><div class="management-priority-main"><span>${escapeCareerHtml(kicker)}</span><strong>${escapeCareerHtml(primary.label)}</strong><small>${escapeCareerHtml(primary.detail)}</small>${progress}</div><button type="button" class="management-priority-action" ${actionAttribute}${scrollAttribute}>${escapeCareerHtml(primary.action || 'OPEN')}</button>${guideToggle}${!guidance && items.length > 1 ? `<details><summary>View plan</summary><div>${items.slice(1).map(item => `<button type="button" ${item.leagueAction ? `data-league-action="${escapeCareerHtml(item.leagueAction)}"` : `data-team-route="${escapeCareerHtml(item.route)}"`}><span>${escapeCareerHtml(secondaryCase(item.kind))}</span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.detail)}</small></button>`).join('')}</div></details>` : ''}</section>`;
   }
 
