@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.203';
-  const BUILD_NAME = 'League Pulse';
-  const BUILD_ID = '12.203.0-league-pulse';
+  const BUILD_VERSION = '12.204';
+  const BUILD_NAME = 'Operator Career Story';
+  const BUILD_ID = '12.204.0-operator-career-story';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -39137,6 +39137,28 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return record?.entries || [];
   }
 
+  function worldPressPlayerCareerSnapshot(player) {
+    const entries = worldPressEntriesForPlayer(player);
+    const awards = entries.filter(entry => entry.type === 'award');
+    const motm = awards.filter(entry => entry.title === 'MAN OF THE MATCH');
+    const major = awards.filter(entry => ['OPERATOR OF THE MONTH','OPERATOR OF THE SEASON'].includes(entry.title));
+    const milestones = entries.filter(entry => entry.type === 'milestone' || entry.type === 'achievement');
+    const ratings = entries.map(entry => Number(entry.rating)).filter(Number.isFinite);
+    const best = ratings.length ? Math.max(...ratings) : Number(player?.career?.rating) || 0;
+    const seasons = new Set(entries.map(entry => Number(entry.season)).filter(value => value > 0));
+    const clubs = new Set([player?.currentTeam, ...(player?.history || []).map(item => item.team), ...entries.map(entry => entry.clubName)].filter(Boolean));
+    const latest = entries[0] || null;
+    return { awards: awards.length, motm: motm.length, major: major.length, milestones: milestones.length, best, seasons: Math.max(1,seasons.size), clubs: Math.max(1,clubs.size), latest };
+  }
+
+  function renderWorldPressCareerStory(player) {
+    const story = worldPressPlayerCareerSnapshot(player);
+    const career = player?.career || {};
+    const kd = (Number(career.kills)||0) / Math.max(1, Number(career.deaths)||0);
+    const latest = story.latest ? `<article class="player-career-latest ${escapeCareerHtml(story.latest.tone || 'neutral')}"><span>LATEST CHAPTER</span><strong>${escapeCareerHtml(story.latest.title)}</strong><p>${escapeCareerHtml(story.latest.detail || '')}</p><small>${escapeCareerHtml(story.latest.dateLabel || '')}${story.latest.clubName ? ` · ${escapeCareerHtml(story.latest.clubName)}` : ''}</small></article>` : '<article class="player-career-latest neutral"><span>LATEST CHAPTER</span><strong>CAREER STORY BEGINS HERE</strong><p>Complete competitive fixtures to add awards, milestones and defining performances.</p></article>';
+    return `<section class="player-career-story"><div class="career-section-head"><div><span>OPERATOR CAREER STORY</span><strong>RECORD, LEGACY & DEFINING MOMENTS</strong></div><p>A compact summary of the operator's full competitive journey.</p></div><div class="player-career-story-grid"><article><span>APPEARANCES</span><strong>${Math.max(0,Number(career.matches)||0)}</strong><small>${Math.max(0,Number(career.wins)||0)} WINS · ${kd.toFixed(2)} K/D</small></article><article><span>AWARDS</span><strong>${story.awards}</strong><small>${story.motm} MOTM · ${story.major} MAJOR</small></article><article><span>BEST AWARD RATING</span><strong>${story.best ? story.best.toFixed(2) : '—'}</strong><small>${story.milestones} CAREER MILESTONES</small></article><article><span>CAREER JOURNEY</span><strong>${story.seasons} SEASON${story.seasons===1?'':'S'}</strong><small>${story.clubs} CLUB${story.clubs===1?'':'S'} RECORDED</small></article></div>${latest}</section>`;
+  }
+
   function renderWorldPressPlayerAccolades(player) {
     if (!player?.id) return '';
     const entries = worldPressEntriesForPlayer(player);
@@ -39145,7 +39167,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const motm = entries.filter(entry => entry.title === 'MAN OF THE MATCH').length;
     const major = entries.filter(entry => ['OPERATOR OF THE MONTH','OPERATOR OF THE SEASON'].includes(entry.title)).length;
     const timeline = entries.length ? entries.slice(0, 30).map(entry => `<article class="player-accolade-entry ${escapeCareerHtml(entry.tone || 'neutral')}"><div class="player-accolade-medal">${escapeCareerHtml(entry.icon || '★')}</div><div><span>${escapeCareerHtml(entry.type.toUpperCase())}${entry.matchday ? ` · MATCHDAY ${entry.matchday}` : ''}</span><strong>${escapeCareerHtml(entry.title)}</strong><p>${escapeCareerHtml(entry.detail || '')}</p><small>${escapeCareerHtml(entry.dateLabel || '')}${entry.opponentName ? ` · VS ${escapeCareerHtml(entry.opponentName)}` : ''}${entry.historical ? ' · HISTORICAL RECORD' : ''}</small></div></article>`).join('') : '<div class="player-accolade-empty"><strong>NO ACCOLADES RECORDED</strong><p>Competitive awards, Team of the Week selections and career milestones will appear here permanently.</p></div>';
-    return `<section class="player-accolades-panel" data-player-accolades="${escapeCareerHtml(player.id)}"><div class="career-section-head"><div><span>ACCOLADES & ACHIEVEMENTS</span><strong>CAREER HONOURS HISTORY</strong></div><p>Every award records the fixture, context and date so the operator develops a permanent career story.</p></div><div class="player-accolade-summary"><article><span>MAN OF THE MATCH</span><strong>${motm}</strong><small>CAREER AWARDS</small></article><article><span>MAJOR HONOURS</span><strong>${major}</strong><small>MONTH / SEASON</small></article><article><span>ALL AWARDS</span><strong>${awards.length}</strong><small>INCLUDING TEAM OF WEEK</small></article><article><span>MILESTONES</span><strong>${milestones.length}</strong><small>CAREER ACHIEVEMENTS</small></article></div><div class="player-accolade-timeline">${timeline}</div></section>`;
+    return `${renderWorldPressCareerStory(player)}<section class="player-accolades-panel" data-player-accolades="${escapeCareerHtml(player.id)}"><div class="career-section-head"><div><span>ACCOLADES & ACHIEVEMENTS</span><strong>CAREER HONOURS HISTORY</strong></div><p>Every award records the fixture, context and date so the operator develops a permanent career story.</p></div><div class="player-accolade-summary"><article><span>MAN OF THE MATCH</span><strong>${motm}</strong><small>CAREER AWARDS</small></article><article><span>MAJOR HONOURS</span><strong>${major}</strong><small>MONTH / SEASON</small></article><article><span>ALL AWARDS</span><strong>${awards.length}</strong><small>INCLUDING TEAM OF WEEK</small></article><article><span>MILESTONES</span><strong>${milestones.length}</strong><small>CAREER ACHIEVEMENTS</small></article></div><div class="player-accolade-timeline">${timeline}</div></section>`;
   }
 
   function renderWorldPressClubHonours() {

@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.203 — League Pulse**
-- Build ID: `12.203.0-league-pulse`
+- Build: **12.204 — Operator Career Story**
+- Build ID: `12.204.0-operator-career-story`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.203.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.204.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.204 adds a compact Operator Career Story above each accolade timeline, summarising appearances, wins, K/D, awards, best rating, milestones, seasons, clubs and the latest defining moment from existing career and world-press records. It adds no new persistence or award authority. See `AUDIT-12.204.md`.
 
 Build 12.203 adds League Pulse to the League page, exposing recent rival reports, scorelines, Man of the Match coverage, seasonal award leaders and the next opposition from the existing living press authority. It adds no fixture or award simulation path and does not duplicate Inbox stories. Gameplay and schemas are unchanged. See `AUDIT-12.203.md`.
 

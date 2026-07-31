@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.203 adds a living-world League Pulse with rival reports, Man of the Match leaders and next-opponent context sourced from the existing press system. See `HANDOFF.md` and `AUDIT-12.203.md`.
+Build 12.204 adds a compact Operator Career Story that turns existing performance, award and club history into a readable personal legacy summary. See `HANDOFF.md` and `AUDIT-12.204.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
