@@ -1,0 +1,71 @@
+=== compile and apply release patch ===
+Applied Build 12.229: Configuration Access & Mobile Mail Dismissal
+=== first deterministic build ===
+Built development bundle: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/strikewatch.dev.js
+Built standalone release: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.229.html
+Release size report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.229-size.json
+CSS debt report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.229-css-debt.json
+JavaScript raw reduction: 3.23%
+=== targeted and browser verification ===
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/00-core.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/10-audio.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/20-navigation.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/30-bot-ai.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/31-match-diagnostics.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/32-tactical-minimap.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/33-season-narrative-state.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/34-squad-dynamics.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/35-career.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/36-team-management.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/37-league.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/38-development.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-calendar-finance.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-club-operations.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-dynamic-market-mail.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-infrastructure.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-matchday.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-medical.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-opposition-intelligence.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-recruitment-commercial.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-transfers.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/39-workflow-integrity.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/40-match-flow.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/41-live-command-pulses.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/50-ui-menus.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/52-season-narratives.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/55-opening-week.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/56-world-press-awards.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/57-loadout-stills.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/60-renderer-core.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/61-world-renderer.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/62-character-renderer.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/63-viewmodel-renderer.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/64-reward-renderer.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/65-sky-dome.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/70-runtime.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/75-ui-clarity-hotfix.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/76-tactical-selection-feedback.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/77-mail-scroll-guard.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/78-management-status.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/79-save-checkpoints.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/80-durable-results.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/81-career-indexeddb.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/82-audit-recovery.js
++ node --check /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/strikewatch.dev.js
++ node --check /tmp/standalone-12.229-0.js
++ node --check /tmp/standalone-12.229-1.js
+Traceback (most recent call last):
+  File "/home/runner/work/idle-clicker-game/idle-clicker-game/.github/scripts/verify-12.229.py", line 226, in <module>
+    main()
+    ~~~~^^
+  File "/home/runner/work/idle-clicker-game/idle-clicker-game/.github/scripts/verify-12.229.py", line 220, in main
+    source_contracts()
+    ~~~~~~~~~~~~~~~~^^
+  File "/home/runner/work/idle-clicker-game/idle-clicker-game/.github/scripts/verify-12.229.py", line 103, in source_contracts
+    assert VERSION in text, f'{path.name} does not record {VERSION}'
+           ^^^^^^^^^^^^^^^
+AssertionError: CONTRACTS.md does not record 12.229
+
+workflow_run=30670269116
+workflow_attempt=1
+trigger_sha=ae168186271e8f0dfb60fd46db4f6f87b0312883
