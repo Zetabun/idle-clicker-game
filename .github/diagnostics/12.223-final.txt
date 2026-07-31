@@ -1,0 +1,31 @@
+anchor_count= 1
+=== patch ===
+Applied Build 12.223: Desktop Must Respond Layout
+exit=0
+=== build1 ===
+Built development bundle: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/strikewatch.dev.js
+Built standalone release: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.223.html
+Release size report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.223-size.json
+CSS debt report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.223-css-debt.json
+JavaScript raw reduction: 2.89%
+exit=0
+=== build2 ===
+Built development bundle: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/strikewatch.dev.js
+Built standalone release: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.223.html
+Release size report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.223-size.json
+CSS debt report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.223-css-debt.json
+JavaScript raw reduction: 2.89%
+exit=0
+=== bundle_cmp ===
+exit=0
+=== standalone_cmp ===
+exit=0
+=== node checks ===
+node_checks_done=1
+inline_scripts= 2
+compact_media= 10
+total_media= 483
+within_budget= True
+marker= True
+build_id= True
+=== inline node checks ===
