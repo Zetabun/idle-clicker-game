@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.213 clarifies section ownership: Ops handles immediate day work, Team owns telemetry, Equipment removes the redundant Supply Overview from its normal submenu, and low-frequency Gold and Configuration pages no longer crowd Club. See `AUDIT-12.213.md`.
+
 Build 12.212 removes the authored `open` state from the authoritative MUST RESPOND disclosure, so it is genuinely collapsed on first render rather than relying on a post-render observer. See `AUDIT-12.212.md`.
 
 Build 12.211 adds a dedicated full-screen boot presentation that masks incomplete layout while assets initialise, and makes MUST RESPOND disclosures collapsed when first rendered on mobile and desktop. See `AUDIT-12.211.md`.

@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.212 makes the authoritative MUST RESPOND disclosure render collapsed by default at source. See `HANDOFF.md` and `AUDIT-12.212.md`.
+Build 12.213 clarifies section ownership and reduces redundant mobile submenu items. See `HANDOFF.md` and `AUDIT-12.213.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -34,7 +34,6 @@
         { id: 'play', label: 'OVERVIEW', hint: 'Club overview and next actions', overview: true },
         { id: 'calendar', label: 'CALENDAR', hint: 'Matches, deadlines and club events' },
         { id: 'mail', label: 'INBOX', hint: 'Club messages and matchday mail' },
-        { id: 'telemetry', label: 'TEAM TELEMETRY', hint: 'Overall squad data' },
         { id: 'reports', label: 'AFTER ACTION', hint: 'Team and player debrief' }
       ]
     },
@@ -42,12 +41,13 @@
       label: 'TEAM',
       commandKicker: 'STRIKEWATCH // TEAM DEPARTMENT',
       commandTitle: 'TEAM DEPARTMENT',
-      description: 'Squad building, tactics, recruitment and contract activity.',
+      description: 'Squad identity, tactics, telemetry, recruitment and contracts.',
       defaultRoute: 'team-hub',
       routes: [
         { id: 'team-hub', label: 'OVERVIEW', hint: 'Team status and direct shortcuts', overview: true },
         { id: 'operators', label: 'SQUAD', hint: 'Line-up and contracts' },
         { id: 'tactics', label: 'TACTICS', hint: 'Formation and delegation' },
+        { id: 'telemetry', label: 'TELEMETRY', hint: 'Overall squad performance data' },
         { id: 'market', label: 'RECRUITMENT', hint: 'Scout available players' },
         { id: 'transfers', label: 'TRANSFERS', hint: 'Offers and negotiations' },
         { id: 'honours', label: 'HONOURS', hint: 'Awards, milestones and club records' },
@@ -73,7 +73,7 @@
       routes: [
         { id: 'armoury-hub', label: 'OVERVIEW', hint: 'Inventory and issue status', overview: true },
         { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, armour and individual player loadouts' },
-        { id: 'supplies-hub', label: 'SUPPLY OVERVIEW', hint: 'Balances, stock and purchasing shortcuts' },
+        { id: 'supplies-hub', label: 'SUPPLY OVERVIEW', hint: 'Balances, stock and purchasing shortcuts', contextOnly: true },
         { id: 'store', label: 'SUPPLY DEPOT', hint: 'Field crates, weapons, armour and future ammunition' }
       ]
     },
@@ -89,10 +89,10 @@
         { id: 'infrastructure', label: 'INFRASTRUCTURE', hint: 'Permanent club facilities and specialisation' },
         { id: 'staff', label: 'STAFF', hint: 'Assistant manager recruitment' },
         { id: 'barracks', label: 'FINANCES', hint: 'Cashflow, analytics and ledger' },
-        { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history' },
+        { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history', contextOnly: true },
         { id: 'commercial', label: 'COMMERCIAL', hint: 'Sponsors and partner income' },
         { id: 'supporters', label: 'FANS', hint: 'Supporter expectations, popularity and reactions' },
-        { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }
+        { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio', contextOnly: true }
       ]
     }
   };
