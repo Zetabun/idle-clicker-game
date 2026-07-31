@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.209 makes the contextual mobile header buttons use the authoritative menu route handler so they open their intended pages. See `HANDOFF.md` and `AUDIT-12.209.md`.
+Build 12.210 gives League a primary navigation slot and unifies Armoury and Supplies under Equipment without changing route or gameplay authority. See `HANDOFF.md` and `AUDIT-12.210.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

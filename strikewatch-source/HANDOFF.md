@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.209 — Mobile Header Button Fix**
-- Build ID: `12.209.0-mobile-header-button-fix`
+- Build: **12.210 — League and Equipment Navigation**
+- Build ID: `12.210.0-league-equipment-navigation`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.209.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.210.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.210 promotes League to the five-item primary navigation and consolidates Armoury plus Supplies under Equipment. Operations now focuses on daily work, while existing route and data authorities remain unchanged. See `AUDIT-12.210.md`.
 
 Build 12.209 wires the contextual mobile header buttons directly to the authoritative `setMenuRoute()` navigation path, so every visible submenu item now opens its intended page. See `AUDIT-12.209.md`.
 

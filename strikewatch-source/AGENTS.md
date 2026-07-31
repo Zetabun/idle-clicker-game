@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.210 promotes League to the five-item primary navigation and consolidates Armoury plus Supplies under Equipment. Operations now focuses on daily work, while existing route and data authorities remain unchanged. See `AUDIT-12.210.md`.
+
 Build 12.209 wires the contextual mobile header buttons directly to the authoritative `setMenuRoute()` navigation path, so every visible submenu item now opens its intended page. See `AUDIT-12.209.md`.
 
 Build 12.208 corrects the compact contextual header geometry so Back and Forward occupy fixed edge columns and the active department submenu fills the centre without clipping or overlap. See `AUDIT-12.208.md`.

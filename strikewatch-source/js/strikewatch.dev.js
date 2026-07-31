@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.209';
-  const BUILD_NAME = 'Mobile Header Button Fix';
-  const BUILD_ID = '12.209.0-mobile-header-button-fix';
+  const BUILD_VERSION = '12.210';
+  const BUILD_NAME = 'League and Equipment Navigation';
+  const BUILD_ID = '12.210.0-league-equipment-navigation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -34238,11 +34238,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       label: 'OPERATIONS',
       commandKicker: 'STRIKEWATCH // MATCH OPERATIONS',
       commandTitle: 'OPERATIONS DECK',
-      description: 'Today, competition, messages, telemetry and match review.',
+      description: 'Today, messages, telemetry and match review.',
       defaultRoute: 'play',
       routes: [
         { id: 'play', label: 'OVERVIEW', hint: 'Club overview and next actions', overview: true },
-        { id: 'league', label: 'LEAGUE', hint: 'Table, fixtures and promotion' },
         { id: 'calendar', label: 'CALENDAR', hint: 'Matches, deadlines and club events' },
         { id: 'mail', label: 'INBOX', hint: 'Club messages and matchday mail' },
         { id: 'telemetry', label: 'TEAM TELEMETRY', hint: 'Overall squad data' },
@@ -34265,25 +34264,26 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         { id: 'profile', label: 'PLAYER PROFILE', hint: 'History and full data', contextOnly: true }
       ]
     },
+    league: {
+      label: 'LEAGUE',
+      commandKicker: 'STRIKEWATCH // DIVISION COMPETITION',
+      commandTitle: 'LEAGUE CENTRE',
+      description: 'Standings, fixtures, rivals, objectives and promotion progress.',
+      defaultRoute: 'league',
+      routes: [
+        { id: 'league', label: 'LEAGUE CENTRE', hint: 'Table, fixtures, results, pulse and objectives', overview: true }
+      ]
+    },
     armoury: {
-      label: 'ARMOURY',
-      commandKicker: 'STRIKEWATCH // EQUIPMENT CONTROL',
-      commandTitle: 'ARMOURY CONTROL',
-      description: 'Weapon and armour inventory, comparisons and operator assignments.',
+      label: 'EQUIPMENT',
+      commandKicker: 'STRIKEWATCH // EQUIPMENT & SUPPLY',
+      commandTitle: 'EQUIPMENT CONTROL',
+      description: 'Inventory, operator loadouts, purchasing and field crates.',
       defaultRoute: 'armoury-hub',
       routes: [
         { id: 'armoury-hub', label: 'OVERVIEW', hint: 'Inventory and issue status', overview: true },
-        { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, armour and individual player loadouts' }
-      ]
-    },
-    supplies: {
-      label: 'SUPPLIES',
-      commandKicker: 'STRIKEWATCH // LOGISTICS NETWORK',
-      commandTitle: 'SUPPLY NETWORK',
-      description: 'Field crates, direct weapon purchases, armour and future consumable stock.',
-      defaultRoute: 'supplies-hub',
-      routes: [
-        { id: 'supplies-hub', label: 'OVERVIEW', hint: 'Balances, stock and Supply shortcuts', overview: true },
+        { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, armour and individual player loadouts' },
+        { id: 'supplies-hub', label: 'SUPPLY OVERVIEW', hint: 'Balances, stock and purchasing shortcuts' },
         { id: 'store', label: 'SUPPLY DEPOT', hint: 'Field crates, weapons, armour and future ammunition' }
       ]
     },
@@ -34613,7 +34613,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const badge = signal.count > 0
         ? `<b class="mobile-navigation-section-badge ${escapeCareerHtml(signal.tone || 'progress')}">${signal.count > 99 ? '99+' : signal.count}</b>`
         : access.state !== 'ready' ? `<b class="mobile-navigation-section-badge access">${escapeCareerHtml(access.state === 'locked' ? 'LOCK' : access.label)}</b>` : '';
-      const compactLabel = { operations: 'OPS', career: 'TEAM', armoury: 'GEAR', supplies: 'SUPPLY', systems: 'CLUB' }[sectionId] || section.label;
+      const compactLabel = { operations: 'OPS', career: 'TEAM', league: 'LEAGUE', armoury: 'EQUIP', systems: 'CLUB' }[sectionId] || section.label;
       return `<button type="button" class="mobile-navigation-section ${current ? 'active' : ''} ${escapeCareerHtml(access.state || 'ready')}" data-mobile-nav-section="${escapeCareerHtml(sectionId)}" aria-pressed="${current ? 'true' : 'false'}" title="${escapeCareerHtml(access.state === 'ready' ? section.description : access.reason)}"><span>${String(index + 1).padStart(2, '0')}</span><strong><i class="mobile-navigation-section-label-full">${escapeCareerHtml(section.label)}</i><i class="mobile-navigation-section-label-short">${escapeCareerHtml(compactLabel)}</i></strong>${badge}</button>`;
     }).join('');
   }
