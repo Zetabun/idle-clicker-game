@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.208';
-  const BUILD_NAME = 'Mobile Header Layout Fix';
-  const BUILD_ID = '12.208.0-mobile-header-layout-fix';
+  const BUILD_VERSION = '12.209';
+  const BUILD_NAME = 'Mobile Header Button Fix';
+  const BUILD_ID = '12.209.0-mobile-header-button-fix';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -34353,6 +34353,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       nav = document.createElement('nav');
       nav.className = 'mobile-header-submenu';
       nav.setAttribute('aria-label', 'Current section pages');
+      nav.addEventListener('click', event => {
+        const button = event.target.closest?.('[data-team-route]');
+        if (!button || !nav.contains(button)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setMenuRoute(String(button.dataset.teamRoute || ''));
+      });
       topbar.insertBefore(nav, topbar.querySelector('.manager-history-forward'));
     }
     const section = menuSections[sectionId] || menuSections.operations;

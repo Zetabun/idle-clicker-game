@@ -143,6 +143,13 @@
       nav = document.createElement('nav');
       nav.className = 'mobile-header-submenu';
       nav.setAttribute('aria-label', 'Current section pages');
+      nav.addEventListener('click', event => {
+        const button = event.target.closest?.('[data-team-route]');
+        if (!button || !nav.contains(button)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setMenuRoute(String(button.dataset.teamRoute || ''));
+      });
       topbar.insertBefore(nav, topbar.querySelector('.manager-history-forward'));
     }
     const section = menuSections[sectionId] || menuSections.operations;
