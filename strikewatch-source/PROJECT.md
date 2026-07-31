@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.214 keeps the detailed required-action panel only on Team > Squad while preserving the global End Day lock. See `HANDOFF.md` and `AUDIT-12.214.md`.
+Build 12.215 keeps the collapsible required-action panel only on Operations Overview while preserving the global End Day lock. See `HANDOFF.md` and `AUDIT-12.215.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.214';
-  const BUILD_NAME = 'Operator-Only Required Action';
-  const BUILD_ID = '12.214.0-operator-only-required-action';
+  const BUILD_VERSION = '12.215';
+  const BUILD_NAME = 'Ops-Only Required Action';
+  const BUILD_ID = '12.215.0-ops-only-required-action';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

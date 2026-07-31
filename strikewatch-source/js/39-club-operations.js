@@ -200,7 +200,7 @@
 
   function renderClubMustRespondStrip() {
     const blockers = clubEndDayBlockers();
-    if (!blockers.length || menuContext === 'pause' || menuTab !== 'operators') return '';
+    if (!blockers.length || menuContext === 'pause' || menuTab !== 'play') return '';
     const groups = new Map();
     for (const blocker of blockers) {
       const category = String(blocker.category || 'REQUIRED').toUpperCase();
