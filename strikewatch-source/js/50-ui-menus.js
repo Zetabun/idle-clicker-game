@@ -135,14 +135,31 @@
     return null;
   }
 
+  function renderMobileHeaderSubmenu(sectionId, routeId) {
+    const topbar = document.querySelector('#menuShell .manager-topbar');
+    if (!topbar) return;
+    let nav = topbar.querySelector('.mobile-header-submenu');
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.className = 'mobile-header-submenu';
+      nav.setAttribute('aria-label', 'Current section pages');
+      topbar.insertBefore(nav, topbar.querySelector('.manager-history-forward'));
+    }
+    const section = menuSections[sectionId] || menuSections.operations;
+    nav.innerHTML = (section.routes || []).filter(item => !item.contextOnly).map(item => `<button type="button" data-team-route="${escapeCareerHtml(item.id)}" class="${item.id === routeId ? 'active' : ''}" aria-current="${item.id === routeId ? 'page' : 'false'}">${escapeCareerHtml(item.label)}</button>`).join('');
+    requestAnimationFrame(() => nav.querySelector('button.active')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' }));
+  }
+
   function syncMobileContextualNavigationState(sectionId = menuSection, routeId = menuTab) {
     const shell = document.getElementById('menuShell');
     if (!shell) return;
     const resolvedSection = menuSections[sectionId] ? sectionId : 'operations';
+    const resolvedRoute = routeId || menuSections[resolvedSection].defaultRoute;
     shell.dataset.mobileSection = resolvedSection;
-    shell.dataset.mobileRoute = routeId || menuSections[resolvedSection].defaultRoute;
-    shell.classList.toggle('mobile-operations-overview', resolvedSection === 'operations' && shell.dataset.mobileRoute === 'play');
-    shell.classList.toggle('mobile-contextual-navigation', !(resolvedSection === 'operations' && shell.dataset.mobileRoute === 'play'));
+    shell.dataset.mobileRoute = resolvedRoute;
+    shell.classList.toggle('mobile-operations-overview', resolvedSection === 'operations' && resolvedRoute === 'play');
+    shell.classList.toggle('mobile-contextual-navigation', !(resolvedSection === 'operations' && resolvedRoute === 'play'));
+    renderMobileHeaderSubmenu(resolvedSection, resolvedRoute);
   }
 
   function menuVisibleRoutes(sectionId, includeContextRoute = true) {

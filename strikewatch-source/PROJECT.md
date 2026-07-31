@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.206 adds contextual compact navigation: Operations Overview keeps shortcuts and End Day, while every other mobile route uses the freed header space for its department submenu. See `HANDOFF.md` and `AUDIT-12.206.md`.
+Build 12.207 fixes the contextual mobile header so the current department route buttons visibly populate the freed space. See `HANDOFF.md` and `AUDIT-12.207.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

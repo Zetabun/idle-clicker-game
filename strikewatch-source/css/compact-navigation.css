@@ -309,3 +309,14 @@
   #menuShell.mobile-operations-overview .manager-topbar-actions{display:flex}
   #menuShell.mobile-operations-overview .manager-end-day-slot{display:block}
 }
+
+/* --- Build 12.207: populate contextual mobile header --------------------- */
+@media (max-width:760px){
+  #menuShell .mobile-header-submenu{display:none}
+  #menuShell.mobile-contextual-navigation .manager-topbar{grid-template-columns:42px minmax(0,1fr) 42px}
+  #menuShell.mobile-contextual-navigation .mobile-header-submenu{display:flex;grid-column:2;grid-row:1;min-width:0;gap:6px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;padding:1px 2px;align-items:center}
+  #menuShell.mobile-contextual-navigation .mobile-header-submenu::-webkit-scrollbar{display:none}
+  #menuShell.mobile-contextual-navigation .mobile-header-submenu button{flex:0 0 auto;min-height:38px;padding:8px 11px;border:1px solid rgba(127,163,190,.24);background:rgba(15,31,47,.88);color:#aabac6;font-size:10px;line-height:1;letter-spacing:.08em;white-space:nowrap}
+  #menuShell.mobile-contextual-navigation .mobile-header-submenu button.active{border-color:rgba(222,190,106,.68);background:rgba(88,69,29,.52);color:#fff3cf}
+  #menuShell.mobile-contextual-navigation .menu-subnav-shell{display:none!important}
+}
