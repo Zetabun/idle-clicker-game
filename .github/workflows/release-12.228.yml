@@ -181,19 +181,21 @@ jobs:
           html = f'''<!doctype html>
           <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{links}
           <style>
-          html,body{{margin:0;min-height:100%;}}
+          html,body{{margin:0;min-width:0!important;max-width:100%;min-height:100%;}}
           body{{overflow-x:auto!important;background:#07131d;}}
           #menuShell.audit-shell{{display:block!important;width:clamp(420px,42vw,680px)!important;max-width:calc(100vw - 32px)!important;min-height:0!important;margin:16px!important;position:static!important;}}
-          #menuContent.audit-content{{display:block!important;width:100%!important;min-height:0!important;overflow:visible!important;}}
-          .audit-content .club-mail-client,.audit-content .club-mail-layout,.audit-content .club-mail-column{{display:block!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;}}
-          .audit-content .club-mail-list{{display:grid!important;gap:12px!important;max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important;}}
-          .audit-content .club-mail-row{{width:100%!important;}}
+          .audit-shell > .menu-content{{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important;}}
+          #menuContent.audit-content{{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important;}}
+          .audit-content .club-mail-client,.audit-content .club-mail-layout,.audit-content .club-mail-column{{display:block!important;width:100%!important;max-width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-height:none!important;}}
+          .audit-content .club-mail-list{{display:grid!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:12px!important;max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important;}}
+          .audit-content .club-mail-row{{width:100%!important;max-width:100%!important;}}
           #audit-result{{display:none!important;}}
           </style></head>
           <body><section id="menuShell" class="menu-shell audit-shell"><div class="menu-content"><div id="menuContent" class="audit-content"><section class="club-mail-client" data-mail-presentation="inline"><div class="club-mail-layout"><aside class="club-mail-column"><section class="club-mail-list">{rows}</section></aside></div></section></div></div></section><pre id="audit-result"></pre>
           <script>
           addEventListener('load',()=>{{
             const tolerance=1;
+            const shell=document.getElementById('menuShell');
             const rows=[...document.querySelectorAll('[data-audit-state]')].map(row=>{{
               const state=row.dataset.auditState;
               const badge=row.querySelector('.club-mail-decision-badge,.club-mail-saved-badge,.club-mail-important');
@@ -219,7 +221,7 @@ jobs:
                 reserved:(parseFloat(rs.paddingRight)||0)>=requiredPadding
               }};
             }});
-            const result={{viewport:innerWidth,rows,documentNoOverflow:document.documentElement.scrollWidth<=innerWidth+1}};
+            const result={{viewport:innerWidth,rows,shellNoOverflow:shell.scrollWidth<=shell.clientWidth+1,documentNoOverflow:document.documentElement.scrollWidth<=innerWidth+1}};
             document.getElementById('audit-result').textContent=JSON.stringify(result);
           }});
           </script></body></html>'''
@@ -276,6 +278,7 @@ jobs:
           if not payload:
               raise SystemExit(f'{width}px: browser audit result missing')
           result = json.loads(payload)
+          assert result['shellNoOverflow'], result
           assert result['documentNoOverflow'], result
           assert len(result['rows']) == 3, result
           for row in result['rows']:
