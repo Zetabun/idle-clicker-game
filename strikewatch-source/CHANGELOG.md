@@ -4,6 +4,14 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.231 — Operations Today Typography and Contrast
+
+- Fixes supporting copy inheriting `button { font-weight: 900 }`, which read as a typeface change; weights now follow the house scale.
+- Promotes the former hover brightness to the resting state and adds a brighter hover above it.
+- Raises the card edge with an inset ring rather than `border-color`, which the skin flags and the debt gate rejected.
+- Puts card titles in caps to match every other headline in the command chrome.
+- See `AUDIT-12.231.md`.
+
 ## 12.230 — Operations Today Instrument Panel
 
 - Restyles Operations Today with line icons, accent rules and per-column status footers.

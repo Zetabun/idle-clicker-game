@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.230 — Operations Today Instrument Panel**
-- Build ID: `12.230.0-operations-today-instrument-panel`
+- Build: **12.231 — Operations Today Typography and Contrast**
+- Build ID: `12.231.0-operations-today-typography-and-contrast`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.230.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.231.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.231 is the review follow-up to 12.230. The reported "different font" was never a typeface change — the family is Inter on both sides. **These cards are `<button>` elements and `game.css` sets `button { font-weight: 900 }`**, so the supporting copy, which had no explicit weight, inherited 900 and rendered heavier than the title above it. Weights now follow the measured house scale: display headlines 700, all-caps kickers 900-950, supporting copy 400. **Anything inside a button on this surface needs an explicit weight or it silently becomes 900.** The former hover brightness is now the resting state and hover steps up again; card titles take caps like every other headline in the command chrome. The card edge is lifted with an inset `box-shadow` ring rather than `border-color`, because the skin flags `border` on a bare `button` (12.132) and doing it that way pushed the important-declaration count to 2271 against its 2270 ceiling — the gate rejected that build. Final debt: media 484/484, important 2269/2270. See `AUDIT-12.231.md`.
 
 Build 12.230 restyles Operations Today as an instrument panel: line icons, an accent rule under each label, a status footer with its own accent edge, and the date split from the week/season counter by a rule. Five things had to be worked around and are worth knowing before touching this surface. **`compact-navigation.css` declares its media queries BEFORE its base rules**, so a compact override there needs a `.command-today-panel` specificity prefix or it silently loses on source order — the mobile header stayed right-aligned for a whole pass because of this. **The Command Skin paints every `#menuContent > section[class]`** with a selector far more specific than one class, so the panel sets `--skin-panel-hi`/`--skin-panel-lo` instead of declaring a background. **A bare `button { background: … !important }` in `game.css`** means the card background is the one declaration here that must carry the flag. **Five columns never divide evenly**, so the layout is flex-wrap rather than `auto-fit` grid — a short final row stretches to fill instead of orphaning a dead quarter-row. And the status footer reserves two lines of height, because a wrapping value (`31 AUG 2026 · 23D`, at both 320px and 1280px) otherwise drags its accent rule out of line with the rest of the row. No new media queries: the debt gate was already at 484/484, so everything scales through `clamp()`. See `AUDIT-12.230.md`.
 
