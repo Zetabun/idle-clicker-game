@@ -1,0 +1,156 @@
+name: Release Build 12.223
+
+on:
+  push:
+    paths:
+      - '.github/triggers/release-12.223.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply release patch
+        run: python .github/scripts/release-12.223.py
+
+      - name: Build first copy
+        working-directory: strikewatch-source
+        run: |
+          python build.py
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.223.html /tmp/strikewatch-build-12.223.first.html
+
+      - name: Build second copy and verify determinism
+        working-directory: strikewatch-source
+        run: |
+          python build.py
+          cmp /tmp/strikewatch.dev.first.js js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build-12.223.first.html dist/strikewatch-build-12.223.html
+
+      - name: Parse modular and generated JavaScript
+        run: |
+          for file in strikewatch-source/js/*.js; do node --check "$file"; done
+
+      - name: Parse standalone inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('strikewatch-source/dist/strikewatch-build-12.223.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S)
+          if not scripts:
+              raise SystemExit('No inline scripts found')
+          for index, script in enumerate(scripts):
+              Path(f'/tmp/standalone-{index}.js').write_text(script, encoding='utf-8')
+          print(len(scripts))
+          PY
+          for file in /tmp/standalone-*.js; do node --check "$file"; done
+
+      - name: Targeted desktop disclosure checks
+        run: |
+          grep -F "Build 12.223: desktop MUST RESPOND disclosure correction" strikewatch-source/css/compact-navigation.css
+          grep -F "#menuContent .club-must-respond-strip[open] > .club-must-respond-body" strikewatch-source/css/compact-navigation.css
+          grep -F "#menuContent .club-must-respond-strip:not([open]) > .club-must-respond-body" strikewatch-source/css/compact-navigation.css
+          grep -F "@media (max-width: 1023px)" strikewatch-source/css/compact-navigation.css
+          grep -F "@media (min-width: 1024px)" strikewatch-source/css/compact-navigation.css
+          python - <<'PY'
+          from pathlib import Path
+          css = Path('strikewatch-source/css/compact-navigation.css').read_text(encoding='utf-8')
+          marker = 'Build 12.223: desktop MUST RESPOND disclosure correction'
+          block = css.split(marker, 1)[1]
+          assert '@media (min-width: 1024px)' in block
+          assert '#menuContent .club-must-respond-body > header' in block
+          assert 'display: none !important;' in block
+          assert 'grid-template-columns: minmax(0, 1fr) 28px !important;' in block
+          assert 'grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;' in block
+          assert css.index('@media (max-width: 1023px)') < css.index(marker)
+          PY
+
+      - name: Verify desktop computed layout in headless Chrome
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path.cwd()
+          source = root / 'strikewatch-source'
+          index = (source / 'index.html').read_text(encoding='utf-8')
+          links = '\n'.join(re.findall(r'<link rel="stylesheet"[^>]+>', index))
+          base = source.as_uri() + '/'
+          html = f'''<!doctype html>
+          <html><head><meta charset="utf-8"><base href="{base}">{links}
+          <style>
+          html,body{{margin:0!important;width:100%!important;min-height:100%!important;overflow:auto!important;background:#07131d!important}}
+          #menuShell.menu-shell{{display:block!important;position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;min-height:100vh!important}}
+          #menuShell .menu-content{{display:block!important;position:relative!important;width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;padding:24px!important}}
+          #menuContent{{display:block!important;width:100%!important;min-width:0!important;box-sizing:border-box!important}}
+          </style></head><body data-layout-pass="pending">
+          <div id="menuShell" class="menu-shell"><main class="menu-content"><div id="menuContent" class="has-urgent-management-action">
+          <details class="club-must-respond-strip" data-management-action-rank="urgent" open>
+            <summary><span><b>MUST RESPOND</b><strong>PLAY TODAY'S LEAGUE MATCH</strong><small>Southbank Recoil must be faced before the calendar can advance.</small></span><i aria-hidden="true"></i></summary>
+            <div class="club-must-respond-body"><header><span>MUST RESPOND</span><strong>1 ACTION REQUIRED BEFORE ENDING THE DAY</strong><small>Resolve this item before advancing the calendar.</small></header>
+              <div class="club-response-groups"><section class="club-response-group"><header><span>MATCHDAY</span><strong>1</strong></header><div><button><span>PLAY TODAY'S LEAGUE MATCH</span><small>Southbank Recoil must be faced before the calendar can advance.</small><b>OPEN →</b></button></div></section></div>
+            </div>
+          </details></div></main></div>
+          <script>
+          requestAnimationFrame(() => requestAnimationFrame(() => {{
+            const details = document.querySelector('.club-must-respond-strip');
+            const summary = details.querySelector(':scope > summary');
+            const body = details.querySelector(':scope > .club-must-respond-body');
+            const header = body.querySelector(':scope > header');
+            const dr = details.getBoundingClientRect();
+            const sr = summary.getBoundingClientRect();
+            const br = body.getBoundingClientRect();
+            const openPass = getComputedStyle(details).display === 'block'
+              && sr.width >= dr.width - 3
+              && br.width >= dr.width - 3
+              && br.top >= sr.bottom - 1
+              && getComputedStyle(header).display === 'none'
+              && details.scrollWidth <= details.clientWidth + 2;
+            details.removeAttribute('open');
+            const closedPass = getComputedStyle(body).display === 'none';
+            document.body.dataset.layoutPass = String(openPass && closedPass);
+            document.body.dataset.detailsDisplay = getComputedStyle(details).display;
+            document.body.dataset.closedBodyDisplay = getComputedStyle(body).display;
+          }}));
+          </script></body></html>'''
+          Path('/tmp/must-respond-desktop.html').write_text(html, encoding='utf-8')
+          PY
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          for width in 1024 1440; do
+            timeout 25s "$CHROME" --headless --no-sandbox --disable-gpu --allow-file-access-from-files --virtual-time-budget=2000 --window-size=${width},900 --dump-dom file:///tmp/must-respond-desktop.html > /tmp/must-respond-${width}.html
+            grep -F 'data-layout-pass="true"' /tmp/must-respond-${width}.html
+          done
+
+      - name: Publish standalone to root
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.223.html cod.html
+          cmp strikewatch-source/dist/strikewatch-build-12.223.html cod.html
+
+      - name: Remove temporary release files
+        run: |
+          rm .github/scripts/release-12.223.py
+          rm .github/workflows/release-12.223.yml
+          rm .github/triggers/release-12.223.txt
+
+      - name: Commit release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build 12.223: Desktop Must Respond Layout"
+          git push origin main
