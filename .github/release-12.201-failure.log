@@ -1,11 +1,6 @@
 Build 12.201 workflow failed.
-Run: https://github.com/Zetabun/idle-clicker-game/actions/runs/30629524388
-Commit: 09208bf4ea2a0567fb5e9306865d452c76d155e0
+Run: https://github.com/Zetabun/idle-clicker-game/actions/runs/30629597516
+Commit: 61f9f5e26e512bd2e9e7fc7fc71c7d20308833eb
 Predecessor release verified: {'version': '12.200', 'name': 'Single-Source Management Prompts', 'build_id': '12.200.0-single-source-management-prompts'}
 Applied Build 12.201: Mobile Action Hierarchy
-Traceback (most recent call last):
-  File "/home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/build.py", line 252, in <module>
-    main()
-  File "/home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/build.py", line 241, in main
-    raise RuntimeError(f"CSS debt budget exceeded: {css_report}")
-RuntimeError: CSS debt budget exceeded: {'version': '12.201', 'stylesheets': 23, 'total_lines': 32086, 'game_css_lines': 30724, 'important_declarations': 2182, 'media_queries': 476, 'stylesheet_order': ['game.css', 'deployment-readability.css', 'economy-guide.css', 'inbox-scroll.css', 'operator-portrait.css', 'command-chrome.css', 'combat-effectiveness.css', 'match-type.css', 'route-readability.css', 'management-grid.css', 'league-table.css', 'calendar-agenda.css', 'training-readability.css', 'training-programme.css', 'management-feedback.css', 'compact-readability.css', 'reward-reveal.css', 'armour-viewer.css', 'weapon-presentation.css', 'loadout-stills.css', '12.161-audit-fixes.css', 'armoury-inventory.css', 'compact-navigation.css'], 'owned_deployment_readability_lines': 57, 'owned_economy_guide_lines': 29, 'owned_inbox_scroll_lines': 19, 'owned_operator_portrait_lines': 103, 'owned_command_chrome_lines': 58, 'owned_combat_effectiveness_lines': 64, 'owned_match_type_lines': 25, 'owned_route_readability_lines': 105, 'owned_management_grid_lines': 28, 'owned_league_table_lines': 22, 'owned_calendar_agenda_lines': 45, 'owned_training_readability_lines': 28, 'owned_training_programme_lines': 21, 'owned_management_feedback_lines': 86, 'owned_compact_readability_lines': 16, 'owned_reward_reveal_lines': 16, 'owned_armour_viewer_lines': 28, 'owned_weapon_presentation_lines': 42, 'owned_loadout_stills_lines': 92, 'owned_armoury_inventory_lines': 139, 'owned_compact_navigation_lines': 186, 'budgets': {'game_css_lines_max': 30730, 'important_declarations_max': 2182, 'media_queries_max': 474}, 'within_budget': False}
+Build 12.201 CSS budget-normalisation tail anchor missing
