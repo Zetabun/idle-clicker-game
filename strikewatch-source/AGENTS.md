@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.208 corrects the compact contextual header geometry so Back and Forward occupy fixed edge columns and the active department submenu fills the centre without clipping or overlap. See `AUDIT-12.208.md`.
+
 Build 12.207 fixes the empty compact header introduced in 12.206 by rendering the active department's real route buttons directly between the Back and Forward controls. The active page is centred and highlighted; Operations Overview still retains its original shortcut header. See `AUDIT-12.207.md`.
 
 Build 12.206 turns the compact management header into contextual navigation. Operations Overview retains the universal shortcuts and End Day; every other mobile route hides the bulky header content and promotes the current department's route list into a sticky, horizontally scrollable top submenu. Desktop routing and gameplay are unchanged. See `AUDIT-12.206.md`.

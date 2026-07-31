@@ -320,3 +320,12 @@
   #menuShell.mobile-contextual-navigation .mobile-header-submenu button.active{border-color:rgba(222,190,106,.68);background:rgba(88,69,29,.52);color:#fff3cf}
   #menuShell.mobile-contextual-navigation .menu-subnav-shell{display:none!important}
 }
+
+/* --- Build 12.208: mobile header layout correction ----------------------- */
+@media (max-width:760px){
+  #menuShell.mobile-contextual-navigation .manager-topbar{display:grid!important;grid-template-columns:48px minmax(0,1fr) 48px!important;grid-template-rows:52px!important;align-items:stretch!important;width:100%!important;max-width:none!important;overflow:hidden!important;padding:0!important;gap:0!important}
+  #menuShell.mobile-contextual-navigation .manager-history-back{display:grid!important;grid-column:1!important;grid-row:1!important;position:static!important;width:48px!important;min-width:48px!important;height:52px!important;z-index:3!important}
+  #menuShell.mobile-contextual-navigation .manager-history-forward{display:grid!important;grid-column:3!important;grid-row:1!important;position:static!important;width:48px!important;min-width:48px!important;height:52px!important;z-index:3!important}
+  #menuShell.mobile-contextual-navigation .mobile-header-submenu{display:flex!important;grid-column:2!important;grid-row:1!important;position:static!important;min-width:0!important;width:100%!important;height:52px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:6px!important;gap:6px!important;align-items:center!important;box-sizing:border-box!important}
+  #menuShell.mobile-contextual-navigation .mobile-header-submenu button{min-height:40px!important;height:40px!important;flex:0 0 auto!important}
+}

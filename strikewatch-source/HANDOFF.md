@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.207 — Mobile Header Submenu Fix**
-- Build ID: `12.207.0-mobile-header-submenu-fix`
+- Build: **12.208 — Mobile Header Layout Fix**
+- Build ID: `12.208.0-mobile-header-layout-fix`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.207.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.208.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.208 corrects the compact contextual header geometry so Back and Forward occupy fixed edge columns and the active department submenu fills the centre without clipping or overlap. See `AUDIT-12.208.md`.
 
 Build 12.207 fixes the empty compact header introduced in 12.206 by rendering the active department's real route buttons directly between the Back and Forward controls. The active page is centred and highlighted; Operations Overview still retains its original shortcut header. See `AUDIT-12.207.md`.
 
