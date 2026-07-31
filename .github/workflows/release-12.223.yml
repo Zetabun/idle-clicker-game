@@ -25,7 +25,18 @@ jobs:
           node-version: '22'
 
       - name: Apply release patch
-        run: python .github/scripts/release-12.223.py
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/release-12.223.py')
+          text = path.read_text(encoding='utf-8')
+          old = "if css_text.count('@media') != 483:"
+          new = "if css_text.count('@media') != 10:"
+          if text.count(old) != 1:
+              raise SystemExit('release media assertion anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python .github/scripts/release-12.223.py
 
       - name: Build first copy
         working-directory: strikewatch-source
@@ -69,6 +80,7 @@ jobs:
           grep -F "@media (min-width: 1024px)" strikewatch-source/css/compact-navigation.css
           python - <<'PY'
           from pathlib import Path
+          import json
           css = Path('strikewatch-source/css/compact-navigation.css').read_text(encoding='utf-8')
           marker = 'Build 12.223: desktop MUST RESPOND disclosure correction'
           marker_index = css.index(marker)
@@ -86,8 +98,11 @@ jobs:
           ]
           for value in required:
               assert value in block, value
-          assert css.count('@media') == 483
+          assert css.count('@media') == 10
           assert css.index('@media (max-width: 1023px)') < marker_index
+          debt = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.223-css-debt.json').read_text(encoding='utf-8'))
+          assert debt['media_queries'] == 483
+          assert debt['within_budget'] is True
           standalone = Path('strikewatch-source/dist/strikewatch-build-12.223.html').read_text(encoding='utf-8')
           assert marker in standalone
           assert '12.223.0-desktop-must-respond-layout' in standalone
@@ -104,6 +119,7 @@ jobs:
           rm .github/workflows/release-12.223.yml
           rm .github/triggers/release-12.223.txt
           rm -f .github/diagnostics/12.223.txt
+          rm -f .github/diagnostics/12.223-retry.txt
 
       - name: Commit release
         run: |
