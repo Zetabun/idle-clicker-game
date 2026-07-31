@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.203 — League Pulse**.
+Current deployed build: **12.204 — Operator Career Story**.
 
 ## Concise agent workflow
 
