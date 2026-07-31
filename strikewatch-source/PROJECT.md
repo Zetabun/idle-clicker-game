@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.221 restores the desktop management interface to a full-width sidebar/content layout while preserving the compact/mobile presentation. See `HANDOFF.md` and `AUDIT-12.221.md`.
+Build 12.222 moves the full league fixture calendar into its own responsive submenu while preserving the single league schedule and standings authority. See `HANDOFF.md` and `AUDIT-12.222.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

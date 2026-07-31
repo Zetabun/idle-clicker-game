@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.221';
-  const BUILD_NAME = 'Desktop Management Layout Restoration';
-  const BUILD_ID = '12.221.0-desktop-management-layout-restoration';
+  const BUILD_VERSION = '12.222';
+  const BUILD_NAME = 'League Fixtures Submenu';
+  const BUILD_ID = '12.222.0-league-fixtures-submenu';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -20969,6 +20969,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }).join('');
   }
 
+  function renderLeagueFixturesTab() {
+    const league = ensureLeagueState();
+    if (!league) return renderCareerCreationTab();
+    const fixture = leagueNextFixture();
+    const opponent = leagueClubById(leagueFixtureOpponentId(fixture));
+    const userFixtures = (league.fixtures || []).filter(item => item.homeId === LEAGUE_USER_CLUB_ID || item.awayId === LEAGUE_USER_CLUB_ID);
+    const played = userFixtures.filter(item => item.played).length;
+    const remaining = Math.max(0, userFixtures.length - played);
+    const homeCount = userFixtures.filter(item => item.homeId === LEAGUE_USER_CLUB_ID).length;
+    const awayCount = Math.max(0, userFixtures.length - homeCount);
+    const complete = !fixture;
+    const nextTiming = complete
+      ? 'SEASON COMPLETE'
+      : (typeof clubDaysUntilFixture === 'function' && clubDaysUntilFixture() === 0
+        ? 'TODAY'
+        : `${typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : 0}D`);
+    return `${renderLeagueIntroduction()}
+      <div class="menu-hero career-hero league-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">${escapeCareerHtml(leagueCompetitionName())} · SEASON ${league.season}</div><h2>${complete ? 'FULL SEASON RESULTS' : `MATCHDAY ${fixture.matchday} · ${escapeCareerHtml(opponent?.name || 'TBD')}`}</h2><p>${complete ? 'The full campaign schedule and every recorded result are listed below.' : 'Review the complete home-and-away schedule without crowding the main League Overview.'}</p><div class="menu-pill-row"><span class="menu-pill">${played} PLAYED</span><span class="menu-pill">${remaining} REMAINING</span><span class="menu-pill">${homeCount} HOME</span><span class="menu-pill">${awayCount} AWAY</span></div></div><div class="menu-hero-side"><div class="menu-kicker">${complete ? 'CAMPAIGN STATUS' : 'NEXT FIXTURE'}</div><div class="menu-side-operator">${complete ? 'FT' : escapeCareerHtml(opponent?.short || 'TBD')}</div><p>${complete ? 'FINAL SCHEDULE' : `${escapeCareerHtml(opponent?.name || 'TBD')} · ${nextTiming}`}</p></div></div>
+      <section class="league-fixture-panel league-fixtures-route-panel"><div class="career-section-head"><div><span>SEASON CALENDAR</span><strong>YOUR FIXTURES & RESULTS</strong></div><p>All ${userFixtures.length} league matches remain connected to the existing schedule and standings authority.</p></div><div class="league-match-actions"><button type="button" data-team-route="league">BACK TO LEAGUE OVERVIEW</button></div><div class="league-fixture-list">${renderLeagueFixtures()}</div></section>`;
+  }
+
   function renderLeagueTab() {
     const league = ensureLeagueState();
     if (!league) return renderCareerCreationTab();
@@ -20984,16 +21005,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const keyPlayer = opponent?.roster?.slice().sort((a, b) => teamPlayerOverall(b) - teamPlayerOverall(a))[0] || null;
     const positionLabel = user?.played ? user.position : '—';
     return `${renderLeagueIntroduction()}
-      <nav class="league-section-jumps" aria-label="League page sections"><button type="button" data-team-scroll-target="#leagueOverview">OVERVIEW</button><button type="button" data-team-scroll-target="#leagueObjectives">OBJECTIVES</button><button type="button" data-team-scroll-target="#leaguePulse">PULSE</button><button type="button" data-team-scroll-target="#leagueTable">TABLE</button><button type="button" data-team-scroll-target="#leagueFixtures">FIXTURES</button></nav>
+      <nav class="league-section-jumps" aria-label="League overview sections"><button type="button" data-team-scroll-target="#leagueOverview">OVERVIEW</button><button type="button" data-team-scroll-target="#leagueObjectives">OBJECTIVES</button><button type="button" data-team-scroll-target="#leaguePulse">PULSE</button><button type="button" data-team-scroll-target="#leagueTable">TABLE</button></nav>
       <div id="leagueOverview" class="menu-hero career-hero league-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">${escapeCareerHtml(leagueCompetitionName())} · SEASON ${league.season}</div><h2>${complete ? 'FINAL TABLE' : `MATCHDAY ${fixture.matchday} · ${escapeCareerHtml(opponent?.name || 'TBD')}`}</h2><p>${complete ? 'The season is complete. Review the final standings, then begin a new campaign when the squad is ready.' : 'Play one scheduled fixture at a time. A match win earns three points; the highest total after 38 fixtures wins the division.'}</p><div class="menu-pill-row"><span class="menu-pill">POSITION ${positionLabel} / ${league.clubs.length}</span><span class="menu-pill">${user?.points || 0} POINTS</span><span class="menu-pill">${user?.played || 0} / ${leagueSeasonMatchCount(league.clubs.length)} PLAYED</span><span class="menu-pill">ROUND DIFF ${user?.roundDifference >= 0 ? '+' : ''}${user?.roundDifference || 0}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">${complete ? 'SEASON WINNER' : 'NEXT OPPONENT'}</div><div class="menu-side-operator">${complete ? escapeCareerHtml(leagueChampion()?.short || 'TBD') : escapeCareerHtml(opponent?.short || 'TBD')}</div><p>${complete ? escapeCareerHtml(leagueChampion()?.name || 'Finalising') : `${escapeCareerHtml(opponent?.style || 'BALANCED')} · RATING ${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}`}</p></div></div>
       ${renderLeaguePyramid()}
       <div id="leagueObjectives">${typeof renderBoardExpectations === 'function' ? renderBoardExpectations(false) : ''}</div>
       <div id="leaguePulse">${typeof renderWorldPressLeaguePulse === 'function' ? renderWorldPressLeaguePulse() : ''}</div>
       <section id="leagueTable" class="league-table-panel"><div class="career-section-head"><div><span>LIVE STANDINGS</span><strong>${escapeCareerHtml(leagueCompetitionName())} TABLE</strong></div><p>Wins are worth ${LEAGUE_POINTS_WIN} points. Round difference breaks ties.</p></div><div class="league-table-head"><span>#</span><span>CLUB</span><span>P</span><span>W</span><span>L</span><span>RD</span><span>FORM</span><span>PTS</span></div>${renderLeagueTableRows()}</section>
-      <div class="league-detail-grid">
-        <section class="league-opponent-panel" ${complete ? 'data-management-target-id="league:season-transition"' : ''}><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : escapeCareerHtml(opponent?.name || 'TBD')}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
-        <section id="leagueFixtures" class="league-fixture-panel"><div class="career-section-head compact"><div><span>SEASON CALENDAR</span><strong>YOUR FIXTURES</strong></div></div><div class="league-fixture-list">${renderLeagueFixtures()}</div></section>
-      </div>`;
+      <section class="league-opponent-panel" ${complete ? 'data-management-target-id="league:season-transition"' : ''}><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : escapeCareerHtml(opponent?.name || 'TBD')}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
+`;
   }
 
   function handleLeagueClick(event) {
@@ -34273,7 +34292,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       description: 'Standings, fixtures, rivals, objectives and promotion progress.',
       defaultRoute: 'league',
       routes: [
-        { id: 'league', label: 'LEAGUE CENTRE', hint: 'Table, fixtures, results, pulse and objectives', overview: true }
+        { id: 'league', label: 'OVERVIEW', hint: 'Table, opposition, pulse and objectives', overview: true },
+        { id: 'fixtures', label: 'FIXTURES', hint: 'Full season schedule and results' }
       ]
     },
     armoury: {
@@ -34312,6 +34332,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const menuTabMeta = {
     play: { title: 'COMMAND CENTRE', kicker: 'CLUB OVERVIEW & PRIORITIES' },
     league: { title: 'LEAGUE SYSTEM', kicker: 'DIVISION COMPETITION' },
+    fixtures: { title: 'LEAGUE FIXTURES', kicker: 'SCHEDULE & RESULTS' },
     calendar: { title: 'CLUB CALENDAR', kicker: 'MATCHES & DEADLINES' },
     mail: { title: 'CLUB INBOX', kicker: 'MESSAGES & CALENDAR' },
     telemetry: { title: 'TEAM TELEMETRY', kicker: 'OVERALL SQUAD LINK' },
@@ -36274,6 +36295,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         break;
       case 'league':
         menuContentEl.innerHTML = renderLeagueTab();
+        break;
+      case 'fixtures':
+        menuContentEl.innerHTML = renderLeagueFixturesTab();
         break;
       case 'calendar':
         menuContentEl.innerHTML = renderCalendarRouteTab();

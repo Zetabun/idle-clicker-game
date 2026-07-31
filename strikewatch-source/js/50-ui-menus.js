@@ -61,7 +61,8 @@
       description: 'Standings, fixtures, rivals, objectives and promotion progress.',
       defaultRoute: 'league',
       routes: [
-        { id: 'league', label: 'LEAGUE CENTRE', hint: 'Table, fixtures, results, pulse and objectives', overview: true }
+        { id: 'league', label: 'OVERVIEW', hint: 'Table, opposition, pulse and objectives', overview: true },
+        { id: 'fixtures', label: 'FIXTURES', hint: 'Full season schedule and results' }
       ]
     },
     armoury: {
@@ -100,6 +101,7 @@
   const menuTabMeta = {
     play: { title: 'COMMAND CENTRE', kicker: 'CLUB OVERVIEW & PRIORITIES' },
     league: { title: 'LEAGUE SYSTEM', kicker: 'DIVISION COMPETITION' },
+    fixtures: { title: 'LEAGUE FIXTURES', kicker: 'SCHEDULE & RESULTS' },
     calendar: { title: 'CLUB CALENDAR', kicker: 'MATCHES & DEADLINES' },
     mail: { title: 'CLUB INBOX', kicker: 'MESSAGES & CALENDAR' },
     telemetry: { title: 'TEAM TELEMETRY', kicker: 'OVERALL SQUAD LINK' },
@@ -2062,6 +2064,9 @@
         break;
       case 'league':
         menuContentEl.innerHTML = renderLeagueTab();
+        break;
+      case 'fixtures':
+        menuContentEl.innerHTML = renderLeagueFixturesTab();
         break;
       case 'calendar':
         menuContentEl.innerHTML = renderCalendarRouteTab();

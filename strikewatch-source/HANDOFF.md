@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.221 — Desktop Management Layout Restoration**
-- Build ID: `12.221.0-desktop-management-layout-restoration`
+- Build: **12.222 — League Fixtures Submenu**
+- Build ID: `12.222.0-league-fixtures-submenu`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.221.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.222.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.222 gives League a dedicated Fixtures submenu on both compact/mobile and desktop. The main League Overview keeps its next-opponent summary, objectives, pulse and table while the full 38-match schedule and results move to one focused route backed by the same league state. See `AUDIT-12.222.md`.
 
 Build 12.221 restores the desktop management shell to the full viewport with an explicit two-column sidebar/content grid at 1024px and wider. The correction is desktop-only and leaves compact/mobile navigation rules unchanged. See `AUDIT-12.221.md`.
 
