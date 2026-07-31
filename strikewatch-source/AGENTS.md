@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.223 repairs the expanded desktop MUST RESPOND disclosure. Its summary now occupies the full row, the action groups open beneath it, duplicate explanatory copy is suppressed on desktop, and the compact/mobile disclosure rules remain unchanged. See `AUDIT-12.223.md`.
+
 Build 12.222 gives League a dedicated Fixtures submenu on both compact/mobile and desktop. The main League Overview keeps its next-opponent summary, objectives, pulse and table while the full 38-match schedule and results move to one focused route backed by the same league state. See `AUDIT-12.222.md`.
 
 Build 12.221 restores the desktop management shell to the full viewport with an explicit two-column sidebar/content grid at 1024px and wider. The correction is desktop-only and leaves compact/mobile navigation rules unchanged. See `AUDIT-12.221.md`.

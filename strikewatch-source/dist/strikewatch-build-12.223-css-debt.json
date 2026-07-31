@@ -1,10 +1,10 @@
 {
   "version": "12.223",
   "stylesheets": 23,
-  "total_lines": 32445,
+  "total_lines": 32441,
   "game_css_lines": 30724,
   "important_declarations": 2262,
-  "media_queries": 484,
+  "media_queries": 483,
   "stylesheet_order": [
     "game.css",
     "deployment-readability.css",
@@ -50,11 +50,11 @@
   "owned_weapon_presentation_lines": 42,
   "owned_loadout_stills_lines": 92,
   "owned_armoury_inventory_lines": 139,
-  "owned_compact_navigation_lines": 545,
+  "owned_compact_navigation_lines": 541,
   "budgets": {
     "game_css_lines_max": 31090,
     "important_declarations_max": 2270,
     "media_queries_max": 483
   },
-  "within_budget": false
+  "within_budget": true
 }

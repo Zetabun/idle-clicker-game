@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.222';
-  const BUILD_NAME = 'League Fixtures Submenu';
-  const BUILD_ID = '12.222.0-league-fixtures-submenu';
+  const BUILD_VERSION = '12.223';
+  const BUILD_NAME = 'Desktop Must Respond Layout';
+  const BUILD_ID = '12.223.0-desktop-must-respond-layout';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
