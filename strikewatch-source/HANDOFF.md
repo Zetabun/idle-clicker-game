@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.211 — Loading Screen and Collapsed Actions**
-- Build ID: `12.211.0-loading-screen-collapsed-actions`
+- Build: **12.212 — Collapsed Must Respond**
+- Build ID: `12.212.0-collapsed-must-respond`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.211.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.212.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.212 removes the authored `open` state from the authoritative MUST RESPOND disclosure, so it is genuinely collapsed on first render rather than relying on a post-render observer. See `AUDIT-12.212.md`.
 
 Build 12.211 adds a dedicated full-screen boot presentation that masks incomplete layout while assets initialise, and makes MUST RESPOND disclosures collapsed when first rendered on mobile and desktop. See `AUDIT-12.211.md`.
 

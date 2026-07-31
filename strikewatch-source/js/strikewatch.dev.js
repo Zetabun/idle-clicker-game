@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.211';
-  const BUILD_NAME = 'Loading Screen and Collapsed Actions';
-  const BUILD_ID = '12.211.0-loading-screen-collapsed-actions';
+  const BUILD_VERSION = '12.212';
+  const BUILD_NAME = 'Collapsed Must Respond';
+  const BUILD_ID = '12.212.0-collapsed-must-respond';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -23024,7 +23024,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const first = blockers[0];
     const summaryLabel = blockers.length === 1 ? first.label : `${blockers.length} REQUIRED ACTIONS`;
     const summaryDetail = blockers.length === 1 ? first.detail : `${first.label} · ${blockers.length - 1} more`;
-    return `<details class="club-must-respond-strip" data-management-action-rank="urgent" aria-label="Actions required before ending the day" open><summary><span><b>MUST RESPOND</b><strong>${escapeCareerHtml(summaryLabel)}</strong><small>${escapeCareerHtml(summaryDetail)}</small></span><i aria-hidden="true"></i></summary><div class="club-must-respond-body"><header><span>MUST RESPOND</span><strong>${blockers.length} ACTION${blockers.length === 1 ? '' : 'S'} REQUIRED BEFORE ENDING THE DAY</strong><small>Resolve ${blockers.length === 1 ? 'this item' : 'these items'} before advancing the calendar.</small></header><div class="club-response-groups">${groupedMarkup}</div></div></details>`;
+    return `<details class="club-must-respond-strip" data-management-action-rank="urgent" aria-label="Actions required before ending the day"><summary><span><b>MUST RESPOND</b><strong>${escapeCareerHtml(summaryLabel)}</strong><small>${escapeCareerHtml(summaryDetail)}</small></span><i aria-hidden="true"></i></summary><div class="club-must-respond-body"><header><span>MUST RESPOND</span><strong>${blockers.length} ACTION${blockers.length === 1 ? '' : 'S'} REQUIRED BEFORE ENDING THE DAY</strong><small>Resolve ${blockers.length === 1 ? 'this item' : 'these items'} before advancing the calendar.</small></header><div class="club-response-groups">${groupedMarkup}</div></div></details>`;
   }
 
   function clubAddMail(subject, body, category = 'CLUB', important = false, actionRoute = null, options = null) {

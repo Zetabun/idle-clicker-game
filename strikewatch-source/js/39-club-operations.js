@@ -214,7 +214,7 @@
     const first = blockers[0];
     const summaryLabel = blockers.length === 1 ? first.label : `${blockers.length} REQUIRED ACTIONS`;
     const summaryDetail = blockers.length === 1 ? first.detail : `${first.label} · ${blockers.length - 1} more`;
-    return `<details class="club-must-respond-strip" data-management-action-rank="urgent" aria-label="Actions required before ending the day" open><summary><span><b>MUST RESPOND</b><strong>${escapeCareerHtml(summaryLabel)}</strong><small>${escapeCareerHtml(summaryDetail)}</small></span><i aria-hidden="true"></i></summary><div class="club-must-respond-body"><header><span>MUST RESPOND</span><strong>${blockers.length} ACTION${blockers.length === 1 ? '' : 'S'} REQUIRED BEFORE ENDING THE DAY</strong><small>Resolve ${blockers.length === 1 ? 'this item' : 'these items'} before advancing the calendar.</small></header><div class="club-response-groups">${groupedMarkup}</div></div></details>`;
+    return `<details class="club-must-respond-strip" data-management-action-rank="urgent" aria-label="Actions required before ending the day"><summary><span><b>MUST RESPOND</b><strong>${escapeCareerHtml(summaryLabel)}</strong><small>${escapeCareerHtml(summaryDetail)}</small></span><i aria-hidden="true"></i></summary><div class="club-must-respond-body"><header><span>MUST RESPOND</span><strong>${blockers.length} ACTION${blockers.length === 1 ? '' : 'S'} REQUIRED BEFORE ENDING THE DAY</strong><small>Resolve ${blockers.length === 1 ? 'this item' : 'these items'} before advancing the calendar.</small></header><div class="club-response-groups">${groupedMarkup}</div></div></details>`;
   }
 
   function clubAddMail(subject, body, category = 'CLUB', important = false, actionRoute = null, options = null) {

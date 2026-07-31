@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.212 removes the authored `open` state from the authoritative MUST RESPOND disclosure, so it is genuinely collapsed on first render rather than relying on a post-render observer. See `AUDIT-12.212.md`.
+
 Build 12.211 adds a dedicated full-screen boot presentation that masks incomplete layout while assets initialise, and makes MUST RESPOND disclosures collapsed when first rendered on mobile and desktop. See `AUDIT-12.211.md`.
 
 Build 12.210 promotes League to the five-item primary navigation and consolidates Armoury plus Supplies under Equipment. Operations now focuses on daily work, while existing route and data authorities remain unchanged. See `AUDIT-12.210.md`.

@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.211 masks startup layout with a dedicated loading screen and defaults MUST RESPOND disclosures to collapsed. See `HANDOFF.md` and `AUDIT-12.211.md`.
+Build 12.212 makes the authoritative MUST RESPOND disclosure render collapsed by default at source. See `HANDOFF.md` and `AUDIT-12.212.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
