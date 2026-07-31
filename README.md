@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.223 — Desktop Must Respond Layout**.
+Current deployed build: **12.227 — Desktop Inbox Preview Stability**.
 
 ## Concise agent workflow
 
