@@ -2086,6 +2086,11 @@
         if (candidateLabel && blockerLabels.has(candidateLabel)) candidate.remove();
       }
     }
+    const urgentSurface = menuContentEl.querySelector('[data-management-action-rank="urgent"]');
+    const recommendedSurface = urgentSurface ? null : menuContentEl.querySelector('.management-priority-strip');
+    menuContentEl.classList.toggle('has-urgent-management-action', Boolean(urgentSurface));
+    menuContentEl.classList.toggle('has-recommended-management-action', Boolean(recommendedSurface));
+    if (recommendedSurface) recommendedSurface.dataset.managementActionRank = 'recommended';
     const arrivalBanner = typeof renderManagementArrivalBanner === 'function' ? renderManagementArrivalBanner() : '';
     if (arrivalBanner) menuContentEl.insertAdjacentHTML('afterbegin', arrivalBanner);
     if (typeof applyManagementArrivalAfterRender === 'function') applyManagementArrivalAfterRender();

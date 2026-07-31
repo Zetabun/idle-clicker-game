@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.200 removes repeated management prompts on the Operations overview by making MUST RESPOND the single authoritative blocker surface while preserving every existing action route. See `HANDOFF.md` and `AUDIT-12.200.md`.
+Build 12.201 gives compact management pages one clear action hierarchy: collapsible urgent blockers first, otherwise one recommended priority. See `HANDOFF.md` and `AUDIT-12.201.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

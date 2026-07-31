@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.200';
-  const BUILD_NAME = 'Single-Source Management Prompts';
-  const BUILD_ID = '12.200.0-single-source-management-prompts';
+  const BUILD_VERSION = '12.201';
+  const BUILD_NAME = 'Mobile Action Hierarchy';
+  const BUILD_ID = '12.201.0-mobile-action-hierarchy';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -22962,7 +22962,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const actionId = typeof managementActionIdForBlocker === 'function' ? managementActionIdForBlocker(blocker) : '';
       return `<button ${actionId ? `data-management-action-id="${escapeCareerHtml(actionId)}"` : `data-team-route="${escapeCareerHtml(blocker.route)}"`}><span>${escapeCareerHtml(blocker.label)}</span><small>${escapeCareerHtml(blocker.detail)}</small><b>OPEN →</b></button>`;
     }).join('')}</div></section>`).join('');
-    return `<section class="club-must-respond-strip" aria-label="Actions required before ending the day"><header><span>MUST RESPOND</span><strong>${blockers.length} ACTION${blockers.length === 1 ? '' : 'S'} REQUIRED BEFORE ENDING THE DAY</strong><small>Each item explains why the calendar is locked. Resolve it and the list updates immediately.</small></header><div class="club-response-groups">${groupedMarkup}</div></section>`;
+    const first = blockers[0];
+    const summaryLabel = blockers.length === 1 ? first.label : `${blockers.length} REQUIRED ACTIONS`;
+    const summaryDetail = blockers.length === 1 ? first.detail : `${first.label} · ${blockers.length - 1} more`;
+    return `<details class="club-must-respond-strip" data-management-action-rank="urgent" aria-label="Actions required before ending the day" open><summary><span><b>MUST RESPOND</b><strong>${escapeCareerHtml(summaryLabel)}</strong><small>${escapeCareerHtml(summaryDetail)}</small></span><i aria-hidden="true"></i></summary><div class="club-must-respond-body"><header><span>MUST RESPOND</span><strong>${blockers.length} ACTION${blockers.length === 1 ? '' : 'S'} REQUIRED BEFORE ENDING THE DAY</strong><small>Resolve ${blockers.length === 1 ? 'this item' : 'these items'} before advancing the calendar.</small></header><div class="club-response-groups">${groupedMarkup}</div></div></details>`;
   }
 
   function clubAddMail(subject, body, category = 'CLUB', important = false, actionRoute = null, options = null) {
@@ -36234,6 +36237,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         if (candidateLabel && blockerLabels.has(candidateLabel)) candidate.remove();
       }
     }
+    const urgentSurface = menuContentEl.querySelector('[data-management-action-rank="urgent"]');
+    const recommendedSurface = urgentSurface ? null : menuContentEl.querySelector('.management-priority-strip');
+    menuContentEl.classList.toggle('has-urgent-management-action', Boolean(urgentSurface));
+    menuContentEl.classList.toggle('has-recommended-management-action', Boolean(recommendedSurface));
+    if (recommendedSurface) recommendedSurface.dataset.managementActionRank = 'recommended';
     const arrivalBanner = typeof renderManagementArrivalBanner === 'function' ? renderManagementArrivalBanner() : '';
     if (arrivalBanner) menuContentEl.insertAdjacentHTML('afterbegin', arrivalBanner);
     if (typeof applyManagementArrivalAfterRender === 'function') applyManagementArrivalAfterRender();

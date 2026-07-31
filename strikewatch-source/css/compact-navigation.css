@@ -91,3 +91,95 @@
     z-index: 1010;
   }
 }
+
+/* --- Build 12.201: compact management action hierarchy --------------------
+   One urgent surface remains visually dominant. MUST RESPOND uses native
+   disclosure semantics so the player can collapse it to a compact summary
+   after reading without losing the blocker count or primary action. */
+@media (max-width: 1023px) {
+  #menuContent.has-urgent-management-action > .club-must-respond-strip {
+    order: -30;
+  }
+
+  .club-must-respond-strip > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24px;
+    align-items: center;
+    gap: 10px;
+    min-height: 68px;
+    padding: 12px 14px;
+    cursor: pointer;
+    list-style: none;
+    touch-action: manipulation;
+  }
+
+  .club-must-respond-strip > summary::-webkit-details-marker { display: none; }
+  .club-must-respond-strip > summary > span {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+  .club-must-respond-strip > summary b {
+    font-size: 11px;
+    letter-spacing: .16em;
+  }
+  .club-must-respond-strip > summary strong {
+    font-size: 14px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .club-must-respond-strip > summary small {
+    font-size: 12px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .club-must-respond-strip > summary i {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    justify-self: end;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    opacity: .8;
+  }
+  .club-must-respond-strip > summary i::before,
+  .club-must-respond-strip > summary i::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 10px;
+    height: 2px;
+    background: currentColor;
+  }
+  .club-must-respond-strip > summary i::after {
+    transform: rotate(90deg);
+    transition: transform .16s ease;
+  }
+  .club-must-respond-strip[open] > summary i::after { transform: rotate(0deg); }
+  .club-must-respond-strip[open] > summary { border-bottom: 1px solid rgba(255,255,255,.10); }
+  .club-must-respond-strip:not([open]) .club-must-respond-body { display: none; }
+  .club-must-respond-strip[open] > summary small {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .club-must-respond-body > header small {
+    max-width: 52ch;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .club-must-respond-strip > summary {
+    min-height: 64px;
+    padding: 10px 12px;
+  }
+  .club-must-respond-strip > summary strong { font-size: 13px; }
+  .club-must-respond-body > header {
+    padding-top: 10px;
+  }
+  .club-must-respond-body > header small {
+    display: none;
+  }
+}

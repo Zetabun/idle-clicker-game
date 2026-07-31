@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.200 — Single-Source Management Prompts**
-- Build ID: `12.200.0-single-source-management-prompts`
+- Build: **12.201 — Mobile Action Hierarchy**
+- Build ID: `12.201.0-mobile-action-hierarchy`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.200.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.201.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.201 establishes a compact management action hierarchy. MUST RESPOND is the single urgent surface, uses a native disclosure summary on compact screens and can collapse without losing the blocker count or first action. When no urgent blocker exists, the existing priority strip is marked as the recommended action. Routes, blocker authority, gameplay and schemas are unchanged. See `AUDIT-12.201.md`.
 
 Build 12.200 makes management blockers single-source on the Operations overview. When MUST RESPOND is present, the generic priority strip is not rendered and later action cards that repeat the same blocker label are removed. The blocker list remains authoritative for matchday, transfer, sponsorship and other end-day locks; routes and actions are unchanged. See `AUDIT-12.200.md`.
 
