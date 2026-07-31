@@ -1,0 +1,345 @@
+name: Release Build 12.229
+
+on:
+  push:
+    paths:
+      - '.github/triggers/release-12.229.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strikewatch-release-12.229
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Configure release diagnostics
+        run: |
+          mkdir -p .github/diagnostics
+          : > .github/diagnostics/12.229.txt
+          cat > /tmp/release-step.sh <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          label="$1"
+          shift
+          {
+            echo "=== ${label} ==="
+            "$@"
+          } 2>&1 | tee -a .github/diagnostics/12.229.txt
+          SH
+          chmod +x /tmp/release-step.sh
+
+      - name: Verify predecessor and apply release patch
+        run: |
+          /tmp/release-step.sh "python compile release patch" python3 -m py_compile .github/scripts/release-12.229.py
+          /tmp/release-step.sh "apply release patch" python3 .github/scripts/release-12.229.py
+
+      - name: Compile build system
+        run: /tmp/release-step.sh "python compile build.py" python3 -m py_compile strikewatch-source/build.py
+
+      - name: Build first deterministic copy
+        run: |
+          /tmp/release-step.sh "first build" bash -lc 'cd strikewatch-source && python3 build.py'
+          cp strikewatch-source/js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp strikewatch-source/dist/strikewatch-build-12.229.html /tmp/strikewatch-build-12.229.first.html
+          cp strikewatch-source/dist/strikewatch-build-12.229-size.json /tmp/strikewatch-build-12.229-size.first.json
+          cp strikewatch-source/dist/strikewatch-build-12.229-css-debt.json /tmp/strikewatch-build-12.229-css-debt.first.json
+
+      - name: Parse modular and generated JavaScript
+        run: |
+          for file in strikewatch-source/js/*.js; do
+            /tmp/release-step.sh "node check ${file}" node --check "$file"
+          done
+          /tmp/release-step.sh "node check generated bundle" node --check strikewatch-source/js/strikewatch.dev.js
+
+      - name: Parse every standalone inline script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+
+          class ScriptCollector(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=False)
+                  self.scripts = []
+                  self.current = None
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() == 'script':
+                      self.current = []
+              def handle_data(self, data):
+                  if self.current is not None:
+                      self.current.append(data)
+              def handle_endtag(self, tag):
+                  if tag.lower() == 'script' and self.current is not None:
+                      self.scripts.append(''.join(self.current))
+                      self.current = None
+
+          html = Path('strikewatch-source/dist/strikewatch-build-12.229.html').read_text(encoding='utf-8')
+          parser = ScriptCollector()
+          parser.feed(html)
+          if not parser.scripts:
+              raise SystemExit('standalone contains no inline scripts')
+          for index, script in enumerate(parser.scripts):
+              Path(f'/tmp/standalone-12.229-{index}.js').write_text(script, encoding='utf-8')
+          print(f'extracted {len(parser.scripts)} inline scripts')
+          PY
+          for file in /tmp/standalone-12.229-*.js; do
+            /tmp/release-step.sh "node check ${file}" node --check "$file"
+          done
+
+      - name: Verify source and generated contracts
+        run: |
+          /tmp/release-step.sh "targeted source assertions" python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          menus = Path('strikewatch-source/js/50-ui-menus.js').read_text(encoding='utf-8')
+          visible = "{ id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }"
+          hidden = "{ id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio', contextOnly: true }"
+          assert menus.count(visible) == 1
+          assert hidden not in menus
+          assert "filter(item => !item.contextOnly)" in menus
+          assert "filter(route => !route.overview && !route.contextOnly)" in menus
+
+          mail = Path('strikewatch-source/js/39-club-operations.js').read_text(encoding='utf-8')
+          start = mail.index("      } else if (mail && modalAction.dataset.mailModalAction === 'mark-read') {")
+          end = mail.index("\n      }", start) + len("\n      }")
+          handler = mail[start:end]
+          for value in (
+              'mail.read = true;',
+              'careerState.selectedMailId = null;',
+              'saveCareerState();',
+              'updateMenuUI();',
+              'closeTeamNoteModal({ restoreFocus: false });',
+              "showStatus('EMAIL MARKED AS READ');",
+          ):
+              assert value in handler, value
+          assert handler.index('saveCareerState();') < handler.index('updateMenuUI();') < handler.index('closeTeamNoteModal({ restoreFocus: false });')
+          assert 'clubMailRowElement' not in handler
+          assert 'MESSAGE RETURNED TO INBOX' not in handler
+          assert 'data-mail-modal-action="mark-read"' in mail
+          assert "if (inlineReader) {\n      mail.read = true;" in mail
+
+          release = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          assert release == {
+              'version': '12.229',
+              'name': 'Configuration Access & Mobile Mail Dismissal',
+              'build_id': '12.229.0-configuration-access-mobile-mail-dismissal',
+          }
+          debt = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.229-css-debt.json').read_text(encoding='utf-8'))
+          assert debt['within_budget'] is True
+          assert debt['media_queries'] == 484, debt['media_queries']
+
+          standalone = Path('strikewatch-source/dist/strikewatch-build-12.229.html').read_text(encoding='utf-8')
+          for value in (
+              '12.229.0-configuration-access-mobile-mail-dismissal',
+              "{ id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }",
+              'closeTeamNoteModal({ restoreFocus: false });',
+          ):
+              assert value in standalone, value
+          PY
+
+      - name: Browser-check Configuration and mobile mail dismissal
+        run: |
+          /tmp/release-step.sh "create browser behaviour fixture" python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('strikewatch-source')
+          menus = (root / 'js/50-ui-menus.js').read_text(encoding='utf-8')
+          mail = (root / 'js/39-club-operations.js').read_text(encoding='utf-8')
+
+          menu_start = menus.index('  const menuSections = {')
+          menu_end = menus.index('\n\n  const menuTabMeta = {', menu_start)
+          menu_block = menus[menu_start:menu_end]
+
+          handler_start = mail.index('  function handleClubMailModalClick(event) {')
+          handler_end = mail.index('\n  function ', handler_start + 12)
+          handler_block = mail[handler_start:handler_end]
+
+          html = f'''<!doctype html>
+          <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+          <body>
+            <nav id="club-nav"></nav>
+            <div id="team-note" data-mode="mail" data-mail-id="mail-1">
+              <button id="mark-read" data-mail-modal-action="mark-read" data-mail-id="mail-1">MARK AS READ</button>
+            </div>
+            <pre id="audit-result"></pre>
+            <script>
+            {menu_block}
+            {handler_block}
+
+            const calls = [];
+            const mailRecord = {{ id: 'mail-1', read: false, saved: false }};
+            const careerState = {{ selectedMailId: 'mail-1' }};
+            const teamNoteOverlayEl = document.getElementById('team-note');
+            teamNoteOverlayEl.hidden = false;
+            let closeOptions = null;
+            function clubMailById(id) {{ return id === mailRecord.id ? mailRecord : null; }}
+            function clubMailDecisionForMessage() {{ return null; }}
+            function clubResolveDecision() {{ return false; }}
+            function openClubMailModal() {{ throw new Error('modal should not reopen'); }}
+            function clubTrimMailStore() {{ throw new Error('save toggle branch should not run'); }}
+            function saveCareerState() {{ calls.push('save'); }}
+            function updateMenuUI() {{ calls.push('update'); }}
+            function closeTeamNoteModal(options = {{}}) {{
+              closeOptions = options;
+              calls.push('close');
+              teamNoteOverlayEl.hidden = true;
+              teamNoteOverlayEl.dataset.mode = '';
+              delete teamNoteOverlayEl.dataset.mailId;
+            }}
+            function showStatus(message) {{ calls.push(`status:${{message}}`); }}
+            function clubMailRowElement() {{ throw new Error('removed mail row must not be focused'); }}
+            function setMenuRoute() {{ throw new Error('route branch should not run'); }}
+            function closeTeamNoteModalFromRoute() {{ throw new Error('route branch should not run'); }}
+
+            const visibleRoutes = menuSections.systems.routes.filter(route => !route.contextOnly);
+            const nav = document.getElementById('club-nav');
+            nav.innerHTML = visibleRoutes.map(route => `<button data-route="${{route.id}}">${{route.label}}</button>`).join('');
+            const handled = handleClubMailModalClick({{ target: document.getElementById('mark-read') }});
+            const result = {{
+              viewport: innerWidth,
+              configurationVisible: visibleRoutes.some(route => route.id === 'settings'),
+              configurationButtonVisible: Boolean(nav.querySelector('[data-route="settings"]')),
+              handled,
+              mailRead: mailRecord.read === true,
+              selectionCleared: careerState.selectedMailId === null,
+              modalHidden: teamNoteOverlayEl.hidden === true,
+              modalModeCleared: teamNoteOverlayEl.dataset.mode === '',
+              restoreFocusDisabled: closeOptions?.restoreFocus === false,
+              calls,
+              exactOrder: JSON.stringify(calls) === JSON.stringify(['save','update','close','status:EMAIL MARKED AS READ'])
+            }};
+            document.getElementById('audit-result').textContent = JSON.stringify(result);
+            </script>
+          </body></html>'''
+          (root / '.configuration-mail-audit.html').write_text(html, encoding='utf-8', newline='\n')
+          PY
+
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$BROWSER" ]; then
+            echo "No supported Chromium browser found on runner" | tee -a .github/diagnostics/12.229.txt
+            exit 1
+          fi
+          echo "browser=${BROWSER}" | tee -a .github/diagnostics/12.229.txt
+
+          for spec in 390x844 1440x900; do
+            width="${spec%x*}"
+            height="${spec#*x}"
+            /tmp/release-step.sh "browser behaviour ${spec}" "$BROWSER" \
+              --headless=new \
+              --no-sandbox \
+              --disable-gpu \
+              --allow-file-access-from-files \
+              --run-all-compositor-stages-before-draw \
+              --virtual-time-budget=1000 \
+              --window-size="${width},${height}" \
+              --dump-dom \
+              "file://${GITHUB_WORKSPACE}/strikewatch-source/.configuration-mail-audit.html" \
+              > "/tmp/configuration-mail-${spec}.html"
+            SPEC="$spec" python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import html
+          import json
+          import os
+
+          spec = os.environ['SPEC']
+          source = Path(f'/tmp/configuration-mail-{spec}.html').read_text(encoding='utf-8')
+
+          class ResultParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.inside = False
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if dict(attrs).get('id') == 'audit-result':
+                      self.inside = True
+              def handle_endtag(self, tag):
+                  if self.inside and tag == 'pre':
+                      self.inside = False
+              def handle_data(self, data):
+                  if self.inside:
+                      self.parts.append(data)
+
+          parser = ResultParser()
+          parser.feed(source)
+          payload = html.unescape(''.join(parser.parts)).strip()
+          if not payload:
+              raise SystemExit(f'{spec}: browser result missing')
+          result = json.loads(payload)
+          for key in (
+              'configurationVisible',
+              'configurationButtonVisible',
+              'handled',
+              'mailRead',
+              'selectionCleared',
+              'modalHidden',
+              'modalModeCleared',
+              'restoreFocusDisabled',
+              'exactOrder',
+          ):
+              assert result[key], f'{spec} failed {key}: {result}'
+          print(json.dumps(result, indent=2))
+          PY
+          done
+          rm strikewatch-source/.configuration-mail-audit.html
+
+      - name: Build second time and compare deterministic outputs
+        run: |
+          /tmp/release-step.sh "second build" bash -lc 'cd strikewatch-source && python3 build.py'
+          /tmp/release-step.sh "compare development bundle" cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
+          /tmp/release-step.sh "compare standalone" cmp /tmp/strikewatch-build-12.229.first.html strikewatch-source/dist/strikewatch-build-12.229.html
+          /tmp/release-step.sh "compare size report" cmp /tmp/strikewatch-build-12.229-size.first.json strikewatch-source/dist/strikewatch-build-12.229-size.json
+          /tmp/release-step.sh "compare CSS debt report" cmp /tmp/strikewatch-build-12.229-css-debt.first.json strikewatch-source/dist/strikewatch-build-12.229-css-debt.json
+
+      - name: Publish verified standalone to root
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.229.html cod.html
+          /tmp/release-step.sh "root standalone byte identity" cmp strikewatch-source/dist/strikewatch-build-12.229.html cod.html
+
+      - name: Remove temporary release files and successful diagnostics
+        run: |
+          rm .github/scripts/release-12.229.py
+          rm .github/workflows/release-12.229.yml
+          rm .github/triggers/release-12.229.txt
+          rm .github/diagnostics/12.229.txt
+
+      - name: Commit finished release to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build 12.229: Configuration Access & Mobile Mail Dismissal"
+          git push origin HEAD:main
+
+      - name: Commit failure ledger
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p .github/diagnostics
+          {
+            echo
+            echo "workflow_run=${GITHUB_RUN_ID}"
+            echo "workflow_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "trigger_sha=${GITHUB_SHA}"
+          } >> .github/diagnostics/12.229.txt
+          git add .github/diagnostics/12.229.txt
+          git commit -m "Record Build 12.229 release failure" || true
+          git push origin HEAD:main || true
