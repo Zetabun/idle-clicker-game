@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.218 — Mobile Information Architecture**
-- Build ID: `12.218.0-mobile-information-architecture`
+- Build: **12.219 — Ops Alert Indicator**
+- Build ID: `12.219.0-ops-alert-indicator`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.218.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.219.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.219 replaces the stretched Ops blocker marker with a fixed 18px circular alert indicator that cannot inherit the navigation tile's stretching or writing geometry. See `AUDIT-12.219.md`.
 
 Build 12.218 adds a sticky League section navigator, clarifies Equipment labels, reduces Club submenu crowding, and suppresses the duplicate recommended-action card whenever MUST RESPOND is active. See `AUDIT-12.218.md`.
 

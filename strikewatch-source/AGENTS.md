@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.219 replaces the stretched Ops blocker marker with a fixed 18px circular alert indicator that cannot inherit the navigation tile's stretching or writing geometry. See `AUDIT-12.219.md`.
+
 Build 12.218 adds a sticky League section navigator, clarifies Equipment labels, reduces Club submenu crowding, and suppresses the duplicate recommended-action card whenever MUST RESPOND is active. See `AUDIT-12.218.md`.
 
 Build 12.217 adds a compact red exclamation badge to the Ops bottom-navigation item whenever an End Day blocker exists, and removes the unused compact-header grid track between Help and End Day. See `AUDIT-12.217.md`.

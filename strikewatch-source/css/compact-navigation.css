@@ -332,7 +332,7 @@
 
 /* --- Build 12.217: Ops blocker badge and compact header gap fix ---------- */
 .menu-tab[data-section="operations"]{position:relative}
-.menu-tab[data-section="operations"].has-must-respond::before{content:"!";position:absolute;left:7px;top:7px;z-index:4;display:grid;place-items:center;width:17px;height:17px;border:1px solid rgba(255,190,180,.9);border-radius:50%;background:#b83e35;color:#fff;font-size:12px;font-weight:900;line-height:1;box-shadow:0 0 0 2px rgba(7,19,29,.8),0 2px 8px rgba(0,0,0,.35)}
+.menu-tab[data-section="operations"].has-must-respond::before{content:"!";position:absolute;inset:6px auto auto 6px;z-index:4;display:flex;align-items:center;justify-content:center;box-sizing:border-box;inline-size:18px;block-size:18px;min-inline-size:18px;max-inline-size:18px;min-block-size:18px;max-block-size:18px;padding:0;border:1px solid #ffd0c9;border-radius:999px;background:#c84439;color:#fff;font:900 12px/1 Arial,sans-serif;letter-spacing:0;writing-mode:horizontal-tb;transform:none;box-shadow:0 0 0 2px #07131d,0 2px 7px rgba(0,0,0,.4)}
 @media(max-width:760px){
   #menuShell.mobile-operations-overview .manager-topbar{grid-template-columns:48px auto auto minmax(118px,1fr) 48px!important;gap:0!important}
   #menuShell.mobile-operations-overview .manager-history-back{grid-column:1!important}
@@ -349,4 +349,4 @@
 .league-section-jumps button{flex:0 0 auto;min-height:38px;padding:8px 12px;border:1px solid rgba(116,170,198,.28);background:rgba(13,31,47,.88);color:#b9cad5;font-size:10px;letter-spacing:.11em;scroll-snap-align:start}
 .league-section-jumps button:first-child{border-color:rgba(222,190,106,.55);color:#fff1c8}
 #leagueOverview,#leagueObjectives,#leaguePulse,#leagueTable,#leagueFixtures{scroll-margin-top:62px}
-@media(max-width:760px){.league-section-jumps{position:sticky;top:52px;z-index:16;margin:0 -10px;padding:6px 10px;background:rgba(7,18,29,.96);border-bottom:1px solid rgba(116,170,198,.2)}.league-section-jumps button{min-height:40px}.menu-tab[data-section="operations"].has-must-respond::before{left:5px;top:5px}}
+@media(max-width:760px){.league-section-jumps{position:sticky;top:52px;z-index:16;margin:0 -10px;padding:6px 10px;background:rgba(7,18,29,.96);border-bottom:1px solid rgba(116,170,198,.2)}.league-section-jumps button{min-height:40px}.menu-tab[data-section="operations"].has-must-respond::before{inset:5px auto auto 5px}}

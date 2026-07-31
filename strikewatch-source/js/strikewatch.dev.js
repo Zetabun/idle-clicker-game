@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.218';
-  const BUILD_NAME = 'Mobile Information Architecture';
-  const BUILD_ID = '12.218.0-mobile-information-architecture';
+  const BUILD_VERSION = '12.219';
+  const BUILD_NAME = 'Ops Alert Indicator';
+  const BUILD_ID = '12.219.0-ops-alert-indicator';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

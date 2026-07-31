@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.218 improves mobile information architecture across League, Equipment, Club and Operations. See `HANDOFF.md` and `AUDIT-12.218.md`.
+Build 12.219 replaces the malformed Ops blocker marker with a stable compact alert badge. See `HANDOFF.md` and `AUDIT-12.219.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
