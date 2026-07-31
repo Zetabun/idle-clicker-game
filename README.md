@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.213 — Section Content Optimisation**.
+Current deployed build: **12.215 — Ops-Only Required Action**.
 
 ## Concise agent workflow
 
