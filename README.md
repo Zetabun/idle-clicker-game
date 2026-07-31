@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.219 — Ops Alert Indicator**.
+Current deployed build: **12.220 — Mobile Mail Read Control**.
 
 ## Concise agent workflow
 
