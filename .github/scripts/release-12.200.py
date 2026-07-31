@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-import re
-import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "strikewatch-source"
@@ -62,11 +60,6 @@ new_render = """    const contextTutorial = renderMenuContextTutorial(menuTab);
 """
 ui = replace_once(ui, old_render, new_render, "management prompt insertion")
 
-# The overview already contains the actionable dashboard card. When the calendar is
-# locked, the blocker list is the single authoritative prompt, so remove any later
-# duplicate card that repeats a blocker label. This is intentionally label-based and
-# scoped to the rendered management page, covering matchday, transfer, sponsor and
-# other blocker types without changing their underlying actions.
 anchor = """    if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
     const arrivalBanner = typeof renderManagementArrivalBanner === 'function' ? renderManagementArrivalBanner() : '';
 """
@@ -95,7 +88,6 @@ for old, new, label in [
     index = index.replace(old, new)
 write(index_path, index)
 
-# Update concise current-release wording without rewriting historical entries.
 release_note = (
     f"Build {NEW_VERSION} makes management blockers single-source on the Operations overview. "
     "When MUST RESPOND is present, the generic priority strip is not rendered and later action cards "
@@ -123,13 +115,18 @@ if marker not in agents:
 agents = agents.replace(marker, release_note + marker, 1)
 write(agents_path, agents)
 
-for filename in ("README.md", "PROJECT.md"):
-    path = SOURCE / filename
-    text = read(path)
-    text = text.replace(OLD_BUILD_ID, NEW_BUILD_ID).replace(f"Build {OLD_VERSION}", f"Build {NEW_VERSION}", 1)
-    if NEW_VERSION not in text:
-        fail(f"failed to update {filename}")
-    write(path, text)
+readme_path = SOURCE / "README.md"
+readme = read(readme_path)
+readme = replace_once(readme, f"# Strikewatch Source {OLD_VERSION}", f"# Strikewatch Source {NEW_VERSION}", "README title")
+readme = replace_once(readme, f"dist/strikewatch-build-{OLD_VERSION}.html", f"dist/strikewatch-build-{NEW_VERSION}.html", "README standalone path")
+write(readme_path, readme)
+
+project_path = SOURCE / "PROJECT.md"
+project = read(project_path)
+old_project = f"Build {OLD_VERSION} anchors nearby-wall blood to the surface that owns it: sliding-door marks move into their wall pockets, and unsupported corner specks are rejected without changing combat. See `HANDOFF.md` and `AUDIT-{OLD_VERSION}.md`."
+new_project = f"Build {NEW_VERSION} removes repeated management prompts on the Operations overview by making MUST RESPOND the single authoritative blocker surface while preserving every existing action route. See `HANDOFF.md` and `AUDIT-{NEW_VERSION}.md`."
+project = replace_once(project, old_project, new_project, "PROJECT current release")
+write(project_path, project)
 
 audit = f"""# Build {NEW_VERSION} audit — {NEW_NAME}
 
@@ -157,7 +154,6 @@ Save schema 19 and diagnostics schema 1 are unchanged.
 """
 write(SOURCE / f"AUDIT-{NEW_VERSION}.md", audit)
 
-# Source-level release assertions fail clearly if the intended behaviour drifts.
 updated_ui = read(ui_path)
 required_fragments = [
     "const priorityStrip = mustRespond ? '' : renderMenuPriorityStrip();",
