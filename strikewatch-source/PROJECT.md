@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.201 gives compact management pages one clear action hierarchy: collapsible urgent blockers first, otherwise one recommended priority. See `HANDOFF.md` and `AUDIT-12.201.md`.
+Build 12.202 adds a live Today timeline to the Operations overview, summarising fixtures, readiness, inbox, commitments and end-day state without duplicating blocker authority. See `HANDOFF.md` and `AUDIT-12.202.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

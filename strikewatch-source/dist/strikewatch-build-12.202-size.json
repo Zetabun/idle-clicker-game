@@ -1,0 +1,25 @@
+{
+  "version": "12.202",
+  "development_bundle": {
+    "raw_bytes": 3540316,
+    "gzip_bytes": 820611
+  },
+  "release_bundle": {
+    "raw_bytes": 3437611,
+    "gzip_bytes": 773173
+  },
+  "source_css": {
+    "raw_bytes": 1236291,
+    "gzip_bytes": 213966
+  },
+  "release_css": {
+    "raw_bytes": 1172357,
+    "gzip_bytes": 187474
+  },
+  "standalone": {
+    "raw_bytes": 4656479,
+    "gzip_bytes": 971751
+  },
+  "javascript_raw_reduction_percent": 2.9,
+  "css_raw_reduction_percent": 5.17
+}

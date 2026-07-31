@@ -1932,6 +1932,60 @@
     </section>`;
   }
 
+  function teamCommandTodayTimeline(fixture, squad, loan, wageBill) {
+    const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    const unread = typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
+    const importantUnread = (careerState.mail || []).filter(item => !item.read && item.important).length;
+    const points = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
+    const planConfirmed = typeof clubMatchPlanConfirmed === 'function' ? clubMatchPlanConfirmed() : false;
+    const matchToday = !fixture.complete && fixture.daysLabel === 'TODAY';
+    const trainingAttention = squad.medical.length > 0 || squad.fatigue >= 58 || points > 0 || Boolean(careerState.trainingRecommendation);
+    const financeCommitment = Math.max(0, Math.round(Number(wageBill) || 0)) + (loan.active ? Math.max(0, Math.round(Number(loan.due) || 0)) : 0);
+    const firstBlocker = blockers[0] || null;
+    return [
+      {
+        id: 'fixture', label: 'FIXTURE',
+        title: fixture.complete ? 'Season review due' : matchToday ? `${fixture.title} today` : `${fixture.title} in ${fixture.daysLabel.toLowerCase()}`,
+        detail: fixture.complete ? 'Review the final table and next-season state.' : `${fixture.location} · ${planConfirmed ? 'plan confirmed' : 'plan not confirmed'}`,
+        value: fixture.complete ? 'REVIEW' : fixture.daysLabel,
+        tone: fixture.complete ? 'complete' : matchToday ? (planConfirmed ? 'urgent' : 'attention') : 'scheduled',
+        route: fixture.complete ? 'league' : matchToday ? 'tactics' : 'calendar'
+      },
+      {
+        id: 'training', label: 'SQUAD',
+        title: trainingAttention ? 'Readiness needs attention' : 'Active five ready',
+        detail: `${squad.readiness} readiness · ${squad.fatigue}% fatigue · ${squad.medical.length} medical flag${squad.medical.length === 1 ? '' : 's'}`,
+        value: trainingAttention ? (points ? `${points} PTS` : 'CHECK') : 'READY',
+        tone: trainingAttention ? 'attention' : 'complete',
+        route: trainingAttention ? 'training' : 'operators'
+      },
+      {
+        id: 'mail', label: 'INBOX',
+        title: unread ? `${unread} unread club message${unread === 1 ? '' : 's'}` : 'Inbox clear',
+        detail: importantUnread ? `${importantUnread} marked important.` : unread ? 'New information is available.' : 'No unread decisions or reports.',
+        value: unread ? String(unread) : 'CLEAR',
+        tone: importantUnread ? 'attention' : unread ? 'scheduled' : 'complete',
+        route: 'mail'
+      },
+      {
+        id: 'finance', label: 'COMMITMENTS',
+        title: financeCommitment ? `${teamCredits(financeCommitment)} scheduled` : 'No scheduled collection',
+        detail: loan.active ? `${teamCredits(loan.due)} loan · ${teamCredits(wageBill)} payroll` : `${teamCredits(wageBill)} weekly payroll`,
+        value: loan.active ? escapeCareerHtml(loan.dueLabel) : 'PAYROLL',
+        tone: loan.tone === 'danger' ? 'urgent' : loan.tone === 'warning' ? 'attention' : 'scheduled',
+        route: 'barracks'
+      },
+      {
+        id: 'day', label: 'END DAY',
+        title: blockers.length ? `Calendar locked by ${blockers.length} response${blockers.length === 1 ? '' : 's'}` : 'Calendar ready to advance',
+        detail: blockers.length ? 'Use MUST RESPOND above for the authoritative action list.' : 'No mandatory decisions remain today.',
+        value: blockers.length ? `${blockers.length} LOCK` : 'READY',
+        tone: blockers.length ? 'urgent' : 'complete',
+        route: firstBlocker?.route || 'calendar'
+      }
+    ];
+  }
+
   function renderTeamOperationsDashboard(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu) {
     const ready = careerSquadReady();
     const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill();
@@ -1962,6 +2016,8 @@
       : '<div class="command-empty-lineup"><strong>NO ACTIVE OPERATORS SELECTED</strong><p>Recruit operators to populate the matchday readiness view.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>';
     const tutorialMarkup = renderTeamTutorialPanel();
     const calendarMarkup = typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : '';
+    const todayTimeline = teamCommandTodayTimeline(fixture, squad, loan, wageBill);
+    const todayTimelineMarkup = `<section class="command-today-panel" aria-label="Today at the club"><div class="career-section-head compact"><div><span>TODAY AT THE CLUB</span><strong>${typeof clubCurrentDateLabel === 'function' ? escapeCareerHtml(clubCurrentDateLabel(false)) : `WEEK ${careerState.week}`}</strong></div><p>One compact view of the fixture, squad, inbox, commitments and end-day state.</p></div><div class="command-today-grid">${todayTimeline.map(item => `<button class="command-today-item ${escapeCareerHtml(item.tone)}" data-team-route="${escapeCareerHtml(item.route)}" data-today-item="${escapeCareerHtml(item.id)}"><span>${escapeCareerHtml(item.label)}</span><strong>${escapeCareerHtml(item.title)}</strong><small>${escapeCareerHtml(item.detail)}</small><b>${escapeCareerHtml(item.value)}</b></button>`).join('')}</div></section>`;
     const heroMarkup = `<section class="command-centre-hero ${pauseMenu ? 'live' : ''} ${firstGuide ? 'guided-journey' : ''}">
         <div>
           <span>${pauseMenu ? (matchSimulationPaused ? 'LIVE MATCH PAUSED' : 'LIVE MATCH RUNNING') : 'MANAGER COMMAND CENTRE'}</span>
@@ -1986,7 +2042,7 @@
         : '';
       return `${tutorialMarkup}${heroMarkup}${guidedMatchMarkup}${progressMarkup}`;
     }
-    return `${tutorialMarkup}${calendarMarkup}${heroMarkup}${progressMarkup}
+    return `${tutorialMarkup}${calendarMarkup}${todayTimelineMarkup}${heroMarkup}${progressMarkup}
       <div class="command-overview-grid">
         <section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">
           <header><div><span>NEXT FIXTURE</span><strong>${escapeCareerHtml(fixture.title)}</strong><small>${escapeCareerHtml(fixture.location)} · ${escapeCareerHtml(fixture.dateLabel)}</small></div><b>${escapeCareerHtml(fixture.daysLabel)}</b></header>

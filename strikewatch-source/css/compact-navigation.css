@@ -183,3 +183,68 @@
     display: none;
   }
 }
+
+/* --- Build 12.202: Operations Today timeline ------------------------------ */
+.command-today-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(104, 196, 225, .24);
+  background: linear-gradient(145deg, rgba(10, 31, 45, .96), rgba(10, 20, 35, .96));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .22);
+}
+.command-today-panel .career-section-head { margin: 0; }
+.command-today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 178px), 1fr));
+  gap: 8px;
+}
+.command-today-item {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 5px;
+  min-width: 0;
+  min-height: 116px;
+  padding: 11px 12px;
+  text-align: left;
+  border: 1px solid rgba(132, 169, 195, .22);
+  background: rgba(18, 31, 49, .88);
+  overflow: hidden;
+}
+.command-today-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #4c95b7;
+}
+.command-today-item > span {
+  font-size: 10px;
+  letter-spacing: .16em;
+  color: #8fcfe8;
+}
+.command-today-item > strong {
+  font-size: 13px;
+  line-height: 1.25;
+  color: #f3f7fa;
+  overflow-wrap: anywhere;
+}
+.command-today-item > small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: #aebdca;
+  overflow-wrap: anywhere;
+}
+.command-today-item > b {
+  justify-self: start;
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: #d7eaf2;
+}
+.command-today-item.urgent::before { background: #ff806f; }
+.command-today-item.attention::before { background: #e7bd55; }
+.command-today-item.complete::before { background: #55c9a6; }
+.command-today-item.urgent > b { color: #ffab9f; }
+.command-today-item.attention > b { color: #f0d17d; }
+.command-today-item.complete > b { color: #79dfbd; }

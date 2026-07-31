@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.202 adds the Operations Today timeline: a compact, live summary of the next fixture, active-five readiness, unread mail, scheduled commitments and end-day readiness. It links into existing routes and deliberately points mandatory decisions back to the authoritative MUST RESPOND surface instead of creating another action authority. Gameplay, calendar rules and schemas are unchanged. See `AUDIT-12.202.md`.
+
 Build 12.201 establishes a compact management action hierarchy. MUST RESPOND is the single urgent surface, uses a native disclosure summary on compact screens and can collapse without losing the blocker count or first action. When no urgent blocker exists, the existing priority strip is marked as the recommended action. Routes, blocker authority, gameplay and schemas are unchanged. See `AUDIT-12.201.md`.
 
 Build 12.200 makes management blockers single-source on the Operations overview. When MUST RESPOND is present, the generic priority strip is not rendered and later action cards that repeat the same blocker label are removed. The blocker list remains authoritative for matchday, transfer, sponsorship and other end-day locks; routes and actions are unchanged. See `AUDIT-12.200.md`.
