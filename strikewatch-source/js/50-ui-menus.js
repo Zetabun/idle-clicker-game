@@ -166,6 +166,12 @@
     shell.dataset.mobileRoute = resolvedRoute;
     shell.classList.toggle('mobile-operations-overview', resolvedSection === 'operations' && resolvedRoute === 'play');
     shell.classList.toggle('mobile-contextual-navigation', !(resolvedSection === 'operations' && resolvedRoute === 'play'));
+    const operationsTab = shell.querySelector('.menu-tab[data-section="operations"]');
+    const blockerCount = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().length : 0;
+    if (operationsTab) {
+      operationsTab.classList.toggle('has-must-respond', blockerCount > 0);
+      operationsTab.setAttribute('data-must-respond-count', String(blockerCount));
+    }
     renderMobileHeaderSubmenu(resolvedSection, resolvedRoute);
   }
 

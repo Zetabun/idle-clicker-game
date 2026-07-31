@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.216 keeps both required-action presentations exclusively on Operations Overview. See `HANDOFF.md` and `AUDIT-12.216.md`.
+Build 12.217 adds an Ops blocker badge and removes the wasted compact-header gap beside End Day. See `HANDOFF.md` and `AUDIT-12.217.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

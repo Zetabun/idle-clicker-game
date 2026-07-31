@@ -172,9 +172,9 @@ def css_debt_report(version: str) -> dict:
         "owned_compact_navigation_lines": texts["compact-navigation.css"].count("\n"),
     }
     budgets = {
-        "game_css_lines_max": 31020,
-        "important_declarations_max": 2230,
-        "media_queries_max": 480,
+        "game_css_lines_max": 31055,
+        "important_declarations_max": 2240,
+        "media_queries_max": 481,
     }
     report["budgets"] = budgets
     report["within_budget"] = (

@@ -329,3 +329,16 @@
   #menuShell.mobile-contextual-navigation .mobile-header-submenu{display:flex!important;grid-column:2!important;grid-row:1!important;position:static!important;min-width:0!important;width:100%!important;height:52px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:6px!important;gap:6px!important;align-items:center!important;box-sizing:border-box!important}
   #menuShell.mobile-contextual-navigation .mobile-header-submenu button{min-height:40px!important;height:40px!important;flex:0 0 auto!important}
 }
+
+/* --- Build 12.217: Ops blocker badge and compact header gap fix ---------- */
+.menu-tab[data-section="operations"]{position:relative}
+.menu-tab[data-section="operations"].has-must-respond::before{content:"!";position:absolute;left:7px;top:7px;z-index:4;display:grid;place-items:center;width:17px;height:17px;border:1px solid rgba(255,190,180,.9);border-radius:50%;background:#b83e35;color:#fff;font-size:12px;font-weight:900;line-height:1;box-shadow:0 0 0 2px rgba(7,19,29,.8),0 2px 8px rgba(0,0,0,.35)}
+@media(max-width:760px){
+  #menuShell.mobile-operations-overview .manager-topbar{grid-template-columns:48px auto auto minmax(118px,1fr) 48px!important;gap:0!important}
+  #menuShell.mobile-operations-overview .manager-history-back{grid-column:1!important}
+  #menuShell.mobile-operations-overview .manager-balance-brand{grid-column:2!important}
+  #menuShell.mobile-operations-overview .manager-topbar-actions{grid-column:3!important}
+  #menuShell.mobile-operations-overview .manager-context{display:none!important}
+  #menuShell.mobile-operations-overview .manager-end-day-slot{grid-column:4!important;margin:0!important}
+  #menuShell.mobile-operations-overview .manager-history-forward{grid-column:5!important}
+}

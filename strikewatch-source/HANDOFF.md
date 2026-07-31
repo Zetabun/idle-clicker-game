@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.216 — Ops-Only Priority Card**
-- Build ID: `12.216.0-ops-only-priority-card`
+- Build: **12.217 — Ops Alert Badge and Header Gap Fix**
+- Build ID: `12.217.0-ops-alert-header-gap`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.216.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.217.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.217 adds a compact red exclamation badge to the Ops bottom-navigation item whenever an End Day blocker exists, and removes the unused compact-header grid track between Help and End Day. See `AUDIT-12.217.md`.
 
 Build 12.216 removes the separate global Required Action priority card from every non-Ops page. Both the priority card and the collapsible MUST RESPOND panel now have one home on Operations Overview only. See `AUDIT-12.216.md`.
 

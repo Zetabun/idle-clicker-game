@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.216';
-  const BUILD_NAME = 'Ops-Only Priority Card';
-  const BUILD_ID = '12.216.0-ops-only-priority-card';
+  const BUILD_VERSION = '12.217';
+  const BUILD_NAME = 'Ops Alert Badge and Header Gap Fix';
+  const BUILD_ID = '12.217.0-ops-alert-header-gap';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -34376,6 +34376,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     shell.dataset.mobileRoute = resolvedRoute;
     shell.classList.toggle('mobile-operations-overview', resolvedSection === 'operations' && resolvedRoute === 'play');
     shell.classList.toggle('mobile-contextual-navigation', !(resolvedSection === 'operations' && resolvedRoute === 'play'));
+    const operationsTab = shell.querySelector('.menu-tab[data-section="operations"]');
+    const blockerCount = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().length : 0;
+    if (operationsTab) {
+      operationsTab.classList.toggle('has-must-respond', blockerCount > 0);
+      operationsTab.setAttribute('data-must-respond-count', String(blockerCount));
+    }
     renderMobileHeaderSubmenu(resolvedSection, resolvedRoute);
   }
 
