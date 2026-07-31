@@ -52,6 +52,12 @@ jobs:
           python3 -m py_compile .github/scripts/release-12.202.py
           python3 .github/scripts/release-12.202.py
 
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('strikewatch-source/css/compact-navigation.css')
+          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
+
           cd strikewatch-source
           python3 -m py_compile build.py
           python3 build.py
