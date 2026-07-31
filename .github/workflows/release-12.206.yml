@@ -95,8 +95,26 @@ jobs:
           print('Targeted source checks and root artifact identity passed')
           PY
 
-          rm -f .github/scripts/release-12.206.py .github/workflows/release-12.206.yml .github/triggers/release-12.206.txt
+          rm -f .github/release-12.206-failure.log
+          rm -f .github/scripts/release-12.206.py
+          rm -f .github/workflows/release-12.206.yml
+          rm -f .github/triggers/release-12.206.txt
           git add -A
           git diff --cached --check
+          git status --short
           git commit -m "Build 12.206: Contextual Mobile Navigation"
+          git push origin main
+
+      - name: Publish failure ledger
+        if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git reset --hard HEAD
+          {
+            printf '%s\n' 'Build 12.206 workflow failed.' "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" "Commit: $GITHUB_SHA"
+            if test -f /tmp/release-12.206.log; then cat /tmp/release-12.206.log; else printf '%s\n' 'Build failed before the release log was initialised.'; fi
+          } > .github/release-12.206-failure.log
+          git add .github/release-12.206-failure.log
+          git commit -m "Record Build 12.206 release failure"
           git push origin main
