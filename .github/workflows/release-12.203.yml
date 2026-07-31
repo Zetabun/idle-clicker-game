@@ -37,11 +37,7 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-          expected = {
-              'version': '12.202',
-              'name': 'Today Timeline',
-              'build_id': '12.202.0-today-timeline',
-          }
+          expected = {'version': '12.202', 'name': 'Today Timeline', 'build_id': '12.202.0-today-timeline'}
           actual = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
           if actual != expected:
               raise SystemExit(f'Unexpected predecessor release: {actual!r}')
@@ -50,6 +46,11 @@ jobs:
 
           python3 -m py_compile .github/scripts/release-12.203.py
           python3 .github/scripts/release-12.203.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('strikewatch-source/css/compact-navigation.css')
+          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
 
           cd strikewatch-source
           python3 -m py_compile build.py
@@ -84,11 +85,7 @@ jobs:
           root = Path('.')
           src = root / 'strikewatch-source'
           release = json.loads((src / 'RELEASE.json').read_text(encoding='utf-8'))
-          expected = {
-              'version': '12.203',
-              'name': 'League Pulse',
-              'build_id': '12.203.0-league-pulse',
-          }
+          expected = {'version': '12.203', 'name': 'League Pulse', 'build_id': '12.203.0-league-pulse'}
           if release != expected:
               raise SystemExit(f'Unexpected completed release metadata: {release!r}')
           press = (src / 'js/56-world-press-awards.js').read_text(encoding='utf-8')
@@ -112,11 +109,7 @@ jobs:
           print('Build 12.203 source, deterministic build and artifact gates passed')
           PY
 
-          rm -f .github/release-12.203-failure.log
-          rm -f .github/scripts/release-12.203.py
-          rm -f .github/workflows/release-12.203.yml
-          rm -f .github/triggers/release-12.203.txt
-
+          rm -f .github/release-12.203-failure.log .github/scripts/release-12.203.py .github/workflows/release-12.203.yml .github/triggers/release-12.203.txt
           git add -A
           git diff --cached --check
           git status --short
