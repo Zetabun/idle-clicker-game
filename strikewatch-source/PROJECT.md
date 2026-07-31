@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.199 anchors nearby-wall blood to the surface that owns it: sliding-door marks move into their wall pockets, and unsupported corner specks are rejected without changing combat. See `HANDOFF.md` and `AUDIT-12.199.md`.
+Build 12.200 removes repeated management prompts on the Operations overview by making MUST RESPOND the single authoritative blocker surface while preserving every existing action route. See `HANDOFF.md` and `AUDIT-12.200.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

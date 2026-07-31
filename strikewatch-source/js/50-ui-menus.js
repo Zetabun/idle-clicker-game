@@ -2073,11 +2073,19 @@
         break;
     }
     const contextTutorial = renderMenuContextTutorial(menuTab);
-    const priorityStrip = renderMenuPriorityStrip();
+    const mustRespond = menuTab === 'play' && typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
+    const priorityStrip = mustRespond ? '' : renderMenuPriorityStrip();
     if (priorityStrip) menuContentEl.insertAdjacentHTML('afterbegin', priorityStrip);
     if (contextTutorial) menuContentEl.insertAdjacentHTML('afterbegin', contextTutorial);
-    const mustRespond = menuTab === 'play' && typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
-    if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+    if (mustRespond) {
+      menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+      const blockerLabels = new Set((typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : []).map(item => String(item?.label || '').trim().toUpperCase()).filter(Boolean));
+      for (const candidate of menuContentEl.querySelectorAll('.management-priority-strip, .career-next-action, .manager-next-action, [data-management-priority]')) {
+        if (candidate.closest('.club-must-respond-strip')) continue;
+        const candidateLabel = String(candidate.querySelector('strong')?.textContent || '').trim().toUpperCase();
+        if (candidateLabel && blockerLabels.has(candidateLabel)) candidate.remove();
+      }
+    }
     const arrivalBanner = typeof renderManagementArrivalBanner === 'function' ? renderManagementArrivalBanner() : '';
     if (arrivalBanner) menuContentEl.insertAdjacentHTML('afterbegin', arrivalBanner);
     if (typeof applyManagementArrivalAfterRender === 'function') applyManagementArrivalAfterRender();

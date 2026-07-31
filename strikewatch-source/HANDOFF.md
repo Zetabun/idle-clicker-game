@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.199 — Surface-Anchored Blood Decals**
-- Build ID: `12.199.0-surface-anchored-blood-decals`
+- Build: **12.200 — Single-Source Management Prompts**
+- Build ID: `12.200.0-single-source-management-prompts`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.199.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.200.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.200 makes management blockers single-source on the Operations overview. When MUST RESPOND is present, the generic priority strip is not rendered and later action cards that repeat the same blocker label are removed. The blocker list remains authoritative for matchday, transfer, sponsorship and other end-day locks; routes and actions are unchanged. See `AUDIT-12.200.md`.
 
 Build 12.199 owns blood surface attachment in `js/61-world-renderer.js`. Preserve `BLOOD_SURFACE_ATTACHMENT`, nearest visible-door-panel selection, material-local door coordinates, wall-pocket clipping, three-point static backing checks and `bloodSurfaceAttachmentForTest()`. Blood remains positive-health-damage-only, shared-raycast, within 1.25m, capped at 18 events, transient and cleared each round. Do not move collision, navigation, line of sight or damage authority into the renderer. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.199.md`.
 
