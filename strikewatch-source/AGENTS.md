@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.214 removes repeated red required-action panels from every route except Team > Squad (the operator page). The End Day lock and blocker authority remain global, but the detailed warning card now has one intentional home. See `AUDIT-12.214.md`.
+
 Build 12.213 clarifies section ownership: Ops handles immediate day work, Team owns telemetry, Equipment removes the redundant Supply Overview from its normal submenu, and low-frequency Gold and Configuration pages no longer crowd Club. See `AUDIT-12.213.md`.
 
 Build 12.212 removes the authored `open` state from the authoritative MUST RESPOND disclosure, so it is genuinely collapsed on first render rather than relying on a post-render observer. See `AUDIT-12.212.md`.

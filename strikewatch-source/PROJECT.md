@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.213 clarifies section ownership and reduces redundant mobile submenu items. See `HANDOFF.md` and `AUDIT-12.213.md`.
+Build 12.214 keeps the detailed required-action panel only on Team > Squad while preserving the global End Day lock. See `HANDOFF.md` and `AUDIT-12.214.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
