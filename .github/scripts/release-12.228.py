@@ -248,8 +248,10 @@ if 'decisionRequired ?' not in row_markup or 'item.saved ?' not in row_markup or
 expected_new_release = {'version': NEW, 'name': NEW_NAME, 'build_id': NEW_ID}
 if json.loads(read(release)) != expected_new_release:
     raise SystemExit('new RELEASE.json metadata does not match the build')
-for path in (core, inbox_css, index, handoff, agents, readme, project, architecture, changelog, audit):
+for path in (core, inbox_css, index, handoff, agents, readme, project, changelog, audit):
     if NEW not in read(path):
         raise SystemExit(f'{path.name}: new version is missing')
+if 'desktop row-status containment' not in read(architecture):
+    raise SystemExit('ARCHITECTURE.md did not record Inbox ownership')
 
 print(f'Applied Build {NEW}: {NEW_NAME}')
