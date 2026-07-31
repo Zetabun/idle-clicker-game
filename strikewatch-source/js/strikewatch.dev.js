@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.210';
-  const BUILD_NAME = 'League and Equipment Navigation';
-  const BUILD_ID = '12.210.0-league-equipment-navigation';
+  const BUILD_VERSION = '12.211';
+  const BUILD_NAME = 'Loading Screen and Collapsed Actions';
+  const BUILD_ID = '12.211.0-loading-screen-collapsed-actions';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -34386,7 +34386,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   let mobileNavigationSectionId = 'operations';
-  document.addEventListener('DOMContentLoaded', () => syncMobileContextualNavigationState());
+  function collapseMustRespondByDefault(root = document) {
+    for (const details of root.querySelectorAll?.('details[open]') || []) {
+      const summary = details.querySelector('summary');
+      if (/MUST\s+RESPOND/i.test(summary?.textContent || '')) details.removeAttribute('open');
+    }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    syncMobileContextualNavigationState();
+    collapseMustRespondByDefault();
+    const target = document.getElementById('menuContent');
+    if (target) new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node.nodeType === 1) collapseMustRespondByDefault(node.matches?.('details') ? node.parentElement : node);
+      }
+    }).observe(target, { childList: true, subtree: true });
+  });
   let mobileNavigationQuery = '';
   let mobileNavigationLastFocus = null;
   let mobileFirstMatchGuideCollapsed = false;

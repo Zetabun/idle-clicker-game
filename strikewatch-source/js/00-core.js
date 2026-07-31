@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.210';
-  const BUILD_NAME = 'League and Equipment Navigation';
-  const BUILD_ID = '12.210.0-league-equipment-navigation';
+  const BUILD_VERSION = '12.211';
+  const BUILD_NAME = 'Loading Screen and Collapsed Actions';
+  const BUILD_ID = '12.211.0-loading-screen-collapsed-actions';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

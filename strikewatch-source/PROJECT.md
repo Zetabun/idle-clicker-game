@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.210 gives League a primary navigation slot and unifies Armoury and Supplies under Equipment without changing route or gameplay authority. See `HANDOFF.md` and `AUDIT-12.210.md`.
+Build 12.211 masks startup layout with a dedicated loading screen and defaults MUST RESPOND disclosures to collapsed. See `HANDOFF.md` and `AUDIT-12.211.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

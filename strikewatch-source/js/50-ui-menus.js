@@ -176,7 +176,22 @@
   }
 
   let mobileNavigationSectionId = 'operations';
-  document.addEventListener('DOMContentLoaded', () => syncMobileContextualNavigationState());
+  function collapseMustRespondByDefault(root = document) {
+    for (const details of root.querySelectorAll?.('details[open]') || []) {
+      const summary = details.querySelector('summary');
+      if (/MUST\s+RESPOND/i.test(summary?.textContent || '')) details.removeAttribute('open');
+    }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    syncMobileContextualNavigationState();
+    collapseMustRespondByDefault();
+    const target = document.getElementById('menuContent');
+    if (target) new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node.nodeType === 1) collapseMustRespondByDefault(node.matches?.('details') ? node.parentElement : node);
+      }
+    }).observe(target, { childList: true, subtree: true });
+  });
   let mobileNavigationQuery = '';
   let mobileNavigationLastFocus = null;
   let mobileFirstMatchGuideCollapsed = false;
