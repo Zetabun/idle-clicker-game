@@ -1,6 +1,18 @@
 Build 12.201 workflow failed.
-Run: https://github.com/Zetabun/idle-clicker-game/actions/runs/30629597516
-Commit: 61f9f5e26e512bd2e9e7fc7fc71c7d20308833eb
+Run: https://github.com/Zetabun/idle-clicker-game/actions/runs/30629651868
+Commit: 4b0b405d4d2e848e29e034ca2f8ec42b754e23d6
 Predecessor release verified: {'version': '12.200', 'name': 'Single-Source Management Prompts', 'build_id': '12.200.0-single-source-management-prompts'}
 Applied Build 12.201: Mobile Action Hierarchy
-Build 12.201 CSS budget-normalisation tail anchor missing
+Built development bundle: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/strikewatch.dev.js
+Built standalone release: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.201.html
+Release size report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.201-size.json
+CSS debt report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.201-css-debt.json
+JavaScript raw reduction: 2.9%
+Parsed 1 standalone inline script block(s)
+Built development bundle: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/js/strikewatch.dev.js
+Built standalone release: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.201.html
+Release size report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.201-size.json
+CSS debt report: /home/runner/work/idle-clicker-game/idle-clicker-game/strikewatch-source/dist/strikewatch-build-12.201-css-debt.json
+JavaScript raw reduction: 2.9%
+Build 12.201 source, deterministic build and artifact gates passed
+strikewatch-source/css/compact-navigation.css:186: new blank line at EOF.
