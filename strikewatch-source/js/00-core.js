@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.231';
-  const BUILD_NAME = 'Operations Today Typography and Contrast';
-  const BUILD_ID = '12.231.0-operations-today-typography-and-contrast';
+  const BUILD_VERSION = '12.232';
+  const BUILD_NAME = 'Management Status Anchor Fix';
+  const BUILD_ID = '12.232.0-management-status-anchor-fix';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.231 — Operations Today Typography and Contrast**
-- Build ID: `12.231.0-operations-today-typography-and-contrast`
+- Build: **12.232 — Management Status Anchor Fix**
+- Build ID: `12.232.0-management-status-anchor-fix`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.231.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.232.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.232 fixes a misaligned management status toast. `css/management-feedback.css` centres it with a **pair** of declarations — `left: 50%` plus `transform: translate(-50%, …)` — and `css/12.161-audit-fixes.css` re-anchors it to the right edge for every viewport at or below 1100px via `inset: auto … auto`, **without overriding the transform**. The toast was therefore anchored right and then dragged left by half its own width: a constant 210px drift that put 140px of it off-screen at 500px wide and clipped the start of the message. The affected band was every width ≤1100px except portrait ≤430px, where `css/compact-navigation.css` loads later and re-declares both halves correctly — so landscape phones, tablets and small desktop windows were all wrong, including the 844×390 check named below. **Anchoring and transform are one decision on this element: any rule touching `left`, `right` or `inset` must set `transform` in the same breath.** Fixed with two declarations in the block that changed the anchoring; the >1100px centred layout is untouched. See `AUDIT-12.232.md`.
 
 Build 12.231 is the review follow-up to 12.230. The reported "different font" was never a typeface change — the family is Inter on both sides. **These cards are `<button>` elements and `game.css` sets `button { font-weight: 900 }`**, so the supporting copy, which had no explicit weight, inherited 900 and rendered heavier than the title above it. Weights now follow the measured house scale: display headlines 700, all-caps kickers 900-950, supporting copy 400. **Anything inside a button on this surface needs an explicit weight or it silently becomes 900.** The former hover brightness is now the resting state and hover steps up again; card titles take caps like every other headline in the command chrome. The card edge is lifted with an inset `box-shadow` ring rather than `border-color`, because the skin flags `border` on a bare `button` (12.132) and doing it that way pushed the important-declaration count to 2271 against its 2270 ceiling — the gate rejected that build. Final debt: media 484/484, important 2269/2270. See `AUDIT-12.231.md`.
 

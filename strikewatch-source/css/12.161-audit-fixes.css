@@ -60,6 +60,17 @@ button, [role="button"], a, input, select, textarea { touch-action: manipulation
     inset: auto max(10px, env(safe-area-inset-right)) max(76px, calc(env(safe-area-inset-bottom) + 68px)) auto;
     max-width: min(420px, calc(100vw - 20px));
   }
+  /* Build 12.232: the `inset` above sets `left: auto`, re-anchoring the toast to
+     the right edge — but `management-feedback.css` centres it with
+     `left: 50%` PLUS `transform: translate(-50%, …)`, and only the `left` half
+     of that pair was being overridden here. The translate survived, so the
+     right-anchored toast was then dragged left by half its own width: a
+     constant 210px of drift that pushed 140px of it off-screen at 500px wide
+     and clipped the message text.
+     Anything that changes this element's anchoring must change its transform in
+     the same breath. */
+  .management-status { transform: translateY(10px); }
+  .management-status.show { transform: translateY(0); }
   .management-status button { padding: 10px 12px; }
 }
 

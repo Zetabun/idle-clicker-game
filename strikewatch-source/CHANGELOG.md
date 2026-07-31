@@ -4,6 +4,14 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.232 — Management Status Anchor Fix
+
+- Fixes the management status toast drifting 210px left of its anchor on every viewport at or below 1100px.
+- Cause: `12.161-audit-fixes.css` re-anchored it right without overriding the centring transform it inherited.
+- Clipped up to 140px of the message off-screen below ~640px, affecting landscape phones, tablets and small desktop windows.
+- Desktop centred layout above 1100px is unchanged.
+- See `AUDIT-12.232.md`.
+
 ## 12.231 — Operations Today Typography and Contrast
 
 - Fixes supporting copy inheriting `button { font-weight: 900 }`, which read as a typeface change; weights now follow the house scale.
