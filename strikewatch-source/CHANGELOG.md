@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.230 — Operations Today Instrument Panel
+
+- Restyles Operations Today with line icons, accent rules and per-column status footers.
+- Splits the header date from the week/season counter, and the fixture/squad detail into separate lines.
+- Replaces the hairline dividers with real card separation on a near-black housing, plus a subtle per-tone card gradient.
+- Uses flex-wrap so a short final row stretches instead of orphaning; reserves footer height so status rules stay aligned.
+- Adds no media queries and no assets; icons are inline SVG on the existing convention.
+- See `AUDIT-12.230.md`.
+
 ## 12.229 — Configuration Access & Mobile Mail Dismissal
 
 - Restores Configuration as a normal Club route in desktop and compact/mobile navigation.

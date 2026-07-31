@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.229';
-  const BUILD_NAME = 'Configuration Access & Mobile Mail Dismissal';
-  const BUILD_ID = '12.229.0-configuration-access-mobile-mail-dismissal';
+  const BUILD_VERSION = '12.230';
+  const BUILD_NAME = 'Operations Today Instrument Panel';
+  const BUILD_ID = '12.230.0-operations-today-instrument-panel';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -19576,6 +19576,27 @@
     </section>`;
   }
 
+  // Build 12.230: line icons for the Operations Today strip. Inline SVG on the
+  // same 24-unit grid and stroke convention the onboarding pills already use,
+  // so this adds no asset and no new drawing authority. `currentColor` lets a
+  // glyph inherit whichever tone colour its column carries.
+  const COMMAND_TODAY_ICONS = Object.freeze({
+    calendar: '<rect x="3.5" y="5" width="17" height="15"></rect><path d="M3.5 10h17M8 3.2v3.6M16 3.2v3.6"></path>',
+    squad: '<circle cx="9" cy="8.5" r="3"></circle><path d="M3.5 19.5c.6-3.9 2.6-5.8 5.5-5.8s4.9 1.9 5.5 5.8"></path><path d="M16 6.4a2.8 2.8 0 0 1 0 5.4M17.4 19.5c-.3-2.4-1-4-2.2-4.9"></path>',
+    mail: '<rect x="3" y="5.5" width="18" height="13"></rect><path d="M3 7l9 6.2L21 7"></path>',
+    ledger: '<path d="M7 4.5h10a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1z"></path><path d="M9.5 3.2h5v2.6h-5z"></path><path d="M9 11h6M9 15h4"></path>',
+    advance: '<path d="M4 5.5l7 6.5-7 6.5zM13 5.5l7 6.5-7 6.5z"></path>',
+    clock: '<circle cx="12" cy="12" r="8.2"></circle><path d="M12 7.2V12l3.2 2"></path>',
+    star: '<path d="M12 3.8l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 17.2 6.7 20l1.1-5.9-4.3-4.1 5.9-.8z"></path>',
+    check: '<circle cx="12" cy="12" r="8.2"></circle><path d="M8.2 12.2l2.7 2.7 5-5.4"></path>',
+    alert: '<path d="M12 3.6l9 15.8H3z"></path><path d="M12 9.6v4M12 16.4v.1"></path>'
+  });
+
+  function commandTodayIcon(name) {
+    const paths = COMMAND_TODAY_ICONS[name] || COMMAND_TODAY_ICONS.calendar;
+    return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
+  }
+
   function teamCommandTodayTimeline(fixture, squad, loan, wageBill) {
     const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
     const unread = typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
@@ -19588,42 +19609,55 @@
     const firstBlocker = blockers[0] || null;
     return [
       {
-        id: 'fixture', label: 'FIXTURE',
+        id: 'fixture', label: 'FIXTURE', icon: 'calendar',
         title: fixture.complete ? 'Season review due' : matchToday ? `${fixture.title} today` : `${fixture.title} in ${fixture.daysLabel.toLowerCase()}`,
-        detail: fixture.complete ? 'Review the final table and next-season state.' : `${fixture.location} · ${planConfirmed ? 'plan confirmed' : 'plan not confirmed'}`,
+        // Build 12.230: the location and the plan state are two separate facts
+        // and were previously run together into one dot-joined sentence. Split
+        // so the column reads as a heading with a status beneath it.
+        detail: fixture.complete ? 'Review the final table and next-season state.' : fixture.location,
+        note: fixture.complete ? '' : planConfirmed ? 'Plan confirmed' : 'Plan not confirmed',
         value: fixture.complete ? 'REVIEW' : fixture.daysLabel,
+        valueIcon: fixture.complete ? 'check' : matchToday ? 'alert' : 'clock',
         tone: fixture.complete ? 'complete' : matchToday ? (planConfirmed ? 'urgent' : 'attention') : 'scheduled',
         route: fixture.complete ? 'league' : matchToday ? 'tactics' : 'calendar'
       },
       {
-        id: 'training', label: 'SQUAD',
+        id: 'training', label: 'SQUAD', icon: 'squad',
         title: trainingAttention ? 'Readiness needs attention' : 'Active five ready',
-        detail: `${squad.readiness} readiness · ${squad.fatigue}% fatigue · ${squad.medical.length} medical flag${squad.medical.length === 1 ? '' : 's'}`,
+        detail: `${squad.readiness} readiness · ${squad.fatigue}% fatigue`,
+        note: `${squad.medical.length} medical flag${squad.medical.length === 1 ? '' : 's'}`,
         value: trainingAttention ? (points ? `${points} PTS` : 'CHECK') : 'READY',
+        valueIcon: trainingAttention ? (points ? 'star' : 'alert') : 'check',
         tone: trainingAttention ? 'attention' : 'complete',
         route: trainingAttention ? 'training' : 'operators'
       },
       {
-        id: 'mail', label: 'INBOX',
+        id: 'mail', label: 'INBOX', icon: 'mail',
         title: unread ? `${unread} unread club message${unread === 1 ? '' : 's'}` : 'Inbox clear',
         detail: importantUnread ? `${importantUnread} marked important.` : unread ? 'New information is available.' : 'No unread decisions or reports.',
+        note: '',
         value: unread ? String(unread) : 'CLEAR',
+        valueIcon: unread ? (importantUnread ? 'alert' : 'mail') : 'check',
         tone: importantUnread ? 'attention' : unread ? 'scheduled' : 'complete',
         route: 'mail'
       },
       {
-        id: 'finance', label: 'COMMITMENTS',
+        id: 'finance', label: 'COMMITMENTS', icon: 'ledger',
         title: financeCommitment ? `${teamCredits(financeCommitment)} scheduled` : 'No scheduled collection',
         detail: loan.active ? `${teamCredits(loan.due)} loan · ${teamCredits(wageBill)} payroll` : `${teamCredits(wageBill)} weekly payroll`,
+        note: '',
         value: loan.active ? escapeCareerHtml(loan.dueLabel) : 'PAYROLL',
+        valueIcon: loan.active ? 'calendar' : 'ledger',
         tone: loan.tone === 'danger' ? 'urgent' : loan.tone === 'warning' ? 'attention' : 'scheduled',
         route: 'barracks'
       },
       {
-        id: 'day', label: 'END DAY',
+        id: 'day', label: 'END DAY', icon: 'advance',
         title: blockers.length ? `Calendar locked by ${blockers.length} response${blockers.length === 1 ? '' : 's'}` : 'Calendar ready to advance',
         detail: blockers.length ? 'Use MUST RESPOND above for the authoritative action list.' : 'No mandatory decisions remain today.',
+        note: '',
         value: blockers.length ? `${blockers.length} LOCK` : 'READY',
+        valueIcon: blockers.length ? 'alert' : 'check',
         tone: blockers.length ? 'urgent' : 'complete',
         route: firstBlocker?.route || 'calendar'
       }
@@ -19661,7 +19695,32 @@
     const tutorialMarkup = renderTeamTutorialPanel();
     const calendarMarkup = typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : '';
     const todayTimeline = teamCommandTodayTimeline(fixture, squad, loan, wageBill);
-    const todayTimelineMarkup = `<section class="command-today-panel" aria-label="Today at the club"><div class="career-section-head compact"><div><span>TODAY AT THE CLUB</span><strong>${typeof clubCurrentDateLabel === 'function' ? escapeCareerHtml(clubCurrentDateLabel(false)) : `WEEK ${careerState.week}`}</strong></div><p>One compact view of the fixture, squad, inbox, commitments and end-day state.</p></div><div class="command-today-grid">${todayTimeline.map(item => `<button class="command-today-item ${escapeCareerHtml(item.tone)}" data-team-route="${escapeCareerHtml(item.route)}" data-today-item="${escapeCareerHtml(item.id)}"><span>${escapeCareerHtml(item.label)}</span><strong>${escapeCareerHtml(item.title)}</strong><small>${escapeCareerHtml(item.detail)}</small><b>${escapeCareerHtml(item.value)}</b></button>`).join('')}</div></section>`;
+    // Build 12.230: the date and the week/season counter are separate facts and
+    // are now presented as such, split by a rule, instead of one dot-joined
+    // run-on. `clubCurrentDateLabel(false)` remains the fallback when the parts
+    // helper is unavailable.
+    const todayDateParts = typeof clubCurrentDateParts === 'function' ? clubCurrentDateParts() : null;
+    const todayDateLine = todayDateParts
+      ? escapeCareerHtml(todayDateParts.fullDate)
+      : typeof clubCurrentDateLabel === 'function' ? escapeCareerHtml(clubCurrentDateLabel(false)) : `WEEK ${careerState.week}`;
+    const todayMetaLine = todayDateParts
+      ? `WEEK ${escapeCareerHtml(String(todayDateParts.week))} · SEASON ${escapeCareerHtml(String(todayDateParts.season))}`
+      : '';
+    const todayTimelineMarkup = `<section class="command-today-panel" aria-label="Today at the club">
+      <header class="command-today-head">
+        <div class="command-today-when">
+          <span>TODAY AT THE CLUB</span>
+          <div class="command-today-datum"><strong>${todayDateLine}</strong>${todayMetaLine ? `<em>${todayMetaLine}</em>` : ''}</div>
+        </div>
+        <p>One compact view of the fixture, squad, inbox, commitments and end-day state.</p>
+      </header>
+      <div class="command-today-grid">${todayTimeline.map(item => `<button class="command-today-item ${escapeCareerHtml(item.tone)}" data-team-route="${escapeCareerHtml(item.route)}" data-today-item="${escapeCareerHtml(item.id)}">
+        <span class="command-today-label">${commandTodayIcon(item.icon)}<i>${escapeCareerHtml(item.label)}</i></span>
+        <strong>${escapeCareerHtml(item.title)}</strong>
+        <small>${escapeCareerHtml(item.detail)}${item.note ? `<u>${escapeCareerHtml(item.note)}</u>` : ''}</small>
+        <b>${commandTodayIcon(item.valueIcon)}<i>${escapeCareerHtml(item.value)}</i></b>
+      </button>`).join('')}</div>
+    </section>`;
     const heroMarkup = `<section class="command-centre-hero ${pauseMenu ? 'live' : ''} ${firstGuide ? 'guided-journey' : ''}">
         <div>
           <span>${pauseMenu ? (matchSimulationPaused ? 'LIVE MATCH PAUSED' : 'LIVE MATCH RUNNING') : 'MANAGER COMMAND CENTRE'}</span>

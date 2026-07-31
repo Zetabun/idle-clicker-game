@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.229 — Configuration Access & Mobile Mail Dismissal**
-- Build ID: `12.229.0-configuration-access-mobile-mail-dismissal`
+- Build: **12.230 — Operations Today Instrument Panel**
+- Build ID: `12.230.0-operations-today-instrument-panel`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.229.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.230.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.230 restyles Operations Today as an instrument panel: line icons, an accent rule under each label, a status footer with its own accent edge, and the date split from the week/season counter by a rule. Five things had to be worked around and are worth knowing before touching this surface. **`compact-navigation.css` declares its media queries BEFORE its base rules**, so a compact override there needs a `.command-today-panel` specificity prefix or it silently loses on source order — the mobile header stayed right-aligned for a whole pass because of this. **The Command Skin paints every `#menuContent > section[class]`** with a selector far more specific than one class, so the panel sets `--skin-panel-hi`/`--skin-panel-lo` instead of declaring a background. **A bare `button { background: … !important }` in `game.css`** means the card background is the one declaration here that must carry the flag. **Five columns never divide evenly**, so the layout is flex-wrap rather than `auto-fit` grid — a short final row stretches to fill instead of orphaning a dead quarter-row. And the status footer reserves two lines of height, because a wrapping value (`31 AUG 2026 · 23D`, at both 320px and 1280px) otherwise drags its accent rule out of line with the rest of the row. No new media queries: the debt gate was already at 484/484, so everything scales through `clamp()`. See `AUDIT-12.230.md`.
 
 Build 12.229 restores Configuration as a normal Club route rather than a hidden context-only page, so it appears in the desktop subsection navigation, compact contextual navigation and Club overview cards. Compact/mobile MARK AS READ now clears the transient mail selection, refreshes the Inbox and closes the shared dialog afterwards with focus restoration disabled because the read row may no longer exist. The legacy second status message and removed-row focus attempt are gone. Desktop inline selection and automatic read behaviour remain unchanged. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.229.md`.
 
