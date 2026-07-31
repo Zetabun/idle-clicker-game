@@ -1,0 +1,109 @@
+name: Publish Build 12.223
+
+on:
+  push:
+    paths:
+      - '.github/triggers/publish-12.223.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply verified release patch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/release-12.223.py')
+          text = path.read_text(encoding='utf-8')
+          old = "if css_text.count('@media') != 483:"
+          new = "if css_text.count('@media') != 10:"
+          if text.count(old) != 1:
+              raise SystemExit('release media assertion anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python .github/scripts/release-12.223.py
+
+      - name: Build and verify determinism
+        working-directory: strikewatch-source
+        run: |
+          python build.py
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.223.html /tmp/strikewatch-build-12.223.first.html
+          python build.py
+          cmp /tmp/strikewatch.dev.first.js js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build-12.223.first.html dist/strikewatch-build-12.223.html
+
+      - name: Parse JavaScript and verify targeted release gates
+        run: |
+          for file in strikewatch-source/js/*.js; do node --check "$file"; done
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+          html_path = Path('strikewatch-source/dist/strikewatch-build-12.223.html')
+          html = html_path.read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S)
+          if not scripts:
+              raise SystemExit('No inline scripts found')
+          for index, script in enumerate(scripts):
+              Path(f'/tmp/publish-standalone-{index}.js').write_text(script, encoding='utf-8')
+          css = Path('strikewatch-source/css/compact-navigation.css').read_text(encoding='utf-8')
+          marker = 'Build 12.223: desktop MUST RESPOND disclosure correction'
+          marker_index = css.index(marker)
+          assert css.rfind('@media (min-width: 1024px)', 0, marker_index) >= 0
+          assert css.count('@media') == 10
+          debt = json.loads(Path('strikewatch-source/dist/strikewatch-build-12.223-css-debt.json').read_text(encoding='utf-8'))
+          assert debt['media_queries'] == 483
+          assert debt['within_budget'] is True
+          required = [
+              '#menuContent .club-must-respond-strip {',
+              'grid-template-columns: minmax(0, 1fr) 28px !important;',
+              '#menuContent .club-must-respond-strip[open] > .club-must-respond-body {',
+              '#menuContent .club-must-respond-strip:not([open]) > .club-must-respond-body {',
+              '#menuContent .club-must-respond-body > header {',
+              'grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;'
+          ]
+          block = css[marker_index:]
+          for value in required:
+              assert value in block, value
+          assert '12.223.0-desktop-must-respond-layout' in html
+          PY
+          for file in /tmp/publish-standalone-*.js; do node --check "$file"; done
+
+      - name: Publish and confirm byte identity
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.223.html cod.html
+          cmp strikewatch-source/dist/strikewatch-build-12.223.html cod.html
+
+      - name: Remove temporary release material
+        run: |
+          rm -f .github/scripts/release-12.223.py
+          rm -f .github/workflows/release-12.223.yml
+          rm -f .github/triggers/release-12.223.txt
+          rm -f .github/workflows/publish-12.223.yml
+          rm -f .github/triggers/publish-12.223.txt
+          rm -f .github/diagnostics/12.223.txt
+          rm -f .github/diagnostics/12.223-retry.txt
+          rm -f .github/diagnostics/12.223-final.txt
+
+      - name: Commit release to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build 12.223: Desktop Must Respond Layout"
+          git push origin main
