@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.220 — Mobile Mail Read Control**
-- Build ID: `12.220.0-mobile-mail-read-control`
+- Build: **12.221 — Desktop Management Layout Restoration**
+- Build ID: `12.221.0-desktop-management-layout-restoration`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.220.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.221.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.221 restores the desktop management shell to the full viewport with an explicit two-column sidebar/content grid at 1024px and wider. The correction is desktop-only and leaves compact/mobile navigation rules unchanged. See `AUDIT-12.221.md`.
 
 Build 12.220 changes compact/mobile email dialogs to preserve unread state until the player explicitly presses MARK AS READ. Desktop inline mail continues to mark a selected message as read automatically. See `AUDIT-12.220.md`.
 

@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.221 restores the desktop management shell to the full viewport with an explicit two-column sidebar/content grid at 1024px and wider. The correction is desktop-only and leaves compact/mobile navigation rules unchanged. See `AUDIT-12.221.md`.
+
 Build 12.220 changes compact/mobile email dialogs to preserve unread state until the player explicitly presses MARK AS READ. Desktop inline mail continues to mark a selected message as read automatically. See `AUDIT-12.220.md`.
 
 Build 12.219 replaces the stretched Ops blocker marker with a fixed 18px circular alert indicator that cannot inherit the navigation tile's stretching or writing geometry. See `AUDIT-12.219.md`.

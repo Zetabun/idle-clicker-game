@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.220';
-  const BUILD_NAME = 'Mobile Mail Read Control';
-  const BUILD_ID = '12.220.0-mobile-mail-read-control';
+  const BUILD_VERSION = '12.221';
+  const BUILD_NAME = 'Desktop Management Layout Restoration';
+  const BUILD_ID = '12.221.0-desktop-management-layout-restoration';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

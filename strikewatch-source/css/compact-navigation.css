@@ -350,3 +350,47 @@
 .league-section-jumps button:first-child{border-color:rgba(222,190,106,.55);color:#fff1c8}
 #leagueOverview,#leagueObjectives,#leaguePulse,#leagueTable,#leagueFixtures{scroll-margin-top:62px}
 @media(max-width:760px){.league-section-jumps{position:sticky;top:52px;z-index:16;margin:0 -10px;padding:6px 10px;background:rgba(7,18,29,.96);border-bottom:1px solid rgba(116,170,198,.2)}.league-section-jumps button{min-height:40px}.menu-tab[data-section="operations"].has-must-respond::before{inset:5px auto auto 5px}}
+
+/* --- Build 12.221: desktop management layout restoration -----------------
+   Desktop management must occupy the full viewport. This guard is deliberately
+   isolated to the established 1024px desktop breakpoint so compact/mobile
+   navigation and its contextual header remain byte-for-byte unaffected. */
+@media (min-width: 1024px) {
+  #menuShell.menu-shell {
+    inset: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  #menuShell .manager-topbar,
+  #menuShell .menu-body,
+  #menuShell .menu-layout {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  #menuShell .menu-layout {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) !important;
+  }
+
+  #menuShell .menu-sidebar {
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  #menuShell .menu-content {
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  #menuShell .mobile-header-submenu {
+    display: none !important;
+  }
+}

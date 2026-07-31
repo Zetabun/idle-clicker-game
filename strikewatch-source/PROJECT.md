@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.220 gives compact/mobile email dialogs an explicit Mark as Read action instead of automatically reading messages on open. See `HANDOFF.md` and `AUDIT-12.220.md`.
+Build 12.221 restores the desktop management interface to a full-width sidebar/content layout while preserving the compact/mobile presentation. See `HANDOFF.md` and `AUDIT-12.221.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

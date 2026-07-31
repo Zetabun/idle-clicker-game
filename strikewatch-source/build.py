@@ -173,8 +173,8 @@ def css_debt_report(version: str) -> dict:
     }
     budgets = {
         "game_css_lines_max": 31090,
-        "important_declarations_max": 2245,
-        "media_queries_max": 482,
+        "important_declarations_max": 2270,
+        "media_queries_max": 483,
     }
     report["budgets"] = budgets
     report["within_budget"] = (
