@@ -2042,7 +2042,8 @@
         : '';
       return `${tutorialMarkup}${heroMarkup}${guidedMatchMarkup}${progressMarkup}`;
     }
-    return `${tutorialMarkup}${calendarMarkup}${todayTimelineMarkup}${heroMarkup}${progressMarkup}
+    const boardMarkup = typeof renderBoardExpectations === 'function' ? renderBoardExpectations(true) : '';
+    return `${tutorialMarkup}${calendarMarkup}${todayTimelineMarkup}${boardMarkup}${heroMarkup}${progressMarkup}
       <div class="command-overview-grid">
         <section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">
           <header><div><span>NEXT FIXTURE</span><strong>${escapeCareerHtml(fixture.title)}</strong><small>${escapeCareerHtml(fixture.location)} · ${escapeCareerHtml(fixture.dateLabel)}</small></div><b>${escapeCareerHtml(fixture.daysLabel)}</b></header>

@@ -983,6 +983,46 @@
     return `${renderWorldPressCareerStory(player)}<section class="player-accolades-panel" data-player-accolades="${escapeCareerHtml(player.id)}"><div class="career-section-head"><div><span>ACCOLADES & ACHIEVEMENTS</span><strong>CAREER HONOURS HISTORY</strong></div><p>Every award records the fixture, context and date so the operator develops a permanent career story.</p></div><div class="player-accolade-summary"><article><span>MAN OF THE MATCH</span><strong>${motm}</strong><small>CAREER AWARDS</small></article><article><span>MAJOR HONOURS</span><strong>${major}</strong><small>MONTH / SEASON</small></article><article><span>ALL AWARDS</span><strong>${awards.length}</strong><small>INCLUDING TEAM OF WEEK</small></article><article><span>MILESTONES</span><strong>${milestones.length}</strong><small>CAREER ACHIEVEMENTS</small></article></div><div class="player-accolade-timeline">${timeline}</div></section>`;
   }
 
+  function boardExpectationDefinitions() {
+    const league = typeof ensureLeagueState === 'function' ? ensureLeagueState() : null;
+    if (!league) return [];
+    const table = typeof leagueTable === 'function' ? leagueTable() : [];
+    const user = table.find(row => row.id === LEAGUE_USER_CLUB_ID) || { position: league.clubs?.length || 20, played: 0, wins: 0, roundDifference: 0 };
+    const tier = typeof leagueDivisionTier === 'function' ? leagueDivisionTier() : 3;
+    const squad = careerState.squad || [];
+    const stable = squad.filter(player => Number(player.morale) >= 60 && Number(player.happiness) >= 55).length;
+    const primaryTarget = tier === 3 ? 2 : tier === 2 ? 6 : tier === 1 ? 8 : 10;
+    const winTarget = tier === 3 ? 12 : tier === 2 ? 14 : tier === 1 ? 16 : 18;
+    const positionProgress = user.played ? clamp((league.clubs.length - user.position + 1) / Math.max(1, league.clubs.length - primaryTarget + 1), 0, 1) : 0;
+    return [
+      { id:'position', type:'PRIMARY', title:tier===3?'WIN PROMOTION':`FINISH IN THE TOP ${primaryTarget}`, detail:tier===3?'Finish in the top two and earn promotion.':`Meet the board's minimum league-position expectation.`, value:user.position, target:primaryTarget, progress:positionProgress, complete:user.played>0 && user.position<=primaryTarget, route:'league' },
+      { id:'wins', type:'SECONDARY', title:`WIN ${winTarget} LEAGUE MATCHES`, detail:'Build a sustainable season rather than relying on one short run.', value:Number(user.wins)||0, target:winTarget, progress:clamp((Number(user.wins)||0)/winTarget,0,1), complete:(Number(user.wins)||0)>=winTarget, route:'league' },
+      { id:'stability', type:'SECONDARY', title:'MAINTAIN A STABLE ACTIVE SQUAD', detail:'Keep at least five operators above the board morale and happiness floor.', value:stable, target:5, progress:clamp(stable/5,0,1), complete:stable>=5, route:'operators' }
+    ];
+  }
+
+  function boardExpectationSnapshot() {
+    const objectives = boardExpectationDefinitions();
+    const average = objectives.length ? objectives.reduce((sum,item)=>sum+item.progress,0)/objectives.length : 0;
+    const confidence = Math.round(clamp(35 + average*55 + objectives.filter(item=>item.complete).length*4, 0, 100));
+    const status = confidence>=75?'STRONG':confidence>=55?'ON TRACK':confidence>=38?'AT RISK':'UNDER PRESSURE';
+    return { objectives, confidence, status };
+  }
+
+  function boardExpectationStatus(item) {
+    if (item.complete) return 'COMPLETED';
+    if (item.progress >= .65) return 'ON TRACK';
+    if (item.progress >= .35) return 'AT RISK';
+    return 'BEHIND PLAN';
+  }
+
+  function renderBoardExpectations(compact = false) {
+    const board = boardExpectationSnapshot();
+    if (!board.objectives.length) return '';
+    const cards = board.objectives.map(item => `<button class="board-objective-card ${item.complete?'complete':item.progress>=.65?'track':item.progress>=.35?'risk':'behind'}" data-team-route="${escapeCareerHtml(item.route)}"><span>${escapeCareerHtml(item.type)} · ${boardExpectationStatus(item)}</span><strong>${escapeCareerHtml(item.title)}</strong><p>${escapeCareerHtml(item.detail)}</p><div><i style="width:${Math.round(item.progress*100)}%"></i></div><small>${escapeCareerHtml(String(item.value))} / ${escapeCareerHtml(String(item.target))}</small></button>`).join('');
+    return `<section class="board-expectations-panel ${compact?'compact':''}"><div class="career-section-head"><div><span>BOARD EXPECTATIONS</span><strong>SEASON OBJECTIVES</strong></div><p>Confidence changes gradually as the club advances toward its primary and secondary targets.</p></div><div class="board-confidence"><span>BOARD CONFIDENCE</span><strong>${board.confidence}% · ${board.status}</strong><div><i style="width:${board.confidence}%"></i></div></div><div class="board-objectives-grid">${cards}</div></section>`;
+  }
+
   function renderWorldPressClubHonours() {
     const state = ensureWorldPressState();
     if (!state) return '';

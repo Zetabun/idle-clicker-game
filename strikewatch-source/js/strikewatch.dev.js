@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.204';
-  const BUILD_NAME = 'Operator Career Story';
-  const BUILD_ID = '12.204.0-operator-career-story';
+  const BUILD_VERSION = '12.205';
+  const BUILD_NAME = 'Board Expectations';
+  const BUILD_ID = '12.205.0-board-expectations';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -19686,7 +19686,8 @@
         : '';
       return `${tutorialMarkup}${heroMarkup}${guidedMatchMarkup}${progressMarkup}`;
     }
-    return `${tutorialMarkup}${calendarMarkup}${todayTimelineMarkup}${heroMarkup}${progressMarkup}
+    const boardMarkup = typeof renderBoardExpectations === 'function' ? renderBoardExpectations(true) : '';
+    return `${tutorialMarkup}${calendarMarkup}${todayTimelineMarkup}${boardMarkup}${heroMarkup}${progressMarkup}
       <div class="command-overview-grid">
         <section class="command-fixture-card ${fixture.threatTone}" data-management-target-id="operations:matchday">
           <header><div><span>NEXT FIXTURE</span><strong>${escapeCareerHtml(fixture.title)}</strong><small>${escapeCareerHtml(fixture.location)} · ${escapeCareerHtml(fixture.dateLabel)}</small></div><b>${escapeCareerHtml(fixture.daysLabel)}</b></header>
@@ -20985,6 +20986,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return `${renderLeagueIntroduction()}
       <div class="menu-hero career-hero league-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">${escapeCareerHtml(leagueCompetitionName())} · SEASON ${league.season}</div><h2>${complete ? 'FINAL TABLE' : `MATCHDAY ${fixture.matchday} · ${escapeCareerHtml(opponent?.name || 'TBD')}`}</h2><p>${complete ? 'The season is complete. Review the final standings, then begin a new campaign when the squad is ready.' : 'Play one scheduled fixture at a time. A match win earns three points; the highest total after 38 fixtures wins the division.'}</p><div class="menu-pill-row"><span class="menu-pill">POSITION ${positionLabel} / ${league.clubs.length}</span><span class="menu-pill">${user?.points || 0} POINTS</span><span class="menu-pill">${user?.played || 0} / ${leagueSeasonMatchCount(league.clubs.length)} PLAYED</span><span class="menu-pill">ROUND DIFF ${user?.roundDifference >= 0 ? '+' : ''}${user?.roundDifference || 0}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">${complete ? 'SEASON WINNER' : 'NEXT OPPONENT'}</div><div class="menu-side-operator">${complete ? escapeCareerHtml(leagueChampion()?.short || 'TBD') : escapeCareerHtml(opponent?.short || 'TBD')}</div><p>${complete ? escapeCareerHtml(leagueChampion()?.name || 'Finalising') : `${escapeCareerHtml(opponent?.style || 'BALANCED')} · RATING ${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}`}</p></div></div>
       ${renderLeaguePyramid()}
+      ${typeof renderBoardExpectations === 'function' ? renderBoardExpectations(false) : ''}
       ${typeof renderWorldPressLeaguePulse === 'function' ? renderWorldPressLeaguePulse() : ''}
       <section class="league-table-panel"><div class="career-section-head"><div><span>LIVE STANDINGS</span><strong>${escapeCareerHtml(leagueCompetitionName())} TABLE</strong></div><p>Wins are worth ${LEAGUE_POINTS_WIN} points. Round difference breaks ties.</p></div><div class="league-table-head"><span>#</span><span>CLUB</span><span>P</span><span>W</span><span>L</span><span>RD</span><span>FORM</span><span>PTS</span></div>${renderLeagueTableRows()}</section>
       <div class="league-detail-grid">
@@ -39168,6 +39170,46 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const major = entries.filter(entry => ['OPERATOR OF THE MONTH','OPERATOR OF THE SEASON'].includes(entry.title)).length;
     const timeline = entries.length ? entries.slice(0, 30).map(entry => `<article class="player-accolade-entry ${escapeCareerHtml(entry.tone || 'neutral')}"><div class="player-accolade-medal">${escapeCareerHtml(entry.icon || '★')}</div><div><span>${escapeCareerHtml(entry.type.toUpperCase())}${entry.matchday ? ` · MATCHDAY ${entry.matchday}` : ''}</span><strong>${escapeCareerHtml(entry.title)}</strong><p>${escapeCareerHtml(entry.detail || '')}</p><small>${escapeCareerHtml(entry.dateLabel || '')}${entry.opponentName ? ` · VS ${escapeCareerHtml(entry.opponentName)}` : ''}${entry.historical ? ' · HISTORICAL RECORD' : ''}</small></div></article>`).join('') : '<div class="player-accolade-empty"><strong>NO ACCOLADES RECORDED</strong><p>Competitive awards, Team of the Week selections and career milestones will appear here permanently.</p></div>';
     return `${renderWorldPressCareerStory(player)}<section class="player-accolades-panel" data-player-accolades="${escapeCareerHtml(player.id)}"><div class="career-section-head"><div><span>ACCOLADES & ACHIEVEMENTS</span><strong>CAREER HONOURS HISTORY</strong></div><p>Every award records the fixture, context and date so the operator develops a permanent career story.</p></div><div class="player-accolade-summary"><article><span>MAN OF THE MATCH</span><strong>${motm}</strong><small>CAREER AWARDS</small></article><article><span>MAJOR HONOURS</span><strong>${major}</strong><small>MONTH / SEASON</small></article><article><span>ALL AWARDS</span><strong>${awards.length}</strong><small>INCLUDING TEAM OF WEEK</small></article><article><span>MILESTONES</span><strong>${milestones.length}</strong><small>CAREER ACHIEVEMENTS</small></article></div><div class="player-accolade-timeline">${timeline}</div></section>`;
+  }
+
+  function boardExpectationDefinitions() {
+    const league = typeof ensureLeagueState === 'function' ? ensureLeagueState() : null;
+    if (!league) return [];
+    const table = typeof leagueTable === 'function' ? leagueTable() : [];
+    const user = table.find(row => row.id === LEAGUE_USER_CLUB_ID) || { position: league.clubs?.length || 20, played: 0, wins: 0, roundDifference: 0 };
+    const tier = typeof leagueDivisionTier === 'function' ? leagueDivisionTier() : 3;
+    const squad = careerState.squad || [];
+    const stable = squad.filter(player => Number(player.morale) >= 60 && Number(player.happiness) >= 55).length;
+    const primaryTarget = tier === 3 ? 2 : tier === 2 ? 6 : tier === 1 ? 8 : 10;
+    const winTarget = tier === 3 ? 12 : tier === 2 ? 14 : tier === 1 ? 16 : 18;
+    const positionProgress = user.played ? clamp((league.clubs.length - user.position + 1) / Math.max(1, league.clubs.length - primaryTarget + 1), 0, 1) : 0;
+    return [
+      { id:'position', type:'PRIMARY', title:tier===3?'WIN PROMOTION':`FINISH IN THE TOP ${primaryTarget}`, detail:tier===3?'Finish in the top two and earn promotion.':`Meet the board's minimum league-position expectation.`, value:user.position, target:primaryTarget, progress:positionProgress, complete:user.played>0 && user.position<=primaryTarget, route:'league' },
+      { id:'wins', type:'SECONDARY', title:`WIN ${winTarget} LEAGUE MATCHES`, detail:'Build a sustainable season rather than relying on one short run.', value:Number(user.wins)||0, target:winTarget, progress:clamp((Number(user.wins)||0)/winTarget,0,1), complete:(Number(user.wins)||0)>=winTarget, route:'league' },
+      { id:'stability', type:'SECONDARY', title:'MAINTAIN A STABLE ACTIVE SQUAD', detail:'Keep at least five operators above the board morale and happiness floor.', value:stable, target:5, progress:clamp(stable/5,0,1), complete:stable>=5, route:'operators' }
+    ];
+  }
+
+  function boardExpectationSnapshot() {
+    const objectives = boardExpectationDefinitions();
+    const average = objectives.length ? objectives.reduce((sum,item)=>sum+item.progress,0)/objectives.length : 0;
+    const confidence = Math.round(clamp(35 + average*55 + objectives.filter(item=>item.complete).length*4, 0, 100));
+    const status = confidence>=75?'STRONG':confidence>=55?'ON TRACK':confidence>=38?'AT RISK':'UNDER PRESSURE';
+    return { objectives, confidence, status };
+  }
+
+  function boardExpectationStatus(item) {
+    if (item.complete) return 'COMPLETED';
+    if (item.progress >= .65) return 'ON TRACK';
+    if (item.progress >= .35) return 'AT RISK';
+    return 'BEHIND PLAN';
+  }
+
+  function renderBoardExpectations(compact = false) {
+    const board = boardExpectationSnapshot();
+    if (!board.objectives.length) return '';
+    const cards = board.objectives.map(item => `<button class="board-objective-card ${item.complete?'complete':item.progress>=.65?'track':item.progress>=.35?'risk':'behind'}" data-team-route="${escapeCareerHtml(item.route)}"><span>${escapeCareerHtml(item.type)} · ${boardExpectationStatus(item)}</span><strong>${escapeCareerHtml(item.title)}</strong><p>${escapeCareerHtml(item.detail)}</p><div><i style="width:${Math.round(item.progress*100)}%"></i></div><small>${escapeCareerHtml(String(item.value))} / ${escapeCareerHtml(String(item.target))}</small></button>`).join('');
+    return `<section class="board-expectations-panel ${compact?'compact':''}"><div class="career-section-head"><div><span>BOARD EXPECTATIONS</span><strong>SEASON OBJECTIVES</strong></div><p>Confidence changes gradually as the club advances toward its primary and secondary targets.</p></div><div class="board-confidence"><span>BOARD CONFIDENCE</span><strong>${board.confidence}% · ${board.status}</strong><div><i style="width:${board.confidence}%"></i></div></div><div class="board-objectives-grid">${cards}</div></section>`;
   }
 
   function renderWorldPressClubHonours() {

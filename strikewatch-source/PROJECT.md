@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.204 adds a compact Operator Career Story that turns existing performance, award and club history into a readable personal legacy summary. See `HANDOFF.md` and `AUDIT-12.204.md`.
+Build 12.205 adds division-scaled Board Expectations with a primary season target, secondary objectives and live confidence. See `HANDOFF.md` and `AUDIT-12.205.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
