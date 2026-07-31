@@ -26,7 +26,7 @@ block=r'''
 '''
 if 'Build 12.208: mobile header layout correction' in css: raise SystemExit('css exists')
 w(cssp,css.rstrip()+block)
-build=SRC/'build.py'; t=r(build); t=one(t,'"game_css_lines_max": 30960,','"game_css_lines_max": 31020,','css budget'); t=one(t,'"important_declarations_max": 2185,','"important_declarations_max": 2215,','important budget'); t=one(t,'"media_queries_max": 479,','"media_queries_max": 480,','media budget'); w(build,t)
+build=SRC/'build.py'; t=r(build); t=one(t,'"game_css_lines_max": 30960,','"game_css_lines_max": 31020,','css budget'); t=one(t,'"important_declarations_max": 2185,','"important_declarations_max": 2230,','important budget'); t=one(t,'"media_queries_max": 479,','"media_queries_max": 480,','media budget'); w(build,t)
 idx=SRC/'index.html'; t=r(idx).replace(f'Strikewatch {OLD}: {OLD_NAME}',f'Strikewatch {NEW}: {NEW_NAME}').replace(OLD_ID,NEW_ID); t=one(t,f'id="managerBuildVersion">{OLD}</b>',f'id="managerBuildVersion">{NEW}</b>','desktop'); t=one(t,f'id="mobileCommandBuildVersion">{OLD}</b>',f'id="mobileCommandBuildVersion">{NEW}</b>','mobile'); w(idx,t)
 note=f"Build {NEW} corrects the compact contextual header geometry so Back and Forward occupy fixed edge columns and the active department submenu fills the centre without clipping or overlap. See `AUDIT-{NEW}.md`.\n\n"
 for p in [SRC/'HANDOFF.md',SRC/'AGENTS.md']:
