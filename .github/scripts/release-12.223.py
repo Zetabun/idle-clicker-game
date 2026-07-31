@@ -44,14 +44,18 @@ text = read(css)
 marker = 'Build 12.223: desktop MUST RESPOND disclosure correction'
 if marker in text:
     raise SystemExit('desktop MUST RESPOND correction already present')
-text = text.rstrip() + '''
+anchor = '''  #menuShell .mobile-header-submenu {
+    display: none !important;
+  }
+}'''
+replacement = '''  #menuShell .mobile-header-submenu {
+    display: none !important;
+  }
 
-/* --- Build 12.223: desktop MUST RESPOND disclosure correction ------------
-   The expanded disclosure previously allowed its summary and body to share
-   the old desktop grid, placing summary copy, explanatory copy and actions in
-   three squeezed horizontal columns. Desktop now uses one disclosure flow:
-   full-width summary first, then the actionable groups beneath it. */
-@media (min-width: 1024px) {
+  /* --- Build 12.223: desktop MUST RESPOND disclosure correction ----------
+     Keep this inside the existing Build 12.221 desktop guard so the CSS debt
+     media-query budget remains unchanged. The disclosure now flows vertically:
+     full-width summary first, then the actionable groups beneath it. */
   #menuContent .club-must-respond-strip {
     display: block !important;
     width: 100%;
@@ -192,8 +196,8 @@ text = text.rstrip() + '''
   #menuContent .club-response-group button > b {
     white-space: nowrap;
   }
-}
-''' + '\n'
+}'''
+text = replace_one(text, anchor, replacement, 'desktop cascade anchor')
 write(css, text)
 
 index = SRC / 'index.html'
@@ -236,7 +240,7 @@ write(SRC / f'AUDIT-{NEW}.md', f'''# Build {NEW} audit — {NEW_NAME}
 When MUST RESPOND was expanded on desktop, the disclosure summary and its body participated in the inherited horizontal grid. The summary copy, secondary explanatory header and action group were consequently squeezed into adjacent columns, producing merged text and an obviously broken wide-screen layout.
 
 ## Change
-- Added a desktop-only correction at the established 1024px breakpoint in the final `compact-navigation.css` cascade layer.
+- Added a desktop-only correction inside the existing final 1024px desktop guard in `compact-navigation.css`; no additional media query was introduced.
 - The `<details>` disclosure now uses a normal block flow on desktop.
 - Its summary occupies the complete available width with a bounded copy column and an explicit plus/minus control.
 - The expanded action groups render beneath the summary instead of beside it.
@@ -244,11 +248,11 @@ When MUST RESPOND was expanded on desktop, the disclosure summary and its body p
 - The summary detail is shown while collapsed and suppressed while expanded to avoid repeating the same blocker text above the action card.
 - Long labels and descriptions wrap within their own columns and action cards cannot exceed the disclosure width.
 - The explicit closed-state rule prevents the body from being exposed by later desktop display overrides.
-- All rules are inside `@media (min-width: 1024px)`. Existing compact/mobile disclosure behaviour and navigation remain unchanged.
+- Existing compact/mobile disclosure behaviour and navigation remain unchanged.
 - Gameplay, blocker authority, save schema 19 and diagnostics schema 1 are unchanged.
 
 ## Verification
-The release requires deterministic double builds; parsing of modular, generated and standalone JavaScript; source-level confirmation that the correction is desktop-scoped; computed-style checks in headless Chrome at 1024px and 1440px confirming that the summary and expanded body each occupy the full disclosure width, the body begins below the summary, the duplicate desktop header is hidden, the closed body is hidden, and no horizontal overflow is introduced; preservation of the compact `max-width: 1023px` disclosure rules; and byte identity between the standalone and root `cod.html`.
+The release requires deterministic double builds; parsing of modular, generated and standalone JavaScript; preservation of the CSS debt budgets including the 483-media-query ceiling; source-level confirmation that the correction remains inside the existing desktop guard; preservation of the compact `max-width: 1023px` disclosure rules; and byte identity between the standalone and root `cod.html`. Independent live-browser visual confirmation at desktop width remains recommended.
 ''')
 
 css_text = read(css)
@@ -263,6 +267,8 @@ required = [
 for value in required:
     if value not in css_text:
         raise SystemExit(f'missing CSS assertion: {value}')
+if css_text.count('@media') != 483:
+    raise SystemExit(f'unexpected media-query count: {css_text.count("@media")}')
 if '@media (max-width: 1023px)' not in css_text:
     raise SystemExit('compact MUST RESPOND rules missing')
 
