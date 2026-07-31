@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.228 — Desktop Inbox Badge Containment**.
+Current deployed build: **12.229 — Configuration Access & Mobile Mail Dismissal**.
 
 ## Concise agent workflow
 
