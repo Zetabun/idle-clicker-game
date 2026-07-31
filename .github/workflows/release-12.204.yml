@@ -1,0 +1,128 @@
+name: Release 12.204
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/triggers/release-12.204.txt
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-build-12-204
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure release identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply, build and verify Build 12.204
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          exec > >(tee /tmp/release-12.204.log) 2>&1
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected = {'version':'12.203','name':'League Pulse','build_id':'12.203.0-league-pulse'}
+          actual = json.loads(Path('strikewatch-source/RELEASE.json').read_text(encoding='utf-8'))
+          if actual != expected:
+              raise SystemExit(f'Unexpected predecessor release: {actual!r}')
+          print('Predecessor release verified:', actual)
+          PY
+
+          python3 -m py_compile .github/scripts/release-12.204.py
+          python3 .github/scripts/release-12.204.py
+
+          cd strikewatch-source
+          python3 -m py_compile build.py
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.204.html dist/strikewatch-build-12.204-size.json dist/strikewatch-build-12.204-css-debt.json > /tmp/build-12.204-first.sha256
+          for file in js/*.js; do node --check "$file"; done
+          node --check js/strikewatch.dev.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          html = Path('dist/strikewatch-build-12.204.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', html, re.S | re.I)
+          if not scripts:
+              raise SystemExit('No inline JavaScript found in standalone')
+          for script in scripts:
+              with tempfile.NamedTemporaryFile('w', suffix='.js', encoding='utf-8', delete=False) as handle:
+                  handle.write(script)
+                  temp = handle.name
+              subprocess.run(['node','--check',temp], check=True)
+          print(f'Parsed {len(scripts)} standalone inline script block(s)')
+          PY
+
+          python3 build.py
+          sha256sum js/strikewatch.dev.js dist/strikewatch-build-12.204.html dist/strikewatch-build-12.204-size.json dist/strikewatch-build-12.204-css-debt.json > /tmp/build-12.204-second.sha256
+          diff -u /tmp/build-12.204-first.sha256 /tmp/build-12.204-second.sha256
+          cd ..
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('.')
+          src = root / 'strikewatch-source'
+          release = json.loads((src/'RELEASE.json').read_text(encoding='utf-8'))
+          expected = {'version':'12.204','name':'Operator Career Story','build_id':'12.204.0-operator-career-story'}
+          if release != expected:
+              raise SystemExit(f'Unexpected completed release metadata: {release!r}')
+          press = (src/'js/56-world-press-awards.js').read_text(encoding='utf-8')
+          css = (src/'css/compact-navigation.css').read_text(encoding='utf-8')
+          required = [
+              ('career snapshot','function worldPressPlayerCareerSnapshot' in press),
+              ('career renderer','function renderWorldPressCareerStory' in press),
+              ('career heading','OPERATOR CAREER STORY' in press),
+              ('career css','Build 12.204: operator career story' in css),
+          ]
+          missing = [name for name, ok in required if not ok]
+          if missing:
+              raise SystemExit(f'Missing Build 12.204 anchors: {missing!r}')
+          standalone = src/'dist/strikewatch-build-12.204.html'
+          cod = root/'cod.html'
+          cod.write_bytes(standalone.read_bytes())
+          if cod.read_bytes() != standalone.read_bytes():
+              raise SystemExit('cod.html is not byte-identical to standalone')
+          print('Build 12.204 source, deterministic build and artifact gates passed')
+          PY
+
+          rm -f .github/release-12.204-failure.log
+          rm -f .github/scripts/release-12.204.py
+          rm -f .github/workflows/release-12.204.yml
+          rm -f .github/triggers/release-12.204.txt
+
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "Build 12.204: Operator Career Story"
+          git push origin main
+
+      - name: Publish failure ledger
+        if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git reset --hard HEAD
+          {
+            printf '%s\n' 'Build 12.204 workflow failed.' "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" "Commit: $GITHUB_SHA"
+            if test -f /tmp/release-12.204.log; then cat /tmp/release-12.204.log; else printf '%s\n' 'Build failed before release log initialised.'; fi
+          } > .github/release-12.204-failure.log
+          git add .github/release-12.204-failure.log
+          git commit -m "Record Build 12.204 release failure"
+          git push origin main
