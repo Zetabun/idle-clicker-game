@@ -31,8 +31,8 @@ jobs:
       - name: Apply release patch
         id: patch
         run: |
-          set -euo pipefail
-          python3 .github/scripts/release-12.200.py
+          set -o pipefail
+          python3 .github/scripts/release-12.200.py 2>&1 | tee /tmp/release-12.200-step.log
 
       - name: Compile build script
         run: python3 -m py_compile strikewatch-source/build.py
@@ -147,11 +147,18 @@ jobs:
         if: failure()
         run: |
           set +e
-          printf '%s\n' \
-            'Build 12.200 workflow failed.' \
-            "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            "Commit: $GITHUB_SHA" \
-            'Inspect the failing step before any retry.' > .github/release-12.200-failure.log
+          {
+            printf '%s\n' \
+              'Build 12.200 workflow failed.' \
+              "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+              "Commit: $GITHUB_SHA"
+            if [ -f /tmp/release-12.200-step.log ]; then
+              printf '%s\n' 'Captured patch output:'
+              cat /tmp/release-12.200-step.log
+            else
+              printf '%s\n' 'The patch step completed; inspect the named failing workflow step.'
+            fi
+          } > .github/release-12.200-failure.log
           git add .github/release-12.200-failure.log
           git commit -m "Record Build 12.200 release failure" || true
           git push origin HEAD:main || true
