@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.226';
-  const BUILD_NAME = 'Desktop Version Label and Submenu Sweep';
-  const BUILD_ID = '12.226.0-desktop-version-label-and-submenu-sweep';
+  const BUILD_VERSION = '12.227';
+  const BUILD_NAME = 'Desktop Inbox Preview Stability';
+  const BUILD_ID = '12.227.0-desktop-inbox-preview-stability';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -23608,6 +23608,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (inlineReader) {
       mail.read = true;
       saveCareerState();
+      // Build 12.227: selectedMailId is transient UI state. Saving may
+      // normalise or replace the persistent career object, so restore the
+      // desktop selection before the Inbox filters read mail and rerenders.
+      careerState.selectedMailId = mail.id;
       updateMenuUI();
       const restoreInlinePosition = () => {
         const contentScroller = menuContentEl?.closest('.menu-content');

@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.227 — Desktop Inbox Preview Stability
+
+- Keeps the clicked desktop email selected after its automatic read-state save.
+- Ensures the selected read message remains in the Inbox list long enough to populate the inline preview pane.
+- Preserves compact/mobile dialogs and their explicit MARK AS READ action from Build 12.220.
+- Reconciles stale release metadata that still reported 12.223 while source and playable artifacts were 12.226.
+- Leaves mail persistence, decisions, saved messages, save schema 19 and diagnostics schema 1 unchanged.
+- See `AUDIT-12.227.md`.
+
 ## 12.226 — Desktop Version Label and Submenu Sweep
 
 - Closes a 761-1023px gap where the department submenu lost its layout and rendered at 7.04px, affecting 844x390 landscape phones and 768px tablets.

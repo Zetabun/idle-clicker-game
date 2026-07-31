@@ -778,6 +778,10 @@
     if (inlineReader) {
       mail.read = true;
       saveCareerState();
+      // Build 12.227: selectedMailId is transient UI state. Saving may
+      // normalise or replace the persistent career object, so restore the
+      // desktop selection before the Inbox filters read mail and rerenders.
+      careerState.selectedMailId = mail.id;
       updateMenuUI();
       const restoreInlinePosition = () => {
         const contentScroller = menuContentEl?.closest('.menu-content');

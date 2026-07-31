@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.226 — Desktop Version Label and Submenu Sweep**
-- Build ID: `12.226.0-desktop-version-label-and-submenu-sweep`
+- Build: **12.227 — Desktop Inbox Preview Stability**
+- Build ID: `12.227.0-desktop-inbox-preview-stability`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.226.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.227.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.227 keeps the desktop Inbox selection alive across the read-state save, so a clicked email remains eligible for the inline list and renders in the preview pane. Compact/mobile dialogs retain Build 12.220's explicit MARK AS READ behaviour. The release also reconciles `RELEASE.json`, `README.md` and `PROJECT.md`, which still reported 12.223 while the source and playable artifact were already 12.226. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.227.md`.
 
 Build 12.226 raises the desktop version badge off a 7.5px floor and closes a responsive gap in the department submenu. **The contextual navigation was authored at `max-width: 760px` while the compact interface is defined as anything below 1024px**, leaving 761-1023px with no owner: the submenu fell back to `display: block` and to the generic `.menu-shell button { font-size: max(7px, 0.44rem) }` — measured at 844×390 as a 228px-wide, 88px-tall wrapped block with 7.04px labels inside an 844px viewport. That band covers the 844×390 landscape phone named as a primary check here and 768px tablet portrait. The four contextual blocks now run to 1023px; **no new media queries were added, the existing bounds were corrected**, because the CSS-debt gate caps the total. The desktop badge moves to `css/version-label.css` at 10-11px with a 12-13px number, using one `clamp()` breakpoint rather than two for the same reason, and needing `!important` because the rule it replaces carries the flag. Blood splatter was verified unchanged on all four arenas and the 12.224 grade in fact *improves* its separation from the wall, most on Dune (127-170%). New gate `navigationSubmenuForTest()`, verified against the defect rather than only the fix. See `AUDIT-12.226.md`.
 
