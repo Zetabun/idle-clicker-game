@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.216 — Ops-Only Priority Card**.
+Current deployed build: **12.217 — Ops Alert Badge and Header Gap Fix**.
 
 ## Concise agent workflow
 
