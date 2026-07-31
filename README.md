@@ -3,7 +3,7 @@
 The live GitHub Pages game is [`cod.html`](cod.html). The complete editable
 project is in [`strikewatch-source/`](strikewatch-source/).
 
-Current deployed build: **12.211 — Loading Screen and Collapsed Actions**.
+Current deployed build: **12.212 — Collapsed Must Respond**.
 
 ## Concise agent workflow
 
