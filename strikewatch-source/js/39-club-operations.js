@@ -738,10 +738,10 @@
   function clubMailModalActionMarkup(mail) {
     const decisionMarkup = typeof renderClubDecisionMailActions === 'function' ? renderClubDecisionMailActions(mail) : '';
     const relatedRoute = mail.actionRoute && mail.actionRoute !== 'mail' ? mail.actionRoute : '';
-    return `${decisionMarkup}<footer class="team-note-mail-toolbar"><button type="button" class="${mail.saved ? 'saved' : ''}" data-mail-modal-action="toggle-save" data-mail-id="${escapeCareerHtml(mail.id)}">${mail.saved ? '★ SAVED EMAIL' : '☆ SAVE EMAIL'}</button><button type="button" data-mail-modal-action="mark-unread" data-mail-id="${escapeCareerHtml(mail.id)}">MARK AS UNREAD</button>${relatedRoute ? `<button type="button" class="primary" data-mail-modal-route="${escapeCareerHtml(relatedRoute)}">OPEN RELATED PAGE</button>` : ''}</footer>`;
+    return `${decisionMarkup}<footer class="team-note-mail-toolbar"><button type="button" class="${mail.saved ? 'saved' : ''}" data-mail-modal-action="toggle-save" data-mail-id="${escapeCareerHtml(mail.id)}">${mail.saved ? '★ SAVED EMAIL' : '☆ SAVE EMAIL'}</button><button type="button" data-mail-modal-action="mark-read" data-mail-id="${escapeCareerHtml(mail.id)}" ${mail.read ? 'disabled' : ''}>MARK AS READ</button>${relatedRoute ? `<button type="button" class="primary" data-mail-modal-route="${escapeCareerHtml(relatedRoute)}">OPEN RELATED PAGE</button>` : ''}</footer>`;
   }
 
-  function openClubMailModal(mailId, returnFocus = null, markRead = true) {
+  function openClubMailModal(mailId, returnFocus = null, markRead = false) {
     const mail = clubMailById(mailId);
     if (!mail || typeof openTeamNoteModal !== 'function') return false;
     careerState.selectedMailId = mail.id;
@@ -775,10 +775,10 @@
       listTop: Math.max(0, Number(menuContentEl?.querySelector('.club-mail-list')?.scrollTop) || 0)
     } : null;
     careerState.selectedMailId = mail.id;
-    mail.read = true;
-    saveCareerState();
-    updateMenuUI();
     if (inlineReader) {
+      mail.read = true;
+      saveCareerState();
+      updateMenuUI();
       const restoreInlinePosition = () => {
         const contentScroller = menuContentEl?.closest('.menu-content');
         const mailList = menuContentEl?.querySelector('.club-mail-list');
@@ -792,6 +792,7 @@
       });
       return true;
     }
+    saveCareerState();
     return openClubMailModal(mail.id, clubMailRowElement(mail.id) || fallbackTrigger, false);
   }
 
@@ -814,12 +815,12 @@
         updateMenuUI();
         openClubMailModal(mail.id, null, false);
         showStatus(mail.saved ? 'EMAIL SAVED' : 'EMAIL REMOVED FROM SAVED');
-      } else if (mail && modalAction.dataset.mailModalAction === 'mark-unread') {
-        mail.read = false;
-        clubMailView = 'inbox';
+      } else if (mail && modalAction.dataset.mailModalAction === 'mark-read') {
+        mail.read = true;
         saveCareerState();
         closeTeamNoteModal();
         updateMenuUI();
+        showStatus('EMAIL MARKED AS READ');
         requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
         showStatus('MESSAGE RETURNED TO INBOX');
       }

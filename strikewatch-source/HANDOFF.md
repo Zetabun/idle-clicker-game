@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.219 — Ops Alert Indicator**
-- Build ID: `12.219.0-ops-alert-indicator`
+- Build: **12.220 — Mobile Mail Read Control**
+- Build ID: `12.220.0-mobile-mail-read-control`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.219.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.220.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.220 changes compact/mobile email dialogs to preserve unread state until the player explicitly presses MARK AS READ. Desktop inline mail continues to mark a selected message as read automatically. See `AUDIT-12.220.md`.
 
 Build 12.219 replaces the stretched Ops blocker marker with a fixed 18px circular alert indicator that cannot inherit the navigation tile's stretching or writing geometry. See `AUDIT-12.219.md`.
 
