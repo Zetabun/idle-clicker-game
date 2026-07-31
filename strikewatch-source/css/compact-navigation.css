@@ -284,3 +284,28 @@
 
 /* --- Build 12.205: board expectations ------------------------------------ */
 .board-expectations-panel{display:grid;gap:12px;padding:16px;border:1px solid rgba(201,172,90,.28);background:linear-gradient(145deg,rgba(29,30,39,.97),rgba(12,23,37,.97))}.board-expectations-panel .career-section-head{margin:0}.board-confidence{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid rgba(201,172,90,.2);background:rgba(24,35,49,.78)}.board-confidence span{font-size:10px;letter-spacing:.14em;color:#d8bd79}.board-confidence strong{justify-self:end;font-size:11px;color:#f1f5f7}.board-confidence>div,.board-objective-card>div{grid-column:1/-1;height:5px;background:rgba(255,255,255,.08);overflow:hidden}.board-confidence i,.board-objective-card i{display:block;height:100%;background:#d8bd79}.board-objectives-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px}.board-objective-card{display:grid;grid-template-rows:auto auto 1fr auto auto;gap:5px;min-width:0;padding:11px 12px;text-align:left;border:1px solid rgba(134,163,187,.2);background:rgba(20,33,50,.84)}.board-objective-card span{font-size:9.5px;letter-spacing:.12em;color:#9fcde0}.board-objective-card strong{font-size:12px;line-height:1.3;color:#f2f6f8}.board-objective-card p{margin:0;font-size:10.5px;line-height:1.4;color:#adbdc8}.board-objective-card small{font-size:10px;color:#d8bd79}.board-objective-card.complete{border-color:rgba(82,198,158,.35)}.board-objective-card.complete i{background:#55c9a6}.board-objective-card.risk i{background:#e0b551}.board-objective-card.behind i{background:#df7f70}.board-expectations-panel.compact .career-section-head p{display:none}
+
+/* --- Build 12.206: contextual mobile navigation -------------------------- */
+@media (max-width:760px){
+  #menuShell.mobile-contextual-navigation .manager-topbar{grid-template-columns:42px minmax(0,1fr) 42px;min-height:50px;padding:6px 8px;gap:6px}
+  #menuShell.mobile-contextual-navigation .manager-balance-brand,
+  #menuShell.mobile-contextual-navigation .manager-context,
+  #menuShell.mobile-contextual-navigation .manager-topbar-actions,
+  #menuShell.mobile-contextual-navigation .manager-end-day-slot{display:none!important}
+  #menuShell.mobile-contextual-navigation .manager-history-back{grid-column:1}
+  #menuShell.mobile-contextual-navigation .manager-history-forward{grid-column:3}
+  #menuShell.mobile-contextual-navigation .menu-history-bar{display:none}
+  #menuShell.mobile-contextual-navigation .menu-subnav-shell{display:grid;position:sticky;top:0;z-index:24;grid-template-columns:34px minmax(0,1fr) 34px;align-items:stretch;min-height:48px;padding:5px 6px;border-top:1px solid rgba(135,165,190,.16);border-bottom:1px solid rgba(135,165,190,.22);background:rgba(8,17,28,.97);backdrop-filter:blur(12px)}
+  #menuShell.mobile-contextual-navigation .menu-subnav{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;padding:0 2px}
+  #menuShell.mobile-contextual-navigation .menu-subnav::-webkit-scrollbar{display:none}
+  #menuShell.mobile-contextual-navigation .menu-subnav button{flex:0 0 auto;min-height:38px;max-width:180px;padding:8px 12px;scroll-snap-align:center;white-space:nowrap;font-size:11px;line-height:1.1}
+  #menuShell.mobile-contextual-navigation .menu-subnav button.active{border-color:rgba(218,188,111,.72);background:rgba(93,74,31,.38);color:#fff5d6}
+  #menuShell.mobile-contextual-navigation .menu-subnav-arrow{display:grid!important;place-items:center;min-width:34px;padding:0;font-size:22px}
+  #menuShell.mobile-contextual-navigation .mobile-command-route-bar{display:none}
+  #menuShell.mobile-contextual-navigation .menu-content{padding-top:0}
+  #menuShell.mobile-contextual-navigation #menuContent{padding-top:10px}
+  #menuShell.mobile-operations-overview .menu-subnav-shell{display:none}
+  #menuShell.mobile-operations-overview .mobile-command-route-bar{display:block}
+  #menuShell.mobile-operations-overview .manager-topbar-actions{display:flex}
+  #menuShell.mobile-operations-overview .manager-end-day-slot{display:block}
+}

@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.205 — Board Expectations**
-- Build ID: `12.205.0-board-expectations`
+- Build: **12.206 — Contextual Mobile Navigation**
+- Build ID: `12.206.0-contextual-mobile-navigation`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.205.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.206.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.206 turns the compact management header into contextual navigation. Operations Overview retains the universal shortcuts and End Day; every other mobile route hides the bulky header content and promotes the current department's route list into a sticky, horizontally scrollable top submenu. Desktop routing and gameplay are unchanged. See `AUDIT-12.206.md`.
 
 Build 12.205 adds Board Expectations: one division-scaled primary league target, two secondary objectives, live progress, status labels and a derived board-confidence score on Operations and League. It reuses existing standings and squad state and does not introduce dismissal or a new save authority. See `AUDIT-12.205.md`.
 

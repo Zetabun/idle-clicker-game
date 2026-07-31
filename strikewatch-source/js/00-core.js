@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.205';
-  const BUILD_NAME = 'Board Expectations';
-  const BUILD_ID = '12.205.0-board-expectations';
+  const BUILD_VERSION = '12.206';
+  const BUILD_NAME = 'Contextual Mobile Navigation';
+  const BUILD_ID = '12.206.0-contextual-mobile-navigation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

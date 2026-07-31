@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.205';
-  const BUILD_NAME = 'Board Expectations';
-  const BUILD_ID = '12.205.0-board-expectations';
+  const BUILD_VERSION = '12.206';
+  const BUILD_NAME = 'Contextual Mobile Navigation';
+  const BUILD_ID = '12.206.0-contextual-mobile-navigation';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -34345,12 +34345,24 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return null;
   }
 
+  function syncMobileContextualNavigationState(sectionId = menuSection, routeId = menuTab) {
+    const shell = document.getElementById('menuShell');
+    if (!shell) return;
+    const resolvedSection = menuSections[sectionId] ? sectionId : 'operations';
+    shell.dataset.mobileSection = resolvedSection;
+    shell.dataset.mobileRoute = routeId || menuSections[resolvedSection].defaultRoute;
+    shell.classList.toggle('mobile-operations-overview', resolvedSection === 'operations' && shell.dataset.mobileRoute === 'play');
+    shell.classList.toggle('mobile-contextual-navigation', !(resolvedSection === 'operations' && shell.dataset.mobileRoute === 'play'));
+  }
+
   function menuVisibleRoutes(sectionId, includeContextRoute = true) {
     const section = menuSections[sectionId] || menuSections.operations;
+    syncMobileContextualNavigationState(sectionId, menuTab);
     return (section.routes || []).filter(route => !route.contextOnly || (includeContextRoute && route.id === menuTab));
   }
 
   let mobileNavigationSectionId = 'operations';
+  document.addEventListener('DOMContentLoaded', () => syncMobileContextualNavigationState());
   let mobileNavigationQuery = '';
   let mobileNavigationLastFocus = null;
   let mobileFirstMatchGuideCollapsed = false;

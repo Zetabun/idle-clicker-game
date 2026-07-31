@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.206 turns the compact management header into contextual navigation. Operations Overview retains the universal shortcuts and End Day; every other mobile route hides the bulky header content and promotes the current department's route list into a sticky, horizontally scrollable top submenu. Desktop routing and gameplay are unchanged. See `AUDIT-12.206.md`.
+
 Build 12.205 adds Board Expectations: one division-scaled primary league target, two secondary objectives, live progress, status labels and a derived board-confidence score on Operations and League. It reuses existing standings and squad state and does not introduce dismissal or a new save authority. See `AUDIT-12.205.md`.
 
 Build 12.204 adds a compact Operator Career Story above each accolade timeline, summarising appearances, wins, K/D, awards, best rating, milestones, seasons, clubs and the latest defining moment from existing career and world-press records. It adds no new persistence or award authority. See `AUDIT-12.204.md`.
