@@ -60,25 +60,25 @@ JavaScript raw reduction: 3.23%
 === create browser fixture ===
 browser=/usr/bin/google-chrome
 === browser geometry 1024px ===
-[2916:2943:0731/220326.764529:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2943:0731/220326.771479:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2943:0731/220328.463584:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2943:0731/220328.804283:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2916:0731/220330.469666:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2916:0731/220330.469724:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2943:0731/220330.469749:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2943:0731/220330.469761:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2916:0731/220330.502623:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2916:0731/220330.520400:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2916:0731/220330.771444:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2916:0731/220330.777991:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2943:0731/220330.778804:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2916:0731/220330.934412:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.UPower was not provided by any .service files
-[2916:2916:0731/220330.940732:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2943:0731/220330.940821:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2916:0731/220331.029990:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2916:2943:0731/220331.030167:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2916:2916:0731/220331.124382:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2715:0731/220550.161066:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2715:0731/220550.161595:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2715:0731/220550.503602:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2715:0731/220550.522877:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2693:0731/220550.576745:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2693:0731/220550.576802:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2715:0731/220550.576820:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2715:0731/220550.576830:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2693:0731/220550.577862:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2693:0731/220550.579500:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2693:0731/220550.591682:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2693:0731/220550.591828:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2715:0731/220550.592418:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2693:0731/220550.600576:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2693:0731/220550.600625:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.UPower was not provided by any .service files
+[2693:2715:0731/220550.601818:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2693:0731/220550.605825:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2693:2715:0731/220550.605890:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2693:2693:0731/220550.607681:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/game.css?v=12.228.0-desktop-inbox-badge-containment">
 <link rel="stylesheet" href="css/deployment-readability.css?v=12.228.0-desktop-inbox-badge-containment">
@@ -106,13 +106,14 @@ browser=/usr/bin/google-chrome
 <link rel="stylesheet" href="css/match-gestures.css?v=12.228.0-desktop-inbox-badge-containment">
 <link rel="stylesheet" href="css/version-label.css?v=12.228.0-desktop-inbox-badge-containment">
 <style>
-html,body{margin:0;min-height:100%;}
+html,body{margin:0;min-width:0!important;max-width:100%;min-height:100%;}
 body{overflow-x:auto!important;background:#07131d;}
 #menuShell.audit-shell{display:block!important;width:clamp(420px,42vw,680px)!important;max-width:calc(100vw - 32px)!important;min-height:0!important;margin:16px!important;position:static!important;}
-#menuContent.audit-content{display:block!important;width:100%!important;min-height:0!important;overflow:visible!important;}
-.audit-content .club-mail-client,.audit-content .club-mail-layout,.audit-content .club-mail-column{display:block!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;}
-.audit-content .club-mail-list{display:grid!important;gap:12px!important;max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important;}
-.audit-content .club-mail-row{width:100%!important;}
+.audit-shell > .menu-content{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important;}
+#menuContent.audit-content{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;overflow:visible!important;}
+.audit-content .club-mail-client,.audit-content .club-mail-layout,.audit-content .club-mail-column{display:block!important;width:100%!important;max-width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-height:none!important;}
+.audit-content .club-mail-list{display:grid!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:12px!important;max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important;}
+.audit-content .club-mail-row{width:100%!important;max-width:100%!important;}
 #audit-result{display:none!important;}
 </style></head>
 <body><section id="menuShell" class="menu-shell audit-shell"><div class="menu-content"><div id="menuContent" class="audit-content"><section class="club-mail-client" data-mail-presentation="inline"><div class="club-mail-layout"><aside class="club-mail-column"><section class="club-mail-list">
@@ -122,10 +123,11 @@ body{overflow-x:auto!important;background:#07131d;}
 <span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>Backroom Staff Department</b><time>MON 17 AUG · W3</time></span><strong>Training standards · Callum Wilson and a deliberately long desktop subject</strong><small>Callum Wilson arrived late to a scheduled tactical review. The staff want a clear response before the next day begins.</small></span><em class="club-mail-saved-badge" aria-label="Saved email">★</em></button>
 <button class="club-mail-row important" data-audit-state="important"><i class="club-mail-unread-dot" aria-hidden="true"></i><span class="club-mail-avatar" aria-hidden="true">BS</span>
 <span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>Backroom Staff Department</b><time>MON 17 AUG · W3</time></span><strong>Training standards · Callum Wilson and a deliberately long desktop subject</strong><small>Callum Wilson arrived late to a scheduled tactical review. The staff want a clear response before the next day begins.</small></span><em class="club-mail-important" aria-label="Important message">★</em></button>
-</section></aside></div></section></div></div></section><pre id="audit-result">{"viewport":1024,"rows":[{"state":"decision","row":{"left":18,"right":433.078125,"width":415.078125,"clientWidth":413,"scrollWidth":413},"badge":{"left":371.390625,"right":420.078125,"top":90.1953125,"bottom":108.8984375,"width":48.6875,"position":"absolute","rightStyle":"12px"},"copy":{"left":95,"right":310.078125,"width":215.078125},"paddingRight":96,"inside":true,"separated":true,"centered":true,"noRowOverflow":true,"absolute":true,"inset":true,"reserved":true},{"state":"saved","row":{"left":18,"right":433.078125,"width":415.078125,"clientWidth":413,"scrollWidth":413},"badge":{"left":407.8125,"right":420.078125,"top":224.84375,"bottom":240.4375,"width":12.265625,"position":"absolute","rightStyle":"12px"},"copy":{"left":95,"right":354.078125,"width":259.078125},"paddingRight":52,"inside":true,"separated":true,"centered":true,"noRowOverflow":true,"absolute":true,"inset":true,"reserved":true},{"state":"important","row":{"left":18,"right":433.078125,"width":415.078125,"clientWidth":413,"scrollWidth":413},"badge":{"left":409.609375,"right":420.078125,"top":360.234375,"bottom":371.234375,"width":10.46875,"position":"absolute","rightStyle":"12px"},"copy":{"left":95,"right":354.078125,"width":259.078125},"paddingRight":52,"inside":true,"separated":true,"centered":true,"noRowOverflow":true,"absolute":true,"inset":true,"reserved":true}],"documentNoOverflow":false}</pre>
+</section></aside></div></section></div></div></section><pre id="audit-result">{"viewport":1024,"rows":[{"state":"decision","row":{"left":18,"right":443.078125,"width":425.078125,"clientWidth":423,"scrollWidth":423},"badge":{"left":381.390625,"right":430.078125,"top":90.1953125,"bottom":108.8984375,"width":48.6875,"position":"absolute","rightStyle":"12px"},"copy":{"left":95,"right":320.078125,"width":225.078125},"paddingRight":96,"inside":true,"separated":true,"centered":true,"noRowOverflow":true,"absolute":true,"inset":true,"reserved":true},{"state":"saved","row":{"left":18,"right":443.078125,"width":425.078125,"clientWidth":423,"scrollWidth":423},"badge":{"left":417.8125,"right":430.078125,"top":224.84375,"bottom":240.4375,"width":12.265625,"position":"absolute","rightStyle":"12px"},"copy":{"left":95,"right":364.078125,"width":269.078125},"paddingRight":52,"inside":true,"separated":true,"centered":true,"noRowOverflow":true,"absolute":true,"inset":true,"reserved":true},{"state":"important","row":{"left":18,"right":443.078125,"width":425.078125,"clientWidth":423,"scrollWidth":423},"badge":{"left":419.609375,"right":430.078125,"top":360.234375,"bottom":371.234375,"width":10.46875,"position":"absolute","rightStyle":"12px"},"copy":{"left":95,"right":364.078125,"width":269.078125},"paddingRight":52,"inside":true,"separated":true,"centered":true,"noRowOverflow":true,"absolute":true,"inset":true,"reserved":true}],"shellNoOverflow":true,"documentNoOverflow":false}</pre>
 <script>
 addEventListener('load',()=>{
   const tolerance=1;
+  const shell=document.getElementById('menuShell');
   const rows=[...document.querySelectorAll('[data-audit-state]')].map(row=>{
     const state=row.dataset.auditState;
     const badge=row.querySelector('.club-mail-decision-badge,.club-mail-saved-badge,.club-mail-important');
@@ -151,11 +153,11 @@ addEventListener('load',()=>{
       reserved:(parseFloat(rs.paddingRight)||0)>=requiredPadding
     };
   });
-  const result={viewport:innerWidth,rows,documentNoOverflow:document.documentElement.scrollWidth<=innerWidth+1};
+  const result={viewport:innerWidth,rows,shellNoOverflow:shell.scrollWidth<=shell.clientWidth+1,documentNoOverflow:document.documentElement.scrollWidth<=innerWidth+1};
   document.getElementById('audit-result').textContent=JSON.stringify(result);
 });
 </script></body></html>
 
-workflow_run=30668659994
+workflow_run=30668797036
 workflow_attempt=1
-trigger_sha=55634f2df93fdaead96f81579f355572b7a19b72
+trigger_sha=3ac44b64095f13953376aecfffa606731abc675e
