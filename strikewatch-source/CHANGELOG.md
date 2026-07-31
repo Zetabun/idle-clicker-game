@@ -1,5 +1,19 @@
 # Release history router
 
+> Note: entries for 12.200-12.223 were never added to this router. Their audits
+> exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
+> `HANDOFF.md`; use those until the gap is backfilled.
+
+## 12.224 — Image Grade and Ceiling Lights
+
+- Adds the renderer's first tone curve; highlights previously clipped flat and lost their hue.
+- Adds a per-arena lift/gain/saturation grade, vignette, output dither and height fog, shared with the sky program.
+- Sets exposure by measurement (0.68) after 1.06 was found to brighten mean luma by nearly 50%.
+- Places bounded ceiling lights in dark regions of the three roofed arenas from the existing enclosure sampler; Dune excluded as open-air.
+- Adds no draw calls, framebuffers, textures or shader passes, and leaves the static batch material key unchanged.
+- Registers five renderer audits that had been defined but never reachable from `window.__strikeDebug`.
+- See `AUDIT-12.224.md`.
+
 ## 12.199 — Surface-Anchored Blood Decals
 
 - Anchors blood decals to sliding door panels so they move into the wall pocket with the door.

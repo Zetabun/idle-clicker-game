@@ -913,6 +913,11 @@
     // nothing is paid per frame.
     for (const tile of createFloorRectangles()) worldBatches.floorTiles.push(tile);
 
+    // Build 12.224: ceiling fixtures are placed from the same enclosure sampler
+    // the floor and walls use, so they land in the parts of the map that
+    // actually measured dark. Placement happens here, once, never per frame.
+    for (const light of createCeilingLights()) worldBatches.ceilingLights.push(light);
+
     for (const rect of createWallRectangles()) {
       // Build 12.146: sample enclosure once, here, so nothing is paid per frame.
       // Build 12.153: measured from the open cells facing the wall rather than
@@ -1234,6 +1239,16 @@
       glLocations.roughness = gl.getUniformLocation(glProgram, 'uRoughness');
       glLocations.time = gl.getUniformLocation(glProgram, 'uTime');
       glLocations.localDetail = gl.getUniformLocation(glProgram, 'uLocalDetail');
+      // Build 12.224 image grade and ceiling lights. All per-frame; none of
+      // these are part of the static batch material key.
+      glLocations.resolution = gl.getUniformLocation(glProgram, 'uResolution');
+      glLocations.gradeLift = gl.getUniformLocation(glProgram, 'uGradeLift');
+      glLocations.gradeGain = gl.getUniformLocation(glProgram, 'uGradeGain');
+      glLocations.gradeParams = gl.getUniformLocation(glProgram, 'uGradeParams');
+      // Absent when the device could not afford the light arrays, in which case
+      // the shader was compiled without them entirely.
+      glLocations.ceilingLightPosRange = gl.getUniformLocation(glProgram, 'uCeilingLightPosRange');
+      glLocations.ceilingLightColour = gl.getUniformLocation(glProgram, 'uCeilingLightColour');
 
       // The locations must exist before the mesh buffers configure attributes.
       glMeshes.cube = makeCubeMesh();
@@ -2479,6 +2494,22 @@
     } else if (!desertTheme) {
       mat4TRS(glModel, MAP_W / 2, sceneWallHeight + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
       drawMesh(glMeshes.cube, ceilingColour, glModel, summitTheme ? 0.035 : 0.015, 1, 2, summitTheme ? 0.82 : 0.94);
+      // Build 12.224: the visible half of the ceiling lights. These are plain
+      // static geometry with a high emissive — no time dependence, nothing
+      // per-frame — so they are deliberately left batch-eligible and merge into
+      // a single draw. The illumination itself is the per-frame uniform block;
+      // this is only the fixture you look at.
+      for (const light of worldBatches.ceilingLights) {
+        const housing = CEILING_LIGHT_POLICY;
+        mat4TRS(glModel, light.x, light.y, light.z, 0, 0, 0,
+          housing.fixtureWidth, housing.fixtureThickness, housing.fixtureDepth);
+        drawMesh(glMeshes.cube, light.colour, glModel, housing.fixtureEmissive, 1, 3, 0.18);
+        // A short dark mount so the panel does not appear to float a hand's
+        // width below a ceiling it is not touching.
+        mat4TRS(glModel, light.x, light.y + housing.dropBelowCeiling * 0.5, light.z, 0, 0, 0,
+          housing.fixtureWidth * 0.16, housing.dropBelowCeiling, housing.fixtureDepth * 0.42);
+        drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, 3, 0.62);
+      }
       if (summitTheme) {
         setBlendMode(true);
         for (const z of [4.6, 11.8, 19.0]) {

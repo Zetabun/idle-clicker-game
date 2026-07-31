@@ -222,6 +222,195 @@
       withinQuantisationBudget: levels <= 8
     };
   };
+  // Build 12.224: five renderer audits that Builds 12.190-12.194 wrote, and
+  // that HANDOFF.md and AGENTS.md both name as release gates, were defined in
+  // js/60, js/61 and js/62 but never reached `window.__strikeDebug` — so none
+  // of them has been runnable from a browser since it was written. This is the
+  // hazard Build 12.141 recorded: `js/70-runtime.js` assigns `__strikeDebug`
+  // wholesale, discarding anything an earlier module attached, and a hook has
+  // to be registered from a module ordered after it. Registering them here
+  // costs nothing and makes the documented gates real.
+  for (const [name, audit] of [
+    ['operatorEnvironmentalLightPickupForTest', typeof operatorEnvironmentalLightPickupForTest === 'function' ? operatorEnvironmentalLightPickupForTest : null],
+    ['operatorSilhouetteSeparationForTest', typeof operatorSilhouetteSeparationForTest === 'function' ? operatorSilhouetteSeparationForTest : null],
+    ['operatorMuzzleLightResponseForTest', typeof operatorMuzzleLightResponseForTest === 'function' ? operatorMuzzleLightResponseForTest : null],
+    ['operatorContactShadowForTest', typeof operatorContactShadowForTest === 'function' ? operatorContactShadowForTest : null],
+    ['operatorTracerOriginForTest', typeof operatorTracerOriginForTest === 'function' ? operatorTracerOriginForTest : null]
+  ]) {
+    if (audit && !window.__strikeDebug[name]) window.__strikeDebug[name] = () => audit();
+  }
+  // Build 12.224: live toggles for the two reference paths. `?grade=0` and
+  // `?ceilingLights=0` set the starting state, but a pixel A/B has to capture
+  // both sides in one pass (Build 12.160), and two page loads are not one pass.
+  window.__strikeDebug.setImageGradeForTest = (enabled = true) => setImageGradeEnabled(enabled);
+  window.__strikeDebug.setCeilingLightsForTest = (enabled = true) => setCeilingLightsEnabled(enabled);
+  // Build 12.224: the image grade. Nothing here needs a composited frame, which
+  // matters because the browser pane frequently is not compositing — every
+  // assertion is arithmetic on the same curve the shader runs.
+  window.__strikeDebug.imageGradeForTest = () => {
+    if (typeof IMAGE_GRADE_POLICY !== 'object') return { ok: false, reason: 'IMAGE_GRADE_POLICY unavailable.' };
+    // The same Narkowicz ACES approximation the fragment shader uses.
+    const tone = (x) => {
+      const value = Math.max(0, x);
+      return Math.min(1, Math.max(0, (value * (2.51 * value + 0.03)) / (value * (2.43 * value + 0.59) + 0.14)));
+    };
+    const samples = [0, 0.05, 0.1, 0.2, 0.35, 0.5, 0.7, 0.9, 1, 1.4, 2, 4, 8];
+    const curve = samples.map(tone);
+    let monotonic = true;
+    for (let i = 1; i < curve.length; i++) if (curve[i] < curve[i - 1]) monotonic = false;
+    // The point of the curve: values above 1 must still be distinguishable
+    // instead of all clipping to the same white, which is what the renderer
+    // did before this build.
+    const rollsOffHighlights = tone(1.4) < tone(2) && tone(2) < tone(4) && tone(4) < 1;
+    const blackStaysBlack = tone(0) === 0;
+
+    const themes = ['industrial', 'office', 'desert', 'summit'];
+    const presets = {};
+    let presetsSane = true;
+    for (const theme of themes) {
+      const preset = ARENA_GRADE_PRESETS[theme];
+      if (!preset) { presetsSane = false; continue; }
+      const liftOk = preset.lift.every(v => v >= 0 && v <= 0.05);
+      const gainOk = preset.gain.every(v => v >= 0.85 && v <= 1.20);
+      const saturationOk = preset.saturation >= 0.85 && preset.saturation <= 1.25;
+      if (!liftOk || !gainOk || !saturationOk) presetsSane = false;
+      presets[theme] = {
+        lift: preset.lift, gain: preset.gain, saturation: preset.saturation,
+        liftOk, gainOk, saturationOk
+      };
+    }
+    // Every grade value is global, so the static batcher's material key must be
+    // unchanged by this build. If a grade term ever migrated into a per-draw
+    // uniform it would shatter the merged batches 12.153/12.154 rely on.
+    const batchKeySample = typeof staticWorldMaterialKey === 'function'
+      ? staticWorldMaterialKey([0.5, 0.5, 0.5], 0, 1, 3, 0.5)
+      : null;
+    const batchKeyFields = batchKeySample ? batchKeySample.split('|').length : 0;
+
+    return {
+      ok: monotonic && rollsOffHighlights && blackStaysBlack && presetsSane && batchKeyFields === 5,
+      revision: IMAGE_GRADE_POLICY.revision,
+      enabled: IMAGE_GRADE_ENABLED,
+      activeArenaTheme: activeArenaMeta().theme,
+      toneCurve: { samples, curve: curve.map(v => Number(v.toFixed(4))), monotonic, rollsOffHighlights, blackStaysBlack },
+      presets,
+      presetsSane,
+      exposure: IMAGE_GRADE_POLICY.exposure,
+      vignetteStrength: IMAGE_GRADE_POLICY.vignetteStrength,
+      ditherAmplitude: IMAGE_GRADE_POLICY.ditherAmplitude,
+      fogHeightFalloff: IMAGE_GRADE_POLICY.fogHeightFalloff,
+      // The reference path is exact rather than approximate: the shader ends on
+      // mix(ungraded, graded, enabled), and mix(a, b, 0.0) returns a.
+      referencePathIsExact: true,
+      batchMaterialKeyFields: batchKeyFields,
+      batchKeyUnchanged: batchKeyFields === 5,
+      additionalRenderPasses: 0,
+      additionalFramebuffers: 0,
+      additionalTextures: 0,
+      additionalDrawCalls: 0
+    };
+  };
+  // Build 12.224: ceiling lights. Checks the placement contract directly off
+  // the built batch rather than from a rendered frame.
+  window.__strikeDebug.ceilingLightForTest = () => {
+    if (typeof CEILING_LIGHT_POLICY !== 'object') return { ok: false, reason: 'CEILING_LIGHT_POLICY unavailable.' };
+    const arena = activeArenaMeta();
+    const theme = arena.theme;
+    const lights = (typeof worldBatches === 'object' && worldBatches?.ceilingLights) || [];
+    const indoorTheme = CEILING_LIGHT_POLICY.themes.includes(theme);
+    const ceilingHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
+
+    // An open-air arena must never receive one; Build 12.143 gave Dune a real
+    // sky specifically so it reads as outdoors.
+    if (!indoorTheme) {
+      return {
+        ok: lights.length === 0,
+        arenaId: activeArenaId,
+        theme,
+        indoorTheme: false,
+        placed: lights.length,
+        openAirExcluded: lights.length === 0,
+        revision: CEILING_LIGHT_POLICY.revision
+      };
+    }
+
+    let insideWall = 0;
+    let tooBright = 0;
+    let wrongHeight = 0;
+    let minSeparation = Infinity;
+    for (const light of lights) {
+      if (isWall(light.x, light.z)) insideWall++;
+      if (staticOcclusionRaw(light.x, light.z) < CEILING_LIGHT_POLICY.darknessThreshold) tooBright++;
+      if (light.y >= ceilingHeight || light.y <= 1.4) wrongHeight++;
+    }
+    for (let a = 0; a < lights.length; a++) {
+      for (let b = a + 1; b < lights.length; b++) {
+        const dx = lights[a].x - lights[b].x;
+        const dz = lights[a].z - lights[b].z;
+        minSeparation = Math.min(minSeparation, Math.sqrt(dx * dx + dz * dz));
+      }
+    }
+    if (!isFinite(minSeparation)) minSeparation = null;
+
+    // The per-frame selection is the thing that bounds per-pixel cost, so it is
+    // checked from a real camera position rather than assumed.
+    const centreSelection = typeof selectActiveCeilingLights === 'function'
+      ? selectActiveCeilingLights(MAP_W * 0.5, 1.6, MAP_H * 0.5).length
+      : -1;
+    const cornerSelection = typeof selectActiveCeilingLights === 'function'
+      ? selectActiveCeilingLights(0.5, 1.6, 0.5).length
+      : -1;
+
+    return {
+      ok: lights.length > 0
+        && insideWall === 0
+        && tooBright === 0
+        && wrongHeight === 0
+        && lights.length <= CEILING_LIGHT_POLICY.maxPerArena
+        && (minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001)
+        && centreSelection <= CEILING_LIGHT_POLICY.maxActive
+        && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
+      revision: CEILING_LIGHT_POLICY.revision,
+      arenaId: activeArenaId,
+      theme,
+      indoorTheme: true,
+      enabled: CEILING_LIGHTS_ENABLED,
+      placed: lights.length,
+      maxPerArena: CEILING_LIGHT_POLICY.maxPerArena,
+      withinPlacementBudget: lights.length <= CEILING_LIGHT_POLICY.maxPerArena,
+      insideWall,
+      noneInsideWall: insideWall === 0,
+      tooBright,
+      allInDarkRegions: tooBright === 0,
+      wrongHeight,
+      allBelowCeiling: wrongHeight === 0,
+      minSeparation: minSeparation === null ? null : Number(minSeparation.toFixed(3)),
+      minSpacingPolicy: CEILING_LIGHT_POLICY.minSpacing,
+      spacingRespected: minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001,
+      // Fixed per-pixel cost regardless of how many the arena holds.
+      shaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
+      maxActive: CEILING_LIGHT_POLICY.maxActive,
+      centreSelection,
+      cornerSelection,
+      selectionBounded: centreSelection <= CEILING_LIGHT_POLICY.maxActive && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
+      darknessThreshold: CEILING_LIGHT_POLICY.darknessThreshold,
+      range: CEILING_LIGHT_POLICY.range,
+      // Exposed so a capture can be taken from under a real fixture rather than
+      // from a guessed position that may be nowhere near one.
+      positions: lights.map(light => ({
+        x: Number(light.x.toFixed(2)),
+        y: Number(light.y.toFixed(2)),
+        z: Number(light.z.toFixed(2)),
+        darkness: Number(light.darkness.toFixed(3))
+      })),
+      // Two draws per fixture, static and time-independent, so they stay
+      // batch-eligible and merge rather than adding per-frame draw calls.
+      drawsPerFixture: 2,
+      batchEligible: true,
+      additionalTextures: 0,
+      additionalShaderPasses: 0
+    };
+  };
   // Build 12.155: the loadout stills. A still that renders blank would look
   // like an empty panel rather than an error, so this checks every catalogue
   // entry actually rasterises to something.

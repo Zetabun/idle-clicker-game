@@ -56,6 +56,37 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.224 owns the image grade and the ceiling lights. **Every value in both
+systems must stay a per-frame uniform** — the static batcher groups by exact
+material (`colour|emissive|alpha|surface|roughness`), so a per-draw grade or
+light term would shatter the merged batches 12.153/12.154 built;
+`imageGradeForTest()` asserts the key still has five fields. Keep the grade
+identical in `js/60-renderer-core.js` and `js/65-sky-dome.js` or Dune's horizon
+join comes apart. **Exposure is measured, never typed**: the ACES fit lifts
+midtones for this renderer's 0-1 input, so sweep any change against the ungraded
+mean luma of all four arenas — 0.68 holds every arena within 5.2%, and 1.06
+brightened them by nearly 50%. Ceiling lights are placed from
+`staticOcclusionRaw()`, deterministic by construction, capped at 14 per arena
+with the nearest 4 active per frame; Dune is open-air and must never receive
+one. `resolveCeilingLightSlots()` must keep querying
+`MAX_FRAGMENT_UNIFORM_VECTORS` — the WebGL1 floor of 16 would make the light
+arrays fail to link, not merely run slowly. Do not add a framebuffer here.
+Verify with `imageGradeForTest()`, `ceilingLightForTest()` and one-pass captures
+via `setImageGradeForTest()` / `setCeilingLightsForTest()`. Save schema 19 and
+diagnostics schema 1 are unchanged. See `AUDIT-12.224.md`.
+
+Build 12.224 also registers five renderer audits that had never been runnable.
+`operatorEnvironmentalLightPickupForTest`, `operatorSilhouetteSeparationForTest`,
+`operatorMuzzleLightResponseForTest`, `operatorContactShadowForTest` and
+`operatorTracerOriginForTest` were all defined but never reached
+`window.__strikeDebug`. **Before citing a gate in this file, check it is
+actually registered** — `js/70-runtime.js` assigns `__strikeDebug` wholesale, so
+a hook attached by an earlier module is discarded and must be registered from
+`js/79-save-checkpoints.js` or later. Note also that
+`typographyConsistencyForTest()` reports `ok: false` for a reason that is not a
+real fault: its `pinchZoomDisabled` check treats pinch zoom being *enabled* —
+which Build 12.161 deliberately restored — as a failure.
+
 Build 12.223 repairs the expanded desktop MUST RESPOND disclosure. Its summary now occupies the full row, the action groups open beneath it, duplicate explanatory copy is suppressed on desktop, and the compact/mobile disclosure rules remain unchanged. See `AUDIT-12.223.md`.
 
 Build 12.222 gives League a dedicated Fixtures submenu on both compact/mobile and desktop. The main League Overview keeps its next-opponent summary, objectives, pulse and table while the full 38-match schedule and results move to one focused route backed by the same league state. See `AUDIT-12.222.md`.

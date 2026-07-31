@@ -502,6 +502,34 @@
     gl.uniform3fv(glLocations.cameraPosition, eye);
     gl.uniform3fv(glLocations.fogColour, zoneFog);
     if (glLocations.time) gl.uniform1f(glLocations.time, time);
+
+    // Build 12.224: the image grade and the active ceiling lights, uploaded
+    // once per frame. Keeping every one of these global is what lets the static
+    // batcher keep its merged draws — a per-draw grade would shatter them.
+    const gradePreset = ARENA_GRADE_PRESETS[arenaTheme] || ARENA_GRADE_PRESETS.industrial;
+    const gradeActive = imageGradeRuntimeEnabled ? 1 : 0;
+    if (glLocations.resolution) {
+      gl.uniform2f(glLocations.resolution, canvas.width || 1, canvas.height || 1);
+    }
+    if (glLocations.gradeLift) gl.uniform3fv(glLocations.gradeLift, gradePreset.lift);
+    if (glLocations.gradeGain) gl.uniform3fv(glLocations.gradeGain, gradePreset.gain);
+    if (glLocations.gradeParams) {
+      gl.uniform4f(
+        glLocations.gradeParams,
+        gradePreset.saturation,
+        IMAGE_GRADE_POLICY.exposure,
+        IMAGE_GRADE_POLICY.vignetteStrength,
+        gradeActive
+      );
+    }
+    if (glLocations.ceilingLightPosRange && glLocations.ceilingLightColour) {
+      selectActiveCeilingLights(eye[0], eye[1], eye[2]);
+      const lightViews = ceilingLightUploadViews();
+      if (lightViews.posRange && lightViews.posRange.length) {
+        gl.uniform4fv(glLocations.ceilingLightPosRange, lightViews.posRange);
+        gl.uniform3fv(glLocations.ceilingLightColour, lightViews.colour);
+      }
+    }
     gl.clearColor(zoneFog[0] * 0.86, zoneFog[1] * 0.90, zoneFog[2] * 0.94, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Open-air arenas replace the flat clear colour with a gradient sky. It is

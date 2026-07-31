@@ -69,6 +69,18 @@
       uniform float uSunSharpness;
       uniform float uSunStrength;
       uniform float uHazeLift;
+      // Build 12.224: the sky is its own program, so it needs the same grade as
+      // the world program or the horizon join Build 12.143 matched to the fog
+      // colour comes apart — a warm-graded desert against an ungraded sky.
+      uniform vec2 uResolution;
+      uniform vec3 uGradeLift;
+      uniform vec3 uGradeGain;
+      uniform vec4 uGradeParams;
+
+      vec3 filmicToneMap(vec3 x) {
+        return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+      }
+
       void main() {
         vec3 dir = normalize(uForward + uRight * (vClip.x * uSlope.x) + uUp * (vClip.y * uSlope.y));
         float elevation = dir.y;
@@ -100,7 +112,18 @@
         colour += dither * 0.006;
 
         colour = mix(colour, colour + vec3(0.04, 0.03, 0.02), uHazeLift * horizonBand);
-        gl_FragColor = vec4(clamp(colour, 0.0, 1.0), 1.0);
+        vec3 skyColour = clamp(colour, 0.0, 1.0);
+
+        // Same order as the world program: expose, roll off, grade, frame.
+        vec3 graded = filmicToneMap(skyColour * uGradeParams.y);
+        graded = graded * uGradeGain + uGradeLift;
+        float gradeLuma = dot(graded, vec3(0.2126, 0.7152, 0.0722));
+        graded = mix(vec3(gradeLuma), graded, uGradeParams.x);
+        vec2 screenUv = gl_FragCoord.xy / max(uResolution, vec2(1.0, 1.0));
+        vec2 vignetteOffset = (screenUv - 0.5) * 2.0;
+        graded *= 1.0 - uGradeParams.z * smoothstep(0.62, 1.45, dot(vignetteOffset, vignetteOffset));
+
+        gl_FragColor = vec4(mix(skyColour, graded, uGradeParams.w), 1.0);
       }
     `;
     const program = gl.createProgram();
@@ -118,7 +141,7 @@
     try {
       glSkyProgram = createSkyProgram();
       glSkyLocations.clip = gl.getAttribLocation(glSkyProgram, 'aClip');
-      for (const name of ['uForward', 'uRight', 'uUp', 'uSlope', 'uZenith', 'uUpper', 'uHorizon', 'uGround', 'uSun', 'uSunDirection', 'uSunSharpness', 'uSunStrength', 'uHazeLift']) {
+      for (const name of ['uForward', 'uRight', 'uUp', 'uSlope', 'uZenith', 'uUpper', 'uHorizon', 'uGround', 'uSun', 'uSunDirection', 'uSunSharpness', 'uSunStrength', 'uHazeLift', 'uResolution', 'uGradeLift', 'uGradeGain', 'uGradeParams']) {
         glSkyLocations[name] = gl.getUniformLocation(glSkyProgram, name);
       }
       // One oversized triangle covers the viewport with no clipping seam.
@@ -186,6 +209,23 @@
     gl.uniform3f(glSkyLocations.uRight, rx, ry, rz);
     gl.uniform3f(glSkyLocations.uUp, ux, uy, uz);
     gl.uniform2f(glSkyLocations.uSlope, horizontalSlope, verticalSlope);
+    // Build 12.224: the sky takes the identical grade the world program takes,
+    // so the horizon stays joined.
+    {
+      const skyGrade = ARENA_GRADE_PRESETS[activeArenaMeta().theme] || ARENA_GRADE_PRESETS.industrial;
+      if (glSkyLocations.uResolution) gl.uniform2f(glSkyLocations.uResolution, canvas.width || 1, canvas.height || 1);
+      if (glSkyLocations.uGradeLift) gl.uniform3fv(glSkyLocations.uGradeLift, skyGrade.lift);
+      if (glSkyLocations.uGradeGain) gl.uniform3fv(glSkyLocations.uGradeGain, skyGrade.gain);
+      if (glSkyLocations.uGradeParams) {
+        gl.uniform4f(
+          glSkyLocations.uGradeParams,
+          skyGrade.saturation,
+          IMAGE_GRADE_POLICY.exposure,
+          IMAGE_GRADE_POLICY.vignetteStrength,
+          imageGradeRuntimeEnabled ? 1 : 0
+        );
+      }
+    }
     gl.uniform3fv(glSkyLocations.uZenith, preset.zenith);
     gl.uniform3fv(glSkyLocations.uUpper, preset.upper);
     gl.uniform3fv(glSkyLocations.uHorizon, preset.horizon);

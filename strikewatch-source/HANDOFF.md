@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.223 — Desktop Must Respond Layout**
-- Build ID: `12.223.0-desktop-must-respond-layout`
+- Build: **12.224 — Image Grade and Ceiling Lights**
+- Build ID: `12.224.0-image-grade-and-ceiling-lights`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.223.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.224.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.224 adds the image-presentation layer the renderer never had and gives the roofed arenas real ceiling lights. There was **no tone curve at all** — the lit value went straight to `gl_FragColor`, so every highlight clipped flat and lost its hue. A filmic curve, a per-arena lift/gain/saturation, a vignette, an output dither and height fog now run as one block at the end of the fragment shader, and the same block runs in the sky program so Dune's horizon join survives. **Exposure is a measured quantity, not a taste setting**: the Narkowicz ACES fit lifts midtones for this renderer's roughly 0-1 input rather than darkening them, so the first value (1.06) brightened mean luma by nearly 50% and washed the blacks out; sweeping against the ungraded mean luma of all four arenas put the crossover at 0.68, which holds every arena within 5.2%. Ceiling fixtures are placed from the same `staticOcclusionRaw()` enclosure sampler that drives baked occlusion, so they land where the map measured dark; bounded at 14 per arena, nearest 4 active per frame, Dune excluded as open-air. Lights only ever brighten — zero pixels darken in any arena — and both changes add **zero draw calls**. Every added value is a per-frame uniform, so the static batch key is untouched. See `AUDIT-12.224.md`.
 
 Build 12.223 repairs the expanded desktop MUST RESPOND disclosure. Its summary now occupies the full row, the action groups open beneath it, duplicate explanatory copy is suppressed on desktop, and the compact/mobile disclosure rules remain unchanged. See `AUDIT-12.223.md`.
 

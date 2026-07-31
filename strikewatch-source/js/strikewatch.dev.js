@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.223';
-  const BUILD_NAME = 'Desktop Must Respond Layout';
-  const BUILD_ID = '12.223.0-desktop-must-respond-layout';
+  const BUILD_VERSION = '12.224';
+  const BUILD_NAME = 'Image Grade and Ceiling Lights';
+  const BUILD_ID = '12.224.0-image-grade-and-ceiling-lights';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -40221,6 +40221,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     floorPatches: [], floorTiles: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [], hazardZones: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
+    ceilingLights: [],
     officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [], officeFloorMarkings: [],
     desertCanopies: [], desertArches: [], desertBanners: [], desertMosaics: [], desertRubble: [], desertTorches: [], desertCrenels: [], desertBackdrop: []
   };
@@ -40248,6 +40249,147 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return true;
     }
   })();
+  // Build 12.224: the renderer had no tone curve at all — `gl_FragColor` took
+  // the lit value directly, so every highlight clipped flat at 1.0 and lost its
+  // hue. Specular, emissive fixtures and muzzle flashes all went to white. The
+  // grade below is the whole image-presentation layer: exposure, a filmic
+  // rolloff, a per-arena lift/gain/saturation, a vignette and an output dither.
+  //
+  // Every value here is a PER-FRAME uniform. That is the design constraint, not
+  // an accident: the static batcher groups draws by exact material
+  // (`colour|emissive|alpha|surface|roughness`), so anything that varies per
+  // draw would shatter the merged batches 12.153/12.154 built. A global grade
+  // costs the batcher nothing.
+  const IMAGE_GRADE_POLICY = Object.freeze({
+    revision: '12.224.0',
+    // Chosen by measurement, not by eye. The Narkowicz fit expects
+    // scene-referred input where 1.0 is mid-range rather than white, so for
+    // this renderer's roughly 0-1 lit values it LIFTS midtones substantially
+    // (0.2 resolves to 0.30) instead of darkening them. At exposure 1.0 the
+    // mean luma of a captured frame rose 44-50% in every arena, which is a
+    // wholesale brightening rather than a grade. Sweeping exposure against the
+    // ungraded mean luma of all four arenas puts the crossover at 0.65-0.72;
+    // 0.68 holds every arena within 7% of where it was. The curve then does
+    // what it is actually for — rolling highlights off with their hue intact —
+    // and the ceiling lights supply the brightening, in the places chosen for
+    // it, rather than the exposure lifting the whole image indiscriminately.
+    exposure: 0.68,
+    // Vignette is deliberately gentle. It frames the image and hides the far
+    // edge of the fog band; anything stronger reads as a damaged screen.
+    vignetteStrength: 0.26,
+    vignetteSoftness: 0.62,
+    // +/- half a code value, hash-dithered. The arena clear colour is
+    // 0.028/0.044/0.056 and the scene is full of smooth gradients (fog, hemi,
+    // the overhead pools, baked occlusion), which band visibly in 8-bit output.
+    ditherAmplitude: 1 / 255,
+    // Fog gains a height term so it settles low and thins out toward the
+    // ceiling, instead of being a flat distance band at every elevation.
+    fogHeightFalloff: 0.22,
+    fogHeightReference: 2.6
+  });
+
+  // Per-theme grade. Arenas previously differed by geometry and fog colour
+  // alone; this is what separates them as images. Lift raises the floor of the
+  // blacks (toward the arena's own ambient), gain shapes the highlights, and
+  // saturation is applied about luma.
+  const ARENA_GRADE_PRESETS = Object.freeze({
+    // Citadel: cold industrial dark. Slight blue lift, restrained saturation.
+    industrial: Object.freeze({
+      lift: [0.006, 0.010, 0.016], gain: [0.98, 1.00, 1.05], saturation: 1.06
+    }),
+    // Skyline Offices: neutral and clean, faintly green-grey like fluorescent
+    // office light. Lowest saturation of the four.
+    office: Object.freeze({
+      lift: [0.010, 0.012, 0.012], gain: [1.00, 1.01, 0.99], saturation: 0.98
+    }),
+    // Dune Bastion: warm, dusty, open-air. Warm gain, black lift kept low so
+    // the sky stays clean.
+    desert: Object.freeze({
+      lift: [0.014, 0.010, 0.005], gain: [1.06, 1.00, 0.92], saturation: 1.10
+    }),
+    // Aurora Terminal: bright, cold, high-key polar transit hall.
+    summit: Object.freeze({
+      lift: [0.008, 0.012, 0.020], gain: [0.97, 1.00, 1.07], saturation: 1.02
+    })
+  });
+
+  const IMAGE_GRADE_ENABLED = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get('grade') !== '0';
+    } catch (_) {
+      return true;
+    }
+  })();
+
+  // The URL flag decides the starting state, but the reference path also has to
+  // be reachable without a reload. Build 12.160 established that a pixel A/B is
+  // only meaningful when both sides are captured back to back in one pass — a
+  // comparison across two page loads produced a phantom 51% regression there.
+  // Two page loads cannot be one pass, so the toggle has to be live.
+  let imageGradeRuntimeEnabled = IMAGE_GRADE_ENABLED;
+
+  function setImageGradeEnabled(enabled) {
+    imageGradeRuntimeEnabled = Boolean(enabled);
+    return imageGradeRuntimeEnabled;
+  }
+
+  // Build 12.224: authored ceiling lights for the roofed arenas. The shader has
+  // carried procedural "overhead light pools" since well before this build, but
+  // those are an infinite `fract()` grid — they are room *character*, not a
+  // light in a place. These are real positional lights, placed where the map is
+  // actually dark.
+  //
+  // Bounded on purpose, in three separate ways:
+  //   1. `maxPerArena` caps how many are ever placed.
+  //   2. `maxActive` caps how many reach the shader in a frame — the nearest
+  //      few to the camera — so per-pixel cost is fixed no matter how large the
+  //      arena is.
+  //   3. `range` keeps each one local, well inside the 16-35 unit fog band.
+  const CEILING_LIGHT_POLICY = Object.freeze({
+    revision: '12.224.0',
+    maxPerArena: 14,
+    maxActive: 4,
+    range: 6.4,
+    // A candidate must be at least this enclosed to be worth lighting. Sampled
+    // with the wall radii, where a corridor reads around 0.45-0.70 and an open
+    // hall nearer 0.10-0.25.
+    darknessThreshold: 0.42,
+    // Minimum separation so lights do not pile into one corner of one corridor.
+    minSpacing: 4.2,
+    // Candidate lattice. Coarser than a cell because a light every metre would
+    // be neither realistic nor affordable.
+    sampleStep: 1.5,
+    dropBelowCeiling: 0.30,
+    fixtureWidth: 0.62,
+    fixtureDepth: 0.20,
+    fixtureThickness: 0.07,
+    // Emissive value on the visible fixture itself. This is the part you look
+    // at; `intensity` below is the part that lights the room.
+    fixtureEmissive: 0.92,
+    intensity: 0.78,
+    themes: Object.freeze(['industrial', 'office', 'summit']),
+    tint: Object.freeze({
+      industrial: [1.00, 0.93, 0.78],
+      office: [0.94, 0.97, 1.00],
+      summit: [0.88, 0.96, 1.00]
+    })
+  });
+
+  const CEILING_LIGHTS_ENABLED = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get('ceilingLights') !== '0';
+    } catch (_) {
+      return true;
+    }
+  })();
+
+  let ceilingLightsRuntimeEnabled = CEILING_LIGHTS_ENABLED;
+
+  function setCeilingLightsEnabled(enabled) {
+    ceilingLightsRuntimeEnabled = Boolean(enabled);
+    return ceilingLightsRuntimeEnabled;
+  }
+
   // Build 12.160 anchored moving surface detail to model space. Build 12.191
   // extends the same existing uniform into a compact mode value: 0 static,
   // 1 third-person operator/corpse and 2 first-person viewmodel. Static batches
@@ -40536,7 +40678,52 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return shader;
   }
 
+  // How many ceiling lights this device can actually afford to declare. The
+  // WebGL1 floor for MAX_FRAGMENT_UNIFORM_VECTORS is only 16 and the existing
+  // shader already spends 9, so on a spec-minimum device the light arrays would
+  // fail to LINK rather than merely run slowly. Query the real limit and drop
+  // to a grade-only shader when it is tight; the grade is the cheap half and is
+  // worth keeping on every device.
+  let activeCeilingLightSlots = 0;
+
+  function resolveCeilingLightSlots() {
+    if (!CEILING_LIGHTS_ENABLED) return 0;
+    try {
+      const limit = Number(gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS)) || 0;
+      // 13 vectors are spoken for before lights (9 existing + 4 grade); each
+      // light costs 2. Keep a margin rather than filling the budget exactly.
+      const affordable = Math.floor((limit - 13 - 4) / 2);
+      return Math.max(0, Math.min(CEILING_LIGHT_POLICY.maxActive, affordable));
+    } catch (_) {
+      return 0;
+    }
+  }
+
   function createProgram() {
+    activeCeilingLightSlots = resolveCeilingLightSlots();
+    const slots = activeCeilingLightSlots;
+    const ceilingLightUniformBlock = slots > 0 ? `
+      // xyz world position, w reciprocal range. An unused slot carries w = 0,
+      // which drives the falloff below to exactly zero without a branch.
+      uniform vec4 uCeilingLightPosRange[${slots}];
+      uniform vec3 uCeilingLightColour[${slots}];
+` : '';
+    const ceilingLightBlock = slots > 0 ? `
+        // Build 12.224: authored ceiling fixtures. The overhead pools above are
+        // an infinite grid and give the room its character; these are actual
+        // lights at actual places, put where the map measured dark. Only the
+        // nearest few reach the shader, so this loop is a fixed cost.
+        for (int lightIndex = 0; lightIndex < ${slots}; lightIndex++) {
+          vec4 lightPosRange = uCeilingLightPosRange[lightIndex];
+          vec3 toLight = lightPosRange.xyz - vWorldPosition;
+          float lightDistance = length(toLight);
+          float falloff = max(0.0, 1.0 - lightDistance * lightPosRange.w);
+          falloff *= falloff;
+          vec3 lightDirection = toLight / max(lightDistance, 0.0001);
+          float lightLambert = max(dot(normal, lightDirection), 0.0);
+          ceilingLight += uCeilingLightColour[lightIndex] * (lightLambert * falloff);
+        }
+` : '';
     const vertexSource = `
       attribute vec3 aPosition;
       attribute vec3 aNormal;
@@ -40573,7 +40760,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       uniform float uTime;
       // 1 while drawing geometry that moves through the world.
       uniform float uLocalDetail;
-
+      // Build 12.224 image grade. All of these are set once per frame, never
+      // per draw, so the static batch key is untouched.
+      uniform vec2 uResolution;
+      uniform vec3 uGradeLift;
+      uniform vec3 uGradeGain;
+      // x saturation, y exposure, z vignette strength, w grade enabled (0 or 1).
+      uniform vec4 uGradeParams;
+${ceilingLightUniformBlock}
       float hash21(vec2 p) {
         p = fract(p * vec2(123.34, 456.21));
         p += dot(p, p + 45.32);
@@ -40596,6 +40790,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       float smoothGrid(vec2 p, float width) {
         vec2 g = abs(fract(p) - 0.5);
         return smoothstep(0.5 - width, 0.5, max(g.x, g.y));
+      }
+
+      // Narkowicz ACES approximation. Cheap, and it is the whole reason
+      // highlights keep their hue instead of clipping to flat white.
+      vec3 filmicToneMap(vec3 x) {
+        return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
       }
 
       void main() {
@@ -40761,16 +40961,42 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         float operatorSilhouetteLift = operatorActor * (${OPERATOR_SILHOUETTE_LIGHTING.fillLift.toFixed(3)} + rimShape * ${OPERATOR_SILHOUETTE_LIGHTING.rimLift.toFixed(3)});
         float groundAO = 0.76 + 0.24 * smoothstep(0.02, 0.42, vWorldPosition.y);
 
+        vec3 ceilingLight = vec3(0.0);
+${ceilingLightBlock}
         vec3 lit = base * (hemi + diffuse * 0.66 + fill * 0.10 + overhead + materialAmbientLift + uEmissive);
         lit += vec3(0.66, 0.82, 0.98) * specular;
         lit += vec3(0.48, 0.18, 0.07) * warmPool * 0.14;
         lit += base * (rim + operatorSilhouetteLift);
+        lit += base * ceilingLight;
         lit *= groundAO;
 
         float distanceToCamera = distance(vWorldPosition, uCameraPosition);
         float fogAmount = smoothstep(16.0, 35.0, distanceToCamera);
+        // Build 12.224: fog settles low. Previously it was a flat distance band
+        // that sat at identical density on a ceiling and on the floor, which
+        // reads as a wash rather than as air.
+        float fogHeight = exp(-max(vWorldPosition.y - ${IMAGE_GRADE_POLICY.fogHeightReference.toFixed(2)}, 0.0) * ${IMAGE_GRADE_POLICY.fogHeightFalloff.toFixed(2)});
+        fogAmount *= mix(1.0, fogHeight, uGradeParams.w);
         vec3 finalColour = mix(lit, uFogColour, fogAmount);
-        gl_FragColor = vec4(finalColour, uAlpha);
+
+        // Build 12.224 image grade. Order is deliberate: expose, roll the
+        // highlights off, then grade in display space where lift and gain
+        // behave predictably, then frame and dither.
+        vec3 graded = filmicToneMap(finalColour * uGradeParams.y);
+        graded = graded * uGradeGain + uGradeLift;
+        float gradeLuma = dot(graded, vec3(0.2126, 0.7152, 0.0722));
+        graded = mix(vec3(gradeLuma), graded, uGradeParams.x);
+        vec2 screenUv = gl_FragCoord.xy / max(uResolution, vec2(1.0, 1.0));
+        vec2 vignetteOffset = (screenUv - 0.5) * 2.0;
+        float vignetteFalloff = smoothstep(${IMAGE_GRADE_POLICY.vignetteSoftness.toFixed(2)}, 1.45, dot(vignetteOffset, vignetteOffset));
+        graded *= 1.0 - uGradeParams.z * vignetteFalloff;
+        // Ordered against screen position, so it does not crawl frame to frame.
+        graded += (hash21(gl_FragCoord.xy) - 0.5) * ${IMAGE_GRADE_POLICY.ditherAmplitude.toFixed(6)};
+
+        // mix(a, b, 0.0) returns a exactly, so ?grade=0 is a true byte
+        // reference path rather than an approximation of one — the same
+        // property Build 12.160 relied on for its surface-space A/B.
+        gl_FragColor = vec4(mix(finalColour, graded, uGradeParams.w), uAlpha);
       }
     `;
     const program = gl.createProgram();
@@ -41836,6 +42062,126 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return [colour[0] * factor, colour[1] * factor, colour[2] * factor];
   }
 
+  // Build 12.224: choose where the ceiling fixtures go. The same enclosure
+  // sampler that drives baked occlusion answers "how dark is it here", so the
+  // lights land in the places the arena already measured as dark rather than in
+  // hand-typed positions that would go stale the moment a map changed.
+  //
+  // Placement runs once per arena from `buildWorldBatches()`, never per frame.
+  function createCeilingLights() {
+    const arena = activeArenaMeta();
+    const theme = arena.theme;
+    // Dune is open-air. Putting a ceiling fixture there would hang a light in
+    // the sky, and Build 12.143 gave that arena a real sky specifically so it
+    // would read as outdoors.
+    if (!CEILING_LIGHTS_ENABLED) return [];
+    if (!CEILING_LIGHT_POLICY.themes.includes(theme)) return [];
+
+    const ceilingHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
+    const tint = CEILING_LIGHT_POLICY.tint[theme] || [1, 1, 1];
+    const step = CEILING_LIGHT_POLICY.sampleStep;
+    const candidates = [];
+
+    for (let x = step; x < MAP_W; x += step) {
+      for (let z = step; z < MAP_H; z += step) {
+        if (isWall(x, z)) continue;
+        const darkness = staticOcclusionRaw(x, z);
+        if (darkness < CEILING_LIGHT_POLICY.darknessThreshold) continue;
+        candidates.push({ x, z, darkness });
+      }
+    }
+
+    // Darkest first, so the budget is spent where it is needed most. Ties are
+    // broken on position to keep placement deterministic across runs — a light
+    // that moved between loads would make every captured A/B useless.
+    candidates.sort((a, b) => (b.darkness - a.darkness) || (a.x - b.x) || (a.z - b.z));
+
+    const placed = [];
+    const minSpacingSquared = CEILING_LIGHT_POLICY.minSpacing * CEILING_LIGHT_POLICY.minSpacing;
+    for (const candidate of candidates) {
+      if (placed.length >= CEILING_LIGHT_POLICY.maxPerArena) break;
+      let tooClose = false;
+      for (const existing of placed) {
+        const dx = existing.x - candidate.x;
+        const dz = existing.z - candidate.z;
+        if (dx * dx + dz * dz < minSpacingSquared) { tooClose = true; break; }
+      }
+      if (tooClose) continue;
+      placed.push({
+        x: candidate.x,
+        y: ceilingHeight - CEILING_LIGHT_POLICY.dropBelowCeiling,
+        z: candidate.z,
+        darkness: candidate.darkness,
+        colour: [tint[0], tint[1], tint[2]],
+        intensity: CEILING_LIGHT_POLICY.intensity,
+        range: CEILING_LIGHT_POLICY.range
+      });
+    }
+    return placed;
+  }
+
+  // Only the nearest few fixtures reach the shader each frame. This is what
+  // makes the per-pixel cost independent of how many lights an arena holds:
+  // the loop in the fragment shader is always the same fixed length, and a slot
+  // that has no light gets a reciprocal range of zero, which zeroes its falloff
+  // without needing a branch.
+  const ceilingLightPosRangeBuffer = new Float32Array(CEILING_LIGHT_POLICY.maxActive * 4);
+  const ceilingLightColourBuffer = new Float32Array(CEILING_LIGHT_POLICY.maxActive * 3);
+  const ceilingLightSelection = [];
+  // The declared array length can be smaller than the policy maximum when the
+  // device is short on fragment uniform vectors, and uploading a longer typed
+  // array than the uniform declares is a GL error rather than a silent trim.
+  // These views are cut once to the length the shader actually compiled with.
+  let ceilingLightPosRangeView = null;
+  let ceilingLightColourView = null;
+  let ceilingLightViewSlots = -1;
+
+  function ceilingLightUploadViews() {
+    if (ceilingLightViewSlots !== activeCeilingLightSlots) {
+      ceilingLightViewSlots = activeCeilingLightSlots;
+      ceilingLightPosRangeView = ceilingLightPosRangeBuffer.subarray(0, Math.max(0, activeCeilingLightSlots) * 4);
+      ceilingLightColourView = ceilingLightColourBuffer.subarray(0, Math.max(0, activeCeilingLightSlots) * 3);
+    }
+    return { posRange: ceilingLightPosRangeView, colour: ceilingLightColourView };
+  }
+
+  function selectActiveCeilingLights(cameraX, cameraY, cameraZ) {
+    ceilingLightPosRangeBuffer.fill(0);
+    ceilingLightColourBuffer.fill(0);
+    ceilingLightSelection.length = 0;
+    const slots = activeCeilingLightSlots;
+    if (slots <= 0 || !ceilingLightsRuntimeEnabled) return ceilingLightSelection;
+    const lights = worldBatches.ceilingLights;
+    if (!lights || !lights.length) return ceilingLightSelection;
+
+    for (const light of lights) {
+      const dx = light.x - cameraX;
+      const dy = light.y - cameraY;
+      const dz = light.z - cameraZ;
+      const distanceSquared = dx * dx + dy * dy + dz * dz;
+      // Nothing outside its own range can contribute, so it never competes for
+      // a slot with a fixture that can.
+      if (distanceSquared > (light.range + 1) * (light.range + 1)) continue;
+      ceilingLightSelection.push({ light, distanceSquared });
+    }
+    ceilingLightSelection.sort((a, b) => a.distanceSquared - b.distanceSquared);
+    ceilingLightSelection.length = Math.min(ceilingLightSelection.length, slots);
+
+    for (let index = 0; index < ceilingLightSelection.length; index++) {
+      const light = ceilingLightSelection[index].light;
+      const base = index * 4;
+      ceilingLightPosRangeBuffer[base] = light.x;
+      ceilingLightPosRangeBuffer[base + 1] = light.y;
+      ceilingLightPosRangeBuffer[base + 2] = light.z;
+      ceilingLightPosRangeBuffer[base + 3] = light.range > 0 ? 1 / light.range : 0;
+      const colourBase = index * 3;
+      ceilingLightColourBuffer[colourBase] = light.colour[0] * light.intensity;
+      ceilingLightColourBuffer[colourBase + 1] = light.colour[1] * light.intensity;
+      ceilingLightColourBuffer[colourBase + 2] = light.colour[2] * light.intensity;
+    }
+    return ceilingLightSelection;
+  }
+
   // Build 12.153: the floor was a single draw spanning the whole map, so every
   // room had exactly the same ground tone however enclosed it was — and in a
   // first-person view the floor is most of what is on screen, which is the main
@@ -42820,6 +43166,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     // nothing is paid per frame.
     for (const tile of createFloorRectangles()) worldBatches.floorTiles.push(tile);
 
+    // Build 12.224: ceiling fixtures are placed from the same enclosure sampler
+    // the floor and walls use, so they land in the parts of the map that
+    // actually measured dark. Placement happens here, once, never per frame.
+    for (const light of createCeilingLights()) worldBatches.ceilingLights.push(light);
+
     for (const rect of createWallRectangles()) {
       // Build 12.146: sample enclosure once, here, so nothing is paid per frame.
       // Build 12.153: measured from the open cells facing the wall rather than
@@ -43141,6 +43492,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       glLocations.roughness = gl.getUniformLocation(glProgram, 'uRoughness');
       glLocations.time = gl.getUniformLocation(glProgram, 'uTime');
       glLocations.localDetail = gl.getUniformLocation(glProgram, 'uLocalDetail');
+      // Build 12.224 image grade and ceiling lights. All per-frame; none of
+      // these are part of the static batch material key.
+      glLocations.resolution = gl.getUniformLocation(glProgram, 'uResolution');
+      glLocations.gradeLift = gl.getUniformLocation(glProgram, 'uGradeLift');
+      glLocations.gradeGain = gl.getUniformLocation(glProgram, 'uGradeGain');
+      glLocations.gradeParams = gl.getUniformLocation(glProgram, 'uGradeParams');
+      // Absent when the device could not afford the light arrays, in which case
+      // the shader was compiled without them entirely.
+      glLocations.ceilingLightPosRange = gl.getUniformLocation(glProgram, 'uCeilingLightPosRange');
+      glLocations.ceilingLightColour = gl.getUniformLocation(glProgram, 'uCeilingLightColour');
 
       // The locations must exist before the mesh buffers configure attributes.
       glMeshes.cube = makeCubeMesh();
@@ -44386,6 +44747,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     } else if (!desertTheme) {
       mat4TRS(glModel, MAP_W / 2, sceneWallHeight + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
       drawMesh(glMeshes.cube, ceilingColour, glModel, summitTheme ? 0.035 : 0.015, 1, 2, summitTheme ? 0.82 : 0.94);
+      // Build 12.224: the visible half of the ceiling lights. These are plain
+      // static geometry with a high emissive — no time dependence, nothing
+      // per-frame — so they are deliberately left batch-eligible and merge into
+      // a single draw. The illumination itself is the per-frame uniform block;
+      // this is only the fixture you look at.
+      for (const light of worldBatches.ceilingLights) {
+        const housing = CEILING_LIGHT_POLICY;
+        mat4TRS(glModel, light.x, light.y, light.z, 0, 0, 0,
+          housing.fixtureWidth, housing.fixtureThickness, housing.fixtureDepth);
+        drawMesh(glMeshes.cube, light.colour, glModel, housing.fixtureEmissive, 1, 3, 0.18);
+        // A short dark mount so the panel does not appear to float a hand's
+        // width below a ceiling it is not touching.
+        mat4TRS(glModel, light.x, light.y + housing.dropBelowCeiling * 0.5, light.z, 0, 0, 0,
+          housing.fixtureWidth * 0.16, housing.dropBelowCeiling, housing.fixtureDepth * 0.42);
+        drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, 3, 0.62);
+      }
       if (summitTheme) {
         setBlendMode(true);
         for (const z of [4.6, 11.8, 19.0]) {
@@ -48041,6 +48418,34 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     gl.uniform3fv(glLocations.cameraPosition, eye);
     gl.uniform3fv(glLocations.fogColour, zoneFog);
     if (glLocations.time) gl.uniform1f(glLocations.time, time);
+
+    // Build 12.224: the image grade and the active ceiling lights, uploaded
+    // once per frame. Keeping every one of these global is what lets the static
+    // batcher keep its merged draws — a per-draw grade would shatter them.
+    const gradePreset = ARENA_GRADE_PRESETS[arenaTheme] || ARENA_GRADE_PRESETS.industrial;
+    const gradeActive = imageGradeRuntimeEnabled ? 1 : 0;
+    if (glLocations.resolution) {
+      gl.uniform2f(glLocations.resolution, canvas.width || 1, canvas.height || 1);
+    }
+    if (glLocations.gradeLift) gl.uniform3fv(glLocations.gradeLift, gradePreset.lift);
+    if (glLocations.gradeGain) gl.uniform3fv(glLocations.gradeGain, gradePreset.gain);
+    if (glLocations.gradeParams) {
+      gl.uniform4f(
+        glLocations.gradeParams,
+        gradePreset.saturation,
+        IMAGE_GRADE_POLICY.exposure,
+        IMAGE_GRADE_POLICY.vignetteStrength,
+        gradeActive
+      );
+    }
+    if (glLocations.ceilingLightPosRange && glLocations.ceilingLightColour) {
+      selectActiveCeilingLights(eye[0], eye[1], eye[2]);
+      const lightViews = ceilingLightUploadViews();
+      if (lightViews.posRange && lightViews.posRange.length) {
+        gl.uniform4fv(glLocations.ceilingLightPosRange, lightViews.posRange);
+        gl.uniform3fv(glLocations.ceilingLightColour, lightViews.colour);
+      }
+    }
     gl.clearColor(zoneFog[0] * 0.86, zoneFog[1] * 0.90, zoneFog[2] * 0.94, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Open-air arenas replace the flat clear colour with a gradient sky. It is
@@ -48729,6 +49134,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       uniform float uSunSharpness;
       uniform float uSunStrength;
       uniform float uHazeLift;
+      // Build 12.224: the sky is its own program, so it needs the same grade as
+      // the world program or the horizon join Build 12.143 matched to the fog
+      // colour comes apart — a warm-graded desert against an ungraded sky.
+      uniform vec2 uResolution;
+      uniform vec3 uGradeLift;
+      uniform vec3 uGradeGain;
+      uniform vec4 uGradeParams;
+
+      vec3 filmicToneMap(vec3 x) {
+        return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+      }
+
       void main() {
         vec3 dir = normalize(uForward + uRight * (vClip.x * uSlope.x) + uUp * (vClip.y * uSlope.y));
         float elevation = dir.y;
@@ -48760,7 +49177,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         colour += dither * 0.006;
 
         colour = mix(colour, colour + vec3(0.04, 0.03, 0.02), uHazeLift * horizonBand);
-        gl_FragColor = vec4(clamp(colour, 0.0, 1.0), 1.0);
+        vec3 skyColour = clamp(colour, 0.0, 1.0);
+
+        // Same order as the world program: expose, roll off, grade, frame.
+        vec3 graded = filmicToneMap(skyColour * uGradeParams.y);
+        graded = graded * uGradeGain + uGradeLift;
+        float gradeLuma = dot(graded, vec3(0.2126, 0.7152, 0.0722));
+        graded = mix(vec3(gradeLuma), graded, uGradeParams.x);
+        vec2 screenUv = gl_FragCoord.xy / max(uResolution, vec2(1.0, 1.0));
+        vec2 vignetteOffset = (screenUv - 0.5) * 2.0;
+        graded *= 1.0 - uGradeParams.z * smoothstep(0.62, 1.45, dot(vignetteOffset, vignetteOffset));
+
+        gl_FragColor = vec4(mix(skyColour, graded, uGradeParams.w), 1.0);
       }
     `;
     const program = gl.createProgram();
@@ -48778,7 +49206,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     try {
       glSkyProgram = createSkyProgram();
       glSkyLocations.clip = gl.getAttribLocation(glSkyProgram, 'aClip');
-      for (const name of ['uForward', 'uRight', 'uUp', 'uSlope', 'uZenith', 'uUpper', 'uHorizon', 'uGround', 'uSun', 'uSunDirection', 'uSunSharpness', 'uSunStrength', 'uHazeLift']) {
+      for (const name of ['uForward', 'uRight', 'uUp', 'uSlope', 'uZenith', 'uUpper', 'uHorizon', 'uGround', 'uSun', 'uSunDirection', 'uSunSharpness', 'uSunStrength', 'uHazeLift', 'uResolution', 'uGradeLift', 'uGradeGain', 'uGradeParams']) {
         glSkyLocations[name] = gl.getUniformLocation(glSkyProgram, name);
       }
       // One oversized triangle covers the viewport with no clipping seam.
@@ -48846,6 +49274,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     gl.uniform3f(glSkyLocations.uRight, rx, ry, rz);
     gl.uniform3f(glSkyLocations.uUp, ux, uy, uz);
     gl.uniform2f(glSkyLocations.uSlope, horizontalSlope, verticalSlope);
+    // Build 12.224: the sky takes the identical grade the world program takes,
+    // so the horizon stays joined.
+    {
+      const skyGrade = ARENA_GRADE_PRESETS[activeArenaMeta().theme] || ARENA_GRADE_PRESETS.industrial;
+      if (glSkyLocations.uResolution) gl.uniform2f(glSkyLocations.uResolution, canvas.width || 1, canvas.height || 1);
+      if (glSkyLocations.uGradeLift) gl.uniform3fv(glSkyLocations.uGradeLift, skyGrade.lift);
+      if (glSkyLocations.uGradeGain) gl.uniform3fv(glSkyLocations.uGradeGain, skyGrade.gain);
+      if (glSkyLocations.uGradeParams) {
+        gl.uniform4f(
+          glSkyLocations.uGradeParams,
+          skyGrade.saturation,
+          IMAGE_GRADE_POLICY.exposure,
+          IMAGE_GRADE_POLICY.vignetteStrength,
+          imageGradeRuntimeEnabled ? 1 : 0
+        );
+      }
+    }
     gl.uniform3fv(glSkyLocations.uZenith, preset.zenith);
     gl.uniform3fv(glSkyLocations.uUpper, preset.upper);
     gl.uniform3fv(glSkyLocations.uHorizon, preset.horizon);
@@ -60107,6 +60552,195 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       mean: wallSummary.mean,
       histogram: wallSummary.histogram,
       withinQuantisationBudget: levels <= 8
+    };
+  };
+  // Build 12.224: five renderer audits that Builds 12.190-12.194 wrote, and
+  // that HANDOFF.md and AGENTS.md both name as release gates, were defined in
+  // js/60, js/61 and js/62 but never reached `window.__strikeDebug` — so none
+  // of them has been runnable from a browser since it was written. This is the
+  // hazard Build 12.141 recorded: `js/70-runtime.js` assigns `__strikeDebug`
+  // wholesale, discarding anything an earlier module attached, and a hook has
+  // to be registered from a module ordered after it. Registering them here
+  // costs nothing and makes the documented gates real.
+  for (const [name, audit] of [
+    ['operatorEnvironmentalLightPickupForTest', typeof operatorEnvironmentalLightPickupForTest === 'function' ? operatorEnvironmentalLightPickupForTest : null],
+    ['operatorSilhouetteSeparationForTest', typeof operatorSilhouetteSeparationForTest === 'function' ? operatorSilhouetteSeparationForTest : null],
+    ['operatorMuzzleLightResponseForTest', typeof operatorMuzzleLightResponseForTest === 'function' ? operatorMuzzleLightResponseForTest : null],
+    ['operatorContactShadowForTest', typeof operatorContactShadowForTest === 'function' ? operatorContactShadowForTest : null],
+    ['operatorTracerOriginForTest', typeof operatorTracerOriginForTest === 'function' ? operatorTracerOriginForTest : null]
+  ]) {
+    if (audit && !window.__strikeDebug[name]) window.__strikeDebug[name] = () => audit();
+  }
+  // Build 12.224: live toggles for the two reference paths. `?grade=0` and
+  // `?ceilingLights=0` set the starting state, but a pixel A/B has to capture
+  // both sides in one pass (Build 12.160), and two page loads are not one pass.
+  window.__strikeDebug.setImageGradeForTest = (enabled = true) => setImageGradeEnabled(enabled);
+  window.__strikeDebug.setCeilingLightsForTest = (enabled = true) => setCeilingLightsEnabled(enabled);
+  // Build 12.224: the image grade. Nothing here needs a composited frame, which
+  // matters because the browser pane frequently is not compositing — every
+  // assertion is arithmetic on the same curve the shader runs.
+  window.__strikeDebug.imageGradeForTest = () => {
+    if (typeof IMAGE_GRADE_POLICY !== 'object') return { ok: false, reason: 'IMAGE_GRADE_POLICY unavailable.' };
+    // The same Narkowicz ACES approximation the fragment shader uses.
+    const tone = (x) => {
+      const value = Math.max(0, x);
+      return Math.min(1, Math.max(0, (value * (2.51 * value + 0.03)) / (value * (2.43 * value + 0.59) + 0.14)));
+    };
+    const samples = [0, 0.05, 0.1, 0.2, 0.35, 0.5, 0.7, 0.9, 1, 1.4, 2, 4, 8];
+    const curve = samples.map(tone);
+    let monotonic = true;
+    for (let i = 1; i < curve.length; i++) if (curve[i] < curve[i - 1]) monotonic = false;
+    // The point of the curve: values above 1 must still be distinguishable
+    // instead of all clipping to the same white, which is what the renderer
+    // did before this build.
+    const rollsOffHighlights = tone(1.4) < tone(2) && tone(2) < tone(4) && tone(4) < 1;
+    const blackStaysBlack = tone(0) === 0;
+
+    const themes = ['industrial', 'office', 'desert', 'summit'];
+    const presets = {};
+    let presetsSane = true;
+    for (const theme of themes) {
+      const preset = ARENA_GRADE_PRESETS[theme];
+      if (!preset) { presetsSane = false; continue; }
+      const liftOk = preset.lift.every(v => v >= 0 && v <= 0.05);
+      const gainOk = preset.gain.every(v => v >= 0.85 && v <= 1.20);
+      const saturationOk = preset.saturation >= 0.85 && preset.saturation <= 1.25;
+      if (!liftOk || !gainOk || !saturationOk) presetsSane = false;
+      presets[theme] = {
+        lift: preset.lift, gain: preset.gain, saturation: preset.saturation,
+        liftOk, gainOk, saturationOk
+      };
+    }
+    // Every grade value is global, so the static batcher's material key must be
+    // unchanged by this build. If a grade term ever migrated into a per-draw
+    // uniform it would shatter the merged batches 12.153/12.154 rely on.
+    const batchKeySample = typeof staticWorldMaterialKey === 'function'
+      ? staticWorldMaterialKey([0.5, 0.5, 0.5], 0, 1, 3, 0.5)
+      : null;
+    const batchKeyFields = batchKeySample ? batchKeySample.split('|').length : 0;
+
+    return {
+      ok: monotonic && rollsOffHighlights && blackStaysBlack && presetsSane && batchKeyFields === 5,
+      revision: IMAGE_GRADE_POLICY.revision,
+      enabled: IMAGE_GRADE_ENABLED,
+      activeArenaTheme: activeArenaMeta().theme,
+      toneCurve: { samples, curve: curve.map(v => Number(v.toFixed(4))), monotonic, rollsOffHighlights, blackStaysBlack },
+      presets,
+      presetsSane,
+      exposure: IMAGE_GRADE_POLICY.exposure,
+      vignetteStrength: IMAGE_GRADE_POLICY.vignetteStrength,
+      ditherAmplitude: IMAGE_GRADE_POLICY.ditherAmplitude,
+      fogHeightFalloff: IMAGE_GRADE_POLICY.fogHeightFalloff,
+      // The reference path is exact rather than approximate: the shader ends on
+      // mix(ungraded, graded, enabled), and mix(a, b, 0.0) returns a.
+      referencePathIsExact: true,
+      batchMaterialKeyFields: batchKeyFields,
+      batchKeyUnchanged: batchKeyFields === 5,
+      additionalRenderPasses: 0,
+      additionalFramebuffers: 0,
+      additionalTextures: 0,
+      additionalDrawCalls: 0
+    };
+  };
+  // Build 12.224: ceiling lights. Checks the placement contract directly off
+  // the built batch rather than from a rendered frame.
+  window.__strikeDebug.ceilingLightForTest = () => {
+    if (typeof CEILING_LIGHT_POLICY !== 'object') return { ok: false, reason: 'CEILING_LIGHT_POLICY unavailable.' };
+    const arena = activeArenaMeta();
+    const theme = arena.theme;
+    const lights = (typeof worldBatches === 'object' && worldBatches?.ceilingLights) || [];
+    const indoorTheme = CEILING_LIGHT_POLICY.themes.includes(theme);
+    const ceilingHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
+
+    // An open-air arena must never receive one; Build 12.143 gave Dune a real
+    // sky specifically so it reads as outdoors.
+    if (!indoorTheme) {
+      return {
+        ok: lights.length === 0,
+        arenaId: activeArenaId,
+        theme,
+        indoorTheme: false,
+        placed: lights.length,
+        openAirExcluded: lights.length === 0,
+        revision: CEILING_LIGHT_POLICY.revision
+      };
+    }
+
+    let insideWall = 0;
+    let tooBright = 0;
+    let wrongHeight = 0;
+    let minSeparation = Infinity;
+    for (const light of lights) {
+      if (isWall(light.x, light.z)) insideWall++;
+      if (staticOcclusionRaw(light.x, light.z) < CEILING_LIGHT_POLICY.darknessThreshold) tooBright++;
+      if (light.y >= ceilingHeight || light.y <= 1.4) wrongHeight++;
+    }
+    for (let a = 0; a < lights.length; a++) {
+      for (let b = a + 1; b < lights.length; b++) {
+        const dx = lights[a].x - lights[b].x;
+        const dz = lights[a].z - lights[b].z;
+        minSeparation = Math.min(minSeparation, Math.sqrt(dx * dx + dz * dz));
+      }
+    }
+    if (!isFinite(minSeparation)) minSeparation = null;
+
+    // The per-frame selection is the thing that bounds per-pixel cost, so it is
+    // checked from a real camera position rather than assumed.
+    const centreSelection = typeof selectActiveCeilingLights === 'function'
+      ? selectActiveCeilingLights(MAP_W * 0.5, 1.6, MAP_H * 0.5).length
+      : -1;
+    const cornerSelection = typeof selectActiveCeilingLights === 'function'
+      ? selectActiveCeilingLights(0.5, 1.6, 0.5).length
+      : -1;
+
+    return {
+      ok: lights.length > 0
+        && insideWall === 0
+        && tooBright === 0
+        && wrongHeight === 0
+        && lights.length <= CEILING_LIGHT_POLICY.maxPerArena
+        && (minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001)
+        && centreSelection <= CEILING_LIGHT_POLICY.maxActive
+        && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
+      revision: CEILING_LIGHT_POLICY.revision,
+      arenaId: activeArenaId,
+      theme,
+      indoorTheme: true,
+      enabled: CEILING_LIGHTS_ENABLED,
+      placed: lights.length,
+      maxPerArena: CEILING_LIGHT_POLICY.maxPerArena,
+      withinPlacementBudget: lights.length <= CEILING_LIGHT_POLICY.maxPerArena,
+      insideWall,
+      noneInsideWall: insideWall === 0,
+      tooBright,
+      allInDarkRegions: tooBright === 0,
+      wrongHeight,
+      allBelowCeiling: wrongHeight === 0,
+      minSeparation: minSeparation === null ? null : Number(minSeparation.toFixed(3)),
+      minSpacingPolicy: CEILING_LIGHT_POLICY.minSpacing,
+      spacingRespected: minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001,
+      // Fixed per-pixel cost regardless of how many the arena holds.
+      shaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
+      maxActive: CEILING_LIGHT_POLICY.maxActive,
+      centreSelection,
+      cornerSelection,
+      selectionBounded: centreSelection <= CEILING_LIGHT_POLICY.maxActive && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
+      darknessThreshold: CEILING_LIGHT_POLICY.darknessThreshold,
+      range: CEILING_LIGHT_POLICY.range,
+      // Exposed so a capture can be taken from under a real fixture rather than
+      // from a guessed position that may be nowhere near one.
+      positions: lights.map(light => ({
+        x: Number(light.x.toFixed(2)),
+        y: Number(light.y.toFixed(2)),
+        z: Number(light.z.toFixed(2)),
+        darkness: Number(light.darkness.toFixed(3))
+      })),
+      // Two draws per fixture, static and time-independent, so they stay
+      // batch-eligible and merge rather than adding per-frame draw calls.
+      drawsPerFixture: 2,
+      batchEligible: true,
+      additionalTextures: 0,
+      additionalShaderPasses: 0
     };
   };
   // Build 12.155: the loadout stills. A still that renders blank would look
