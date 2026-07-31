@@ -42,6 +42,13 @@ if release.get("version") != OLD_VERSION:
 release.update(version=NEW_VERSION, name=NEW_NAME, build_id=NEW_BUILD_ID)
 write(release_path, json.dumps(release, indent=2) + "\n")
 
+core_path = SOURCE / "js/00-core.js"
+core = read(core_path)
+core = replace_once(core, f"const BUILD_VERSION = '{OLD_VERSION}'", f"const BUILD_VERSION = '{NEW_VERSION}'", "BUILD_VERSION")
+core = replace_once(core, f"const BUILD_NAME = '{OLD_NAME}'", f"const BUILD_NAME = '{NEW_NAME}'", "BUILD_NAME")
+core = replace_once(core, f"const BUILD_ID = '{OLD_BUILD_ID}'", f"const BUILD_ID = '{NEW_BUILD_ID}'", "BUILD_ID")
+write(core_path, core)
+
 ui_path = SOURCE / "js/50-ui-menus.js"
 ui = read(ui_path)
 old_render = """    const contextTutorial = renderMenuContextTutorial(menuTab);
@@ -79,13 +86,12 @@ write(ui_path, ui)
 
 index_path = SOURCE / "index.html"
 index = read(index_path)
-for old, new, label in [
-    (f"Strikewatch {OLD_VERSION}: {OLD_NAME}", f"Strikewatch {NEW_VERSION}: {NEW_NAME}", "document title"),
-    (OLD_BUILD_ID, NEW_BUILD_ID, "asset build id"),
-]:
-    if old not in index:
-        fail(f"missing {label} anchor in index.html")
-    index = index.replace(old, new)
+index = replace_once(index, f"Strikewatch {OLD_VERSION}: {OLD_NAME}", f"Strikewatch {NEW_VERSION}: {NEW_NAME}", "document title")
+if OLD_BUILD_ID not in index:
+    fail("missing asset build id in index.html")
+index = index.replace(OLD_BUILD_ID, NEW_BUILD_ID)
+index = replace_once(index, f'id="managerBuildVersion">{OLD_VERSION}</b>', f'id="managerBuildVersion">{NEW_VERSION}</b>', "desktop build label")
+index = replace_once(index, f'id="mobileCommandBuildVersion">{OLD_VERSION}</b>', f'id="mobileCommandBuildVersion">{NEW_VERSION}</b>', "mobile build label")
 write(index_path, index)
 
 release_note = (
