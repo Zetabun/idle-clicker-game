@@ -56,6 +56,8 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.228 owns the desktop Inbox row-status slot in `css/inbox-scroll.css`. Keep DECISION, saved and important indicators inside the row border, vertically centred and separated from `.club-mail-row-copy`; never solve one status with a one-off offset. Scope the rule to the inline desktop presentation so Build 12.220 compact/modal behaviour remains untouched. Verify computed geometry for all three states across the supported desktop widths. See `AUDIT-12.228.md`.
+
 Build 12.227 owns desktop inline Inbox selection in `js/39-club-operations.js`. Preserve this order when a row is opened at 1024px and wider: select the mail, mark it read, save persistent career state, reassert the transient `selectedMailId`, then render. Read messages remain eligible only while selected through `clubMailVisibleInInbox()`. Do not move automatic read-on-open into compact/mobile: Build 12.220's modal must keep the message unread until MARK AS READ is pressed. Verify both presentation branches and the selected read-message filter together. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.227.md`.
 
 Build 12.226 owns the compact navigation breakpoint and the desktop version

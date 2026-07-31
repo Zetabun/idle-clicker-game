@@ -12,7 +12,7 @@ share application scope in the listed order.
 | `css/game.css` | Legacy/base responsive and visual presentation; no new component-owned tail blocks |
 | `css/deployment-readability.css` | Confirm Deployment typography and desktop/compact roster layout |
 | `css/economy-guide.css` | After-action reward/economy typography and compact card reflow |
-| `css/inbox-scroll.css` | Inbox nested-scroll arming, overscroll containment and overflow mask |
+| `css/inbox-scroll.css` | Inbox nested-scroll arming, overflow mask and desktop row-status containment |
 | `css/operator-portrait.css` | Asset-free operator complexion, kit, headgear, rig and deployment portrait presentation |
 | `css/command-chrome.css` | Compact shared command typography floors and nowrap containment |
 | `css/combat-effectiveness.css` | Compact after-action score ring, caption and influence typography |

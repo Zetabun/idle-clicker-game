@@ -1,5 +1,5 @@
-/* Inbox nested-scroll arming and overflow signposting ownership.
-   Extracted from the Build 12.133 tail in Build 12.183 without changing declarations. */
+/* Inbox nested-scroll arming, overflow signposting and desktop row-status containment.
+   Scroll ownership was extracted from the Build 12.133 tail in Build 12.183. */
 
 /* --- Inbox feed: inert until the manager clicks into it --- */
 
@@ -16,4 +16,45 @@ body.mail-scroll-armed .club-mail-list {
 .club-mail-list.mail-scroll-overflow {
   -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, .18) 100%);
   mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, .18) 100%);
+}
+
+/* --- Build 12.228: desktop Inbox status-badge containment -----------------
+   Inline desktop rows previously inherited an edge-positioned badge with no
+   protected space in the copy column. The row clips its contents, so DECISION
+   could be cut by the right border. Keep every status in one inset slot and
+   reserve only the width each state needs. Compact/modal mail is untouched. */
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row.saved,
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row.important {
+  position: relative;
+  box-sizing: border-box;
+  padding-inline-end: 52px;
+}
+
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row.decision-required {
+  position: relative;
+  box-sizing: border-box;
+  padding-inline-end: 96px;
+}
+
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row > .club-mail-row-copy {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row > .club-mail-decision-badge,
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row > .club-mail-saved-badge,
+.club-mail-client[data-mail-presentation='inline'] .club-mail-row > .club-mail-important {
+  position: absolute;
+  left: auto;
+  right: 12px;
+  inset-inline-start: auto;
+  inset-inline-end: 12px;
+  top: 50%;
+  bottom: auto;
+  box-sizing: border-box;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 1;
 }

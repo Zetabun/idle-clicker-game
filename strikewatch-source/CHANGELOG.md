@@ -4,6 +4,16 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.228 — Desktop Inbox Badge Containment
+
+- Moves the desktop DECISION chip fully inside the mail-row border.
+- Gives decision, saved and important states one shared inset status slot instead of unrelated edge offsets.
+- Reserves 96px for decision labels and 52px for star indicators so message copy cannot run underneath them.
+- Scopes the change to the inline desktop Inbox; compact/mobile modal mail remains unchanged.
+- Verifies all three row states at 1024, 1280, 1440 and 1920px with computed browser geometry and no horizontal overflow.
+- Leaves mail state, decisions, save schema 19 and diagnostics schema 1 unchanged.
+- See `AUDIT-12.228.md`.
+
 ## 12.227 — Desktop Inbox Preview Stability
 
 - Keeps the clicked desktop email selected after its automatic read-state save.

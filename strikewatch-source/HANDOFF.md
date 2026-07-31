@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.227 — Desktop Inbox Preview Stability**
-- Build ID: `12.227.0-desktop-inbox-preview-stability`
+- Build: **12.228 — Desktop Inbox Badge Containment**
+- Build ID: `12.228.0-desktop-inbox-badge-containment`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.227.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.228.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.228 owns desktop Inbox row-status containment in `css/inbox-scroll.css`. The DECISION chip, saved star and important star now share an inset right-edge slot, while decision rows reserve the wider label space and star rows reserve only their smaller icon space. The correction is scoped to `data-mail-presentation="inline"`, so compact/mobile modal mail is unchanged. Verify all three states at 1024, 1280, 1440 and 1920px with no badge clipping, copy overlap or horizontal overflow. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.228.md`.
 
 Build 12.227 keeps the desktop Inbox selection alive across the read-state save, so a clicked email remains eligible for the inline list and renders in the preview pane. Compact/mobile dialogs retain Build 12.220's explicit MARK AS READ behaviour. The release also reconciles `RELEASE.json`, `README.md` and `PROJECT.md`, which still reported 12.223 while the source and playable artifact were already 12.226. Save schema 19 and diagnostics schema 1 are unchanged. See `AUDIT-12.227.md`.
 

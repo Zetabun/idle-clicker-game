@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.227';
-  const BUILD_NAME = 'Desktop Inbox Preview Stability';
-  const BUILD_ID = '12.227.0-desktop-inbox-preview-stability';
+  const BUILD_VERSION = '12.228';
+  const BUILD_NAME = 'Desktop Inbox Badge Containment';
+  const BUILD_ID = '12.228.0-desktop-inbox-badge-containment';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

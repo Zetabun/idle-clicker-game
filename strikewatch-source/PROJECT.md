@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.227 preserves a clicked desktop email through the read-state save so it appears in the inline preview pane, while retaining compact/mobile explicit read control. See `HANDOFF.md` and `AUDIT-12.227.md`.
+Build 12.228 contains every desktop Inbox row-status indicator inside a shared inset slot, preventing decision, saved and important badges from clipping or covering message copy. See `HANDOFF.md` and `AUDIT-12.228.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
