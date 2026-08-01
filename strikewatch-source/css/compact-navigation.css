@@ -165,8 +165,25 @@
     -webkit-line-clamp: 2;
     overflow: hidden;
   }
-  .club-must-respond-body > header small {
-    max-width: 52ch;
+  /* Build 12.234: the expanded disclosure's own header is suppressed here, as
+     Build 12.223 already suppresses it on desktop.
+
+     It was never laid out on compact. `game.css` styles
+     `.club-must-respond-strip > header`, but Build 12.201 moved that header
+     inside `.club-must-respond-body`, so the selector stopped matching and its
+     `span`, `strong` and `small` fell back to `display: inline` with no
+     padding — printing "MUST RESPOND1 ACTION REQUIRED BEFORE ENDING THE
+     DAYResolve this item…" as one unbroken run against the panel edge.
+
+     Laying it out was the obvious repair and the wrong one: the block restates
+     the summary two lines above it. With one blocker the summary already names
+     that action; with more, `summaryLabel` is already "N REQUIRED ACTIONS", so
+     the count is not lost either way. Desktop reached this conclusion first and
+     both targets now agree. `game.css`'s `> header` rules are dead code and are
+     left alone rather than retargeted — their 7px type predates the compact
+     readability floors and would fail them. */
+  .club-must-respond-body > header {
+    display: none;
   }
 
   /* Build 12.230: Operations Today on the compact target. These live inside
@@ -205,12 +222,9 @@
     padding: 10px 12px;
   }
   .club-must-respond-strip > summary strong { font-size: 13px; }
-  .club-must-respond-body > header {
-    padding-top: 10px;
-  }
-  .club-must-respond-body > header small {
-    display: none;
-  }
+  /* Build 12.234: the two rules that sat here trimmed the expanded
+     disclosure's own header for narrow phones. That header is now hidden for
+     the whole compact range, so they had nothing left to act on. */
 
   /* Build 12.230: narrow portrait phones. The date is the longest single
      string in the header and must never be the thing that forces a scrollbar.
@@ -643,6 +657,46 @@
 
 /* --- Build 12.205: board expectations ------------------------------------ */
 .board-expectations-panel{display:grid;gap:12px;padding:16px;border:1px solid rgba(201,172,90,.28);background:linear-gradient(145deg,rgba(29,30,39,.97),rgba(12,23,37,.97))}.board-expectations-panel .career-section-head{margin:0}.board-confidence{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid rgba(201,172,90,.2);background:rgba(24,35,49,.78)}.board-confidence span{font-size:10px;letter-spacing:.14em;color:#d8bd79}.board-confidence strong{justify-self:end;font-size:11px;color:#f1f5f7}.board-confidence>div,.board-objective-card>div{grid-column:1/-1;height:5px;background:rgba(255,255,255,.08);overflow:hidden}.board-confidence i,.board-objective-card i{display:block;height:100%;background:#d8bd79}.board-objectives-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px}.board-objective-card{display:grid;grid-template-rows:auto auto 1fr auto auto;gap:5px;min-width:0;padding:11px 12px;text-align:left;border:1px solid rgba(134,163,187,.2);background:rgba(20,33,50,.84)}.board-objective-card span{font-size:9.5px;letter-spacing:.12em;color:#9fcde0}.board-objective-card strong{font-size:12px;line-height:1.3;color:#f2f6f8}.board-objective-card p{margin:0;font-size:10.5px;line-height:1.4;color:#adbdc8}.board-objective-card small{font-size:10px;color:#d8bd79}.board-objective-card.complete{border-color:rgba(82,198,158,.35)}.board-objective-card.complete i{background:#55c9a6}.board-objective-card.risk i{background:#e0b551}.board-objective-card.behind i{background:#df7f70}.board-expectations-panel.compact .career-section-head p{display:none}
+
+/* --- Build 12.234: Board Expectations surface ----------------------------
+   The `background` declared in the 12.205 block above has never painted. The
+   Command Skin targets `#menuContent > section[class]`, which outranks a single
+   class, so this panel has always been drawn with the skin's default pair —
+   and that pair fades to `rgba(11, 17, 30, .95)`, near-black, at the bottom.
+   Nobody noticed while the panel was full, but three objectives in a two-column
+   grid leave one empty cell, and that cell showed the fade as a black hole
+   beside the cards.
+
+   Fixed the same way Build 12.230 fixed it for Operations Today: redefine the
+   two variables the skin reads rather than declaring a background it will
+   outrank. That costs no flagged declaration — the budget has one slot left in
+   the whole project — and keeps the panel inside the theming system.
+
+   The pair stays inside the blue-grey family the rest of the command chrome
+   uses, with a shallow top-lit fall so the panel still reads as a lit surface
+   rather than a flat block. Note this fade is the skin default on EVERY panel;
+   only this one exposes it, so the correction is deliberately scoped here.
+
+   Do not write the override-flag token in prose anywhere in these stylesheets.
+   The CSS-debt gate counts raw occurrences of that string across the combined
+   sheets, so naming it in a comment spends budget exactly as a real declaration
+   would; an earlier draft of this comment cost the last free slot. */
+.board-expectations-panel {
+  --skin-panel-hi: rgba(27, 38, 60, .95);
+  --skin-panel-lo: rgba(20, 29, 46, .95);
+}
+
+/* Three objectives never divide evenly into a two-column grid, so `auto-fit`
+   orphans the third and reserves a dead cell beside it. Flex-wrap lets a short
+   final row stretch to fill instead — the same reasoning, and the same fix, as
+   the five columns of Operations Today. */
+.board-objectives-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+.board-objective-card {
+  flex: 1 1 190px;
+}
 
 /* --- Build 12.206: contextual mobile navigation --------------------------
    Build 12.226: these blocks were authored at max-width:760px, but the compact

@@ -4,6 +4,14 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.234 — Board Surface & Compact Blocker Header
+
+- Board Expectations no longer renders near-black: its authored background never applied because the Command Skin outranks it, so the panel now sets the skin's own variables instead.
+- The objectives grid becomes flex-wrap, removing the 204-297px dead cell three objectives left in a two-column layout.
+- The expanded MUST RESPOND disclosure no longer prints its header as one unbroken run of text on compact; it is hidden there, as desktop has done since 12.223.
+- Presentation only. No flagged declaration and no media query added; CSS debt unchanged at 2269/2270 and 484/484.
+- See `AUDIT-12.234.md`.
+
 ## 12.233 — Operations Today Status Board
 
 - Rebuilds Operations Today as a status board: the tone states are no longer equal in weight, so an area needing a decision reads before an area that is settled.

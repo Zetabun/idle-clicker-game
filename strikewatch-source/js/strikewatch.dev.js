@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.233';
-  const BUILD_NAME = 'Operations Today Status Board';
-  const BUILD_ID = '12.233.0-operations-today-status-board';
+  const BUILD_VERSION = '12.234';
+  const BUILD_NAME = 'Board Surface & Compact Blocker Header';
+  const BUILD_ID = '12.234.0-board-surface-compact-blocker-header';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

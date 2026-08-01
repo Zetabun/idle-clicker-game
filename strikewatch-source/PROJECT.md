@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.233 rebuilds Operations Today as a status board, so the areas needing a decision read before the areas that are settled. See `HANDOFF.md` and `AUDIT-12.233.md`.
+Build 12.234 corrects the Board Expectations panel surface and the expanded compact blocker header. See `HANDOFF.md` and `AUDIT-12.234.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
