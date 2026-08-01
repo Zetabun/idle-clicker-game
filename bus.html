@@ -141,7 +141,7 @@ button{cursor:pointer;border:0;background:none}
 .destchip .n{opacity:.6;font-weight:400;margin-left:4px}
 .destnote{font-size:10.5px;color:var(--text-dim);margin-top:7px;letter-spacing:.03em}
 
-.dep.unreachable{opacity:.45}
+.dep.unreachable{opacity:.6}
 .chip.tight{border-color:var(--warn);color:var(--warn)}
 
 
@@ -172,10 +172,10 @@ button{cursor:pointer;border:0;background:none}
   content:'';position:absolute;inset:0;pointer-events:none;z-index:5;
   background-image:radial-gradient(circle at center, rgba(0,0,0,.42) 0.9px, transparent 1px);
   background-size:var(--board-dot) var(--board-dot);
-  mix-blend-mode:multiply;opacity:.85;
+  mix-blend-mode:multiply;opacity:.45;
 }
 .dep{
-  display:grid;grid-template-columns:46px 1fr auto 26px;gap:11px;align-items:center;
+  display:grid;grid-template-columns:46px minmax(0,1fr) 56px 26px;gap:11px;align-items:center;
   padding:12px 16px;border-bottom:1px solid var(--rule);width:100%;text-align:left;
   transition:background .12s;
 }
@@ -194,16 +194,18 @@ button{cursor:pointer;border:0;background:none}
 }
 .route.stale{background:var(--led-dim);color:#0B1119}
 .dest{font-size:14px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.deprow2{display:flex;align-items:center;gap:7px;margin-top:3px}
+.deprow2{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px;min-width:0}
 .chip{
   font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;
-  padding:2px 6px;border-radius:3px;border:1px solid var(--rule);color:var(--text-dim);white-space:nowrap;
+  padding:2px 6px;border-radius:3px;border:1px solid var(--rule);color:var(--text-dim);
+  white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;
 }
 .chip.in{border-color:var(--led-dim);color:var(--led)}
 .chip.away{opacity:.75}
 .eta{
   font-family:'Martian Mono',monospace;font-weight:700;font-size:24px;color:var(--led);
   text-align:right;letter-spacing:-.06em;line-height:1;text-shadow:0 0 12px rgba(255,176,0,.28);
+  min-width:52px;
 }
 .eta small{display:block;font-size:9px;font-weight:400;letter-spacing:.14em;color:var(--led-dim);margin-top:3px}
 .eta.due{color:var(--live);text-shadow:0 0 12px rgba(63,217,164,.3)}
@@ -353,7 +355,9 @@ button{cursor:pointer;border:0;background:none}
   .lblshort{display:inline}
   #setBtn{flex:0 0 auto}
   .searchwrap{order:3;flex-basis:100%}
-  .dep{grid-template-columns:44px 1fr auto 24px;gap:9px;padding:11px 14px}
+  .dep{grid-template-columns:42px minmax(0,1fr) 52px 22px;gap:8px;padding:11px 13px}
+  .eta{font-size:21px;min-width:0}
+  .chip{font-size:9.5px;padding:2px 5px}
   .dfacts{grid-template-columns:repeat(2,1fr)}
 }
 @media (prefers-reduced-motion:reduce){
@@ -1507,17 +1511,17 @@ function render(){
       const mins = Math.round(r.secs/60);
       const due = mins<=1;
       const stale = (Date.now()-r.v.ts) > 90000;
-      const tight = S.walkSecs && r.secs < S.walkSecs;
+      const tight = S.walkSecs > 90 && r.secs < S.walkSecs - 30;
       const dirChip = S.destFilter ? fmtDist(r.metres)+' away'
-                    : r.dir==='in' ? 'Into '+(S.anchor?S.anchor.name:'town')
-                    : r.dir==='out' ? 'Outbound' : 'Direction unclear';
+                    : r.dir==='in' ? '\u2192 '+(S.anchor?S.anchor.name:'town')
+                    : r.dir==='out' ? '\u2190 Outbound' : 'Unclear';
       return '<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'">'
         + '<span class="route'+(stale?' stale':'')+'">'+esc(r.v.line)+'</span>'
         + '<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span>'
         + '<span class="deprow2">'
         + '<span class="chip'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
-        + (tight ? '<span class="chip tight">Too soon to walk</span>'
-                 : '<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+' away</span>')
+        + (S.destFilter ? '' : '<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
+        + (tight ? '<span class="chip tight">Tight</span>' : '')
         + '</span></span>'
         + '<span class="eta'+(due?' due':'')+'">'+(due?'due':mins)+'<small>'+(due?'arriving':'min')+'</small></span>'
         + '<span class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" role="button" tabindex="0" title="Alert me when to leave">'
