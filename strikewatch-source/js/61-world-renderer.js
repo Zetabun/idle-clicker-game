@@ -2494,16 +2494,23 @@
     } else if (!desertTheme) {
       mat4TRS(glModel, MAP_W / 2, sceneWallHeight + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
       drawMesh(glMeshes.cube, ceilingColour, glModel, summitTheme ? 0.035 : 0.015, 1, 2, summitTheme ? 0.82 : 0.94);
-      // Build 12.224: the visible half of the ceiling lights. These are plain
-      // static geometry with a high emissive — no time dependence, nothing
-      // per-frame — so they are deliberately left batch-eligible and merge into
-      // a single draw. The illumination itself is the per-frame uniform block;
-      // this is only the fixture you look at.
+      // Build 12.241: a shallow lens beneath each dark housing is deliberately
+      // independent of nearest-light selection, so every panel reads as on
+      // while only the bounded few light the room. Housing and mount share one
+      // material group; every lens shares the other. The static fixture still
+      // costs two batches and no time-dependent or per-frame work is added.
       for (const light of worldBatches.ceilingLights) {
         const housing = CEILING_LIGHT_POLICY;
         mat4TRS(glModel, light.x, light.y, light.z, 0, 0, 0,
           housing.fixtureWidth, housing.fixtureThickness, housing.fixtureDepth);
-        drawMesh(glMeshes.cube, light.colour, glModel, housing.fixtureEmissive, 1, 3, 0.18);
+        drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, 3, 0.62);
+        mat4TRS(glModel, light.x,
+          light.y - housing.fixtureThickness * 0.5 - housing.fixtureLensThickness * 0.5 - 0.004,
+          light.z, 0, 0, 0,
+          housing.fixtureWidth * housing.fixtureLensWidthScale,
+          housing.fixtureLensThickness,
+          housing.fixtureDepth * housing.fixtureLensDepthScale);
+        drawMesh(glMeshes.cube, light.colour, glModel, housing.fixtureEmissive, 1, 3, 0.08);
         // A short dark mount so the panel does not appear to float a hand's
         // width below a ceiling it is not touching.
         mat4TRS(glModel, light.x, light.y + housing.dropBelowCeiling * 0.5, light.z, 0, 0, 0,

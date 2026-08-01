@@ -19,15 +19,28 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.240 — Adaptive Mobile Lighting**
-- Build ID: `12.240.0-adaptive-mobile-lighting`
+- Build: **12.241 — Self-Lit Ceiling Fixtures**
+- Build ID: `12.241.0-self-lit-ceiling-fixtures`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.240.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.241.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.241 makes every authored ceiling fixture visibly read as switched on,
+including panels outside the bounded positional-light selection. It raises the
+existing static fixture emissive after the 12.224 grade made the previous 0.92
+value read grey, with one shallow lens below each dark housing. Housing+mount
+share one static material group and all lenses the other, preserving two groups
+and adding no per-frame draw call, texture, animation, shader slot or render
+pass. Mobile still shades the room from its nearest two fixtures at
+Balanced and one at Constrained, while desktop Full keeps four. Placement,
+dynamic intensity/range, image grading, adaptive resolution, gameplay, saves
+and diagnostics schemas are unchanged. Verify `ceilingLightForTest()`,
+`mobileLightingPerformanceForTest()`, renderer/image-grade gates and a staged
+capture with dynamic ceiling illumination disabled. See `AUDIT-12.241.md`.
 
 Build 12.240 reduces mobile lighting pressure while preserving the authored
 grade, fixture placement, colour and range. Full desktop keeps four compiled

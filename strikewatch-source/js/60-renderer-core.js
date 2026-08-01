@@ -352,7 +352,7 @@
   //      arena is.
   //   3. `range` keeps each one local, well inside the 16-35 unit fog band.
   const CEILING_LIGHT_POLICY = Object.freeze({
-    revision: '12.240.0',
+    revision: '12.241.0',
     maxPerArena: 14,
     maxActive: 4,
     mobileActive: 2,
@@ -371,9 +371,15 @@
     fixtureWidth: 0.62,
     fixtureDepth: 0.20,
     fixtureThickness: 0.07,
-    // Emissive value on the visible fixture itself. This is the part you look
-    // at; `intensity` below is the part that lights the room.
-    fixtureEmissive: 0.92,
+    fixtureLensWidthScale: 0.72,
+    fixtureLensDepthScale: 0.58,
+    fixtureLensThickness: 0.014,
+    // Build 12.241: the shallow lens under every dark housing reads as
+    // switched on even when it is not one of the nearest fixtures contributing
+    // positional light. It reuses the existing static material/emissive path;
+    // all lenses merge into one batch and add no dynamic light or render pass.
+    // `intensity` below remains the independent value that lights the room.
+    fixtureEmissive: 6.00,
     intensity: 0.78,
     themes: Object.freeze(['industrial', 'office', 'summit']),
     tint: Object.freeze({

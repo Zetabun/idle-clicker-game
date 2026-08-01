@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.240';
-  const BUILD_NAME = 'Adaptive Mobile Lighting';
-  const BUILD_ID = '12.240.0-adaptive-mobile-lighting';
+  const BUILD_VERSION = '12.241';
+  const BUILD_NAME = 'Self-Lit Ceiling Fixtures';
+  const BUILD_ID = '12.241.0-self-lit-ceiling-fixtures';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

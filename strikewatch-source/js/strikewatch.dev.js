@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.240';
-  const BUILD_NAME = 'Adaptive Mobile Lighting';
-  const BUILD_ID = '12.240.0-adaptive-mobile-lighting';
+  const BUILD_VERSION = '12.241';
+  const BUILD_NAME = 'Self-Lit Ceiling Fixtures';
+  const BUILD_ID = '12.241.0-self-lit-ceiling-fixtures';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -40665,7 +40665,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   //      arena is.
   //   3. `range` keeps each one local, well inside the 16-35 unit fog band.
   const CEILING_LIGHT_POLICY = Object.freeze({
-    revision: '12.240.0',
+    revision: '12.241.0',
     maxPerArena: 14,
     maxActive: 4,
     mobileActive: 2,
@@ -40684,9 +40684,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     fixtureWidth: 0.62,
     fixtureDepth: 0.20,
     fixtureThickness: 0.07,
-    // Emissive value on the visible fixture itself. This is the part you look
-    // at; `intensity` below is the part that lights the room.
-    fixtureEmissive: 0.92,
+    fixtureLensWidthScale: 0.72,
+    fixtureLensDepthScale: 0.58,
+    fixtureLensThickness: 0.014,
+    // Build 12.241: the shallow lens under every dark housing reads as
+    // switched on even when it is not one of the nearest fixtures contributing
+    // positional light. It reuses the existing static material/emissive path;
+    // all lenses merge into one batch and add no dynamic light or render pass.
+    // `intensity` below remains the independent value that lights the room.
+    fixtureEmissive: 6.00,
     intensity: 0.78,
     themes: Object.freeze(['industrial', 'office', 'summit']),
     tint: Object.freeze({
@@ -45121,16 +45127,23 @@ ${ceilingLightBlock}
     } else if (!desertTheme) {
       mat4TRS(glModel, MAP_W / 2, sceneWallHeight + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
       drawMesh(glMeshes.cube, ceilingColour, glModel, summitTheme ? 0.035 : 0.015, 1, 2, summitTheme ? 0.82 : 0.94);
-      // Build 12.224: the visible half of the ceiling lights. These are plain
-      // static geometry with a high emissive — no time dependence, nothing
-      // per-frame — so they are deliberately left batch-eligible and merge into
-      // a single draw. The illumination itself is the per-frame uniform block;
-      // this is only the fixture you look at.
+      // Build 12.241: a shallow lens beneath each dark housing is deliberately
+      // independent of nearest-light selection, so every panel reads as on
+      // while only the bounded few light the room. Housing and mount share one
+      // material group; every lens shares the other. The static fixture still
+      // costs two batches and no time-dependent or per-frame work is added.
       for (const light of worldBatches.ceilingLights) {
         const housing = CEILING_LIGHT_POLICY;
         mat4TRS(glModel, light.x, light.y, light.z, 0, 0, 0,
           housing.fixtureWidth, housing.fixtureThickness, housing.fixtureDepth);
-        drawMesh(glMeshes.cube, light.colour, glModel, housing.fixtureEmissive, 1, 3, 0.18);
+        drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, 3, 0.62);
+        mat4TRS(glModel, light.x,
+          light.y - housing.fixtureThickness * 0.5 - housing.fixtureLensThickness * 0.5 - 0.004,
+          light.z, 0, 0, 0,
+          housing.fixtureWidth * housing.fixtureLensWidthScale,
+          housing.fixtureLensThickness,
+          housing.fixtureDepth * housing.fixtureLensDepthScale);
+        drawMesh(glMeshes.cube, light.colour, glModel, housing.fixtureEmissive, 1, 3, 0.08);
         // A short dark mount so the panel does not appear to float a hand's
         // width below a ceiling it is not touching.
         mat4TRS(glModel, light.x, light.y + housing.dropBelowCeiling * 0.5, light.z, 0, 0, 0,
@@ -61268,6 +61281,12 @@ ${ceilingLightBlock}
     const lights = (typeof worldBatches === 'object' && worldBatches?.ceilingLights) || [];
     const indoorTheme = CEILING_LIGHT_POLICY.themes.includes(theme);
     const ceilingHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
+    const fixtureLensValid = CEILING_LIGHT_POLICY.fixtureLensWidthScale > 0
+      && CEILING_LIGHT_POLICY.fixtureLensWidthScale < 1
+      && CEILING_LIGHT_POLICY.fixtureLensDepthScale > 0
+      && CEILING_LIGHT_POLICY.fixtureLensDepthScale < 1
+      && CEILING_LIGHT_POLICY.fixtureLensThickness > 0
+      && CEILING_LIGHT_POLICY.fixtureLensThickness < CEILING_LIGHT_POLICY.fixtureThickness;
 
     // An open-air arena must never receive one; Build 12.143 gave Dune a real
     // sky specifically so it reads as outdoors.
@@ -61315,6 +61334,8 @@ ${ceilingLightBlock}
         && insideWall === 0
         && tooBright === 0
         && wrongHeight === 0
+        && CEILING_LIGHT_POLICY.fixtureEmissive >= 5.5
+        && fixtureLensValid
         && lights.length <= CEILING_LIGHT_POLICY.maxPerArena
         && (minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001)
         && centreSelection <= CEILING_LIGHT_POLICY.maxActive
@@ -61347,6 +61368,15 @@ ${ceilingLightBlock}
       selectionBounded: centreSelection <= CEILING_LIGHT_POLICY.maxActive && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
       darknessThreshold: CEILING_LIGHT_POLICY.darknessThreshold,
       range: CEILING_LIGHT_POLICY.range,
+      fixtureEmissive: CEILING_LIGHT_POLICY.fixtureEmissive,
+      fixtureReadsOn: CEILING_LIGHT_POLICY.fixtureEmissive >= 5.5,
+      fixtureLensValid,
+      fixtureLens: {
+        widthScale: CEILING_LIGHT_POLICY.fixtureLensWidthScale,
+        depthScale: CEILING_LIGHT_POLICY.fixtureLensDepthScale,
+        thickness: CEILING_LIGHT_POLICY.fixtureLensThickness
+      },
+      fixtureIndependentOfDynamicSelection: true,
       // Exposed so a capture can be taken from under a real fixture rather than
       // from a guessed position that may be nowhere near one.
       positions: lights.map(light => ({
@@ -61355,10 +61385,14 @@ ${ceilingLightBlock}
         z: Number(light.z.toFixed(2)),
         darkness: Number(light.darkness.toFixed(3))
       })),
-      // Two draws per fixture, static and time-independent, so they stay
-      // batch-eligible and merge rather than adding per-frame draw calls.
-      drawsPerFixture: 2,
+      // Three source meshes per fixture collapse into two static material
+      // groups: dark housing+mount and the self-lit lens. The extra shallow
+      // cube therefore does not add a per-frame draw call.
+      sourceMeshesPerFixture: 3,
+      additionalSourceMeshesPerFixture: 1,
+      staticMaterialGroups: 2,
       batchEligible: true,
+      additionalDrawCalls: 0,
       additionalTextures: 0,
       additionalShaderPasses: 0
     };

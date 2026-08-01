@@ -4,6 +4,17 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.241 — Self-Lit Ceiling Fixtures
+
+- Raises the existing static fixture emissive so every ceiling panel visibly
+  reads as on, including fixtures outside the bounded dynamic-light selection.
+- Adds one shallow static lens per fixture but merges housing+mount and lenses
+  into the same two material groups, so no per-frame draw call is added; there
+  is still no texture, new light slot, animation or render pass.
+- Keeps fixture placement, room-light intensity/range, image grade and adaptive
+  mobile performance policy unchanged.
+- See `AUDIT-12.241.md`.
+
 ## 12.240 — Adaptive Mobile Lighting
 
 - Keeps four authored ceiling-light slots on Full desktop, while compact

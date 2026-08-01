@@ -398,6 +398,12 @@
     const lights = (typeof worldBatches === 'object' && worldBatches?.ceilingLights) || [];
     const indoorTheme = CEILING_LIGHT_POLICY.themes.includes(theme);
     const ceilingHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
+    const fixtureLensValid = CEILING_LIGHT_POLICY.fixtureLensWidthScale > 0
+      && CEILING_LIGHT_POLICY.fixtureLensWidthScale < 1
+      && CEILING_LIGHT_POLICY.fixtureLensDepthScale > 0
+      && CEILING_LIGHT_POLICY.fixtureLensDepthScale < 1
+      && CEILING_LIGHT_POLICY.fixtureLensThickness > 0
+      && CEILING_LIGHT_POLICY.fixtureLensThickness < CEILING_LIGHT_POLICY.fixtureThickness;
 
     // An open-air arena must never receive one; Build 12.143 gave Dune a real
     // sky specifically so it reads as outdoors.
@@ -445,6 +451,8 @@
         && insideWall === 0
         && tooBright === 0
         && wrongHeight === 0
+        && CEILING_LIGHT_POLICY.fixtureEmissive >= 5.5
+        && fixtureLensValid
         && lights.length <= CEILING_LIGHT_POLICY.maxPerArena
         && (minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001)
         && centreSelection <= CEILING_LIGHT_POLICY.maxActive
@@ -477,6 +485,15 @@
       selectionBounded: centreSelection <= CEILING_LIGHT_POLICY.maxActive && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
       darknessThreshold: CEILING_LIGHT_POLICY.darknessThreshold,
       range: CEILING_LIGHT_POLICY.range,
+      fixtureEmissive: CEILING_LIGHT_POLICY.fixtureEmissive,
+      fixtureReadsOn: CEILING_LIGHT_POLICY.fixtureEmissive >= 5.5,
+      fixtureLensValid,
+      fixtureLens: {
+        widthScale: CEILING_LIGHT_POLICY.fixtureLensWidthScale,
+        depthScale: CEILING_LIGHT_POLICY.fixtureLensDepthScale,
+        thickness: CEILING_LIGHT_POLICY.fixtureLensThickness
+      },
+      fixtureIndependentOfDynamicSelection: true,
       // Exposed so a capture can be taken from under a real fixture rather than
       // from a guessed position that may be nowhere near one.
       positions: lights.map(light => ({
@@ -485,10 +502,14 @@
         z: Number(light.z.toFixed(2)),
         darkness: Number(light.darkness.toFixed(3))
       })),
-      // Two draws per fixture, static and time-independent, so they stay
-      // batch-eligible and merge rather than adding per-frame draw calls.
-      drawsPerFixture: 2,
+      // Three source meshes per fixture collapse into two static material
+      // groups: dark housing+mount and the self-lit lens. The extra shallow
+      // cube therefore does not add a per-frame draw call.
+      sourceMeshesPerFixture: 3,
+      additionalSourceMeshesPerFixture: 1,
+      staticMaterialGroups: 2,
       batchEligible: true,
+      additionalDrawCalls: 0,
       additionalTextures: 0,
       additionalShaderPasses: 0
     };

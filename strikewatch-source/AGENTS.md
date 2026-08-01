@@ -56,6 +56,18 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.241 owns self-lit ceiling-fixture presentation. **Every fixture panel
+must visibly read as on even when it is outside the dynamic-light selection.**
+Keep that presentation in the shallow static lens and existing
+`fixtureEmissive` material. Housing+mount must share one material group and all
+lenses the other, preserving two static groups despite three source meshes per
+fixture. Do not add bloom, textures, time dependence, light slots, per-frame
+draw calls or render passes. `intensity` remains the independent room-light authority. Mobile
+still compiles two positional slots at Balanced and one at Constrained; desktop
+Full keeps four. Verify `ceilingLightForTest()`,
+`mobileLightingPerformanceForTest()`, image grade, renderer integrity and a
+capture with dynamic ceiling illumination disabled. See `AUDIT-12.241.md`.
+
 Build 12.240 owns adaptive mobile lighting. **Desktop Full keeps four compiled
 ceiling-light slots; compact touch/coarse devices compile two at Balanced and
 constrained devices compile one.** Do not weaken fixture placement, colour,
