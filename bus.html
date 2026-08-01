@@ -337,6 +337,9 @@ button{cursor:pointer;border:0;background:none}
    positions markers with a transform, so easing that is enough.
    Duration is set from the refresh interval at runtime. */
 .leaflet-marker-icon.vehmark{transition:transform var(--glide, 3s) linear}
+/* Panning and zooming also move markers by transform — easing those
+   makes icons lag behind the map and appear to drift. */
+body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 
 #viewbar{display:none}
 
@@ -731,6 +734,17 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
 
 let meMarker=null, anchorMarker=null, stopLayer=L.layerGroup().addTo(map), vehLayer=L.layerGroup().addTo(map);
 let ring=null;
+
+/* Leaflet moves markers with the same transform property the glide
+   animates, so easing must be off while the user drags or zooms. */
+let moveOffT;
+function mapMoving(on){
+  clearTimeout(moveOffT);
+  if(on) document.body.classList.add('mapmoving');
+  else moveOffT = setTimeout(()=>document.body.classList.remove('mapmoving'), 120);
+}
+map.on('movestart zoomstart dragstart', ()=>mapMoving(true));
+map.on('moveend zoomend dragend', ()=>mapMoving(false));
 
 function drawOrigin(){
   if(!S.origin) return;
