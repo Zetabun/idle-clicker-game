@@ -576,7 +576,7 @@ const S = {
   dir:'in',                 // 'in' | 'out' | 'all'
   origin:null,              // {lat,lon,label}
   anchor:null,              // town centre {lat,lon,name}
-  stops:[], stop:null, pendingStopId:null, loadingRoutes:false,
+  stops:[], stop:null, pendingStopId:null, loadingRoutes:false, filterFellBack:false,
   destFilter:null,          // exact DestinationName, or null for all
   destsByStop:{},           // stopId -> { destName: lastSeenTs } view:'live',
   vehicles:new Map(),       // id -> {id,line,dest,lat,lon,bearing,dir,ts,hist:[],speed}
@@ -1142,14 +1142,17 @@ async function fetchLive(){
   const acts = [...xml.getElementsByTagName('*')].filter(n=>n.localName==='VehicleActivity');
   const now = Date.now();
   const out = [];
+  let stale = 0;
   for(const a of acts){
     const f = flatten(a);
     const lat = parseFloat(f.Latitude), lon = parseFloat(f.Longitude);
     if(!isFinite(lat) || !isFinite(lon)) continue;
     // BODS caches, and some operators leave dead vehicles in the feed for
     // hours. Anything this old is not a bus you can catch.
-    const ts = f.RecordedAtTime ? (Date.parse(f.RecordedAtTime)||now) : now;
-    if(now - ts > MAX_AGE_MS) continue;
+    const parsed = f.RecordedAtTime ? Date.parse(f.RecordedAtTime) : NaN;
+    const ts = isFinite(parsed) ? parsed : now;
+    const isStale = (now - ts) > MAX_AGE_MS;
+    if(isStale) stale++;
     out.push({
       id: f.VehicleRef || f.DatedVehicleJourneyRef || (f.LineRef+'-'+lat.toFixed(4)+lon.toFixed(4)),
       line: cleanLine(f.PublishedLineName || f.LineRef || '?'),
@@ -1159,10 +1162,13 @@ async function fetchLive(){
       declaredDir: (f.DirectionRef||'').toLowerCase(),
       lat, lon,
       bearing: parseFloat(f.Bearing),
-      ts
+      ts, stale: isStale
     });
   }
-  return out;
+  // If nearly everything looks stale, it is far likelier that the
+  // timestamps are being misread than that no buses are running.
+  const trustAges = !out.length || (stale / out.length) < 0.8;
+  return trustAges ? out.filter(v=>!v.stale) : out.map(v=>({...v, ts:now}));
 }
 
 /* ============================================================
@@ -1627,6 +1633,11 @@ function renderServingNote(){
     el.innerHTML = '<b>Checking which routes stop here…</b>';
     return;
   }
+  if(S.filterFellBack){
+    el.innerHTML = '<b>Route list did not match anything live.</b> OpenStreetMap route numbers '
+      + 'and operator line names sometimes differ, so the filter is off for now and nearby buses are shown.';
+    return;
+  }
   const m = MAPPED[String(S.stop.id)];
   const routes = knownRoutes();
 
@@ -1662,7 +1673,18 @@ function renderServingNote(){
 
 function relevant(){
   if(!S.stop) return [];
-  const gate = servingReady();
+  S.filterFellBack = false;
+  let out = collect(servingReady());
+  // A route list that matches nothing live is worse than no list at all —
+  // OSM refs and operator line names do not always agree.
+  if(!out.length && servingReady()){
+    out = collect(false);
+    S.filterFellBack = out.length > 0;
+  }
+  return out;
+}
+
+function collect(gate){
   // Unfiltered, a 9 km radius is just "every bus in the city". Without a
   // route list, only show buses close enough to plausibly be coming here.
   const maxD = gate ? MAX_VEH_DIST : 3500;
@@ -1834,6 +1856,7 @@ function render(){
     checkAlarms(rows);
   }
   renderVehicles(rows);
+  renderServingNote();
 }
 
 function clearVehicleMarkers(){ vehLayer.clearLayers(); S.markers.clear(); }
