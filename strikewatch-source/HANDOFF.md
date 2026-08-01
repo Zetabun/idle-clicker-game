@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.235 — Club Profile**
-- Build ID: `12.235.0-club-profile`
+- Build: **12.236 — Operator Links & Plain Name Controls**
+- Build ID: `12.236.0-operator-links-plain-name-controls`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.235.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.236.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.236 links operator names in press and market copy, and makes every name control read as plain text. **`careerPlayerLinkMarkup()` in `js/36-team-management.js` is the single authority and links only when `teamPlayerById()` resolves the id** — squad and market only. A rival club's operator has no profile to open, so their name stays plain text; verified on a feed of six Man of the Match credits where exactly the one squad player linked. The helper takes the RAW name and escapes internally, so **call sites must not pre-escape**. In `renderWorldPressLeaguePulse()` the `playerLink` const must be declared above `reportMarkup`, which consumes it — putting it beside `leadersMarkup` where it was first needed left it in the temporal dead zone. **Name controls are styled as ordinary text**: `text-decoration: none`, everything inherited, `cursor: pointer` as the only resting signal, colour lift on hover, and a real outline on `:focus-visible` for keyboard users. Do not reintroduce a resting underline — 12.235 had one and it turned the league table into a page of links. Mail bodies and calendar agenda titles are still plain text on purpose: both are escaped as whole strings, so linking inside them is a data-model change. Audit parity with the 12.235 artifact at 390px on every metric. See `AUDIT-12.236.md`.
 
 Build 12.235 makes club names controls and adds the club profile page behind them. It needed **no save change**: clubs already persist `{id, name, short, rating, style, roster}` with full roster players, and `leagueTable()` already computes the record. **A new route needs an entry in `menuTabMeta` as well as `menuSections`** — `setMenuRoute()` opens with `if (!menuTabMeta[route]) return false;` and fails silently, leaving the previous page rendered, which is exactly what it did for a whole debugging pass. **`renderLeagueFixtures` is reassigned in `js/52-season-narratives.js` and does not delegate**, so the copy in `js/37-league.js` is dead for the fixtures route — a fixture-row change must be made in both. (`renderLeagueTab` is wrapped twice but both wrappers call the base, so edits there do carry.) Club links inherit typography explicitly and are selected as `#menuContent .league-club-link` to beat the `.menu-shell button` 7px fallback, and the table link stays inside its `<strong>` because `css/league-table.css` sizes that element with the flag. Also learned: **`#menuContent small` is flag-sized by `game.css` in both bands**, so an unflagged `font-size` on a `small` there is dead code — five such declarations were removed. Selection is module state, never persisted, because a viewed club is a view position rather than progress. Audit parity with the 12.234 artifact at 390px on every metric. See `AUDIT-12.235.md`.
 

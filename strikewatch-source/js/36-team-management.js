@@ -726,6 +726,20 @@
     return [...(careerState.squad || []), ...(careerState.market || [])].find(player => player.id === id) || null;
   }
 
+  // Build 12.236: a player name becomes a control only when the profile route
+  // can actually show that player. `teamPlayerById()` resolves the squad and
+  // the market; anyone else named in press or market copy — a rival club's
+  // operator, someone who has left the pool — has no profile to open, so their
+  // name stays plain text rather than becoming a control that leads nowhere.
+  //
+  // Takes the RAW name and escapes it here, so call sites must not pre-escape.
+  function careerPlayerLinkMarkup(playerId, label) {
+    const safe = escapeCareerHtml(String(label == null ? '' : label));
+    const id = String(playerId || '').trim();
+    if (!id || !teamPlayerById(id)) return safe;
+    return `<button type="button" class="career-entity-link" data-team-profile="${escapeCareerHtml(id)}">${safe}</button>`;
+  }
+
   function normaliseGeneratedPlayer(player, fallbackId = 'player') {
     const stats = defaultCareerStats();
     const rawStats = player?.stats && typeof player.stats === 'object' ? player.stats : {};

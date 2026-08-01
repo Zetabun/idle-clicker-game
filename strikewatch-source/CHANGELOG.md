@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.236 — Operator Links & Plain Name Controls
+
+- Operator names in League Pulse reports, award leaders and the living market pulse open that operator's profile.
+- They link only when a profile exists: a rival club's player has nowhere to open and stays plain text, so no name becomes a control that leads nowhere.
+- Club and operator names now read as ordinary text rather than hyperlinks. The 12.235 underline is gone; at rest a name is indistinguishable from the copy around it and only the pointer cursor marks it.
+- Keyboard focus keeps a visible outline.
+- No flagged declaration and no media query added; CSS debt unchanged at 2269/2270 and 484/484.
+- See `AUDIT-12.236.md`.
+
 ## 12.235 — Club Profile
 
 - Club names are now controls: clicking one in the league table, fixtures list, opposition brief or a League Pulse press report opens that club's page.

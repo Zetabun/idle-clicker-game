@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.235';
-  const BUILD_NAME = 'Club Profile';
-  const BUILD_ID = '12.235.0-club-profile';
+  const BUILD_VERSION = '12.236';
+  const BUILD_NAME = 'Operator Links & Plain Name Controls';
+  const BUILD_ID = '12.236.0-operator-links-plain-name-controls';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -18370,6 +18370,20 @@
     return [...(careerState.squad || []), ...(careerState.market || [])].find(player => player.id === id) || null;
   }
 
+  // Build 12.236: a player name becomes a control only when the profile route
+  // can actually show that player. `teamPlayerById()` resolves the squad and
+  // the market; anyone else named in press or market copy — a rival club's
+  // operator, someone who has left the pool — has no profile to open, so their
+  // name stays plain text rather than becoming a control that leads nowhere.
+  //
+  // Takes the RAW name and escapes it here, so call sites must not pre-escape.
+  function careerPlayerLinkMarkup(playerId, label) {
+    const safe = escapeCareerHtml(String(label == null ? '' : label));
+    const id = String(playerId || '').trim();
+    if (!id || !teamPlayerById(id)) return safe;
+    return `<button type="button" class="career-entity-link" data-team-profile="${escapeCareerHtml(id)}">${safe}</button>`;
+  }
+
   function normaliseGeneratedPlayer(player, fallbackId = 'player') {
     const stats = defaultCareerStats();
     const rawStats = player?.stats && typeof player.stats === 'object' ? player.stats : {};
@@ -30592,7 +30606,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const bids = (careerState.market || []).filter(player => player.rivalBid && Number(player.rivalBid.expiresDay) >= day).length;
     const arrivals = recent.filter(event => ['arrival','listed'].includes(event.type)).length;
     const movements = recent.filter(event => ['signed','departed'].includes(event.type)).length;
-    return `<section class="dynamic-market-pulse"><header><div><span>LIVING TRANSFER MARKET</span><strong>${escapeCareerHtml(dynamicMarketDivisionLabel())} NETWORK PULSE</strong><p>Operators enter and leave through real league needs, free agency, academy graduation, releases and lower-division breakthroughs.</p></div><aside><div><b>${arrivals}</b><span>NEW / LISTED</span></div><div><b>${bids}</b><span>ACTIVE BIDS</span></div><div><b>${movements}</b><span>MOVES</span></div></aside></header><div>${recent.length ? recent.map(event => `<article class="${escapeCareerHtml(event.type)}"><span>${escapeCareerHtml(String(event.type).replace(/-/g, ' ').toUpperCase())}</span><strong>${escapeCareerHtml(event.playerName || event.clubName || 'Market update')}</strong><p>${escapeCareerHtml(dynamicMarketEventLine(event))}</p></article>`).join('') : '<article class="quiet"><span>NETWORK QUIET</span><strong>NO RECENT MOVEMENT</strong><p>Advance the calendar to let clubs reassess squads, generate listings and enter negotiations.</p></article>'}</div></section>`;
+    return `<section class="dynamic-market-pulse"><header><div><span>LIVING TRANSFER MARKET</span><strong>${escapeCareerHtml(dynamicMarketDivisionLabel())} NETWORK PULSE</strong><p>Operators enter and leave through real league needs, free agency, academy graduation, releases and lower-division breakthroughs.</p></div><aside><div><b>${arrivals}</b><span>NEW / LISTED</span></div><div><b>${bids}</b><span>ACTIVE BIDS</span></div><div><b>${movements}</b><span>MOVES</span></div></aside></header><div>${recent.length ? recent.map(event => `<article class="${escapeCareerHtml(event.type)}"><span>${escapeCareerHtml(String(event.type).replace(/-/g, ' ').toUpperCase())}</span><strong>${event.playerName
+      // Build 12.236: the market event already stores `playerId`, and a listed
+      // operator is in `careerState.market`, so this headline resolves and
+      // opens the profile. `dynamicMarketEventLine()` below stays plain text —
+      // it is prose escaped as a whole, so a link inside it would need the line
+      // split into parts.
+      ? careerPlayerLinkMarkup(event.playerId, event.playerName)
+      : escapeCareerHtml(event.clubName || 'Market update')}</strong><p>${escapeCareerHtml(dynamicMarketEventLine(event))}</p></article>`).join('') : '<article class="quiet"><span>NETWORK QUIET</span><strong>NO RECENT MOVEMENT</strong><p>Advance the calendar to let clubs reassess squads, generate listings and enter negotiations.</p></article>'}</div></section>`;
   }
 
   function dynamicMarketSigningMail(player, dealSnapshot = null) {
@@ -39469,11 +39490,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     // profile. The report already stores `homeId`/`awayId`, so this needs no
     // new record field — it falls back to plain text when an older report
     // predates them.
+    // Build 12.236: award leaders and the Man of the Match credit carry
+    // `playerId`, so one of your own operators appearing here opens their
+    // profile. A rival club's player has no profile to open and stays plain
+    // text — `careerPlayerLinkMarkup()` makes that decision, not this call.
+    // Declared above `reportMarkup`, which uses it.
+    const playerLink = (id, name) => (typeof careerPlayerLinkMarkup === 'function'
+      ? careerPlayerLinkMarkup(id, name)
+      : escapeCareerHtml(String(name || '')));
     const pressClub = (id, label) => (id
       ? `<button type="button" class="league-club-link" data-league-club="${escapeCareerHtml(String(id))}">${escapeCareerHtml(label)}</button>`
       : escapeCareerHtml(label));
-    const reportMarkup = pulse.reports.length ? pulse.reports.map(report => `<article class="league-pulse-report"><header><span>MATCHDAY ${Math.max(1, Number(report.matchday) || 1)}</span><strong>${pressClub(report.homeId, report.homeShort || report.homeName)} ${report.homeScore} — ${report.awayScore} ${pressClub(report.awayId, report.awayShort || report.awayName)}</strong></header><p>${escapeCareerHtml(report.writeup || '')}</p><small>★ ${escapeCareerHtml(report.motm?.playerName || 'Award pending')} · ${escapeCareerHtml(report.motm?.clubName || '')} · ${Number(report.motm?.rating || 0).toFixed(2)} RATING</small></article>`).join('') : '<div class="league-pulse-empty"><strong>NO RIVAL REPORTS YET</strong><p>Completed matchdays will generate results, write-ups and Man of the Match coverage.</p></div>';
-    const leadersMarkup = pulse.leaders.length ? pulse.leaders.map((item, index) => `<article><b>${index + 1}</b><div><strong>${escapeCareerHtml(item.playerName)}</strong><small>${escapeCareerHtml(item.clubName || 'DIVISION')} · ${item.rating.toFixed(2)} AVG</small></div><em>${item.motm} MOTM</em></article>`).join('') : '<p>No award leader has emerged yet.</p>';
+    const reportMarkup = pulse.reports.length ? pulse.reports.map(report => `<article class="league-pulse-report"><header><span>MATCHDAY ${Math.max(1, Number(report.matchday) || 1)}</span><strong>${pressClub(report.homeId, report.homeShort || report.homeName)} ${report.homeScore} — ${report.awayScore} ${pressClub(report.awayId, report.awayShort || report.awayName)}</strong></header><p>${escapeCareerHtml(report.writeup || '')}</p><small>★ ${report.motm?.playerName ? playerLink(report.motm.playerId, report.motm.playerName) : 'Award pending'} · ${escapeCareerHtml(report.motm?.clubName || '')} · ${Number(report.motm?.rating || 0).toFixed(2)} RATING</small></article>`).join('') : '<div class="league-pulse-empty"><strong>NO RIVAL REPORTS YET</strong><p>Completed matchdays will generate results, write-ups and Man of the Match coverage.</p></div>';
+    const leadersMarkup = pulse.leaders.length ? pulse.leaders.map((item, index) => `<article><b>${index + 1}</b><div><strong>${playerLink(item.playerId, item.playerName)}</strong><small>${escapeCareerHtml(item.clubName || 'DIVISION')} · ${item.rating.toFixed(2)} AVG</small></div><em>${item.motm} MOTM</em></article>`).join('') : '<p>No award leader has emerged yet.</p>';
     const nextMarkup = pulse.next ? `<button class="league-pulse-next" data-team-route="tactics"><span>NEXT OPPOSITION</span><strong>${escapeCareerHtml(pulse.next.opponentName)}</strong><small>MATCHDAY ${pulse.next.matchday} · ${escapeCareerHtml(pulse.next.style || 'BALANCED')}${Number.isFinite(Number(pulse.next.days)) ? ` · ${pulse.next.days === 0 ? 'TODAY' : `${pulse.next.days}D`}` : ''}</small><b>OPEN PREPARATION →</b></button>` : '<div class="league-pulse-next complete"><span>SEASON STATUS</span><strong>CAMPAIGN COMPLETE</strong><small>Review the final table and awards.</small></div>';
     return `<section class="league-pulse-panel"><div class="career-section-head"><div><span>THE STRIKEWATCH WIRE</span><strong>LEAGUE PULSE</strong></div><p>Recent rival results, award leaders and the next opposition in one living-world feed.</p></div><div class="league-pulse-layout"><section><header><span>RECENT COVERAGE</span><strong>AROUND THE DIVISION</strong></header><div class="league-pulse-reports">${reportMarkup}</div></section><aside><section><header><span>AWARD WATCH</span><strong>MAN OF THE MATCH LEADERS</strong></header><div class="league-pulse-leaders">${leadersMarkup}</div></section>${nextMarkup}</aside></div></section>`;
   }

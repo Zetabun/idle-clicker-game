@@ -987,7 +987,19 @@
 
    No media query and no flagged declaration is added here: the debt gate sits
    on its breakpoint ceiling and has one slot left for flags. */
-#menuContent .league-club-link {
+/* Build 12.236: these read as ordinary text, not as hyperlinks. The 12.235
+   club link carried a permanent underline, which made a league table look like
+   a page of links and competed with the data for attention. At rest a club or
+   player name is now indistinguishable from the copy around it; the only
+   resting signal is the pointer cursor, which appears exactly when the name is
+   worth clicking.
+
+   Hover lifts the colour rather than adding a rule, so the affordance never
+   reads as link styling. Keyboard focus keeps a real outline — that is an
+   accessibility requirement, not decoration, and it only shows during keyboard
+   navigation. */
+#menuContent .league-club-link,
+#menuContent .career-entity-link {
   display: inline;
   max-width: 100%;
   margin: 0;
@@ -998,19 +1010,21 @@
   font: inherit;
   letter-spacing: inherit;
   text-align: inherit;
-  text-decoration: underline;
-  text-decoration-color: rgba(126, 209, 255, .34);
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
+  text-decoration: none;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color .14s ease, text-decoration-color .14s ease;
+  transition: color .14s ease;
 }
 #menuContent .league-club-link:hover,
-#menuContent .league-club-link:focus-visible {
-  color: #a8e0ff;
-  text-decoration-color: #7ed1ff;
+#menuContent .career-entity-link:hover {
+  color: #bfe6ff;
+}
+#menuContent .league-club-link:focus-visible,
+#menuContent .career-entity-link:focus-visible {
+  outline: 2px solid #7ed1ff;
+  outline-offset: 2px;
+  color: #bfe6ff;
 }
 
 #menuContent .club-profile-panel {

@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.235';
-  const BUILD_NAME = 'Club Profile';
-  const BUILD_ID = '12.235.0-club-profile';
+  const BUILD_VERSION = '12.236';
+  const BUILD_NAME = 'Operator Links & Plain Name Controls';
+  const BUILD_ID = '12.236.0-operator-links-plain-name-controls';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

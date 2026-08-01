@@ -562,7 +562,14 @@
     const bids = (careerState.market || []).filter(player => player.rivalBid && Number(player.rivalBid.expiresDay) >= day).length;
     const arrivals = recent.filter(event => ['arrival','listed'].includes(event.type)).length;
     const movements = recent.filter(event => ['signed','departed'].includes(event.type)).length;
-    return `<section class="dynamic-market-pulse"><header><div><span>LIVING TRANSFER MARKET</span><strong>${escapeCareerHtml(dynamicMarketDivisionLabel())} NETWORK PULSE</strong><p>Operators enter and leave through real league needs, free agency, academy graduation, releases and lower-division breakthroughs.</p></div><aside><div><b>${arrivals}</b><span>NEW / LISTED</span></div><div><b>${bids}</b><span>ACTIVE BIDS</span></div><div><b>${movements}</b><span>MOVES</span></div></aside></header><div>${recent.length ? recent.map(event => `<article class="${escapeCareerHtml(event.type)}"><span>${escapeCareerHtml(String(event.type).replace(/-/g, ' ').toUpperCase())}</span><strong>${escapeCareerHtml(event.playerName || event.clubName || 'Market update')}</strong><p>${escapeCareerHtml(dynamicMarketEventLine(event))}</p></article>`).join('') : '<article class="quiet"><span>NETWORK QUIET</span><strong>NO RECENT MOVEMENT</strong><p>Advance the calendar to let clubs reassess squads, generate listings and enter negotiations.</p></article>'}</div></section>`;
+    return `<section class="dynamic-market-pulse"><header><div><span>LIVING TRANSFER MARKET</span><strong>${escapeCareerHtml(dynamicMarketDivisionLabel())} NETWORK PULSE</strong><p>Operators enter and leave through real league needs, free agency, academy graduation, releases and lower-division breakthroughs.</p></div><aside><div><b>${arrivals}</b><span>NEW / LISTED</span></div><div><b>${bids}</b><span>ACTIVE BIDS</span></div><div><b>${movements}</b><span>MOVES</span></div></aside></header><div>${recent.length ? recent.map(event => `<article class="${escapeCareerHtml(event.type)}"><span>${escapeCareerHtml(String(event.type).replace(/-/g, ' ').toUpperCase())}</span><strong>${event.playerName
+      // Build 12.236: the market event already stores `playerId`, and a listed
+      // operator is in `careerState.market`, so this headline resolves and
+      // opens the profile. `dynamicMarketEventLine()` below stays plain text —
+      // it is prose escaped as a whole, so a link inside it would need the line
+      // split into parts.
+      ? careerPlayerLinkMarkup(event.playerId, event.playerName)
+      : escapeCareerHtml(event.clubName || 'Market update')}</strong><p>${escapeCareerHtml(dynamicMarketEventLine(event))}</p></article>`).join('') : '<article class="quiet"><span>NETWORK QUIET</span><strong>NO RECENT MOVEMENT</strong><p>Advance the calendar to let clubs reassess squads, generate listings and enter negotiations.</p></article>'}</div></section>`;
   }
 
   function dynamicMarketSigningMail(player, dealSnapshot = null) {
