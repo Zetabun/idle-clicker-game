@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.239';
-  const BUILD_NAME = 'Cohesive Operator Rig';
-  const BUILD_ID = '12.239.0-cohesive-operator-rig';
+  const BUILD_VERSION = '12.240';
+  const BUILD_NAME = 'Adaptive Mobile Lighting';
+  const BUILD_ID = '12.240.0-adaptive-mobile-lighting';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -1705,6 +1705,7 @@
   let roundEnding = false;
   let roundRestartTimer = 0;
   let DPR = 1;
+  const RENDER_RESOLUTION_SCALE_FLOOR = 0.62;
   let renderResolutionScale = 1;
   let renderResolutionTarget = 1;
   let renderResolutionChanges = 0;
@@ -1715,11 +1716,33 @@
   let runtimeQualityLastChangedAt = 0;
   const runtimeHardwareConcurrency = Math.max(1, Number(navigator.hardwareConcurrency) || 4);
   const runtimeDeviceMemoryGb = Number(navigator.deviceMemory) || 0;
+  const runtimeCompactViewportHint = Math.max(1, Number(window.innerWidth) || 1024) < 1024;
+  const runtimeTouchCapable = Math.max(0, Number(navigator.maxTouchPoints) || 0) > 0;
+  const runtimeCoarsePointer = (() => {
+    try {
+      return Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+    } catch (_) {
+      return false;
+    }
+  })();
+  const runtimeMobileRenderForced = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get('mobileRender') === '1';
+    } catch (_) {
+      return false;
+    }
+  })();
+  // Build 12.240: browsers frequently omit deviceMemory while still exposing
+  // a many-core phone CPU. Compact layout plus a touch/coarse pointer is a
+  // render-only hint that starts those devices at Balanced rather than asking
+  // them to survive several seconds at Full before the governor can react.
+  const runtimeMobileRenderHint = runtimeMobileRenderForced
+    || (runtimeCompactViewportHint && (runtimeTouchCapable || runtimeCoarsePointer));
+  const runtimeConstrainedRenderHint = runtimeHardwareConcurrency <= 2
+    || (runtimeDeviceMemoryGb > 0 && runtimeDeviceMemoryGb <= 2);
   // Build 12.197: this tier is render-only. Device pressure may reduce
   // resolution and actor detail, but it must never weaken match intelligence.
-  let runtimeQualityTier = runtimeHardwareConcurrency <= 2 || (runtimeDeviceMemoryGb > 0 && runtimeDeviceMemoryGb <= 2)
-    ? 0
-    : 2;
+  let runtimeQualityTier = runtimeConstrainedRenderHint ? 0 : (runtimeMobileRenderHint ? 1 : 2);
   const SIMULATION_WORK_POLICY = Object.freeze({
     revision: '12.197-device-independent-simulation-1',
     windowSeconds: 1 / 60,

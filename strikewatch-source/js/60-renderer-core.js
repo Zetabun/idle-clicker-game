@@ -352,9 +352,11 @@
   //      arena is.
   //   3. `range` keeps each one local, well inside the 16-35 unit fog band.
   const CEILING_LIGHT_POLICY = Object.freeze({
-    revision: '12.224.0',
+    revision: '12.240.0',
     maxPerArena: 14,
     maxActive: 4,
+    mobileActive: 2,
+    constrainedActive: 1,
     range: 6.4,
     // A candidate must be at least this enclosed to be worth lighting. Sampled
     // with the wall radii, where a corridor reads around 0.45-0.70 and an open
@@ -692,6 +694,15 @@
   // worth keeping on every device.
   let activeCeilingLightSlots = 0;
 
+  function ceilingLightSlotTargetForDevice(
+    qualityTier = runtimeQualityTier,
+    mobileHint = runtimeMobileRenderHint
+  ) {
+    if (Number(qualityTier) <= 0) return CEILING_LIGHT_POLICY.constrainedActive;
+    if (mobileHint || Number(qualityTier) === 1) return CEILING_LIGHT_POLICY.mobileActive;
+    return CEILING_LIGHT_POLICY.maxActive;
+  }
+
   function resolveCeilingLightSlots() {
     if (!CEILING_LIGHTS_ENABLED) return 0;
     try {
@@ -699,7 +710,8 @@
       // 13 vectors are spoken for before lights (9 existing + 4 grade); each
       // light costs 2. Keep a margin rather than filling the budget exactly.
       const affordable = Math.floor((limit - 13 - 4) / 2);
-      return Math.max(0, Math.min(CEILING_LIGHT_POLICY.maxActive, affordable));
+      const target = ceilingLightSlotTargetForDevice();
+      return Math.max(0, Math.min(target, affordable));
     } catch (_) {
       return 0;
     }
@@ -721,13 +733,18 @@
         // nearest few reach the shader, so this loop is a fixed cost.
         for (int lightIndex = 0; lightIndex < ${slots}; lightIndex++) {
           vec4 lightPosRange = uCeilingLightPosRange[lightIndex];
-          vec3 toLight = lightPosRange.xyz - vWorldPosition;
-          float lightDistance = length(toLight);
-          float falloff = max(0.0, 1.0 - lightDistance * lightPosRange.w);
-          falloff *= falloff;
-          vec3 lightDirection = toLight / max(lightDistance, 0.0001);
-          float lightLambert = max(dot(normal, lightDirection), 0.0);
-          ceilingLight += uCeilingLightColour[lightIndex] * (lightLambert * falloff);
+          // This condition is uniform for every fragment in the draw, so it
+          // introduces no lane divergence. Empty slots, outdoor arenas and the
+          // runtime-off reference path now skip the distance/normal maths.
+          if (lightPosRange.w > 0.0) {
+            vec3 toLight = lightPosRange.xyz - vWorldPosition;
+            float lightDistance = length(toLight);
+            float falloff = max(0.0, 1.0 - lightDistance * lightPosRange.w);
+            falloff *= falloff;
+            vec3 lightDirection = toLight / max(lightDistance, 0.0001);
+            float lightLambert = max(dot(normal, lightDirection), 0.0);
+            ceilingLight += uCeilingLightColour[lightIndex] * (lightLambert * falloff);
+          }
         }
 ` : '';
     const vertexSource = `
@@ -2159,6 +2176,7 @@ ${ceilingLightBlock}
   const ceilingLightPosRangeBuffer = new Float32Array(CEILING_LIGHT_POLICY.maxActive * 4);
   const ceilingLightColourBuffer = new Float32Array(CEILING_LIGHT_POLICY.maxActive * 3);
   const ceilingLightSelection = [];
+  const ceilingLightSelectionDistances = new Float32Array(CEILING_LIGHT_POLICY.maxActive);
   // The declared array length can be smaller than the policy maximum when the
   // device is short on fragment uniform vectors, and uploading a longer typed
   // array than the uniform declares is a GL error rather than a silent trim.
@@ -2166,14 +2184,17 @@ ${ceilingLightBlock}
   let ceilingLightPosRangeView = null;
   let ceilingLightColourView = null;
   let ceilingLightViewSlots = -1;
+  const ceilingLightUploadView = { posRange: null, colour: null };
 
   function ceilingLightUploadViews() {
     if (ceilingLightViewSlots !== activeCeilingLightSlots) {
       ceilingLightViewSlots = activeCeilingLightSlots;
       ceilingLightPosRangeView = ceilingLightPosRangeBuffer.subarray(0, Math.max(0, activeCeilingLightSlots) * 4);
       ceilingLightColourView = ceilingLightColourBuffer.subarray(0, Math.max(0, activeCeilingLightSlots) * 3);
+      ceilingLightUploadView.posRange = ceilingLightPosRangeView;
+      ceilingLightUploadView.colour = ceilingLightColourView;
     }
-    return { posRange: ceilingLightPosRangeView, colour: ceilingLightColourView };
+    return ceilingLightUploadView;
   }
 
   function selectActiveCeilingLights(cameraX, cameraY, cameraZ) {
@@ -2193,13 +2214,22 @@ ${ceilingLightBlock}
       // Nothing outside its own range can contribute, so it never competes for
       // a slot with a fixture that can.
       if (distanceSquared > (light.range + 1) * (light.range + 1)) continue;
-      ceilingLightSelection.push({ light, distanceSquared });
+      const count = ceilingLightSelection.length;
+      let insertAt = count;
+      while (insertAt > 0 && distanceSquared < ceilingLightSelectionDistances[insertAt - 1]) insertAt--;
+      if (insertAt >= slots) continue;
+      const nextCount = Math.min(count + 1, slots);
+      ceilingLightSelection.length = nextCount;
+      for (let move = nextCount - 1; move > insertAt; move--) {
+        ceilingLightSelection[move] = ceilingLightSelection[move - 1];
+        ceilingLightSelectionDistances[move] = ceilingLightSelectionDistances[move - 1];
+      }
+      ceilingLightSelection[insertAt] = light;
+      ceilingLightSelectionDistances[insertAt] = distanceSquared;
     }
-    ceilingLightSelection.sort((a, b) => a.distanceSquared - b.distanceSquared);
-    ceilingLightSelection.length = Math.min(ceilingLightSelection.length, slots);
 
     for (let index = 0; index < ceilingLightSelection.length; index++) {
-      const light = ceilingLightSelection[index].light;
+      const light = ceilingLightSelection[index];
       const base = index * 4;
       ceilingLightPosRangeBuffer[base] = light.x;
       ceilingLightPosRangeBuffer[base + 1] = light.y;

@@ -19,15 +19,31 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.239 — Cohesive Operator Rig**
-- Build ID: `12.239.0-cohesive-operator-rig`
+- Build: **12.240 — Adaptive Mobile Lighting**
+- Build ID: `12.240.0-adaptive-mobile-lighting`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.239.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.240.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.240 reduces mobile lighting pressure while preserving the authored
+grade, fixture placement, colour and range. Full desktop keeps four compiled
+ceiling-light slots; compact touch/coarse devices start at Balanced with two,
+and constrained devices compile one. Empty slots take a coherent uniform
+branch that skips their distance/normal maths. Nearest-light selection now
+uses persistent light references and fixed distance storage rather than
+allocating objects and sorting every rendered frame. The adaptive scaler can
+reach its intended 0.62 portrait floor and reacts after 18 pressured mobile
+frames instead of 28. Gameplay, static batches, draw counts, image grading,
+saves and diagnostics schemas are unchanged. The undefined `menuSection`
+default in the compact-navigation startup sync is also replaced by the existing
+route-to-section authority, removing that live boot error. Verify with
+`mobileLightingPerformanceForTest()`, `ceilingLightForTest()`,
+`imageGradeForTest()`, runtime/adaptive quality gates and staged phone-sized
+captures. See `AUDIT-12.240.md`.
 
 Build 12.239 closes the remaining visible gaps in the operator assembly. The
 cloth sleeve now drops over the upper arm, the lower ribcage and pelvis overlap

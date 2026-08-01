@@ -1296,7 +1296,7 @@
   function resize() {
     const nativeDpr = Math.max(1, Number(window.devicePixelRatio) || 1);
     const cap = renderDprCap();
-    DPR = Math.max(0.82, Math.min(cap, nativeDpr) * clamp(renderResolutionScale, 0.72, 1));
+    DPR = Math.max(0.82, Math.min(cap, nativeDpr) * clamp(renderResolutionScale, RENDER_RESOLUTION_SCALE_FLOOR, 1));
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(1, Math.round(canvas.clientWidth || rect.width || innerWidth));
     const h = Math.max(1, Math.round(canvas.clientHeight || rect.height || innerHeight));

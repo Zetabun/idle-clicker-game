@@ -466,9 +466,12 @@
       minSeparation: minSeparation === null ? null : Number(minSeparation.toFixed(3)),
       minSpacingPolicy: CEILING_LIGHT_POLICY.minSpacing,
       spacingRespected: minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001,
-      // Fixed per-pixel cost regardless of how many the arena holds.
+      // The compiled loop is bounded regardless of arena size; empty slots now
+      // take a coherent uniform branch and skip their distance/normal maths.
       shaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
       maxActive: CEILING_LIGHT_POLICY.maxActive,
+      mobileActive: CEILING_LIGHT_POLICY.mobileActive,
+      constrainedActive: CEILING_LIGHT_POLICY.constrainedActive,
       centreSelection,
       cornerSelection,
       selectionBounded: centreSelection <= CEILING_LIGHT_POLICY.maxActive && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
@@ -488,6 +491,51 @@
       batchEligible: true,
       additionalTextures: 0,
       additionalShaderPasses: 0
+    };
+  };
+  // Build 12.240: the mobile lighting path must reduce fragment work without
+  // changing placement, colour, range or any static batch material. The
+  // selection and upload containers are persistent so walking between pools
+  // of light cannot create a stream of short-lived objects for the collector.
+  window.__strikeDebug.mobileLightingPerformanceForTest = () => {
+    if (typeof ceilingLightSlotTargetForDevice !== 'function') {
+      return { ok: false, reason: 'Mobile ceiling-light slot policy unavailable.' };
+    }
+    const lights = (typeof worldBatches === 'object' && worldBatches?.ceilingLights) || [];
+    const selectionA = selectActiveCeilingLights(MAP_W * 0.5, 1.6, MAP_H * 0.5);
+    const stableSelectionArray = selectionA === selectActiveCeilingLights(MAP_W * 0.5, 1.6, MAP_H * 0.5);
+    const selectionUsesLightReferences = selectionA.every(light => lights.includes(light));
+    const uploadA = ceilingLightUploadViews();
+    const stableUploadObject = uploadA === ceilingLightUploadViews();
+    const slotPolicy = {
+      desktopFull: ceilingLightSlotTargetForDevice(2, false),
+      mobileBalanced: ceilingLightSlotTargetForDevice(1, true),
+      constrained: ceilingLightSlotTargetForDevice(0, true)
+    };
+    const intendedSlotPolicy = slotPolicy.desktopFull === 4
+      && slotPolicy.mobileBalanced === 2
+      && slotPolicy.constrained === 1;
+    const intendedResolutionFloor = Math.abs(RENDER_RESOLUTION_SCALE_FLOOR - 0.62) < 0.0001;
+    return {
+      ok: stableSelectionArray
+        && selectionUsesLightReferences
+        && stableUploadObject
+        && intendedSlotPolicy
+        && intendedResolutionFloor
+        && activeCeilingLightSlots <= ceilingLightSlotTargetForDevice(),
+      revision: CEILING_LIGHT_POLICY.revision,
+      mobileHint: runtimeMobileRenderHint,
+      initialQualityTier: runtimeQualityTier,
+      slotPolicy,
+      intendedSlotPolicy,
+      compiledShaderSlots: activeCeilingLightSlots,
+      currentSlotTarget: ceilingLightSlotTargetForDevice(),
+      selectionCount: selectionA.length,
+      stableSelectionArray,
+      selectionUsesLightReferences,
+      stableUploadObject,
+      resolutionScaleFloor: RENDER_RESOLUTION_SCALE_FLOOR,
+      intendedResolutionFloor
     };
   };
   // Build 12.155: the loadout stills. A still that renders blank would look

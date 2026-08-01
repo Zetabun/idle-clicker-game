@@ -56,6 +56,21 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.240 owns adaptive mobile lighting. **Desktop Full keeps four compiled
+ceiling-light slots; compact touch/coarse devices compile two at Balanced and
+constrained devices compile one.** Do not weaken fixture placement, colour,
+range, the ACES grade or Dune's sky/grade parity. Keep inactive light work
+behind the coherent `lightPosRange.w > 0.0` uniform branch, and keep
+`selectActiveCeilingLights()` allocation-free: persistent selection array,
+fixed distance buffer, stable light references and no per-frame sort. The DPR
+path must honour `RENDER_RESOLUTION_SCALE_FLOOR` at 0.62; the 0.82 absolute DPR
+floor remains. Runtime quality stays render-only and must never change match
+intelligence. Verify `mobileLightingPerformanceForTest()`,
+`ceilingLightForTest()`, `imageGradeForTest()`, runtime/adaptive quality,
+simulation independence, renderer integrity, `navigationSubmenuForTest()` and
+phone-sized captures. See
+`AUDIT-12.240.md`.
+
 Build 12.239 owns the cohesive third-person operator rig. **Keep the sleeve
 dropped over the upper arm and keep the torso/pelvis profiles vertically
 overlapping**; those joins remove the floating-part read without adding draws.

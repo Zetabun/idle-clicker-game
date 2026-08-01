@@ -165,10 +165,11 @@
     requestAnimationFrame(() => nav.querySelector('button.active')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' }));
   }
 
-  function syncMobileContextualNavigationState(sectionId = menuSection, routeId = menuTab) {
+  function syncMobileContextualNavigationState(sectionId = null, routeId = menuTab) {
     const shell = document.getElementById('menuShell');
     if (!shell) return;
-    const resolvedSection = menuSections[sectionId] ? sectionId : 'operations';
+    const requestedSection = sectionId || menuSectionForRoute(routeId);
+    const resolvedSection = menuSections[requestedSection] ? requestedSection : 'operations';
     const resolvedRoute = routeId || menuSections[resolvedSection].defaultRoute;
     shell.dataset.mobileSection = resolvedSection;
     shell.dataset.mobileRoute = resolvedRoute;

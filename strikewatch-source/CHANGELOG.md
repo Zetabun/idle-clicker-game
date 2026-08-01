@@ -4,6 +4,18 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.240 — Adaptive Mobile Lighting
+
+- Keeps four authored ceiling-light slots on Full desktop, while compact
+  touch/coarse devices compile two and constrained devices compile one.
+- Skips inactive-slot fragment maths and replaces per-frame light objects plus
+  sorting with persistent, allocation-free nearest-light selection.
+- Lets the adaptive scaler reach its intended 0.62 floor and respond sooner to
+  sustained pressure on mobile, without changing gameplay or the image grade.
+- Removes the compact-navigation boot error by deriving its section from the
+  existing route authority instead of the nonexistent `menuSection` value.
+- See `AUDIT-12.240.md`.
+
 ## 12.239 — Cohesive Operator Rig
 
 - Drops the cloth sleeve over the upper arm and broadens the torso/pelvis waist

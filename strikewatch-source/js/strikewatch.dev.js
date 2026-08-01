@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.239';
-  const BUILD_NAME = 'Cohesive Operator Rig';
-  const BUILD_ID = '12.239.0-cohesive-operator-rig';
+  const BUILD_VERSION = '12.240';
+  const BUILD_NAME = 'Adaptive Mobile Lighting';
+  const BUILD_ID = '12.240.0-adaptive-mobile-lighting';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -1708,6 +1708,7 @@
   let roundEnding = false;
   let roundRestartTimer = 0;
   let DPR = 1;
+  const RENDER_RESOLUTION_SCALE_FLOOR = 0.62;
   let renderResolutionScale = 1;
   let renderResolutionTarget = 1;
   let renderResolutionChanges = 0;
@@ -1718,11 +1719,33 @@
   let runtimeQualityLastChangedAt = 0;
   const runtimeHardwareConcurrency = Math.max(1, Number(navigator.hardwareConcurrency) || 4);
   const runtimeDeviceMemoryGb = Number(navigator.deviceMemory) || 0;
+  const runtimeCompactViewportHint = Math.max(1, Number(window.innerWidth) || 1024) < 1024;
+  const runtimeTouchCapable = Math.max(0, Number(navigator.maxTouchPoints) || 0) > 0;
+  const runtimeCoarsePointer = (() => {
+    try {
+      return Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+    } catch (_) {
+      return false;
+    }
+  })();
+  const runtimeMobileRenderForced = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get('mobileRender') === '1';
+    } catch (_) {
+      return false;
+    }
+  })();
+  // Build 12.240: browsers frequently omit deviceMemory while still exposing
+  // a many-core phone CPU. Compact layout plus a touch/coarse pointer is a
+  // render-only hint that starts those devices at Balanced rather than asking
+  // them to survive several seconds at Full before the governor can react.
+  const runtimeMobileRenderHint = runtimeMobileRenderForced
+    || (runtimeCompactViewportHint && (runtimeTouchCapable || runtimeCoarsePointer));
+  const runtimeConstrainedRenderHint = runtimeHardwareConcurrency <= 2
+    || (runtimeDeviceMemoryGb > 0 && runtimeDeviceMemoryGb <= 2);
   // Build 12.197: this tier is render-only. Device pressure may reduce
   // resolution and actor detail, but it must never weaken match intelligence.
-  let runtimeQualityTier = runtimeHardwareConcurrency <= 2 || (runtimeDeviceMemoryGb > 0 && runtimeDeviceMemoryGb <= 2)
-    ? 0
-    : 2;
+  let runtimeQualityTier = runtimeConstrainedRenderHint ? 0 : (runtimeMobileRenderHint ? 1 : 2);
   const SIMULATION_WORK_POLICY = Object.freeze({
     revision: '12.197-device-independent-simulation-1',
     windowSeconds: 1 / 60,
@@ -34661,10 +34684,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     requestAnimationFrame(() => nav.querySelector('button.active')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' }));
   }
 
-  function syncMobileContextualNavigationState(sectionId = menuSection, routeId = menuTab) {
+  function syncMobileContextualNavigationState(sectionId = null, routeId = menuTab) {
     const shell = document.getElementById('menuShell');
     if (!shell) return;
-    const resolvedSection = menuSections[sectionId] ? sectionId : 'operations';
+    const requestedSection = sectionId || menuSectionForRoute(routeId);
+    const resolvedSection = menuSections[requestedSection] ? requestedSection : 'operations';
     const resolvedRoute = routeId || menuSections[resolvedSection].defaultRoute;
     shell.dataset.mobileSection = resolvedSection;
     shell.dataset.mobileRoute = resolvedRoute;
@@ -40641,9 +40665,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   //      arena is.
   //   3. `range` keeps each one local, well inside the 16-35 unit fog band.
   const CEILING_LIGHT_POLICY = Object.freeze({
-    revision: '12.224.0',
+    revision: '12.240.0',
     maxPerArena: 14,
     maxActive: 4,
+    mobileActive: 2,
+    constrainedActive: 1,
     range: 6.4,
     // A candidate must be at least this enclosed to be worth lighting. Sampled
     // with the wall radii, where a corridor reads around 0.45-0.70 and an open
@@ -40981,6 +41007,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   // worth keeping on every device.
   let activeCeilingLightSlots = 0;
 
+  function ceilingLightSlotTargetForDevice(
+    qualityTier = runtimeQualityTier,
+    mobileHint = runtimeMobileRenderHint
+  ) {
+    if (Number(qualityTier) <= 0) return CEILING_LIGHT_POLICY.constrainedActive;
+    if (mobileHint || Number(qualityTier) === 1) return CEILING_LIGHT_POLICY.mobileActive;
+    return CEILING_LIGHT_POLICY.maxActive;
+  }
+
   function resolveCeilingLightSlots() {
     if (!CEILING_LIGHTS_ENABLED) return 0;
     try {
@@ -40988,7 +41023,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       // 13 vectors are spoken for before lights (9 existing + 4 grade); each
       // light costs 2. Keep a margin rather than filling the budget exactly.
       const affordable = Math.floor((limit - 13 - 4) / 2);
-      return Math.max(0, Math.min(CEILING_LIGHT_POLICY.maxActive, affordable));
+      const target = ceilingLightSlotTargetForDevice();
+      return Math.max(0, Math.min(target, affordable));
     } catch (_) {
       return 0;
     }
@@ -41010,13 +41046,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         // nearest few reach the shader, so this loop is a fixed cost.
         for (int lightIndex = 0; lightIndex < ${slots}; lightIndex++) {
           vec4 lightPosRange = uCeilingLightPosRange[lightIndex];
-          vec3 toLight = lightPosRange.xyz - vWorldPosition;
-          float lightDistance = length(toLight);
-          float falloff = max(0.0, 1.0 - lightDistance * lightPosRange.w);
-          falloff *= falloff;
-          vec3 lightDirection = toLight / max(lightDistance, 0.0001);
-          float lightLambert = max(dot(normal, lightDirection), 0.0);
-          ceilingLight += uCeilingLightColour[lightIndex] * (lightLambert * falloff);
+          // This condition is uniform for every fragment in the draw, so it
+          // introduces no lane divergence. Empty slots, outdoor arenas and the
+          // runtime-off reference path now skip the distance/normal maths.
+          if (lightPosRange.w > 0.0) {
+            vec3 toLight = lightPosRange.xyz - vWorldPosition;
+            float lightDistance = length(toLight);
+            float falloff = max(0.0, 1.0 - lightDistance * lightPosRange.w);
+            falloff *= falloff;
+            vec3 lightDirection = toLight / max(lightDistance, 0.0001);
+            float lightLambert = max(dot(normal, lightDirection), 0.0);
+            ceilingLight += uCeilingLightColour[lightIndex] * (lightLambert * falloff);
+          }
         }
 ` : '';
     const vertexSource = `
@@ -42448,6 +42489,7 @@ ${ceilingLightBlock}
   const ceilingLightPosRangeBuffer = new Float32Array(CEILING_LIGHT_POLICY.maxActive * 4);
   const ceilingLightColourBuffer = new Float32Array(CEILING_LIGHT_POLICY.maxActive * 3);
   const ceilingLightSelection = [];
+  const ceilingLightSelectionDistances = new Float32Array(CEILING_LIGHT_POLICY.maxActive);
   // The declared array length can be smaller than the policy maximum when the
   // device is short on fragment uniform vectors, and uploading a longer typed
   // array than the uniform declares is a GL error rather than a silent trim.
@@ -42455,14 +42497,17 @@ ${ceilingLightBlock}
   let ceilingLightPosRangeView = null;
   let ceilingLightColourView = null;
   let ceilingLightViewSlots = -1;
+  const ceilingLightUploadView = { posRange: null, colour: null };
 
   function ceilingLightUploadViews() {
     if (ceilingLightViewSlots !== activeCeilingLightSlots) {
       ceilingLightViewSlots = activeCeilingLightSlots;
       ceilingLightPosRangeView = ceilingLightPosRangeBuffer.subarray(0, Math.max(0, activeCeilingLightSlots) * 4);
       ceilingLightColourView = ceilingLightColourBuffer.subarray(0, Math.max(0, activeCeilingLightSlots) * 3);
+      ceilingLightUploadView.posRange = ceilingLightPosRangeView;
+      ceilingLightUploadView.colour = ceilingLightColourView;
     }
-    return { posRange: ceilingLightPosRangeView, colour: ceilingLightColourView };
+    return ceilingLightUploadView;
   }
 
   function selectActiveCeilingLights(cameraX, cameraY, cameraZ) {
@@ -42482,13 +42527,22 @@ ${ceilingLightBlock}
       // Nothing outside its own range can contribute, so it never competes for
       // a slot with a fixture that can.
       if (distanceSquared > (light.range + 1) * (light.range + 1)) continue;
-      ceilingLightSelection.push({ light, distanceSquared });
+      const count = ceilingLightSelection.length;
+      let insertAt = count;
+      while (insertAt > 0 && distanceSquared < ceilingLightSelectionDistances[insertAt - 1]) insertAt--;
+      if (insertAt >= slots) continue;
+      const nextCount = Math.min(count + 1, slots);
+      ceilingLightSelection.length = nextCount;
+      for (let move = nextCount - 1; move > insertAt; move--) {
+        ceilingLightSelection[move] = ceilingLightSelection[move - 1];
+        ceilingLightSelectionDistances[move] = ceilingLightSelectionDistances[move - 1];
+      }
+      ceilingLightSelection[insertAt] = light;
+      ceilingLightSelectionDistances[insertAt] = distanceSquared;
     }
-    ceilingLightSelection.sort((a, b) => a.distanceSquared - b.distanceSquared);
-    ceilingLightSelection.length = Math.min(ceilingLightSelection.length, slots);
 
     for (let index = 0; index < ceilingLightSelection.length; index++) {
-      const light = ceilingLightSelection[index].light;
+      const light = ceilingLightSelection[index];
       const base = index * 4;
       ceilingLightPosRangeBuffer[base] = light.x;
       ceilingLightPosRangeBuffer[base + 1] = light.y;
@@ -43869,7 +43923,7 @@ ${ceilingLightBlock}
   function resize() {
     const nativeDpr = Math.max(1, Number(window.devicePixelRatio) || 1);
     const cap = renderDprCap();
-    DPR = Math.max(0.82, Math.min(cap, nativeDpr) * clamp(renderResolutionScale, 0.72, 1));
+    DPR = Math.max(0.82, Math.min(cap, nativeDpr) * clamp(renderResolutionScale, RENDER_RESOLUTION_SCALE_FLOOR, 1));
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(1, Math.round(canvas.clientWidth || rect.width || innerWidth));
     const h = Math.max(1, Math.round(canvas.clientHeight || rect.height || innerHeight));
@@ -50695,7 +50749,8 @@ ${ceilingLightBlock}
     renderPerformancePressure = slowFrame ? renderPerformancePressure + 1 : Math.max(0, renderPerformancePressure - 2);
     renderPerformanceRecovery = fastFrame ? renderPerformanceRecovery + 1 : Math.max(0, renderPerformanceRecovery - 1);
     let changed = false;
-    if (renderPerformancePressure >= 28 && renderResolutionTarget > minimum) {
+    const pressureThreshold = adaptiveResolutionPressureThreshold();
+    if (renderPerformancePressure >= pressureThreshold && renderResolutionTarget > minimum) {
       renderResolutionTarget = Math.max(minimum, renderResolutionTarget - 0.08);
       renderPerformancePressure = 0;
       renderPerformanceRecovery = 0;
@@ -50714,6 +50769,10 @@ ${ceilingLightBlock}
       renderResolutionChanges++;
       resize();
     }
+  }
+
+  function adaptiveResolutionPressureThreshold(mobileHint = runtimeMobileRenderHint) {
+    return mobileHint ? 18 : 28;
   }
 
   function recordRuntimePerformance(frameMs, updateMs, renderMs, frameIntervalMs = frameMs) {
@@ -57353,6 +57412,9 @@ ${ceilingLightBlock}
       qualityRecovery: runtimeQualityRecovery,
       hardwareConcurrency: runtimeHardwareConcurrency,
       deviceMemoryGb: runtimeDeviceMemoryGb || null,
+      mobileRenderHint: runtimeMobileRenderHint,
+      resolutionScaleFloor: RENDER_RESOLUTION_SCALE_FLOOR,
+      ceilingLightShaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
       matchSpeed: matchSpeedMultiplier,
       matchClock: matchClockSnapshot(),
       damageNumbers: damageNumberEffects.length,
@@ -57461,6 +57523,8 @@ ${ceilingLightBlock}
       changes: renderResolutionChanges, pressure: renderPerformancePressure, recovery: renderPerformanceRecovery,
       qualityTier: runtimeQualityTier, qualityLabel: typeof runtimeQualityLabel === 'function' ? runtimeQualityLabel() : String(runtimeQualityTier),
       qualityPressure: runtimeQualityPressure, qualityRecovery: runtimeQualityRecovery,
+      mobileRenderHint: runtimeMobileRenderHint, resolutionScaleFloor: RENDER_RESOLUTION_SCALE_FLOOR,
+      ceilingLightShaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
       frameMs: runtimePerformance.frameMs, renderMs: runtimePerformance.renderMs, updateMs: runtimePerformance.updateMs,
       longFrames: runtimePerformance.longFrames, canvasWidth: canvas.width, canvasHeight: canvas.height
     }),
@@ -57507,6 +57571,52 @@ ${ceilingLightBlock}
       const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
       for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);
       return { before, after: { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges }, dpr: DPR };
+    },
+    mobileAdaptiveResolutionForTest: () => {
+      const preserved = {
+        appState,
+        tier: runtimeQualityTier,
+        scale: renderResolutionScale,
+        target: renderResolutionTarget,
+        changes: renderResolutionChanges,
+        pressure: renderPerformancePressure,
+        recovery: renderPerformanceRecovery
+      };
+      let result = null;
+      try {
+        appState = 'match';
+        runtimeQualityTier = 0;
+        renderResolutionScale = 1;
+        renderResolutionTarget = 1;
+        renderResolutionChanges = 0;
+        renderPerformancePressure = 0;
+        renderPerformanceRecovery = 0;
+        const mobileThreshold = adaptiveResolutionPressureThreshold(true);
+        const desktopThreshold = adaptiveResolutionPressureThreshold(false);
+        for (let frame = 0; frame < mobileThreshold * 5; frame++) updateAdaptiveRenderResolution(30, 22);
+        result = {
+          ok: mobileThreshold === 18
+            && desktopThreshold === 28
+            && Math.abs(renderResolutionTarget - RENDER_RESOLUTION_SCALE_FLOOR) < 0.0001
+            && Math.abs(renderResolutionScale - RENDER_RESOLUTION_SCALE_FLOOR) < 0.0001,
+          mobileThreshold,
+          desktopThreshold,
+          target: renderResolutionTarget,
+          scale: renderResolutionScale,
+          changes: renderResolutionChanges,
+          floor: RENDER_RESOLUTION_SCALE_FLOOR
+        };
+      } finally {
+        appState = preserved.appState;
+        runtimeQualityTier = preserved.tier;
+        renderResolutionScale = preserved.scale;
+        renderResolutionTarget = preserved.target;
+        renderResolutionChanges = preserved.changes;
+        renderPerformancePressure = preserved.pressure;
+        renderPerformanceRecovery = preserved.recovery;
+        resize();
+      }
+      return { ...result, stateRestored: appState === preserved.appState && runtimeQualityTier === preserved.tier };
     },
     criticalProfileForTest: (playerId = '', weaponId = '') => {
       const player = teamPlayerById(String(playerId || '')) || careerState.squad?.[0] || null;
@@ -61226,9 +61336,12 @@ ${ceilingLightBlock}
       minSeparation: minSeparation === null ? null : Number(minSeparation.toFixed(3)),
       minSpacingPolicy: CEILING_LIGHT_POLICY.minSpacing,
       spacingRespected: minSeparation === null || minSeparation >= CEILING_LIGHT_POLICY.minSpacing - 0.001,
-      // Fixed per-pixel cost regardless of how many the arena holds.
+      // The compiled loop is bounded regardless of arena size; empty slots now
+      // take a coherent uniform branch and skip their distance/normal maths.
       shaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
       maxActive: CEILING_LIGHT_POLICY.maxActive,
+      mobileActive: CEILING_LIGHT_POLICY.mobileActive,
+      constrainedActive: CEILING_LIGHT_POLICY.constrainedActive,
       centreSelection,
       cornerSelection,
       selectionBounded: centreSelection <= CEILING_LIGHT_POLICY.maxActive && cornerSelection <= CEILING_LIGHT_POLICY.maxActive,
@@ -61248,6 +61361,51 @@ ${ceilingLightBlock}
       batchEligible: true,
       additionalTextures: 0,
       additionalShaderPasses: 0
+    };
+  };
+  // Build 12.240: the mobile lighting path must reduce fragment work without
+  // changing placement, colour, range or any static batch material. The
+  // selection and upload containers are persistent so walking between pools
+  // of light cannot create a stream of short-lived objects for the collector.
+  window.__strikeDebug.mobileLightingPerformanceForTest = () => {
+    if (typeof ceilingLightSlotTargetForDevice !== 'function') {
+      return { ok: false, reason: 'Mobile ceiling-light slot policy unavailable.' };
+    }
+    const lights = (typeof worldBatches === 'object' && worldBatches?.ceilingLights) || [];
+    const selectionA = selectActiveCeilingLights(MAP_W * 0.5, 1.6, MAP_H * 0.5);
+    const stableSelectionArray = selectionA === selectActiveCeilingLights(MAP_W * 0.5, 1.6, MAP_H * 0.5);
+    const selectionUsesLightReferences = selectionA.every(light => lights.includes(light));
+    const uploadA = ceilingLightUploadViews();
+    const stableUploadObject = uploadA === ceilingLightUploadViews();
+    const slotPolicy = {
+      desktopFull: ceilingLightSlotTargetForDevice(2, false),
+      mobileBalanced: ceilingLightSlotTargetForDevice(1, true),
+      constrained: ceilingLightSlotTargetForDevice(0, true)
+    };
+    const intendedSlotPolicy = slotPolicy.desktopFull === 4
+      && slotPolicy.mobileBalanced === 2
+      && slotPolicy.constrained === 1;
+    const intendedResolutionFloor = Math.abs(RENDER_RESOLUTION_SCALE_FLOOR - 0.62) < 0.0001;
+    return {
+      ok: stableSelectionArray
+        && selectionUsesLightReferences
+        && stableUploadObject
+        && intendedSlotPolicy
+        && intendedResolutionFloor
+        && activeCeilingLightSlots <= ceilingLightSlotTargetForDevice(),
+      revision: CEILING_LIGHT_POLICY.revision,
+      mobileHint: runtimeMobileRenderHint,
+      initialQualityTier: runtimeQualityTier,
+      slotPolicy,
+      intendedSlotPolicy,
+      compiledShaderSlots: activeCeilingLightSlots,
+      currentSlotTarget: ceilingLightSlotTargetForDevice(),
+      selectionCount: selectionA.length,
+      stableSelectionArray,
+      selectionUsesLightReferences,
+      stableUploadObject,
+      resolutionScaleFloor: RENDER_RESOLUTION_SCALE_FLOOR,
+      intendedResolutionFloor
     };
   };
   // Build 12.155: the loadout stills. A still that renders blank would look

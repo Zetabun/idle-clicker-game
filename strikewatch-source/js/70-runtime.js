@@ -949,7 +949,8 @@
     renderPerformancePressure = slowFrame ? renderPerformancePressure + 1 : Math.max(0, renderPerformancePressure - 2);
     renderPerformanceRecovery = fastFrame ? renderPerformanceRecovery + 1 : Math.max(0, renderPerformanceRecovery - 1);
     let changed = false;
-    if (renderPerformancePressure >= 28 && renderResolutionTarget > minimum) {
+    const pressureThreshold = adaptiveResolutionPressureThreshold();
+    if (renderPerformancePressure >= pressureThreshold && renderResolutionTarget > minimum) {
       renderResolutionTarget = Math.max(minimum, renderResolutionTarget - 0.08);
       renderPerformancePressure = 0;
       renderPerformanceRecovery = 0;
@@ -968,6 +969,10 @@
       renderResolutionChanges++;
       resize();
     }
+  }
+
+  function adaptiveResolutionPressureThreshold(mobileHint = runtimeMobileRenderHint) {
+    return mobileHint ? 18 : 28;
   }
 
   function recordRuntimePerformance(frameMs, updateMs, renderMs, frameIntervalMs = frameMs) {
@@ -7607,6 +7612,9 @@
       qualityRecovery: runtimeQualityRecovery,
       hardwareConcurrency: runtimeHardwareConcurrency,
       deviceMemoryGb: runtimeDeviceMemoryGb || null,
+      mobileRenderHint: runtimeMobileRenderHint,
+      resolutionScaleFloor: RENDER_RESOLUTION_SCALE_FLOOR,
+      ceilingLightShaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
       matchSpeed: matchSpeedMultiplier,
       matchClock: matchClockSnapshot(),
       damageNumbers: damageNumberEffects.length,
@@ -7715,6 +7723,8 @@
       changes: renderResolutionChanges, pressure: renderPerformancePressure, recovery: renderPerformanceRecovery,
       qualityTier: runtimeQualityTier, qualityLabel: typeof runtimeQualityLabel === 'function' ? runtimeQualityLabel() : String(runtimeQualityTier),
       qualityPressure: runtimeQualityPressure, qualityRecovery: runtimeQualityRecovery,
+      mobileRenderHint: runtimeMobileRenderHint, resolutionScaleFloor: RENDER_RESOLUTION_SCALE_FLOOR,
+      ceilingLightShaderSlots: typeof activeCeilingLightSlots === 'number' ? activeCeilingLightSlots : null,
       frameMs: runtimePerformance.frameMs, renderMs: runtimePerformance.renderMs, updateMs: runtimePerformance.updateMs,
       longFrames: runtimePerformance.longFrames, canvasWidth: canvas.width, canvasHeight: canvas.height
     }),
@@ -7761,6 +7771,52 @@
       const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
       for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);
       return { before, after: { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges }, dpr: DPR };
+    },
+    mobileAdaptiveResolutionForTest: () => {
+      const preserved = {
+        appState,
+        tier: runtimeQualityTier,
+        scale: renderResolutionScale,
+        target: renderResolutionTarget,
+        changes: renderResolutionChanges,
+        pressure: renderPerformancePressure,
+        recovery: renderPerformanceRecovery
+      };
+      let result = null;
+      try {
+        appState = 'match';
+        runtimeQualityTier = 0;
+        renderResolutionScale = 1;
+        renderResolutionTarget = 1;
+        renderResolutionChanges = 0;
+        renderPerformancePressure = 0;
+        renderPerformanceRecovery = 0;
+        const mobileThreshold = adaptiveResolutionPressureThreshold(true);
+        const desktopThreshold = adaptiveResolutionPressureThreshold(false);
+        for (let frame = 0; frame < mobileThreshold * 5; frame++) updateAdaptiveRenderResolution(30, 22);
+        result = {
+          ok: mobileThreshold === 18
+            && desktopThreshold === 28
+            && Math.abs(renderResolutionTarget - RENDER_RESOLUTION_SCALE_FLOOR) < 0.0001
+            && Math.abs(renderResolutionScale - RENDER_RESOLUTION_SCALE_FLOOR) < 0.0001,
+          mobileThreshold,
+          desktopThreshold,
+          target: renderResolutionTarget,
+          scale: renderResolutionScale,
+          changes: renderResolutionChanges,
+          floor: RENDER_RESOLUTION_SCALE_FLOOR
+        };
+      } finally {
+        appState = preserved.appState;
+        runtimeQualityTier = preserved.tier;
+        renderResolutionScale = preserved.scale;
+        renderResolutionTarget = preserved.target;
+        renderResolutionChanges = preserved.changes;
+        renderPerformancePressure = preserved.pressure;
+        renderPerformanceRecovery = preserved.recovery;
+        resize();
+      }
+      return { ...result, stateRestored: appState === preserved.appState && runtimeQualityTier === preserved.tier };
     },
     criticalProfileForTest: (playerId = '', weaponId = '') => {
       const player = teamPlayerById(String(playerId || '')) || careerState.squad?.[0] || null;
