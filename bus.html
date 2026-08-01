@@ -249,6 +249,11 @@ button{cursor:pointer;border:0;background:none}
 .stopitem{display:flex;width:100%;text-align:left;gap:11px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--rule)}
 .stopitem:hover{background:var(--ink-3)}
 .stopitem .dist{margin-left:auto;font-family:'Martian Mono',monospace;font-size:12px;color:var(--led);letter-spacing:-.04em}
+.stopitem .hasroutes{
+  margin-left:auto;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--led);border:1px solid var(--led-dim);border-radius:3px;padding:2px 5px;white-space:nowrap;
+}
+.stopitem .hasroutes + .dist{margin-left:9px}
 .stopitem .nm{font-size:14px;font-weight:500}
 .stopitem .sub{font-size:11px;color:var(--text-dim)}
 
@@ -1056,11 +1061,15 @@ function selectStop(s){
 $('changeStop').addEventListener('click', ()=>{
   if(!S.stops.length){ toast('No stops loaded yet.'); return; }
   const box=$('stopItems');
-  box.innerHTML = S.stops.slice(0,60).map((s,i)=>
-    '<button class="stopitem" data-i="'+i+'"><span class="flagicon" style="width:12px;height:14px"></span>'+
-    '<span style="min-width:0"><span class="nm">'+esc(s.name)+'</span>'+
-    (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+
-    '<span class="dist">'+fmtDist(s.d)+'</span></button>').join('');
+  box.innerHTML = S.stops.slice(0,60).map((s,i)=>{
+    const m = MAPPED[String(s.id)];
+    const badge = m && m.routes.length
+      ? '<span class="hasroutes">'+m.routes.length+' routes</span>' : '';
+    return '<button class="stopitem" data-i="'+i+'"><span class="flagicon" style="width:12px;height:14px"></span>'+
+      '<span style="min-width:0"><span class="nm">'+esc(s.name)+'</span>'+
+      (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+
+      badge+'<span class="dist">'+fmtDist(s.d)+'</span></button>';
+  }).join('');
   [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i])));
   $('stopPicker').classList.add('show');
 });
@@ -1502,14 +1511,9 @@ function saveMapped(){
 async function fetchRoutesFor(stop){
   const sid = String(stop.id);
   if(MAPPED[sid]) return MAPPED[sid];
-  const q = `[out:json][timeout:25];
-node(${stop.id});
-rel(bn)["type"="route"]["route"~"^(bus|trolleybus)$"];
-out tags;`;
-  try{
-    const j = await overpass(q);
-    const seen = new Set();
-    const routes = [];
+
+  const parse = (j)=>{
+    const seen = new Set(), routes = [];
     for(const el of (j.elements||[])){
       const t = el.tags||{};
       const ref = cleanLine(t.ref || t['route_ref'] || '');
@@ -1519,7 +1523,42 @@ out tags;`;
       seen.add(key);
       routes.push({ref, to:cleanName(t.to||''), from:cleanName(t.from||''), op:t.operator||''});
     }
-    MAPPED[sid] = {routes, ts:Date.now()};
+    return routes;
+  };
+
+  // First: relations this exact stop node belongs to.
+  const exact = `[out:json][timeout:25];
+node(${stop.id});
+rel(bn)["type"="route"]["route"~"^(bus|trolleybus)$"];
+out tags;`;
+
+  // Fallback: OSM often maps the route against a sibling node a few
+  // metres away (a platform, or a duplicate of the same flag).
+  const nearby = `[out:json][timeout:25];
+(node["highway"="bus_stop"](around:70,${stop.lat},${stop.lon});
+ node["public_transport"~"^(platform|stop_position)$"](around:70,${stop.lat},${stop.lon}););
+rel(bn)["type"="route"]["route"~"^(bus|trolleybus)$"];
+out tags;`;
+
+  // Last resort: which bus routes physically run along this bit of road.
+  // Higher hit rate, lower confidence — an express may pass without calling.
+  const along = `[out:json][timeout:25];
+way(around:30,${stop.lat},${stop.lon})["highway"];
+rel(bw)["type"="route"]["route"~"^(bus|trolleybus)$"];
+out tags;`;
+
+  try{
+    let routes = parse(await overpass(exact));
+    let source = 'stop';
+    if(!routes.length){
+      routes = parse(await overpass(nearby));
+      source = 'nearby';
+    }
+    if(!routes.length){
+      routes = parse(await overpass(along));
+      source = 'along';
+    }
+    MAPPED[sid] = {routes, ts:Date.now(), source};
     saveMapped();
     return MAPPED[sid];
   }catch(e){
@@ -1588,8 +1627,12 @@ function renderServingNote(){
         return '<span class="rref">'+esc(ref)+'</span>'+(dests?' <span class="rdest">'+esc(dests)+'</span>':'');
       });
     el.innerHTML = '<div class="rlist">'+parts.join('')+'</div>'
-      + '<div class="rsrc">Routes at this stop'
-      + (S.onlyServing ? ' — other buses hidden' : '') + '</div>';
+      + '<div class="rsrc">'
+      + (m.source === 'along' ? 'Routes running past this stop \u00b7 some may not call here'
+        : m.source === 'nearby' ? 'Routes via an adjacent stop node'
+        : 'Routes calling at this stop')
+      + ' \u00b7 OpenStreetMap'
+      + (S.onlyServing ? ' \u00b7 other buses hidden' : '') + '</div>';
     return;
   }
   if(!S.onlyServing){ el.style.display='none'; return; }
@@ -1597,20 +1640,24 @@ function renderServingNote(){
     el.innerHTML = '<b>Seen stopping here:</b> '+esc(routes.join(', '))
       + '. OpenStreetMap has no route data for this stop, so this list builds from buses that actually pull in.';
   } else {
-    el.innerHTML = '<b>No route data for this stop yet.</b> OpenStreetMap has none mapped here, '
-      + 'so everything nearby is shown until a couple of buses have pulled in.';
+    el.innerHTML = '<b>No route data for this stop yet.</b> OpenStreetMap has none mapped here, so buses '
+      + 'within about 2 miles are shown — some of these will not call at this stop. '
+      + 'It corrects itself as buses pull in.';
   }
 }
 
 function relevant(){
   if(!S.stop) return [];
   const gate = servingReady();
+  // Unfiltered, a 9 km radius is just "every bus in the city". Without a
+  // route list, only show buses close enough to plausibly be coming here.
+  const maxD = gate ? MAX_VEH_DIST : 3500;
   const out=[];
   for(const v of S.vehicles.values()){
     // Distance limits the bus, not the stop: a 61 two miles out still
     // counts if the 61 calls here.
     const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
-    if(d > MAX_VEH_DIST) continue;
+    if(d > maxD) continue;
     if(Date.now() - v.ts > MAX_AGE_MS) continue;
     if(gate && !servesHere(v.line)) continue;
     const dir = inferDirection(v);
