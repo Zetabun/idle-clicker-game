@@ -1301,19 +1301,25 @@ ${ceilingLightBlock}
   }
 
 
-  // Tapered deltoid shell used for shoulder protection. The lower edge narrows
-  // into the arm rather than ending as a rectangular block or a round ball.
+  // Cloth deltoid/sleeve volume. It is vertically profiled and shallow through
+  // the chest so the always-present shoulder form reads as clothing flowing
+  // out of the torso, not as a spherical mechanical joint. Armour classes that
+  // own a hard shoulder plate still draw that separate authored shell.
   function makeOperatorShoulderPadMesh(segments = 16) {
     const profile = [
-      { y: -0.50, rx: 0.27, rz: 0.30, cz: 0.010 },
-      { y: -0.30, rx: 0.43, rz: 0.43, cz: 0.008 },
-      { y:  0.02, rx: 0.50, rz: 0.50, cz: 0.000 },
-      { y:  0.30, rx: 0.46, rz: 0.43, cz: -0.006 },
-      { y:  0.50, rx: 0.31, rz: 0.28, cz: -0.012 }
+      { y: -0.50, rx: 0.30, rz: 0.25, cz:  0.006 },
+      { y: -0.34, rx: 0.43, rz: 0.37, cz:  0.006 },
+      { y: -0.08, rx: 0.53, rz: 0.46, cz:  0.002 },
+      { y:  0.18, rx: 0.50, rz: 0.43, cz: -0.004 },
+      { y:  0.38, rx: 0.41, rz: 0.34, cz: -0.010 },
+      { y:  0.50, rx: 0.27, rz: 0.22, cz: -0.014 }
     ];
     return makeProfiledCharacterMesh(profile, segments, point => {
       const front = Math.max(0, Math.sin(point.angle));
-      point.z += Math.pow(front, 3) * 0.020;
+      const side = Math.abs(Math.cos(point.angle));
+      const crown = Math.exp(-Math.pow((point.y - 0.08) / 0.34, 2));
+      point.z += Math.pow(front, 3) * crown * 0.018;
+      point.x *= 1 + Math.pow(side, 5) * crown * 0.045;
       return point;
     }, true, true);
   }
@@ -1434,18 +1440,18 @@ ${ceilingLightBlock}
     return createMesh(positions, normals, indices);
   }
 
-  // A low-cost tapered capsule. The local -Y end is broader than +Y, matching
-  // the natural shoulder-to-elbow, hip-to-knee and knee-to-ankle silhouette.
+  // A low-cost anatomical limb segment. Both ends retain real volume so limbs
+  // flow through their joints instead of pinching into beads; the local -Y end
+  // remains broader than +Y for shoulder-to-elbow, hip-to-knee and calf taper.
+  // Closed end caps prevent a moving elbow or knee exposing a hollow seam.
   function makeTaperedCapsuleMesh(segments = 10) {
     const profile = [
-      { y: -0.50, r: 0.00 },
-      { y: -0.46, r: 0.27 },
+      { y: -0.50, r: 0.38 },
       { y: -0.38, r: 0.47 },
-      { y: -0.25, r: 0.50 },
-      { y:  0.10, r: 0.46 },
-      { y:  0.34, r: 0.37 },
-      { y:  0.45, r: 0.22 },
-      { y:  0.50, r: 0.00 }
+      { y: -0.16, r: 0.50 },
+      { y:  0.10, r: 0.455 },
+      { y:  0.34, r: 0.36 },
+      { y:  0.50, r: 0.30 }
     ];
     const positions = [], normals = [], indices = [];
     for (let ring = 0; ring < profile.length; ring++) {
@@ -1479,6 +1485,25 @@ ${ceilingLightBlock}
         indices.push(a, b, a + 1, b, b + 1, a + 1);
       }
     }
+
+    const addCap = (ring, normalY, reverse) => {
+      const current = profile[ring];
+      const centre = positions.length / 3;
+      positions.push(0, current.y, 0);
+      normals.push(0, normalY, 0);
+      const start = positions.length / 3;
+      for (let segment = 0; segment <= segments; segment++) {
+        const angle = segment / segments * TAU;
+        positions.push(Math.cos(angle) * current.r, current.y, Math.sin(angle) * current.r);
+        normals.push(0, normalY, 0);
+      }
+      for (let segment = 0; segment < segments; segment++) {
+        if (reverse) indices.push(centre, start + segment + 1, start + segment);
+        else indices.push(centre, start + segment, start + segment + 1);
+      }
+    };
+    addCap(0, -1, true);
+    addCap(profile.length - 1, 1, false);
     return createMesh(positions, normals, indices);
   }
 
@@ -1492,8 +1517,8 @@ ${ceilingLightBlock}
       { y: -0.20, x: 0.78, z: 0.84, cz:  0.016 },
       { y:  0.03, x: 0.94, z: 0.93, cz:  0.014 },
       { y:  0.25, x: 1.00, z: 0.88, cz:  0.006 },
-      { y:  0.41, x: 0.91, z: 0.77, cz: -0.006 },
-      { y:  0.50, x: 0.70, z: 0.62, cz: -0.012 }
+      { y:  0.41, x: 0.94, z: 0.77, cz: -0.006 },
+      { y:  0.50, x: 0.82, z: 0.62, cz: -0.012 }
     ];
     const positions = [], normals = [], indices = [];
     for (let ring = 0; ring < profile.length; ring++) {

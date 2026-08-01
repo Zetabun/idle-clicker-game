@@ -8496,6 +8496,7 @@
       silhouette: 'compact anatomical tactical profile with tapered waist, shaped joint shells and profiled boots',
       footPlanting: 'phase-driven lift with floor-clamped soles'
     }),
+    operatorBodySilhouetteForTest: () => operatorSurfaceGeometryAudit(),
     operatorHeadGeometryForTest: (slot = 0) => operatorHeadGeometryAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     operatorSkinPresentationForTest: (slot = 0) => operatorSkinPresentationAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     operatorAmbientOcclusionForTest: (slot = 0) => operatorAmbientOcclusionAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),

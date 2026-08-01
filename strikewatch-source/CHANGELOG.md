@@ -4,6 +4,17 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.238 — Natural Operator Silhouette
+
+- Replaces the always-on spherical shoulder shells with inset cloth deltoid
+  sleeves that overlap the ribcage; hard shoulder plates remain armour-class
+  equipment.
+- Rebuilds arm and leg segments with connected, capped anatomical tapers so
+  elbows, knees and wrists no longer pinch into robotic beads.
+- Extends the lower-face cover and flattens elbow protection for a more grounded
+  tactical silhouette, with no hitbox, AI, animation-anchor or draw-count change.
+- See `AUDIT-12.238.md`.
+
 ## 12.237 — Development Alert Pulse
 
 - The development alert cards (points ready, stat points ready, transfer items) now pulse, so earned rewards waiting to be spent are no longer the quietest thing on the page.

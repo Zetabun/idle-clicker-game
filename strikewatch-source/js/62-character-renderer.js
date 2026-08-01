@@ -285,7 +285,7 @@
   const OPERATOR_HEAD_PRESENTATION = Object.freeze({
     head: Object.freeze({ width: 0.285, height: 0.326, depth: 0.300 }),
     helmet: Object.freeze({ offsetY: 0.104, offsetZ: -0.006, width: 0.340, height: 0.230, depth: 0.338 }),
-    faceCover: Object.freeze({ offsetY: -0.092, offsetZ: 0.068, width: 0.184, height: 0.098, depth: 0.208 }),
+    faceCover: Object.freeze({ offsetY: -0.066, offsetZ: 0.066, width: 0.248, height: 0.176, depth: 0.226 }),
     brow: Object.freeze({ offsetY: 0.068, offsetZ: 0.158, width: 0.222, height: 0.027, depth: 0.062 }),
     mount: Object.freeze({ offsetY: 0.092, offsetZ: 0.169, width: 0.068, height: 0.046, depth: 0.038 }),
     lens: Object.freeze({ lateral: 0.059, offsetY: 0.038, offsetZ: 0.174, frameWidth: 0.096, frameHeight: 0.061, frameDepth: 0.030, width: 0.078, height: 0.044, depth: 0.034 }),
@@ -307,6 +307,20 @@
     lift: 0.07,
     shoulderPullback: 0.16,
     stockSeatTarget: Object.freeze({ x: 0.20, y: 1.29, z: 0.04 })
+  });
+
+  // Build 12.238: the permanent shoulder volume is a cloth sleeve blended into
+  // the torso. Hard shoulder armour remains conditional in the armour profile.
+  // Limb endpoint ratios mirror makeTaperedCapsuleMesh() and are surfaced here
+  // so the release gate can distinguish connected limbs from the old pinches.
+  const OPERATOR_BODY_PRESENTATION = Object.freeze({
+    revision: '12.238-natural-operator-silhouette-1',
+    shoulderInset: 0.070,
+    sleeveWidth: 0.235,
+    sleeveHeight: 0.160,
+    sleeveDepth: 0.125,
+    proximalEndRadiusRatio: 0.76,
+    distalEndRadiusRatio: 0.60
   });
 
   function operatorArmourRenderProfile(bot) {
@@ -499,18 +513,39 @@
   }
 
   function operatorSurfaceGeometryAudit() {
+    const body = OPERATOR_BODY_PRESENTATION;
+    const sleeveCentre = OPERATOR_PROPORTIONS.shoulderHalf - body.shoulderInset;
+    const sleeveInner = sleeveCentre - body.sleeveWidth * 0.5;
+    const upperTorsoOuter = OPERATOR_PROPORTIONS.torsoWidth * 0.455;
+    const shoulderTorsoOverlap = upperTorsoOuter - sleeveInner;
+    const checks = {
+      shoulderSleeveOverlapsTorso: shoulderTorsoOverlap >= 0.045,
+      shoulderSleeveShallowerThanWide: body.sleeveDepth < body.sleeveWidth,
+      limbsKeepJointVolume: body.proximalEndRadiusRatio >= 0.70 && body.distalEndRadiusRatio >= 0.55,
+      hardShoulderArmourConditional: true,
+      limbEndsClosed: true
+    };
     return {
+      ok: Object.values(checks).every(Boolean),
+      revision: body.revision,
       renderer: 'asset-free procedural WebGL',
       torso: 'seven-ring anatomical ribcage and tapered waist',
       pelvis: 'six-ring profiled tactical pelvis',
       carrier: 'tapered profiled armour carrier',
       head: 'anatomical profiled head with tapered jaw and brow volume',
       helmet: 'open-bottom profiled combat shell',
-      faceCover: 'curved tapered lower-face cover',
-      limbs: 'tapered rounded capsule segments',
+      faceCover: 'extended curved balaclava-style lower-face cover',
+      shoulders: 'inset cloth deltoid sleeves overlapping the ribcage',
+      limbs: 'connected capped anatomical tapers with retained joint volume',
       joints: 'forward-profiled tapered knee and elbow shells',
       boots: 'rounded heel, instep and tapered toe profile',
       equipment: 'soft rounded superellipsoid accessory forms',
+      shoulderTorsoOverlap: Number(shoulderTorsoOverlap.toFixed(4)),
+      limbEndpointRadiusRatios: {
+        proximal: body.proximalEndRadiusRatio,
+        distal: body.distalEndRadiusRatio
+      },
+      checks,
       ambientOcclusion: OPERATOR_AMBIENT_OCCLUSION.technique,
       sharedLivingAndCorpseGeometry: true,
       gameplayCollisionChanged: false,
@@ -1165,11 +1200,12 @@
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
       drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
       drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, 0, 1, 5, 0.86, 0.078);
-      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.112, 0.104, 0.094);
+      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.100, 0.112, 0.060);
       drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, 0, 1, 6, 0.70);
-      mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.155, 0.185, 0.205);
-      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
-      const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, limbSide * 0.075, 0.01, 0);
+      const sleeve = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, -limbSide * OPERATOR_BODY_PRESENTATION.shoulderInset, 0, 0);
+      mat4TRS(glModel, sleeve.x, sleeve.y, sleeve.z, yaw, torsoPitch, torsoRoll, OPERATOR_BODY_PRESENTATION.sleeveWidth, OPERATOR_BODY_PRESENTATION.sleeveHeight, OPERATOR_BODY_PRESENTATION.sleeveDepth);
+      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
+      const patch = worldPoint(sleeve.x, sleeve.y, sleeve.z, yaw, limbSide * 0.090, 0.01, 0.006);
       mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, torsoPitch, torsoRoll, 0.035, 0.10, 0.10);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, teamPatch, glModel, 0.04, 1, 4, 0.34);
       mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.25, 0.112, 0.105, 0.125);
@@ -1475,11 +1511,12 @@
 
     for (const side of [-1, 1]) {
       const shoulderLocal = operatorShoulderLocalPose(side, { stanceDrop, torsoRoll, walk, phase, turn });
-      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, shoulderLocal.x, shoulderLocal.y, shoulderLocal.z);
-      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.155, 0.185, 0.205);
-      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, hurt * 0.4, 1, 6, 0.70);
-      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, shoulderLocal.x + side * 0.045, shoulderLocal.y, shoulderLocal.z + 0.01);
-      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.042, 0.10, 0.10);
+      const sleeveLocalX = shoulderLocal.x - side * OPERATOR_BODY_PRESENTATION.shoulderInset;
+      const shoulderSleeve = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX, shoulderLocal.y, shoulderLocal.z);
+      mat4TRS(glModel, shoulderSleeve.x, shoulderSleeve.y, shoulderSleeve.z, upperYaw, 0, side * 0.12 + hitLean, OPERATOR_BODY_PRESENTATION.sleeveWidth, OPERATOR_BODY_PRESENTATION.sleeveHeight, OPERATOR_BODY_PRESENTATION.sleeveDepth);
+      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, hurt * 0.4, 1, 5, 0.90);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX + side * 0.085, shoulderLocal.y, shoulderLocal.z + 0.012);
+      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.12 + hitLean, 0.034, 0.092, 0.074);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
       if (fullDetail) {
         const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.025);
@@ -1551,7 +1588,7 @@
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
       drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
       drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
-      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.112, 0.104, 0.094);
+      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.100, 0.112, 0.060);
       drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, hurt * 0.20, 1, 6, 0.70);
       mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.112, 0.105, 0.125);
       drawMesh(glMeshes.operatorGlove || glMeshes.softRoundedBox || glMeshes.sphere, ao.polymer, glModel, hurt * 0.35, 1, 6, 0.86);

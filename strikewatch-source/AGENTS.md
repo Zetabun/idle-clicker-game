@@ -56,6 +56,18 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.238 owns the natural third-person operator silhouette. **The
+always-present shoulder draw is a cloth deltoid sleeve, inset by 0.070 and
+overlapped into the upper torso; never recolour it as a permanent plate or move
+it back to the arm anchor.** Hard shoulder armour remains conditional in
+`operatorArmourRenderProfile()`. `makeTaperedCapsuleMesh()` deliberately keeps
+0.76/0.60 endpoint volume and closes both ends; returning either end to zero
+recreates the bead-and-rod joints reported in 12.237. Living and corpse paths
+must stay aligned. Preserve animation anchors, hitboxes, the conservative
+culling sphere and draw counts. Verify `operatorBodySilhouetteForTest()`,
+`operatorModel()`, operator AO/lighting/culling and weapon attachments, then
+review staged match captures. See `AUDIT-12.238.md`.
+
 Build 12.237 owns the development alert pulse. **Animate `opacity` on a pseudo-element, never a paint property on the card** — and do not add `will-change` for it. Keep `pointer-events: none` on the glow. **Do not give MUST RESPOND motion**: it is already the dominant surface and the asymmetry is the point. Any new reduced-motion rule must go inside an **existing** `@media (prefers-reduced-motion: reduce)` block — the media budget is at its cap — and must rely on source order rather than an override flag. **Treat `tinyText` from `mobileInterfaceAuditForTest()` as state-sensitive**: injuries and preparation states diverge between page loads, so a small delta between builds is usually career state. Diff the node lists, or delete the rules under test from the live CSSOM and re-run, before believing a regression. See `AUDIT-12.237.md`.
 
 Build 12.236 owns name controls. **Route every player name through `careerPlayerLinkMarkup(playerId, rawName)`** — it links only when `teamPlayerById()` resolves the id and returns escaped plain text otherwise, so a name never becomes a control that leads nowhere. Never pre-escape what you pass it. **Name controls must read as ordinary text** — no resting underline, everything inherited, pointer cursor as the only resting signal, hover colour lift, and `:focus-visible` outline retained for keyboard access. `.league-club-link` and `.career-entity-link` are styled together and must stay that way. Mail bodies and calendar agenda titles are escaped as whole strings; linking inside them needs the record split into parts, so leave them plain unless that is the task. See `AUDIT-12.236.md`.

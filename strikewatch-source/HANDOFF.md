@@ -19,15 +19,28 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.237 — Development Alert Pulse**
-- Build ID: `12.237.0-development-alert-pulse`
+- Build: **12.238 — Natural Operator Silhouette**
+- Build ID: `12.238.0-natural-operator-silhouette`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.237.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.238.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.238 reshapes the third-person operators around the supplied tactical
+reference. **The permanent shoulder form is now cloth, inset into and
+overlapping the ribcage; it is not armour.** Only armour classes that own a
+hard shoulder plate draw one. Arm and leg segments keep volume at both capped
+ends instead of shrinking to points at elbows, knees and wrists, so the moving
+silhouette reads as one clothed body rather than capsules joined by beads. The
+lower-face cover is taller and wider, and elbow shells are flatter. Living and
+fallen paths share the geometry. Hitboxes, animation anchors, AI, collision,
+LOD draw counts and save/diagnostics schemas are unchanged. Verify with
+`operatorBodySilhouetteForTest()`, `operatorModel()`, the operator lighting/AO,
+culling and weapon-attachment gates, plus staged match captures. See
+`AUDIT-12.238.md`.
 
 Build 12.237 pulses the development alert cards. **The pulse is `opacity` on a pseudo-element, never on the card** — opacity is a compositor property, so the layer is promoted for the animation and nothing repaints; animating `box-shadow` or `border-color` on the button would repaint the card every frame. `will-change` is omitted on purpose (12.152): an animating element is promoted anyway and declaring it would hold a permanent layer for a card that is usually absent. The glow is `inset: -1px` with `pointer-events: none` so it never disturbs the copy or blocks the click. **MUST RESPOND deliberately gets no motion** — it already dominates by size and colour; motion is spent on the alert that is easy to miss. The reduced-motion rule went into an **existing** `@media (prefers-reduced-motion: reduce)` block in `game.css` because the media budget is on its cap, and it needs no override flag: that block is at CSSOM index 2121 against the animation rule's 1539, so source order settles it at equal specificity. **`tinyText` in `mobileInterfaceAuditForTest()` is state-sensitive** — it read 235 here against 231 on the previous artifact, which was injury flags and preparation states diverging between page loads, proven by deleting the new rules from the live CSSOM and getting an identical 223 either way. Compare node lists or toggle rules live; do not trust the raw total across separate loads. See `AUDIT-12.237.md`.
 

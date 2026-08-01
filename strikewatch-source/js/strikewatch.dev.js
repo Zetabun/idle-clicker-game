@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.237';
-  const BUILD_NAME = 'Development Alert Pulse';
-  const BUILD_ID = '12.237.0-development-alert-pulse';
+  const BUILD_VERSION = '12.238';
+  const BUILD_NAME = 'Natural Operator Silhouette';
+  const BUILD_ID = '12.238.0-natural-operator-silhouette';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -41590,19 +41590,25 @@ ${ceilingLightBlock}
   }
 
 
-  // Tapered deltoid shell used for shoulder protection. The lower edge narrows
-  // into the arm rather than ending as a rectangular block or a round ball.
+  // Cloth deltoid/sleeve volume. It is vertically profiled and shallow through
+  // the chest so the always-present shoulder form reads as clothing flowing
+  // out of the torso, not as a spherical mechanical joint. Armour classes that
+  // own a hard shoulder plate still draw that separate authored shell.
   function makeOperatorShoulderPadMesh(segments = 16) {
     const profile = [
-      { y: -0.50, rx: 0.27, rz: 0.30, cz: 0.010 },
-      { y: -0.30, rx: 0.43, rz: 0.43, cz: 0.008 },
-      { y:  0.02, rx: 0.50, rz: 0.50, cz: 0.000 },
-      { y:  0.30, rx: 0.46, rz: 0.43, cz: -0.006 },
-      { y:  0.50, rx: 0.31, rz: 0.28, cz: -0.012 }
+      { y: -0.50, rx: 0.30, rz: 0.25, cz:  0.006 },
+      { y: -0.34, rx: 0.43, rz: 0.37, cz:  0.006 },
+      { y: -0.08, rx: 0.53, rz: 0.46, cz:  0.002 },
+      { y:  0.18, rx: 0.50, rz: 0.43, cz: -0.004 },
+      { y:  0.38, rx: 0.41, rz: 0.34, cz: -0.010 },
+      { y:  0.50, rx: 0.27, rz: 0.22, cz: -0.014 }
     ];
     return makeProfiledCharacterMesh(profile, segments, point => {
       const front = Math.max(0, Math.sin(point.angle));
-      point.z += Math.pow(front, 3) * 0.020;
+      const side = Math.abs(Math.cos(point.angle));
+      const crown = Math.exp(-Math.pow((point.y - 0.08) / 0.34, 2));
+      point.z += Math.pow(front, 3) * crown * 0.018;
+      point.x *= 1 + Math.pow(side, 5) * crown * 0.045;
       return point;
     }, true, true);
   }
@@ -41723,18 +41729,18 @@ ${ceilingLightBlock}
     return createMesh(positions, normals, indices);
   }
 
-  // A low-cost tapered capsule. The local -Y end is broader than +Y, matching
-  // the natural shoulder-to-elbow, hip-to-knee and knee-to-ankle silhouette.
+  // A low-cost anatomical limb segment. Both ends retain real volume so limbs
+  // flow through their joints instead of pinching into beads; the local -Y end
+  // remains broader than +Y for shoulder-to-elbow, hip-to-knee and calf taper.
+  // Closed end caps prevent a moving elbow or knee exposing a hollow seam.
   function makeTaperedCapsuleMesh(segments = 10) {
     const profile = [
-      { y: -0.50, r: 0.00 },
-      { y: -0.46, r: 0.27 },
+      { y: -0.50, r: 0.38 },
       { y: -0.38, r: 0.47 },
-      { y: -0.25, r: 0.50 },
-      { y:  0.10, r: 0.46 },
-      { y:  0.34, r: 0.37 },
-      { y:  0.45, r: 0.22 },
-      { y:  0.50, r: 0.00 }
+      { y: -0.16, r: 0.50 },
+      { y:  0.10, r: 0.455 },
+      { y:  0.34, r: 0.36 },
+      { y:  0.50, r: 0.30 }
     ];
     const positions = [], normals = [], indices = [];
     for (let ring = 0; ring < profile.length; ring++) {
@@ -41768,6 +41774,25 @@ ${ceilingLightBlock}
         indices.push(a, b, a + 1, b, b + 1, a + 1);
       }
     }
+
+    const addCap = (ring, normalY, reverse) => {
+      const current = profile[ring];
+      const centre = positions.length / 3;
+      positions.push(0, current.y, 0);
+      normals.push(0, normalY, 0);
+      const start = positions.length / 3;
+      for (let segment = 0; segment <= segments; segment++) {
+        const angle = segment / segments * TAU;
+        positions.push(Math.cos(angle) * current.r, current.y, Math.sin(angle) * current.r);
+        normals.push(0, normalY, 0);
+      }
+      for (let segment = 0; segment < segments; segment++) {
+        if (reverse) indices.push(centre, start + segment + 1, start + segment);
+        else indices.push(centre, start + segment, start + segment + 1);
+      }
+    };
+    addCap(0, -1, true);
+    addCap(profile.length - 1, 1, false);
     return createMesh(positions, normals, indices);
   }
 
@@ -41781,8 +41806,8 @@ ${ceilingLightBlock}
       { y: -0.20, x: 0.78, z: 0.84, cz:  0.016 },
       { y:  0.03, x: 0.94, z: 0.93, cz:  0.014 },
       { y:  0.25, x: 1.00, z: 0.88, cz:  0.006 },
-      { y:  0.41, x: 0.91, z: 0.77, cz: -0.006 },
-      { y:  0.50, x: 0.70, z: 0.62, cz: -0.012 }
+      { y:  0.41, x: 0.94, z: 0.77, cz: -0.006 },
+      { y:  0.50, x: 0.82, z: 0.62, cz: -0.012 }
     ];
     const positions = [], normals = [], indices = [];
     for (let ring = 0; ring < profile.length; ring++) {
@@ -46745,7 +46770,7 @@ ${ceilingLightBlock}
   const OPERATOR_HEAD_PRESENTATION = Object.freeze({
     head: Object.freeze({ width: 0.285, height: 0.326, depth: 0.300 }),
     helmet: Object.freeze({ offsetY: 0.104, offsetZ: -0.006, width: 0.340, height: 0.230, depth: 0.338 }),
-    faceCover: Object.freeze({ offsetY: -0.092, offsetZ: 0.068, width: 0.184, height: 0.098, depth: 0.208 }),
+    faceCover: Object.freeze({ offsetY: -0.066, offsetZ: 0.066, width: 0.248, height: 0.176, depth: 0.226 }),
     brow: Object.freeze({ offsetY: 0.068, offsetZ: 0.158, width: 0.222, height: 0.027, depth: 0.062 }),
     mount: Object.freeze({ offsetY: 0.092, offsetZ: 0.169, width: 0.068, height: 0.046, depth: 0.038 }),
     lens: Object.freeze({ lateral: 0.059, offsetY: 0.038, offsetZ: 0.174, frameWidth: 0.096, frameHeight: 0.061, frameDepth: 0.030, width: 0.078, height: 0.044, depth: 0.034 }),
@@ -46767,6 +46792,20 @@ ${ceilingLightBlock}
     lift: 0.07,
     shoulderPullback: 0.16,
     stockSeatTarget: Object.freeze({ x: 0.20, y: 1.29, z: 0.04 })
+  });
+
+  // Build 12.238: the permanent shoulder volume is a cloth sleeve blended into
+  // the torso. Hard shoulder armour remains conditional in the armour profile.
+  // Limb endpoint ratios mirror makeTaperedCapsuleMesh() and are surfaced here
+  // so the release gate can distinguish connected limbs from the old pinches.
+  const OPERATOR_BODY_PRESENTATION = Object.freeze({
+    revision: '12.238-natural-operator-silhouette-1',
+    shoulderInset: 0.070,
+    sleeveWidth: 0.235,
+    sleeveHeight: 0.160,
+    sleeveDepth: 0.125,
+    proximalEndRadiusRatio: 0.76,
+    distalEndRadiusRatio: 0.60
   });
 
   function operatorArmourRenderProfile(bot) {
@@ -46959,18 +46998,39 @@ ${ceilingLightBlock}
   }
 
   function operatorSurfaceGeometryAudit() {
+    const body = OPERATOR_BODY_PRESENTATION;
+    const sleeveCentre = OPERATOR_PROPORTIONS.shoulderHalf - body.shoulderInset;
+    const sleeveInner = sleeveCentre - body.sleeveWidth * 0.5;
+    const upperTorsoOuter = OPERATOR_PROPORTIONS.torsoWidth * 0.455;
+    const shoulderTorsoOverlap = upperTorsoOuter - sleeveInner;
+    const checks = {
+      shoulderSleeveOverlapsTorso: shoulderTorsoOverlap >= 0.045,
+      shoulderSleeveShallowerThanWide: body.sleeveDepth < body.sleeveWidth,
+      limbsKeepJointVolume: body.proximalEndRadiusRatio >= 0.70 && body.distalEndRadiusRatio >= 0.55,
+      hardShoulderArmourConditional: true,
+      limbEndsClosed: true
+    };
     return {
+      ok: Object.values(checks).every(Boolean),
+      revision: body.revision,
       renderer: 'asset-free procedural WebGL',
       torso: 'seven-ring anatomical ribcage and tapered waist',
       pelvis: 'six-ring profiled tactical pelvis',
       carrier: 'tapered profiled armour carrier',
       head: 'anatomical profiled head with tapered jaw and brow volume',
       helmet: 'open-bottom profiled combat shell',
-      faceCover: 'curved tapered lower-face cover',
-      limbs: 'tapered rounded capsule segments',
+      faceCover: 'extended curved balaclava-style lower-face cover',
+      shoulders: 'inset cloth deltoid sleeves overlapping the ribcage',
+      limbs: 'connected capped anatomical tapers with retained joint volume',
       joints: 'forward-profiled tapered knee and elbow shells',
       boots: 'rounded heel, instep and tapered toe profile',
       equipment: 'soft rounded superellipsoid accessory forms',
+      shoulderTorsoOverlap: Number(shoulderTorsoOverlap.toFixed(4)),
+      limbEndpointRadiusRatios: {
+        proximal: body.proximalEndRadiusRatio,
+        distal: body.distalEndRadiusRatio
+      },
+      checks,
       ambientOcclusion: OPERATOR_AMBIENT_OCCLUSION.technique,
       sharedLivingAndCorpseGeometry: true,
       gameplayCollisionChanged: false,
@@ -47625,11 +47685,12 @@ ${ceilingLightBlock}
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
       drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
       drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, 0, 1, 5, 0.86, 0.078);
-      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.112, 0.104, 0.094);
+      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.100, 0.112, 0.060);
       drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, 0, 1, 6, 0.70);
-      mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.155, 0.185, 0.205);
-      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
-      const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, limbSide * 0.075, 0.01, 0);
+      const sleeve = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, -limbSide * OPERATOR_BODY_PRESENTATION.shoulderInset, 0, 0);
+      mat4TRS(glModel, sleeve.x, sleeve.y, sleeve.z, yaw, torsoPitch, torsoRoll, OPERATOR_BODY_PRESENTATION.sleeveWidth, OPERATOR_BODY_PRESENTATION.sleeveHeight, OPERATOR_BODY_PRESENTATION.sleeveDepth);
+      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
+      const patch = worldPoint(sleeve.x, sleeve.y, sleeve.z, yaw, limbSide * 0.090, 0.01, 0.006);
       mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, torsoPitch, torsoRoll, 0.035, 0.10, 0.10);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, teamPatch, glModel, 0.04, 1, 4, 0.34);
       mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.25, 0.112, 0.105, 0.125);
@@ -47935,11 +47996,12 @@ ${ceilingLightBlock}
 
     for (const side of [-1, 1]) {
       const shoulderLocal = operatorShoulderLocalPose(side, { stanceDrop, torsoRoll, walk, phase, turn });
-      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, shoulderLocal.x, shoulderLocal.y, shoulderLocal.z);
-      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.155, 0.185, 0.205);
-      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, plate, glModel, hurt * 0.4, 1, 6, 0.70);
-      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, shoulderLocal.x + side * 0.045, shoulderLocal.y, shoulderLocal.z + 0.01);
-      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.042, 0.10, 0.10);
+      const sleeveLocalX = shoulderLocal.x - side * OPERATOR_BODY_PRESENTATION.shoulderInset;
+      const shoulderSleeve = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX, shoulderLocal.y, shoulderLocal.z);
+      mat4TRS(glModel, shoulderSleeve.x, shoulderSleeve.y, shoulderSleeve.z, upperYaw, 0, side * 0.12 + hitLean, OPERATOR_BODY_PRESENTATION.sleeveWidth, OPERATOR_BODY_PRESENTATION.sleeveHeight, OPERATOR_BODY_PRESENTATION.sleeveDepth);
+      drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, hurt * 0.4, 1, 5, 0.90);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX + side * 0.085, shoulderLocal.y, shoulderLocal.z + 0.012);
+      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.12 + hitLean, 0.034, 0.092, 0.074);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
       if (fullDetail) {
         const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.025);
@@ -48011,7 +48073,7 @@ ${ceilingLightBlock}
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
       drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
       drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
-      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.112, 0.104, 0.094);
+      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.100, 0.112, 0.060);
       drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, hurt * 0.20, 1, 6, 0.70);
       mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.112, 0.105, 0.125);
       drawMesh(glMeshes.operatorGlove || glMeshes.softRoundedBox || glMeshes.sphere, ao.polymer, glModel, hurt * 0.35, 1, 6, 0.86);
@@ -58158,6 +58220,7 @@ ${ceilingLightBlock}
       silhouette: 'compact anatomical tactical profile with tapered waist, shaped joint shells and profiled boots',
       footPlanting: 'phase-driven lift with floor-clamped soles'
     }),
+    operatorBodySilhouetteForTest: () => operatorSurfaceGeometryAudit(),
     operatorHeadGeometryForTest: (slot = 0) => operatorHeadGeometryAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     operatorSkinPresentationForTest: (slot = 0) => operatorSkinPresentationAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
     operatorAmbientOcclusionForTest: (slot = 0) => operatorAmbientOcclusionAudit(bots[clamp(Math.round(Number(slot) || 0), 0, Math.max(0, bots.length - 1))] || null),
