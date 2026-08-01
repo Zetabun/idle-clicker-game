@@ -140,6 +140,20 @@ button{cursor:pointer;border:0;background:none}
 .destchip[aria-pressed="true"]{background:var(--led);border-color:var(--led);color:#20160A}
 .destchip .n{opacity:.6;font-weight:400;margin-left:4px}
 .destnote{font-size:10.5px;color:var(--text-dim);margin-top:7px;letter-spacing:.03em}
+.servenote{
+  font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;
+  border-left:2px solid var(--led-dim);padding-left:9px;
+}
+.servenote b{color:var(--text);font-weight:600}
+.rlist{display:flex;flex-wrap:wrap;gap:5px 10px;align-items:baseline}
+.rlist > span{display:inline-flex;align-items:baseline;gap:5px;max-width:100%}
+.rref{
+  font-family:'Martian Mono',monospace;font-size:11px;font-weight:700;letter-spacing:-.05em;
+  background:var(--ink-3);border:1px solid var(--rule);color:var(--led);
+  border-radius:3px;padding:2px 5px;
+}
+.rdest{font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsrc{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-top:7px}
 
 .dep.unreachable{opacity:.6}
 .chip.tight{border-color:var(--warn);color:var(--warn)}
@@ -412,6 +426,7 @@ button{cursor:pointer;border:0;background:none}
         <div class="walkline" id="walkLine" style="display:none"></div>
         <div class="destbar" id="destBar" role="group" aria-label="Filter by destination"></div>
         <div class="destnote" id="destNote" style="display:none"></div>
+        <div class="servenote" id="serveNote" style="display:none"></div>
       </div>
 
       <div class="boardscroll" id="scroll">
@@ -498,6 +513,14 @@ button{cursor:pointer;border:0;background:none}
 
       <div class="toggle">
         <div>
+          <div class="t">Only routes seen at this stop</div>
+          <div class="h">The app watches which buses actually pull in, then hides the rest. A far-off bus still shows if its route calls here.</div>
+        </div>
+        <button class="sw" id="serveSw" aria-pressed="true" aria-label="Toggle showing only routes seen at this stop"></button>
+      </div>
+
+      <div class="toggle">
+        <div>
           <div class="t">Hide buses heading away</div>
           <div class="h">Drops anything already past your stop, even if the route matches.</div>
         </div>
@@ -540,11 +563,11 @@ const MY_PROXY = '';
 
 const S = {
   key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
-  demo:!(MY_KEY || MY_PROXY), hideAway:true, remember:true,
+  demo:!(MY_KEY || MY_PROXY), hideAway:true, remember:true, onlyServing:true,
   dir:'in',                 // 'in' | 'out' | 'all'
   origin:null,              // {lat,lon,label}
   anchor:null,              // town centre {lat,lon,name}
-  stops:[], stop:null, pendingStopId:null,
+  stops:[], stop:null, pendingStopId:null, loadingRoutes:false,
   destFilter:null,          // exact DestinationName, or null for all
   destsByStop:{},           // stopId -> { destName: lastSeenTs } view:'live',
   vehicles:new Map(),       // id -> {id,line,dest,lat,lon,bearing,dir,ts,hist:[],speed}
@@ -615,6 +638,7 @@ function savePrefs(){
   store.write({
     key:S.key, proxy:S.proxy, radius:S.radius, interval:S.interval,
     demo:S.demo, hideAway:S.hideAway, dir:S.dir, destFilter:S.destFilter,
+    onlyServing:S.onlyServing,
     origin:S.origin, stopId:S.stop?S.stop.id:null
   });
 }
@@ -628,6 +652,7 @@ function loadPrefs(){
   if(p.interval) S.interval=p.interval;
   if(typeof p.demo==='boolean') S.demo=p.demo;
   if(typeof p.hideAway==='boolean') S.hideAway=p.hideAway;
+  if(typeof p.onlyServing==='boolean') S.onlyServing=p.onlyServing;
   if(p.dir) S.dir=p.dir;
   if(p.destFilter) S.destFilter=p.destFilter;
   return p;
@@ -801,6 +826,7 @@ async function setOrigin(lat,lon,label){
 $('locBtn').addEventListener('click', ()=>{
   if(!navigator.geolocation){ toast('This browser has no location support. Type an address instead.',true); return; }
   setStatus('Getting your location','');
+  S.pendingStopId = null;                 // moved on purpose — take the nearest stop again
   navigator.geolocation.getCurrentPosition(
     p=>{ $('q').value='My location'; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
     err=>{
@@ -1011,6 +1037,14 @@ function selectStop(s){
   renderWalk();
   renderDests();
   renderPair();
+  renderServingNote();
+  if(!MAPPED[String(s.id)]){
+    S.loadingRoutes = true; renderServingNote();
+    fetchRoutesFor(s).then(()=>{
+      S.loadingRoutes = false;
+      if(S.stop && S.stop.id===s.id){ renderServingNote(); render(); }
+    });
+  }
   savePrefs();
   render();
 }
@@ -1049,7 +1083,7 @@ $('dAll').addEventListener('click',()=>setDir('all'));
    Live feed — BODS SIRI-VM
    ============================================================ */
 function bbox(){
-  const c=S.origin, pad=(S.radius+2500)/111320;
+  const c=S.origin, pad=(S.radius+9000)/111320;   // buses well outside the stop radius still matter
   const padLon = pad/Math.cos(rad(c.lat));
   return [(c.lon-padLon).toFixed(5),(c.lat-pad).toFixed(5),(c.lon+padLon).toFixed(5),(c.lat+pad).toFixed(5)].join(',');
 }
@@ -1387,12 +1421,187 @@ function checkAlarms(rows){
   }
 }
 
+/* ------------------------------------------------------------
+   Which routes actually serve this stop. Without timetable data
+   there is no list to look up, but a bus that physically passes
+   within a few metres of the flag is calling there. Watch for
+   that and the stop builds its own route list.
+   ------------------------------------------------------------ */
+const SERVE_KEY = 'kerbside.serving.v1';
+const SERVE_RADIUS = 55;          // metres — close enough to be at the stop
+const SERVE_TTL = 60*24*3600*1000;
+let SERVING = {};                 // stopId -> { line: lastSeenTs }
+
+function loadServing(){
+  if(!store.ok) return;
+  try{
+    const o = JSON.parse(localStorage.getItem(SERVE_KEY)||'{}');
+    const now = Date.now();
+    for(const sid of Object.keys(o)){
+      for(const l of Object.keys(o[sid])) if(now-o[sid][l] > SERVE_TTL) delete o[sid][l];
+      if(!Object.keys(o[sid]).length) delete o[sid];
+    }
+    SERVING = o;
+  }catch(e){ SERVING = {}; }
+}
+let servingSaveT;
+function saveServing(){
+  if(!store.ok) return;
+  clearTimeout(servingSaveT);
+  servingSaveT = setTimeout(()=>{ try{ localStorage.setItem(SERVE_KEY,JSON.stringify(SERVING)); }catch(e){} }, 3000);
+}
+function learnServing(){
+  if(!S.stop) return;
+  const sid = String(S.stop.id);
+  const bag = SERVING[sid] || (SERVING[sid]={});
+  let added = false;
+  for(const v of S.vehicles.values()){
+    if(!v.line) continue;
+    if(dist(v.lat,v.lon,S.stop.lat,S.stop.lon) > SERVE_RADIUS) continue;
+    if(!bag[v.line]) added = true;
+    bag[v.line] = Date.now();
+  }
+  if(added){ saveServing(); renderServingNote(); }
+  else saveServing();
+}
+/* ------------------------------------------------------------
+   Which routes serve this stop, from OpenStreetMap. Bus routes
+   are modelled as relations and stops are members of them, so a
+   single Overpass query answers it for any stop in the country —
+   no bulk download, no learning period. Coverage varies by area,
+   so observed arrivals still fill the gaps.
+   ------------------------------------------------------------ */
+const MAPPED_KEY = 'kerbside.routes.v1';
+const MAPPED_TTL = 30*24*3600*1000;
+let MAPPED = {};          // stopId -> {routes:[{ref,to,from,name}], ts}
+
+function loadMapped(){
+  if(!store.ok) return;
+  try{
+    const o = JSON.parse(localStorage.getItem(MAPPED_KEY)||'{}');
+    const now=Date.now();
+    for(const k of Object.keys(o)) if(now-(o[k].ts||0) > MAPPED_TTL) delete o[k];
+    MAPPED = o;
+  }catch(e){ MAPPED = {}; }
+}
+function saveMapped(){
+  if(!store.ok) return;
+  try{ localStorage.setItem(MAPPED_KEY, JSON.stringify(MAPPED)); }catch(e){}
+}
+
+async function fetchRoutesFor(stop){
+  const sid = String(stop.id);
+  if(MAPPED[sid]) return MAPPED[sid];
+  const q = `[out:json][timeout:25];
+node(${stop.id});
+rel(bn)["type"="route"]["route"~"^(bus|trolleybus)$"];
+out tags;`;
+  try{
+    const j = await overpass(q);
+    const seen = new Set();
+    const routes = [];
+    for(const el of (j.elements||[])){
+      const t = el.tags||{};
+      const ref = cleanLine(t.ref || t['route_ref'] || '');
+      if(!ref) continue;
+      const key = ref+'|'+(t.to||'');
+      if(seen.has(key)) continue;
+      seen.add(key);
+      routes.push({ref, to:cleanName(t.to||''), from:cleanName(t.from||''), op:t.operator||''});
+    }
+    MAPPED[sid] = {routes, ts:Date.now()};
+    saveMapped();
+    return MAPPED[sid];
+  }catch(e){
+    return null;      // Overpass busy — fall back to observed learning
+  }
+}
+function mappedRefs(){
+  if(!S.stop) return null;
+  const m = MAPPED[String(S.stop.id)];
+  if(!m || !m.routes.length) return null;
+  return new Set(m.routes.map(r=>String(r.ref)));
+}
+
+function servesHere(line){
+  if(!S.stop) return true;
+  const l = String(line);
+  const mapped = mappedRefs();
+  if(mapped && mapped.has(l)) return true;
+  const bag = SERVING[String(S.stop.id)];
+  if(bag && bag[l]) return true;              // seen pulling in, whatever OSM says
+  return !(mapped || (bag && Object.keys(bag).length >= 2));
+}
+function knownRouteCount(){
+  if(!S.stop) return 0;
+  const set = new Set();
+  const mapped = mappedRefs();
+  if(mapped) mapped.forEach(r=>set.add(r));
+  const bag = SERVING[String(S.stop.id)];
+  if(bag) Object.keys(bag).forEach(r=>set.add(r));
+  return set.size;
+}
+function knownRoutes(){
+  const set = new Set();
+  const mapped = mappedRefs();
+  if(mapped) mapped.forEach(r=>set.add(r));
+  const bag = S.stop && SERVING[String(S.stop.id)];
+  if(bag) Object.keys(bag).forEach(r=>set.add(r));
+  return [...set].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+}
+/* Filtering applies as soon as we have any trustworthy source. */
+function servingReady(){
+  if(!S.onlyServing || !S.stop) return false;
+  return !!mappedRefs() || knownRouteCount() >= 2;
+}
+function renderServingNote(){
+  const el = $('serveNote');
+  if(!el) return;
+  if(!S.stop){ el.style.display='none'; return; }
+  el.style.display='block';
+
+  if(S.loadingRoutes){
+    el.innerHTML = '<b>Checking which routes stop here…</b>';
+    return;
+  }
+  const m = MAPPED[String(S.stop.id)];
+  const routes = knownRoutes();
+
+  if(m && m.routes.length){
+    // Group destinations under each route number.
+    const byRef = {};
+    m.routes.forEach(r=>{ (byRef[r.ref] = byRef[r.ref] || new Set()).add(r.to); });
+    const parts = Object.keys(byRef)
+      .sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}))
+      .map(ref=>{
+        const dests = [...byRef[ref]].filter(Boolean).slice(0,2).join(' / ');
+        return '<span class="rref">'+esc(ref)+'</span>'+(dests?' <span class="rdest">'+esc(dests)+'</span>':'');
+      });
+    el.innerHTML = '<div class="rlist">'+parts.join('')+'</div>'
+      + '<div class="rsrc">Routes at this stop'
+      + (S.onlyServing ? ' — other buses hidden' : '') + '</div>';
+    return;
+  }
+  if(!S.onlyServing){ el.style.display='none'; return; }
+  if(routes.length >= 2){
+    el.innerHTML = '<b>Seen stopping here:</b> '+esc(routes.join(', '))
+      + '. OpenStreetMap has no route data for this stop, so this list builds from buses that actually pull in.';
+  } else {
+    el.innerHTML = '<b>No route data for this stop yet.</b> OpenStreetMap has none mapped here, '
+      + 'so everything nearby is shown until a couple of buses have pulled in.';
+  }
+}
+
 function relevant(){
   if(!S.stop) return [];
+  const gate = servingReady();
   const out=[];
   for(const v of S.vehicles.values()){
+    // Distance limits the bus, not the stop: a 61 two miles out still
+    // counts if the 61 calls here.
     const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
-    if(d > S.radius + 4000) continue;
+    if(d > 12000) continue;
+    if(gate && !servesHere(v.line)) continue;
     const dir = inferDirection(v);
     if(S.destFilter){
       // The operator's own destination beats anything we could infer.
@@ -1501,9 +1710,14 @@ function render(){
       const dirWord = S.dir==='in' ? 'into '+(S.anchor?S.anchor.name:'town')
                     : S.dir==='out' ? 'out of '+(S.anchor?S.anchor.name:'town') : 'either way';
       showEmpty('<strong>Nothing heading '+esc(dirWord)+'</strong>'+
-        (S.vehicles.size ? S.vehicles.size+' buses are moving nearby, but none are approaching this stop in that direction. Try <button id="flipDir">the other direction</button> or Both.'
-                         : 'No vehicle positions have come through yet. Give it a refresh, or check the data source in settings.'));
+        (S.vehicles.size
+          ? S.vehicles.size+' buses are moving nearby, but none are approaching this stop in that direction.'
+            + (servingReady() ? ' Routes not yet seen calling here are also hidden — <button id="showAllRoutes">show every route</button>.' : '')
+            + ' Try <button id="flipDir">the other direction</button> or Both.'
+          : 'No vehicle positions have come through yet. Give it a refresh, or check the data source in settings.'));
       const fd=$('flipDir'); if(fd) fd.addEventListener('click',()=>setDir(S.dir==='in'?'out':'in'));
+      const sa=$('showAllRoutes');
+      if(sa) sa.addEventListener('click',()=>{ S.onlyServing=false; savePrefs(); renderServingNote(); render(); });
     }
   } else {
     $('empty').style.display='none';
@@ -1612,6 +1826,7 @@ async function poll(){
     const list = S.demo ? fetchSim(dt) : await fetchLive();
     ingest(list);
     learnDests();
+    learnServing();
     S.lastOk=Date.now();
     setStatus(S.demo ? 'Simulated · '+S.vehicles.size+' buses' : 'Live · '+S.vehicles.size+' buses', S.demo?'demo':'');
     render();
@@ -1638,6 +1853,7 @@ $('setBtn').addEventListener('click',()=>{
   $('radius').value=S.radius; $('interval').value=S.interval;
   $('demoSw').setAttribute('aria-pressed',S.demo);
   $('awaySw').setAttribute('aria-pressed',S.hideAway);
+  $('serveSw').setAttribute('aria-pressed',S.onlyServing);
   $('rememberSw').setAttribute('aria-pressed',S.remember && store.ok);
   if(!store.ok){
     $('rememberHint').textContent='Unavailable here — this browser context blocks local storage, so settings last for the session only.';
@@ -1651,7 +1867,7 @@ $('closeSet').addEventListener('click',()=>$('scrim').classList.remove('show'));
 $('scrim').addEventListener('click',e=>{ if(e.target===$('scrim')) $('scrim').classList.remove('show'); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ $('scrim').classList.remove('show'); closePicker(); }});
 function bindSwitch(el){ el.addEventListener('click',()=>el.setAttribute('aria-pressed', el.getAttribute('aria-pressed')!=='true')); }
-bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw'));
+bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw')); bindSwitch($('serveSw'));
 
 $('forgetBtn').addEventListener('click',()=>{
   store.clear();
@@ -1670,8 +1886,10 @@ $('saveSet').addEventListener('click', async ()=>{
   S.interval=+$('interval').value;
   S.demo=$('demoSw').getAttribute('aria-pressed')==='true';
   S.hideAway=$('awaySw').getAttribute('aria-pressed')==='true';
+  S.onlyServing=$('serveSw').getAttribute('aria-pressed')==='true';
   S.remember=$('rememberSw').getAttribute('aria-pressed')==='true' && store.ok;
   savePrefs();
+  renderServingNote();
   $('scrim').classList.remove('show');
   if(!S.demo && !S.key && !S.proxy){ toast('Add a key or a proxy, or switch the simulator back on.',true); }
   if(S.origin){
@@ -1705,6 +1923,8 @@ map.on('contextmenu', e=>{
 const saved = loadPrefs();
 loadDests();
 loadLines();
+loadServing();
+loadMapped();
 $('pairBtn').addEventListener('click',()=>{
   if(S.pair) selectStop(S.pair);
 });
@@ -1730,6 +1950,14 @@ if(saved && saved.origin && isFinite(saved.origin.lat)){
   S.pendingStopId = saved.stopId || null;
   $('q').value = saved.origin.label || '';
   setOrigin(saved.origin.lat, saved.origin.lon, saved.origin.label);
+} else if(navigator.geolocation){
+  // Nothing saved — the whole point is to walk up and open it.
+  setStatus('Finding you','');
+  navigator.geolocation.getCurrentPosition(
+    p=>{ $('q').value='My location'; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
+    ()=>{ setStatus('Search a place or use the locate button',''); },
+    {enableHighAccuracy:true, timeout:9000, maximumAge:60000}
+  );
 }
 
 window.addEventListener('resize',()=>map.invalidateSize());
