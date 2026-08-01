@@ -618,7 +618,13 @@
       const state = fixture.played ? 'played' : (matchday === current ? 'next' : 'future');
       const score = fixture.played ? `${fixture.homeScore} — ${fixture.awayScore}` : (matchday === current ? 'NEXT' : 'SCHEDULED');
       const context = !fixture.played && matchday === current ? seasonNarrativeFixtureContext(fixture, opponent) : null;
-      return `<article class="league-fixture ${state} ${context ? `stakes-${context.importance}` : ''}"><span>MATCHDAY ${matchday}${context ? ` · ${escapeCareerHtml(context.label)}` : ''}</span><div><strong>${escapeCareerHtml(home.name)}</strong><b>${score}</b><strong>${escapeCareerHtml(away.name)}</strong></div><small>${fixture.played ? (fixture.winnerId === LEAGUE_USER_CLUB_ID ? 'WIN' : 'LOSS') : (context ? `${context.importance}/5 IMPORTANCE · ${context.rivalry.tier.short}` : matchday === current ? 'REVIEW ACTIVE OPERATORS' : 'UPCOMING')}</small></article>`;
+      // Build 12.235: club names open the club profile. This renderer REPLACES
+      // `renderLeagueFixtures` from `js/37-league.js` (see the reassignment
+      // above), so the fixtures route renders this markup and not that one —
+      // any change to a fixture row has to be made in both places or it will
+      // silently never appear.
+      const clubLink = club => `<button type="button" class="league-club-link" data-league-club="${escapeCareerHtml(club.id)}">${escapeCareerHtml(club.name)}</button>`;
+      return `<article class="league-fixture ${state} ${context ? `stakes-${context.importance}` : ''}"><span>MATCHDAY ${matchday}${context ? ` · ${escapeCareerHtml(context.label)}` : ''}</span><div><strong>${clubLink(home)}</strong><b>${score}</b><strong>${clubLink(away)}</strong></div><small>${fixture.played ? (fixture.winnerId === LEAGUE_USER_CLUB_ID ? 'WIN' : 'LOSS') : (context ? `${context.importance}/5 IMPORTANCE · ${context.rivalry.tier.short}` : matchday === current ? 'REVIEW ACTIVE OPERATORS' : 'UPCOMING')}</small></article>`;
     }).join('');
   };
 

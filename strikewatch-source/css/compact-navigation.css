@@ -963,3 +963,302 @@
     white-space: nowrap;
   }
 }
+
+/* --- Build 12.235: club profile ------------------------------------------
+   Note on `<small>`: do not set `font-size` on one inside `#menuContent`.
+   `game.css` owns it through `#menuContent small` with the override flag, in
+   both the >=1024px and <=1023px bands, and `css/12.161-audit-fixes.css` sets
+   it again below 1100px. An unflagged rule loses however specific it is, so
+   every `small` here follows the house type scale on purpose — which is also
+   why none of them can fall through the compact readability floor. Weight,
+   colour and letter-spacing are not flagged and do still apply.
+   A club name anywhere in the interface is now a control, so it has to look
+   like one without turning the league table into a wall of buttons.
+
+   The trap here is `.menu-shell button { font-size: max(7px, 0.44rem) }`, the
+   broad fallback Build 12.226 documented: a bare `button` with no size rule of
+   its own silently renders at 7.04px. Every club link therefore inherits its
+   typography explicitly, and the selectors carry a `#menuContent` prefix so
+   they outrank that fallback — (1,1,0) against (0,1,1) — rather than relying on
+   source order. The league-table link also stays inside its original `<strong>`
+   wrapper, because `css/league-table.css` sizes
+   `.league-table-row .club strong` and replacing that element would have handed
+   the club name straight to the 7px fallback.
+
+   No media query and no flagged declaration is added here: the debt gate sits
+   on its breakpoint ceiling and has one slot left for flags. */
+#menuContent .league-club-link {
+  display: inline;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(126, 209, 255, .34);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .14s ease, text-decoration-color .14s ease;
+}
+#menuContent .league-club-link:hover,
+#menuContent .league-club-link:focus-visible {
+  color: #a8e0ff;
+  text-decoration-color: #7ed1ff;
+}
+
+#menuContent .club-profile-panel {
+  --skin-panel-hi: rgba(27, 38, 60, .95);
+  --skin-panel-lo: rgba(20, 29, 46, .95);
+  display: grid;
+  gap: clamp(10px, 1vw, 14px);
+  padding: clamp(13px, 1.3vw, 18px);
+  border: 1px solid rgba(112, 160, 190, .22);
+}
+#menuContent .club-profile-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px clamp(12px, 1.6vw, 22px);
+  padding-left: clamp(9px, 1vw, 13px);
+  border-left: 3px solid #7ed1ff;
+}
+#menuContent .club-profile-identity.user { border-left-color: #e7c866; }
+#menuContent .club-profile-identity > div { min-width: 0; }
+#menuContent .club-profile-identity span {
+  font-size: clamp(11px, .72vw, 12.5px);
+  font-weight: 900;
+  letter-spacing: .2em;
+  color: #7ed1ff;
+}
+#menuContent .club-profile-identity.user span { color: #e7c866; }
+#menuContent .club-profile-identity h2 {
+  margin: 4px 0 3px;
+  font-size: clamp(19px, 2vw, 30px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: .01em;
+  color: #f4f9fc;
+  overflow-wrap: anywhere;
+}
+#menuContent .club-profile-identity small {
+  font-weight: 400;
+  letter-spacing: .1em;
+  color: #93a8b8;
+}
+#menuContent .club-profile-rating {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  padding: clamp(8px, .85vw, 12px) clamp(11px, 1.1vw, 16px);
+  border: 1px solid rgba(126, 209, 255, .26);
+  background: rgba(126, 209, 255, .07);
+}
+#menuContent .club-profile-rating span {
+  font-size: clamp(11px, .7vw, 12.5px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: #8aa5b6;
+}
+#menuContent .club-profile-rating strong {
+  font-size: clamp(20px, 1.9vw, 28px);
+  font-weight: 700;
+  line-height: 1;
+  color: #f4f9fc;
+  font-variant-numeric: tabular-nums;
+}
+#menuContent .club-profile-rating small {
+  font-weight: 900;
+  color: #a8c6d8;
+}
+
+#menuContent .club-profile-block {
+  display: grid;
+  gap: clamp(8px, .85vw, 12px);
+  padding: clamp(11px, 1.15vw, 16px);
+  border: 1px solid rgba(104, 152, 182, .18);
+  background: rgba(9, 15, 24, .5);
+}
+#menuContent .club-profile-block > p {
+  margin: 0;
+  font-size: clamp(11px, .86vw, 13px);
+  font-weight: 400;
+  line-height: 1.45;
+  color: #9db0be;
+}
+#menuContent .club-profile-empty {
+  margin: 0;
+  font-size: clamp(11px, .86vw, 13px);
+  font-weight: 400;
+  color: #8ea2b1;
+}
+
+#menuContent .club-profile-record {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(7px, .7vw, 10px);
+}
+#menuContent .club-profile-record > div {
+  flex: 1 1 118px;
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: clamp(9px, .9vw, 13px);
+  border: 1px solid rgba(104, 152, 182, .16);
+  background: rgba(255, 255, 255, .028);
+}
+#menuContent .club-profile-record span {
+  font-size: clamp(11px, .7vw, 12.5px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: #8aa5b6;
+}
+#menuContent .club-profile-record strong {
+  font-size: clamp(18px, 1.7vw, 25px);
+  font-weight: 700;
+  line-height: 1;
+  color: #f2f7fa;
+  font-variant-numeric: tabular-nums;
+}
+#menuContent .club-profile-record strong em {
+  font-style: normal;
+  /* Relative to the value it qualifies, but floored: a bare .5em of the
+     compact 18px minimum is 9px, under the 11px compact readability floor. */
+  font-size: clamp(11px, .5em, 14px);
+  font-weight: 400;
+  color: #8aa5b6;
+}
+#menuContent .club-profile-record small {
+  font-weight: 400;
+  letter-spacing: .06em;
+  color: #8ea2b1;
+}
+#menuContent .club-profile-form { flex: 1 1 100%; }
+#menuContent .club-profile-form > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+#menuContent .club-profile-form > div span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  border: 1px solid rgba(255, 255, 255, .09);
+}
+#menuContent .club-profile-form > div .win { color: #bbffd0; background: rgba(57, 170, 92, .2); border-color: rgba(77, 210, 118, .28); }
+#menuContent .club-profile-form > div .loss { color: #ffc5bf; background: rgba(178, 57, 50, .2); border-color: rgba(218, 83, 74, .28); }
+#menuContent .club-profile-form > div .empty { width: auto; border: 0; background: none; color: #7b8d99; }
+
+#menuContent .club-profile-meetings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, .65vw, 9px);
+}
+#menuContent .club-profile-meeting {
+  flex: 1 1 96px;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: clamp(8px, .8vw, 11px);
+  border: 1px solid rgba(104, 152, 182, .18);
+  border-top: 2px solid rgba(140, 178, 202, .4);
+  background: rgba(255, 255, 255, .028);
+  text-align: center;
+}
+#menuContent .club-profile-meeting span {
+  font-size: clamp(11px, .7vw, 12.5px);
+  font-weight: 900;
+  letter-spacing: .12em;
+  color: #8aa5b6;
+}
+#menuContent .club-profile-meeting strong {
+  font-size: clamp(14px, 1.25vw, 19px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #f2f7fa;
+  font-variant-numeric: tabular-nums;
+}
+#menuContent .club-profile-meeting small {
+  font-weight: 900;
+  letter-spacing: .1em;
+  color: #7f93a1;
+}
+#menuContent .club-profile-meeting.win { border-top-color: #55c9a6; }
+#menuContent .club-profile-meeting.win strong { color: #79dfbd; }
+#menuContent .club-profile-meeting.loss { border-top-color: #ff806f; }
+#menuContent .club-profile-meeting.loss strong { color: #ffab9f; }
+#menuContent .club-profile-meeting.upcoming { border-top-color: rgba(140, 178, 202, .34); }
+#menuContent .club-profile-meeting.upcoming strong { font-size: clamp(11px, .8vw, 13px); color: #a8bcc9; }
+
+#menuContent .club-profile-squad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, .65vw, 9px);
+}
+#menuContent .club-profile-operator {
+  flex: 1 1 168px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(8px, .8vw, 11px);
+  min-width: 0;
+  padding: clamp(8px, .8vw, 11px) clamp(10px, .95vw, 13px);
+  border: 1px solid rgba(104, 152, 182, .16);
+  background: rgba(255, 255, 255, .028);
+}
+#menuContent .club-profile-operator > span {
+  font-size: clamp(11px, .74vw, 12.5px);
+  font-weight: 900;
+  color: #7f93a1;
+  font-variant-numeric: tabular-nums;
+}
+#menuContent .club-profile-operator > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+#menuContent .club-profile-operator strong {
+  font-size: clamp(11.5px, .9vw, 13.5px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f2f7fa;
+  overflow-wrap: anywhere;
+}
+#menuContent .club-profile-operator small {
+  font-weight: 400;
+  letter-spacing: .1em;
+  color: #8ea2b1;
+}
+#menuContent .club-profile-operator em {
+  font-style: normal;
+  font-size: clamp(14px, 1.2vw, 18px);
+  font-weight: 700;
+  color: #e7c866;
+  font-variant-numeric: tabular-nums;
+}
+
+#menuContent .club-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(7px, .7vw, 10px);
+}
+#menuContent .club-profile-actions button {
+  flex: 1 1 160px;
+  min-height: 44px;
+  font-size: clamp(11px, .82vw, 12.5px);
+  font-weight: 900;
+  letter-spacing: .12em;
+}

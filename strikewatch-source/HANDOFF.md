@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.234 — Board Surface & Compact Blocker Header**
-- Build ID: `12.234.0-board-surface-compact-blocker-header`
+- Build: **12.235 — Club Profile**
+- Build ID: `12.235.0-club-profile`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.234.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.235.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.235 makes club names controls and adds the club profile page behind them. It needed **no save change**: clubs already persist `{id, name, short, rating, style, roster}` with full roster players, and `leagueTable()` already computes the record. **A new route needs an entry in `menuTabMeta` as well as `menuSections`** — `setMenuRoute()` opens with `if (!menuTabMeta[route]) return false;` and fails silently, leaving the previous page rendered, which is exactly what it did for a whole debugging pass. **`renderLeagueFixtures` is reassigned in `js/52-season-narratives.js` and does not delegate**, so the copy in `js/37-league.js` is dead for the fixtures route — a fixture-row change must be made in both. (`renderLeagueTab` is wrapped twice but both wrappers call the base, so edits there do carry.) Club links inherit typography explicitly and are selected as `#menuContent .league-club-link` to beat the `.menu-shell button` 7px fallback, and the table link stays inside its `<strong>` because `css/league-table.css` sizes that element with the flag. Also learned: **`#menuContent small` is flag-sized by `game.css` in both bands**, so an unflagged `font-size` on a `small` there is dead code — five such declarations were removed. Selection is module state, never persisted, because a viewed club is a view position rather than progress. Audit parity with the 12.234 artifact at 390px on every metric. See `AUDIT-12.235.md`.
 
 Build 12.234 fixes two reported defects, both a rule that stopped matching its markup. **Board Expectations has never painted its own background** — the Command Skin outranks `.board-expectations-panel`, exactly as it outranks `.command-today-panel` (12.230) — so the panel drew with the skin default, which fades to `rgba(11, 17, 30, .95)` at the bottom. Three objectives do not divide into two columns, so the orphaned cell exposed that fade as 204-297px of black for any grid width between 388 and 585px. The panel now sets `--skin-panel-hi`/`--skin-panel-lo` and the objectives grid is flex-wrap so a short final row fills; dead space is zero at every width. **This fade is the skin default on every panel** — Board Expectations is only the surface that exposes it, so the fix is deliberately scoped rather than applied to the global skin. Second, **`game.css` styles `.club-must-respond-strip > header` but Build 12.201 moved that header inside `.club-must-respond-body`**, so the selector matches nothing and its children fell back to `display: inline` in a zero-height block, printing "MUST RESPOND2 ACTIONS REQUIRED BEFORE ENDING THE DAYResolve these items…" past the panel edge on compact. It is now hidden across compact, which is what 12.223 already does on desktop; the count survives because `summaryLabel` is "N REQUIRED ACTIONS" whenever there is more than one blocker. **The dead `> header` rules are left in place, not retargeted** — their 7px type predates the compact readability floors. Audit parity with 12.233 at 390px on overlap/collapse/overflow/targets, tinyText 231→219. Debt untouched at 2269/2270 and 484/484. See `AUDIT-12.234.md`.
 

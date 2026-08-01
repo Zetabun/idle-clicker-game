@@ -4,6 +4,14 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.235 — Club Profile
+
+- Club names are now controls: clicking one in the league table, fixtures list, opposition brief or a League Pulse press report opens that club's page.
+- The page carries season record, tactical identity, head-to-head history against the player and the club's registered operators.
+- Built entirely from data the save already holds, so there is no new persistence and no schema change.
+- Presentation and navigation only. No flagged declaration and no media query added; CSS debt unchanged at 2269/2270 and 484/484.
+- See `AUDIT-12.235.md`.
+
 ## 12.234 — Board Surface & Compact Blocker Header
 
 - Board Expectations no longer renders near-black: its authored background never applied because the Command Skin outranks it, so the panel now sets the skin's own variables instead.

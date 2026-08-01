@@ -62,7 +62,8 @@
       defaultRoute: 'league',
       routes: [
         { id: 'league', label: 'OVERVIEW', hint: 'Table, opposition, pulse and objectives', overview: true },
-        { id: 'fixtures', label: 'FIXTURES', hint: 'Full season schedule and results' }
+        { id: 'fixtures', label: 'FIXTURES', hint: 'Full season schedule and results' },
+        { id: 'club-profile', label: 'CLUB PROFILE', hint: 'Record, identity, head to head and squad', contextOnly: true }
       ]
     },
     armoury: {
@@ -102,6 +103,11 @@
     play: { title: 'COMMAND CENTRE', kicker: 'CLUB OVERVIEW & PRIORITIES' },
     league: { title: 'LEAGUE SYSTEM', kicker: 'DIVISION COMPETITION' },
     fixtures: { title: 'LEAGUE FIXTURES', kicker: 'SCHEDULE & RESULTS' },
+    // Build 12.235: a route is not navigable until it appears here.
+    // `setMenuRoute()` returns false for anything missing from `menuTabMeta`,
+    // silently leaving the previous page rendered — adding the route to
+    // `menuSections` alone is not enough.
+    'club-profile': { title: 'CLUB PROFILE', kicker: 'RECORD, IDENTITY & SQUAD' },
     calendar: { title: 'CLUB CALENDAR', kicker: 'MATCHES & DEADLINES' },
     mail: { title: 'CLUB INBOX', kicker: 'MESSAGES & CALENDAR' },
     telemetry: { title: 'TEAM TELEMETRY', kicker: 'OVERALL SQUAD LINK' },
@@ -2067,6 +2073,9 @@
         break;
       case 'fixtures':
         menuContentEl.innerHTML = renderLeagueFixturesTab();
+        break;
+      case 'club-profile':
+        menuContentEl.innerHTML = typeof renderClubProfileTab === 'function' ? renderClubProfileTab() : renderLeagueTab();
         break;
       case 'calendar':
         menuContentEl.innerHTML = renderCalendarRouteTab();

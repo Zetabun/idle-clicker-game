@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.234 corrects the Board Expectations panel surface and the expanded compact blocker header. See `HANDOFF.md` and `AUDIT-12.234.md`.
+Build 12.235 makes club names clickable and adds the club profile page behind them. See `HANDOFF.md` and `AUDIT-12.235.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.

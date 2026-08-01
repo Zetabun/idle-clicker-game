@@ -827,6 +827,152 @@
     return values.map(value => `<span class="${value === 'W' ? 'win' : 'loss'}">${value}</span>`).join('');
   }
 
+  // --- Build 12.235: club profile ------------------------------------------
+  // Deliberately module state, not `careerState`. Which club the manager last
+  // looked at is a view position, not career progress: persisting it would add
+  // a field to the save for no gameplay benefit and force a schema bump past
+  // 19. The route resolves a sensible club on its own when nothing is selected,
+  // so a reload lands on the next opponent rather than on nothing.
+  let selectedLeagueClubId = null;
+
+  function leagueSelectedClubId() {
+    const league = ensureLeagueState();
+    if (!league) return null;
+    if (selectedLeagueClubId && league.clubs.some(club => club.id === selectedLeagueClubId)) return selectedLeagueClubId;
+    const next = leagueNextFixture();
+    const opponentId = next ? leagueFixtureOpponentId(next) : null;
+    if (opponentId && league.clubs.some(club => club.id === opponentId)) return opponentId;
+    return league.clubs.find(club => club.id !== LEAGUE_USER_CLUB_ID)?.id || null;
+  }
+
+  function selectLeagueClub(clubId) {
+    const league = ensureLeagueState();
+    if (!league || !league.clubs.some(club => club.id === clubId)) return false;
+    selectedLeagueClubId = clubId;
+    return true;
+  }
+
+  // `styleDetail` is restored from the rival templates by `leagueNormaliseClub`,
+  // but only on the path that rebuilds clubs. Reading it back through the
+  // template by id is correct on every path and costs nothing, so the profile
+  // never has to render "scouting is incomplete" for a club the game has always
+  // known the answer for.
+  function leagueClubStyleDetail(club) {
+    if (!club) return 'Opponent scouting is incomplete.';
+    if (club.styleDetail) return String(club.styleDetail);
+    const template = LEAGUE_RIVAL_TEMPLATES.find(entry => entry.id === club.id);
+    if (template?.styleDetail) return template.styleDetail;
+    return club.id === LEAGUE_USER_CLUB_ID
+      ? 'Tactical identity is determined by the selected squad and assigned roles.'
+      : 'Balanced tactical approach.';
+  }
+
+  function leagueClubHeadToHead(clubId) {
+    const league = ensureLeagueState();
+    if (!league || !clubId || clubId === LEAGUE_USER_CLUB_ID) return null;
+    const meetings = league.fixtures
+      .filter(fixture => (fixture.homeId === clubId && fixture.awayId === LEAGUE_USER_CLUB_ID)
+        || (fixture.awayId === clubId && fixture.homeId === LEAGUE_USER_CLUB_ID))
+      .sort((a, b) => a.matchday - b.matchday);
+    const played = meetings.filter(fixture => fixture.played);
+    let wins = 0;
+    let losses = 0;
+    for (const fixture of played) {
+      if (fixture.winnerId === LEAGUE_USER_CLUB_ID) wins++;
+      else if (fixture.winnerId === clubId) losses++;
+    }
+    return {
+      meetings,
+      played,
+      wins,
+      losses,
+      next: meetings.find(fixture => !fixture.played) || null
+    };
+  }
+
+  function renderClubProfileTab() {
+    const league = ensureLeagueState();
+    if (!league) return '<section class="club-profile-panel"><div class="career-section-head"><div><span>CLUB PROFILE</span><strong>NO COMPETITION</strong></div><p>Create a club to view league opposition.</p></div></section>';
+    const clubId = leagueSelectedClubId();
+    const club = leagueClubById(clubId);
+    if (!club) return '<section class="club-profile-panel"><div class="career-section-head"><div><span>CLUB PROFILE</span><strong>CLUB NOT FOUND</strong></div><p>Select a club from the league table.</p></div><button data-team-route="league">OPEN LEAGUE TABLE</button></section>';
+    const isUser = club.id === LEAGUE_USER_CLUB_ID;
+    const row = leagueTable().find(entry => entry.id === club.id) || null;
+    const clubCount = league.clubs.length;
+    const stars = typeof leagueStrengthStars === 'function' ? leagueStrengthStars(row?.rating ?? club.rating) : null;
+    const head = leagueClubHeadToHead(club.id);
+    const roster = Array.isArray(club.roster) ? club.roster : [];
+    // The user's own club keeps an empty league roster by design — the real
+    // squad is `careerState.squad` — so read the operators the manager actually
+    // owns rather than showing an empty list on their own profile.
+    const squad = isUser ? (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS) : roster;
+    const movement = row && clubCount
+      ? (leagueDivisionTier() > 0 && row.position <= 2 ? 'PROMOTION PLACE'
+        : (leagueDivisionTier() < 3 && row.position >= clubCount - 1 ? 'RELEGATION PLACE' : ''))
+      : '';
+
+    const recordMarkup = row
+      ? `<div class="club-profile-record">
+          <div><span>POSITION</span><strong>${row.position}<em> / ${clubCount}</em></strong>${movement ? `<small>${movement}</small>` : ''}</div>
+          <div><span>POINTS</span><strong>${row.points}</strong><small>${row.played} PLAYED</small></div>
+          <div><span>WON</span><strong>${row.wins}</strong><small>${row.losses} LOST</small></div>
+          <div><span>ROUND DIFF</span><strong>${row.roundDifference >= 0 ? '+' : ''}${row.roundDifference}</strong><small>${row.roundsFor}–${row.roundsAgainst}</small></div>
+          <div class="club-profile-form"><span>RECENT FORM</span><div>${leagueFormMarkup(row.form)}</div></div>
+        </div>`
+      : '<p class="club-profile-empty">No standings recorded yet this season.</p>';
+
+    const headMarkup = head && head.meetings.length
+      ? `<section class="club-profile-block">
+          <div class="career-section-head compact"><div><span>HEAD TO HEAD</span><strong>${head.played.length ? `${head.wins}–${head.losses} FROM ${head.played.length} MEETING${head.played.length === 1 ? '' : 'S'}` : 'NOT YET MET'}</strong></div></div>
+          <div class="club-profile-meetings">${head.meetings.map(fixture => {
+            const home = fixture.homeId === club.id;
+            const venue = home ? 'AWAY' : 'HOME';
+            if (!fixture.played) {
+              return `<div class="club-profile-meeting upcoming"><span>MD ${fixture.matchday}</span><strong>SCHEDULED</strong><small>${venue}</small></div>`;
+            }
+            const userScore = fixture.homeId === LEAGUE_USER_CLUB_ID ? fixture.homeScore : fixture.awayScore;
+            const clubScore = fixture.homeId === club.id ? fixture.homeScore : fixture.awayScore;
+            const outcome = fixture.winnerId === LEAGUE_USER_CLUB_ID ? 'win' : fixture.winnerId === club.id ? 'loss' : 'draw';
+            return `<div class="club-profile-meeting ${outcome}"><span>MD ${fixture.matchday}</span><strong>${userScore}–${clubScore}</strong><small>${venue}</small></div>`;
+          }).join('')}</div>
+          ${head.next ? `<p>Next meeting on matchday ${head.next.matchday}, ${head.next.homeId === LEAGUE_USER_CLUB_ID ? 'at home' : 'away'}.</p>` : '<p>No further meetings are scheduled this season.</p>'}
+        </section>`
+      : '';
+
+    const squadMarkup = squad.length
+      ? `<div class="club-profile-squad">${squad.map((player, index) => `<div class="club-profile-operator">
+          <span>${String(index + 1).padStart(2, '0')}</span>
+          <div><strong>${escapeCareerHtml(player.name || 'Unknown operator')}</strong><small>${escapeCareerHtml(teamRoleById(player.role).name)}</small></div>
+          <em>${typeof teamPlayerOverall === 'function' ? teamPlayerOverall(player) : (Number(player.overall) || 0)}</em>
+        </div>`).join('')}</div>`
+      : '<p class="club-profile-empty">No operators are registered for this club.</p>';
+
+    return `<section class="club-profile-panel">
+      <header class="club-profile-identity ${isUser ? 'user' : ''}">
+        <div>
+          <span>${isUser ? 'YOUR CLUB' : 'LEAGUE OPPOSITION'}</span>
+          <h2>${escapeCareerHtml(club.name)}</h2>
+          <small>${escapeCareerHtml(club.short || '')} · ${escapeCareerHtml(leagueCompetitionName())}</small>
+        </div>
+        <div class="club-profile-rating"><span>CLUB RATING</span><strong>${row?.rating ?? club.rating}</strong>${stars ? `<small>${stars.toFixed(1)}★</small>` : ''}</div>
+      </header>
+      <section class="club-profile-block">
+        <div class="career-section-head compact"><div><span>SEASON RECORD</span><strong>${escapeCareerHtml(leagueCompetitionName())}</strong></div></div>
+        ${recordMarkup}
+      </section>
+      <section class="club-profile-block">
+        <div class="career-section-head compact"><div><span>TACTICAL IDENTITY</span><strong>${escapeCareerHtml(club.style || 'BALANCED')}</strong></div></div>
+        <p>${escapeCareerHtml(leagueClubStyleDetail(club))}</p>
+      </section>
+      ${headMarkup}
+      <section class="club-profile-block">
+        <div class="career-section-head compact"><div><span>${isUser ? 'ACTIVE FIVE' : 'REGISTERED OPERATORS'}</span><strong>${squad.length} OPERATOR${squad.length === 1 ? '' : 'S'}</strong></div></div>
+        ${squadMarkup}
+      </section>
+      <div class="club-profile-actions"><button data-team-route="league">BACK TO TABLE</button><button data-team-route="fixtures">VIEW FIXTURES</button></div>
+    </section>`;
+  }
+
   function renderLeagueIntroduction() {
     const league = ensureLeagueState();
     if (!league || league.introSeen) return '';
@@ -869,7 +1015,7 @@
       const movementLabel = movementClass === 'promotion' ? 'PROMOTION' : movementClass === 'relegation' ? 'RELEGATION' : '';
       const strengthStars = typeof leagueStrengthStars === 'function' ? leagueStrengthStars(row.rating) : null;
       return `<div class="league-table-row ${row.id === LEAGUE_USER_CLUB_ID ? 'user' : ''} ${movementClass}">
-        <span class="position">${row.position}</span><span class="club"><strong>${escapeCareerHtml(row.name)}</strong><small>RATING ${row.rating}${strengthStars ? ` · ${strengthStars.toFixed(1)}★` : ''}${movementLabel ? ` · ${movementLabel}` : ''}</small></span><span>${row.played}</span><span>${row.wins}</span><span>${row.losses}</span><span>${row.roundDifference >= 0 ? '+' : ''}${row.roundDifference}</span><span class="form">${leagueFormMarkup(row.form)}</span><strong class="points">${row.points}</strong>
+        <span class="position">${row.position}</span><span class="club"><strong><button type="button" class="league-club-link" data-league-club="${escapeCareerHtml(row.id)}">${escapeCareerHtml(row.name)}</button></strong><small>RATING ${row.rating}${strengthStars ? ` · ${strengthStars.toFixed(1)}★` : ''}${movementLabel ? ` · ${movementLabel}` : ''}</small></span><span>${row.played}</span><span>${row.wins}</span><span>${row.losses}</span><span>${row.roundDifference >= 0 ? '+' : ''}${row.roundDifference}</span><span class="form">${leagueFormMarkup(row.form)}</span><strong class="points">${row.points}</strong>
       </div>`;
     }).join('');
   }
@@ -893,7 +1039,8 @@
       const away = leagueClubById(fixture.awayId);
       const state = fixture.played ? 'played' : (matchday === current ? 'next' : 'future');
       const score = fixture.played ? `${fixture.homeScore} — ${fixture.awayScore}` : (matchday === current ? 'NEXT' : 'SCHEDULED');
-      return `<article class="league-fixture ${state}"><span>MATCHDAY ${matchday}</span><div><strong>${escapeCareerHtml(home.name)}</strong><b>${score}</b><strong>${escapeCareerHtml(away.name)}</strong></div><small>${fixture.played ? (fixture.winnerId === LEAGUE_USER_CLUB_ID ? 'WIN' : 'LOSS') : (matchday === current ? 'REVIEW ACTIVE OPERATORS' : 'UPCOMING')}</small></article>`;
+      const clubLink = club => `<button type="button" class="league-club-link" data-league-club="${escapeCareerHtml(club.id)}">${escapeCareerHtml(club.name)}</button>`;
+      return `<article class="league-fixture ${state}"><span>MATCHDAY ${matchday}</span><div><strong>${clubLink(home)}</strong><b>${score}</b><strong>${clubLink(away)}</strong></div><small>${fixture.played ? (fixture.winnerId === LEAGUE_USER_CLUB_ID ? 'WIN' : 'LOSS') : (matchday === current ? 'REVIEW ACTIVE OPERATORS' : 'UPCOMING')}</small></article>`;
     }).join('');
   }
 
@@ -939,11 +1086,22 @@
       <div id="leagueObjectives">${typeof renderBoardExpectations === 'function' ? renderBoardExpectations(false) : ''}</div>
       <div id="leaguePulse">${typeof renderWorldPressLeaguePulse === 'function' ? renderWorldPressLeaguePulse() : ''}</div>
       <section id="leagueTable" class="league-table-panel"><div class="career-section-head"><div><span>LIVE STANDINGS</span><strong>${escapeCareerHtml(leagueCompetitionName())} TABLE</strong></div><p>Wins are worth ${LEAGUE_POINTS_WIN} points. Round difference breaks ties.</p></div><div class="league-table-head"><span>#</span><span>CLUB</span><span>P</span><span>W</span><span>L</span><span>RD</span><span>FORM</span><span>PTS</span></div>${renderLeagueTableRows()}</section>
-      <section class="league-opponent-panel" ${complete ? 'data-management-target-id="league:season-transition"' : ''}><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : escapeCareerHtml(opponent?.name || 'TBD')}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
+      <section class="league-opponent-panel" ${complete ? 'data-management-target-id="league:season-transition"' : ''}><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : opponent ? `<button type="button" class="league-club-link" data-league-club="${escapeCareerHtml(opponent.id)}">${escapeCareerHtml(opponent.name)}</button>` : 'TBD'}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}${typeof leagueStrengthStars === 'function' ? ` · ${leagueStrengthStars(opponent?.rating || 50).toFixed(1)}★` : ''}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
 `;
   }
 
   function handleLeagueClick(event) {
+    // Build 12.235: a club name anywhere in the interface opens its profile.
+    // Checked before the action buttons so a club link nested inside an action
+    // surface still resolves to the club rather than the surrounding control.
+    const clubLink = event.target.closest('[data-league-club]');
+    if (clubLink) {
+      const clubId = clubLink.dataset.leagueClub;
+      if (selectLeagueClub(clubId)) {
+        setMenuRoute('club-profile');
+        return true;
+      }
+    }
     const actionButton = event.target.closest('[data-league-action]');
     if (!actionButton) return false;
     const action = actionButton.dataset.leagueAction;
