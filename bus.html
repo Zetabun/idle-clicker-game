@@ -6,6 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="theme-color" content="#0B1119">
 <title>Kerbside — live buses near you</title>
+<meta name="application-name" content="Kerbside">
+<meta name="description" content="A route-aware live bus board using BODS vehicle positions and optional timetable validation.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -216,6 +218,18 @@ button{cursor:pointer;border:0;background:none}
 }
 .chip.in{border-color:var(--led-dim);color:var(--led)}
 .chip.away{opacity:.75}
+.chip.conf-high{border-color:rgba(63,217,164,.55);color:var(--live)}
+.chip.conf-medium{border-color:var(--led-dim);color:var(--led)}
+.chip.conf-low{border-color:var(--rule);color:var(--text-dim)}
+.depwrap{position:relative;border-bottom:1px solid var(--rule)}
+.depwrap .dep{border-bottom:0;padding-right:52px}
+.depwrap > .bell{position:absolute;right:15px;top:50%;transform:translateY(-50%);z-index:2}
+.depwrap .detail{border-top:1px solid rgba(34,48,63,.55);border-bottom:0}
+.settings-status{font-size:11px;color:var(--text-dim);line-height:1.5;margin:-6px 0 14px;padding:8px 10px;background:var(--ink);border:1px solid var(--rule);border-radius:7px}
+.settings-status.good{border-color:rgba(63,217,164,.35);color:#A9EED7}
+.settings-status.bad{border-color:rgba(255,107,90,.45);color:#FFD0CA}
+.copybtn{width:100%;border:1px solid var(--rule);border-radius:8px;padding:9px 11px;margin:2px 0 14px;color:var(--text-dim);font-size:12px}
+.copybtn:hover{border-color:var(--led-dim);color:var(--led)}
 .eta{
   font-family:'Martian Mono',monospace;font-weight:700;font-size:24px;color:var(--led);
   text-align:right;letter-spacing:-.06em;line-height:1;text-shadow:0 0 12px rgba(255,176,0,.28);
@@ -378,7 +392,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .lblshort{display:inline}
   #setBtn{flex:0 0 auto}
   .searchwrap{order:3;flex-basis:100%}
-  .dep{grid-template-columns:42px minmax(0,1fr) 52px 22px;gap:8px;padding:11px 13px}
+  .dep{grid-template-columns:42px minmax(0,1fr) 52px;gap:8px;padding:11px 13px}
   .eta{font-size:21px;min-width:0}
   .chip{font-size:9.5px;padding:2px 5px}
   .dfacts{grid-template-columns:repeat(2,1fr)}
@@ -477,19 +491,22 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
       <button id="closeSet" style="font-size:22px;color:var(--text-dim);line-height:1">&times;</button>
     </header>
     <div class="pad">
-      <p class="note">Live positions come from the Department for Transport's <b style="color:var(--led)">Bus Open Data Service</b>. Registration is free. BODS doesn't send CORS headers, so a browser needs a proxy in front of it — put yours below, or run this file through one.</p>
+      <p class="note">Live positions come from the Department for Transport's <b style="color:var(--led)">Bus Open Data Service</b>. For a public copy, use your Cloudflare Worker so the BODS key stays off the page. The app can also use a generated <b style="color:var(--led)">timetable.json</b> to verify which routes and destinations actually call at a stop.</p>
 
       <div class="field" style="margin-top:16px">
-        <label for="apiKey">BODS API key</label>
-        <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
-        <div class="hint">Register at data.bus-data.dft.gov.uk, then find the key in your account. Held in memory only — nothing is stored or sent anywhere except the feed.</div>
+        <label for="proxy">Cloudflare Worker URL</label>
+        <input id="proxy" type="text" placeholder="https://kerbside-bus.your-name.workers.dev" autocomplete="off" inputmode="url">
+        <div class="hint">Recommended. Enter the Worker base URL, without adding <code>?bbox=</code>. The browser sends only a small geographic box; your BODS key remains a Cloudflare secret.</div>
       </div>
 
       <div class="field">
-        <label for="proxy">Proxy prefix (optional)</label>
-        <input id="proxy" type="text" placeholder="https://your-proxy.example/?url=" autocomplete="off">
-        <div class="hint">The feed URL gets appended, encoded. Leave empty to call BODS directly — that only works outside a browser sandbox.</div>
+        <label for="apiKey">BODS API key — local testing only</label>
+        <input id="apiKey" type="password" placeholder="Leave empty when using the Worker" autocomplete="off">
+        <div class="hint">Kept in memory for this tab only and never written to browser storage. Direct browser access normally fails because BODS does not provide browser CORS headers.</div>
       </div>
+
+      <div id="sourceStatus" class="settings-status">No source check has run yet.</div>
+      <button class="copybtn" id="copyStopBtn" type="button">Copy current stop for Cloudflare recorder</button>
 
       <div class="row">
         <div class="field">
@@ -539,7 +556,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
       <div class="toggle">
         <div>
           <div class="t">Remember on this device</div>
-          <div class="h" id="rememberHint">Keeps your key, proxy and last stop so you don't re-enter them. Stored in this browser only.</div>
+          <div class="h" id="rememberHint">Keeps the Worker URL, last stop and locally learned route evidence. The BODS key is never saved.</div>
         </div>
         <button class="sw" id="rememberSw" aria-pressed="true" aria-label="Toggle remembering settings on this device"></button>
       </div>
@@ -567,6 +584,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
+const APP_VERSION = '0.3.0';
 const MY_KEY   = '';
 const MY_PROXY = '';
 
@@ -577,20 +595,25 @@ const S = {
   origin:null,              // {lat,lon,label}
   anchor:null,              // town centre {lat,lon,name}
   stops:[], stop:null, pendingStopId:null, loadingRoutes:false, filterFellBack:false,
-  destFilter:null,          // exact DestinationName, or null for all
-  destsByStop:{},           // stopId -> { destName: lastSeenTs } view:'live',
-  vehicles:new Map(),       // id -> {id,line,dest,lat,lon,bearing,dir,ts,hist:[],speed}
+  destFilter:null,          // reset per stop; never leaks between stops
+  destsByStop:{},           // stopId -> { destName: lastSeenTs }
+  vehicles:new Map(),       // id -> live vehicle state and short position history
   markers:new Map(),
   selected:null,
-  timer:null, tick:null, busy:false, lastOk:0
+  timer:null, tick:null, busy:false, lastOk:0,
+  locationRun:0, pollAbort:null,
+  feedStale:0, feedUnknownAge:0,
+  timetable:null, ttStop:null, ttError:null,
+  workerHistory:{}
 };
 
 const R_EARTH = 6371000;
-const ROAD_FACTOR = 1.32;      // straight-line -> road distance fudge
+const ROAD_FACTOR = 1.32;      // fallback only; timetable/track evidence wins where available
 const DEFAULT_SPEED = 6.2;     // m/s ≈ 14 mph, typical urban bus incl. stops
 const MIN_SPEED = 1.8, MAX_SPEED = 16;
-const MAX_AGE_MS = 4*60*1000;    // a position older than this is not useful
-const MAX_VEH_DIST = 9000;       // metres — beyond this it is not "due" by any reading
+const MAX_AGE_MS = 2*60*1000;  // old AVL positions are never silently revived
+const MAX_VEH_DIST = 9000;
+const FETCH_TIMEOUT_MS = 12000;
 
 /* ============================================================
    Helpers
@@ -603,17 +626,33 @@ const rad = d => d*Math.PI/180;
    on localStorage access — if it's unavailable the app just runs
    without remembering anything.
    ------------------------------------------------------------ */
-const STORE_KEY = 'kerbside.v1';
+const STORE_KEY = 'kerbside.v2';
+const LEGACY_STORE_KEY = 'kerbside.v1';
+const STORAGE_PREFIX = 'kerbside.';
 const store = {
   ok:(function(){ try{ const k='__k'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }catch(e){ return false; } })(),
-  read(){ if(!this.ok) return null; try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'null'); }catch(e){ return null; } },
-  write(o){ if(!this.ok) return false; try{ localStorage.setItem(STORE_KEY,JSON.stringify(o)); return true; }catch(e){ return false; } },
-  clear(){ if(!this.ok) return; try{ localStorage.removeItem(STORE_KEY); }catch(e){} }
+  read(){
+    if(!this.ok) return null;
+    try{
+      const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_STORE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  },
+  write(o){ if(!this.ok) return false; try{ localStorage.setItem(STORE_KEY,JSON.stringify(o)); localStorage.removeItem(LEGACY_STORE_KEY); return true; }catch(e){ return false; } },
+  clearAll(){
+    if(!this.ok) return;
+    try{
+      for(let i=localStorage.length-1;i>=0;i--){
+        const k=localStorage.key(i);
+        if(k && k.startsWith(STORAGE_PREFIX)) localStorage.removeItem(k);
+      }
+    }catch(e){}
+  }
 };
 const DEST_KEY = 'kerbside.dests';
 const DEST_TTL = 30*24*3600*1000;
 function loadDests(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{
     const o = JSON.parse(localStorage.getItem(DEST_KEY)||'{}');
     const now=Date.now();
@@ -625,18 +664,18 @@ function loadDests(){
   }catch(e){}
 }
 function saveDests(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{ localStorage.setItem(DEST_KEY, JSON.stringify(S.destsByStop)); }catch(e){}
 }
-/* Note what actually serves this stop, so the list survives quiet periods. */
 function learnDests(){
   if(!S.stop) return;
   const sid = String(S.stop.id);
   const bag = S.destsByStop[sid] || (S.destsByStop[sid]={});
   let added=false;
   for(const v of S.vehicles.values()){
-    if(!v.dest) continue;
-    if(dist(v.lat,v.lon,S.stop.lat,S.stop.lon) > 1500) continue;
+    if(!v.dest || !servesHere(v.line,v.dest)) continue;
+    const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
+    if(d > 1800 || approachStrength(v,S.stop) < 0) continue;
     if(!bag[v.dest]) added=true;
     bag[v.dest] = Date.now();
   }
@@ -645,27 +684,32 @@ function learnDests(){
 }
 
 function savePrefs(){
-  if(!S.remember){ store.clear(); return; }
+  if(!S.remember){ store.clearAll(); return; }
+  // Deliberately never store S.key. API credentials remain memory-only.
   store.write({
-    key:S.key, proxy:S.proxy, radius:S.radius, interval:S.interval,
-    demo:S.demo, hideAway:S.hideAway, dir:S.dir, destFilter:S.destFilter,
-    onlyServing:S.onlyServing,
+    proxy:S.proxy, radius:S.radius, interval:S.interval,
+    demo:S.demo, hideAway:S.hideAway, dir:S.dir,
+    onlyServing:S.onlyServing, remember:true,
     origin:S.origin, stopId:S.stop?S.stop.id:null
   });
 }
 function loadPrefs(){
   const p = store.read();
   if(!p) return null;
-  S.remember = true;
-  if(p.key) S.key=p.key;
-  if(p.proxy) S.proxy=p.proxy;
+  S.remember = p.remember !== false;
+  if(p.proxy){ S.proxy=normaliseWorkerUrl(p.proxy); if(typeof p.demo!=='boolean' && S.proxy) S.demo=false; }
   if(p.radius) S.radius=p.radius;
   if(p.interval) S.interval=p.interval;
   if(typeof p.demo==='boolean') S.demo=p.demo;
   if(typeof p.hideAway==='boolean') S.hideAway=p.hideAway;
   if(typeof p.onlyServing==='boolean') S.onlyServing=p.onlyServing;
   if(p.dir) S.dir=p.dir;
-  if(p.destFilter) S.destFilter=p.destFilter;
+  // Clean up any credential saved by an older release.
+  if(p.key && store.ok){
+    delete p.key;
+    try{ localStorage.removeItem(LEGACY_STORE_KEY); }catch(e){}
+    store.write({...p,remember:S.remember});
+  }
   return p;
 }
 
@@ -721,6 +765,35 @@ function toast(msg, bad){
 function setStatus(text, kind){
   $('statusText').textContent = text;
   $('status').className = 'pulse'+(kind?' '+kind:'');
+}
+function normaliseWorkerUrl(value){
+  const raw=String(value||'').trim();
+  if(!raw) return '';
+  try{
+    const candidate=/^https?:\/\//i.test(raw)?raw:'https://'+raw;
+    const u=new URL(candidate);
+    if(u.protocol!=='https:' && u.hostname!=='localhost' && u.hostname!=='127.0.0.1') return '';
+    u.hash=''; u.search='';
+    u.pathname=u.pathname.replace(/\/(feed|health|history|watched)\/?$/i,'').replace(/\/$/,'');
+    return u.toString().replace(/\/$/,'');
+  }catch(e){ return ''; }
+}
+async function fetchTimed(url, options, timeoutMs){
+  const ctl = new AbortController();
+  const external = options && options.signal;
+  const abort = ()=>ctl.abort();
+  if(external){ if(external.aborted) ctl.abort(); else external.addEventListener('abort',abort,{once:true}); }
+  const timer=setTimeout(()=>ctl.abort(),timeoutMs||FETCH_TIMEOUT_MS);
+  try{ return await fetch(url,{...(options||{}),signal:ctl.signal}); }
+  finally{ clearTimeout(timer); if(external) external.removeEventListener('abort',abort); }
+}
+function nameTokens(s){
+  return new Set(normName(s).split(' ').filter(w=>w.length>2 && !['bus','station','interchange'].includes(w)));
+}
+function nameSimilarity(a,b){
+  const A=nameTokens(a), B=nameTokens(b); if(!A.size || !B.size) return 0;
+  let hit=0; A.forEach(x=>{ if(B.has(x)) hit++; });
+  return hit/Math.max(A.size,B.size);
 }
 
 /* ============================================================
@@ -833,16 +906,18 @@ function pickPlace(f){
    Origin, town anchor, stops
    ============================================================ */
 async function setOrigin(lat,lon,label){
+  const run=++S.locationRun;
+  if(S.pollAbort) S.pollAbort.abort();
   S.origin={lat,lon,label:label||'Chosen point'};
-  S.stop=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers();
+  S.stop=null; S.ttStop=null; S.destFilter=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers();
   savePrefs();
   drawOrigin();
-  map.setView([lat,lon], Math.max(map.getZoom(),16));   // street level, not district level
+  map.setView([lat,lon], Math.max(map.getZoom(),16));
   $('stopName').textContent='Looking for stops…';
   $('stopMeta').textContent=(label||'').toUpperCase();
   setStatus('Loading stops','');
-  await Promise.all([findAnchor(lat,lon), findStops(lat,lon)]);
-  startPolling();
+  await Promise.all([findAnchor(lat,lon,run), findStops(lat,lon,run)]);
+  if(run===S.locationRun) startPolling();
 }
 
 $('locBtn').addEventListener('click', ()=>{
@@ -872,23 +947,22 @@ const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 async function overpass(query){
   let lastErr;
-  // two passes over the endpoint list, backing off between rounds
-  for(let round=0; round<2; round++){
-    for(const ep of OVERPASS){
-      try{
-        const ctl = new AbortController();
-        const timer = setTimeout(()=>ctl.abort(), 20000);
-        const r = await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(query),
-          headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctl.signal});
-        clearTimeout(timer);
-        if(r.status===429 || r.status===504){ lastErr=new Error(r.status); continue; }
-        if(!r.ok) throw new Error(r.status);
-        return await r.json();
-      }catch(e){ lastErr=e; }
-    }
-    if(round===0){ setStatus('Stop service busy — retrying','err'); await sleep(2500); }
+  const deadline=Date.now()+32000;
+  for(let i=0;i<OVERPASS.length;i++){
+    const left=deadline-Date.now();
+    if(left<1000) break;
+    try{
+      const r = await fetchTimed(OVERPASS[i],{
+        method:'POST',body:'data='+encodeURIComponent(query),
+        headers:{'Content-Type':'application/x-www-form-urlencoded'}
+      },Math.min(9000,left));
+      if(r.status===429 || r.status===504){ lastErr=new Error(String(r.status)); continue; }
+      if(!r.ok) throw new Error(String(r.status));
+      return await r.json();
+    }catch(e){ lastErr=e; }
+    if(i===1) setStatus('Stop service busy — trying another map server','err');
   }
-  throw lastErr;
+  throw lastErr || new Error('Overpass timeout');
 }
 
 /* Stops barely change, so cache them per area for a week.
@@ -898,7 +972,7 @@ function stopCacheKey(lat,lon,radius){
   return 'kerbside.stops.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
 }
 function readStopCache(lat,lon,radius){
-  if(!store.ok) return null;
+  if(!store.ok || !S.remember) return null;
   try{
     const raw = localStorage.getItem(stopCacheKey(lat,lon,radius));
     if(!raw) return null;
@@ -908,13 +982,13 @@ function readStopCache(lat,lon,radius){
   }catch(e){ return null; }
 }
 function writeStopCache(lat,lon,radius,stops,anchor){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{ localStorage.setItem(stopCacheKey(lat,lon,radius),
         JSON.stringify({ts:Date.now(),stops,anchor})); }catch(e){}
 }
 
 /* Nearest town/city/suburb centre — the reference point for "into town" */
-async function findAnchor(lat,lon){
+async function findAnchor(lat,lon,run){
   const q = `[out:json][timeout:25];
 (node["place"~"^(city|town)$"](around:22000,${lat},${lon}););
 out body 40;`;
@@ -927,12 +1001,14 @@ out body 40;`;
       const score = d * (weight[el.tags.place]||1);
       if(score<bestScore){ bestScore=score; best={lat:el.lat,lon:el.lon,name:el.tags.name||'Town centre'}; }
     }
+    if(run!==S.locationRun) return;
     if(best){ S.anchor=best; drawAnchor(); }
     else { S.anchor={lat,lon,name:'Town centre'}; drawAnchor(); }
   }catch(e){
+    if(run!==S.locationRun) return;
     S.anchor={lat,lon,name:'Town centre'}; drawAnchor();
   }
-  updateDirLabels();
+  if(run===S.locationRun) updateDirLabels();
 }
 function updateDirLabels(){
   const n = S.anchor ? S.anchor.name : 'town';
@@ -940,9 +1016,11 @@ function updateDirLabels(){
   $('dOut').querySelector('.lbl').textContent = 'Out of '+n;
 }
 
-async function findStops(lat,lon){
+async function findStops(lat,lon,run){
   const cached = readStopCache(lat,lon,S.radius);
+  if(run!==S.locationRun) return;
   if(cached && cached.stops && cached.stops.length){
+    if(run!==S.locationRun) return;
     S.stops = cached.stops.map(s=>({...s, d:dist(lat,lon,s.lat,s.lon)})).sort((a,b)=>a.d-b.d);
     if(cached.anchor && !S.anchor){ S.anchor=cached.anchor; drawAnchor(); updateDirLabels(); }
     drawStops();
@@ -957,6 +1035,7 @@ async function findStops(lat,lon){
 out body 120;`;
   try{
     const j = await overpass(q);
+    if(run!==S.locationRun) return;
     const seen=new Set();
     S.stops = (j.elements||[]).map(el=>({
       id:el.id,
@@ -966,7 +1045,7 @@ out body 120;`;
       lat:el.lat, lon:el.lon,
       d: dist(lat,lon,el.lat,el.lon)
     })).filter(s=>{
-      const k=s.name+'|'+Math.round(s.lat*4000)+'|'+Math.round(s.lon*4000);
+      const k=String(s.id)+'|'+Math.round(s.lat*25000)+'|'+Math.round(s.lon*25000);
       if(seen.has(k)) return false; seen.add(k); return true;
     }).sort((a,b)=>a.d-b.d);
 
@@ -983,10 +1062,11 @@ out body 120;`;
       showEmpty('<strong>No stops within '+fmtDist(S.radius)+'</strong>OpenStreetMap has no bus stops mapped around this point. Widen the radius in settings, or move the search somewhere more built up.');
     }
   }catch(e){
+    if(run!==S.locationRun) return;
     $('stopName').textContent='Could not load stops';
     $('stopMeta').textContent='OVERPASS UNAVAILABLE';
     showEmpty('<strong>Stop lookup failed</strong>The OpenStreetMap query service didn\'t respond. It rate-limits under load — wait a moment and <button id="retryStops">try again</button>.');
-    const rb=$('retryStops'); if(rb) rb.addEventListener('click',()=>findStops(lat,lon));
+    const rb=$('retryStops'); if(rb) rb.addEventListener('click',()=>findStops(lat,lon,S.locationRun));
   }
 }
 
@@ -1050,16 +1130,191 @@ function renderPair(){
     + 'Other side' + (p.ind ? ' ('+esc(p.ind)+')' : '');
 }
 
+/* ============================================================
+   Optional timetable validation
+   timetable.json is generated from BODS GTFS by build-timetable.js.
+   The app remains usable without it, but route/branch confidence is lower.
+   ============================================================ */
+function parseDepMinutes(value){
+  if(typeof value==='number' && isFinite(value)) return value;
+  const m=String(value||'').match(/^(\d{1,2}):(\d{2})/);
+  return m ? Number(m[1])*60+Number(m[2]) : NaN;
+}
+function localMidnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+const PATTERN_CACHE = new Map();
+function ymd(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return ''+y+m+day;
+}
+function serviceRuns(ref, serviceDate){
+  if(!ref) return true;
+  const day=(serviceDate.getDay()+6)%7;
+  if(/^[01]{7}$/.test(String(ref))) return String(ref)[day]==='1';
+  const svc=S.timetable && S.timetable.services && S.timetable.services[ref];
+  if(!svc) return true;
+  const key=ymd(serviceDate);
+  if((svc.remove||[]).includes(key)) return false;
+  if((svc.add||[]).includes(key)) return true;
+  if(svc.start && key<svc.start) return false;
+  if(svc.end && key>svc.end) return false;
+  return !svc.days || String(svc.days)[day]==='1';
+}
+async function loadTimetable(){
+  try{
+    const r=await fetchTimed('timetable.json',{cache:'no-cache'},8000);
+    if(!r.ok){ S.ttError=r.status===404?'not installed':'HTTP '+r.status; return; }
+    const data=await r.json();
+    if(!data || !data.stops || typeof data.stops!=='object') throw new Error('bad format');
+    S.timetable=data; PATTERN_CACHE.clear(); S.ttError=null;
+    if(S.stop){ S.ttStop=matchTimetableStop(S.stop); renderServingNote(); render(); }
+  }catch(e){
+    S.ttError=(e && e.name==='AbortError')?'timed out':'could not be read';
+  }
+}
+function matchTimetableStop(stop){
+  if(!S.timetable || !stop) return null;
+  const entries=Object.entries(S.timetable.stops);
+  const code=String(stop.code||'').trim().toLowerCase();
+  if(code){
+    for(const [id,t] of entries){
+      if(String(id).toLowerCase()===code || String(t.c||'').trim().toLowerCase()===code) return {id,...t,match:'code'};
+    }
+  }
+  let best=null, bestScore=-Infinity;
+  for(const [id,t] of entries){
+    if(!Array.isArray(t.ll)) continue;
+    const d=dist(stop.lat,stop.lon,Number(t.ll[0]),Number(t.ll[1]));
+    if(d>140) continue;
+    const sim=nameSimilarity(stop.name,t.n||'');
+    const score=sim*120-d;
+    if(score>bestScore){ bestScore=score; best={id,...t,match:'nearby',distance:d}; }
+  }
+  return best && (bestScore>-45 || best.distance<45) ? best : null;
+}
+function timetableRows(now){
+  const stop=S.ttStop;
+  if(!stop || !Array.isArray(stop.d)) return [];
+  const out=[];
+  const today=localMidnight(now||new Date());
+  for(const offset of [-1,0,1]){
+    const serviceDate=new Date(today); serviceDate.setDate(serviceDate.getDate()+offset);
+    for(const e of stop.d){
+      if(!Array.isArray(e) || e.length<3) continue;
+      const mins=parseDepMinutes(e[0]); if(!isFinite(mins)) continue;
+      const service=e[3]||'';
+      if(!serviceRuns(service,serviceDate)) continue;
+      const at=new Date(serviceDate.getTime()+mins*60000);
+      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||''});
+    }
+  }
+  return out;
+}
+function timetableRouteSet(){
+  const now=Date.now();
+  return new Set(timetableRows(new Date(now)).filter(r=>r.at>now-4*3600000 && r.at<now+20*3600000).map(r=>String(r.line)));
+}
+function destinationSimilarity(a,b){
+  if(!a || !b) return 0;
+  const A=normName(a), B=normName(b);
+  if(A===B) return 1;
+  if(A.includes(B) || B.includes(A)) return .8;
+  return nameSimilarity(A,B);
+}
+function tripRefMatches(a,b){
+  const A=String(a||'').trim(), B=String(b||'').trim();
+  return !!A && !!B && A===B;
+}
+function timetablePattern(journey){
+  const tt=S.timetable;
+  if(!tt || !journey || !tt.tripPatterns || !tt.patterns) return null;
+  const id=tt.tripPatterns[String(journey)];
+  if(!id) return null;
+  if(PATTERN_CACHE.has(id)) return PATTERN_CACHE.get(id);
+  const raw=tt.patterns[id];
+  if(!Array.isArray(raw) || raw.length<2){ PATTERN_CACHE.set(id,null); return null; }
+  const points=raw.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])}))
+    .filter(p=>isFinite(p.lat)&&isFinite(p.lon));
+  const value=points.length>=2 ? points : null;
+  PATTERN_CACHE.set(id,value);
+  return value;
+}
+function projectToPattern(points,lat,lon){
+  let best=null, travelled=0;
+  for(let i=0;i<points.length-1;i++){
+    const a=points[i], b=points[i+1];
+    const seg=dist(a.lat,a.lon,b.lat,b.lon);
+    if(!isFinite(seg) || seg<1) continue;
+    const scaleX=111320*Math.cos(rad((a.lat+b.lat+lat)/3));
+    const dx=(b.lon-a.lon)*scaleX, dy=(b.lat-a.lat)*111320;
+    const px=(lon-a.lon)*scaleX, py=(lat-a.lat)*111320;
+    const denom=dx*dx+dy*dy;
+    const t=denom?Math.max(0,Math.min(1,(px*dx+py*dy)/denom)):0;
+    const metres=Math.hypot(px-dx*t,py-dy*t);
+    if(!best || metres<best.metres) best={metres,along:travelled+seg*t,segment:i,t};
+    travelled+=seg;
+  }
+  return best ? {...best,total:travelled} : null;
+}
+function journeyGeometry(v,stop){
+  if(!v || !stop) return null;
+  const points=timetablePattern(v.journey);
+  if(!points) return null;
+  const vehicle=projectToPattern(points,v.lat,v.lon);
+  const target=projectToPattern(points,stop.lat,stop.lon);
+  if(!vehicle || !target || vehicle.metres>650 || target.metres>250) return null;
+  const remaining=target.along-vehicle.along;
+  return {
+    remaining,
+    passed:remaining < -120,
+    vehicleOffset:vehicle.metres,
+    stopOffset:target.metres,
+    total:vehicle.total
+  };
+}
+function scheduledMatches(line,dest,spatialSecs,journey){
+  const now=Date.now(), target=now+Math.max(0,Number(spatialSecs)||0)*1000;
+  let rows=timetableRows(new Date(now)).filter(r=>{
+    if(String(r.line)!==String(line)) return false;
+    if(r.at<now-3*60000 || r.at>now+3*3600000) return false;
+    return !dest || !r.head || destinationSimilarity(dest,r.head)>=.34;
+  });
+  const exact=journey ? rows.filter(r=>tripRefMatches(r.trip,journey)) : [];
+  if(exact.length) rows=exact;
+  return rows.sort((a,b)=>Math.abs(a.at-target)-Math.abs(b.at-target));
+}
+async function loadWorkerHistory(stop){
+  if(!S.proxy || !stop) return;
+  const id=String(stop.code || (S.ttStop&&S.ttStop.id) || stop.id);
+  try{
+    const u=new URL(S.proxy,location.href); u.pathname=u.pathname.replace(/\/$/,'')+'/history';
+    u.searchParams.set('days','30'); u.searchParams.set('stop',id);
+    const r=await fetchTimed(u.toString(),{headers:{Accept:'application/json'},cache:'no-store'},8000);
+    if(!r.ok) return;
+    const j=await r.json();
+    if(!Array.isArray(j.arrivals)) return;
+    S.workerHistory[id]=j.arrivals;
+    const sid=String(stop.id), bag=SERVING[sid]||(SERVING[sid]={});
+    const lines={};
+    j.arrivals.forEach(a=>{ const l=cleanLine(a.l||a.line||''); if(l) lines[l]=(lines[l]||0)+1; });
+    Object.entries(lines).forEach(([line,count])=>{
+      const old=normaliseServingRecord(bag[line]);
+      bag[line]={last:Date.now(),count:Math.max(old.count,count),vehicles:old.vehicles||[],confirmed:count>=2,source:'worker'};
+    });
+    saveServing(); renderServingNote(); render();
+  }catch(e){}
+}
+
 function selectStop(s){
+  if(!s) return;
+  const changed=!S.stop || String(S.stop.id)!==String(s.id);
   S.stop=s;
+  if(changed){ S.destFilter=null; S.selected=null; }
+  S.ttStop=matchTimetableStop(s);
   $('stopName').textContent = s.name + (s.ind ? ' ('+s.ind+')' : '');
-  $('stopMeta').innerHTML = '<b>'+fmtDist(s.d)+'</b> from your point' + (s.code?' · '+esc(s.code):'');
-  drawStops();
-  closePicker();
-  renderWalk();
-  renderDests();
-  renderPair();
-  renderServingNote();
+  const code=s.code ? ' · '+esc(s.code) : '';
+  const tt=S.ttStop ? ' · timetable matched' : '';
+  $('stopMeta').innerHTML = '<b>'+fmtDist(s.d)+'</b> from your point' + code + tt;
+  drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
   if(!MAPPED[String(s.id)]){
     S.loadingRoutes = true; renderServingNote();
     fetchRoutesFor(s).then(()=>{
@@ -1067,8 +1322,8 @@ function selectStop(s){
       if(S.stop && S.stop.id===s.id){ renderServingNote(); render(); }
     });
   }
-  savePrefs();
-  render();
+  loadWorkerHistory(s);
+  savePrefs(); render();
 }
 
 /* stop picker */
@@ -1114,11 +1369,14 @@ function bbox(){
   return [(c.lon-padLon).toFixed(5),(c.lat-pad).toFixed(5),(c.lon+padLon).toFixed(5),(c.lat+pad).toFixed(5)].join(',');
 }
 function feedUrl(){
-  // Worker mode: the proxy holds the key, we send only a bounding box.
-  if(!S.key && S.proxy) return S.proxy + (S.proxy.includes('?') ? '&' : '?') + 'bbox=' + bbox();
-  const u = 'https://data.bus-data.dft.gov.uk/api/v1/datafeed/?api_key='
-          + encodeURIComponent(S.key) + '&boundingBox=' + bbox();
-  return S.proxy ? S.proxy + encodeURIComponent(u) : u;
+  if(S.proxy){
+    const u = new URL(S.proxy, location.href);
+    u.searchParams.set('bbox',bbox());
+    return u.toString();
+  }
+  if(!S.key) return '';
+  return 'https://data.bus-data.dft.gov.uk/api/v1/datafeed/?api_key='
+       + encodeURIComponent(S.key) + '&boundingBox=' + bbox();
 }
 
 /* flatten a <VehicleActivity> subtree into {localName: text} */
@@ -1131,44 +1389,64 @@ function flatten(node, out){
   return out;
 }
 
-async function fetchLive(){
-  if(!S.key && !S.proxy){ throw {soft:true, msg:'No key or proxy — open settings, or turn the simulator on.'}; }
-  const r = await fetch(feedUrl());
-  if(r.status===401 || r.status===403) throw {soft:true, msg:'BODS rejected the key. Check it in settings.'};
-  if(!r.ok) throw {soft:true, msg:'Feed returned '+r.status+'.'};
+async function fetchLive(signal){
+  const url=feedUrl();
+  if(!url) throw {soft:true, msg:'No Worker URL or local API key is configured.'};
+  let r;
+  try{
+    r = await fetchTimed(url,{headers:{'Accept':'application/xml'},cache:'no-store',signal},FETCH_TIMEOUT_MS);
+  }catch(e){
+    if(e && e.name==='AbortError') throw {soft:true,msg:'The live feed timed out. The Worker or BODS may be busy.'};
+    throw {soft:true,msg:'Could not reach the live feed.'};
+  }
+  if(!r.ok){
+    let detail='';
+    try{
+      const ct=r.headers.get('content-type')||'';
+      detail=ct.includes('json') ? (await r.json()).error : (await r.text()).slice(0,180);
+    }catch(e){}
+    if(r.status===401 || r.status===403) throw {soft:true, msg:detail||'BODS or the Worker rejected the credentials/origin.'};
+    throw {soft:true, msg:detail||('Feed returned '+r.status+'.')};
+  }
   const xml = new DOMParser().parseFromString(await r.text(),'application/xml');
   if(xml.querySelector('parsererror')) throw {soft:true, msg:'Feed response was not valid XML.'};
 
   const acts = [...xml.getElementsByTagName('*')].filter(n=>n.localName==='VehicleActivity');
   const now = Date.now();
   const out = [];
-  let stale = 0;
+  let stale = 0, unknownAge=0;
   for(const a of acts){
     const f = flatten(a);
     const lat = parseFloat(f.Latitude), lon = parseFloat(f.Longitude);
     if(!isFinite(lat) || !isFinite(lon)) continue;
-    // BODS caches, and some operators leave dead vehicles in the feed for
-    // hours. Anything this old is not a bus you can catch.
     const parsed = f.RecordedAtTime ? Date.parse(f.RecordedAtTime) : NaN;
-    const ts = isFinite(parsed) ? parsed : now;
-    const isStale = (now - ts) > MAX_AGE_MS;
-    if(isStale) stale++;
+    const timestampKnown = isFinite(parsed);
+    if(!timestampKnown){ unknownAge++; continue; }
+    const ts = parsed, age = now-ts;
+    if(age>MAX_AGE_MS || age < -120000){ stale++; continue; }
+    const journey = f.DatedVehicleJourneyRef || f.VehicleJourneyRef || '';
+    const id = f.VehicleRef || journey;
+    if(!id) continue; // a stable identity is required for movement, learning and alarms
     out.push({
-      id: f.VehicleRef || f.DatedVehicleJourneyRef || (f.LineRef+'-'+lat.toFixed(4)+lon.toFixed(4)),
+      id, journey,
       line: cleanLine(f.PublishedLineName || f.LineRef || '?'),
+      lineRef: f.LineRef || '',
       dest: cleanName(f.DestinationName || f.DirectionName || ''),
-      origin: cleanName(f.OriginName || ''),
+      destRef: f.DestinationRef || '',
+      origin: cleanName(f.OriginName || ''), originRef:f.OriginRef||'',
       operator: f.OperatorRef || '',
       declaredDir: (f.DirectionRef||'').toLowerCase(),
       lat, lon,
       bearing: parseFloat(f.Bearing),
-      ts, stale: isStale
+      feedSpeed: parseFloat(f.Velocity),
+      aimedOriginAt: f.OriginAimedDepartureTime ? Date.parse(f.OriginAimedDepartureTime) : NaN,
+      aimedDestinationAt: f.DestinationAimedArrivalTime ? Date.parse(f.DestinationAimedArrivalTime) : NaN,
+      ts, timestampKnown
     });
   }
-  // If nearly everything looks stale, it is far likelier that the
-  // timestamps are being misread than that no buses are running.
-  const trustAges = !out.length || (stale / out.length) < 0.8;
-  return trustAges ? out.filter(v=>!v.stale) : out.map(v=>({...v, ts:now}));
+  S.feedStale=stale; S.feedUnknownAge=unknownAge;
+  if(!out.length && (stale || unknownAge)) throw {soft:true,msg:'BODS returned no fresh timestamped vehicle positions, so Kerbside hid them instead of showing ghost buses.'};
+  return out;
 }
 
 /* ============================================================
@@ -1271,6 +1549,10 @@ function ingest(list){
         rec.speed = rec.speed==null ? inst : rec.speed*0.6 + inst*0.4;
       }
     }
+    const feedSpeed=Number(v.feedSpeed);
+    if(isFinite(feedSpeed) && feedSpeed>=0 && feedSpeed<=35){
+      rec.speed = rec.speed==null ? feedSpeed : rec.speed*0.72 + feedSpeed*0.28;
+    }
     rec.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
     if(rec.hist.length>6) rec.hist.shift();
     Object.assign(rec, v);
@@ -1306,22 +1588,26 @@ function inferDirection(v){
 }
 
 /* is it still coming towards the stop, or already gone past? */
-function approaching(v, stop){
+function approachStrength(v, stop){
   if(v.hist.length>=2){
     const a=v.hist[0], b=v.hist[v.hist.length-1];
-    if(dist(a.lat,a.lon,b.lat,b.lon) > 40){
+    const moved=dist(a.lat,a.lon,b.lat,b.lon);
+    if(moved>35){
       const d0=dist(a.lat,a.lon,stop.lat,stop.lon);
       const d1=dist(b.lat,b.lon,stop.lat,stop.lon);
-      if(Math.abs(d0-d1)>25) return d1 < d0;
+      if(d0-d1>30) return 2;
+      if(d1-d0>30) return -2;
     }
   }
   if(isFinite(v.bearing)){
     const toStop = bearingTo(v.lat,v.lon,stop.lat,stop.lon);
     const diff = Math.abs(((v.bearing - toStop + 540)%360)-180);
-    return diff < 95;
+    if(diff<70) return 1;
+    if(diff>115) return -1;
   }
-  return true;
+  return 0;
 }
+function approaching(v, stop){ return approachStrength(v,stop)>=0; }
 
 /* ------------------------------------------------------------
    Learned road factor. Crow-flies distance always understates a
@@ -1334,12 +1620,12 @@ const LINE_KEY = 'kerbside.lines.v1';
 let LINES = {};   // line -> {f: detour factor, n: samples, sp: m/s, sn: samples}
 
 function loadLines(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{ LINES = JSON.parse(localStorage.getItem(LINE_KEY)||'{}') || {}; }catch(e){ LINES={}; }
 }
 let lineSaveT;
 function saveLines(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   clearTimeout(lineSaveT);
   lineSaveT=setTimeout(()=>{ try{ localStorage.setItem(LINE_KEY,JSON.stringify(LINES)); }catch(e){} },4000);
 }
@@ -1372,20 +1658,59 @@ function lineSpeed(line){
   return (r && r.sn >= 3) ? r.sp : DEFAULT_SPEED;
 }
 
+function routeEvidence(line,dest,journey){
+  if(!S.stop) return {score:0,label:'unverified'};
+  const l=String(line);
+  const ttRows=timetableRows(new Date()).filter(r=>String(r.line)===l);
+  if(journey && ttRows.some(r=>tripRefMatches(r.trip,journey))){
+    const path=!!timetablePattern(journey);
+    return {score:path?6:5,label:path?'journey and stop sequence matched':'journey matched to timetable',journeyMatch:true,pathMatch:path};
+  }
+  const tt=timetableRouteSet();
+  if(tt.has(l)){
+    const heads=ttRows.map(r=>r.head).filter(Boolean);
+    const branchOk=!dest || !heads.length || heads.some(h=>destinationSimilarity(dest,h)>=.34);
+    return {score:branchOk?4:2,label:branchOk?'timetable verified':'route verified; branch uncertain'};
+  }
+  const m=MAPPED[String(S.stop.id)];
+  if(m && m.routes.some(r=>String(r.ref)===l)){
+    if(m.source==='stop') return {score:3,label:'mapped at this stop'};
+    if(m.source==='nearby') return {score:2,label:'mapped nearby'};
+    return {score:1,label:'runs past stop'};
+  }
+  const bag=SERVING[String(S.stop.id)]||{};
+  const rec=normaliseServingRecord(bag[l]);
+  if(rec.confirmed || rec.count>=2) return {score:3,label:rec.source==='worker'?'recorded arrivals':'seen stopping'};
+  if(rec.count===1) return {score:1,label:'seen once'};
+  return {score:0,label:'unverified'};
+}
 function estimate(v, stop){
   const straight = dist(v.lat,v.lon,stop.lat,stop.lon);
-  const road = straight * lineFactor(v.line);
-  let sp = v.speed;                                  // this vehicle's own speed wins
+  const geometry=journeyGeometry(v,stop);
+  const road = geometry && geometry.remaining>0
+    ? Math.max(straight,geometry.remaining)
+    : straight * lineFactor(v.line);
+  let sp = v.speed;
   if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = lineSpeed(v.line);
-  const dwell = (road/1000) * 22;                    // ~22 s of stopping per km
-  // Latency counts against the estimate, but only a little of it — a very
-  // old position is bad data, not a bus that is nearly here.
-  const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 90);
-  let secs = road/sp + dwell - age*0.5;
-  // Nothing arrives faster than the road allows at full speed.
-  secs = Math.max(secs, road/MAX_SPEED);
-  const learned = !!(LINES[v.line] && LINES[v.line].n >= 3);
-  return {secs, metres: straight, learned};
+  const dwell = (road/1000) * 24;
+  const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 75);
+  let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - age*0.35);
+  const evidence=routeEvidence(v.line,v.dest,v.journey);
+  const strength=approachStrength(v,stop);
+  const schedules=scheduledMatches(v.line,v.dest,spatial,v.journey);
+  let schedule=null;
+  if(schedules.length){
+    const cand=schedules[0], schedSecs=(cand.at-Date.now())/1000;
+    if(Math.abs(schedSecs-spatial)<=12*60){
+      schedule=cand;
+      const weight=evidence.journeyMatch ? .42 : evidence.score>=4 ? .32 : .18;
+      spatial=spatial*(1-weight)+Math.max(0,schedSecs)*weight;
+    }
+  }
+  let points=evidence.score + (strength>=2?2:strength===1?1:strength<0?-2:0) + (straight<250?1:0) + (schedule?1:0);
+  const confidence=points>=6?'high':points>=3?'medium':'low';
+  const spread=confidence==='high'?90:confidence==='medium'?210:360;
+  return {secs:spatial, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(LINES[v.line]&&LINES[v.line].n>=3), confidence, spread, evidence, schedule};
 }
 
 /* ============================================================
@@ -1440,22 +1765,23 @@ function checkAlarms(rows){
   for(const a of ALARMS){
     if(a.stopId !== S.stop.id) continue;
     const hit = rows.find(r=>String(r.v.line)===String(a.line) && (!a.dest || r.v.dest===a.dest));
-    if(!hit){ if(a.fired && !rows.length) a.fired=false; continue; }
+    if(!hit){ a.fired=false; a.vehicleId=null; continue; }
+    const vehicleId=String(hit.v.journey||hit.v.id);
+    if(a.vehicleId && a.vehicleId!==vehicleId){ a.fired=false; a.vehicleId=null; }
     const slack = hit.secs - walk;
     if(!a.fired && slack <= 60){
-      a.fired = true;
+      a.fired = true; a.vehicleId=vehicleId;
       const mins = Math.max(0,Math.round(hit.secs/60));
       const body = 'The '+a.line+' to '+(hit.v.dest||'?')+' reaches '+S.stop.name
                  + ' in about '+mins+' min. Walking takes '+Math.round(walk/60)+'.';
-      beep();
-      toast('Time to leave — ' + body);
+      beep(); toast('Time to leave — ' + body);
       try{
         if('Notification' in window && Notification.permission==='granted'){
-          new Notification('Leave now for the '+a.line, {body, tag:a.k, renotify:false});
+          new Notification('Leave now for the '+a.line, {body, tag:a.k+'|'+vehicleId, renotify:false});
         }
       }catch(e){}
     } else if(a.fired && slack > 300){
-      a.fired = false;      // next bus on the same line re-arms it
+      a.fired=false; a.vehicleId=null;
     }
   }
 }
@@ -1466,42 +1792,56 @@ function checkAlarms(rows){
    within a few metres of the flag is calling there. Watch for
    that and the stop builds its own route list.
    ------------------------------------------------------------ */
-const SERVE_KEY = 'kerbside.serving.v1';
-const SERVE_RADIUS = 55;          // metres — close enough to be at the stop
+const SERVE_KEY = 'kerbside.serving.v2';
+const LEGACY_SERVE_KEY = 'kerbside.serving.v1';
+const SERVE_RADIUS = 42;
 const SERVE_TTL = 60*24*3600*1000;
-let SERVING = {};                 // stopId -> { line: lastSeenTs }
-
+let SERVING = {}; // stopId -> line -> {last,count,vehicles,confirmed,source}
+function normaliseServingRecord(v){
+  if(!v) return {last:0,count:0,vehicles:[],confirmed:false,source:''};
+  if(typeof v==='number') return {last:v,count:1,vehicles:[],confirmed:false,source:'legacy'};
+  return {last:Number(v.last)||0,count:Number(v.count)||0,vehicles:Array.isArray(v.vehicles)?v.vehicles:[],confirmed:!!v.confirmed,source:v.source||''};
+}
 function loadServing(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{
-    const o = JSON.parse(localStorage.getItem(SERVE_KEY)||'{}');
-    const now = Date.now();
+    const raw=localStorage.getItem(SERVE_KEY)||localStorage.getItem(LEGACY_SERVE_KEY)||'{}';
+    const o=JSON.parse(raw), now=Date.now();
     for(const sid of Object.keys(o)){
-      for(const l of Object.keys(o[sid])) if(now-o[sid][l] > SERVE_TTL) delete o[sid][l];
+      for(const l of Object.keys(o[sid])){
+        const r=normaliseServingRecord(o[sid][l]);
+        if(now-r.last>SERVE_TTL) delete o[sid][l]; else o[sid][l]=r;
+      }
       if(!Object.keys(o[sid]).length) delete o[sid];
     }
-    SERVING = o;
-  }catch(e){ SERVING = {}; }
+    SERVING=o; localStorage.removeItem(LEGACY_SERVE_KEY);
+  }catch(e){ SERVING={}; }
 }
 let servingSaveT;
 function saveServing(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   clearTimeout(servingSaveT);
-  servingSaveT = setTimeout(()=>{ try{ localStorage.setItem(SERVE_KEY,JSON.stringify(SERVING)); }catch(e){} }, 3000);
+  servingSaveT=setTimeout(()=>{ try{ localStorage.setItem(SERVE_KEY,JSON.stringify(SERVING)); }catch(e){} },3000);
 }
 function learnServing(){
   if(!S.stop) return;
-  const sid = String(S.stop.id);
-  const bag = SERVING[sid] || (SERVING[sid]={});
-  let added = false;
+  const sid=String(S.stop.id), bag=SERVING[sid]||(SERVING[sid]={});
+  let changed=false;
   for(const v of S.vehicles.values()){
-    if(!v.line) continue;
-    if(dist(v.lat,v.lon,S.stop.lat,S.stop.lon) > SERVE_RADIUS) continue;
-    if(!bag[v.line]) added = true;
-    bag[v.line] = Date.now();
+    if(!v.line || Date.now()-v.ts>MAX_AGE_MS) continue;
+    const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
+    if(d>SERVE_RADIUS) continue;
+    const strength=approachStrength(v,S.stop);
+    const slow=(v.speed!=null && isFinite(v.speed)) ? v.speed<5.5 : v.hist.length>=3;
+    if(strength<0 || !slow) continue;
+    const r=normaliseServingRecord(bag[v.line]);
+    const vehicle=String(v.journey||v.id);
+    if(r.vehicles.includes(vehicle) || Date.now()-r.last<90000) continue;
+    r.vehicles=[vehicle,...r.vehicles].slice(0,6);
+    r.count=Math.min(50,r.count+1); r.last=Date.now(); r.confirmed=r.count>=2; r.source='observed';
+    bag[v.line]=r; changed=true;
   }
-  if(added){ saveServing(); renderServingNote(); }
-  else saveServing();
+  if(changed){ saveServing(); renderServingNote(); }
 }
 /* ------------------------------------------------------------
    Which routes serve this stop, from OpenStreetMap. Bus routes
@@ -1515,7 +1855,7 @@ const MAPPED_TTL = 30*24*3600*1000;
 let MAPPED = {};          // stopId -> {routes:[{ref,to,from,name}], ts}
 
 function loadMapped(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{
     const o = JSON.parse(localStorage.getItem(MAPPED_KEY)||'{}');
     const now=Date.now();
@@ -1524,7 +1864,7 @@ function loadMapped(){
   }catch(e){ MAPPED = {}; }
 }
 function saveMapped(){
-  if(!store.ok) return;
+  if(!store.ok || !S.remember) return;
   try{ localStorage.setItem(MAPPED_KEY, JSON.stringify(MAPPED)); }catch(e){}
 }
 
@@ -1585,126 +1925,100 @@ out tags;`;
     return null;      // Overpass busy — fall back to observed learning
   }
 }
-function mappedRefs(){
+function mappedRefs(trustedOnly){
   if(!S.stop) return null;
-  const m = MAPPED[String(S.stop.id)];
+  const m=MAPPED[String(S.stop.id)];
   if(!m || !m.routes.length) return null;
+  if(trustedOnly && m.source==='along') return null;
   return new Set(m.routes.map(r=>String(r.ref)));
 }
-
-function servesHere(line){
+function servesHere(line,dest){
   if(!S.stop) return true;
-  const l = String(line);
-  const mapped = mappedRefs();
-  if(mapped && mapped.has(l)) return true;
-  const bag = SERVING[String(S.stop.id)];
-  if(bag && bag[l]) return true;              // seen pulling in, whatever OSM says
-  return !(mapped || (bag && Object.keys(bag).length >= 2));
-}
-function knownRouteCount(){
-  if(!S.stop) return 0;
-  const set = new Set();
-  const mapped = mappedRefs();
-  if(mapped) mapped.forEach(r=>set.add(r));
-  const bag = SERVING[String(S.stop.id)];
-  if(bag) Object.keys(bag).forEach(r=>set.add(r));
-  return set.size;
+  return routeEvidence(line,dest).score>=2;
 }
 function knownRoutes(){
-  const set = new Set();
-  const mapped = mappedRefs();
-  if(mapped) mapped.forEach(r=>set.add(r));
-  const bag = S.stop && SERVING[String(S.stop.id)];
-  if(bag) Object.keys(bag).forEach(r=>set.add(r));
+  const set=timetableRouteSet();
+  const mapped=mappedRefs(true); if(mapped) mapped.forEach(r=>set.add(r));
+  const bag=S.stop && SERVING[String(S.stop.id)];
+  if(bag) Object.entries(bag).forEach(([line,val])=>{ const r=normaliseServingRecord(val); if(r.confirmed||r.count>=2) set.add(line); });
   return [...set].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
 }
-/* Filtering applies as soon as we have any trustworthy source. */
+function knownRouteCount(){ return knownRoutes().length; }
 function servingReady(){
   if(!S.onlyServing || !S.stop) return false;
-  return !!mappedRefs() || knownRouteCount() >= 2;
+  return timetableRouteSet().size>0 || !!mappedRefs(true) || knownRouteCount()>0;
 }
 function renderServingNote(){
-  const el = $('serveNote');
+  const el=$('serveNote');
   if(!el) return;
   if(!S.stop){ el.style.display='none'; return; }
   el.style.display='block';
-
-  if(S.loadingRoutes){
-    el.innerHTML = '<b>Checking which routes stop here…</b>';
-    return;
-  }
+  if(S.loadingRoutes && !S.ttStop){ el.innerHTML='<b>Checking which routes stop here…</b>'; return; }
   if(S.filterFellBack){
-    el.innerHTML = '<b>Route list did not match anything live.</b> OpenStreetMap route numbers '
-      + 'and operator line names sometimes differ, so the filter is off for now and nearby buses are shown.';
+    el.innerHTML='<b>No verified route matched the current live feed.</b> Kerbside is showing only very nearby buses that are clearly moving towards this stop; their times remain rough.';
     return;
   }
-  const m = MAPPED[String(S.stop.id)];
-  const routes = knownRoutes();
-
+  if(S.ttStop){
+    const rows=timetableRows(new Date());
+    const by={};
+    rows.forEach(r=>{ if(!by[r.line]) by[r.line]=new Set(); if(r.head) by[r.line].add(r.head); });
+    const parts=Object.keys(by).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true})).map(ref=>{
+      const heads=[...by[ref]].slice(0,2).join(' / ');
+      return '<span><span class="rref">'+esc(ref)+'</span>'+(heads?'<span class="rdest">'+esc(heads)+'</span>':'')+'</span>';
+    });
+    el.innerHTML=(parts.length?'<div class="rlist">'+parts.join('')+'</div>':'<b>Timetable matched, but no service is scheduled for this service day.</b>')
+      +'<div class="rsrc">BODS timetable · '+(S.ttStop.match==='code'?'stop code match':'nearby stop match')+(S.onlyServing?' · unverified buses hidden':'')+'</div>';
+    return;
+  }
+  const m=MAPPED[String(S.stop.id)], routes=knownRoutes();
   if(m && m.routes.length){
-    // Group destinations under each route number.
-    const byRef = {};
-    m.routes.forEach(r=>{ (byRef[r.ref] = byRef[r.ref] || new Set()).add(r.to); });
-    const parts = Object.keys(byRef)
-      .sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}))
-      .map(ref=>{
-        const dests = [...byRef[ref]].filter(Boolean).slice(0,2).join(' / ');
-        return '<span class="rref">'+esc(ref)+'</span>'+(dests?' <span class="rdest">'+esc(dests)+'</span>':'');
-      });
-    el.innerHTML = '<div class="rlist">'+parts.join('')+'</div>'
-      + '<div class="rsrc">'
-      + (m.source === 'along' ? 'Routes running past this stop \u00b7 some may not call here'
-        : m.source === 'nearby' ? 'Routes via an adjacent stop node'
-        : 'Routes calling at this stop')
-      + ' \u00b7 OpenStreetMap'
-      + (S.onlyServing ? ' \u00b7 other buses hidden' : '') + '</div>';
+    const byRef={}; m.routes.forEach(r=>{ (byRef[r.ref]=byRef[r.ref]||new Set()).add(r.to); });
+    const parts=Object.keys(byRef).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true})).map(ref=>{
+      const dests=[...byRef[ref]].filter(Boolean).slice(0,2).join(' / ');
+      return '<span><span class="rref">'+esc(ref)+'</span>'+(dests?'<span class="rdest">'+esc(dests)+'</span>':'')+'</span>';
+    });
+    el.innerHTML='<div class="rlist">'+parts.join('')+'</div><div class="rsrc">'
+      +(m.source==='along'?'Routes mapped along this road · treated as low confidence':m.source==='nearby'?'Routes via an adjacent stop node':'Routes mapped at this stop')
+      +' · OpenStreetMap'+(S.onlyServing?' · unverified buses hidden':'')+'</div>';
     return;
   }
-  if(!S.onlyServing){ el.style.display='none'; return; }
-  if(routes.length >= 2){
-    el.innerHTML = '<b>Seen stopping here:</b> '+esc(routes.join(', '))
-      + '. OpenStreetMap has no route data for this stop, so this list builds from buses that actually pull in.';
-  } else {
-    el.innerHTML = '<b>No route data for this stop yet.</b> OpenStreetMap has none mapped here, so buses '
-      + 'within about 2 miles are shown — some of these will not call at this stop. '
-      + 'It corrects itself as buses pull in.';
+  if(routes.length){
+    el.innerHTML='<b>Confirmed from observed arrivals:</b> '+esc(routes.join(', '))+'. A route needs repeated stop evidence before it is trusted.';
+  }else{
+    el.innerHTML='<b>No verified route list is available yet.</b> Kerbside will show only buses close to the stop and moving towards it. Add timetable.json for much stronger route and branch matching.';
   }
 }
-
 function relevant(){
   if(!S.stop) return [];
-  S.filterFellBack = false;
-  let out = collect(servingReady());
-  // A route list that matches nothing live is worse than no list at all —
-  // OSM refs and operator line names do not always agree.
-  if(!out.length && servingReady()){
-    out = collect(false);
-    S.filterFellBack = out.length > 0;
+  S.filterFellBack=false;
+  const gated=servingReady();
+  let out=collect(gated);
+  if(!out.length && gated){
+    out=collect(false);
+    S.filterFellBack=out.length>0;
   }
   return out;
 }
-
 function collect(gate){
-  // Unfiltered, a 9 km radius is just "every bus in the city". Without a
-  // route list, only show buses close enough to plausibly be coming here.
-  const maxD = gate ? MAX_VEH_DIST : 3500;
   const out=[];
   for(const v of S.vehicles.values()){
-    // Distance limits the bus, not the stop: a 61 two miles out still
-    // counts if the 61 calls here.
-    const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
-    if(d > maxD) continue;
-    if(Date.now() - v.ts > MAX_AGE_MS) continue;
-    if(gate && !servesHere(v.line)) continue;
-    const dir = inferDirection(v);
+    const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
+    if(Date.now()-v.ts>MAX_AGE_MS || d>(gate?MAX_VEH_DIST:1300)) continue;
+    const evidence=routeEvidence(v.line,v.dest,v.journey);
+    const geometry=journeyGeometry(v,S.stop);
+    if(geometry && geometry.passed) continue;
+    const strength=geometry && geometry.remaining>80 ? 2 : approachStrength(v,S.stop);
+    if(gate && evidence.score<2) continue;
+    if(!gate && !(d<260 || (d<1300 && strength>=1))) continue;
+    const dir=inferDirection(v);
     if(S.destFilter){
-      // The operator's own destination beats anything we could infer.
-      if(v.dest !== S.destFilter) continue;
-    } else if(S.dir!=='all' && dir!==S.dir && dir!=='unknown') continue;
-    const app = approaching(v, S.stop);
-    if(S.hideAway && !app && d > 120) continue;
-    const est = estimate(v, S.stop);
-    out.push({v, dir, app, secs: est.secs, metres: est.metres});
+      if(destinationSimilarity(v.dest,S.destFilter)<.75) continue;
+    }else if(S.dir!=='all' && dir!==S.dir && dir!=='unknown') continue;
+    if(S.hideAway && strength<0 && d>100) continue;
+    const est=estimate(v,S.stop);
+    if(!gate && est.confidence==='low') continue;
+    if(gate && est.confidence==='low' && d>500) continue;
+    out.push({v,dir,app:strength>=0,strength,secs:est.secs,metres:est.metres,routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,spread:est.spread,evidence:est.evidence,schedule:est.schedule});
   }
   out.sort((a,b)=>a.secs-b.secs);
   return out.slice(0,25);
@@ -1713,34 +2027,29 @@ function collect(gate){
 function renderDests(){
   const bar=$('destBar'), note=$('destNote');
   if(!S.stop){ bar.innerHTML=''; note.style.display='none'; return; }
-  const bag = S.destsByStop[String(S.stop.id)] || {};
-  const live = {};
+  const bag={...(S.destsByStop[String(S.stop.id)]||{})};
+  const now=Date.now();
+  timetableRows(new Date()).filter(r=>r.at>now-2*3600000 && r.at<now+20*3600000 && r.head).forEach(r=>{ if(!bag[r.head]) bag[r.head]=now-1; });
+  const live={};
   for(const v of S.vehicles.values()){
-    if(v.dest && dist(v.lat,v.lon,S.stop.lat,S.stop.lon) < S.radius+3000) live[v.dest]=true;
+    if(v.dest && servesHere(v.line,v.dest) && dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<MAX_VEH_DIST) live[v.dest]=true;
   }
-  const names = Object.keys(bag).sort((a,b)=>{
-    if(!!live[b] !== !!live[a]) return live[b]?1:-1;   // running now first
-    return bag[b]-bag[a];
+  const names=Object.keys(bag).sort((a,b)=>{
+    if(!!live[b]!==!!live[a]) return live[b]?1:-1;
+    return (bag[b]||0)-(bag[a]||0);
   });
-  if(!names.length){
-    bar.innerHTML=''; note.style.display='none';
-    if(S.destFilter){ S.destFilter=null; }
-    return;
-  }
-  const chip = (label,val,extra)=>
-    '<button class="destchip" data-dest="'+esc(val==null?'':val)+'" aria-pressed="'+(S.destFilter===val)+'">'
-    + esc(label) + (extra||'') + '</button>';
-  bar.innerHTML = chip('All destinations',null)
-    + names.map(n=>chip('To '+n, n, live[n]?'':' <span class="n">·</span>')).join('');
+  if(S.destFilter && !names.some(n=>destinationSimilarity(n,S.destFilter)>=.75)) S.destFilter=null;
+  if(!names.length){ bar.innerHTML=''; note.style.display='none'; return; }
+  const chip=(label,val,extra)=>'<button class="destchip" data-dest="'+esc(val==null?'':val)+'" aria-pressed="'+(S.destFilter===val)+'">'+esc(label)+(extra||'')+'</button>';
+  bar.innerHTML=chip('All destinations',null)+names.map(n=>chip('To '+n,n,live[n]?'':' <span class="n">·</span>')).join('');
   [...bar.children].forEach(b=>b.addEventListener('click',()=>{
-    const d=b.dataset.dest;
-    S.destFilter = d==='' ? null : d;
-    savePrefs(); renderDests(); render();
+    S.destFilter=b.dataset.dest===''?null:b.dataset.dest;
+    renderDests(); render();
   }));
   note.style.display='block';
-  note.textContent = S.destFilter
-    ? 'Showing buses to ' + S.destFilter + ' only. The direction switch is ignored while a destination is picked.'
-    : 'A dot means that destination is not currently running. Pick one to ignore the direction switch.';
+  note.textContent=S.destFilter
+    ? 'Showing vehicles whose operator destination matches '+S.destFilter+'.'
+    : 'A dot means timetable/learned destination only; no matching live vehicle is currently verified nearby.';
 }
 
 function renderWalk(){
@@ -1756,26 +2065,26 @@ function renderWalk(){
 
 /* Expanded view under a tapped departure: everything the live
    feed and the app's own learning know about this vehicle. */
+function formatClock(ts){ return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function lineDetail(r){
-  const v = r.v;
-  const rec = LINES[v.line];
-  const facts = [
-    ['Distance', fmtDist(r.metres)+' away'],
-    ['Speed', (v.speed && isFinite(v.speed)) ? Math.round(v.speed*2.237)+' mph' : 'stopped'],
-    ['Position age', (function(){
-      const s = Math.max(0,Math.round((Date.now()-v.ts)/1000));
-      return s < 90 ? s+' s' : Math.round(s/60)+' min';
-    })()],
-    ['Heading', isFinite(v.bearing) ? compass(v.bearing) : 'unknown'],
-    ['Route detour', rec && rec.n>=3 ? '\u00d7'+rec.f.toFixed(2)+' measured' : 'still learning'],
-    ['Typical speed', rec && rec.sn>=3 ? Math.round(rec.sp*2.237)+' mph' : 'still learning']
+  const v=r.v, rec=LINES[v.line];
+  const speed=(v.speed==null || !isFinite(v.speed))?'unknown':v.speed<.6?'stationary':Math.round(v.speed*2.237)+' mph';
+  const facts=[
+    ['Distance',fmtDist(r.metres)+' away'+(r.routeMetres&&r.routeMetres>r.metres+80?' · '+fmtDist(r.routeMetres)+' by route':'')],
+    ['Speed',speed],
+    ['Position age',(function(){ const n=Math.max(0,Math.round((Date.now()-v.ts)/1000)); return n<90?n+' s':Math.round(n/60)+' min'; })()],
+    ['Heading',isFinite(v.bearing)?compass(v.bearing):'unknown'],
+    ['Route evidence',r.evidence?r.evidence.label:'unverified'],
+    ['Estimate confidence',r.confidence==='high'?'higher':r.confidence==='medium'?'moderate':'rough']
   ];
-  return '<div class="detail">'
-    + '<div class="dfacts">' + facts.map(([k,val])=>
-        '<div><span class="dk">'+esc(k)+'</span><span class="dv">'+esc(val)+'</span></div>').join('') + '</div>'
-    + (v.origin ? '<div class="dnote">Running '+esc(v.origin)+' to '+esc(v.dest||'?')
-        + (v.operator ? ' \u00b7 '+esc(v.operator) : '') + '.</div>' : '')
-    + '</div>';
+  const schedules=scheduledMatches(v.line,v.dest,r.secs,v.journey).slice(0,4);
+  const times=schedules.length?'<div class="dlabel">Nearby scheduled departures</div><div class="dtimes">'+schedules.map((x,i)=>'<span class="dtime">'+esc(formatClock(x.at))+(i===0?'<i>closest</i>':'')+'</span>').join('')+'</div>':'';
+  return '<div class="detail">'+times
+    +'<div class="dfacts">'+facts.map(([k,val])=>'<div><span class="dk">'+esc(k)+'</span><span class="dv">'+esc(val)+'</span></div>').join('')+'</div>'
+    +'<div class="dnote">ETA is calculated from the fresh vehicle position, movement towards this stop, locally observed speed and '
+    +(r.geometry?'the matched journey stop sequence':'route factor')
+    +(r.schedule?', then checked against the timetable':'')+'. It is an estimate, not an operator prediction.'
+    +(v.origin?' Running '+esc(v.origin)+' to '+esc(v.dest||'?')+(v.operator?' · '+esc(v.operator):'')+'.':'')+'</div></div>';
 }
 function compass(b){
   const pts=['N','NE','E','SE','S','SW','W','NW'];
@@ -1789,74 +2098,51 @@ function showEmpty(html){
 }
 
 function render(){
-  const rows = relevant();
-  const deps=$('deps');
-
+  const rows=relevant(), deps=$('deps');
   if(!S.origin){
     showEmpty('<strong>Nothing on the board yet</strong>Search an address or use your location, then pick the direction you\'re travelling.');
-  } else if(!S.stop){
+  }else if(!S.stop){
     showEmpty('<strong>No stop selected</strong>Pick one from the map or the stop list.');
-  } else if(!rows.length){
+  }else if(!rows.length){
     if(S.destFilter){
-      showEmpty('<strong>Nothing running to '+esc(S.destFilter)+'</strong>'+
-        'No bus with that destination is broadcasting near this stop right now. '+
-        '<button id="clearDest">Show all destinations</button>');
-      const cd=$('clearDest');
-      if(cd) cd.addEventListener('click',()=>{ S.destFilter=null; savePrefs(); renderDests(); render(); });
-    } else {
-      const dirWord = S.dir==='in' ? 'into '+(S.anchor?S.anchor.name:'town')
-                    : S.dir==='out' ? 'out of '+(S.anchor?S.anchor.name:'town') : 'either way';
-      showEmpty('<strong>Nothing heading '+esc(dirWord)+'</strong>'+
-        (S.vehicles.size
-          ? S.vehicles.size+' buses are moving nearby, but none are approaching this stop in that direction.'
-            + (servingReady() ? ' Routes not yet seen calling here are also hidden — <button id="showAllRoutes">show every route</button>.' : '')
-            + ' Try <button id="flipDir">the other direction</button> or Both.'
-          : 'No vehicle positions have come through yet. Give it a refresh, or check the data source in settings.'));
+      showEmpty('<strong>Nothing verified to '+esc(S.destFilter)+'</strong>No fresh matching vehicle is confidently approaching this stop. <button id="clearDest">Show all destinations</button>');
+      const cd=$('clearDest'); if(cd) cd.addEventListener('click',()=>{ S.destFilter=null; renderDests(); render(); });
+    }else{
+      const dirWord=S.dir==='in'?'into '+(S.anchor?S.anchor.name:'town'):S.dir==='out'?'out of '+(S.anchor?S.anchor.name:'town'):'either way';
+      showEmpty('<strong>Nothing verified heading '+esc(dirWord)+'</strong>'
+        +(S.vehicles.size?S.vehicles.size+' fresh buses are broadcasting nearby, but none currently have enough route and movement evidence for this stop. Try <button id="flipDir">the other direction</button> or Both.'
+        :'No fresh vehicle positions have come through yet. Refresh, or check the Worker in settings.'));
       const fd=$('flipDir'); if(fd) fd.addEventListener('click',()=>setDir(S.dir==='in'?'out':'in'));
-      const sa=$('showAllRoutes');
-      if(sa) sa.addEventListener('click',()=>{ S.onlyServing=false; savePrefs(); renderServingNote(); render(); });
     }
-  } else {
+  }else{
     $('empty').style.display='none';
-    deps.innerHTML = rows.map(r=>{
-      const mins = Math.round(r.secs/60);
-      const due = mins<=1;
-      const stale = (Date.now()-r.v.ts) > 90000;
-      const tight = S.walkSecs > 90 && r.secs < S.walkSecs - 30;
-      const dirChip = S.destFilter ? fmtDist(r.metres)+' away'
-                    : r.dir==='in' ? '\u2192 '+(S.anchor?S.anchor.name:'town')
-                    : r.dir==='out' ? '\u2190 Outbound' : 'Unclear';
-      return '<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'">'
-        + '<span class="route'+(stale?' stale':'')+'">'+esc(r.v.line)+'</span>'
-        + '<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span>'
-        + '<span class="deprow2">'
-        + '<span class="chip'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
-        + (S.destFilter ? '' : '<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
-        + (tight ? '<span class="chip tight">Tight</span>' : '')
-        + '</span></span>'
-        + '<span class="eta'+(due?' due':'')+'">'+(due?'due':mins)+'<small>'+(due?'arriving':'min')+'</small></span>'
-        + '<span class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" role="button" tabindex="0" title="Alert me when to leave">'
-        + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
-        + '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>'
-        + '</button>'
-        + (S.selected===r.v.id ? lineDetail(r) : '');
+    deps.innerHTML=rows.map(r=>{
+      const mins=Math.max(0,Math.round(r.secs/60));
+      const due=r.confidence!=='low' && mins<=1;
+      const age=Date.now()-r.v.ts, tight=S.walkSecs>90 && r.secs<S.walkSecs-30;
+      const dirChip=S.destFilter?fmtDist(r.metres)+' away':r.dir==='in'?'→ '+(S.anchor?S.anchor.name:'town'):r.dir==='out'?'← Outbound':'Direction unclear';
+      const confLabel=r.confidence==='high'?'verified':r.confidence==='medium'?'likely':'rough';
+      const etaText=due?'due':(r.confidence==='low'?'~':'')+mins;
+      return '<div class="depwrap">'
+        +'<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'" aria-expanded="'+(S.selected===r.v.id)+'">'
+        +'<span class="route'+(age>75000?' stale':'')+'">'+esc(r.v.line)+'</span>'
+        +'<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span><span class="deprow2">'
+        +'<span class="chip'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
+        +(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
+        +'<span class="chip conf-'+r.confidence+'">'+confLabel+'</span>'+(tight?'<span class="chip tight">Tight</span>':'')
+        +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(due?'arriving':r.confidence==='low'?'est':'min')+'</small></span></button>'
+        +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
+        +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>'
+        +(S.selected===r.v.id?lineDetail(r):'')+'</div>';
     }).join('');
-    [...deps.querySelectorAll('.dep')].forEach(b=>{
-      const row = rows.find(r=>String(r.v.id)===b.dataset.id);
-      if(!row) return;
-      b.addEventListener('click',e=>{
-        if(e.target.closest('[data-bell]')){
-          e.stopPropagation();
-          toggleAlarm(row.v.line, row.v.dest);
-          return;
-        }
-        focusVehicle(b.dataset.id);
-      });
-    });
+    [...deps.querySelectorAll('.dep')].forEach(b=>b.addEventListener('click',()=>focusVehicle(b.dataset.id)));
+    [...deps.querySelectorAll('[data-bell]')].forEach(b=>b.addEventListener('click',()=>{
+      const row=rows.find(r=>String(r.v.id)===String(b.dataset.bell));
+      if(row) toggleAlarm(row.v.line,row.v.dest);
+    }));
     checkAlarms(rows);
   }
-  renderVehicles(rows);
-  renderServingNote();
+  renderVehicles(rows); renderServingNote();
 }
 
 function clearVehicleMarkers(){ vehLayer.clearLayers(); S.markers.clear(); }
@@ -1924,39 +2210,39 @@ function focusVehicle(id){
    ============================================================ */
 function startPolling(){
   stopPolling();
-  // Glide over most of the gap between polls, so movement looks continuous.
-  document.documentElement.style.setProperty('--glide', Math.max(1.5, S.interval*0.8)+'s');
-  S.vehicles.clear();          // never show yesterday's positions on a fresh start
-  clearVehicleMarkers();
-  poll();
-  S.timer = setInterval(poll, S.interval*1000);
-  S.tick  = setInterval(()=>{ if(S.stop) render(); }, 5000);  // keep ETAs counting down
+  document.documentElement.style.setProperty('--glide',Math.max(1.5,S.interval*.8)+'s');
+  S.vehicles.clear(); clearVehicleMarkers(); poll();
+  S.timer=setInterval(poll,S.interval*1000);
+  S.tick=setInterval(()=>{ if(S.stop) render(); },5000);
 }
 function stopPolling(){
-  if(S.timer) clearInterval(S.timer);
-  if(S.tick) clearInterval(S.tick);
-  S.timer=S.tick=null;
+  if(S.timer) clearInterval(S.timer); if(S.tick) clearInterval(S.tick);
+  if(S.pollAbort) S.pollAbort.abort();
+  S.timer=S.tick=null; S.pollAbort=null;
 }
 let lastPoll=Date.now();
 async function poll(){
   if(!S.origin || S.busy) return;
   S.busy=true;
-  const dt = Math.min(90,(Date.now()-lastPoll)/1000) || S.interval;
-  lastPoll=Date.now();
+  const ctl=new AbortController(); S.pollAbort=ctl;
+  const dt=Math.min(90,(Date.now()-lastPoll)/1000)||S.interval; lastPoll=Date.now();
   try{
-    const list = S.demo ? fetchSim(dt) : await fetchLive();
-    ingest(list);
-    learnDests();
-    learnServing();
-    S.lastOk=Date.now();
-    setStatus(S.demo ? 'Simulated · '+S.vehicles.size+' buses' : 'Live · '+S.vehicles.size+' buses', S.demo?'demo':'');
+    const list=S.demo?fetchSim(dt):await fetchLive(ctl.signal);
+    ingest(list); learnDests(); learnServing(); S.lastOk=Date.now();
+    const hidden=!S.demo&&S.feedStale?' · '+S.feedStale+' stale hidden':'';
+    const tt=S.ttStop?' · timetable checked':'';
+    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+S.vehicles.size+' fresh'+hidden+tt,S.demo?'demo':'');
     render();
-    }catch(e){
-    const msg = (e && e.msg) ? e.msg : 'Feed unreachable — a CORS proxy is usually the cause.';
+  }catch(e){
+    if(ctl.signal.aborted) return;
+    const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
     setStatus('Feed problem','err');
-    if(Date.now()-S.lastOk > 25000) toast(msg,true);
+    if(Date.now()-S.lastOk>25000) toast(msg,true);
     render();
-  }finally{ S.busy=false; }
+  }finally{
+    if(S.pollAbort===ctl) S.pollAbort=null;
+    S.busy=false;
+  }
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden) stopPolling();
@@ -1969,54 +2255,75 @@ $('refreshBtn').addEventListener('click',()=>{ poll(); toast('Refreshing…'); }
 /* ============================================================
    Settings
    ============================================================ */
+async function checkSourceStatus(){
+  const el=$('sourceStatus');
+  if(S.demo){ el.className='settings-status good'; el.textContent='Simulator is active. Live BODS data is not being used.'; return; }
+  if(!S.proxy){ el.className='settings-status'; el.textContent=S.key?'Local key mode selected. This usually works only through a local server.':'Add your Cloudflare Worker URL.'; return; }
+  el.className='settings-status'; el.textContent='Checking Worker…';
+  try{
+    const u=new URL(S.proxy,location.href); u.pathname=u.pathname.replace(/\/$/,'')+'/health'; u.search='';
+    const r=await fetchTimed(u.toString(),{headers:{Accept:'application/json'},cache:'no-store'},7000);
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+    el.className='settings-status good';
+    el.textContent='Worker reachable · BODS secret '+(j.bods?'configured':'missing')+' · recorder '+(j.recorder||'optional/not configured')+' · app '+APP_VERSION;
+  }catch(e){
+    el.className='settings-status bad'; el.textContent='Worker check failed: '+(e.message||'unreachable');
+  }
+}
 $('setBtn').addEventListener('click',()=>{
   $('apiKey').value=S.key; $('proxy').value=S.proxy;
   $('radius').value=S.radius; $('interval').value=S.interval;
   $('demoSw').setAttribute('aria-pressed',S.demo);
   $('awaySw').setAttribute('aria-pressed',S.hideAway);
   $('serveSw').setAttribute('aria-pressed',S.onlyServing);
-  $('rememberSw').setAttribute('aria-pressed',S.remember && store.ok);
+  $('rememberSw').setAttribute('aria-pressed',S.remember&&store.ok);
   if(!store.ok){
-    $('rememberHint').textContent='Unavailable here — this browser context blocks local storage, so settings last for the session only.';
-    $('rememberSw').setAttribute('aria-pressed','false');
-    $('rememberSw').disabled = true;
-    $('rememberSw').style.opacity = '.4';
+    $('rememberHint').textContent='Unavailable here — this browser context blocks local storage, so settings last for this tab only.';
+    $('rememberSw').setAttribute('aria-pressed','false'); $('rememberSw').disabled=true; $('rememberSw').style.opacity='.4';
   }
-  $('scrim').classList.add('show');
+  $('copyStopBtn').disabled=!S.stop; $('copyStopBtn').style.opacity=S.stop?'1':'.45';
+  $('scrim').classList.add('show'); checkSourceStatus();
 });
 $('closeSet').addEventListener('click',()=>$('scrim').classList.remove('show'));
 $('scrim').addEventListener('click',e=>{ if(e.target===$('scrim')) $('scrim').classList.remove('show'); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ $('scrim').classList.remove('show'); closePicker(); }});
-function bindSwitch(el){ el.addEventListener('click',()=>el.setAttribute('aria-pressed', el.getAttribute('aria-pressed')!=='true')); }
+function bindSwitch(el){ el.addEventListener('click',()=>el.setAttribute('aria-pressed',el.getAttribute('aria-pressed')!=='true')); }
 bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw')); bindSwitch($('serveSw'));
-
-$('forgetBtn').addEventListener('click',()=>{
-  store.clear();
-  S.remember=false;
-  $('rememberSw').setAttribute('aria-pressed','false');
-  $('apiKey').value=''; $('proxy').value='';
-  S.key=''; S.proxy='';
-  toast('Saved settings cleared from this device.');
+$('copyStopBtn').addEventListener('click',async()=>{
+  if(!S.stop){ toast('Choose a stop first.',true); return; }
+  const item={id:String(S.stop.code||(S.ttStop&&S.ttStop.id)||S.stop.id),name:S.stop.name,lat:+S.stop.lat.toFixed(6),lon:+S.stop.lon.toFixed(6)};
+  const text=JSON.stringify([item]);
+  try{ await navigator.clipboard.writeText(text); toast('Stop configuration copied for WATCHED_STOPS.'); }
+  catch(e){ toast(text); }
 });
-
-$('saveSet').addEventListener('click', async ()=>{
-  const oldRadius=S.radius;
-  S.key=$('apiKey').value.trim();
-  S.proxy=$('proxy').value.trim();
-  S.radius=+$('radius').value;
-  S.interval=+$('interval').value;
-  S.demo=$('demoSw').getAttribute('aria-pressed')==='true';
-  S.hideAway=$('awaySw').getAttribute('aria-pressed')==='true';
-  S.onlyServing=$('serveSw').getAttribute('aria-pressed')==='true';
-  S.remember=$('rememberSw').getAttribute('aria-pressed')==='true' && store.ok;
-  savePrefs();
-  renderServingNote();
-  $('scrim').classList.remove('show');
-  if(!S.demo && !S.key && !S.proxy){ toast('Add a key or a proxy, or switch the simulator back on.',true); }
+$('forgetBtn').addEventListener('click',()=>{
+  store.clearAll();
+  S.remember=false; S.key=''; S.proxy=''; S.demo=true; S.destsByStop={}; S.workerHistory={};
+  LINES={}; SERVING={}; MAPPED={}; S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false;
+  $('rememberSw').setAttribute('aria-pressed','false'); $('demoSw').setAttribute('aria-pressed','true');
+  $('apiKey').value=''; $('proxy').value='';
+  checkSourceStatus();
+  if(S.origin) startPolling();
+  toast('All Kerbside settings, caches and learned route data were removed. Simulator enabled.');
+});
+$('saveSet').addEventListener('click',async()=>{
+  const oldRadius=S.radius, rawProxy=$('proxy').value.trim(), worker=normaliseWorkerUrl(rawProxy);
+  if(rawProxy && !worker){ $('sourceStatus').className='settings-status bad'; $('sourceStatus').textContent='Use a valid HTTPS Worker URL, or localhost for local testing.'; return; }
+  const demo=$('demoSw').getAttribute('aria-pressed')==='true';
+  let key=$('apiKey').value.trim();
+  if(worker && key){ key=''; $('apiKey').value=''; toast('The Worker is configured, so the browser API key was discarded.'); }
+  if(!demo && !worker && !key){ $('sourceStatus').className='settings-status bad'; $('sourceStatus').textContent='Add a Worker URL or switch the simulator on.'; return; }
+  const remember=$('rememberSw').getAttribute('aria-pressed')==='true'&&store.ok;
+  if(!remember) store.clearAll();
+  S.key=key; S.proxy=worker; S.radius=+$('radius').value; S.interval=+$('interval').value;
+  S.demo=demo; S.hideAway=$('awaySw').getAttribute('aria-pressed')==='true';
+  S.onlyServing=$('serveSw').getAttribute('aria-pressed')==='true'; S.remember=remember;
+  savePrefs(); renderServingNote(); $('scrim').classList.remove('show');
   if(S.origin){
-    S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false;
-    drawOrigin();
-    if(S.radius!==oldRadius) await findStops(S.origin.lat,S.origin.lon);
+    S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false; drawOrigin();
+    if(S.radius!==oldRadius) await findStops(S.origin.lat,S.origin.lon,S.locationRun);
+    if(S.stop) loadWorkerHistory(S.stop);
     startPolling();
   }
 });
@@ -2042,6 +2349,7 @@ map.on('contextmenu', e=>{
 
 /* restore anything saved on this device — the address bar still wins */
 const saved = loadPrefs();
+loadTimetable();
 loadDests();
 loadLines();
 loadServing();
@@ -2056,11 +2364,11 @@ $('pairBtn').addEventListener('click',()=>{
   const p = new URLSearchParams(location.hash.slice(1));
   const k = p.get('key'), px = p.get('proxy');
   if(k){ S.key = k; S.demo = false; }
-  if(px) S.proxy = px;
+  if(px){ S.proxy = normaliseWorkerUrl(px); if(S.proxy) S.demo = false; }
   if(k || px){
     history.replaceState(null,'',location.pathname+location.search);
     savePrefs();
-    toast(k ? 'Key loaded from the address bar — live feed on.' : 'Proxy loaded from the address bar.');
+    toast(k ? 'Key loaded for this tab only — live feed on.' : 'Worker loaded from the address bar.');
   }
 })();
 
