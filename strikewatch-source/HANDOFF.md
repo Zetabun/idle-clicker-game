@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.236 — Operator Links & Plain Name Controls**
-- Build ID: `12.236.0-operator-links-plain-name-controls`
+- Build: **12.237 — Development Alert Pulse**
+- Build ID: `12.237.0-development-alert-pulse`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.236.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.237.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.237 pulses the development alert cards. **The pulse is `opacity` on a pseudo-element, never on the card** — opacity is a compositor property, so the layer is promoted for the animation and nothing repaints; animating `box-shadow` or `border-color` on the button would repaint the card every frame. `will-change` is omitted on purpose (12.152): an animating element is promoted anyway and declaring it would hold a permanent layer for a card that is usually absent. The glow is `inset: -1px` with `pointer-events: none` so it never disturbs the copy or blocks the click. **MUST RESPOND deliberately gets no motion** — it already dominates by size and colour; motion is spent on the alert that is easy to miss. The reduced-motion rule went into an **existing** `@media (prefers-reduced-motion: reduce)` block in `game.css` because the media budget is on its cap, and it needs no override flag: that block is at CSSOM index 2121 against the animation rule's 1539, so source order settles it at equal specificity. **`tinyText` in `mobileInterfaceAuditForTest()` is state-sensitive** — it read 235 here against 231 on the previous artifact, which was injury flags and preparation states diverging between page loads, proven by deleting the new rules from the live CSSOM and getting an identical 223 either way. Compare node lists or toggle rules live; do not trust the raw total across separate loads. See `AUDIT-12.237.md`.
 
 Build 12.236 links operator names in press and market copy, and makes every name control read as plain text. **`careerPlayerLinkMarkup()` in `js/36-team-management.js` is the single authority and links only when `teamPlayerById()` resolves the id** — squad and market only. A rival club's operator has no profile to open, so their name stays plain text; verified on a feed of six Man of the Match credits where exactly the one squad player linked. The helper takes the RAW name and escapes internally, so **call sites must not pre-escape**. In `renderWorldPressLeaguePulse()` the `playerLink` const must be declared above `reportMarkup`, which consumes it — putting it beside `leadersMarkup` where it was first needed left it in the temporal dead zone. **Name controls are styled as ordinary text**: `text-decoration: none`, everything inherited, `cursor: pointer` as the only resting signal, colour lift on hover, and a real outline on `:focus-visible` for keyboard users. Do not reintroduce a resting underline — 12.235 had one and it turned the league table into a page of links. Mail bodies and calendar agenda titles are still plain text on purpose: both are escaped as whole strings, so linking inside them is a data-model change. Audit parity with the 12.235 artifact at 390px on every metric. See `AUDIT-12.236.md`.
 

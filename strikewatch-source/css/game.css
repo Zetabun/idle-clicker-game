@@ -7022,6 +7022,41 @@ body[data-match-simulation='paused'] .menu-badge {
 }
 .development-alert-strip strong { display: block; margin-top: 4px; color: #fff1bd; font-size: 9px; line-height: 1.25; }
 .development-alert-strip small { display: block; margin-top: 3px; color: #ae9f77; font-size: 6px; line-height: 1.35; }
+
+/* Build 12.237: these cards announce points the manager has earned and not yet
+   spent, and they are the quietest thing on a page that also carries MUST
+   RESPOND. Motion is what gives them weight — deliberately used on the SMALLER
+   alert rather than the larger red one, because the red panel already commands
+   attention by size and colour and does not need it too.
+
+   The pulse is opacity on a pseudo-element, never on the card itself. Opacity
+   is a compositor property, so the browser promotes the layer for the duration
+   and repaints nothing; animating `box-shadow` or `border-color` directly on
+   the button would repaint the card every frame. `will-change` is deliberately
+   omitted (Build 12.152) — an actively animating element is promoted anyway,
+   and declaring it would hold a permanent layer for a card that is usually
+   absent.
+
+   The glow sits OUTSIDE the button so it never disturbs the copy, and
+   `pointer-events: none` keeps the whole card clickable through it. */
+.development-alert-strip button { position: relative; }
+.development-alert-strip button::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(244, 195, 78, .5), 0 0 16px 2px rgba(240, 189, 80, .28);
+  opacity: 0;
+  animation: developmentAlertPulse 2.4s ease-in-out infinite;
+}
+/* Staggered so two or three alerts read as a sequence rather than one block
+   flashing in unison. */
+.development-alert-strip button:nth-child(2)::after { animation-delay: .35s; }
+.development-alert-strip button:nth-child(3)::after { animation-delay: .7s; }
+@keyframes developmentAlertPulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: .9; }
+}
 .development-benefit-card.points-ready,
 .training-player-card.points-ready {
   border-color: rgba(244, 195, 78, .48);
@@ -9598,6 +9633,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   .sponsor-round-transition::before,
   .sponsor-round-transition-frame { animation: none !important; transition: none !important; }
   .sponsor-round-transition.show .sponsor-round-transition-frame { opacity: 1; transform: none; }
+  /* Build 12.237: the development alert keeps its ring, loses the motion. The
+     glow settles at a static value rather than disappearing, so the card is
+     still marked as live for anyone who has asked for reduced motion.
+
+     No override flag is needed and none may be used: this block sits after the
+     rule it overrides, so equal specificity wins on source order, and the debt
+     gate has one flagged declaration left in the whole project. */
+  .development-alert-strip button::after { animation: none; opacity: .5; }
 }
 
 

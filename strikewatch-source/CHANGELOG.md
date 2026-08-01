@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.237 — Development Alert Pulse
+
+- The development alert cards (points ready, stat points ready, transfer items) now pulse, so earned rewards waiting to be spent are no longer the quietest thing on the page.
+- MUST RESPOND deliberately keeps no motion: it already dominates by size and colour, and motion is spent on the alert that is easy to miss.
+- The pulse animates opacity on a pseudo-element, so it is compositor-only and repaints nothing; the glow sits outside the card and cannot intercept clicks.
+- Reduced motion keeps a static ring instead, added to an existing media block with no override flag.
+- No flagged declaration and no media query added; CSS debt unchanged at 2269/2270 and 484/484.
+- See `AUDIT-12.237.md`.
+
 ## 12.236 — Operator Links & Plain Name Controls
 
 - Operator names in League Pulse reports, award leaders and the living market pulse open that operator's profile.

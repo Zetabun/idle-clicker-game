@@ -32,7 +32,7 @@ supporters, a persistent league/calendar and evidence-based post-match reports.
 
 ## Current release
 
-Build 12.236 links operator names in press and market copy and makes every name control read as ordinary text. See `HANDOFF.md` and `AUDIT-12.236.md`.
+Build 12.237 pulses the development alert cards so earned rewards waiting to be spent are noticed. See `HANDOFF.md` and `AUDIT-12.237.md`.
 
 Historical architecture narratives are retained in the individual audits and
 Git history rather than duplicated here.
