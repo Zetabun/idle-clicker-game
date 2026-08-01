@@ -19,15 +19,17 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.232 — Management Status Anchor Fix**
-- Build ID: `12.232.0-management-status-anchor-fix`
+- Build: **12.233 — Operations Today Status Board**
+- Build ID: `12.233.0-operations-today-status-board`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.232.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.233.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.233 rebuilds Operations Today as a status board. The 12.230/12.231 surface was informative and **evenly weighted**, and the second of those was the fault: a column reporting an End Day blocker was drawn exactly like a column reporting nothing to do, so the strip had to be read rather than glanced at. **A tone is now one decision, not four** — each state sets `--today-accent`, `--today-wash`, `--today-band` and `--today-cap` together — and **the states are deliberately unequal**: `complete` is washed at 6% and capped at 42% alpha, `urgent` at 16% and full accent, which measures as a 43–46% brightness gap on the card and 57% on the status band. The status value moves from a hairline-ruled footer into a **filled band flush with the card floor**, which retires the reserved two-line `min-height` 12.230 needed: a bottom-anchored *rule* must align across five columns, a bottom-anchored *band* does not. The accent rule under the label is gone — with a second rule above the footer, a 187px card was carrying two full-width lines and the strip read as fifteen bands. The top cap is `::before` and the chevron affordance is `b::after`, both for the same reason the edge ring exists: the skin flags `border` on a bare `button` and the important budget has one slot left in the whole project. The header's explanatory sentence, which named the five columns rendered directly beneath it, is now a live `N OF 5 NEED ATTENTION` readout. **Headlines are sentence case, reversing 12.231's uppercase rule for these strings only** — they are wrapped sentences, not one-word kickers, and the all-caps department label above each one still carries the command-chrome voice. Verified across 320–1920 plus 844×390 with zero overflow and every band flush to −1px (the border); `mobileInterfaceAuditForTest()` is identical to the 12.232 artifact on overlap/collapse/overflow/targets and improves tinyText 230→223. Debt is untouched at 2269/2270 and 484/484. See `AUDIT-12.233.md`.
 
 Build 12.232 fixes a misaligned management status toast. `css/management-feedback.css` centres it with a **pair** of declarations — `left: 50%` plus `transform: translate(-50%, …)` — and `css/12.161-audit-fixes.css` re-anchors it to the right edge for every viewport at or below 1100px via `inset: auto … auto`, **without overriding the transform**. The toast was therefore anchored right and then dragged left by half its own width: a constant 210px drift that put 140px of it off-screen at 500px wide and clipped the start of the message. The affected band was every width ≤1100px except portrait ≤430px, where `css/compact-navigation.css` loads later and re-declares both halves correctly — so landscape phones, tablets and small desktop windows were all wrong, including the 844×390 check named below. **Anchoring and transform are one decision on this element: any rule touching `left`, `right` or `inset` must set `transform` in the same breath.** Fixed with two declarations in the block that changed the anchoring; the >1100px centred layout is untouched. See `AUDIT-12.232.md`.
 

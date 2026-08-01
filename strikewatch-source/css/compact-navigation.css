@@ -178,22 +178,23 @@
      specificity they would win on source order and these overrides would
      silently do nothing — which is exactly what happened to the header
      alignment on the first pass. */
-  .command-today-panel .command-today-head { gap: 6px; }
-  .command-today-panel .command-today-head > p {
-    /* The explainer drops to its own full-width line and reads left-aligned;
-       right-aligned ragged copy under a left-aligned date looks unresolved. */
-    flex-basis: 100%;
-    max-width: none;
-    text-align: left;
-  }
+  .command-today-panel .command-today-head { gap: 8px; }
   .command-today-panel .command-today-datum > strong { font-size: 17px; }
   .command-today-panel .command-today-datum > em { font-size: 11px; }
+  /* Build 12.233: the readout takes its own full-width line here rather than
+     competing with the date for a wrapped row. */
+  .command-today-panel .command-today-pulse {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    font-size: 10.5px;
+  }
   .command-today-panel .command-today-item {
+    --today-pad: 13px;
     flex-basis: 152px;
-    padding: 13px 13px 0;
+    padding: 14px 13px 0;
   }
   .command-today-panel .command-today-label > i { font-size: 10px; letter-spacing: .14em; }
-  .command-today-panel .command-today-item > strong { font-size: 13.5px; }
+  .command-today-panel .command-today-item > strong { font-size: 14px; }
   .command-today-panel .command-today-item > small { font-size: 11.5px; }
   .command-today-panel .command-today-item > b { font-size: 10.5px; }
 }
@@ -220,13 +221,15 @@
     border-left: 0;
   }
   .command-today-panel .command-today-item {
+    --today-pad: 11px;
     flex-basis: 138px;
-    padding: 12px 11px 0;
+    padding: 13px 11px 0;
   }
-  /* The status rules are bottom-anchored, so a value that wraps to two lines
-     lifts its own rule above its neighbour's and the row reads ragged. The
-     longest real value is the loan date ("31 AUG 2026 · 23D"); at 320px it
-     needs slightly tighter type to stay on one line. */
+  /* The longest real value is the loan date ("31 AUG 2026 · 23D"). Build
+     12.233's status band no longer has to hold it on one line — a taller band
+     is a legitimate outcome now that it is a filled block anchored to the card
+     floor rather than a rule that must align across five columns — but tighter
+     type still keeps the common case to one line at 320px. */
   .command-today-panel .command-today-item > b {
     font-size: 9.5px;
     letter-spacing: .07em;
@@ -235,11 +238,13 @@
 }
 
 /* --- Build 12.202: Operations Today timeline ------------------------------
-   Build 12.230 restyles this surface as a single instrument panel rather than
-   five floating cards, so Operations reads as a game console instead of a page
-   of web widgets.
+   Build 12.230 restyled this surface as a single instrument panel. Build 12.233
+   rebuilds it as a status board, because the instrument panel gave all five
+   columns identical weight: a card reporting a blocker looked exactly like a
+   card reporting that there was nothing to do, so the strip had to be read
+   left to right instead of glanced at.
 
-   Two structural notes worth keeping:
+   Four structural notes worth keeping:
 
    1. The hairlines between columns are the container's `gap`, painted by its
       background showing through. That is deliberate — a border on each column
@@ -248,11 +253,26 @@
       configuration, horizontal and vertical, with no breakpoint.
    2. Everything scales with `clamp()` against the viewport rather than through
       new media queries. The build enforces a CSS-debt budget that caps their
-      total, and it was already sitting on the cap; the only compact rules this
-      build adds live inside the two media queries that already existed.
+      total, and it has been sitting on the cap since Build 12.226; the only
+      compact rules here live inside the two media queries that already existed.
+   3. A state is one decision, not four. Each tone class sets `--today-accent`,
+      `--today-wash`, `--today-band` and `--today-cap` together, so the card's
+      hue, its background wash, the solidity of its status band and the
+      brightness of its top cap always agree.
+   4. The tone states are deliberately NOT equal in weight. `complete` is washed
+      out and capped dim; `urgent` is washed strongest and capped at full accent.
+      That asymmetry is the entire point of the surface — the manager should see
+      which areas want a decision before reading a single word.
    -------------------------------------------------------------------------- */
 .command-today-panel {
+  /* Neutral/`scheduled` is the base state; the tone classes further down
+     override the same four values. */
   --today-accent: #6fc3e6;
+  --today-wash: 8%;
+  --today-wash-hi: 17%;
+  --today-band: 15%;
+  --today-cap: rgba(111, 195, 230, .5);
+  --today-title: #eef5fa;
   /* Near-black, so the cards read as lit instruments on an unlit housing
      rather than as widgets on a mid-blue web surface.
 
@@ -272,13 +292,13 @@
 }
 
 /* Header: kicker above, then the date and the week/season counter separated by
-   a rule, with the explainer pushed to the far edge. */
+   a rule, with the live readout at the far edge. */
 .command-today-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px clamp(12px, 2vw, 26px);
+  gap: 10px clamp(12px, 2vw, 26px);
   padding: clamp(12px, 1.5vw, 17px) clamp(13px, 1.6vw, 20px);
   border-bottom: 1px solid rgba(104, 152, 182, .16);
 }
@@ -318,15 +338,38 @@
   letter-spacing: .13em;
   color: #93a8b8;
 }
-.command-today-head > p {
-  flex: 0 1 auto;
-  max-width: 46ch;
-  margin: 0;
-  text-align: right;
-  font-size: clamp(10px, .78vw, 12px);
-  line-height: 1.4;
-  color: #8b9dab;
+
+/* Build 12.233: the header's right slot used to hold a sentence that named the
+   five columns rendered directly beneath it — copy the player could not act on
+   and did not need twice. It now carries the one fact the header can add that
+   the columns cannot: how many of those areas are actually asking for a
+   decision. The dot is a status lamp, so the count reads as a live readout
+   rather than a heading. */
+.command-today-pulse {
+  --pulse-accent: #55c9a6;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: clamp(7px, .7vw, 10px) clamp(11px, 1.1vw, 15px);
+  border: 1px solid color-mix(in srgb, var(--pulse-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--pulse-accent) 12%, #060c14);
+  font-size: clamp(9.5px, .78vw, 11.5px);
+  font-weight: 900;
+  letter-spacing: .15em;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--pulse-accent) 76%, #f4fbff);
 }
+.command-today-pulse::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pulse-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pulse-accent) 20%, transparent);
+}
+.command-today-pulse.attention { --pulse-accent: #e7bd55; }
+.command-today-pulse.urgent { --pulse-accent: #ff806f; }
 
 /* Flex rather than grid, and the reason matters. There are five columns, so no
    `auto-fit` track count divides them evenly — at four across the fifth orphans
@@ -342,18 +385,17 @@
   padding: clamp(9px, .95vw, 14px);
 }
 .command-today-item {
+  /* One padding value, because the status band has to escape it by exactly the
+     same amount to sit flush with the card edge. */
+  --today-pad: clamp(12px, 1.2vw, 16px);
   position: relative;
   flex: 1 1 clamp(148px, 11.5vw, 188px);
   display: grid;
   grid-template-rows: auto auto 1fr auto;
-  gap: clamp(6px, .55vw, 9px);
+  gap: clamp(5px, .5vw, 8px);
   min-width: 0;
-  padding: clamp(12px, 1.3vw, 17px) clamp(12px, 1.2vw, 16px) 0;
+  padding: clamp(14px, 1.4vw, 19px) var(--today-pad) 0;
   text-align: left;
-  /* Build 12.231: the resting card now carries what used to be the hover
-     brightness — the previous default sat too dark to read as a lit surface,
-     and the hover state was doing the work the default should have done.
-     Hover moves up another step so the interaction is still legible. */
   border: 1px solid rgba(104, 152, 182, .17);
   /* A shallow top-lit gradient carrying a trace of the column's own tone, so
      each card reads as a lit instrument face rather than a flat black rectangle
@@ -362,8 +404,8 @@
      `!important` too, so this also has to match the flag to land. */
   background:
     linear-gradient(168deg,
-      color-mix(in srgb, var(--today-accent) 13%, #0b1420) 0%,
-      #080e17 44%,
+      color-mix(in srgb, var(--today-accent) var(--today-wash), #0b1420) 0%,
+      #080e17 46%,
       #04080e 100%) !important;
   /* The edge is lifted with an inset ring rather than `border-color`. The skin
      flags `border` on a bare `button` with `!important` (Build 12.132), so
@@ -371,31 +413,45 @@
      and the important budget is genuinely full at 2270. A ring inside the
      border reads as one slightly stronger edge and costs nothing. */
   box-shadow:
-    inset 0 0 0 1px rgba(133, 182, 212, .3),
+    inset 0 0 0 1px rgba(133, 182, 212, .26),
     0 6px 16px rgba(0, 0, 0, .34);
   overflow: hidden;
-  transition: background .16s ease, box-shadow .16s ease;
+  transition: background .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+/* The tone cap. A pseudo-element rather than `border-top`, for the same reason
+   the edge ring exists: the skin flags `border` on a bare `button`, and
+   `button::before` is outside that selector, so this costs no flagged
+   declaration at all. */
+.command-today-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--today-cap);
 }
 .command-today-item:hover,
 .command-today-item:focus-visible {
+  transform: translateY(-2px);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--today-accent) 50%, transparent),
-    0 8px 20px rgba(0, 0, 0, .42);
+    inset 0 0 0 1px color-mix(in srgb, var(--today-accent) 46%, transparent),
+    0 12px 24px rgba(0, 0, 0, .46);
   background:
     linear-gradient(168deg,
-      color-mix(in srgb, var(--today-accent) 21%, #131e2c) 0%,
-      #0d1622 44%,
+      color-mix(in srgb, var(--today-accent) var(--today-wash-hi), #131e2c) 0%,
+      #0d1622 46%,
       #070d16 100%) !important;
 }
 
-/* Label row: glyph, then the department name, then the accent rule beneath. */
+/* Label row: glyph, then the department name. Build 12.233 drops the accent
+   rule that used to sit beneath it — with a second rule above the status
+   footer, a 180px card was carrying two full-width horizontal lines and the
+   five-across strip read as fifteen stacked bands. The tone now arrives through
+   the cap, the glyph and the status band, which is enough. */
 .command-today-label {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding-bottom: clamp(7px, .7vw, 10px);
-  border-bottom: 2px solid var(--today-accent);
   color: var(--today-accent);
 }
 .command-today-label > svg {
@@ -421,68 +477,83 @@
    throughout, only the weight was wrong. */
 .command-today-label > i {
   font-style: normal;
-  font-size: clamp(9.5px, .76vw, 11.5px);
+  font-size: clamp(9.5px, .74vw, 11px);
   font-weight: 900;
-  letter-spacing: .17em;
+  letter-spacing: .18em;
   overflow-wrap: anywhere;
 }
+/* Build 12.233: sentence case, reversing the 12.231 decision to uppercase these
+   titles. Uppercase is right for a kicker of one or two words and wrong here:
+   the strings are short sentences ("Calendar locked by 1 response"), they wrap
+   to two lines at every supported width, and capitals remove the word shapes
+   that make a wrapped line scannable. The all-caps kickers directly above give
+   the card its command-chrome voice; the headline's job is to be read. */
 .command-today-item > strong {
-  font-size: clamp(13px, 1.06vw, 16.5px);
+  font-size: clamp(13.5px, 1.1vw, 17px);
   font-weight: 700;
-  /* Caps match every other headline in the command chrome. */
-  text-transform: uppercase;
-  letter-spacing: .035em;
-  line-height: 1.24;
-  color: #f2f7fa;
+  letter-spacing: .005em;
+  line-height: 1.26;
+  color: var(--today-title);
   overflow-wrap: anywhere;
 }
 .command-today-item > small {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   align-content: start;
   font-size: clamp(10.5px, .82vw, 12.5px);
   /* Explicit, or it inherits 900 from the button and outweighs its own title. */
   font-weight: 400;
-  line-height: 1.4;
-  color: #92a5b4;
+  line-height: 1.42;
+  color: #8ea2b1;
   overflow-wrap: anywhere;
 }
+/* The note is a state ("Plan confirmed", "2 medical flags"), not more detail,
+   and used to render identically to the line above it so the two read as one
+   run-on sentence. Tone-tinted and a step heavier separates them without
+   adding a rule or a bullet. */
 .command-today-item > small > u {
   display: block;
   text-decoration: none;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--today-accent) 58%, #c6d5df);
 }
 
-/* Status footer: sits on the column floor with its own accent edge.
+/* Status band: the fastest-read fact on the card, so Build 12.233 moves it out
+   of a hairline-ruled footer and into a filled band flush with the card floor.
 
-   The rule is bottom-anchored, so a value that wraps to two lines pushes its
-   own rule up and the row reads ragged against its neighbours — the longest
-   real value is the loan date ("31 AUG 2026 · 23D") and it wrapped at both
-   320px and 1280px. Reserving two lines of height makes the rule position
-   independent of the value's length, so any future label is safe too. Tighter
-   tracking then keeps the common one-line case from wrapping at all. */
+   That also retires the reserved two-line `min-height` the ruled version
+   needed. A bottom-anchored rule has to align across all five columns, so a
+   value that wrapped ("31 AUG 2026 · 23D") lifted its own rule above its
+   neighbours' and the row read ragged. A filled band is anchored by its bottom
+   edge instead: if one value takes two lines that band is simply taller, which
+   reads as intended rather than as misalignment, and no column has to reserve
+   height it does not use. */
 .command-today-item > b {
   display: flex;
   align-items: center;
-  gap: 8px;
-  /* 2.6em is two lines at the 1.3 line-height set below; `lh` would say this
-     more directly but is far too new to rely on here. */
-  min-height: calc(2.6em + clamp(18px, 1.8vw, 24px));
-  margin-top: clamp(10px, 1vw, 14px);
-  padding: clamp(9px, .9vw, 12px) 0;
-  border-top: 2px solid var(--today-accent);
-  font-size: clamp(9.5px, .78vw, 11.5px);
+  gap: 7px;
+  /* Escapes the card's side padding by exactly that padding, so the band meets
+     the card's inner edge. `overflow: hidden` on the card clips it to the
+     border. */
+  margin: clamp(12px, 1.2vw, 16px) calc(var(--today-pad) * -1) 0;
+  padding: clamp(9px, .85vw, 12px) var(--today-pad);
+  border-top: 1px solid color-mix(in srgb, var(--today-accent) 32%, transparent);
+  background: color-mix(in srgb, var(--today-accent) var(--today-band), #060c14);
+  font-size: clamp(9.5px, .76vw, 11.5px);
   font-weight: 900;
   letter-spacing: .06em;
   line-height: 1.3;
-  color: #d7eaf2;
+  /* One derived tint replaces the three hand-picked per-tone colours the ruled
+     footer used, so a new tone needs no extra rule. */
+  color: color-mix(in srgb, var(--today-accent) 74%, #f4fbff);
 }
 .command-today-item > b > svg {
   flex: 0 0 auto;
-  width: clamp(14px, 1.1vw, 17px);
-  height: clamp(14px, 1.1vw, 17px);
+  width: clamp(13px, 1.02vw, 15px);
+  height: clamp(13px, 1.02vw, 15px);
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.7;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -490,14 +561,52 @@
   font-style: normal;
   overflow-wrap: anywhere;
 }
+/* Every card is a button that opens a route, and nothing said so. A chevron in
+   the status band carries that affordance without a word of copy, and it is
+   built from borders on a pseudo-element so it costs no markup and no glyph. */
+.command-today-item > b::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: .48;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.command-today-item:hover > b::after,
+.command-today-item:focus-visible > b::after {
+  opacity: 1;
+  transform: rotate(45deg) translate(2px, -2px);
+}
 
-/* One tone variable drives the glyph, the label, both rules and the status. */
-.command-today-item.urgent { --today-accent: #ff806f; }
-.command-today-item.attention { --today-accent: #e7bd55; }
-.command-today-item.complete { --today-accent: #55c9a6; }
-.command-today-item.urgent > b { color: #ffab9f; }
-.command-today-item.attention > b { color: #f0d17d; }
-.command-today-item.complete > b { color: #79dfbd; }
+/* One tone decision per state — see note 4 at the top of this block. */
+.command-today-item.urgent {
+  --today-accent: #ff806f;
+  --today-wash: 16%;
+  --today-wash-hi: 25%;
+  --today-band: 26%;
+  --today-cap: #ff806f;
+}
+.command-today-item.attention {
+  --today-accent: #e7bd55;
+  --today-wash: 13%;
+  --today-wash-hi: 22%;
+  --today-band: 22%;
+  --today-cap: #e7bd55;
+}
+/* Resolved. Washed out, capped dim and titled a step quieter, so a column with
+   nothing outstanding recedes behind the ones that need a decision. */
+.command-today-item.complete {
+  --today-accent: #55c9a6;
+  --today-wash: 6%;
+  --today-wash-hi: 15%;
+  --today-band: 12%;
+  --today-cap: rgba(85, 201, 166, .42);
+  --today-title: #c6d6e0;
+}
 
 /* --- Build 12.203: living-world League Pulse ------------------------------ */
 .league-pulse-panel { display:grid; gap:14px; padding:16px; border:1px solid rgba(112,190,219,.24); background:linear-gradient(145deg,rgba(10,28,42,.97),rgba(11,19,33,.97)); }

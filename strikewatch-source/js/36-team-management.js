@@ -1633,6 +1633,10 @@
       opponentStrength,
       expectation,
       title: opponent?.name || 'OPPONENT TBD',
+      // Build 12.233: the venue as data rather than only baked into the
+      // all-caps `location` tag, so Operations Today can set it in sentence
+      // case beside its sentence-case headline without re-deriving it.
+      home,
       location: `${home ? 'HOME' : 'AWAY'} · MATCHDAY ${fixture.matchday}`,
       dateLabel: date ? `${date.shortDay} ${date.dayOfMonth} ${date.shortMonth} ${date.year}` : `MATCHDAY ${fixture.matchday}`,
       daysLabel: days === 0 ? 'TODAY' : `${days} DAY${days === 1 ? '' : 'S'}`,
@@ -1963,6 +1967,12 @@
     const trainingAttention = squad.medical.length > 0 || squad.fatigue >= 58 || points > 0 || Boolean(careerState.trainingRecommendation);
     const financeCommitment = Math.max(0, Math.round(Number(wageBill) || 0)) + (loan.active ? Math.max(0, Math.round(Number(loan.due) || 0)) : 0);
     const firstBlocker = blockers[0] || null;
+    // Build 12.233: sentence case, matching the headline directly above it.
+    // `fixture.location` stays all-caps because the fixture card and the guided
+    // flow render it as a data tag; here it would be the only shouted line in
+    // the strip.
+    const fixtureMatchday = Math.max(0, Number(fixture.fixture?.matchday) || 0);
+    const fixtureVenue = fixture.home ? 'Home' : 'Away';
     return [
       {
         id: 'fixture', label: 'FIXTURE', icon: 'calendar',
@@ -1970,7 +1980,9 @@
         // Build 12.230: the location and the plan state are two separate facts
         // and were previously run together into one dot-joined sentence. Split
         // so the column reads as a heading with a status beneath it.
-        detail: fixture.complete ? 'Review the final table and next-season state.' : fixture.location,
+        detail: fixture.complete
+          ? 'Review the final table and next-season state.'
+          : fixtureMatchday ? `${fixtureVenue} · Matchday ${fixtureMatchday}` : fixtureVenue,
         note: fixture.complete ? '' : planConfirmed ? 'Plan confirmed' : 'Plan not confirmed',
         value: fixture.complete ? 'REVIEW' : fixture.daysLabel,
         valueIcon: fixture.complete ? 'check' : matchToday ? 'alert' : 'clock',
@@ -2062,13 +2074,25 @@
     const todayMetaLine = todayDateParts
       ? `WEEK ${escapeCareerHtml(String(todayDateParts.week))} · SEASON ${escapeCareerHtml(String(todayDateParts.season))}`
       : '';
+    // Build 12.233: the header's second slot used to explain that the strip
+    // below covered the fixture, squad, inbox, commitments and end-day state —
+    // which is exactly what the five labelled columns underneath already say.
+    // It now reports how many of those columns want a decision, which is the
+    // one thing the header can add that the columns cannot show at a glance.
+    const todayOutstanding = todayTimeline.filter(item => item.tone === 'urgent' || item.tone === 'attention');
+    const todayPulseTone = todayOutstanding.length
+      ? (todayOutstanding.some(item => item.tone === 'urgent') ? 'urgent' : 'attention')
+      : 'complete';
+    const todayPulseLabel = todayOutstanding.length
+      ? `${todayOutstanding.length} OF ${todayTimeline.length} NEED ATTENTION`
+      : `ALL ${todayTimeline.length} AREAS CLEAR`;
     const todayTimelineMarkup = `<section class="command-today-panel" aria-label="Today at the club">
       <header class="command-today-head">
         <div class="command-today-when">
           <span>TODAY AT THE CLUB</span>
           <div class="command-today-datum"><strong>${todayDateLine}</strong>${todayMetaLine ? `<em>${todayMetaLine}</em>` : ''}</div>
         </div>
-        <p>One compact view of the fixture, squad, inbox, commitments and end-day state.</p>
+        <div class="command-today-pulse ${todayPulseTone}">${escapeCareerHtml(todayPulseLabel)}</div>
       </header>
       <div class="command-today-grid">${todayTimeline.map(item => `<button class="command-today-item ${escapeCareerHtml(item.tone)}" data-team-route="${escapeCareerHtml(item.route)}" data-today-item="${escapeCareerHtml(item.id)}">
         <span class="command-today-label">${commandTodayIcon(item.icon)}<i>${escapeCareerHtml(item.label)}</i></span>

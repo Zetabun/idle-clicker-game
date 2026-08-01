@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.233 — Operations Today Status Board
+
+- Rebuilds Operations Today as a status board: the tone states are no longer equal in weight, so an area needing a decision reads before an area that is settled.
+- Retires one of the two horizontal rules inside every card and moves the status value into a filled band flush with the card floor.
+- Replaces the header's explanatory sentence with a live count of how many of the five areas want attention.
+- Sets the card headlines in sentence case, reversing the 12.231 uppercase decision for these wrapped sentence strings only.
+- Presentation only. No `!important` and no media query added; CSS debt unchanged at 2269/2270 and 484/484.
+- See `AUDIT-12.233.md`.
+
 ## 12.232 — Management Status Anchor Fix
 
 - Fixes the management status toast drifting 210px left of its anchor on every viewport at or below 1100px.
