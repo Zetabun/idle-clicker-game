@@ -1,15 +1,15 @@
 name: Build timetable
 
-# Rebuilds timetable.json from BODS GTFS and commits it.
-# Runs on the 1st of each month, or whenever you click Run workflow.
+# Rebuilds timetable.json from BODS GTFS and commits it to the repo.
+# Runs on the 1st of each month, or whenever you press Run workflow.
 #
 # SETUP (once):
 #   Settings -> Secrets and variables -> Actions
-#     Secret   BODS_KEY   your Bus Open Data key
+#     New repository secret:  BODS_KEY  = your Bus Open Data key
 #   Settings -> Actions -> General -> Workflow permissions
-#     tick "Read and write permissions"  (so it can commit the file)
+#     Select "Read and write permissions", then Save
 #
-# Adjust REGION, LAT, LON, RADIUS below to your area.
+# Change REGION / LAT / LON / RADIUS below to your area.
 # Region codes: north_east, north_west, yorkshire, east_midlands,
 #   west_midlands, east_anglia, london, south_east, south_west
 
@@ -28,11 +28,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Download GTFS for the region
         run: |
@@ -45,19 +45,25 @@ jobs:
         run: |
           mkdir -p gtfs
           unzip -o -q gtfs.zip -d gtfs
-          ls gtfs
+          ls -lh gtfs
 
       - name: Build timetable.json
         run: node build-timetable.js ./gtfs "$LAT" "$LON" "$RADIUS"
 
+      - name: Show what was built
+        run: ls -lh timetable.json
+
+      # git diff only compares tracked files, so a brand new
+      # timetable.json would look like "no change" and be thrown
+      # away. Stage it first, then compare against the last commit.
       - name: Commit if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- timetable.json; then
-            echo "No change."
+          git add timetable.json
+          if git diff --cached --quiet; then
+            echo "No change to commit."
           else
-            git add timetable.json
             git commit -m "Rebuild timetable.json ($(date -u +%Y-%m-%d))"
             git push
           fi
