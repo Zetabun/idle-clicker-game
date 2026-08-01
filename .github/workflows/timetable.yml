@@ -1,0 +1,63 @@
+name: Build timetable
+
+# Rebuilds timetable.json from BODS GTFS and commits it.
+# Runs on the 1st of each month, or whenever you click Run workflow.
+#
+# SETUP (once):
+#   Settings -> Secrets and variables -> Actions
+#     Secret   BODS_KEY   your Bus Open Data key
+#   Settings -> Actions -> General -> Workflow permissions
+#     tick "Read and write permissions"  (so it can commit the file)
+#
+# Adjust REGION, LAT, LON, RADIUS below to your area.
+# Region codes: north_east, north_west, yorkshire, east_midlands,
+#   west_midlands, east_anglia, london, south_east, south_west
+
+on:
+  schedule:
+    - cron: '0 4 1 * *'
+  workflow_dispatch:
+
+env:
+  REGION: west_midlands
+  LAT: '52.5089'
+  LON: '-2.0870'
+  RADIUS: '8000'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download GTFS for the region
+        run: |
+          curl -fSL --retry 3 \
+            "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/${REGION}/?api_key=${{ secrets.BODS_KEY }}" \
+            -o gtfs.zip
+          ls -lh gtfs.zip
+
+      - name: Unzip
+        run: |
+          mkdir -p gtfs
+          unzip -o -q gtfs.zip -d gtfs
+          ls gtfs
+
+      - name: Build timetable.json
+        run: node build-timetable.js ./gtfs "$LAT" "$LON" "$RADIUS"
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- timetable.json; then
+            echo "No change."
+          else
+            git add timetable.json
+            git commit -m "Rebuild timetable.json ($(date -u +%Y-%m-%d))"
+            git push
+          fi
