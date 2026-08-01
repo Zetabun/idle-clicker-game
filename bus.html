@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kerbside — live buses near you</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Martian+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B1119;          /* night ground */
+  --ink-2:#111A26;        /* panel */
+  --ink-3:#18232F;        /* raised */
+  --rule:#22303F;
+  --led:#FFB000;          /* dot-matrix amber */
+  --led-dim:#8A5F08;
+  --text:#DCE6F0;
+  --text-dim:#7D8FA3;
+  --live:#3FD9A4;         /* signal, used sparingly */
+  --warn:#FF6B5A;
+  --panel-w:392px;
+  --board-dot:2px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--ink);color:var(--text);
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:15px;line-height:1.45;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--led);outline-offset:2px;border-radius:4px}
+
+/* ---------- shell ---------- */
+#app{display:flex;flex-direction:column;height:100%}
+#topbar{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--ink-2);border-bottom:1px solid var(--rule);
+  flex-wrap:wrap;z-index:1200;position:relative;
+}
+.brand{display:flex;align-items:baseline;gap:8px;margin-right:4px}
+.brand h1{
+  font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:15px;font-weight:700;letter-spacing:-.04em;margin:0;color:var(--text);
+}
+.brand .dot{width:7px;height:7px;border-radius:50%;background:var(--led);box-shadow:0 0 8px var(--led)}
+.brand small{color:var(--text-dim);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+
+.searchwrap{display:flex;align-items:center;flex:1 1 260px;min-width:200px;position:relative}
+.searchwrap input{
+  width:100%;background:var(--ink);border:1px solid var(--rule);border-radius:8px;
+  padding:9px 74px 9px 34px;font-size:14px;
+}
+.searchwrap input::placeholder{color:#5C6B7D}
+.searchwrap .pin{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none}
+.searchwrap .go{
+  position:absolute;right:34px;top:50%;transform:translateY(-50%);
+  color:var(--text-dim);padding:4px 6px;border-radius:6px;font-size:12px;
+}
+.searchwrap .go:hover{color:var(--led)}
+.searchwrap .locate{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  color:var(--text-dim);padding:4px;border-radius:6px;line-height:0;
+}
+.searchwrap .locate:hover{color:var(--led)}
+#suggest{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--ink-3);
+  border:1px solid var(--rule);border-radius:8px;overflow:hidden;z-index:1400;display:none;
+  box-shadow:0 18px 40px rgba(0,0,0,.55);
+}
+#suggest button{display:block;width:100%;text-align:left;padding:9px 12px;font-size:13px;border-bottom:1px solid var(--rule)}
+#suggest button:last-child{border-bottom:0}
+#suggest button:hover,#suggest button.sel{background:var(--ink-2);color:var(--led)}
+#suggest .sub{display:block;color:var(--text-dim);font-size:11px}
+
+/* direction switch — the app's main decision */
+.dirswitch{display:flex;background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:3px;gap:2px}
+.dirswitch button{
+  padding:6px 12px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--text-dim);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;transition:background .12s,color .12s;
+}
+.dirswitch button[aria-pressed="true"]{background:var(--led);color:#20160A}
+.dirswitch button .arrow{font-family:'Martian Mono',monospace;font-size:13px}
+
+.iconbtn{padding:8px;border-radius:8px;border:1px solid var(--rule);background:var(--ink);color:var(--text-dim);line-height:0}
+.iconbtn:hover{color:var(--led);border-color:var(--led-dim)}
+.iconbtn.on{color:var(--led);border-color:var(--led-dim)}
+
+/* ---------- body ---------- */
+#main{flex:1;display:flex;min-height:0;position:relative}
+#map{flex:1;background:#0A0F16;z-index:1}
+.leaflet-container{background:#0A0F16;font-family:'Archivo',sans-serif}
+.leaflet-control-attribution{background:rgba(11,17,25,.8)!important;color:#5C6B7D!important;font-size:10px!important}
+.leaflet-control-attribution a{color:#7D8FA3!important}
+.leaflet-bar a{background:var(--ink-2)!important;color:var(--text)!important;border-color:var(--rule)!important}
+.leaflet-bar a:hover{background:var(--ink-3)!important}
+
+/* ---------- the board (signature) ---------- */
+#board{
+  width:var(--panel-w);flex:0 0 var(--panel-w);background:var(--ink-2);
+  border-left:1px solid var(--rule);display:flex;flex-direction:column;min-height:0;z-index:2;
+}
+.board-head{padding:12px 16px 10px;border-bottom:1px solid var(--rule)}
+.stopline{display:flex;align-items:flex-start;gap:9px}
+.flagicon{
+  flex:0 0 auto;margin-top:2px;width:16px;height:18px;background:var(--led);
+  clip-path:polygon(0 0,100% 0,100% 62%,38% 62%,38% 100%,26% 100%,26% 62%,0 62%);
+}
+.stopname{font-weight:600;font-size:15.5px;letter-spacing:-.01em;line-height:1.25}
+.stopmeta{color:var(--text-dim);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;margin-top:3px}
+.stopmeta b{color:var(--led);font-weight:600}
+.changestop{margin-top:9px;font-size:12px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px}
+.changestop:hover{color:var(--led)}
+
+.boardscroll{flex:1;overflow-y:auto;position:relative;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
+.boardscroll::-webkit-scrollbar{width:8px}
+.boardscroll::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+/* dot-matrix texture sits over the departures list only */
+.boardscroll::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:5;
+  background-image:radial-gradient(circle at center, rgba(0,0,0,.42) 0.9px, transparent 1px);
+  background-size:var(--board-dot) var(--board-dot);
+  mix-blend-mode:multiply;opacity:.85;
+}
+.dep{
+  display:grid;grid-template-columns:46px 1fr auto;gap:11px;align-items:center;
+  padding:12px 16px;border-bottom:1px solid var(--rule);width:100%;text-align:left;
+  transition:background .12s;
+}
+.dep:hover,.dep:focus-visible{background:var(--ink-3)}
+.dep.active{background:var(--ink-3);box-shadow:inset 3px 0 0 var(--led)}
+.route{
+  font-family:'Martian Mono',monospace;font-weight:700;font-size:15px;letter-spacing:-.05em;
+  background:var(--led);color:#20160A;border-radius:4px;padding:5px 2px;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.route.stale{background:var(--led-dim);color:#0B1119}
+.dest{font-size:14px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deprow2{display:flex;align-items:center;gap:7px;margin-top:3px}
+.chip{
+  font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;
+  padding:2px 6px;border-radius:3px;border:1px solid var(--rule);color:var(--text-dim);white-space:nowrap;
+}
+.chip.in{border-color:var(--led-dim);color:var(--led)}
+.chip.away{opacity:.75}
+.eta{
+  font-family:'Martian Mono',monospace;font-weight:700;font-size:24px;color:var(--led);
+  text-align:right;letter-spacing:-.06em;line-height:1;text-shadow:0 0 12px rgba(255,176,0,.28);
+}
+.eta small{display:block;font-size:9px;font-weight:400;letter-spacing:.14em;color:var(--led-dim);margin-top:3px}
+.eta.due{color:var(--live);text-shadow:0 0 12px rgba(63,217,164,.3)}
+.eta.due small{color:var(--live);opacity:.65}
+
+.emptystate{padding:30px 22px;text-align:center;color:var(--text-dim);font-size:13.5px;line-height:1.6}
+.emptystate strong{display:block;color:var(--text);font-size:15px;margin-bottom:6px;font-weight:600}
+.emptystate button{color:var(--led);text-decoration:underline;text-underline-offset:3px;font-size:13.5px}
+
+.board-foot{
+  padding:9px 16px;border-top:1px solid var(--rule);display:flex;align-items:center;
+  justify-content:space-between;gap:10px;font-size:11px;color:var(--text-dim);
+}
+.pulse{display:inline-flex;align-items:center;gap:6px}
+.pulse i{width:6px;height:6px;border-radius:50%;background:var(--live);animation:blip 2s infinite}
+.pulse.demo i{background:var(--led)}
+.pulse.err i{background:var(--warn);animation:none}
+@keyframes blip{0%,100%{opacity:1}50%{opacity:.25}}
+.board-foot button{color:var(--text-dim);text-decoration:underline;text-underline-offset:3px}
+.board-foot button:hover{color:var(--led)}
+
+/* stop picker */
+.stoplist{position:absolute;inset:0;background:var(--ink-2);z-index:10;display:none;flex-direction:column}
+.stoplist.show{display:flex}
+.stoplist h2{margin:0;padding:13px 16px;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center}
+.stoplist .inner{overflow-y:auto;flex:1}
+.stopitem{display:flex;width:100%;text-align:left;gap:11px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--rule)}
+.stopitem:hover{background:var(--ink-3)}
+.stopitem .dist{margin-left:auto;font-family:'Martian Mono',monospace;font-size:12px;color:var(--led);letter-spacing:-.04em}
+.stopitem .nm{font-size:14px;font-weight:500}
+.stopitem .sub{font-size:11px;color:var(--text-dim)}
+
+/* ---------- vehicle markers ---------- */
+.veh{position:relative;width:34px;height:34px}
+.veh .cone{
+  position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;
+  transform-origin:center;transition:transform .6s ease-out;
+}
+.veh .cone::before{
+  content:'';position:absolute;left:50%;top:-3px;transform:translateX(-50%);
+  border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid var(--led);
+}
+.veh .body{
+  position:absolute;inset:7px;border-radius:5px;background:var(--led);color:#20160A;
+  font-family:'Martian Mono',monospace;font-weight:700;font-size:10px;letter-spacing:-.06em;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 2px var(--ink),0 3px 10px rgba(0,0,0,.6);
+}
+.veh.dim .body{background:#4E607A;color:#0B1119}
+.veh.dim .cone::before{border-bottom-color:#4E607A}
+.veh.sel .body{background:var(--live);box-shadow:0 0 0 2px var(--ink),0 0 16px var(--live)}
+.veh.sel .cone::before{border-bottom-color:var(--live)}
+.me{width:18px;height:18px;border-radius:50%;background:var(--live);border:3px solid var(--ink);box-shadow:0 0 0 2px var(--live),0 0 18px rgba(63,217,164,.5)}
+.stopmark{width:11px;height:11px;border-radius:50%;background:var(--ink);border:2px solid var(--text-dim)}
+.stopmark.sel{background:var(--led);border-color:#20160A;width:15px;height:15px;box-shadow:0 0 12px var(--led)}
+.anchormark{
+  font-family:'Martian Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;
+  color:var(--text);background:rgba(17,26,38,.92);border:1px solid var(--rule);
+  padding:3px 7px;border-radius:4px;white-space:nowrap;text-transform:uppercase;
+}
+.leaflet-popup-content-wrapper{background:var(--ink-3);color:var(--text);border-radius:8px;border:1px solid var(--rule)}
+.leaflet-popup-tip{background:var(--ink-3)}
+.leaflet-popup-content{margin:11px 13px;font-size:13px}
+.leaflet-popup-content b{color:var(--led)}
+
+/* ---------- settings ---------- */
+#scrim{position:fixed;inset:0;background:rgba(5,8,12,.72);z-index:2000;display:none;align-items:center;justify-content:center;padding:18px}
+#scrim.show{display:flex}
+.sheet{
+  background:var(--ink-2);border:1px solid var(--rule);border-radius:14px;width:100%;max-width:480px;
+  max-height:88vh;overflow-y:auto;box-shadow:0 30px 70px rgba(0,0,0,.6);
+}
+.sheet header{padding:16px 20px 12px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center}
+.sheet header h2{margin:0;font-size:16px;letter-spacing:-.02em}
+.sheet .pad{padding:18px 20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;font-weight:600}
+.field input[type=text],.field input[type=password],.field input[type=number],.field select{
+  width:100%;background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 11px;font-size:14px;
+}
+.field .hint{font-size:11.5px;color:var(--text-dim);margin-top:6px;line-height:1.5}
+.field .hint a{color:var(--led)}
+.row{display:flex;gap:12px}
+.row .field{flex:1}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--rule)}
+.toggle .t{font-size:14px;font-weight:500}
+.toggle .h{font-size:11.5px;color:var(--text-dim);margin-top:2px}
+.sw{flex:0 0 auto;width:44px;height:25px;border-radius:13px;background:var(--rule);position:relative;transition:background .15s}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--text-dim);transition:transform .15s,background .15s}
+.sw[aria-pressed="true"]{background:var(--led-dim)}
+.sw[aria-pressed="true"]::after{transform:translateX(19px);background:var(--led)}
+.primary{
+  width:100%;background:var(--led);color:#20160A;font-weight:700;padding:12px;border-radius:9px;
+  font-size:14.5px;letter-spacing:-.01em;margin-top:4px;
+}
+.primary:hover{filter:brightness(1.08)}
+.note{font-size:11.5px;color:var(--text-dim);line-height:1.6;border-left:2px solid var(--led-dim);padding-left:11px;margin-top:4px}
+
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,80px);z-index:3000;
+  background:var(--ink-3);border:1px solid var(--rule);border-radius:9px;padding:11px 16px;
+  font-size:13px;max-width:min(460px,92vw);box-shadow:0 14px 36px rgba(0,0,0,.5);
+  opacity:0;transition:transform .25s,opacity .25s;pointer-events:none;
+}
+#toast.show{transform:translate(-50%,0);opacity:1}
+#toast.bad{border-color:var(--warn);color:#FFD9D3}
+
+/* ---------- mobile ---------- */
+@media (max-width:820px){
+  :root{--panel-w:100%}
+  #main{flex-direction:column}
+  #map{flex:1 1 auto;min-height:0}
+  #board{
+    flex:0 0 46vh;width:100%;border-left:0;border-top:1px solid var(--rule);
+    border-radius:14px 14px 0 0;margin-top:-14px;box-shadow:0 -12px 30px rgba(0,0,0,.45);
+  }
+  #board.collapsed{flex-basis:118px}
+  .grab{width:38px;height:4px;border-radius:2px;background:var(--rule);margin:7px auto 0;flex:0 0 auto}
+  #topbar{padding:9px 11px;gap:8px}
+  .brand small{display:none}
+  .searchwrap{order:3;flex-basis:100%}
+  .dirswitch button{padding:6px 10px;font-size:12px}
+}
+@media (min-width:821px){.grab{display:none}}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <div class="brand"><span class="dot"></span><h1>Kerbside</h1><small>live buses</small></div>
+
+    <div class="searchwrap">
+      <span class="pin">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </span>
+      <input id="q" type="text" placeholder="Postcode, street or place" autocomplete="off" spellcheck="false" aria-label="Search for a location">
+      <button class="go" id="goBtn">Find</button>
+      <button class="locate" id="locBtn" title="Use my location" aria-label="Use my location">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+      </button>
+      <div id="suggest" role="listbox"></div>
+    </div>
+
+    <div class="dirswitch" role="group" aria-label="Travel direction">
+      <button id="dIn" aria-pressed="true"><span class="arrow">&#8594;</span>Into town</button>
+      <button id="dOut" aria-pressed="false"><span class="arrow">&#8592;</span>Out of town</button>
+      <button id="dAll" aria-pressed="false">Both</button>
+    </div>
+
+    <button class="iconbtn" id="setBtn" title="Data source and settings" aria-label="Settings">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6h.09A1.65 1.65 0 0 0 10.6 3.09V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 16.11 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    </button>
+  </div>
+
+  <div id="main">
+    <div id="map"></div>
+
+    <section id="board" aria-label="Departure board">
+      <div class="grab" id="grab"></div>
+
+      <div class="board-head">
+        <div class="stopline">
+          <span class="flagicon"></span>
+          <div style="min-width:0">
+            <div class="stopname" id="stopName">Finding a stop near you…</div>
+            <div class="stopmeta" id="stopMeta">Set a location to begin</div>
+          </div>
+        </div>
+        <button class="changestop" id="changeStop">Choose a different stop</button>
+      </div>
+
+      <div class="boardscroll" id="scroll">
+        <div class="emptystate" id="empty">
+          <strong>Nothing on the board yet</strong>
+          Search an address or use your location, then pick the direction you're travelling.
+        </div>
+        <div id="deps"></div>
+      </div>
+
+      <div class="board-foot">
+        <span class="pulse" id="status"><i></i><span id="statusText">Idle</span></span>
+        <button id="refreshBtn">Refresh now</button>
+      </div>
+
+      <div class="stoplist" id="stopPicker">
+        <h2>Stops near this location <button id="closePicker" style="color:var(--text-dim);font-size:18px;line-height:1">&times;</button></h2>
+        <div class="inner" id="stopItems"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="scrim" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="sheet">
+    <header>
+      <h2>Data source</h2>
+      <button id="closeSet" style="font-size:22px;color:var(--text-dim);line-height:1">&times;</button>
+    </header>
+    <div class="pad">
+      <p class="note">Live positions come from the Department for Transport's <b style="color:var(--led)">Bus Open Data Service</b>. Registration is free. BODS doesn't send CORS headers, so a browser needs a proxy in front of it — put yours below, or run this file through one.</p>
+
+      <div class="field" style="margin-top:16px">
+        <label for="apiKey">BODS API key</label>
+        <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
+        <div class="hint">Register at data.bus-data.dft.gov.uk, then find the key in your account. Held in memory only — nothing is stored or sent anywhere except the feed.</div>
+      </div>
+
+      <div class="field">
+        <label for="proxy">Proxy prefix (optional)</label>
+        <input id="proxy" type="text" placeholder="https://your-proxy.example/?url=" autocomplete="off">
+        <div class="hint">The feed URL gets appended, encoded. Leave empty to call BODS directly — that only works outside a browser sandbox.</div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="radius">Search radius</label>
+          <select id="radius">
+            <option value="800">800 m</option>
+            <option value="1500" selected>1.5 km</option>
+            <option value="3000">3 km</option>
+            <option value="6000">6 km</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="interval">Refresh every</label>
+          <select id="interval">
+            <option value="10">10 seconds</option>
+            <option value="15" selected>15 seconds</option>
+            <option value="30">30 seconds</option>
+            <option value="60">60 seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toggle">
+        <div>
+          <div class="t">Simulator</div>
+          <div class="h">Invented buses on real roads near your location. Use it to try the app without a key.</div>
+        </div>
+        <button class="sw" id="demoSw" aria-pressed="true" aria-label="Toggle simulator"></button>
+      </div>
+
+      <div class="toggle">
+        <div>
+          <div class="t">Hide buses heading away</div>
+          <div class="h">Drops anything already past your stop, even if the route matches.</div>
+        </div>
+        <button class="sw" id="awaySw" aria-pressed="true" aria-label="Toggle hiding buses heading away"></button>
+      </div>
+
+      <div class="toggle">
+        <div>
+          <div class="t">Remember on this device</div>
+          <div class="h" id="rememberHint">Keeps your key, proxy and last stop so you don't re-enter them. Stored in this browser only.</div>
+        </div>
+        <button class="sw" id="rememberSw" aria-pressed="true" aria-label="Toggle remembering settings on this device"></button>
+      </div>
+
+      <button class="primary" id="saveSet">Apply and refresh</button>
+      <button id="forgetBtn" style="width:100%;margin-top:10px;font-size:12.5px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px;padding:6px">Forget everything saved on this device</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   State
+   ============================================================ */
+/* ------------------------------------------------------------
+   LOCAL CONFIG — for your own copy of this file only.
+   Paste your BODS key between the quotes and it loads on start.
+   Leave empty and enter it in Settings instead, or pass it in the
+   address bar as  kerbside.html#key=YOURKEY  (stripped after load).
+   Don't commit or share a copy with the key filled in.
+   ------------------------------------------------------------ */
+const MY_KEY   = '';
+const MY_PROXY = '';
+
+const S = {
+  key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
+  demo:!(MY_KEY || MY_PROXY), hideAway:true, remember:true,
+  dir:'in',                 // 'in' | 'out' | 'all'
+  origin:null,              // {lat,lon,label}
+  anchor:null,              // town centre {lat,lon,name}
+  stops:[], stop:null, pendingStopId:null,
+  vehicles:new Map(),       // id -> {id,line,dest,lat,lon,bearing,dir,ts,hist:[],speed}
+  markers:new Map(),
+  selected:null,
+  timer:null, tick:null, busy:false, lastOk:0
+};
+
+const R_EARTH = 6371000;
+const ROAD_FACTOR = 1.32;      // straight-line -> road distance fudge
+const DEFAULT_SPEED = 6.2;     // m/s ≈ 14 mph, typical urban bus incl. stops
+const MIN_SPEED = 1.8, MAX_SPEED = 16;
+
+/* ============================================================
+   Helpers
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const rad = d => d*Math.PI/180;
+
+/* ------------------------------------------------------------
+   Saved settings. Wrapped because some sandboxed contexts throw
+   on localStorage access — if it's unavailable the app just runs
+   without remembering anything.
+   ------------------------------------------------------------ */
+const STORE_KEY = 'kerbside.v1';
+const store = {
+  ok:(function(){ try{ const k='__k'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }catch(e){ return false; } })(),
+  read(){ if(!this.ok) return null; try{ return JSON.parse(localStorage.getItem(STORE_KEY)||'null'); }catch(e){ return null; } },
+  write(o){ if(!this.ok) return false; try{ localStorage.setItem(STORE_KEY,JSON.stringify(o)); return true; }catch(e){ return false; } },
+  clear(){ if(!this.ok) return; try{ localStorage.removeItem(STORE_KEY); }catch(e){} }
+};
+function savePrefs(){
+  if(!S.remember){ store.clear(); return; }
+  store.write({
+    key:S.key, proxy:S.proxy, radius:S.radius, interval:S.interval,
+    demo:S.demo, hideAway:S.hideAway, dir:S.dir,
+    origin:S.origin, stopId:S.stop?S.stop.id:null
+  });
+}
+function loadPrefs(){
+  const p = store.read();
+  if(!p) return null;
+  S.remember = true;
+  if(p.key) S.key=p.key;
+  if(p.proxy) S.proxy=p.proxy;
+  if(p.radius) S.radius=p.radius;
+  if(p.interval) S.interval=p.interval;
+  if(typeof p.demo==='boolean') S.demo=p.demo;
+  if(typeof p.hideAway==='boolean') S.hideAway=p.hideAway;
+  if(p.dir) S.dir=p.dir;
+  return p;
+}
+
+function dist(a,b,c,d){
+  const p1=rad(a), p2=rad(c), dp=rad(c-a), dl=rad(d-b);
+  const h=Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*R_EARTH*Math.asin(Math.sqrt(h));
+}
+function bearingTo(a,b,c,d){
+  const p1=rad(a),p2=rad(c),dl=rad(d-b);
+  const y=Math.sin(dl)*Math.cos(p2);
+  const x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function fmtDist(m){ return m<1000 ? Math.round(m/10)*10+' m' : (m/1000).toFixed(1)+' km'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function titleCase(s){
+  if(!s) return '';
+  if(s === s.toUpperCase() && s.length > 3){
+    return s.toLowerCase().replace(/\b[a-z]/g,m=>m.toUpperCase());
+  }
+  return s;
+}
+let toastT;
+function toast(msg, bad){
+  const t=$('toast'); t.textContent=msg; t.className='show'+(bad?' bad':'');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.className='',4200);
+}
+function setStatus(text, kind){
+  $('statusText').textContent = text;
+  $('status').className = 'pulse'+(kind?' '+kind:'');
+}
+
+/* ============================================================
+   Map
+   ============================================================ */
+const map = L.map('map',{zoomControl:true, attributionControl:true}).setView([52.509,-2.087],13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap contributors &copy; CARTO &middot; vehicles via BODS',
+  subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+let meMarker=null, anchorMarker=null, stopLayer=L.layerGroup().addTo(map), vehLayer=L.layerGroup().addTo(map);
+let ring=null;
+
+function drawOrigin(){
+  if(!S.origin) return;
+  const ll=[S.origin.lat,S.origin.lon];
+  if(meMarker) meMarker.setLatLng(ll);
+  else meMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:600}).addTo(map);
+  if(ring) map.removeLayer(ring);
+  ring=L.circle(ll,{radius:S.radius,color:'#FFB000',weight:1,opacity:.22,fillOpacity:.03,dashArray:'4 6'}).addTo(map);
+}
+function drawAnchor(){
+  if(!S.anchor) return;
+  const ll=[S.anchor.lat,S.anchor.lon];
+  const html='<div class="anchormark">'+esc(S.anchor.name)+'</div>';
+  if(anchorMarker){ anchorMarker.setLatLng(ll); anchorMarker.setIcon(L.divIcon({className:'',html,iconSize:null})); }
+  else anchorMarker=L.marker(ll,{icon:L.divIcon({className:'',html,iconSize:null}),interactive:false,zIndexOffset:100}).addTo(map);
+}
+
+/* ============================================================
+   Geocoding — Photon (keyless, CORS-enabled)
+   ============================================================ */
+let sugTimer, sugItems=[], sugIdx=-1;
+$('q').addEventListener('input', e=>{
+  const v=e.target.value.trim();
+  clearTimeout(sugTimer);
+  if(v.length<3){ hideSuggest(); return; }
+  sugTimer=setTimeout(()=>geocode(v,true),280);
+});
+$('q').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    if(sugIdx>=0 && sugItems[sugIdx]) pickPlace(sugItems[sugIdx]);
+    else { const v=$('q').value.trim(); if(v) geocode(v,false); }
+  } else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    if(!sugItems.length) return;
+    e.preventDefault();
+    sugIdx = e.key==='ArrowDown' ? Math.min(sugIdx+1,sugItems.length-1) : Math.max(sugIdx-1,0);
+    [...$('suggest').children].forEach((b,i)=>b.classList.toggle('sel',i===sugIdx));
+  } else if(e.key==='Escape') hideSuggest();
+});
+document.addEventListener('click', e=>{ if(!e.target.closest('.searchwrap')) hideSuggest(); });
+function hideSuggest(){ $('suggest').style.display='none'; sugItems=[]; sugIdx=-1; }
+
+async function geocode(q, asSuggest){
+  const c = S.origin || {lat:52.509,lon:-2.087};
+  const url = 'https://photon.komoot.io/api/?q='+encodeURIComponent(q)
+            + '&limit=6&lang=en&lat='+c.lat+'&lon='+c.lon;
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    const feats = (j.features||[]).filter(f=>f.geometry && f.geometry.coordinates);
+    if(!feats.length){ if(!asSuggest) toast('No match for that address. Try a postcode.',true); hideSuggest(); return; }
+    if(asSuggest){ renderSuggest(feats); }
+    else { hideSuggest(); pickPlace(feats[0]); }
+  }catch(err){
+    hideSuggest();
+    if(!asSuggest) toast('Address lookup failed — check your connection.',true);
+  }
+}
+function placeLabel(f){
+  const p=f.properties||{};
+  const name = p.name || p.street || p.postcode || 'Unnamed';
+  const bits = [p.district,p.city,p.county,p.state].filter(Boolean);
+  const uniq = [...new Set(bits)].slice(0,2).join(', ');
+  return {main:name, sub:[p.postcode,uniq].filter(Boolean).join(' · ')};
+}
+function renderSuggest(feats){
+  sugItems=feats; sugIdx=-1;
+  const box=$('suggest');
+  box.innerHTML = feats.map(f=>{
+    const l=placeLabel(f);
+    return '<button type="button" role="option">'+esc(l.main)+'<span class="sub">'+esc(l.sub)+'</span></button>';
+  }).join('');
+  [...box.children].forEach((b,i)=>b.addEventListener('click',()=>pickPlace(feats[i])));
+  box.style.display='block';
+}
+function pickPlace(f){
+  const [lon,lat]=f.geometry.coordinates;
+  const l=placeLabel(f);
+  $('q').value=l.main;
+  hideSuggest();
+  setOrigin(lat,lon,l.main);
+}
+
+/* ============================================================
+   Origin, town anchor, stops
+   ============================================================ */
+async function setOrigin(lat,lon,label){
+  S.origin={lat,lon,label:label||'Chosen point'};
+  S.stop=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers();
+  savePrefs();
+  drawOrigin();
+  map.setView([lat,lon], Math.max(map.getZoom(),14));
+  $('stopName').textContent='Looking for stops…';
+  $('stopMeta').textContent=(label||'').toUpperCase();
+  setStatus('Loading stops','');
+  await Promise.all([findAnchor(lat,lon), findStops(lat,lon)]);
+  startPolling();
+}
+
+$('locBtn').addEventListener('click', ()=>{
+  if(!navigator.geolocation){ toast('This browser has no location support. Type an address instead.',true); return; }
+  setStatus('Getting your location','');
+  navigator.geolocation.getCurrentPosition(
+    p=>{ $('q').value='My location'; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
+    err=>{
+      const m = err.code===1 ? 'Location permission was declined. Type an address instead.'
+              : err.code===3 ? 'Location timed out. Try again or type an address.'
+              : 'Could not get your location.';
+      toast(m,true); setStatus('Idle','');
+    },
+    {enableHighAccuracy:true, timeout:9000, maximumAge:30000}
+  );
+});
+$('goBtn').addEventListener('click', ()=>{ const v=$('q').value.trim(); if(v) geocode(v,false); });
+
+const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+async function overpass(query){
+  let lastErr;
+  for(const ep of OVERPASS){
+    try{
+      const r = await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(query),
+        headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      if(!r.ok) throw new Error(r.status);
+      return await r.json();
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr;
+}
+
+/* Nearest town/city/suburb centre — the reference point for "into town" */
+async function findAnchor(lat,lon){
+  const q = `[out:json][timeout:25];
+(node["place"~"^(city|town)$"](around:22000,${lat},${lon}););
+out body 40;`;
+  try{
+    const j = await overpass(q);
+    let best=null, bestScore=Infinity;
+    const weight = {city:0.45, town:1};
+    for(const el of (j.elements||[])){
+      const d = dist(lat,lon,el.lat,el.lon);
+      const score = d * (weight[el.tags.place]||1);
+      if(score<bestScore){ bestScore=score; best={lat:el.lat,lon:el.lon,name:el.tags.name||'Town centre'}; }
+    }
+    if(best){ S.anchor=best; drawAnchor(); }
+    else { S.anchor={lat,lon,name:'Town centre'}; drawAnchor(); }
+  }catch(e){
+    S.anchor={lat,lon,name:'Town centre'}; drawAnchor();
+  }
+  updateDirLabels();
+}
+function updateDirLabels(){
+  const n = S.anchor ? S.anchor.name : 'town';
+  $('dIn').lastChild.textContent = 'Into '+n;
+  $('dOut').lastChild.textContent = 'Out of '+n;
+}
+
+async function findStops(lat,lon){
+  const q = `[out:json][timeout:25];
+(node["highway"="bus_stop"](around:${S.radius},${lat},${lon});
+ node["public_transport"="platform"]["bus"="yes"](around:${S.radius},${lat},${lon}););
+out body 120;`;
+  try{
+    const j = await overpass(q);
+    const seen=new Set();
+    S.stops = (j.elements||[]).map(el=>({
+      id:el.id,
+      name: titleCase(el.tags.name || el.tags['naptan:CommonName'] || 'Unnamed stop'),
+      code: el.tags['naptan:AtcoCode'] || el.tags['naptan:Indicator'] || el.tags.ref || '',
+      ind: el.tags['naptan:Indicator'] || el.tags.local_ref || '',
+      lat:el.lat, lon:el.lon,
+      d: dist(lat,lon,el.lat,el.lon)
+    })).filter(s=>{
+      const k=s.name+'|'+Math.round(s.lat*4000)+'|'+Math.round(s.lon*4000);
+      if(seen.has(k)) return false; seen.add(k); return true;
+    }).sort((a,b)=>a.d-b.d);
+
+    drawStops();
+    if(S.stops.length){
+      const want = S.pendingStopId ? S.stops.find(s=>s.id===S.pendingStopId) : null;
+      S.pendingStopId = null;
+      selectStop(want || S.stops[0]);
+    }
+    else {
+      $('stopName').textContent='No bus stops mapped here';
+      $('stopMeta').textContent='TRY A WIDER RADIUS IN SETTINGS';
+      showEmpty('<strong>No stops within '+fmtDist(S.radius)+'</strong>OpenStreetMap has no bus stops mapped around this point. Widen the radius in settings, or move the search somewhere more built up.');
+    }
+  }catch(e){
+    $('stopName').textContent='Could not load stops';
+    $('stopMeta').textContent='OVERPASS UNAVAILABLE';
+    showEmpty('<strong>Stop lookup failed</strong>The OpenStreetMap query service didn\'t respond. It rate-limits under load — wait a moment and <button id="retryStops">try again</button>.');
+    const rb=$('retryStops'); if(rb) rb.addEventListener('click',()=>findStops(lat,lon));
+  }
+}
+
+function drawStops(){
+  stopLayer.clearLayers();
+  S.stops.slice(0,80).forEach(s=>{
+    const sel = S.stop && s.id===S.stop.id;
+    const m = L.marker([s.lat,s.lon],{
+      icon:L.divIcon({className:'',html:'<div class="stopmark'+(sel?' sel':'')+'"></div>',
+        iconSize:sel?[15,15]:[11,11], iconAnchor:sel?[7,7]:[5,5]}),
+      zIndexOffset: sel?500:0
+    }).addTo(stopLayer);
+    m.on('click',()=>selectStop(s));
+    m.bindTooltip(s.name+(s.ind?' ('+s.ind+')':''),{direction:'top',offset:[0,-8],className:'stoptip'});
+  });
+}
+
+function selectStop(s){
+  S.stop=s;
+  $('stopName').textContent = s.name + (s.ind ? ' ('+s.ind+')' : '');
+  $('stopMeta').innerHTML = '<b>'+fmtDist(s.d)+'</b> from your point' + (s.code?' · '+esc(s.code):'');
+  drawStops();
+  closePicker();
+  savePrefs();
+  render();
+}
+
+/* stop picker */
+$('changeStop').addEventListener('click', ()=>{
+  if(!S.stops.length){ toast('No stops loaded yet.'); return; }
+  const box=$('stopItems');
+  box.innerHTML = S.stops.slice(0,60).map((s,i)=>
+    '<button class="stopitem" data-i="'+i+'"><span class="flagicon" style="width:12px;height:14px"></span>'+
+    '<span style="min-width:0"><span class="nm">'+esc(s.name)+'</span>'+
+    (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+
+    '<span class="dist">'+fmtDist(s.d)+'</span></button>').join('');
+  [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i])));
+  $('stopPicker').classList.add('show');
+});
+$('closePicker').addEventListener('click', closePicker);
+function closePicker(){ $('stopPicker').classList.remove('show'); }
+
+/* ============================================================
+   Direction switch
+   ============================================================ */
+function setDir(d){
+  S.dir=d;
+  $('dIn').setAttribute('aria-pressed', d==='in');
+  $('dOut').setAttribute('aria-pressed', d==='out');
+  $('dAll').setAttribute('aria-pressed', d==='all');
+  savePrefs();
+  render();
+}
+$('dIn').addEventListener('click',()=>setDir('in'));
+$('dOut').addEventListener('click',()=>setDir('out'));
+$('dAll').addEventListener('click',()=>setDir('all'));
+
+/* ============================================================
+   Live feed — BODS SIRI-VM
+   ============================================================ */
+function bbox(){
+  const c=S.origin, pad=(S.radius+2500)/111320;
+  const padLon = pad/Math.cos(rad(c.lat));
+  return [(c.lon-padLon).toFixed(5),(c.lat-pad).toFixed(5),(c.lon+padLon).toFixed(5),(c.lat+pad).toFixed(5)].join(',');
+}
+function feedUrl(){
+  // Worker mode: the proxy holds the key, we send only a bounding box.
+  if(!S.key && S.proxy) return S.proxy + (S.proxy.includes('?') ? '&' : '?') + 'bbox=' + bbox();
+  const u = 'https://data.bus-data.dft.gov.uk/api/v1/datafeed/?api_key='
+          + encodeURIComponent(S.key) + '&boundingBox=' + bbox();
+  return S.proxy ? S.proxy + encodeURIComponent(u) : u;
+}
+
+/* flatten a <VehicleActivity> subtree into {localName: text} */
+function flatten(node, out){
+  out = out || {};
+  for(let c=node.firstElementChild; c; c=c.nextElementSibling){
+    if(c.firstElementChild) flatten(c,out);
+    else if(!(c.localName in out)) out[c.localName]=c.textContent.trim();
+  }
+  return out;
+}
+
+async function fetchLive(){
+  if(!S.key && !S.proxy){ throw {soft:true, msg:'No key or proxy — open settings, or turn the simulator on.'}; }
+  const r = await fetch(feedUrl(), {headers:{'Accept':'application/xml'}});
+  if(r.status===401 || r.status===403) throw {soft:true, msg:'BODS rejected the key. Check it in settings.'};
+  if(!r.ok) throw {soft:true, msg:'Feed returned '+r.status+'.'};
+  const xml = new DOMParser().parseFromString(await r.text(),'application/xml');
+  if(xml.querySelector('parsererror')) throw {soft:true, msg:'Feed response was not valid XML.'};
+
+  const acts = [...xml.getElementsByTagName('*')].filter(n=>n.localName==='VehicleActivity');
+  const now = Date.now();
+  const out = [];
+  for(const a of acts){
+    const f = flatten(a);
+    const lat = parseFloat(f.Latitude), lon = parseFloat(f.Longitude);
+    if(!isFinite(lat) || !isFinite(lon)) continue;
+    out.push({
+      id: f.VehicleRef || f.DatedVehicleJourneyRef || (f.LineRef+'-'+lat.toFixed(4)+lon.toFixed(4)),
+      line: f.PublishedLineName || f.LineRef || '?',
+      dest: titleCase(f.DestinationName || f.DirectionName || ''),
+      origin: titleCase(f.OriginName || ''),
+      operator: f.OperatorRef || '',
+      declaredDir: (f.DirectionRef||'').toLowerCase(),
+      lat, lon,
+      bearing: parseFloat(f.Bearing),
+      ts: f.RecordedAtTime ? Date.parse(f.RecordedAtTime)||now : now
+    });
+  }
+  return out;
+}
+
+/* ============================================================
+   Simulator — invented vehicles, real geography
+   ============================================================ */
+const SIM = { routes:[], vehicles:[], built:false, key:'' };
+const SIM_LINES = ['9','16','24','X8','126','87','74A','12','4','246','82','58'];
+const SIM_PLACES = ['Merry Hill','Russells Hall','Wolverhampton','Stourbridge','Halesowen','Sedgley','Brierley Hill','Kingswinford','Bilston','Gornal','Cradley Heath','Tipton'];
+
+function buildSim(){
+  const c=S.origin, a=S.anchor||c;
+  SIM.key = c.lat.toFixed(3)+c.lon.toFixed(3);
+  SIM.routes=[]; SIM.vehicles=[];
+  const n=7;
+  for(let i=0;i<n;i++){
+    const ang = (i/n)*Math.PI*2 + Math.random()*0.4;
+    const len = 5000 + Math.random()*4000;
+    const dLat = len/111320, dLon = len/(111320*Math.cos(rad(a.lat)));
+    const outer = {lat:a.lat + Math.sin(ang)*dLat, lon:a.lon + Math.cos(ang)*dLon};
+    const opp   = {lat:a.lat - Math.sin(ang)*dLat*0.7, lon:a.lon - Math.cos(ang)*dLon*0.7};
+    const pts=[];
+    const add=(p,jit)=>pts.push({lat:p.lat+(Math.random()-0.5)*jit, lon:p.lon+(Math.random()-0.5)*jit});
+    add(outer,0.004);
+    for(let k=1;k<=3;k++){
+      add({lat:outer.lat+(a.lat-outer.lat)*k/4, lon:outer.lon+(a.lon-outer.lon)*k/4},0.008);
+    }
+    pts.push({lat:a.lat,lon:a.lon});
+    for(let k=1;k<=3;k++){
+      add({lat:a.lat+(opp.lat-a.lat)*k/3, lon:a.lon+(opp.lon-a.lon)*k/3},0.008);
+    }
+    const segs=[]; let total=0;
+    for(let k=0;k<pts.length-1;k++){
+      const d=dist(pts[k].lat,pts[k].lon,pts[k+1].lat,pts[k+1].lon);
+      segs.push({a:pts[k],b:pts[k+1],d,acc:total}); total+=d;
+    }
+    SIM.routes.push({
+      line: SIM_LINES[i%SIM_LINES.length],
+      pts, segs, total,
+      ends:[SIM_PLACES[(i*2)%SIM_PLACES.length], SIM_PLACES[(i*2+1)%SIM_PLACES.length]]
+    });
+  }
+  SIM.routes.forEach((rt,ri)=>{
+    const count = 2 + Math.floor(Math.random()*2);
+    for(let v=0; v<count*2; v++){
+      const dir = v%2===0 ? 1 : -1;
+      SIM.vehicles.push({
+        id:'SIM-'+ri+'-'+v, route:rt, dir,
+        t: (v/(count*2)) * rt.total + Math.random()*600,
+        speed: 5.5 + Math.random()*4.5
+      });
+    }
+  });
+  SIM.built=true;
+}
+function simPoint(rt,t){
+  t = ((t % rt.total) + rt.total) % rt.total;
+  for(const s of rt.segs){
+    if(t <= s.acc + s.d){
+      const f = s.d ? (t-s.acc)/s.d : 0;
+      return {
+        lat: s.a.lat + (s.b.lat-s.a.lat)*f,
+        lon: s.a.lon + (s.b.lon-s.a.lon)*f,
+        brg: bearingTo(s.a.lat,s.a.lon,s.b.lat,s.b.lon)
+      };
+    }
+  }
+  const l=rt.segs[rt.segs.length-1];
+  return {lat:l.b.lat, lon:l.b.lon, brg:bearingTo(l.a.lat,l.a.lon,l.b.lat,l.b.lon)};
+}
+function fetchSim(dt){
+  if(!SIM.built || SIM.key !== S.origin.lat.toFixed(3)+S.origin.lon.toFixed(3)) buildSim();
+  const now=Date.now();
+  return SIM.vehicles.map(v=>{
+    v.t += v.speed * dt * v.dir;
+    const p = simPoint(v.route, v.t);
+    const brg = v.dir>0 ? p.brg : (p.brg+180)%360;
+    return {
+      id:v.id, line:v.route.line,
+      dest: v.dir>0 ? v.route.ends[1] : v.route.ends[0],
+      origin: v.dir>0 ? v.route.ends[0] : v.route.ends[1],
+      operator:'SIM', declaredDir:'',
+      lat:p.lat, lon:p.lon, bearing:brg, ts:now
+    };
+  });
+}
+
+/* ============================================================
+   Merge, infer direction, estimate arrival
+   ============================================================ */
+function ingest(list){
+  const now=Date.now();
+  const live=new Set();
+  for(const v of list){
+    live.add(v.id);
+    const prev = S.vehicles.get(v.id);
+    const rec = prev || {hist:[], speed:null};
+    if(prev && (prev.lat!==v.lat || prev.lon!==v.lon)){
+      const dt = Math.max(1,(v.ts - prev.ts)/1000);
+      const dd = dist(prev.lat,prev.lon,v.lat,v.lon);
+      if(dt<180 && dd<3000){
+        const inst = dd/dt;
+        rec.speed = rec.speed==null ? inst : rec.speed*0.6 + inst*0.4;
+      }
+    }
+    rec.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
+    if(rec.hist.length>6) rec.hist.shift();
+    Object.assign(rec, v);
+    S.vehicles.set(v.id, rec);
+  }
+  // drop anything not seen for 3 minutes
+  for(const [id,v] of S.vehicles){
+    if(!live.has(id) && now - v.ts > 180000) S.vehicles.delete(id);
+  }
+}
+
+/* inbound = getting closer to the town anchor */
+function inferDirection(v){
+  if(S.anchor && v.hist.length>=2){
+    const a=v.hist[0], b=v.hist[v.hist.length-1];
+    if(dist(a.lat,a.lon,b.lat,b.lon) > 60){
+      const d0=dist(a.lat,a.lon,S.anchor.lat,S.anchor.lon);
+      const d1=dist(b.lat,b.lon,S.anchor.lat,S.anchor.lon);
+      if(Math.abs(d0-d1) > 40) return d1<d0 ? 'in':'out';
+    }
+  }
+  if(v.declaredDir){
+    if(v.declaredDir.startsWith('in')) return 'in';
+    if(v.declaredDir.startsWith('out')) return 'out';
+  }
+  if(S.anchor && isFinite(v.bearing)){
+    const toAnchor = bearingTo(v.lat,v.lon,S.anchor.lat,S.anchor.lon);
+    let diff = Math.abs(((v.bearing - toAnchor + 540)%360)-180);
+    return diff < 75 ? 'in' : diff > 105 ? 'out' : 'unknown';
+  }
+  return 'unknown';
+}
+
+/* is it still coming towards the stop, or already gone past? */
+function approaching(v, stop){
+  if(v.hist.length>=2){
+    const a=v.hist[0], b=v.hist[v.hist.length-1];
+    if(dist(a.lat,a.lon,b.lat,b.lon) > 40){
+      const d0=dist(a.lat,a.lon,stop.lat,stop.lon);
+      const d1=dist(b.lat,b.lon,stop.lat,stop.lon);
+      if(Math.abs(d0-d1)>25) return d1 < d0;
+    }
+  }
+  if(isFinite(v.bearing)){
+    const toStop = bearingTo(v.lat,v.lon,stop.lat,stop.lon);
+    const diff = Math.abs(((v.bearing - toStop + 540)%360)-180);
+    return diff < 95;
+  }
+  return true;
+}
+
+function estimate(v, stop){
+  const straight = dist(v.lat,v.lon,stop.lat,stop.lon);
+  const road = straight * ROAD_FACTOR;
+  let sp = v.speed;
+  if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = DEFAULT_SPEED;
+  const dwell = (road/1000) * 22;                    // ~22 s of stopping per km
+  const age = Math.max(0,(Date.now()-v.ts)/1000);    // feed latency counts against you
+  return {secs: road/sp + dwell - age*0.5, metres: straight};
+}
+
+/* ============================================================
+   Render
+   ============================================================ */
+function relevant(){
+  if(!S.stop) return [];
+  const out=[];
+  for(const v of S.vehicles.values()){
+    const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
+    if(d > S.radius + 4000) continue;
+    const dir = inferDirection(v);
+    if(S.dir!=='all' && dir!==S.dir && dir!=='unknown') continue;
+    const app = approaching(v, S.stop);
+    if(S.hideAway && !app && d > 120) continue;
+    const est = estimate(v, S.stop);
+    out.push({v, dir, app, secs: est.secs, metres: est.metres});
+  }
+  out.sort((a,b)=>a.secs-b.secs);
+  return out.slice(0,25);
+}
+
+function showEmpty(html){
+  $('empty').innerHTML=html;
+  $('empty').style.display='block';
+  $('deps').innerHTML='';
+}
+
+function render(){
+  const rows = relevant();
+  const deps=$('deps');
+
+  if(!S.origin){
+    showEmpty('<strong>Nothing on the board yet</strong>Search an address or use your location, then pick the direction you\'re travelling.');
+  } else if(!S.stop){
+    showEmpty('<strong>No stop selected</strong>Pick one from the map or the stop list.');
+  } else if(!rows.length){
+    const dirWord = S.dir==='in' ? 'into '+(S.anchor?S.anchor.name:'town')
+                  : S.dir==='out' ? 'out of '+(S.anchor?S.anchor.name:'town') : 'either way';
+    showEmpty('<strong>Nothing heading '+esc(dirWord)+'</strong>'+
+      (S.vehicles.size ? S.vehicles.size+' buses are moving nearby, but none are approaching this stop in that direction. Try <button id="flipDir">the other direction</button> or Both.'
+                       : 'No vehicle positions have come through yet. Give it a refresh, or check the data source in settings.'));
+    const fd=$('flipDir'); if(fd) fd.addEventListener('click',()=>setDir(S.dir==='in'?'out':'in'));
+  } else {
+    $('empty').style.display='none';
+    deps.innerHTML = rows.map(r=>{
+      const mins = Math.round(r.secs/60);
+      const due = mins<=1;
+      const stale = (Date.now()-r.v.ts) > 90000;
+      const dirChip = r.dir==='in' ? 'Into '+(S.anchor?S.anchor.name:'town')
+                    : r.dir==='out' ? 'Outbound' : 'Direction unclear';
+      return '<button class="dep'+(S.selected===r.v.id?' active':'')+'" data-id="'+esc(r.v.id)+'">'
+        + '<span class="route'+(stale?' stale':'')+'">'+esc(r.v.line)+'</span>'
+        + '<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span>'
+        + '<span class="deprow2">'
+        + '<span class="chip'+(r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
+        + '<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+' away</span>'
+        + '</span></span>'
+        + '<span class="eta'+(due?' due':'')+'">'+(due?'due':mins)+'<small>'+(due?'arriving':'min')+'</small></span>'
+        + '</button>';
+    }).join('');
+    [...deps.children].forEach(b=>b.addEventListener('click',()=>focusVehicle(b.dataset.id)));
+  }
+  renderVehicles(rows);
+}
+
+function clearVehicleMarkers(){ vehLayer.clearLayers(); S.markers.clear(); }
+
+function renderVehicles(rows){
+  const wanted = new Map(rows.map(r=>[r.v.id,r]));
+  for(const [id,m] of S.markers){
+    if(!wanted.has(id) && !S.vehicles.has(id)){ vehLayer.removeLayer(m); S.markers.delete(id); }
+  }
+  for(const v of S.vehicles.values()){
+    const shown = wanted.has(v.id);
+    const cls = 'veh'+(shown?'':' dim')+(S.selected===v.id?' sel':'');
+    const brg = isFinite(v.bearing)?v.bearing:0;
+    const html = '<div class="'+cls+'"><div class="cone" style="transform:rotate('+brg+'deg)"></div>'
+               + '<div class="body">'+esc(String(v.line).slice(0,4))+'</div></div>';
+    const icon = L.divIcon({className:'',html,iconSize:[34,34],iconAnchor:[17,17]});
+    let m = S.markers.get(v.id);
+    if(m){ m.setLatLng([v.lat,v.lon]); m.setIcon(icon); }
+    else{
+      m = L.marker([v.lat,v.lon],{icon, zIndexOffset: shown?400:200}).addTo(vehLayer);
+      m.on('click',()=>focusVehicle(v.id));
+      S.markers.set(v.id,m);
+    }
+    m.setZIndexOffset(shown ? (S.selected===v.id?700:400) : 150);
+    const r = wanted.get(v.id);
+    m.bindPopup('<b>'+esc(v.line)+'</b> to '+esc(v.dest||'?')
+      + (r ? '<br>'+Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name) : '<br>Not calling at your stop')
+      + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':''));
+  }
+}
+
+function focusVehicle(id){
+  S.selected = S.selected===id ? null : id;
+  const v = S.vehicles.get(id);
+  if(v && S.selected){
+    map.panTo([v.lat,v.lon],{animate:true});
+    const m=S.markers.get(id); if(m) m.openPopup();
+  }
+  render();
+}
+
+/* ============================================================
+   Polling
+   ============================================================ */
+function startPolling(){
+  stopPolling();
+  poll();
+  S.timer = setInterval(poll, S.interval*1000);
+  S.tick  = setInterval(()=>{ if(S.stop) render(); }, 5000);  // keep ETAs counting down
+}
+function stopPolling(){
+  if(S.timer) clearInterval(S.timer);
+  if(S.tick) clearInterval(S.tick);
+  S.timer=S.tick=null;
+}
+let lastPoll=Date.now();
+async function poll(){
+  if(!S.origin || S.busy) return;
+  S.busy=true;
+  const dt = Math.min(90,(Date.now()-lastPoll)/1000) || S.interval;
+  lastPoll=Date.now();
+  try{
+    const list = S.demo ? fetchSim(dt) : await fetchLive();
+    ingest(list);
+    S.lastOk=Date.now();
+    setStatus(S.demo ? 'Simulated · '+S.vehicles.size+' buses' : 'Live · '+S.vehicles.size+' buses', S.demo?'demo':'');
+    render();
+  }catch(e){
+    const msg = (e && e.msg) ? e.msg : 'Feed unreachable — a CORS proxy is usually the cause.';
+    setStatus('Feed problem','err');
+    if(Date.now()-S.lastOk > 25000) toast(msg,true);
+    render();
+  }finally{ S.busy=false; }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) stopPolling();
+  else if(S.origin) startPolling();
+});
+$('refreshBtn').addEventListener('click',()=>{ poll(); toast('Refreshing…'); });
+
+/* ============================================================
+   Settings
+   ============================================================ */
+$('setBtn').addEventListener('click',()=>{
+  $('apiKey').value=S.key; $('proxy').value=S.proxy;
+  $('radius').value=S.radius; $('interval').value=S.interval;
+  $('demoSw').setAttribute('aria-pressed',S.demo);
+  $('awaySw').setAttribute('aria-pressed',S.hideAway);
+  $('rememberSw').setAttribute('aria-pressed',S.remember && store.ok);
+  if(!store.ok){
+    $('rememberHint').textContent='Unavailable here — this browser context blocks local storage, so settings last for the session only.';
+    $('rememberSw').setAttribute('aria-pressed','false');
+    $('rememberSw').disabled = true;
+    $('rememberSw').style.opacity = '.4';
+  }
+  $('scrim').classList.add('show');
+});
+$('closeSet').addEventListener('click',()=>$('scrim').classList.remove('show'));
+$('scrim').addEventListener('click',e=>{ if(e.target===$('scrim')) $('scrim').classList.remove('show'); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ $('scrim').classList.remove('show'); closePicker(); }});
+function bindSwitch(el){ el.addEventListener('click',()=>el.setAttribute('aria-pressed', el.getAttribute('aria-pressed')!=='true')); }
+bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw'));
+
+$('forgetBtn').addEventListener('click',()=>{
+  store.clear();
+  S.remember=false;
+  $('rememberSw').setAttribute('aria-pressed','false');
+  $('apiKey').value=''; $('proxy').value='';
+  S.key=''; S.proxy='';
+  toast('Saved settings cleared from this device.');
+});
+
+$('saveSet').addEventListener('click', async ()=>{
+  const oldRadius=S.radius;
+  S.key=$('apiKey').value.trim();
+  S.proxy=$('proxy').value.trim();
+  S.radius=+$('radius').value;
+  S.interval=+$('interval').value;
+  S.demo=$('demoSw').getAttribute('aria-pressed')==='true';
+  S.hideAway=$('awaySw').getAttribute('aria-pressed')==='true';
+  S.remember=$('rememberSw').getAttribute('aria-pressed')==='true' && store.ok;
+  savePrefs();
+  $('scrim').classList.remove('show');
+  if(!S.demo && !S.key && !S.proxy){ toast('Add a key or a proxy, or switch the simulator back on.',true); }
+  if(S.origin){
+    S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false;
+    drawOrigin();
+    if(S.radius!==oldRadius) await findStops(S.origin.lat,S.origin.lon);
+    startPolling();
+  }
+});
+
+/* mobile: collapse the board by dragging the handle */
+let dragY=null;
+$('grab').addEventListener('pointerdown',e=>{dragY=e.clientY; e.target.setPointerCapture(e.pointerId);});
+$('grab').addEventListener('pointerup',e=>{
+  if(dragY===null) return;
+  const dy=e.clientY-dragY;
+  if(dy>28) $('board').classList.add('collapsed');
+  else if(dy<-28) $('board').classList.remove('collapsed');
+  else $('board').classList.toggle('collapsed');
+  dragY=null; setTimeout(()=>map.invalidateSize(),260);
+});
+
+map.on('contextmenu', e=>{
+  S.anchor={lat:e.latlng.lat, lon:e.latlng.lng, name:'Town centre'};
+  drawAnchor(); updateDirLabels(); render();
+  toast('Town centre moved. "Into town" now means heading here.');
+});
+
+/* restore anything saved on this device — the address bar still wins */
+const saved = loadPrefs();
+
+/* key via address bar: kerbside.html#key=...&proxy=... — read once, then wiped */
+(function readHash(){
+  if(!location.hash) return;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const k = p.get('key'), px = p.get('proxy');
+  if(k){ S.key = k; S.demo = false; }
+  if(px) S.proxy = px;
+  if(k || px){
+    history.replaceState(null,'',location.pathname+location.search);
+    savePrefs();
+    toast(k ? 'Key loaded from the address bar — live feed on.' : 'Proxy loaded from the address bar.');
+  }
+})();
+
+setDir(S.dir);
+setStatus((S.key||S.proxy) ? 'Waiting for a location · live feed ready' : 'Waiting for a location','');
+
+if(saved && saved.origin && isFinite(saved.origin.lat)){
+  S.pendingStopId = saved.stopId || null;
+  $('q').value = saved.origin.label || '';
+  setOrigin(saved.origin.lat, saved.origin.lon, saved.origin.label);
+}
+
+window.addEventListener('resize',()=>map.invalidateSize());
+})();
+</script>
+</body>
+</html>
