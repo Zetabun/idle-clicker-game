@@ -329,8 +329,9 @@ button{cursor:pointer;border:0;background:none}
 
 /* ---------- mobile ---------- */
 /* Vehicle markers glide between polls instead of jumping. Leaflet
-   positions markers with a transform, so easing that is enough. */
-.leaflet-marker-icon.vehmark{transition:transform 1.4s linear}
+   positions markers with a transform, so easing that is enough.
+   Duration is set from the refresh interval at runtime. */
+.leaflet-marker-icon.vehmark{transition:transform var(--glide, 3s) linear}
 
 #viewbar{display:none}
 
@@ -580,6 +581,8 @@ const R_EARTH = 6371000;
 const ROAD_FACTOR = 1.32;      // straight-line -> road distance fudge
 const DEFAULT_SPEED = 6.2;     // m/s ≈ 14 mph, typical urban bus incl. stops
 const MIN_SPEED = 1.8, MAX_SPEED = 16;
+const MAX_AGE_MS = 4*60*1000;    // a position older than this is not useful
+const MAX_VEH_DIST = 9000;       // metres — beyond this it is not "due" by any reading
 
 /* ============================================================
    Helpers
@@ -1120,6 +1123,10 @@ async function fetchLive(){
     const f = flatten(a);
     const lat = parseFloat(f.Latitude), lon = parseFloat(f.Longitude);
     if(!isFinite(lat) || !isFinite(lon)) continue;
+    // BODS caches, and some operators leave dead vehicles in the feed for
+    // hours. Anything this old is not a bus you can catch.
+    const ts = f.RecordedAtTime ? (Date.parse(f.RecordedAtTime)||now) : now;
+    if(now - ts > MAX_AGE_MS) continue;
     out.push({
       id: f.VehicleRef || f.DatedVehicleJourneyRef || (f.LineRef+'-'+lat.toFixed(4)+lon.toFixed(4)),
       line: cleanLine(f.PublishedLineName || f.LineRef || '?'),
@@ -1129,7 +1136,7 @@ async function fetchLive(){
       declaredDir: (f.DirectionRef||'').toLowerCase(),
       lat, lon,
       bearing: parseFloat(f.Bearing),
-      ts: f.RecordedAtTime ? Date.parse(f.RecordedAtTime)||now : now
+      ts
     });
   }
   return out;
@@ -1224,9 +1231,7 @@ function fetchSim(dt){
    ============================================================ */
 function ingest(list){
   const now=Date.now();
-  const live=new Set();
   for(const v of list){
-    live.add(v.id);
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null};
     if(prev && (prev.lat!==v.lat || prev.lon!==v.lon)){
@@ -1243,9 +1248,9 @@ function ingest(list){
     learnLine(rec);
     S.vehicles.set(v.id, rec);
   }
-  // drop anything not seen for 3 minutes
+  // drop anything whose last reported position has gone stale
   for(const [id,v] of S.vehicles){
-    if(!live.has(id) && now - v.ts > 180000) S.vehicles.delete(id);
+    if(now - v.ts > MAX_AGE_MS) S.vehicles.delete(id);
   }
 }
 
@@ -1344,9 +1349,14 @@ function estimate(v, stop){
   let sp = v.speed;                                  // this vehicle's own speed wins
   if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = lineSpeed(v.line);
   const dwell = (road/1000) * 22;                    // ~22 s of stopping per km
-  const age = Math.max(0,(Date.now()-v.ts)/1000);    // feed latency counts against you
+  // Latency counts against the estimate, but only a little of it — a very
+  // old position is bad data, not a bus that is nearly here.
+  const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 90);
+  let secs = road/sp + dwell - age*0.5;
+  // Nothing arrives faster than the road allows at full speed.
+  secs = Math.max(secs, road/MAX_SPEED);
   const learned = !!(LINES[v.line] && LINES[v.line].n >= 3);
-  return {secs: road/sp + dwell - age*0.5, metres: straight, learned};
+  return {secs, metres: straight, learned};
 }
 
 /* ============================================================
@@ -1600,7 +1610,8 @@ function relevant(){
     // Distance limits the bus, not the stop: a 61 two miles out still
     // counts if the 61 calls here.
     const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
-    if(d > 12000) continue;
+    if(d > MAX_VEH_DIST) continue;
+    if(Date.now() - v.ts > MAX_AGE_MS) continue;
     if(gate && !servesHere(v.line)) continue;
     const dir = inferDirection(v);
     if(S.destFilter){
@@ -1668,7 +1679,10 @@ function lineDetail(r){
   const facts = [
     ['Distance', fmtDist(r.metres)+' away'],
     ['Speed', (v.speed && isFinite(v.speed)) ? Math.round(v.speed*2.237)+' mph' : 'stopped'],
-    ['Position age', Math.max(0,Math.round((Date.now()-v.ts)/1000))+' s'],
+    ['Position age', (function(){
+      const s = Math.max(0,Math.round((Date.now()-v.ts)/1000));
+      return s < 90 ? s+' s' : Math.round(s/60)+' min';
+    })()],
     ['Heading', isFinite(v.bearing) ? compass(v.bearing) : 'unknown'],
     ['Route detour', rec && rec.n>=3 ? '\u00d7'+rec.f.toFixed(2)+' measured' : 'still learning'],
     ['Typical speed', rec && rec.sn>=3 ? Math.round(rec.sp*2.237)+' mph' : 'still learning']
@@ -1772,21 +1786,42 @@ function renderVehicles(rows){
     const shown = wanted.has(v.id);
     const cls = 'veh'+(shown?'':' dim')+(S.selected===v.id?' sel':'');
     const brg = isFinite(v.bearing)?v.bearing:0;
-    const html = '<div class="'+cls+'"><div class="cone" style="transform:rotate('+brg+'deg)"></div>'
-               + '<div class="body">'+esc(String(v.line).slice(0,4))+'</div></div>';
-    const icon = L.divIcon({className:'vehmark',html,iconSize:[34,34],iconAnchor:[17,17]});
+    // Replacing the icon rebuilds the DOM node, which cancels the CSS
+    // transition mid-flight — so the marker never appears to move.
+    // Patch the existing node instead, and only when something changed.
+    const sig = cls+'|'+Math.round(brg/5)+'|'+v.line;
     let m = S.markers.get(v.id);
-    if(m){ m.setLatLng([v.lat,v.lon]); m.setIcon(icon); }
-    else{
-      m = L.marker([v.lat,v.lon],{icon, zIndexOffset: shown?400:200}).addTo(vehLayer);
+    if(!m){
+      const html = '<div class="'+cls+'"><div class="cone" style="transform:rotate('+brg+'deg)"></div>'
+                 + '<div class="body">'+esc(String(v.line).slice(0,4))+'</div></div>';
+      m = L.marker([v.lat,v.lon],{
+        icon:L.divIcon({className:'vehmark',html,iconSize:[34,34],iconAnchor:[17,17]}),
+        zIndexOffset: shown?400:200
+      }).addTo(vehLayer);
+      m._sig = sig;
       m.on('click',()=>focusVehicle(v.id));
       S.markers.set(v.id,m);
+    } else {
+      if(m._sig !== sig){
+        const el = m.getElement();
+        const inner = el && el.firstElementChild;
+        if(inner){
+          inner.className = cls;
+          const cone = inner.querySelector('.cone');
+          if(cone) cone.style.transform = 'rotate('+brg+'deg)';
+          const body = inner.querySelector('.body');
+          if(body) body.textContent = String(v.line).slice(0,4);
+        }
+        m._sig = sig;
+      }
+      m.setLatLng([v.lat,v.lon]);
     }
     m.setZIndexOffset(shown ? (S.selected===v.id?700:400) : 150);
     const r = wanted.get(v.id);
-    m.bindPopup('<b>'+esc(v.line)+'</b> to '+esc(v.dest||'?')
+    const popup = '<b>'+esc(v.line)+'</b> to '+esc(v.dest||'?')
       + (r ? '<br>'+Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name) : '<br>Not calling at your stop')
-      + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':''));
+      + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':'');
+    if(m.getPopup()) m.setPopupContent(popup); else m.bindPopup(popup);
   }
 }
 
@@ -1805,6 +1840,8 @@ function focusVehicle(id){
    ============================================================ */
 function startPolling(){
   stopPolling();
+  // Glide over most of the gap between polls, so movement looks continuous.
+  document.documentElement.style.setProperty('--glide', Math.max(1.5, S.interval*0.8)+'s');
   S.vehicles.clear();          // never show yesterday's positions on a fresh start
   clearVehicleMarkers();
   poll();
