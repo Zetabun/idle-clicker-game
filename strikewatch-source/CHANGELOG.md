@@ -4,6 +4,15 @@
 > exist as `AUDIT-12.200.md` through `AUDIT-12.223.md` and are summarised in
 > `HANDOFF.md`; use those until the gap is backfilled.
 
+## 12.239 — Cohesive Operator Rig
+
+- Drops the cloth sleeve over the upper arm and broadens the torso/pelvis waist
+  profiles so the upper body reads as one connected garment.
+- Thickens thighs and calves, widens the pelvis join and retains more limb width
+  at joint caps in both living and fallen operators.
+- Keeps hitboxes, animation anchors, gameplay behaviour and draw counts intact.
+- See `AUDIT-12.239.md`.
+
 ## 12.238 — Natural Operator Silhouette
 
 - Replaces the always-on spherical shoulder shells with inset cloth deltoid

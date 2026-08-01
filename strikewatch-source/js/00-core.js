@@ -296,9 +296,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.238';
-  const BUILD_NAME = 'Natural Operator Silhouette';
-  const BUILD_ID = '12.238.0-natural-operator-silhouette';
+  const BUILD_VERSION = '12.239';
+  const BUILD_NAME = 'Cohesive Operator Rig';
+  const BUILD_ID = '12.239.0-cohesive-operator-rig';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;

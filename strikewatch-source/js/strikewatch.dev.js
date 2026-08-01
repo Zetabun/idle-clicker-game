@@ -299,9 +299,9 @@
   const ownedDecisionInstructionEl = document.getElementById('ownedDecisionInstruction');
   const ownedDecisionRouteEl = document.getElementById('ownedDecisionRoute');
 
-  const BUILD_VERSION = '12.238';
-  const BUILD_NAME = 'Natural Operator Silhouette';
-  const BUILD_ID = '12.238.0-natural-operator-silhouette';
+  const BUILD_VERSION = '12.239';
+  const BUILD_NAME = 'Cohesive Operator Rig';
+  const BUILD_ID = '12.239.0-cohesive-operator-rig';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.documentElement.dataset.buildVersion = BUILD_VERSION;
@@ -41566,12 +41566,12 @@ ${ceilingLightBlock}
 
   function makeOperatorPelvisMesh(segments = 16) {
     const profile = [
-      { y: -0.50, rx: 0.30, rz: 0.30, cz:  0.006 },
-      { y: -0.34, rx: 0.42, rz: 0.40, cz:  0.004 },
+      { y: -0.50, rx: 0.40, rz: 0.38, cz:  0.006 },
+      { y: -0.34, rx: 0.46, rz: 0.44, cz:  0.004 },
       { y: -0.08, rx: 0.50, rz: 0.49, cz:  0.000 },
       { y:  0.22, rx: 0.48, rz: 0.46, cz: -0.004 },
-      { y:  0.42, rx: 0.39, rz: 0.36, cz: -0.008 },
-      { y:  0.50, rx: 0.32, rz: 0.29, cz: -0.010 }
+      { y:  0.42, rx: 0.45, rz: 0.41, cz: -0.008 },
+      { y:  0.50, rx: 0.44, rz: 0.38, cz: -0.010 }
     ];
     return makeProfiledCharacterMesh(profile, segments, null, true, true);
   }
@@ -41596,12 +41596,12 @@ ${ceilingLightBlock}
   // own a hard shoulder plate still draw that separate authored shell.
   function makeOperatorShoulderPadMesh(segments = 16) {
     const profile = [
-      { y: -0.50, rx: 0.30, rz: 0.25, cz:  0.006 },
-      { y: -0.34, rx: 0.43, rz: 0.37, cz:  0.006 },
-      { y: -0.08, rx: 0.53, rz: 0.46, cz:  0.002 },
-      { y:  0.18, rx: 0.50, rz: 0.43, cz: -0.004 },
-      { y:  0.38, rx: 0.41, rz: 0.34, cz: -0.010 },
-      { y:  0.50, rx: 0.27, rz: 0.22, cz: -0.014 }
+      { y: -0.50, rx: 0.38, rz: 0.30, cz:  0.006 },
+      { y: -0.34, rx: 0.46, rz: 0.37, cz:  0.006 },
+      { y: -0.08, rx: 0.52, rz: 0.44, cz:  0.002 },
+      { y:  0.18, rx: 0.50, rz: 0.42, cz: -0.004 },
+      { y:  0.38, rx: 0.43, rz: 0.34, cz: -0.010 },
+      { y:  0.50, rx: 0.34, rz: 0.27, cz: -0.014 }
     ];
     return makeProfiledCharacterMesh(profile, segments, point => {
       const front = Math.max(0, Math.sin(point.angle));
@@ -41735,12 +41735,12 @@ ${ceilingLightBlock}
   // Closed end caps prevent a moving elbow or knee exposing a hollow seam.
   function makeTaperedCapsuleMesh(segments = 10) {
     const profile = [
-      { y: -0.50, r: 0.38 },
-      { y: -0.38, r: 0.47 },
-      { y: -0.16, r: 0.50 },
-      { y:  0.10, r: 0.455 },
-      { y:  0.34, r: 0.36 },
-      { y:  0.50, r: 0.30 }
+      { y: -0.50, r: 0.44 },
+      { y: -0.36, r: 0.49 },
+      { y: -0.12, r: 0.50 },
+      { y:  0.12, r: 0.47 },
+      { y:  0.36, r: 0.42 },
+      { y:  0.50, r: 0.37 }
     ];
     const positions = [], normals = [], indices = [];
     for (let ring = 0; ring < profile.length; ring++) {
@@ -41801,8 +41801,8 @@ ${ceilingLightBlock}
   // another draw call or changing any gameplay dimensions.
   function makeOperatorTorsoMesh(segments = 12) {
     const profile = [
-      { y: -0.50, x: 0.56, z: 0.61, cz:  0.010 },
-      { y: -0.39, x: 0.67, z: 0.72, cz:  0.012 },
+      { y: -0.50, x: 0.66, z: 0.68, cz:  0.010 },
+      { y: -0.39, x: 0.72, z: 0.76, cz:  0.012 },
       { y: -0.20, x: 0.78, z: 0.84, cz:  0.016 },
       { y:  0.03, x: 0.94, z: 0.93, cz:  0.014 },
       { y:  0.25, x: 1.00, z: 0.88, cz:  0.006 },
@@ -46752,9 +46752,9 @@ ${ceilingLightBlock}
     upperLeg: 0.365,
     lowerLeg: 0.345,
     pelvisY: 0.815,
-    pelvisWidth: 0.39,
-    pelvisHeight: 0.22,
-    pelvisDepth: 0.255,
+    pelvisWidth: 0.44,
+    pelvisHeight: 0.26,
+    pelvisDepth: 0.285,
     torsoY: 1.145,
     torsoWidth: 0.535,
     torsoHeight: 0.50,
@@ -46794,18 +46794,27 @@ ${ceilingLightBlock}
     stockSeatTarget: Object.freeze({ x: 0.20, y: 1.29, z: 0.04 })
   });
 
-  // Build 12.238: the permanent shoulder volume is a cloth sleeve blended into
-  // the torso. Hard shoulder armour remains conditional in the armour profile.
-  // Limb endpoint ratios mirror makeTaperedCapsuleMesh() and are surfaced here
-  // so the release gate can distinguish connected limbs from the old pinches.
+  // Build 12.239: the cloth sleeve drops over the upper arm, the waist profiles
+  // overlap, and the lower body uses fuller authored widths. Hard shoulder
+  // armour remains conditional. Endpoint ratios mirror makeTaperedCapsuleMesh()
+  // so the release gate can distinguish connected limbs from pinched segments.
   const OPERATOR_BODY_PRESENTATION = Object.freeze({
-    revision: '12.238-natural-operator-silhouette-1',
+    revision: '12.239-cohesive-operator-rig-1',
     shoulderInset: 0.070,
-    sleeveWidth: 0.235,
-    sleeveHeight: 0.160,
+    sleeveDrop: 0.055,
+    sleeveWidth: 0.205,
+    sleeveHeight: 0.265,
     sleeveDepth: 0.125,
-    proximalEndRadiusRatio: 0.76,
-    distalEndRadiusRatio: 0.60
+    upperArmWidth: 0.118,
+    upperArmDepth: 0.104,
+    forearmWidth: 0.102,
+    forearmDepth: 0.090,
+    thighWidth: 0.170,
+    thighDepth: 0.150,
+    calfWidth: 0.130,
+    calfDepth: 0.112,
+    proximalEndRadiusRatio: 0.88,
+    distalEndRadiusRatio: 0.74
   });
 
   function operatorArmourRenderProfile(bot) {
@@ -47003,10 +47012,19 @@ ${ceilingLightBlock}
     const sleeveInner = sleeveCentre - body.sleeveWidth * 0.5;
     const upperTorsoOuter = OPERATOR_PROPORTIONS.torsoWidth * 0.455;
     const shoulderTorsoOverlap = upperTorsoOuter - sleeveInner;
+    const torsoBottom = OPERATOR_PROPORTIONS.torsoY - OPERATOR_PROPORTIONS.torsoHeight * 0.5;
+    const pelvisTop = OPERATOR_PROPORTIONS.pelvisY + OPERATOR_PROPORTIONS.pelvisHeight * 0.5;
+    const waistVerticalOverlap = pelvisTop - torsoBottom;
+    const sleeveBottom = 1.34 - body.sleeveDrop - body.sleeveHeight * 0.5;
+    const hipCapWidth = body.thighWidth * body.proximalEndRadiusRatio;
+    const hipOuter = 0.138 + hipCapWidth * 0.5;
     const checks = {
       shoulderSleeveOverlapsTorso: shoulderTorsoOverlap >= 0.045,
       shoulderSleeveShallowerThanWide: body.sleeveDepth < body.sleeveWidth,
-      limbsKeepJointVolume: body.proximalEndRadiusRatio >= 0.70 && body.distalEndRadiusRatio >= 0.55,
+      shoulderSleeveCoversUpperArm: sleeveBottom <= 1.20,
+      waistProfilesOverlap: waistVerticalOverlap >= 0.04,
+      fullerThighsMeetPelvis: body.thighWidth >= 0.165 && hipOuter <= OPERATOR_PROPORTIONS.pelvisWidth * 0.5,
+      limbsKeepJointVolume: body.proximalEndRadiusRatio >= 0.84 && body.distalEndRadiusRatio >= 0.70,
       hardShoulderArmourConditional: true,
       limbEndsClosed: true
     };
@@ -47014,18 +47032,21 @@ ${ceilingLightBlock}
       ok: Object.values(checks).every(Boolean),
       revision: body.revision,
       renderer: 'asset-free procedural WebGL',
-      torso: 'seven-ring anatomical ribcage and tapered waist',
-      pelvis: 'six-ring profiled tactical pelvis',
+      torso: 'seven-ring anatomical ribcage with a widened lower waist bridge',
+      pelvis: 'six-ring profiled tactical pelvis with broadened waist and hip joins',
       carrier: 'tapered profiled armour carrier',
       head: 'anatomical profiled head with tapered jaw and brow volume',
       helmet: 'open-bottom profiled combat shell',
       faceCover: 'extended curved balaclava-style lower-face cover',
-      shoulders: 'inset cloth deltoid sleeves overlapping the ribcage',
-      limbs: 'connected capped anatomical tapers with retained joint volume',
+      shoulders: 'inset cloth deltoid sleeves overlapping the ribcage and upper arms',
+      limbs: 'connected capped anatomical tapers with fuller thighs and retained joint volume',
       joints: 'forward-profiled tapered knee and elbow shells',
       boots: 'rounded heel, instep and tapered toe profile',
       equipment: 'soft rounded superellipsoid accessory forms',
       shoulderTorsoOverlap: Number(shoulderTorsoOverlap.toFixed(4)),
+      waistVerticalOverlap: Number(waistVerticalOverlap.toFixed(4)),
+      thighWidth: body.thighWidth,
+      calfWidth: body.calfWidth,
       limbEndpointRadiusRatios: {
         proximal: body.proximalEndRadiusRatio,
         distal: body.distalEndRadiusRatio
@@ -47640,8 +47661,8 @@ ${ceilingLightBlock}
       const knee = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y, legPose.knee.z);
       const ankle = worldPoint(base.x, 0, base.z, yaw, legPose.ankle.x, legPose.ankle.y, legPose.ankle.z);
       const boot = worldPoint(base.x, 0, base.z, yaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
-      drawAnatomicalSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90, 0.104);
-      drawAnatomicalSegment(knee, ankle, 0.102, ao.clothLight, 0, 1, 5, 0.90, 0.088);
+      drawAnatomicalSegment(hip, knee, OPERATOR_BODY_PRESENTATION.thighWidth, cloth, 0, 1, 5, 0.90, OPERATOR_BODY_PRESENTATION.thighDepth);
+      drawAnatomicalSegment(knee, ankle, OPERATOR_BODY_PRESENTATION.calfWidth, ao.clothLight, 0, 1, 5, 0.90, OPERATOR_BODY_PRESENTATION.calfDepth);
       const thighPlateA = worldPoint(base.x, 0, base.z, yaw,
         lerp(legPose.hip.x, legPose.knee.x, 0.30),
         lerp(legPose.hip.y, legPose.knee.y, 0.30),
@@ -47683,11 +47704,11 @@ ${ceilingLightBlock}
       const armSpread = pose === 0 ? (leading ? 0.55 : 0.38) : (leading ? 0.44 : 0.34);
       const elbow = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.31, limbSide * armSpread, fall), lerp(1.14, 0.115, fall), lerp(0.18, leading ? 0.18 : -0.12, fall));
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
-      drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
-      drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, 0, 1, 5, 0.86, 0.078);
+      drawAnatomicalSegment(shoulder, elbow, OPERATOR_BODY_PRESENTATION.upperArmWidth, cloth, 0, 1, 5, 0.88, OPERATOR_BODY_PRESENTATION.upperArmDepth);
+      drawAnatomicalSegment(elbow, hand, OPERATOR_BODY_PRESENTATION.forearmWidth, ao.clothLight, 0, 1, 5, 0.86, OPERATOR_BODY_PRESENTATION.forearmDepth);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.100, 0.112, 0.060);
       drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, 0, 1, 6, 0.70);
-      const sleeve = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, -limbSide * OPERATOR_BODY_PRESENTATION.shoulderInset, 0, 0);
+      const sleeve = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, -limbSide * OPERATOR_BODY_PRESENTATION.shoulderInset, -OPERATOR_BODY_PRESENTATION.sleeveDrop, 0);
       mat4TRS(glModel, sleeve.x, sleeve.y, sleeve.z, yaw, torsoPitch, torsoRoll, OPERATOR_BODY_PRESENTATION.sleeveWidth, OPERATOR_BODY_PRESENTATION.sleeveHeight, OPERATOR_BODY_PRESENTATION.sleeveDepth);
       drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
       const patch = worldPoint(sleeve.x, sleeve.y, sleeve.z, yaw, limbSide * 0.090, 0.01, 0.006);
@@ -47846,8 +47867,8 @@ ${ceilingLightBlock}
       const foot = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
       joints.feet.push(foot); joints.knees.push(knee); joints.hips.push(hip);
 
-      drawAnatomicalSegment(hip, knee, 0.121, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
-      drawAnatomicalSegment(knee, ankle, 0.101, ao.clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
+      drawAnatomicalSegment(hip, knee, OPERATOR_BODY_PRESENTATION.thighWidth, cloth, hurt * 0.32, 1, 5, 0.90, OPERATOR_BODY_PRESENTATION.thighDepth);
+      drawAnatomicalSegment(knee, ankle, OPERATOR_BODY_PRESENTATION.calfWidth, ao.clothLight, hurt * 0.32, 1, 5, 0.90, OPERATOR_BODY_PRESENTATION.calfDepth);
 
       const hipGuard = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.hip.x + side * 0.035, legPose.hip.y - 0.045, legPose.hip.z + 0.018);
       mat4TRS(glModel, hipGuard.x, hipGuard.y, hipGuard.z, moveYaw, 0, side * 0.08, 0.10, 0.16, 0.13);
@@ -47997,10 +48018,11 @@ ${ceilingLightBlock}
     for (const side of [-1, 1]) {
       const shoulderLocal = operatorShoulderLocalPose(side, { stanceDrop, torsoRoll, walk, phase, turn });
       const sleeveLocalX = shoulderLocal.x - side * OPERATOR_BODY_PRESENTATION.shoulderInset;
-      const shoulderSleeve = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX, shoulderLocal.y, shoulderLocal.z);
+      const sleeveLocalY = shoulderLocal.y - OPERATOR_BODY_PRESENTATION.sleeveDrop;
+      const shoulderSleeve = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX, sleeveLocalY, shoulderLocal.z);
       mat4TRS(glModel, shoulderSleeve.x, shoulderSleeve.y, shoulderSleeve.z, upperYaw, 0, side * 0.12 + hitLean, OPERATOR_BODY_PRESENTATION.sleeveWidth, OPERATOR_BODY_PRESENTATION.sleeveHeight, OPERATOR_BODY_PRESENTATION.sleeveDepth);
       drawMesh(glMeshes.operatorShoulderPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, cloth, glModel, hurt * 0.4, 1, 5, 0.90);
-      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX + side * 0.085, shoulderLocal.y, shoulderLocal.z + 0.012);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, sleeveLocalX + side * 0.085, sleeveLocalY, shoulderLocal.z + 0.012);
       mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.12 + hitLean, 0.034, 0.092, 0.074);
       drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
       if (fullDetail) {
@@ -48071,8 +48093,8 @@ ${ceilingLightBlock}
       // adding bodyBob again here caused the hands to drift above the weapon.
       const hand = worldPoint(bot.x, 0, bot.y, upperYaw, handX, handY, handZ);
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
-      drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
-      drawAnatomicalSegment(elbow, hand, 0.088, ao.clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
+      drawAnatomicalSegment(shoulder, elbow, OPERATOR_BODY_PRESENTATION.upperArmWidth, cloth, hurt * 0.4, 1, 5, 0.88, OPERATOR_BODY_PRESENTATION.upperArmDepth);
+      drawAnatomicalSegment(elbow, hand, OPERATOR_BODY_PRESENTATION.forearmWidth, ao.clothLight, hurt * 0.4, 1, 5, 0.86, OPERATOR_BODY_PRESENTATION.forearmDepth);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.100, 0.112, 0.060);
       drawMesh(glMeshes.operatorJointPad || glMeshes.softRoundedBox || glMeshes.roundedBox || glMeshes.cube, ao.plate, glModel, hurt * 0.20, 1, 6, 0.70);
       mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.112, 0.105, 0.125);

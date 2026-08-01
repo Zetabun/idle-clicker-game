@@ -251,9 +251,11 @@ current task. Release-specific implementation detail belongs in the matching
 - Living and fallen operators share the established procedural body/head
   geometry and deterministic identity palette.
 - Always-present shoulder volume is cloth sleeve/deltoid geometry overlapped
-  into the ribcage; hard shoulder armour is conditional on the equipped armour
-  class. Limb segments retain volume through capped joint ends. These are
-  presentation rules only and must not move hitboxes or animation anchors.
+  into the ribcage and dropped over the upper arm; hard shoulder armour is
+  conditional on the equipped armour class. The lower torso and pelvis profiles
+  overlap as a waist bridge, and the pelvis owns a broad enough hip join for the
+  fuller thighs. Limb segments retain volume through capped joint ends. These
+  are presentation rules only and must not move hitboxes or animation anchors.
 - Operator contact ambient occlusion is folded into the existing deterministic material palette at authored overlap zones. It must not add meshes, draw calls, textures, shader passes or uniforms unless a later release explicitly budgets and measures that cost; living and fallen operators share the same treatment.
 - Weapon and armour presentation derives from shared authored parts and
   attachment anchors. Do not restore unrelated generic hand, muzzle or fit

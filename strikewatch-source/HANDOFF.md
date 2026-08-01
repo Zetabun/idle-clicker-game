@@ -19,15 +19,26 @@ For ChatGPT releases when direct Git push is unavailable, prefer the proven sepa
 
 ## Current release
 
-- Build: **12.238 — Natural Operator Silhouette**
-- Build ID: `12.238.0-natural-operator-silhouette`
+- Build: **12.239 — Cohesive Operator Rig**
+- Build ID: `12.239.0-cohesive-operator-rig`
 - Editable source: `strikewatch-source/`
 - Generated development bundle: `strikewatch-source/js/strikewatch.dev.js`
-- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.238.html`
+- Generated standalone: `strikewatch-source/dist/strikewatch-build-12.239.html`
 - Live GitHub Pages artifact: root `cod.html`
 - Save schema: **19**
 - Diagnostics schema: **1**
 - Historical release detail: `AUDIT-*.md`, located through `CHANGELOG.md`
+
+Build 12.239 closes the remaining visible gaps in the operator assembly. The
+cloth sleeve now drops over the upper arm, the lower ribcage and pelvis overlap
+through a broader waist bridge, and the pelvis meets substantially fuller
+thighs and calves. Limb caps retain more of each segment's maximum width, so
+elbows, knees, hips and ankles stay visually joined through animation. Living
+and fallen paths share every revised width. Hitboxes, animation anchors, AI,
+collision, LOD draw counts and save/diagnostics schemas remain unchanged.
+Verify with `operatorBodySilhouetteForTest()`, `operatorModel()`, the operator
+lighting/AO/culling and weapon-attachment gates, plus staged match captures.
+See `AUDIT-12.239.md`.
 
 Build 12.238 reshapes the third-person operators around the supplied tactical
 reference. **The permanent shoulder form is now cloth, inset into and

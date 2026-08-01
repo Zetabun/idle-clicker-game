@@ -56,6 +56,17 @@ requires link/routing validation and a clean diff.
 
 ## Current release note
 
+Build 12.239 owns the cohesive third-person operator rig. **Keep the sleeve
+dropped over the upper arm and keep the torso/pelvis profiles vertically
+overlapping**; those joins remove the floating-part read without adding draws.
+Thigh and calf widths live in `OPERATOR_BODY_PRESENTATION` and must be consumed
+by both living and corpse paths. `makeTaperedCapsuleMesh()` retains 0.88/0.74
+endpoint volume; do not narrow the joint caps independently. Preserve animation
+anchors, hitboxes, the conservative culling sphere and draw counts. Verify
+`operatorBodySilhouetteForTest()`, `operatorModel()`, operator
+AO/lighting/culling and weapon attachments, then review staged match captures.
+See `AUDIT-12.239.md`.
+
 Build 12.238 owns the natural third-person operator silhouette. **The
 always-present shoulder draw is a cloth deltoid sleeve, inset by 0.070 and
 overlapped into the upper torso; never recolour it as a permanent plate or move

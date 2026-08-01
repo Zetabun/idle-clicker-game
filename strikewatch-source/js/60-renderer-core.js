@@ -1277,12 +1277,12 @@ ${ceilingLightBlock}
 
   function makeOperatorPelvisMesh(segments = 16) {
     const profile = [
-      { y: -0.50, rx: 0.30, rz: 0.30, cz:  0.006 },
-      { y: -0.34, rx: 0.42, rz: 0.40, cz:  0.004 },
+      { y: -0.50, rx: 0.40, rz: 0.38, cz:  0.006 },
+      { y: -0.34, rx: 0.46, rz: 0.44, cz:  0.004 },
       { y: -0.08, rx: 0.50, rz: 0.49, cz:  0.000 },
       { y:  0.22, rx: 0.48, rz: 0.46, cz: -0.004 },
-      { y:  0.42, rx: 0.39, rz: 0.36, cz: -0.008 },
-      { y:  0.50, rx: 0.32, rz: 0.29, cz: -0.010 }
+      { y:  0.42, rx: 0.45, rz: 0.41, cz: -0.008 },
+      { y:  0.50, rx: 0.44, rz: 0.38, cz: -0.010 }
     ];
     return makeProfiledCharacterMesh(profile, segments, null, true, true);
   }
@@ -1307,12 +1307,12 @@ ${ceilingLightBlock}
   // own a hard shoulder plate still draw that separate authored shell.
   function makeOperatorShoulderPadMesh(segments = 16) {
     const profile = [
-      { y: -0.50, rx: 0.30, rz: 0.25, cz:  0.006 },
-      { y: -0.34, rx: 0.43, rz: 0.37, cz:  0.006 },
-      { y: -0.08, rx: 0.53, rz: 0.46, cz:  0.002 },
-      { y:  0.18, rx: 0.50, rz: 0.43, cz: -0.004 },
-      { y:  0.38, rx: 0.41, rz: 0.34, cz: -0.010 },
-      { y:  0.50, rx: 0.27, rz: 0.22, cz: -0.014 }
+      { y: -0.50, rx: 0.38, rz: 0.30, cz:  0.006 },
+      { y: -0.34, rx: 0.46, rz: 0.37, cz:  0.006 },
+      { y: -0.08, rx: 0.52, rz: 0.44, cz:  0.002 },
+      { y:  0.18, rx: 0.50, rz: 0.42, cz: -0.004 },
+      { y:  0.38, rx: 0.43, rz: 0.34, cz: -0.010 },
+      { y:  0.50, rx: 0.34, rz: 0.27, cz: -0.014 }
     ];
     return makeProfiledCharacterMesh(profile, segments, point => {
       const front = Math.max(0, Math.sin(point.angle));
@@ -1446,12 +1446,12 @@ ${ceilingLightBlock}
   // Closed end caps prevent a moving elbow or knee exposing a hollow seam.
   function makeTaperedCapsuleMesh(segments = 10) {
     const profile = [
-      { y: -0.50, r: 0.38 },
-      { y: -0.38, r: 0.47 },
-      { y: -0.16, r: 0.50 },
-      { y:  0.10, r: 0.455 },
-      { y:  0.34, r: 0.36 },
-      { y:  0.50, r: 0.30 }
+      { y: -0.50, r: 0.44 },
+      { y: -0.36, r: 0.49 },
+      { y: -0.12, r: 0.50 },
+      { y:  0.12, r: 0.47 },
+      { y:  0.36, r: 0.42 },
+      { y:  0.50, r: 0.37 }
     ];
     const positions = [], normals = [], indices = [];
     for (let ring = 0; ring < profile.length; ring++) {
@@ -1512,8 +1512,8 @@ ${ceilingLightBlock}
   // another draw call or changing any gameplay dimensions.
   function makeOperatorTorsoMesh(segments = 12) {
     const profile = [
-      { y: -0.50, x: 0.56, z: 0.61, cz:  0.010 },
-      { y: -0.39, x: 0.67, z: 0.72, cz:  0.012 },
+      { y: -0.50, x: 0.66, z: 0.68, cz:  0.010 },
+      { y: -0.39, x: 0.72, z: 0.76, cz:  0.012 },
       { y: -0.20, x: 0.78, z: 0.84, cz:  0.016 },
       { y:  0.03, x: 0.94, z: 0.93, cz:  0.014 },
       { y:  0.25, x: 1.00, z: 0.88, cz:  0.006 },
