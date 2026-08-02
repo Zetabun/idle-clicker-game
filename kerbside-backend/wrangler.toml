@@ -1,0 +1,11 @@
+name = "kerbside-bus"
+main = "src/worker.js"
+compatibility_date = "2026-07-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://zetabun.github.io"
+
+[[r2_buckets]]
+binding = "KERBSIDE_DATA"
+bucket_name = "kerbside-data"

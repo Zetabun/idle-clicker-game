@@ -591,7 +591,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.5.0';
 const MY_KEY   = '';
 const MY_PROXY = '';
 
@@ -610,7 +610,7 @@ const S = {
   timer:null, tick:null, busy:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0,
-  timetable:null, ttStop:null, ttError:null,
+  timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   workerHistory:{}
 };
 
@@ -784,6 +784,14 @@ function normaliseWorkerUrl(value){
     u.pathname=u.pathname.replace(/\/(feed|health|history|watched)\/?$/i,'').replace(/\/$/,'');
     return u.toString().replace(/\/$/,'');
   }catch(e){ return ''; }
+}
+function workerUrl(pathname,params){
+  if(!S.proxy) return '';
+  const u=new URL(S.proxy,location.href);
+  const base=u.pathname.replace(/\/$/,'');
+  u.pathname=base+(pathname.startsWith('/')?pathname:'/'+pathname); u.search='';
+  Object.entries(params||{}).forEach(([key,value])=>{ if(value!=null && value!=='') u.searchParams.set(key,value); });
+  return u.toString();
 }
 async function fetchTimed(url, options, timeoutMs){
   const ctl = new AbortController();
@@ -978,7 +986,7 @@ async function overpass(query){
    Saves hammering Overpass on every visit. */
 const STOP_TTL = 7*24*3600*1000;
 function stopCacheKey(lat,lon,radius){
-  return 'kerbside.stops.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
+  return 'kerbside.stops.v3.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
 }
 function readStopCache(lat,lon,radius){
   if(!store.ok || !S.remember) return null;
@@ -1025,6 +1033,24 @@ function updateDirLabels(){
   $('dOut').querySelector('.lbl').textContent = 'Out of '+n;
 }
 
+async function fetchOfficialStops(lat,lon,radius){
+  if(!S.proxy) return null;
+  try{
+    const url=workerUrl('/nearby-stops',{lat:lat.toFixed(6),lon:lon.toFixed(6),radius});
+    const r=await fetchTimed(url,{headers:{Accept:'application/json'},cache:'no-store'},10000);
+    if(!r.ok) return null;
+    const j=await r.json();
+    if(!Array.isArray(j.stops) || !j.stops.length) return null;
+    return j.stops.map(stop=>({
+      id:String(stop.id||stop.atco||stop.code||''), name:titleCase(stop.name||'Unnamed stop'),
+      atco:String(stop.atco||stop.id||''), naptan:String(stop.sms||stop.code||''),
+      code:String(stop.atco||stop.id||stop.code||''), ind:String(stop.ind||''),
+      lat:Number(stop.lat), lon:Number(stop.lon), region:String(stop.region||''), tile:String(stop.tile||''),
+      source:'official', d:dist(lat,lon,Number(stop.lat),Number(stop.lon))
+    })).filter(stop=>stop.id&&isFinite(stop.lat)&&isFinite(stop.lon)).sort((a,b)=>a.d-b.d);
+  }catch(e){ return null; }
+}
+
 async function findStops(lat,lon,run){
   const cached = readStopCache(lat,lon,S.radius);
   if(run!==S.locationRun) return;
@@ -1037,6 +1063,13 @@ async function findStops(lat,lon,run){
     S.pendingStopId = null;
     selectStop(want || S.stops[0]);
     return;
+  }
+  const official=await fetchOfficialStops(lat,lon,S.radius);
+  if(run!==S.locationRun) return;
+  if(official && official.length){
+    S.stops=official; drawStops(); writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
+    const want=S.pendingStopId?S.stops.find(s=>String(s.id)===String(S.pendingStopId)):null;
+    S.pendingStopId=null; selectStop(want||S.stops[0]); return;
   }
   const q = `[out:json][timeout:25];
 (node["highway"="bus_stop"](around:${S.radius},${lat},${lon});
@@ -1172,24 +1205,44 @@ function serviceRuns(ref, serviceDate){
   if(svc.end && key>svc.end) return false;
   return !svc.days || String(svc.days)[day]==='1';
 }
+function activateTimetable(data,source,region){
+  S.timetable=data||null; S.timetableSource=source||''; S.timetableRegion=region||''; PATTERN_CACHE.clear();
+}
 async function loadTimetable(){
   S.ttError=null;
   try{
     const r=await fetchTimed('timetable.json',{cache:'no-cache'},12000);
     if(!r.ok) throw new Error(r.status===404?'not installed':'HTTP '+r.status);
-    const raw=await r.text();
-    if(!raw.trim()) throw new Error('empty timetable file');
+    const raw=await r.text(); if(!raw.trim()) throw new Error('empty timetable file');
     const data=JSON.parse(raw);
-    if(!data || !data.stops || typeof data.stops!=='object' || !Object.keys(data.stops).length) throw new Error('no stop data');
-    S.timetable=data; PATTERN_CACHE.clear();
+    if(!data||!data.stops||typeof data.stops!=='object'||!Object.keys(data.stops).length) throw new Error('no stop data');
+    S.fallbackTimetable=data;
+    if(S.timetableSource!=='national') activateTimetable(data,'regional','west_midlands');
   }catch(e){
-    S.timetable=null; S.ttStop=null;
+    S.fallbackTimetable=null;
+    if(S.timetableSource!=='national') activateTimetable(null,'','');
     S.ttError=(e&&e.name==='AbortError')?'timed out':String((e&&e.message)||'could not be read');
   }
-  if(S.stop){
-    S.ttStop=matchTimetableStop(S.stop);
-    updateStopMeta(); renderServingNote(); renderDests(); render();
+  if(S.stop) loadStopTimetable(S.stop);
+}
+async function loadStopTimetable(stop){
+  const run=++S.timetableRun, stopId=String(stop.atco||stop.code||stop.id||'');
+  activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
+  S.ttStop=matchTimetableStop(stop); updateStopMeta(); renderServingNote(); renderDests(); render();
+  if(!S.proxy||!stop.region||!stop.tile||!stopId) return;
+  try{
+    const url=workerUrl('/departures/'+encodeURIComponent(stopId),{region:stop.region,tile:stop.tile});
+    const r=await fetchTimed(url,{headers:{Accept:'application/json'},cache:'no-store'},12000);
+    if(!r.ok) throw new Error(r.status===404?'no national timetable tile':'HTTP '+r.status);
+    const data=await r.json();
+    if(!data||!data.stops||!Object.keys(data.stops).length) throw new Error('empty national timetable tile');
+    if(run!==S.timetableRun||!S.stop||String(S.stop.id)!==String(stop.id)) return;
+    activateTimetable(data,'national',stop.region); S.ttError=null; S.ttStop=matchTimetableStop(stop);
+  }catch(e){
+    if(run!==S.timetableRun) return;
+    S.ttError=String((e&&e.message)||'national timetable unavailable');
   }
+  updateStopMeta(); renderServingNote(); renderDests(); render();
 }
 function looksLikeAtco(value){ return /^\d{3}0[A-Za-z0-9]{4,8}$/.test(String(value||'').trim()); }
 function matchTimetableStop(stop){
@@ -1230,7 +1283,7 @@ function timetableRows(now){
       const service=e[3]||'';
       if(!serviceRuns(service,serviceDate)) continue;
       const at=new Date(serviceDate.getTime()+mins*60000);
-      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||''});
+      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||''});
     }
   }
   return out;
@@ -1250,19 +1303,24 @@ function tripRefMatches(a,b){
   const A=String(a||'').trim(), B=String(b||'').trim();
   return !!A && !!B && A===B;
 }
+async function queuePattern(patternId){
+  if(!patternId||!S.proxy||!S.timetableRegion||S.patternPending.has(patternId)) return;
+  S.patternPending.add(patternId);
+  try{
+    const r=await fetchTimed(workerUrl('/pattern/'+encodeURIComponent(patternId),{region:S.timetableRegion}),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
+    if(!r.ok) return; const data=await r.json();
+    if(data&&data.patterns&&S.timetable){ Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns); PATTERN_CACHE.clear(); render(); }
+  }catch(e){} finally{ S.patternPending.delete(patternId); }
+}
 function timetablePattern(journey){
   const tt=S.timetable;
-  if(!tt || !journey || !tt.tripPatterns || !tt.patterns) return null;
-  const id=tt.tripPatterns[String(journey)];
-  if(!id) return null;
+  if(!tt||!journey||!tt.tripPatterns) return null;
+  const id=tt.tripPatterns[String(journey)]; if(!id) return null;
   if(PATTERN_CACHE.has(id)) return PATTERN_CACHE.get(id);
-  const raw=tt.patterns[id];
-  if(!Array.isArray(raw) || raw.length<2){ PATTERN_CACHE.set(id,null); return null; }
-  const points=raw.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])}))
-    .filter(p=>isFinite(p.lat)&&isFinite(p.lon));
-  const value=points.length>=2 ? points : null;
-  PATTERN_CACHE.set(id,value);
-  return value;
+  const raw=tt.patterns&&tt.patterns[id];
+  if(!Array.isArray(raw)||raw.length<2){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
+  const points=raw.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])})).filter(p=>isFinite(p.lat)&&isFinite(p.lon));
+  const value=points.length>=2?points:null; PATTERN_CACHE.set(id,value); return value;
 }
 function projectToPattern(points,lat,lon){
   let best=null, travelled=0;
@@ -1335,34 +1393,20 @@ function updateStopMeta(){
   const s=S.stop, displayCode=s.atco||s.naptan||s.code||'';
   const code=displayCode?' · '+esc(displayCode):'';
   let tt=' · checking timetable';
-  if(S.ttStop) tt=S.ttStop.match==='code'?' · exact timetable stop':' · nearby timetable match';
-  else if(S.timetable) tt=' · live only';
-  else if(S.ttError) tt=' · timetable unavailable';
+  if(S.ttStop) tt=S.timetableSource==='national'?' · official timetable stop':S.ttStop.match==='code'?' · regional timetable stop':' · nearby timetable match';
+  else if(S.timetable) tt=' · live only'; else if(S.ttError) tt=' · timetable unavailable';
   $('stopMeta').innerHTML='<b>'+fmtDist(s.d)+'</b> from your point'+code+tt;
 }
 function selectStop(s,manual){
   if(!s) return;
-  const changed=!S.stop || String(S.stop.id)!==String(s.id);
-  S.stop=s;
-  if(changed){ S.destFilter=null; S.selected=null; S.manualStop=manual===true; }
-  else if(manual===true) S.manualStop=true;
-  S.ttStop=matchTimetableStop(s);
-  $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':'');
-  updateStopMeta();
+  const changed=!S.stop||String(S.stop.id)!==String(s.id); S.stop=s;
+  if(changed){ S.destFilter=null; S.selected=null; S.manualStop=manual===true; } else if(manual===true) S.manualStop=true;
+  activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
+  S.ttStop=matchTimetableStop(s); $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':''); updateStopMeta();
   drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
-  if(!MAPPED[String(s.id)]){
-    S.loadingRoutes=true; renderServingNote();
-    fetchRoutesFor(s).then(()=>{
-      S.loadingRoutes=false;
-      if(S.stop && S.stop.id===s.id){ renderServingNote(); render(); }
-    });
-  }
-  loadWorkerHistory(s);
-  savePrefs(); render();
-  if(changed && S.timer){
-    setStatus('Refreshing selected stop','');
-    poll(true);
-  }
+  if(!MAPPED[String(s.id)]){ S.loadingRoutes=true; renderServingNote(); fetchRoutesFor(s).then(()=>{ S.loadingRoutes=false; if(S.stop&&S.stop.id===s.id){ renderServingNote(); render(); } }); }
+  loadWorkerHistory(s); loadStopTimetable(s); savePrefs(); render();
+  if(changed&&S.timer){ setStatus('Refreshing selected stop',''); poll(true); }
 }
 
 /* stop picker */
@@ -1429,6 +1473,7 @@ function flatten(node, out){
 }
 
 async function fetchLive(signal){
+  S.feedFallback=false;
   const url=feedUrl();
   if(!url) throw {soft:true, msg:'No Worker URL or local API key is configured.'};
   let r;
@@ -1447,6 +1492,7 @@ async function fetchLive(signal){
     if(r.status===401 || r.status===403) throw {soft:true, msg:detail||'BODS or the Worker rejected the credentials/origin.'};
     throw {soft:true, msg:detail||('Feed returned '+r.status+'.')};
   }
+  S.feedFallback=r.headers.get('X-Kerbside-Stale')==='1';
   const xml = new DOMParser().parseFromString(await r.text(),'application/xml');
   if(xml.querySelector('parsererror')) throw {soft:true, msg:'Feed response was not valid XML.'};
 
@@ -2006,7 +2052,7 @@ function renderServingNote(){
       return '<span><span class="rref">'+esc(ref)+'</span>'+(heads?'<span class="rdest">'+esc(heads)+'</span>':'')+'</span>';
     });
     el.innerHTML=(parts.length?'<div class="rlist">'+parts.join('')+'</div>':'<b>Timetable matched, but no service is scheduled for this service day.</b>')
-      +'<div class="rsrc">BODS timetable · '+(S.ttStop.match==='code'?'stop code match':'nearby stop match')+(S.onlyServing?' · unverified buses hidden':'')+'</div>';
+      +'<div class="rsrc">'+(S.timetableSource==='national'?'BODS national timetable':'BODS regional timetable')+' · '+(S.ttStop.match==='code'?'stop code match':'nearby stop match')+(S.onlyServing?' · unverified buses hidden':'')+'</div>';
     return;
   }
   const m=MAPPED[String(S.stop.id)], routes=knownRoutes();
@@ -2314,13 +2360,14 @@ async function poll(force){
     ingest(list); learnDests(); learnServing(); S.lastOk=Date.now(); S.lastFeedAt=Date.now();
     const hidden=!S.demo&&S.feedStale?' · '+S.feedStale+' stale hidden':'';
     const tt=S.ttStop?' · timetable checked':'';
-    const updated=' · updated '+formatClock(S.lastFeedAt);
-    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+S.vehicles.size+' fresh'+hidden+tt+updated,S.demo?'demo':'');
+    const updated=' · updated '+formatClock(S.lastFeedAt), cached=S.feedFallback?' · cached during BODS outage':'';
+    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+S.vehicles.size+' fresh'+hidden+tt+cached+updated,S.demo?'demo':'');
     render();
   }catch(e){
     if(!ctl.signal.aborted){
       const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
-      setStatus('Feed problem','err');
+      const scheduled=S.ttStop&&timetableRows(new Date()).some(row=>row.at>Date.now()-60000&&row.at<Date.now()+3*3600000);
+      setStatus(scheduled?'Live unavailable · scheduled times shown':'Feed problem','err');
       if(Date.now()-S.lastOk>25000) toast(msg,true);
       render();
     }
@@ -2352,7 +2399,7 @@ async function checkSourceStatus(){
     const j=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
     el.className='settings-status good';
-    el.textContent='Worker reachable · BODS secret '+(j.bods?'configured':'missing')+' · recorder '+(j.recorder||'optional/not configured')+' · app '+APP_VERSION;
+    el.textContent='Worker reachable · BODS secret '+(j.bods?'configured':'missing')+' · national timetable '+(j.timetable?'connected':'not connected')+' · app '+APP_VERSION;
   }catch(e){
     el.className='settings-status bad'; el.textContent='Worker check failed: '+(e.message||'unreachable');
   }
@@ -2394,7 +2441,7 @@ $('forgetBtn').addEventListener('click',()=>{
   toast('All Kerbside settings, caches and learned route data were removed. Simulator enabled.');
 });
 $('saveSet').addEventListener('click',async()=>{
-  const oldRadius=S.radius, rawProxy=$('proxy').value.trim(), worker=normaliseWorkerUrl(rawProxy);
+  const oldRadius=S.radius, oldProxy=S.proxy, rawProxy=$('proxy').value.trim(), worker=normaliseWorkerUrl(rawProxy);
   if(rawProxy && !worker){ $('sourceStatus').className='settings-status bad'; $('sourceStatus').textContent='Use a valid HTTPS Worker URL, or localhost for local testing.'; return; }
   const demo=$('demoSw').getAttribute('aria-pressed')==='true';
   let key=$('apiKey').value.trim();
@@ -2408,7 +2455,7 @@ $('saveSet').addEventListener('click',async()=>{
   savePrefs(); renderServingNote(); $('scrim').classList.remove('show');
   if(S.origin){
     S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false; drawOrigin();
-    if(S.radius!==oldRadius) await findStops(S.origin.lat,S.origin.lon,S.locationRun);
+    if(S.radius!==oldRadius||S.proxy!==oldProxy) await findStops(S.origin.lat,S.origin.lon,S.locationRun);
     if(S.stop) loadWorkerHistory(S.stop);
     startPolling();
   }
