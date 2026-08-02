@@ -591,9 +591,13 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.5.0';
+const APP_VERSION = '0.6.0';
 const MY_KEY   = '';
 const MY_PROXY = '';
+const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
+const DATA_TILE_CACHE = new Map();
+let DATA_MANIFEST = null;
+let DATA_MANIFEST_PROMISE = null;
 
 const S = {
   key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
@@ -986,7 +990,7 @@ async function overpass(query){
    Saves hammering Overpass on every visit. */
 const STOP_TTL = 7*24*3600*1000;
 function stopCacheKey(lat,lon,radius){
-  return 'kerbside.stops.v3.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
+  return 'kerbside.stops.v4.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
 }
 function readStopCache(lat,lon,radius){
   if(!store.ok || !S.remember) return null;
@@ -1033,21 +1037,66 @@ function updateDirLabels(){
   $('dOut').querySelector('.lbl').textContent = 'Out of '+n;
 }
 
+function dataUrl(path){ return DATA_BASE.replace(/\/$/,'')+'/'+String(path||'').replace(/^\//,''); }
+function dataTileKey(lat,lon){
+  const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
+  return Math.floor((Number(lat)+90)/size)+'-'+Math.floor((Number(lon)+180)/size);
+}
+function dataTilesForRadius(lat,lon,radius){
+  const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
+  const latPad=radius/111320, lonPad=radius/(111320*Math.max(.2,Math.cos(rad(lat))));
+  const minY=Math.floor((lat-latPad+90)/size), maxY=Math.floor((lat+latPad+90)/size);
+  const minX=Math.floor((lon-lonPad+180)/size), maxX=Math.floor((lon+lonPad+180)/size);
+  const keys=[]; for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++) keys.push(y+'-'+x);
+  return keys;
+}
+async function loadDataManifest(force){
+  if(DATA_MANIFEST&&!force) return DATA_MANIFEST;
+  if(DATA_MANIFEST_PROMISE&&!force) return DATA_MANIFEST_PROMISE;
+  DATA_MANIFEST_PROMISE=(async()=>{
+    const r=await fetchTimed(dataUrl('/manifest.json'),{headers:{Accept:'application/json'},cache:force?'reload':'force-cache'},10000);
+    if(!r.ok) throw new Error('Pages timetable HTTP '+r.status);
+    const data=await r.json();
+    if(!data||!data.regions||!Object.keys(data.regions).length) throw new Error('Pages timetable manifest is empty');
+    DATA_MANIFEST=data; return data;
+  })();
+  try{return await DATA_MANIFEST_PROMISE;}finally{DATA_MANIFEST_PROMISE=null;}
+}
+function dataRegionsFor(lat,lon,radius,manifest){
+  const latPad=radius/111320, lonPad=radius/(111320*Math.max(.2,Math.cos(rad(lat))));
+  const names=[];
+  for(const [name,info] of Object.entries((manifest&&manifest.regions)||{})){
+    const b=info&&info.bounds; if(!Array.isArray(b)||b.length!==4) continue;
+    if(lon+lonPad>=b[0]&&lat+latPad>=b[1]&&lon-lonPad<=b[2]&&lat-latPad<=b[3]) names.push(name);
+  }
+  return names.length?names:Object.keys((manifest&&manifest.regions)||{});
+}
+async function loadDataTile(region,tile){
+  const key=region+'/'+tile; if(DATA_TILE_CACHE.has(key)) return DATA_TILE_CACHE.get(key);
+  const pending=(async()=>{
+    const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/tiles/'+encodeURIComponent(tile)+'.json'),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
+    if(r.status===404) return null; if(!r.ok) throw new Error('Pages tile HTTP '+r.status);
+    const data=await r.json(); return data&&data.stops?data:null;
+  })();
+  DATA_TILE_CACHE.set(key,pending);
+  try{return await pending;}catch(e){DATA_TILE_CACHE.delete(key);throw e;}
+}
 async function fetchOfficialStops(lat,lon,radius){
-  if(!S.proxy) return null;
   try{
-    const url=workerUrl('/nearby-stops',{lat:lat.toFixed(6),lon:lon.toFixed(6),radius});
-    const r=await fetchTimed(url,{headers:{Accept:'application/json'},cache:'no-store'},10000);
-    if(!r.ok) return null;
-    const j=await r.json();
-    if(!Array.isArray(j.stops) || !j.stops.length) return null;
-    return j.stops.map(stop=>({
-      id:String(stop.id||stop.atco||stop.code||''), name:titleCase(stop.name||'Unnamed stop'),
-      atco:String(stop.atco||stop.id||''), naptan:String(stop.sms||stop.code||''),
-      code:String(stop.atco||stop.id||stop.code||''), ind:String(stop.ind||''),
-      lat:Number(stop.lat), lon:Number(stop.lon), region:String(stop.region||''), tile:String(stop.tile||''),
-      source:'official', d:dist(lat,lon,Number(stop.lat),Number(stop.lon))
-    })).filter(stop=>stop.id&&isFinite(stop.lat)&&isFinite(stop.lon)).sort((a,b)=>a.d-b.d);
+    const manifest=await loadDataManifest(false), regions=dataRegionsFor(lat,lon,radius,manifest), tiles=dataTilesForRadius(lat,lon,radius);
+    const loaded=await Promise.all(regions.flatMap(region=>tiles.map(async tile=>({region,tile,data:await loadDataTile(region,tile)}))));
+    const unique=new Map();
+    for(const item of loaded){
+      if(!item.data||!item.data.stops) continue;
+      for(const [id,raw] of Object.entries(item.data.stops)){
+        const ll=raw&&raw.ll, stopLat=Number(ll&&ll[0]), stopLon=Number(ll&&ll[1]);
+        if(!isFinite(stopLat)||!isFinite(stopLon)) continue;
+        const metres=dist(lat,lon,stopLat,stopLon); if(metres>radius) continue;
+        const stop={id:String(id),name:titleCase(raw.n||'Unnamed stop'),atco:String(raw.c||id),naptan:String(raw.sms||''),code:String(raw.c||id),ind:String(raw.ind||''),lat:stopLat,lon:stopLon,region:item.region,tile:item.tile,source:'official',d:metres};
+        const old=unique.get(stop.id); if(!old||stop.d<old.d) unique.set(stop.id,stop);
+      }
+    }
+    return [...unique.values()].sort((a,b)=>a.d-b.d).slice(0,120);
   }catch(e){ return null; }
 }
 
@@ -1226,22 +1275,16 @@ async function loadTimetable(){
   if(S.stop) loadStopTimetable(S.stop);
 }
 async function loadStopTimetable(stop){
-  const run=++S.timetableRun, stopId=String(stop.atco||stop.code||stop.id||'');
+  const run=++S.timetableRun;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
   S.ttStop=matchTimetableStop(stop); updateStopMeta(); renderServingNote(); renderDests(); render();
-  if(!S.proxy||!stop.region||!stop.tile||!stopId) return;
+  if(!stop.region||!stop.tile) return;
   try{
-    const url=workerUrl('/departures/'+encodeURIComponent(stopId),{region:stop.region,tile:stop.tile});
-    const r=await fetchTimed(url,{headers:{Accept:'application/json'},cache:'no-store'},12000);
-    if(!r.ok) throw new Error(r.status===404?'no national timetable tile':'HTTP '+r.status);
-    const data=await r.json();
-    if(!data||!data.stops||!Object.keys(data.stops).length) throw new Error('empty national timetable tile');
+    const data=await loadDataTile(stop.region,stop.tile);
+    if(!data||!data.stops||!Object.keys(data.stops).length) throw new Error('no Pages timetable tile');
     if(run!==S.timetableRun||!S.stop||String(S.stop.id)!==String(stop.id)) return;
     activateTimetable(data,'national',stop.region); S.ttError=null; S.ttStop=matchTimetableStop(stop);
-  }catch(e){
-    if(run!==S.timetableRun) return;
-    S.ttError=String((e&&e.message)||'national timetable unavailable');
-  }
+  }catch(e){ if(run!==S.timetableRun) return; S.ttError=String((e&&e.message)||'national timetable unavailable'); }
   updateStopMeta(); renderServingNote(); renderDests(); render();
 }
 function looksLikeAtco(value){ return /^\d{3}0[A-Za-z0-9]{4,8}$/.test(String(value||'').trim()); }
@@ -1304,13 +1347,14 @@ function tripRefMatches(a,b){
   return !!A && !!B && A===B;
 }
 async function queuePattern(patternId){
-  if(!patternId||!S.proxy||!S.timetableRegion||S.patternPending.has(patternId)) return;
+  if(!patternId||!S.timetableRegion||S.patternPending.has(patternId)) return;
   S.patternPending.add(patternId);
   try{
-    const r=await fetchTimed(workerUrl('/pattern/'+encodeURIComponent(patternId),{region:S.timetableRegion}),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
+    const prefix=String(patternId).toLowerCase().replace(/[^a-f0-9]/g,'').slice(0,2); if(prefix.length!==2) return;
+    const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(S.timetableRegion)+'/patterns/'+prefix+'.json'),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
     if(!r.ok) return; const data=await r.json();
-    if(data&&data.patterns&&S.timetable){ Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns); PATTERN_CACHE.clear(); render(); }
-  }catch(e){} finally{ S.patternPending.delete(patternId); }
+    if(data&&data.patterns&&S.timetable){Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns);PATTERN_CACHE.clear();render();}
+  }catch(e){} finally{S.patternPending.delete(patternId);}
 }
 function timetablePattern(journey){
   const tt=S.timetable;
@@ -1447,9 +1491,11 @@ $('dAll').addEventListener('click',()=>setDir('all'));
    Live feed — BODS SIRI-VM
    ============================================================ */
 function bbox(){
-  const c=S.origin, pad=(S.radius+9000)/111320;   // buses well outside the stop radius still matter
-  const padLon = pad/Math.cos(rad(c.lat));
-  return [(c.lon-padLon).toFixed(5),(c.lat-pad).toFixed(5),(c.lon+padLon).toFixed(5),(c.lat+pad).toFixed(5)].join(',');
+  const c=S.origin, wanted=(S.radius+9000)/111320, maxHalf=.17;
+  const latPad=Math.min(wanted,maxHalf), lonPad=Math.min(wanted/Math.max(.2,Math.cos(rad(c.lat))),maxHalf);
+  const minLon=Math.max(-9,c.lon-lonPad), minLat=Math.max(49,c.lat-latPad);
+  const maxLon=Math.min(3,c.lon+lonPad), maxLat=Math.min(61,c.lat+latPad);
+  return [minLon.toFixed(5),minLat.toFixed(5),maxLon.toFixed(5),maxLat.toFixed(5)].join(',');
 }
 function feedUrl(){
   if(S.proxy){
@@ -2389,20 +2435,18 @@ $('refreshBtn').addEventListener('click',()=>{ poll(true); toast('Refreshing…'
    Settings
    ============================================================ */
 async function checkSourceStatus(){
-  const el=$('sourceStatus');
-  if(S.demo){ el.className='settings-status good'; el.textContent='Simulator is active. Live BODS data is not being used.'; return; }
-  if(!S.proxy){ el.className='settings-status'; el.textContent=S.key?'Local key mode selected. This usually works only through a local server.':'Add your Cloudflare Worker URL.'; return; }
-  el.className='settings-status'; el.textContent='Checking Worker…';
+  const el=$('sourceStatus'); el.className='settings-status'; el.textContent='Checking live Worker and timetable Pages…';
+  let dataText='national timetable unavailable';
+  try{const manifest=await loadDataManifest(true);dataText='national timetable '+((manifest&&manifest.built)?'updated '+new Date(manifest.built).toLocaleDateString():'connected');}
+  catch(e){dataText='national timetable unavailable';}
+  if(S.demo){el.className='settings-status good';el.textContent='Simulator active · '+dataText+' · app '+APP_VERSION;return;}
+  if(!S.proxy){el.className='settings-status';el.textContent=(S.key?'Local key mode selected':'Add your Cloudflare Worker URL')+' · '+dataText;return;}
   try{
-    const u=new URL(S.proxy,location.href); u.pathname=u.pathname.replace(/\/$/,'')+'/health'; u.search='';
-    const r=await fetchTimed(u.toString(),{headers:{Accept:'application/json'},cache:'no-store'},7000);
-    const j=await r.json().catch(()=>({}));
+    const u=new URL(S.proxy,location.href);u.pathname=u.pathname.replace(/\/$/,'')+'/health';u.search='';
+    const r=await fetchTimed(u.toString(),{headers:{Accept:'application/json'},cache:'no-store'},7000);const j=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
-    el.className='settings-status good';
-    el.textContent='Worker reachable · BODS secret '+(j.bods?'configured':'missing')+' · national timetable '+(j.timetable?'connected':'not connected')+' · app '+APP_VERSION;
-  }catch(e){
-    el.className='settings-status bad'; el.textContent='Worker check failed: '+(e.message||'unreachable');
-  }
+    el.className='settings-status good';el.textContent='Live Worker reachable · BODS secret '+(j.bods?'configured':'missing')+' · '+dataText+' · app '+APP_VERSION;
+  }catch(e){el.className='settings-status bad';el.textContent='Live Worker check failed: '+(e.message||'unreachable')+' · '+dataText;}
 }
 $('setBtn').addEventListener('click',()=>{
   $('apiKey').value=S.key; $('proxy').value=S.proxy;
