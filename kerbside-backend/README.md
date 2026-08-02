@@ -61,6 +61,8 @@ Kerbside 0.6.21 resets location-dependent direction state immediately. Choosing 
 
 Kerbside 0.6.22 removes the retired recorder/history client. The Settings button for copying `WATCHED_STOPS`, the silent `/history` request, its in-memory state and all call sites have been deleted because the live-only Worker exposes only `/`, `/feed` and `/health`. Local observed-arrival learning remains available in the browser, but the interface no longer implies that a Cloudflare recorder is active.
 
+Kerbside 0.6.23 makes address lookup race-safe and country-scoped. Each Photon request cancels the preceding request, stale responses are ignored by a sequence guard, and clicking away, pressing Escape or reducing the query below three characters also cancels pending work. Forward searches now include both `countrycode=GB` and the Great Britain bounding box, matching the app's timetable and BODS coverage.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

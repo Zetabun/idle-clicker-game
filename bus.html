@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.22 also removes the retired Cloudflare recorder controls and silent /history requests; the public Worker is now represented accurately as a live-feed proxy only.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.23 also cancels obsolete address lookups and restricts Photon suggestions to Great Britain, preventing a slower earlier query or unsupported overseas result from replacing the user's latest search.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.22';
+const APP_VERSION = '0.6.23';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1053,11 +1053,15 @@ function drawAnchor(){
 /* ============================================================
    Geocoding — Photon (keyless, CORS-enabled)
    ============================================================ */
-let sugTimer, sugItems=[], sugIdx=-1;
+let sugTimer, sugItems=[], sugIdx=-1, geocodeRun=0, geocodeAbort=null;
+function cancelGeocode(){
+  geocodeRun++;
+  if(geocodeAbort){ geocodeAbort.abort(); geocodeAbort=null; }
+}
 $('q').addEventListener('input', e=>{
   const v=e.target.value.trim();
   clearTimeout(sugTimer);
-  if(v.length<3){ hideSuggest(); return; }
+  if(v.length<3){ cancelGeocode(); hideSuggest(); return; }
   sugTimer=setTimeout(()=>geocode(v,true),280);
 });
 $('q').addEventListener('keydown', e=>{
@@ -1070,26 +1074,34 @@ $('q').addEventListener('keydown', e=>{
     e.preventDefault();
     sugIdx = e.key==='ArrowDown' ? Math.min(sugIdx+1,sugItems.length-1) : Math.max(sugIdx-1,0);
     [...$('suggest').children].forEach((b,i)=>b.classList.toggle('sel',i===sugIdx));
-  } else if(e.key==='Escape') hideSuggest();
+  } else if(e.key==='Escape'){ cancelGeocode(); hideSuggest(); }
 });
-document.addEventListener('click', e=>{ if(!e.target.closest('.searchwrap')) hideSuggest(); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.searchwrap')){ cancelGeocode(); hideSuggest(); } });
 function hideSuggest(){ $('suggest').style.display='none'; sugItems=[]; sugIdx=-1; }
 
 async function geocode(q, asSuggest){
+  const run=++geocodeRun;
+  if(geocodeAbort) geocodeAbort.abort();
+  const ctl=new AbortController(); geocodeAbort=ctl;
   const c = S.origin || {lat:52.509,lon:-2.087};
   const url = 'https://photon.komoot.io/api/?q='+encodeURIComponent(q)
-            + '&limit=6&lang=en&lat='+c.lat+'&lon='+c.lon;
+            + '&limit=6&lang=en&countrycode=GB&bbox=-9,49,3,61&lat='+c.lat+'&lon='+c.lon;
   try{
-    const r = await fetch(url);
+    const r = await fetchTimed(url,{signal:ctl.signal},8000);
+    if(run!==geocodeRun) return;
     if(!r.ok) throw new Error(r.status);
     const j = await r.json();
+    if(run!==geocodeRun) return;
     const feats = (j.features||[]).filter(f=>f.geometry && f.geometry.coordinates);
     if(!feats.length){ if(!asSuggest) toast('No match for that address. Try a postcode.',true); hideSuggest(); return; }
     if(asSuggest){ renderSuggest(feats); }
     else { hideSuggest(); pickPlace(feats[0]); }
   }catch(err){
+    if(run!==geocodeRun || (err&&err.name==='AbortError')) return;
     hideSuggest();
     if(!asSuggest) toast('Address lookup failed — check your connection.',true);
+  }finally{
+    if(run===geocodeRun) geocodeAbort=null;
   }
 }
 function placeLabel(f){
@@ -1110,6 +1122,7 @@ function renderSuggest(feats){
   box.style.display='block';
 }
 function pickPlace(f){
+  cancelGeocode();
   const [lon,lat]=f.geometry.coordinates;
   const l=placeLabel(f);
   $('q').value=l.main;
