@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.45 also validates timetable departure shards and retains recent last-known-good copies, so a temporary 404, malformed response or incomplete Pages deployment does not erase working departures.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.46 also validates and snapshots route-pattern shards, coalesces requests by shard prefix and retries failed geometry instead of caching a permanent unavailable result for the tab.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.45';
+const APP_VERSION = '0.6.46';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -794,6 +794,11 @@ const DATA_TILE_CACHE = new Map();
 const DATA_DEPARTURE_CACHE = new Map();
 const DATA_DEPARTURE_LAST_GOOD = new Map();
 const DATA_DEPARTURE_SOURCE = new Map();
+const DATA_PATTERN_SHARD_CACHE = new Map();
+const DATA_PATTERN_LAST_GOOD = new Map();
+const DATA_PATTERN_SOURCE = new Map();
+const DATA_PATTERN_RETRY = new Map();
+const DATA_PATTERN_RETRY_MS = 60*1000;
 const DATA_SNAPSHOT_CACHE = 'kerbside-timetable-snapshots-v1';
 const DATA_SHARD_MAX_AGE = 14*24*3600*1000;
 const DATA_MANIFEST_STORAGE = 'kerbside.data.manifest.v1';
@@ -1325,7 +1330,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||''};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||''};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -1373,7 +1378,7 @@ function writeStoredDataManifest(data){
 }
 function resetDataManifestForTest(clearStored){
   DATA_MANIFEST=null; DATA_MANIFEST_PROMISE=null; DATA_MANIFEST_SOURCE='';
-  DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); PATTERN_CACHE.clear();
+  DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_RETRY.clear(); PATTERN_CACHE.clear();
   if(clearStored){ try{localStorage.removeItem(DATA_MANIFEST_STORAGE);}catch(e){} }
 }
 async function loadDataManifest(force){
@@ -1389,7 +1394,7 @@ async function loadDataManifest(force){
       const previousBuild=DATA_MANIFEST&&String(DATA_MANIFEST.built||'');
       const nextBuild=String(data.built||'');
       if(previousBuild&&nextBuild&&previousBuild!==nextBuild){
-        DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); PATTERN_CACHE.clear();
+        DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_RETRY.clear(); PATTERN_CACHE.clear();
       }
       DATA_MANIFEST=data; DATA_MANIFEST_SOURCE='network'; writeStoredDataManifest(data); return data;
     }catch(e){
@@ -1459,6 +1464,7 @@ async function writeDepartureSnapshot(region,shard,data){
 }
 async function clearDataSnapshots(){
   DATA_DEPARTURE_CACHE.clear(); DATA_DEPARTURE_LAST_GOOD.clear(); DATA_DEPARTURE_SOURCE.clear();
+  DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_LAST_GOOD.clear(); DATA_PATTERN_SOURCE.clear(); DATA_PATTERN_RETRY.clear();
   if('caches' in window){ try{await caches.delete(DATA_SNAPSHOT_CACHE);}catch(e){} }
 }
 async function resetDataDepartureForTest(clearSnapshot){
@@ -1496,6 +1502,86 @@ async function loadDataDeparture(region,shard){
     if(fallbackUsed) DATA_DEPARTURE_CACHE.delete(key);
     return data;
   }catch(e){ DATA_DEPARTURE_CACHE.delete(key); throw e; }
+}
+function patternLogicalKey(region,prefix){ return String(region||'')+'/'+String(prefix||'').toLowerCase(); }
+function patternSnapshotRequest(region,prefix){
+  return new Request(location.origin+'/__kerbside_snapshot__/pattern/'+encodeURIComponent(String(region||''))+'/'+encodeURIComponent(String(prefix||'').toLowerCase()));
+}
+function validDataPatternShard(data,region,prefix,expectedBuild){
+  const wanted=String(prefix||'').toLowerCase();
+  if(!data||Number(data.version)<3||String(data.region||'')!==String(region||'')) return false;
+  if(data.scope&&data.scope!=='pattern-shard') return false;
+  if(data.shard&&String(data.shard).toLowerCase()!==wanted) return false;
+  const built=String(data.built||'');
+  if(!Number.isFinite(Date.parse(built))||(expectedBuild&&built!==String(expectedBuild))) return false;
+  if(!/^[a-f0-9]{2}$/.test(wanted)||!plainDataObject(data.patterns)||!Object.keys(data.patterns).length) return false;
+  for(const [id,raw] of Object.entries(data.patterns)){
+    if(!String(id).toLowerCase().startsWith(wanted)) return false;
+    const points=Array.isArray(raw)?raw:raw&&raw.p;
+    if(!Array.isArray(points)||points.length<2||points.some(point=>!Array.isArray(point)||point.length<2||!Number.isFinite(Number(point[0]))||!Number.isFinite(Number(point[1])))) return false;
+    if(raw&&raw.s!==undefined){
+      if(!Array.isArray(raw.s)||raw.s.some(stop=>!Array.isArray(stop)||stop.length<4||!Number.isFinite(Number(stop[2]))||!Number.isFinite(Number(stop[3])))) return false;
+    }
+  }
+  return true;
+}
+async function readPatternSnapshot(region,prefix,now=Date.now()){
+  if(!S.remember||!('caches' in window)) return null;
+  try{
+    const cache=await caches.open(DATA_SNAPSHOT_CACHE), response=await cache.match(patternSnapshotRequest(region,prefix));
+    if(!response) return null;
+    const record=await response.json();
+    if(!record||!Number.isFinite(Number(record.ts))||now-Number(record.ts)>DATA_SHARD_MAX_AGE) return null;
+    return validDataPatternShard(record.data,region,prefix)?record.data:null;
+  }catch(e){ return null; }
+}
+async function writePatternSnapshot(region,prefix,data){
+  if(!S.remember||!('caches' in window)||!validDataPatternShard(data,region,prefix)) return;
+  try{
+    const cache=await caches.open(DATA_SNAPSHOT_CACHE);
+    await cache.put(patternSnapshotRequest(region,prefix),new Response(JSON.stringify({ts:Date.now(),data}),{headers:{'Content-Type':'application/json'}}));
+  }catch(e){}
+}
+async function resetDataPatternForTest(clearSnapshot){
+  DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_LAST_GOOD.clear(); DATA_PATTERN_SOURCE.clear(); DATA_PATTERN_RETRY.clear();
+  if(clearSnapshot&&'caches' in window){
+    try{
+      const cache=await caches.open(DATA_SNAPSHOT_CACHE), keys=await cache.keys();
+      await Promise.all(keys.filter(request=>request.url.includes('/__kerbside_snapshot__/pattern/')).map(request=>cache.delete(request)));
+    }catch(e){}
+  }
+}
+async function loadDataPatternShard(region,prefix){
+  const clean=String(prefix||'').toLowerCase(), logical=patternLogicalKey(region,clean);
+  const expectedBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
+  if(!expectedBuild) throw new Error('Pages patterns have no validated regional build');
+  const key=expectedBuild+'|'+logical;
+  if(DATA_PATTERN_SHARD_CACHE.has(key)) return DATA_PATTERN_SHARD_CACHE.get(key);
+  let fallbackUsed=false;
+  const pending=(async()=>{
+    let fallback=DATA_PATTERN_LAST_GOOD.get(logical)||null, fallbackSource=fallback?'memory':'';
+    if(!fallback){ fallback=await readPatternSnapshot(region,clean); if(fallback) fallbackSource='snapshot'; }
+    try{
+      const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/patterns/'+encodeURIComponent(clean)+'.json'),{headers:{Accept:'application/json'},cache:'no-cache'},12000);
+      if(!r.ok) throw new Error('Pages patterns HTTP '+r.status);
+      const data=await r.json();
+      if(!validDataPatternShard(data,region,clean,expectedBuild)) throw new Error('Pages pattern shard failed validation');
+      DATA_PATTERN_LAST_GOOD.set(logical,data); DATA_PATTERN_SOURCE.set(logical,'network');
+      await writePatternSnapshot(region,clean,data);
+      return data;
+    }catch(e){
+      if(fallback&&validDataPatternShard(fallback,region,clean)){
+        fallbackUsed=true; DATA_PATTERN_LAST_GOOD.set(logical,fallback); DATA_PATTERN_SOURCE.set(logical,fallbackSource||'fallback'); return fallback;
+      }
+      throw e;
+    }
+  })();
+  DATA_PATTERN_SHARD_CACHE.set(key,pending);
+  try{
+    const data=await pending;
+    if(fallbackUsed) DATA_PATTERN_SHARD_CACHE.delete(key);
+    return data;
+  }catch(e){ DATA_PATTERN_SHARD_CACHE.delete(key); throw e; }
 }
 function nationalStopCodes(stop){
   const values=[stop&&stop.timetableId,stop&&stop.atco,stop&&stop.naptan,stop&&stop.code];
@@ -1978,14 +2064,19 @@ function scheduledJourneyDirection(row){
   return afterDistance<beforeDistance?'in':'out';
 }
 async function queuePattern(patternId){
-  if(!patternId||!S.timetableRegion||S.patternPending.has(patternId)) return;
-  S.patternPending.add(patternId);
+  if(!patternId||!S.timetableRegion) return;
+  const prefix=String(patternId).toLowerCase().replace(/[^a-f0-9]/g,'').slice(0,2); if(prefix.length!==2) return;
+  const region=S.timetableRegion, requestKey=patternLogicalKey(region,prefix), expectedBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
+  if(Date.now()<(DATA_PATTERN_RETRY.get(requestKey)||0)||S.patternPending.has(requestKey)) return;
+  S.patternPending.add(requestKey);
   try{
-    const prefix=String(patternId).toLowerCase().replace(/[^a-f0-9]/g,'').slice(0,2); if(prefix.length!==2) return;
-    const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(S.timetableRegion)+'/patterns/'+prefix+'.json'),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
-    if(!r.ok) return; const data=await r.json();
-    if(data&&data.patterns&&S.timetable){Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns);PATTERN_CACHE.clear();render();}
-  }catch(e){} finally{S.patternPending.delete(patternId);}
+    const data=await loadDataPatternShard(region,prefix);
+    const currentBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
+    if(!S.timetable||S.timetableRegion!==region||!data||currentBuild!==expectedBuild) return;
+    Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns);
+    DATA_PATTERN_RETRY.delete(requestKey); PATTERN_CACHE.clear(); render();
+  }catch(e){ DATA_PATTERN_RETRY.set(requestKey,Date.now()+DATA_PATTERN_RETRY_MS); }
+  finally{S.patternPending.delete(requestKey);}
 }
 function timetablePatternRecord(journey){
   const tt=S.timetable;
@@ -2003,10 +2094,10 @@ function timetablePatternRecord(journey){
   if(!id) return null;
   if(PATTERN_CACHE.has(id)) return PATTERN_CACHE.get(id);
   const raw=tt.patterns&&tt.patterns[id];
-  if(!raw){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
+  if(!raw){ if(S.timetableSource==='national') queuePattern(id); else PATTERN_CACHE.set(id,null); return null; }
   const pointRows=Array.isArray(raw)?raw:raw&&raw.p;
   const stopRows=Array.isArray(raw&&raw.s)?raw.s:[];
-  if(!Array.isArray(pointRows)||pointRows.length<2){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
+  if(!Array.isArray(pointRows)||pointRows.length<2){ if(S.timetableSource==='national') queuePattern(id); else PATTERN_CACHE.set(id,null); return null; }
   const points=pointRows.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])})).filter(p=>isFinite(p.lat)&&isFinite(p.lon));
   const stops=stopRows.map(s=>({
     id:String(s&&s[0]||''), name:cleanName(s&&s[1]||'Unnamed stop'),

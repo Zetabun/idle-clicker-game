@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.45'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.46'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -64,7 +64,7 @@ assert.match(busSource, /destination match uncertain/);
 assert.match(busSource, /possible GPS match was filtered/);
 assert.match(busSource, /no unique journey match/);
 assert.match(busSource, /function versionedDataUrl\(path,built\)/);
-assert.match(busSource, /DATA_TILE_CACHE\.clear\(\); DATA_DEPARTURE_CACHE\.clear\(\); PATTERN_CACHE\.clear\(\);/);
+assert.match(busSource, /DATA_TILE_CACHE\.clear\(\); DATA_DEPARTURE_CACHE\.clear\(\); DATA_PATTERN_SHARD_CACHE\.clear\(\); DATA_PATTERN_RETRY\.clear\(\); PATTERN_CACHE\.clear\(\);/);
 assert.match(busSource, /function indexTimetableRows\(rows\)/);
 assert.match(busSource, /function timetableRowsForLine\(line,now\)/);
 assert.match(busSource, /TIMETABLE_ROUTE_CACHE=\{rows,minute,set\}/);
@@ -141,6 +141,12 @@ assert.match(busSource, /cache:'no-cache'/);
 assert.match(busSource, /if\(fallbackUsed\) DATA_DEPARTURE_CACHE\.delete\(key\)/);
 assert.match(busSource, /caches\.delete\(DATA_SNAPSHOT_CACHE\)/);
 assert.doesNotMatch(busSource, /if\(r\.status===404\) return null; if\(!r\.ok\) throw new Error\('Pages departures HTTP '/);
+assert.match(busSource, /const DATA_PATTERN_RETRY_MS = 60\*1000/);
+assert.match(busSource, /function validDataPatternShard\(data,region,prefix,expectedBuild\)/);
+assert.match(busSource, /S\.patternPending\.has\(requestKey\)/);
+assert.match(busSource, /DATA_PATTERN_RETRY\.set\(requestKey,Date\.now\(\)\+DATA_PATTERN_RETRY_MS\)/);
+assert.match(busSource, /if\(S\.timetableSource==='national'\) queuePattern\(id\); else PATTERN_CACHE\.set\(id,null\)/);
+assert.doesNotMatch(busSource, /cache:'force-cache'\},12000\);\n    if\(!r\.ok\) return; const data=await r\.json\(\);/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -177,7 +183,7 @@ const context = await browser.newContext({ viewport: { width: 393, height: 852 }
 const page = await context.newPage();
 
 try {
-  let leafletCdnRequests = 0, cartoTileRequests = 0, osmTileRequests = 0, wideFeedRequests = 0, nearbyFeedRequests = 0, departureRequests = 0;
+  let leafletCdnRequests = 0, cartoTileRequests = 0, osmTileRequests = 0, wideFeedRequests = 0, nearbyFeedRequests = 0, departureRequests = 0, patternRequests = 0;
   const transparentTile = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
   await page.route('https://unpkg.com/leaflet@1.9.4/dist/**', route => { leafletCdnRequests++; return route.abort(); });
   await page.route('https://*.basemaps.cartocdn.com/**', route => { cartoTileRequests++; return route.abort(); });
@@ -216,10 +222,25 @@ try {
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(validDeparture)});
   });
 
+  const patternId='aa1234567890abcdef12';
+  const validPatternShard={
+    version:3,built:'2026-08-02T00:00:00.000Z',scope:'pattern-shard',region:'west_midlands',shard:'aa',
+    patterns:{[patternId]:{p:[[52.49,-2.1],[52.5,-2.1]],s:[['stop-a','Test stop',52.5,-2.1]],g:1}}
+  };
+  let patternMode='valid';
+  await page.route(/^https:\/\/kerbside-data-zetabun\.pages\.dev\/regions\/west_midlands\/patterns\/aa\.json/, route => {
+    patternRequests++;
+    if(patternMode==='bad-json') return route.fulfill({status:200,contentType:'application/json',body:'{"broken"'});
+    if(patternMode==='wrong-build') return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...validPatternShard,built:'2026-08-01T00:00:00.000Z'})});
+    if(patternMode==='404') return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'synthetic missing pattern'})});
+    if(patternMode==='error') return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'synthetic pattern outage'})});
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(validPatternShard)});
+  });
+
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.45', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.46', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -323,6 +344,61 @@ try {
   assert.equal(departureRequests-beforeMissingRetries,2);
   departureMode='valid';
   await page.evaluate(async()=>{const api=window.__KERBSIDE_TEST__;await api.resetDataDepartureForTest(true);await api.loadDataDeparture('west_midlands','aa');});
+
+  patternMode='valid'; patternRequests=0;
+  const patternPolicy=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataPatternForTest(true);
+    const data=await api.loadDataPatternShard('west_midlands','aa');
+    return {valid:api.validDataPatternShard(data,'west_midlands','aa','2026-08-02T00:00:00.000Z'),source:api.dataPatternSource('west_midlands','aa'),patterns:Object.keys(data.patterns).length};
+  });
+  assert.deepEqual(patternPolicy,{valid:true,source:'network',patterns:1});
+  patternMode='bad-json';
+  const malformedPattern=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataPatternForTest(false);
+    const data=await api.loadDataPatternShard('west_midlands','aa');return {source:api.dataPatternSource('west_midlands','aa'),patterns:Object.keys(data.patterns).length};
+  });
+  assert.deepEqual(malformedPattern,{source:'snapshot',patterns:1});
+  patternMode='wrong-build';
+  const wrongBuildPattern=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataPatternForTest(false);
+    const data=await api.loadDataPatternShard('west_midlands','aa');return {source:api.dataPatternSource('west_midlands','aa'),built:data.built};
+  });
+  assert.deepEqual(wrongBuildPattern,{source:'snapshot',built:'2026-08-02T00:00:00.000Z'});
+  patternMode='404';
+  const missingPattern=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataPatternForTest(false);
+    const data=await api.loadDataPatternShard('west_midlands','aa');return {source:api.dataPatternSource('west_midlands','aa'),patterns:Object.keys(data.patterns).length};
+  });
+  assert.deepEqual(missingPattern,{source:'snapshot',patterns:1});
+  await page.evaluate(async()=>window.__KERBSIDE_TEST__.resetDataPatternForTest(true));
+  const beforePatternRetries=patternRequests;
+  const patternFailures=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;let failures=0;
+    for(let i=0;i<2;i++){try{await api.loadDataPatternShard('west_midlands','aa');}catch(e){failures++;}}
+    return failures;
+  });
+  assert.equal(patternFailures,2);
+  assert.equal(patternRequests-beforePatternRetries,2);
+  patternMode='error';
+  await page.evaluate(async()=>window.__KERBSIDE_TEST__.resetDataPatternForTest(true));
+  const beforeQueueRetry=patternRequests;
+  await page.evaluate(async patternId=>{
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,saved={timetable:state.timetable,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion};
+    state.timetable={patterns:{},tripPatterns:{'trip-pattern':patternId}};state.timetableSource='national';state.timetableRegion='west_midlands';
+    try{await api.queuePattern(patternId);await api.queuePattern(patternId);}finally{Object.assign(state,saved);}
+  },patternId);
+  assert.equal(patternRequests-beforeQueueRetry,1);
+  patternMode='valid';
+  const loadedPattern=await page.evaluate(async patternId=>{
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,saved={timetable:state.timetable,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion};
+    await api.resetDataPatternForTest(true);
+    state.timetable={patterns:{},tripPatterns:{'trip-pattern':patternId}};state.timetableSource='national';state.timetableRegion='west_midlands';
+    try{
+      await api.queuePattern(patternId);
+      return {loaded:!!state.timetable.patterns[patternId],record:!!api.timetablePatternRecord('trip-pattern'),source:api.dataPatternSource('west_midlands','aa')};
+    }finally{Object.assign(state,saved);}
+  },patternId);
+  assert.deepEqual(loadedPattern,{loaded:true,record:true,source:'network'});
 
   const liveParsing = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,now=Date.now(),iso=value=>new Date(value).toISOString();
@@ -614,7 +690,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.45'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.46'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
