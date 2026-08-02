@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.25 also preserves ambiguous `St` place-name abbreviations instead of expanding them blindly to `Street`, preventing destinations such as St Helens and Bury St Edmunds from being corrupted.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.26 also keeps a fired leave alert through a brief two-minute missing-GPS gap, preventing the same bus from generating duplicate notifications when it disappears for one poll and returns.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.25';
+const APP_VERSION = '0.6.26';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2367,10 +2367,17 @@ function estimate(v, stop){
    the tab is open — there's no service worker, so nothing fires
    with the browser closed.
    ------------------------------------------------------------ */
-let ALARMS = [];   // {stopId, line, dest, lead, fired}
+const ALERT_MISSING_GRACE_MS = 120*1000;
+let ALARMS = [];   // {stopId,line,dest,fired,vehicleId,lastSeenAt}
 let audioCtx = null;
 
 function alarmKey(stopId,line,dest){ return stopId+'|'+line+'|'+(dest||''); }
+function retainFiredAlarm(alarm,now){
+  return !!(alarm&&alarm.fired&&alarm.lastSeenAt&&now-alarm.lastSeenAt<=ALERT_MISSING_GRACE_MS);
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm};
+}
 function hasAlarm(line,dest){
   return S.stop && ALARMS.some(a=>a.k===alarmKey(S.stop.id,line,dest));
 }
@@ -2382,7 +2389,7 @@ async function toggleAlarm(line,dest){
   if('Notification' in window && Notification.permission==='default'){
     try{ await Notification.requestPermission(); }catch(e){}
   }
-  ALARMS.push({k, stopId:S.stop.id, line, dest, fired:false});
+  ALARMS.push({k, stopId:S.stop.id, line, dest, fired:false, vehicleId:null, lastSeenAt:0});
   const denied = ('Notification' in window) && Notification.permission==='denied';
   toast(denied
     ? 'Watching the '+line+'. Notifications are blocked, so it will alert in the app only.'
@@ -2406,16 +2413,20 @@ function beep(){
 }
 function checkAlarms(rows){
   if(!ALARMS.length || !S.stop) return;
-  const walk = S.walkSecs || 0;
+  const walk = S.walkSecs || 0, now=Date.now();
   for(const a of ALARMS){
     if(a.stopId !== S.stop.id) continue;
     const hit = rows.find(r=>String(r.v.line)===String(a.line) && (!a.dest || r.v.dest===a.dest));
-    if(!hit){ a.fired=false; a.vehicleId=null; continue; }
+    if(!hit){
+      if(retainFiredAlarm(a,now)) continue;
+      a.fired=false; a.vehicleId=null; a.lastSeenAt=0; continue;
+    }
+    a.lastSeenAt=now;
     const vehicleId=String(hit.v.journey||hit.v.id);
     if(a.vehicleId && a.vehicleId!==vehicleId){ a.fired=false; a.vehicleId=null; }
     const slack = hit.secs - walk;
     if(!a.fired && slack <= 60){
-      a.fired = true; a.vehicleId=vehicleId;
+      a.fired = true; a.vehicleId=vehicleId; a.lastSeenAt=now;
       const mins = Math.max(0,Math.round(hit.secs/60));
       const body = 'The '+a.line+' to '+(hit.v.dest||'?')+' reaches '+S.stop.name
                  + ' in about '+mins+' min. Walking takes '+Math.round(walk/60)+'.';
@@ -2426,7 +2437,7 @@ function checkAlarms(rows){
         }
       }catch(e){}
     } else if(a.fired && slack > 300){
-      a.fired=false; a.vehicleId=null;
+      a.fired=false; a.vehicleId=null; a.lastSeenAt=0;
     }
   }
 }
