@@ -19,7 +19,10 @@ if source.count(bad_resolver) != 1:
     raise SystemExit(f"release loader: expected one resolver cleanup, found {source.count(bad_resolver)}")
 source = source.replace(bad_resolver, good_resolver, 1)
 marker = 'browser = read("kerbside-backend/tests/browser-regression.mjs").replace(OLD, NEW)\n'
-addition = 'browser = browser.replace("assert.match(busSource, /if\\\\(!shown&&!nearby\\\\) continue/);", "assert.match(busSource, /function mapVehicleVisible/);")\n'
+addition = (
+    'browser = browser.replace("assert.match(busSource, /if\\\\(!shown&&!nearby\\\\) continue/);", "assert.match(busSource, /function mapVehicleVisible/);")\n'
+    'browser = browser.replace("assert.match(busSource, /const APP_VERSION = \'0\\\\.6\\\\.51\'/);", "assert.match(busSource, /const APP_VERSION = \'0\\\\.6\\\\.52\'/);")\n'
+)
 if source.count(marker) != 1:
     raise SystemExit(f"release loader: expected one browser test load, found {source.count(marker)}")
 source = source.replace(marker, marker + addition, 1)
