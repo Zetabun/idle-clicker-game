@@ -18,6 +18,16 @@ def replace_once(text, old, new, label):
     return text.replace(old, new, 1)
 
 
+def replace_span(text, start, end, replacement, label):
+    start_index = text.find(start)
+    if start_index < 0:
+        raise SystemExit(f'{label}: start marker was not found')
+    end_index = text.find(end, start_index)
+    if end_index < 0:
+        raise SystemExit(f'{label}: end marker was not found')
+    return text[:start_index] + replacement + text[end_index:]
+
+
 bus_path = 'bus.html'
 bus = read(bus_path)
 bus = replace_once(bus, "const APP_VERSION = '0.6.40';", "const APP_VERSION = '0.6.41';", 'browser version')
@@ -27,39 +37,21 @@ bus = replace_once(
     "Version 0.6.41 also supplements incomplete national stop-tile responses with OpenStreetMap, avoids week-long caching of partial results and uses a finer location key so nearby searches do not incorrectly share stop lists.",
     'coverage release note'
 )
-old_cache = """const STOP_TTL = 7*24*3600*1000;
+bus = replace_once(
+    bus,
+    """const STOP_TTL = 7*24*3600*1000;
 function stopCacheKey(lat,lon,radius){
   return 'kerbside.stops.v5.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
 }
-"""
-new_cache = """const STOP_TTL = 7*24*3600*1000;
+""",
+    """const STOP_TTL = 7*24*3600*1000;
 function stopCacheKey(lat,lon,radius){
   return 'kerbside.stops.v6.'+lat.toFixed(4)+','+lon.toFixed(4)+','+radius;
 }
-"""
-bus = replace_once(bus, old_cache, new_cache, 'stop cache precision')
+""",
+    'stop cache precision'
+)
 
-old_official = """async function fetchOfficialStops(lat,lon,radius){
-  try{
-    const manifest=await loadDataManifest(false), regions=dataRegionsFor(lat,lon,radius,manifest), tiles=dataTilesForRadius(lat,lon,radius);
-    const settled=await Promise.allSettled(regions.flatMap(region=>tiles.map(async tile=>({region,tile,data:await loadDataTile(region,tile)}))));
-    const loaded=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
-    if(!loaded.length) return null;
-    const unique=new Map();
-    for(const item of loaded){
-      if(!item.data||!item.data.stops) continue;
-      for(const [id,raw] of Object.entries(item.data.stops)){
-        const ll=raw&&raw.ll, stopLat=Number(ll&&ll[0]), stopLon=Number(ll&&ll[1]);
-        if(!isFinite(stopLat)||!isFinite(stopLon)) continue;
-        const metres=dist(lat,lon,stopLat,stopLon); if(metres>radius) continue;
-        const stop={id:String(id),timetableId:String(id),name:titleCase(raw.n||'Unnamed stop'),atco:String(raw.c||id),naptan:String(raw.sms||''),code:String(raw.c||id),ind:String(raw.ind||''),lat:stopLat,lon:stopLon,region:item.region,tile:item.tile,shard:String(raw.shard||''),source:'official',d:metres};
-        const old=unique.get(stop.id); if(!old||stop.d<old.d) unique.set(stop.id,stop);
-      }
-    }
-    return [...unique.values()].sort((a,b)=>a.d-b.d).slice(0,120);
-  }catch(e){ return null; }
-}
-"""
 new_official = """async function fetchOfficialStops(lat,lon,radius){
   try{
     const manifest=await loadDataManifest(false), regions=dataRegionsFor(lat,lon,radius,manifest), tiles=dataTilesForRadius(lat,lon,radius);
@@ -125,61 +117,15 @@ function showDiscoveredStops(stops,lat,lon,cacheable){
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),stopCacheKey,sameDiscoveredStop,mergeDiscoveredStops};
-}
-"""
-bus = replace_once(bus, old_official, new_official, 'partial official stop result')
+}"""
+bus = replace_span(
+    bus,
+    'async function fetchOfficialStops(lat,lon,radius){',
+    '\n\nasync function findStops(lat,lon,run){',
+    new_official,
+    'partial official stop result'
+)
 
-old_find = """  const official=await fetchOfficialStops(lat,lon,S.radius);
-  if(run!==S.locationRun) return;
-  if(official && official.length){
-    S.stops=official; drawStops(); writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
-    const want=S.pendingStopId?S.stops.find(s=>String(s.id)===String(S.pendingStopId)):null;
-    S.pendingStopId=null; selectStop(want||S.stops[0]); return;
-  }
-  const q = `[out:json][timeout:25];
-(node["highway"="bus_stop"](around:${S.radius},${lat},${lon});
- node["public_transport"="platform"]["bus"="yes"](around:${S.radius},${lat},${lon}););
-out body 120;`;
-  try{
-    const j = await overpass(q);
-    if(run!==S.locationRun) return;
-    const seen=new Set();
-    S.stops = (j.elements||[]).map(el=>{
-      const tags=el.tags||{};
-      const atco=tags['naptan:AtcoCode']||'';
-      const naptan=tags['naptan:NaptanCode']||tags['naptan:SmsCode']||'';
-      return {
-        id:el.id,
-        name:titleCase(tags.name||tags['naptan:CommonName']||'Unnamed stop'),
-        atco,naptan, code:atco||naptan||tags.ref||'',
-        ind:tags['naptan:Indicator']||tags.local_ref||'',
-        lat:el.lat, lon:el.lon, d:dist(lat,lon,el.lat,el.lon)
-      };
-    }).filter(s=>{
-      const k=String(s.id)+'|'+Math.round(s.lat*25000)+'|'+Math.round(s.lon*25000);
-      if(seen.has(k)) return false; seen.add(k); return true;
-    }).sort((a,b)=>a.d-b.d);
-
-    drawStops();
-    writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
-    if(S.stops.length){
-      const want = S.pendingStopId ? S.stops.find(s=>s.id===S.pendingStopId) : null;
-      S.pendingStopId = null;
-      selectStop(want || S.stops[0]);
-    }
-    else {
-      $('stopName').textContent='No bus stops mapped here';
-      $('stopMeta').textContent='TRY A WIDER RADIUS IN SETTINGS';
-      showEmpty('<strong>No stops within '+fmtDist(S.radius)+'</strong>OpenStreetMap has no bus stops mapped around this point. Widen the radius in settings, or move the search somewhere more built up.');
-    }
-  }catch(e){
-    if(run!==S.locationRun) return;
-    $('stopName').textContent='Could not load stops';
-    $('stopMeta').textContent='OVERPASS UNAVAILABLE';
-    showEmpty('<strong>Stop lookup failed</strong>The OpenStreetMap query service didn\'t respond. It rate-limits under load — wait a moment and <button id="retryStops">try again</button>.');
-    const rb=$('retryStops'); if(rb) rb.addEventListener('click',()=>findStops(lat,lon,S.locationRun));
-  }
-"""
 new_find = """  const officialResult=await fetchOfficialStops(lat,lon,S.radius);
   if(run!==S.locationRun) return;
   const official=officialResult&&Array.isArray(officialResult.stops)?officialResult.stops:[];
@@ -227,9 +173,14 @@ out body 120;`;
     $('stopMeta').textContent='STOP DATA UNAVAILABLE';
     showEmpty('<strong>Stop lookup failed</strong>National timetable tiles and OpenStreetMap did not respond. Wait a moment and <button id="retryStops">try again</button>.');
     const rb=$('retryStops'); if(rb) rb.addEventListener('click',()=>findStops(lat,lon,S.locationRun));
-  }
-"""
-bus = replace_once(bus, old_find, new_find, 'partial stop recovery flow')
+  }"""
+bus = replace_span(
+    bus,
+    '  const official=await fetchOfficialStops(lat,lon,S.radius);',
+    '\n}\n\nfunction drawStops(){',
+    new_find,
+    'partial stop recovery flow'
+)
 write(bus_path, bus)
 
 package_path = 'kerbside-backend/package.json'
