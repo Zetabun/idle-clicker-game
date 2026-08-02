@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.43 also validates the complete national timetable manifest and keeps a recent last-known-good copy, so malformed or incomplete data deployments cannot replace working timetable coverage.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.44 also identifies live buses by their globally unique journey reference before falling back to the vehicle code, so several buses running the same route remain separate even when an operator reuses a generic VehicleRef.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.43';
+const APP_VERSION = '0.6.44';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2215,10 +2215,17 @@ function flatten(node, out){
 
 function liveVehicleIdentity(fields){
   const operator=String(fields&&fields.OperatorRef||'').trim();
+  const producer=String(fields&&fields.ProducerRef||'').trim();
   const vehicle=String(fields&&fields.VehicleRef||'').trim();
   const journey=String(fields&&(fields.DatedVehicleJourneyRef||fields.VehicleJourneyRef)||'').trim();
-  if(vehicle) return (operator?operator+'|':'')+'vehicle|'+vehicle;
-  if(journey) return (operator?operator+'|':'')+'journey|'+journey;
+  const item=String(fields&&fields.ItemIdentifier||'').trim();
+  const owner=operator||producer||'unknown';
+  // BODS specifies VehicleJourneyRef as globally unique. Use it before the
+  // physical vehicle code because some real feeds reuse placeholder or fleet
+  // values in VehicleRef across several simultaneous journeys.
+  if(journey) return owner+'|journey|'+journey;
+  if(vehicle) return owner+'|vehicle|'+vehicle;
+  if(item) return owner+'|item|'+item;
   return '';
 }
 function parseLivePayloads(items,now){
@@ -2263,7 +2270,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,liveState:S};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S};
 }
 
 async function fetchLiveResponse(url,signal){

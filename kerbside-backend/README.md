@@ -103,6 +103,8 @@ Kerbside 0.6.42 tightens stop identity merging. Official timetable IDs, ATCO cod
 
 Kerbside 0.6.43 validates national timetable manifests before they become active. A manifest must identify the England regional Pages dataset, contain all nine expected regions, include valid build timestamps and bounds, report positive regional asset counts, and have totals that exactly match the regional sums. Valid manifests are stored locally for 14 days. Malformed JSON, incomplete deployments, inconsistent totals and HTTP failures now fall back to that recent last-known-good snapshot without clearing working tile, departure or pattern caches. WebKit executes successful, malformed, partial and unavailable manifest scenarios.
 
+Kerbside 0.6.44 fixes live multi-vehicle identity. The DfT SIRI-VM profile defines `VehicleJourneyRef` as globally unique, while `VehicleRef` identifies the physical vehicle. Kerbside previously preferred `VehicleRef`, allowing a non-compliant operator that reused a placeholder or fleet code to collapse several simultaneous journeys into one record. Live identity now uses operator plus journey first, then falls back to vehicle and item identifiers only when no journey reference exists. WebKit parses five simultaneous route-9 activities with one shared vehicle code and verifies all five survive ingestion, stop matching and board-row generation.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
