@@ -35,13 +35,17 @@ assert.doesNotMatch(busSource, /st:'Street'/);
 assert.match(busSource, /if\(bare==='st'\) return 'St'/);
 assert.match(busSource, /const ALERT_MISSING_GRACE_MS = 120\*1000/);
 assert.match(busSource, /function retainFiredAlarm\(alarm,now\)/);
-assert.match(busSource, /if\(!shown&&!nearby\) continue/);
+assert.match(busSource, /function mapVehicleVisible/);
 assert.match(busSource, /function timetablePatternRecord\(journey,preferredPatternId\)/);
 assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.51'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.52'/);
+assert.match(busSource, /age<=4\*60\*1000/);
+assert.match(busSource, /points\.length===2\?1:2/);
+assert.match(busSource, /function boardRefreshCanRender/);
+assert.match(busSource, /feedRefreshing:false/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -277,7 +281,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.51', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.52', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -301,11 +305,13 @@ try {
     return route.fulfill({status:200,contentType:'application/xml',body:liveXml('NEAR','nearby-1','52.5010')});
   });
 
+  const pageErrors=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
   assert.match(await page.title(), /Kerbside/i);
   assert.equal(await page.evaluate(() => window.L && window.L.version), '1.9.4');
   assert.equal(leafletCdnRequests, 0);
-  assert.equal(await page.locator('#map.leaflet-container').count(), 1);
+  assert.equal(await page.locator('#map.leaflet-container').count(), 1, pageErrors.join('\n'));
   await page.waitForFunction(() => window.__KERBSIDE_TEST__?.currentTileProvider?.() === 'OpenStreetMap');
   assert.ok(cartoTileRequests >= 4);
   assert.ok(osmTileRequests > 0);
@@ -683,6 +689,32 @@ try {
   assert.equal(gpsSafety.freshClaims,true);
   assert.equal(gpsSafety.wrongBoardDirection,false);
 
+  const resilience = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now(),saved={anchor:state.anchor,timetable:state.timetable,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion,patternPending:new Set(state.patternPending)};
+    try{
+      const vehicle={hist:[{lat:52.40,lon:-2.1,ts:now-80000},{lat:52.45,lon:-2.1,ts:now-60000},{lat:52.44,lon:-2.1,ts:now-40000},{lat:52.43,lon:-2.1,ts:now-20000},{lat:52.42,lon:-2.1,ts:now}],bearing:NaN};
+      state.anchor={lat:52.6,lon:-2.1,name:'Town',synthetic:false};const direction=api.gpsMovementDirection(vehicle),recent=api.recentMovementPoints(vehicle).length;
+      state.anchor={lat:52.6,lon:-2.1,name:'Local',synthetic:true};const synthetic=api.gpsMovementDirection(vehicle);
+      const staleMap=api.mapVehicleVisible({ts:now-5*60000},false,now),heldMap=api.mapVehicleVisible({ts:now-5*60000},true,now);
+      const id='aa52loadingpattern0001';state.timetable={tripPatterns:{trip:id},patterns:{}};state.timetableSource='national';state.timetableRegion='west_midlands';state.patternPending.add('west_midlands/aa');
+      const loading=api.timetablePatternLoadState('trip',''),html=api.journeyProgressHtml({journey:'trip',progressTrip:'trip',progressPattern:id});
+      const plan=api.nationalStopRegionPlan({region:'west_midlands',lat:52.5,lon:-2.1},{regions:{west_midlands:{bounds:[-3,51,-1,53]},north_west:{bounds:[-4,53,-1,56]}}});
+      return {direction,recent,synthetic,staleMap,heldMap,loading,html,primary:plan.primary,fallback:plan.fallback,mapHelper:api.mapVehicleVisible.toString(),mapAge:now-(now-5*60000),mapTimestamp:now-5*60000,now};
+    }finally{state.patternPending.clear();for(const item of saved.patternPending)state.patternPending.add(item);Object.assign(state,{anchor:saved.anchor,timetable:saved.timetable,timetableSource:saved.timetableSource,timetableRegion:saved.timetableRegion});}
+  });
+  assert.equal(resilience.direction,'out');assert.equal(resilience.recent,4);assert.equal(resilience.synthetic,'unknown');assert.equal(resilience.staleMap,false,JSON.stringify(resilience));assert.equal(resilience.heldMap,true,JSON.stringify(resilience));assert.equal(resilience.loading,'loading');assert.match(resilience.html,/Loading journey progress/);assert.deepEqual(resilience.primary,['west_midlands']);assert.deepEqual(resilience.fallback,['north_west']);
+
+  const refreshGate = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,saved=state.feedRefreshing;
+    try{
+      state.feedRefreshing=true;const busy=api.boardRefreshCanRender();
+      state.feedRefreshing=false;const idle=api.boardRefreshCanRender();
+      return {busy,idle};
+    }finally{state.feedRefreshing=saved;}
+  });
+  assert.equal(refreshGate.busy,false);
+  assert.equal(refreshGate.idle,true);
+
   const emptyFeed = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,originalFetch=window.fetch;
     const saved={stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge,feedEmptyReason:state.feedEmptyReason};
@@ -924,7 +956,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.51'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.52'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

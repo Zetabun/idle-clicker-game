@@ -543,6 +543,10 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .settings-tab{padding:6px 8px;font-size:11.5px}
   .board-head{padding:8px 12px 7px}
 }
+.map-tile-error{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:1200;width:min(440px,calc(100% - 32px));padding:11px 14px;border:1px solid var(--warn);border-radius:9px;background:rgba(17,26,38,.96);box-shadow:0 12px 32px rgba(0,0,0,.5);text-align:center;pointer-events:none}
+.map-tile-error[hidden]{display:none}
+.map-tile-error strong{display:block;color:#FFD0CA;font-size:13px}
+.map-tile-error span{display:block;margin-top:3px;color:var(--text-dim);font-size:11.5px;line-height:1.45}
 </style>
 </head>
 <body>
@@ -789,7 +793,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.51';
+const APP_VERSION = '0.6.52';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -808,6 +812,7 @@ const DATA_PATTERN_RETRY = new Map();
 const DATA_PATTERN_RETRY_MS = 60*1000;
 const DATA_SNAPSHOT_CACHE = 'kerbside-timetable-snapshots-v1';
 const DATA_SHARD_MAX_AGE = 14*24*3600*1000;
+const DATA_DEPARTURE_MAX_AGE = 3*24*3600*1000;
 const DATA_MANIFEST_STORAGE = 'kerbside.data.manifest.v1';
 const DATA_MANIFEST_MAX_AGE = 14*24*3600*1000;
 const REQUIRED_DATA_REGIONS = ['east_anglia','east_midlands','london','north_east','north_west','south_east','south_west','west_midlands','yorkshire'];
@@ -827,10 +832,10 @@ const S = {
   vehicles:new Map(),       // id -> live vehicle state and short position history
   markers:new Map(),
   selected:null,
-  timer:null, tick:null, motionTimer:null, busy:false, pollAgain:false, lastOk:0, lastFeedAt:0,
+  timer:null, tick:null, motionTimer:null, busy:false, feedRefreshing:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
-  timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
+  timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
   routeScanBusy:false, routeScanAbort:null, lastRouteScan:0,
   routeScanBoxes:0, routeScanPatterns:0, routeScanVehicles:0, routeScanError:''
@@ -1078,33 +1083,46 @@ const TILE_PROVIDERS=[
     }
   }
 ];
-let baseLayer=null,tileProviderIndex=-1,tileErrorCount=0;
+let baseLayer=null,tileProviderIndex=-1,tileErrorCount=0,mapTileFailureWarned=false;
 function currentTileProvider(){return TILE_PROVIDERS[tileProviderIndex]&&TILE_PROVIDERS[tileProviderIndex].name||'';}
+function hardenMapAttributionLinks(){
+  const attribution=map.attributionControl&&map.attributionControl.getContainer();
+  if(attribution) attribution.querySelectorAll('a').forEach(link=>{link.target='_blank';link.rel='noopener noreferrer';});
+}
+function setMapTileFailure(failed){
+  let node=document.getElementById('mapTileError');
+  if(!node){
+    node=document.createElement('div');node.id='mapTileError';node.className='map-tile-error';node.hidden=true;node.setAttribute('role','alert');
+    node.innerHTML='<strong>Map tiles unavailable</strong><span>The departure board is still working. Check your connection and retry the map shortly.</span>';
+    document.getElementById('map').appendChild(node);
+  }
+  node.hidden=!failed;
+  if(!failed) mapTileFailureWarned=false;
+}
 function useTileProvider(index,reason){
   const provider=TILE_PROVIDERS[index];
   if(!provider||index===tileProviderIndex) return;
   if(baseLayer) map.removeLayer(baseLayer);
-  tileProviderIndex=index;tileErrorCount=0;
+  setMapTileFailure(false);tileProviderIndex=index;tileErrorCount=0;
   baseLayer=L.tileLayer(provider.url,provider.options);
-  baseLayer.on('tileload',()=>{if(tileProviderIndex===index) tileErrorCount=Math.max(0,tileErrorCount-1);});
+  baseLayer.on('tileload',()=>{if(tileProviderIndex===index){tileErrorCount=Math.max(0,tileErrorCount-1);setMapTileFailure(false);hardenMapAttributionLinks();}});
   baseLayer.on('tileerror',()=>{
     if(tileProviderIndex!==index) return;
     tileErrorCount++;
-    if(tileErrorCount>=TILE_ERROR_THRESHOLD&&index+1<TILE_PROVIDERS.length){
-      useTileProvider(index+1,'Primary map tiles unavailable');
+    if(tileErrorCount<TILE_ERROR_THRESHOLD) return;
+    if(index+1<TILE_PROVIDERS.length) useTileProvider(index+1,'Primary map tiles unavailable');
+    else{
+      setMapTileFailure(true);
+      if(!mapTileFailureWarned){mapTileFailureWarned=true;toast('Map tiles are unavailable. Live times remain available.',true);}
     }
   });
-  baseLayer.addTo(map);
+  baseLayer.addTo(map);hardenMapAttributionLinks();
   if(reason) toast(reason+' — using '+provider.name+'.');
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),currentTileProvider};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),currentTileProvider,hardenMapAttributionLinks,setMapTileFailure};
 }
-useTileProvider(0);
-const attributionEl=map.attributionControl&&map.attributionControl.getContainer();
-if(attributionEl){
-  attributionEl.querySelectorAll('a').forEach(link=>{link.target='_blank';link.rel='noopener noreferrer';});
-}
+useTileProvider(0);hardenMapAttributionLinks();
 
 let meMarker=null, anchorMarker=null, routeLayer=L.layerGroup().addTo(map), stopLayer=L.layerGroup().addTo(map), vehLayer=L.layerGroup().addTo(map);
 let ring=null;
@@ -1422,14 +1440,14 @@ async function loadDataManifest(force){
   })();
   try{return await DATA_MANIFEST_PROMISE;}finally{DATA_MANIFEST_PROMISE=null;}
 }
-function dataRegionsFor(lat,lon,radius,manifest){
+function dataRegionsFor(lat,lon,radius,manifest,fallbackAll=true){
   const latPad=radius/111320, lonPad=radius/(111320*Math.max(.2,Math.cos(rad(lat))));
   const names=[];
   for(const [name,info] of Object.entries((manifest&&manifest.regions)||{})){
     const b=info&&info.bounds; if(!Array.isArray(b)||b.length!==4) continue;
     if(lon+lonPad>=b[0]&&lat+latPad>=b[1]&&lon-lonPad<=b[2]&&lat-latPad<=b[3]) names.push(name);
   }
-  return names.length?names:Object.keys((manifest&&manifest.regions)||{});
+  return names.length||!fallbackAll?names:Object.keys((manifest&&manifest.regions)||{});
 }
 function tileLogicalKey(region,tile){ return String(region||'')+'/'+String(tile||''); }
 function tileSnapshotRequest(region,tile){
@@ -1547,7 +1565,7 @@ async function readDepartureSnapshot(region,shard,now=Date.now()){
     const cache=await caches.open(DATA_SNAPSHOT_CACHE), response=await cache.match(departureSnapshotRequest(region,shard));
     if(!response) return null;
     const record=await response.json();
-    if(!record||!Number.isFinite(Number(record.ts))||now-Number(record.ts)>DATA_SHARD_MAX_AGE) return null;
+    if(!record||!Number.isFinite(Number(record.ts))||now-Number(record.ts)>DATA_DEPARTURE_MAX_AGE) return null;
     return validDataDeparture(record.data,region,shard)?record.data:null;
   }catch(e){ return null; }
 }
@@ -1706,19 +1724,26 @@ function matchNationalTileStop(tileData,stop){
   }
   return best;
 }
-async function nationalStopCandidates(stop){
-  const manifest=await loadDataManifest(false), tile=stop.tile||dataTileKey(stop.lat,stop.lon);
-  const allRegions=Object.keys((manifest&&manifest.regions)||{});
-  const likely=dataRegionsFor(stop.lat,stop.lon,250,manifest);
-  const regions=[...new Set([stop.region,...likely,...allRegions].filter(Boolean))];
+function nationalStopRegionPlan(stop,manifest){
+  const all=Object.keys((manifest&&manifest.regions)||{}), likely=dataRegionsFor(stop.lat,stop.lon,250,manifest,false);
+  const primary=[...new Set([stop.region,...likely].filter(region=>region&&all.includes(region)))];
+  const first=primary.length?primary:all;
+  return {primary:first,fallback:all.filter(region=>!first.includes(region))};
+}
+async function loadNationalStopCandidates(stop,tile,regions){
   const settled=await Promise.allSettled(regions.map(async region=>({region,tile,data:await loadDataTile(region,tile)})));
   const candidates=[];
   for(const result of settled){
     if(result.status!=='fulfilled'||!result.value.data) continue;
     const matched=matchNationalTileStop(result.value.data,stop);
-    if(matched) candidates.push({...result.value,...matched});
+    if(matched) candidates.push({...result.value,...matched,tileSource:DATA_TILE_SOURCE.get(tileLogicalKey(result.value.region,tile))||''});
   }
   return candidates;
+}
+async function nationalStopCandidates(stop){
+  const manifest=await loadDataManifest(false), tile=stop.tile||dataTileKey(stop.lat,stop.lon), plan=nationalStopRegionPlan(stop,manifest);
+  const primary=await loadNationalStopCandidates(stop,tile,plan.primary);
+  return primary.length||!plan.fallback.length?primary:loadNationalStopCandidates(stop,tile,plan.fallback);
 }
 async function loadBestNationalStop(stop){
   const candidates=await nationalStopCandidates(stop);
@@ -1729,14 +1754,16 @@ async function loadBestNationalStop(stop){
     const data=await loadDataDeparture(candidate.region,shard);
     const timetableStop=data&&data.stops&&data.stops[candidate.id];
     if(!timetableStop) throw new Error('no Pages timetable data for this stop');
-    return {...candidate,shard,data,timetableStop,departureCount:Array.isArray(timetableStop.d)?timetableStop.d.length:0};
+    const departureSource=DATA_DEPARTURE_SOURCE.get(departureLogicalKey(candidate.region,shard))||'';
+    return {...candidate,shard,data,timetableStop,departureSource,departureCount:Array.isArray(timetableStop.d)?timetableStop.d.length:0};
   }));
   const valid=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
   if(!valid.length) throw new Error('no regional timetable shard contained this official stop');
   valid.sort((a,b)=>b.departureCount-a.departureCount
     ||(a.region===stop.region?-1:b.region===stop.region?1:0)
     ||a.region.localeCompare(b.region));
-  return valid[0];
+  const best=valid[0], sources=[best.tileSource,best.departureSource].filter(Boolean);
+  return {...best,fallback:sources.some(source=>source!=='network')};
 }
 async function fetchOfficialStops(lat,lon,radius){
   try{
@@ -1981,8 +2008,9 @@ function serviceRuns(ref, serviceDate){
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),parseDepMinutes,serviceDepartureTime,serviceRuns};
 }
-function activateTimetable(data,source,region){
-  S.timetable=data||null; S.timetableSource=source||''; S.timetableRegion=region||''; PATTERN_CACHE.clear();
+function activateTimetable(data,source,region,meta){
+  const info=meta||{};S.timetable=data||null;S.timetableSource=source||'';S.timetableRegion=region||'';
+  S.timetableBuilt=String(info.built||(data&&data.built)||'');S.timetableFallback=!!info.fallback;PATTERN_CACHE.clear();
 }
 async function loadTimetable(){
   S.ttError=null;
@@ -2013,7 +2041,7 @@ async function loadStopTimetable(stop){
     stop.timetableId=matched.id; stop.region=matched.region; stop.tile=matched.tile; stop.shard=matched.shard; stop.source='official';
     stop.atco=String(raw.c||matched.id); stop.naptan=String(raw.sms||stop.naptan||''); stop.code=String(raw.c||matched.id);
     if(!stop.ind&&raw.ind) stop.ind=String(raw.ind);
-    activateTimetable(matched.data,'national',matched.region); S.ttError=null;
+    activateTimetable(matched.data,'national',matched.region,{built:matched.data&&matched.data.built,fallback:matched.fallback}); S.ttError=null;
     S.ttStop={id:matched.id,...matched.timetableStop,match:'code'};
   }catch(e){ if(run!==S.timetableRun) return; S.ttError=String((e&&e.message)||'national timetable unavailable'); }
   updateStopMeta(); renderServingNote(); renderDests(); render();
@@ -2173,21 +2201,30 @@ async function queuePattern(patternId){
     Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns);
     DATA_PATTERN_RETRY.delete(requestKey); PATTERN_CACHE.clear(); render();
   }catch(e){ DATA_PATTERN_RETRY.set(requestKey,Date.now()+DATA_PATTERN_RETRY_MS); }
-  finally{S.patternPending.delete(requestKey);}
+  finally{S.patternPending.delete(requestKey);if(boardRefreshCanRender()) render();}
+}
+function timetablePatternId(journey,preferredPatternId){
+  const tt=S.timetable;if(!tt||!tt.tripPatterns) return '';
+  const journeyKey=String(journey||''), aliasKey='trip:'+journeyKey;
+  let id=String(preferredPatternId||'')||tt.tripPatterns[journeyKey];
+  if(!id&&journeyKey){
+    if(PATTERN_CACHE.has(aliasKey)) id=PATTERN_CACHE.get(aliasKey)||'';
+    else{const match=uniqueCompatibleTrips(Object.keys(tt.tripPatterns),journeyKey,ref=>ref);id=match.items.length?tt.tripPatterns[match.ref]:'';PATTERN_CACHE.set(aliasKey,id||'');}
+  }
+  return String(id||'');
+}
+function timetablePatternLoadState(journey,preferredPatternId){
+  const id=timetablePatternId(journey,preferredPatternId);if(!id) return 'unavailable';
+  if(S.timetable&&S.timetable.patterns&&S.timetable.patterns[id]) return 'ready';
+  if(S.timetableSource!=='national') return 'unavailable';
+  const prefix=id.toLowerCase().replace(/[^a-f0-9]/g,'').slice(0,2), key=prefix.length===2?patternLogicalKey(S.timetableRegion,prefix):'';
+  if(key&&Date.now()<(DATA_PATTERN_RETRY.get(key)||0)) return 'failed';
+  return 'loading';
 }
 function timetablePatternRecord(journey,preferredPatternId){
   const tt=S.timetable;
   if(!tt||!tt.tripPatterns) return null;
-  const journeyKey=String(journey||''), aliasKey='trip:'+journeyKey;
-  let id=String(preferredPatternId||'')||tt.tripPatterns[journeyKey];
-  if(!id&&journeyKey){
-    if(PATTERN_CACHE.has(aliasKey)) id=PATTERN_CACHE.get(aliasKey)||null;
-    else{
-      const match=uniqueCompatibleTrips(Object.keys(tt.tripPatterns),journeyKey,ref=>ref);
-      id=match.items.length?tt.tripPatterns[match.ref]:null;
-      PATTERN_CACHE.set(aliasKey,id||'');
-    }
-  }
+  const id=timetablePatternId(journey,preferredPatternId);
   if(!id) return null;
   if(PATTERN_CACHE.has(id)) return PATTERN_CACHE.get(id);
   const raw=tt.patterns&&tt.patterns[id];
@@ -2383,12 +2420,14 @@ function scheduledMatches(line,dest,spatialSecs,journey){
   if(tripMatch.items.length) rows=tripMatch.items;
   return rows.sort((a,b)=>Math.abs(a.at-target)-Math.abs(b.at-target));
 }
+function timetableBuildLabel(){const d=new Date(S.timetableBuilt||'');return Number.isNaN(d.getTime())?'':d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}
+function timetableSourceLabel(){return S.timetableFallback?'last-known timetable':'scheduled';}
 function updateStopMeta(){
   if(!S.stop) return;
   const s=S.stop, displayCode=s.atco||s.naptan||s.code||'';
   const code=displayCode?' · '+esc(displayCode):'';
   let tt=' · checking timetable';
-  if(S.ttStop) tt=S.timetableSource==='national'?' · official timetable stop':S.ttStop.match==='code'?' · regional timetable stop':' · nearby timetable match';
+  if(S.ttStop) tt=S.timetableSource==='national'?(S.timetableFallback?' · last-known timetable'+(timetableBuildLabel()?' · built '+timetableBuildLabel():''):' · official timetable stop'):S.ttStop.match==='code'?' · regional timetable stop':' · nearby timetable match';
   else if(S.ttError) tt=' · timetable unavailable'; else if(S.timetable) tt=' · live only';
   $('stopMeta').innerHTML='<b>'+fmtDist(s.d)+'</b> from your point'+code+tt;
 }
@@ -2612,7 +2651,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,gpsMovementDirection};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -2712,7 +2751,7 @@ async function pollRouteCorridor(){
     const failures=settled.filter(result=>result.status==='rejected').length;
     if(failures===settled.length) S.routeScanError='Upstream route scan temporarily unavailable';
     else if(failures) S.routeScanError='Part of the upstream route scan was unavailable';
-    if(vehicles.length){ ingest(vehicles); learnDests(); renderDests(); render(); }
+    if(vehicles.length){ ingest(vehicles); learnDests(); renderDests(); if(boardRefreshCanRender()) render(); else renderLiveDiagnostics(); }
     else renderLiveDiagnostics();
     return vehicles;
   }catch(e){
@@ -2825,15 +2864,14 @@ function ingest(list){
   for(const v of list){
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null, cadence:null};
-    if(prev && Number(v.ts)<Number(prev.ts)){
-      mergeOlderVehicleEvidence(prev,v,now);
-      continue;
-    }
-    if(prev && v.ts>prev.ts){
+    if(prev && Number(v.ts)<Number(prev.ts)){mergeOlderVehicleEvidence(prev,v,now);continue;}
+    const journeyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
+    if(journeyChanged){rec.hist=[];rec.speed=null;rec.cadence=null;}
+    if(prev && !journeyChanged && v.ts>prev.ts){
       const gap=(v.ts-prev.ts)/1000;
       if(gap>=2 && gap<=180) rec.cadence=rec.cadence==null?gap:rec.cadence*.65+gap*.35;
     }
-    if(prev && (prev.lat!==v.lat || prev.lon!==v.lon)){
+    if(prev && !journeyChanged && (prev.lat!==v.lat || prev.lon!==v.lon)){
       const dt = Math.max(1,(v.ts - prev.ts)/1000);
       const dd = dist(prev.lat,prev.lon,v.lat,v.lon);
       if(dt<180 && dd<3000){
@@ -2850,11 +2888,11 @@ function ingest(list){
       rec.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
       if(rec.hist.length>8) rec.hist.shift();
     }
-    const sameJourney=!prev||!prev.journey||!v.journey||prev.journey===v.journey;
+    const sameJourney=!journeyChanged&&(!prev||!prev.journey||!v.journey||prev.journey===v.journey);
     const keepCorridor=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&now-Number(prev.corridorConfirmedAt||0)<=CORRIDOR_TAG_GRACE_MS);
     const corridorExpired=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&!keepCorridor);
     const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
-    if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete rec.routeProjection; delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; }
+    if(journeyChanged){delete rec.routeProjection;delete rec.corridorTrip;delete rec.corridorRemaining;delete rec.corridorConfirmedAt;delete rec.lastShownSnapshot;delete rec.lastShownAt;delete rec.lastShownArrivalAt;}
     Object.assign(rec, v);
     if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }
     else if(corridorExpired){ delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; rec.corridorTracked=false; }
@@ -2897,52 +2935,28 @@ function updateVehicleMotion(){
 }
 
 /* inbound = getting closer to the town anchor */
-function gpsMovementDirection(v){
-  if(!S.anchor||!v||!Array.isArray(v.hist)||v.hist.length<2) return 'unknown';
-  const a=v.hist[0],b=v.hist[v.hist.length-1];
-  if(dist(a.lat,a.lon,b.lat,b.lon)<=60) return 'unknown';
-  const d0=dist(a.lat,a.lon,S.anchor.lat,S.anchor.lon),d1=dist(b.lat,b.lon,S.anchor.lat,S.anchor.lon);
-  return Math.abs(d0-d1)>40?(d1<d0?'in':'out'):'unknown';
+const MOVEMENT_WINDOW_POINTS=4;
+function recentMovementPoints(v){
+  const out=[];
+  for(const p of Array.isArray(v&&v.hist)?v.hist:[]){const lat=Number(p.lat),lon=Number(p.lon),ts=Number(p.ts),last=out[out.length-1];if(isFinite(lat)&&isFinite(lon)&&isFinite(ts)&&(!last||ts>last.ts)) out.push({lat,lon,ts});}
+  return out.slice(-MOVEMENT_WINDOW_POINTS);
 }
+function movementTrend(v,target){
+  if(!target) return 0;const points=recentMovementPoints(v);if(points.length<2) return 0;
+  let toward=0,away=0;
+  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];if(dist(a.lat,a.lon,b.lat,b.lon)<12) continue;const delta=dist(a.lat,a.lon,target.lat,target.lon)-dist(b.lat,b.lon,target.lat,target.lon);if(delta>10)toward++;else if(delta<-10)away++;}
+  const needed=points.length===2?1:2;return toward>=needed&&toward>away?1:away>=needed&&away>toward?-1:0;
+}
+function gpsMovementDirection(v){if(!S.anchor||S.anchor.synthetic) return 'unknown';const trend=movementTrend(v,S.anchor);return trend>0?'in':trend<0?'out':'unknown';}
 function inferDirection(v){
-  if(S.anchor && v.hist.length>=2){
-    const a=v.hist[0], b=v.hist[v.hist.length-1];
-    if(dist(a.lat,a.lon,b.lat,b.lon) > 60){
-      const d0=dist(a.lat,a.lon,S.anchor.lat,S.anchor.lon);
-      const d1=dist(b.lat,b.lon,S.anchor.lat,S.anchor.lon);
-      if(Math.abs(d0-d1) > 40) return d1<d0 ? 'in':'out';
-    }
-  }
-  if(v.declaredDir){
-    if(v.declaredDir.startsWith('in')) return 'in';
-    if(v.declaredDir.startsWith('out')) return 'out';
-  }
-  if(S.anchor && isFinite(v.bearing)){
-    const toAnchor = bearingTo(v.lat,v.lon,S.anchor.lat,S.anchor.lon);
-    let diff = Math.abs(((v.bearing - toAnchor + 540)%360)-180);
-    return diff < 75 ? 'in' : diff > 105 ? 'out' : 'unknown';
-  }
+  const movement=gpsMovementDirection(v);if(movement!=='unknown') return movement;
+  if(v.declaredDir){if(v.declaredDir.startsWith('in')) return 'in';if(v.declaredDir.startsWith('out')) return 'out';}
+  if(S.anchor&&!S.anchor.synthetic&&isFinite(v.bearing)){const toAnchor=bearingTo(v.lat,v.lon,S.anchor.lat,S.anchor.lon),diff=Math.abs(((v.bearing-toAnchor+540)%360)-180);return diff<75?'in':diff>105?'out':'unknown';}
   return 'unknown';
 }
-
-/* is it still coming towards the stop, or already gone past? */
-function approachStrength(v, stop){
-  if(v.hist.length>=2){
-    const a=v.hist[0], b=v.hist[v.hist.length-1];
-    const moved=dist(a.lat,a.lon,b.lat,b.lon);
-    if(moved>35){
-      const d0=dist(a.lat,a.lon,stop.lat,stop.lon);
-      const d1=dist(b.lat,b.lon,stop.lat,stop.lon);
-      if(d0-d1>30) return 2;
-      if(d1-d0>30) return -2;
-    }
-  }
-  if(isFinite(v.bearing)){
-    const toStop = bearingTo(v.lat,v.lon,stop.lat,stop.lon);
-    const diff = Math.abs(((v.bearing - toStop + 540)%360)-180);
-    if(diff<70) return 1;
-    if(diff>115) return -1;
-  }
+function approachStrength(v,stop){
+  const trend=movementTrend(v,stop);if(trend) return trend>0?2:-2;
+  if(isFinite(v.bearing)){const toStop=bearingTo(v.lat,v.lon,stop.lat,stop.lon),diff=Math.abs(((v.bearing-toStop+540)%360)-180);if(diff<70)return 1;if(diff>115)return -1;}
   return 0;
 }
 function approaching(v, stop){ return approachStrength(v,stop)>=0; }
@@ -3599,6 +3613,9 @@ function formatPositionAge(ms){
 function journeyProgressHtml(v){
   const progress=journeyProgress(v);
   if(!progress){
+    const state=timetablePatternLoadState(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern);
+    if(state==='loading') return '<div class="journey-progress journey-progress-unavailable"><b>Loading journey progress…</b> Kerbside is fetching the ordered route for this exact journey.</div>';
+    if(state==='failed') return '<div class="journey-progress journey-progress-unavailable"><b>Journey progress could not be loaded.</b> Kerbside will retry the route data shortly.</div>';
     return '<div class="journey-progress journey-progress-unavailable"><b>Journey progress unavailable.</b> Kerbside only shows route progress after this live vehicle is matched to an exact ordered timetable journey.</div>';
   }
   const next=progress.nextIndex>=0&&progress.nextIndex<progress.stops.length?progress.stops[progress.nextIndex]:null;
@@ -3700,12 +3717,12 @@ function liveTimingLabel(r){
   return diff>0?diff+' min late':Math.abs(diff)+' min early';
 }
 function renderScheduledRow(r){
-  const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), due=mins<=1;
+  const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), due=mins<=1, source=timetableSourceLabel();
   const reason=r.liveReason||'no fresh GPS match';
   return '<div class="dep schedule-only" aria-label="Scheduled '+esc(s.line)+' to '+esc(s.head||'destination unknown')+' · '+esc(reason)+'">'
     +'<span class="route">'+esc(s.line)+'</span>'
     +'<span style="min-width:0"><span class="dest">'+esc(s.head||'Destination unknown')+'</span><span class="deprow2">'
-    +'<span class="chip schedule-source">scheduled</span><span class="chip">'+esc(reason)+'</span><span class="chip">'+esc(formatClock(s.at))+'</span></span></span>'
+    +'<span class="chip schedule-source">'+esc(source)+'</span><span class="chip">'+esc(reason)+'</span><span class="chip">'+esc(formatClock(s.at))+'</span></span></span>'
     +'<span class="eta scheduled">'+(due?'due':mins)+'<small>'+(due?'scheduled':'min')+'</small></span></div>';
 }
 
@@ -3807,17 +3824,18 @@ function renderSelectedJourney(rows){
     marker.bindTooltip(stop.name+(selected?' · your stop':next?' · next stop':''),{direction:'top',className:'stoptip'});
   });
 }
+function mapVehicleVisible(v,shown,now=Date.now()){if(shown) return true;const ts=Number(v&&v.ts),age=now-ts;return Number.isFinite(ts)&&Number.isFinite(age)&&age>=0&&age<=4*60*1000;}
 function renderVehicles(rows){
-  const wanted = new Map(rows.map(r=>[r.v.id,r]));
+  const wanted = new Map(rows.map(r=>[r.v.id,r])),now=Date.now();
   for(const [id,m] of S.markers){
     const v=S.vehicles.get(id);
-    const keep=wanted.has(id)||(v&&S.stop&&dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<=MAX_VEH_DIST);
+    const shown=wanted.has(id),keep=mapVehicleVisible(v,shown,now)&&(shown||(v&&S.stop&&dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<=MAX_VEH_DIST));
     if(!keep){ vehLayer.removeLayer(m); S.markers.delete(id); }
   }
   for(const v of S.vehicles.values()){
     const shown = wanted.has(v.id);
     const nearby=!S.stop||dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<=MAX_VEH_DIST;
-    if(!shown&&!nearby) continue;
+    if(!mapVehicleVisible(v,shown,now)||(!shown&&!nearby)) continue;
     const cls = 'veh'+(shown?'':' dim')+(S.selected===v.id?' sel':'');
     const brg = isFinite(v.bearing)?v.bearing:0;
     const visual=visualVehiclePosition(v);
@@ -3893,18 +3911,19 @@ function startPolling(){
   poll(true);
   S.timer=setInterval(poll,S.interval*1000);
   S.motionTimer=setInterval(updateVehicleMotion,VISUAL_MOTION_TICK_MS);
-  S.tick=setInterval(()=>{ if(S.stop) render(); },5000);
+  S.tick=setInterval(()=>{ if(S.stop&&boardRefreshCanRender()) render(); },5000);
 }
 function stopPolling(){
   if(S.timer) clearInterval(S.timer);if(S.tick) clearInterval(S.tick);if(S.motionTimer) clearInterval(S.motionTimer);
   if(S.pollAbort) S.pollAbort.abort(); if(S.routeScanAbort) S.routeScanAbort.abort();
-  S.timer=S.tick=S.motionTimer=null;S.pollAbort=null;S.routeScanAbort=null;S.routeScanBusy=false;
+  S.timer=S.tick=S.motionTimer=null;S.pollAbort=null;S.routeScanAbort=null;S.routeScanBusy=false;S.feedRefreshing=false;
 }
+function boardRefreshCanRender(){return !S.feedRefreshing;}
 let lastPoll=Date.now();
 async function poll(force){
   if(!S.origin) return;
   if(S.busy){ if(force) S.pollAgain=true; return; }
-  S.busy=true;
+  S.busy=true; S.feedRefreshing=true;
   const ctl=new AbortController(); S.pollAbort=ctl;
   const dt=Math.min(90,(Date.now()-lastPoll)/1000)||S.interval; lastPoll=Date.now();
   try{
@@ -3923,6 +3942,7 @@ async function poll(force){
       : 'Live · '+fresh+' fresh'+delayedText+hidden+tt+cached+partial+updated;
     setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':liveStatus,S.demo?'demo':'');
     renderGpsStats();
+    S.feedRefreshing=false;
     render();
     if(!S.demo) void pollRouteCorridor();
   }catch(e){
@@ -3932,9 +3952,11 @@ async function poll(force){
       const retained=[...S.vehicles.values()].some(v=>Date.now()-v.ts<=MAX_AGE_MS+GPS_RESULT_GRACE_MS);
       setStatus(scheduled?'Live unavailable · scheduled times shown':retained?'Live feed delayed · last GPS retained':'Live feed unavailable · retrying','err');
       if(Date.now()-S.lastOk>25000) toast(msg,true);
+      S.feedRefreshing=false;
       render();
     }
   }finally{
+    S.feedRefreshing=false;
     if(S.pollAbort===ctl) S.pollAbort=null;
     S.busy=false;
     if(S.pollAgain){ S.pollAgain=false; setTimeout(()=>poll(false),0); }
