@@ -1,13 +1,15 @@
 {
   "name": "kerbside-backend",
   "private": true,
-  "version": "0.6.12",
+  "version": "0.6.13",
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check scripts/build-region.js",
-    "test": "node --test"
+    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check tests/browser-regression.mjs",
+    "test": "node --test",
+    "test:browser": "node tests/browser-regression.mjs"
   },
   "devDependencies": {
-    "wrangler": "^4.28.1"
+    "wrangler": "^4.28.1",
+    "playwright": "1.62.0"
   }
 }

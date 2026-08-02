@@ -11,6 +11,7 @@ on:
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/kerbside-check.yml
+      - .github/workflows/kerbside-release.yml
   push:
     branches:
       - main
@@ -21,6 +22,7 @@ on:
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/kerbside-check.yml
+      - .github/workflows/kerbside-release.yml
 
 permissions:
   contents: read
@@ -32,7 +34,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository
@@ -44,6 +46,14 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '24'
+
+      - name: Install browser test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
 
       - name: Validate browser JavaScript
         shell: bash
@@ -75,6 +85,12 @@ jobs:
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
+      - name: Run WebKit mobile regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+
       - name: Parse Kerbside workflow YAML
         shell: bash
         run: |
@@ -82,7 +98,8 @@ jobs:
           ruby -e "require 'yaml'; ARGV.each { |file| YAML.parse_file(file) or abort(file) }" \
             .github/workflows/build-kerbside-national.yml \
             .github/workflows/deploy-kerbside-worker.yml \
-            .github/workflows/kerbside-check.yml
+            .github/workflows/kerbside-check.yml \
+            .github/workflows/kerbside-release.yml
 
       - name: Check whitespace
         shell: bash
