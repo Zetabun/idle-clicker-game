@@ -93,6 +93,8 @@ Kerbside 0.6.37 completes expanded-scan recovery for partial failures. If one sp
 
 Kerbside 0.6.38 makes OpenStreetMap route discovery recoverable. Exact `node(...)` lookups are now used only for numeric OSM node IDs; official GTFS/NaPTAN stops, including alphanumeric ATCO codes, start with the coordinate-based adjacent-platform query instead of generating invalid Overpass syntax. Verified stop mappings remain cached for 30 days, nearby mappings for 7 days, road-only mappings for 24 hours and empty results for 2 hours. Expired records are removed both at startup and before use, while concurrent lookups for the same stop share one pending request. WebKit verifies the query plans and every cache boundary.
 
+Kerbside 0.6.39 hardens service-calendar and overnight departure handling. A service reference is now resolved against the timetable `services` map before the legacy seven-bit weekday fallback, so a legitimate binary-looking GTFS `service_id` still honours date additions, removals and validity ranges. Departures are constructed by setting local calendar days and wall-clock hours rather than adding elapsed milliseconds to midnight, preventing one-hour shifts after the UK spring and autumn clock changes. The fallback parser now also accepts three-digit GTFS hours. WebKit runs in `Europe/London` and verifies both 2026 clock-change Sundays, a 25:30 overnight trip and binary-looking service exceptions.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

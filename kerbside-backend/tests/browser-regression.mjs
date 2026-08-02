@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.38'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.39'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -104,6 +104,12 @@ assert.match(busSource, /function routeLookupQueries\(stop\)/);
 assert.match(busSource, /stop\.source!=='official'/);
 assert.match(busSource, /const MAPPED_PENDING = new Map\(\)/);
 assert.doesNotMatch(busSource, /const MAPPED_TTL = 30\*24\*3600\*1000/);
+assert.match(busSource, /function serviceDepartureTime\(serviceDate,mins\)/);
+assert.match(busSource, /const svc=S\.timetable && S\.timetable\.services && S\.timetable\.services\[ref\]/);
+assert.match(busSource, /if\(svc\)\{/);
+assert.match(busSource, /at\.setHours\(Math\.floor\(minuteOfDay\/60\),minuteOfDay%60,0,0\)/);
+assert.match(busSource, /serviceDepartureTime\(serviceDate,mins\)/);
+assert.doesNotMatch(busSource, /new Date\(serviceDate\.getTime\(\)\+mins\*60000\)/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -136,7 +142,7 @@ const server = http.createServer(async (request, response) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const browser = await webkit.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
+const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true, timezoneId: 'Europe/London' });
 const page = await context.newPage();
 
 try {
@@ -155,7 +161,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.38', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.39', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -281,6 +287,32 @@ try {
     freshEmpty:true,staleEmpty:false,staleAlong:false
   });
 
+  const serviceCalendar = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,saved=state.timetable;
+    state.timetable={services:{
+      '1111100':{days:'1111100',start:'20260101',end:'20261231',add:['20260801'],remove:['20260803']}
+    }};
+    try{
+      const spring=api.serviceDepartureTime(new Date(2026,2,29),180);
+      const autumn=api.serviceDepartureTime(new Date(2026,9,25),180);
+      const overnight=api.serviceDepartureTime(new Date(2026,7,2),1530);
+      return {
+        removedBinaryId:api.serviceRuns('1111100',new Date(2026,7,3)),
+        addedBinaryId:api.serviceRuns('1111100',new Date(2026,7,1)),
+        legacyMonday:api.serviceRuns('1000000',new Date(2026,7,3)),
+        legacySaturday:api.serviceRuns('1000000',new Date(2026,7,1)),
+        spring:[spring.getFullYear(),spring.getMonth()+1,spring.getDate(),spring.getHours(),spring.getMinutes()],
+        autumn:[autumn.getFullYear(),autumn.getMonth()+1,autumn.getDate(),autumn.getHours(),autumn.getMinutes()],
+        overnight:[overnight.getFullYear(),overnight.getMonth()+1,overnight.getDate(),overnight.getHours(),overnight.getMinutes()],
+        extendedHours:api.parseDepMinutes('100:05')
+      };
+    }finally{state.timetable=saved;}
+  });
+  assert.deepEqual(serviceCalendar,{
+    removedBinaryId:false,addedBinaryId:true,legacyMonday:true,legacySaturday:false,
+    spring:[2026,3,29,3,0],autumn:[2026,10,25,3,0],overnight:[2026,8,3,1,30],extendedHours:6005
+  });
+
   const tripMatching = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
     const unique=api.uniqueCompatibleTrips([{trip:'trip-AB12345678'},{trip:'unrelated-XY87654321'}],'operator:trip-AB12345678');
@@ -349,7 +381,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.38'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.39'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

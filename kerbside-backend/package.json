@@ -1,7 +1,7 @@
 {
   "name": "kerbside-backend",
   "private": true,
-  "version": "0.6.38",
+  "version": "0.6.39",
   "type": "module",
   "scripts": {
     "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs",
