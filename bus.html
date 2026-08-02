@@ -789,7 +789,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.50';
+const APP_VERSION = '0.6.51';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -829,7 +829,7 @@ const S = {
   selected:null,
   timer:null, tick:null, motionTimer:null, busy:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
-  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
+  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
   timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
   routeScanBusy:false, routeScanAbort:null, lastRouteScan:0,
@@ -2298,7 +2298,7 @@ function pointAlongPattern(points,along){
   const last=points[points.length-1];
   return {lat:last.lat,lon:last.lon,along:metrics.total};
 }
-function vehicleJourneyRef(v){ return String(v&&(v.corridorTrip||v.journey)||''); }
+function vehicleJourneyRef(v){ return String(v&&((v.corridorTracked&&v.corridorTrip)||v.journey)||''); }
 function journeyGeometry(v,stop){
   if(!v || !stop) return null;
   const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
@@ -2399,7 +2399,7 @@ function selectStop(s,manual){
     if(S.routeScanAbort) S.routeScanAbort.abort();
     S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
     S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError='';
-    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; vehicle.corridorTracked=false; }
+    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; vehicle.corridorTracked=false; }
     S.destFilter=null; S.selected=null; S.manualStop=manual===true;
   } else if(manual===true) S.manualStop=true;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
@@ -2647,7 +2647,7 @@ async function fetchLiveBatch(wide,signal){
   };
 }
 async function fetchLive(signal){
-  S.feedFallback=false; S.feedEmptyReason='';
+  S.feedFallback=false; S.feedEmptyReason=''; S.feedPartial=false;
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
   if(wide) S.lastWideFetch=Date.now();
   let batch=await fetchLiveBatch(wide,signal);
@@ -2656,6 +2656,8 @@ async function fetchLive(signal){
   // results while restoring complete local coverage around the selected stop.
   if(wide&&batch.successful.length<batch.requested&&!(signal&&signal.aborted)){
     const nearby=await fetchLiveBatch(false,signal);
+    const nearbyRecovered=nearby.requested>0&&nearby.successful.length===nearby.requested;
+    S.feedPartial=!nearbyRecovered;
     batch={
       requested:batch.requested,
       successful:[...batch.successful,...nearby.successful],
@@ -2669,6 +2671,7 @@ async function fetchLive(signal){
   const out=parsed.vehicles;
   S.feedStale=parsed.stale;S.feedUnknownAge=parsed.unknownAge;
   if(!out.length&&parsed.malformed===successful.length) throw {soft:true,msg:'The live feed returned malformed XML.'};
+  if(!out.length&&S.feedPartial) throw {soft:true,msg:'Live feed coverage was incomplete. Kerbside is keeping the last verified board while it retries.'};
   if(!out.length&&(parsed.stale||parsed.unknownAge)){
     S.feedEmptyReason='No fresh timestamped GPS positions were reported in the latest feed.';
     return [];
@@ -2808,11 +2811,24 @@ function fetchSim(dt){
 /* ============================================================
    Merge, infer direction, estimate arrival
    ============================================================ */
+function mergeOlderVehicleEvidence(rec,v,now){
+  const sameJourney=!rec.journey||!v.journey||rec.journey===v.journey;
+  if(v.corridorTracked&&sameJourney&&v.corridorTrip){
+    rec.corridorTrip=v.corridorTrip;
+    rec.corridorRemaining=v.corridorRemaining;
+    rec.corridorConfirmedAt=Number(v.corridorConfirmedAt)||now;
+    rec.corridorTracked=true;
+  }
+}
 function ingest(list){
   const now=Date.now();
   for(const v of list){
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null, cadence:null};
+    if(prev && Number(v.ts)<Number(prev.ts)){
+      mergeOlderVehicleEvidence(prev,v,now);
+      continue;
+    }
     if(prev && v.ts>prev.ts){
       const gap=(v.ts-prev.ts)/1000;
       if(gap>=2 && gap<=180) rec.cadence=rec.cadence==null?gap:rec.cadence*.65+gap*.35;
@@ -2836,10 +2852,12 @@ function ingest(list){
     }
     const sameJourney=!prev||!prev.journey||!v.journey||prev.journey===v.journey;
     const keepCorridor=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&now-Number(prev.corridorConfirmedAt||0)<=CORRIDOR_TAG_GRACE_MS);
+    const corridorExpired=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&!keepCorridor);
     const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
     if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete rec.routeProjection; delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; }
     Object.assign(rec, v);
     if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }
+    else if(corridorExpired){ delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; rec.corridorTracked=false; }
     learnLine(rec);
     S.vehicles.set(v.id, rec);
   }
@@ -3075,8 +3093,9 @@ function alarmKey(stopId,line,dest){ return stopId+'|'+line+'|'+(dest||''); }
 function retainFiredAlarm(alarm,now){
   return !!(alarm&&alarm.fired&&alarm.lastSeenAt&&now-alarm.lastSeenAt<=ALERT_MISSING_GRACE_MS);
 }
+function alarmRowEligible(row){ return !!(row&&!row.gpsLost); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows};
 }
 function hasAlarm(line,dest){
   return S.stop && ALARMS.some(a=>a.k===alarmKey(S.stop.id,line,dest));
@@ -3116,7 +3135,7 @@ function checkAlarms(rows){
   const walk = S.walkSecs || 0, now=Date.now();
   for(const a of ALARMS){
     if(a.stopId !== S.stop.id) continue;
-    const hit = rows.find(r=>String(r.v.line)===String(a.line) && (!a.dest || r.v.dest===a.dest));
+    const hit = rows.find(r=>alarmRowEligible(r) && String(r.v.line)===String(a.line) && (!a.dest || r.v.dest===a.dest));
     if(!hit){
       if(retainFiredAlarm(a,now)) continue;
       a.fired=false; a.vehicleId=null; a.lastSeenAt=0; continue;
@@ -3377,6 +3396,15 @@ function newLiveDiagnostics(gate){
 function rejectLive(diagnostics,reason){
   if(diagnostics&&diagnostics.rejected&&reason in diagnostics.rejected) diagnostics.rejected[reason]++;
 }
+function retainedSnapshotRow(v,now=Date.now()){
+  if(!v||!v.lastShownSnapshot||!S.stop) return null;
+  if(v.lastShownStopId!==String(S.stop.id)) return null;
+  if(v.lastShownBoardDir!==S.dir) return null;
+  if(String(v.lastShownDestFilter||'')!==String(S.destFilter||'')) return null;
+  if(now-Number(v.lastShownAt||0)>GPS_RESULT_GRACE_MS) return null;
+  if(Number(v.lastShownArrivalAt||0)<now-3*60000) return null;
+  return {...v.lastShownSnapshot,v,secs:Math.max(0,(v.lastShownArrivalAt-now)/1000),gpsLost:true,confidence:'low',recovered:false};
+}
 function relevant(){
   if(!S.stop){ S.liveDiag=null; return []; }
   S.filterFellBack=false;
@@ -3399,8 +3427,8 @@ function collect(gate,diagnostics){
   for(const v of S.vehicles.values()){
     const age=now-v.ts;
     if(age>MAX_AGE_MS){
-      const held=v.lastShownSnapshot&&v.lastShownStopId===String(S.stop.id)&&now-Number(v.lastShownAt||0)<=GPS_RESULT_GRACE_MS&&Number(v.lastShownArrivalAt||0)>=now-3*60000;
-      if(held){ out.push({...v.lastShownSnapshot,v,secs:Math.max(0,(v.lastShownArrivalAt-now)/1000),gpsLost:true,confidence:'low',recovered:false}); }
+      const held=retainedSnapshotRow(v,now);
+      if(held) out.push(held);
       else rejectLive(diagnostics,'stale');
       continue;
     }
@@ -3432,8 +3460,9 @@ function collect(gate,diagnostics){
     const est=estimate(v,S.stop);
     const scheduleBacked=!!(est.schedule && evidence.score>=4);
     const trustedJourney=!!(evidence.journeyMatch || geometry);
-    const scheduledDir=scheduledJourneyDirection(est.schedule);
-    const candidateDest=v.dest || (est.schedule&&est.schedule.head) || '';
+    const directionSchedule=est.schedule||matchedRow;
+    const scheduledDir=scheduledJourneyDirection(directionSchedule);
+    const candidateDest=v.dest || (directionSchedule&&directionSchedule.head) || '';
 
     if(S.destFilter && destinationSimilarity(candidateDest,S.destFilter)<.75){
       rejectLive(diagnostics,'destination'); continue;
@@ -3475,6 +3504,7 @@ function collect(gate,diagnostics){
       spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match,directionLabel
     };
     v.lastShownStopId=String(S.stop.id); v.lastShownAt=now; v.lastShownArrivalAt=now+Math.max(0,row.secs)*1000;
+    v.lastShownBoardDir=S.dir; v.lastShownDestFilter=String(S.destFilter||'');
     v.lastShownSnapshot={...row,v:null};
     out.push(row);
   }
@@ -3597,6 +3627,9 @@ function journeyProgressHtml(v){
 }
 function lineDetail(r){
   const v=r.v;
+  const progressHtml=r.gpsLost
+    ? '<div class="journey-progress journey-progress-unavailable"><b>Journey progress paused.</b> Kerbside is holding the last confirmed position until fresh GPS returns.</div>'
+    : journeyProgressHtml(v);
   const speed=(v.speed==null || !isFinite(v.speed))?'unknown':v.speed<.6?'stationary':Math.round(v.speed*2.237)+' mph';
   const facts=[
     ['Distance',fmtDist(r.metres)+' away'+(r.routeMetres&&r.routeMetres>r.metres+80?' · '+fmtDist(r.routeMetres)+' by route':'')],
@@ -3610,11 +3643,14 @@ function lineDetail(r){
   ];
   const schedules=scheduledMatches(v.line,v.dest,r.secs,vehicleJourneyRef(v)).slice(0,4);
   const times=schedules.length?'<div class="dlabel">Nearby scheduled departures</div><div class="dtimes">'+schedules.map((x,i)=>'<span class="dtime">'+esc(formatClock(x.at))+(i===0?'<i>closest</i>':'')+'</span>').join('')+'</div>':'';
-  return '<div class="detail">'+journeyProgressHtml(v)+times
+  const note=r.gpsLost
+    ? 'This row is held at the last confirmed GPS position. Its countdown, journey progress and leave alert are paused until a fresh position arrives.'
+    : 'ETA is calculated from the fresh vehicle position, movement towards this stop, locally observed speed and '
+      +(r.geometry?'the matched journey geometry':'route factor')
+      +(r.schedule?', then checked against the timetable':'')+'. It is an estimate, not an operator prediction.';
+  return '<div class="detail">'+progressHtml+times
     +'<div class="dfacts">'+facts.map(([k,val])=>'<div><span class="dk">'+esc(k)+'</span><span class="dv">'+esc(val)+'</span></div>').join('')+'</div>'
-    +'<div class="dnote">ETA is calculated from the fresh vehicle position, movement towards this stop, locally observed speed and '
-    +(r.geometry?'the matched journey geometry':'route factor')
-    +(r.schedule?', then checked against the timetable':'')+'. It is an estimate, not an operator prediction.'
+    +'<div class="dnote">'+note
     +(v.origin?' Running '+esc(v.origin)+' to '+esc(v.dest||'?')+(v.operator?' · '+esc(v.operator):'')+'.':'')+'</div></div>';
 }
 function compass(b){
@@ -3641,10 +3677,11 @@ function scheduleLiveReason(schedule){
   if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
   return 'no unique journey match';
 }
+function scheduleClaimedByLive(row){ return !!(row&&row.schedule&&!row.gpsLost); }
 function scheduledBoardRows(liveRows){
   if(!S.ttStop) return [];
   const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set();
-  liveRows.forEach(r=>{ if(r.schedule) claimed.add(scheduleKey(r.schedule)); });
+  liveRows.forEach(r=>{ if(scheduleClaimedByLive(r)) claimed.add(scheduleKey(r.schedule)); });
   return timetableRows(new Date(now)).filter(r=>{
     if(r.at<now-60000 || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
@@ -3657,7 +3694,7 @@ function scheduledBoardRows(liveRows){
     .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule)}));
 }
 function liveTimingLabel(r){
-  if(!r.schedule) return '';
+  if(r.gpsLost||!r.schedule) return '';
   const diff=Math.round(((Date.now()+r.secs*1000)-r.schedule.at)/60000);
   if(Math.abs(diff)<=1) return 'on schedule';
   return diff>0?diff+' min late':Math.abs(diff)+' min early';
@@ -3706,7 +3743,7 @@ function render(){
       const mins=Math.max(0,Math.round(r.secs/60));
       const age=Date.now()-r.v.ts, gpsLost=!!r.gpsLost, gpsFresh=!gpsLost&&age<=GPS_FRESH_MS, gpsAge=formatPositionAge(age);
       const due=!gpsLost&&gpsFresh&&r.confidence!=='low'&&mins<=1;
-      const tight=S.walkSecs>90 && r.secs<S.walkSecs-30;
+      const tight=!gpsLost&&S.walkSecs>90 && r.secs<S.walkSecs-30;
       const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'Inbound';
       const dirChip=r.directionLabel||(S.destFilter?fmtDist(r.metres)+' away':r.dir==='in'?'→ '+namedAnchor:r.dir==='out'?'← Outbound':'Direction unclear');
       const confLabel=r.confidence==='high'?'verified':r.confidence==='medium'?'likely':'rough';
@@ -3725,7 +3762,7 @@ function render(){
         +(r.v.corridorTracked?'<span class="chip route-scan" title="Found farther upstream through this exact timetable journey">route scan</span>':'')
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
 +(r.recovered?'<span class="chip timing" title="Kept live because stronger timetable or journey evidence overruled weak direction or bearing evidence.">GPS recovered</span>':'')
-+(r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
++(!gpsLost&&r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
 +(tight?'<span class="chip tight">Tight</span>':'')
         +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?'last seen':due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'
         +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
@@ -3751,7 +3788,8 @@ function renderSelectedJourney(rows){
   routeLayer.clearLayers();
   if(!S.selected) return;
   const row=rows.find(item=>String(item.v.id)===String(S.selected));
-  const progress=row&&journeyProgress(row.v);
+  if(!row||row.gpsLost) return;
+  const progress=journeyProgress(row.v);
   if(!progress||!progress.pattern.shape) return;
   const split=splitPatternAt(progress.pattern,progress.vehicle);
   if(split.passed.length>1) L.polyline(split.passed,{color:'#526276',weight:4,opacity:.72,dashArray:'5 7',interactive:false}).addTo(routeLayer);
@@ -3813,7 +3851,7 @@ function renderVehicles(rows){
     m.setZIndexOffset(shown ? (S.selected===v.id?700:400) : 150);
     const r = wanted.get(v.id);
     const popup = '<b>'+esc(v.line)+'</b> to '+esc(v.dest||'?')
-      + (r ? '<br>'+Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name) : '<br>Not calling at your stop')
+      + (r ? '<br>'+(r.gpsLost?'GPS signal lost · last position held':Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name)) : '<br>Not calling at your stop')
       + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':'');
     if(m.getPopup()) m.setPopupContent(popup); else m.bindPopup(popup);
   }
@@ -3878,9 +3916,11 @@ async function poll(force){
     const delayedText=!S.demo&&delayed?' · '+delayed+' delayed':'';
     const tt=S.ttStop?' · timetable checked':'';
     const updated=' · updated '+formatClock(S.lastFeedAt), cached=S.feedFallback?' · cached during BODS outage':'';
+    const partial=!S.demo&&S.feedPartial?' · partial coverage':'';
+    const emptySummary=S.feedEmptyReason.includes('timestamped')?'no fresh GPS positions reported':'no buses reported';
     const liveStatus=!list.length&&fresh===0&&!delayed
-      ? 'Live · no fresh buses reported'+tt+cached+updated
-      : 'Live · '+fresh+' fresh'+delayedText+hidden+tt+cached+updated;
+      ? 'Live · '+emptySummary+tt+cached+partial+updated
+      : 'Live · '+fresh+' fresh'+delayedText+hidden+tt+cached+partial+updated;
     setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':liveStatus,S.demo?'demo':'');
     renderGpsStats();
     render();
@@ -3946,7 +3986,7 @@ function renderGpsStats(){
   $('statGpsUpdated').textContent=S.lastFeedAt?formatClock(S.lastFeedAt):'Waiting';
   const status=$('statsGpsStatus');
   if(S.demo){status.textContent='Simulator, not live GPS';status.style.color='var(--led)';}
-  else if(S.workerOk===true){status.textContent='BODS GPS · Worker connected'+(S.workerVersion?' · '+S.workerVersion:'')+(delayed?' · '+delayed+' delayed':'');status.style.color='var(--live)';}
+  else if(S.workerOk===true){status.textContent='BODS GPS · Worker connected'+(S.workerVersion?' · '+S.workerVersion:'')+(delayed?' · '+delayed+' delayed':'')+(S.feedPartial?' · partial coverage':'');status.style.color=S.feedPartial?'var(--warn)':'var(--live)';}
   else if(S.workerOk===false){status.textContent='Worker health check failed';status.style.color='var(--warn)';}
   else if(S.proxy){status.textContent='BODS GPS · checking Worker';status.style.color='var(--text-dim)';}
   else{status.textContent='Live GPS not configured';status.style.color='var(--text-dim)';}

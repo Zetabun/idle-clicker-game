@@ -59,7 +59,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.6.50',
+    version: '0.6.51',
     bods: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
     upstreamTimeoutMs: LIVE_TIMEOUT_MS,
@@ -88,7 +88,11 @@ async function liveFeed(request, env, ctx) {
   cacheUrl.pathname = '/__live-cache';
   cacheUrl.search = `?bbox=${encodeURIComponent(bbox)}${lineRef ? `&lineRef=${encodeURIComponent(lineRef)}` : ''}`;
   const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
-  const cached = await cache.match(cacheKey);
+  let cached = await cache.match(cacheKey);
+  if (cached && !(await validCachedSiriResponse(cached))) {
+    try { if (typeof cache.delete === 'function') await cache.delete(cacheKey); } catch {}
+    cached = null;
+  }
   const cacheAge = cachedAgeMs(cached);
 
   if (cached && cacheAge <= LIVE_FRESH_CACHE_MS) {
@@ -150,7 +154,7 @@ async function refreshLiveCache(request, env, incoming, bbox, lineRef, cache, ca
         cf: { cacheTtl: 0, cacheEverything: false }
       }, LIVE_TIMEOUT_MS);
       const body = await response.arrayBuffer();
-      if (response.ok && body.byteLength) {
+      if (response.ok && validSiriPayload(body, response.headers.get('Content-Type'))) {
         const headers = new Headers();
         headers.set('Content-Type', response.headers.get('Content-Type') || 'application/xml; charset=utf-8');
         headers.set('Cache-Control', `public, max-age=5, s-maxage=${LIVE_CACHE_SECONDS}`);
@@ -168,6 +172,32 @@ async function refreshLiveCache(request, env, incoming, bbox, lineRef, cache, ca
     if (attempt + 1 < LIVE_ATTEMPTS) await sleep(LIVE_RETRY_DELAY_MS * (attempt + 1));
   }
   return { response: null, failures };
+}
+
+export function validSiriPayload(buffer, contentType = '') {
+  if (!buffer || !buffer.byteLength) return false;
+  const type = String(contentType || '').toLowerCase();
+  if (type && !type.includes('xml') && !type.includes('text/plain') && !type.includes('application/octet-stream')) return false;
+  let text = '';
+  try {
+    const bytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 65536));
+    text = new TextDecoder().decode(bytes).replace(/^﻿/, '').trimStart();
+  } catch {
+    return false;
+  }
+  if (!text.startsWith('<') || /^<(?:!doctype\s+html|html)/i.test(text)) return false;
+  const siri = /<(?:[A-Za-z0-9_.-]+:)?Siri(?=[\s/>])/i.test(text);
+  const vehicleDelivery = /<(?:[A-Za-z0-9_.-]+:)?VehicleMonitoringDelivery(?=[\s/>])/i.test(text);
+  return siri && vehicleDelivery;
+}
+
+async function validCachedSiriResponse(response) {
+  try {
+    const body = await response.clone().arrayBuffer();
+    return validSiriPayload(body, response.headers.get('Content-Type'));
+  } catch {
+    return false;
+  }
 }
 
 function cachedAgeMs(cached) {

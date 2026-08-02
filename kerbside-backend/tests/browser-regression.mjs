@@ -41,7 +41,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.50'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.51'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -50,7 +50,8 @@ assert.match(busSource, /function timetableDirection\(value\)/);
 assert.match(busSource, /function scheduledJourneyDirection\(row\)/);
 assert.match(busSource, /direction==='inbound'/);
 assert.doesNotMatch(busSource, /direction==='0' \|\| direction\.startsWith\('in'\)/);
-assert.match(busSource, /scheduledJourneyDirection\(est\.schedule\)/);
+assert.match(busSource, /const directionSchedule=est\.schedule\|\|matchedRow/);
+assert.match(busSource, /scheduledJourneyDirection\(directionSchedule\)/);
 assert.match(busSource, /scheduledJourneyDirection\(r\)/);
 assert.match(busSource, /diagnostics\.recovered\+\+/);
 assert.match(busSource, /function scheduleLiveReason\(schedule\)/);
@@ -165,7 +166,8 @@ assert.match(busSource, /const GPS_RESULT_GRACE_MS = 6\*60\*1000/);
 assert.match(busSource, /function gpsMovementDirection\(v\)/);
 assert.match(busSource, /GPS signal lost/);
 assert.match(busSource, /v\.progressPattern/);
-assert.match(busSource, /Live · no fresh buses reported/);
+assert.match(busSource, /const emptySummary=S\.feedEmptyReason\.includes\('timestamped'\)\?'no fresh GPS positions reported':'no buses reported'/);
+assert.match(busSource, /'Live · '\+emptySummary/);
 assert.match(busSource, /Live feed delayed · last GPS retained/);
 assert.doesNotMatch(busSource, /setStatus\(scheduled\?'Live unavailable · scheduled times shown':'Feed problem'/);
 const mime = new Map([
@@ -275,7 +277,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.50', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.51', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -638,6 +640,49 @@ try {
   });
   assert.equal(gpsFixes.corridor,true);assert.equal(gpsFixes.live,1);assert.equal(gpsFixes.progress,true);assert.equal(gpsFixes.held,true);assert.equal(gpsFixes.away,false);
 
+  const gpsSafety = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
+    const saved={stop:state.stop,origin:state.origin,anchor:state.anchor,dir:state.dir,onlyServing:state.onlyServing,hideAway:state.hideAway,destFilter:state.destFilter,demo:state.demo,vehicles:state.vehicles,ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion};
+    try{
+      state.stop={id:'gps-safety-stop',timetableId:'gps-safety-stop',lat:52.5,lon:-2.1,name:'GPS safety stop',d:0};
+      state.origin={lat:52.5,lon:-2.1,label:'GPS safety'};state.anchor={lat:52.5,lon:-2.1,name:'Local area',synthetic:true};state.dir='in';state.onlyServing=false;state.hideAway=false;state.destFilter=null;state.demo=false;state.vehicles=new Map();state.ttStop=null;state.timetable=null;state.timetableSource='';state.timetableRegion='';state.timetableRun++;
+      api.ingest([{id:'ordered',journey:'ordered-trip',line:'77',dest:'Town Centre',lat:52.5,lon:-2.1,bearing:NaN,feedSpeed:8,ts:now,timestampKnown:true,corridorTracked:false}]);
+      api.ingest([{id:'ordered',journey:'ordered-trip',line:'77',dest:'Town Centre',lat:51.5,lon:-3.1,bearing:180,feedSpeed:8,ts:now-60000,timestampKnown:true,corridorTracked:true,corridorTrip:'ordered-trip',corridorRemaining:12000,corridorConfirmedAt:now}]);
+      const ordered=state.vehicles.get('ordered');
+      const newestPositionKept=ordered.ts===now&&ordered.lat===52.5&&ordered.lon===-2.1&&ordered.hist[ordered.hist.length-1].ts===now;
+      const olderEvidenceMerged=ordered.corridorTracked&&ordered.corridorTrip==='ordered-trip';
+      ordered.corridorConfirmedAt=now-6*60000;
+      api.ingest([{id:'ordered',journey:'ordered-trip',line:'77',dest:'Town Centre',lat:52.5001,lon:-2.1,bearing:NaN,feedSpeed:8,ts:now+1000,timestampKnown:true,corridorTracked:false}]);
+      const expired=state.vehicles.get('ordered');
+      const corridorExpired=!expired.corridorTracked&&!expired.corridorTrip&&api.vehicleJourneyRef(expired)==='ordered-trip';
+
+      const snapshotVehicle={id:'snapshot',journey:'snapshot-trip',line:'9',dest:'Town Centre',lat:52.49,lon:-2.1,ts:now-5*60000,lastShownStopId:'gps-safety-stop',lastShownAt:now-1000,lastShownArrivalAt:now+5*60000,lastShownBoardDir:'in',lastShownDestFilter:'',lastShownSnapshot:{v:null,dir:'in',app:true,strength:1,secs:300,metres:500,routeMetres:null,geometry:null,confidence:'high',spread:90,evidence:{score:5},schedule:{trip:'snapshot-trip',at:now+5*60000},recovered:false,match:'exact journey',directionLabel:'Journey: inbound'}};
+      state.dir='in';state.destFilter=null;const sameContext=!!api.retainedSnapshotRow(snapshotVehicle,now);
+      state.dir='out';const wrongDirection=!!api.retainedSnapshotRow(snapshotVehicle,now);
+      state.dir='in';state.destFilter='Other place';const wrongDestination=!!api.retainedSnapshotRow(snapshotVehicle,now);
+      const lostRow={gpsLost:true,schedule:{trip:'lost-trip',at:now+5*60000}};
+      const lostAlarm=api.alarmRowEligible(lostRow),lostClaims=api.scheduleClaimedByLive(lostRow),freshClaims=api.scheduleClaimedByLive({gpsLost:false,schedule:lostRow.schedule});
+
+      const directionTrip='direction-trip',departure=new Date(now+150*60000),mins=departure.getHours()*60+departure.getMinutes();
+      state.dir='out';state.destFilter=null;state.onlyServing=true;state.vehicles=new Map();
+      state.ttStop={id:'gps-safety-stop',d:[[mins,'77','Town Centre','daily','in',directionTrip,'']]};
+      state.timetable={services:{daily:{days:'1111111',start:'20260101',end:'20261231',add:[],remove:[]}},tripPatterns:{},patterns:{}};state.timetableSource='national';state.timetableRegion='west_midlands';state.timetableRun++;
+      api.ingest([{id:'direction',journey:directionTrip,line:'77',dest:'',lat:52.5005,lon:-2.1,bearing:NaN,feedSpeed:8,ts:now,timestampKnown:true,corridorTracked:false}]);
+      const wrongBoardDirection=api.relevant().some(row=>row.v.id==='direction');
+      return {newestPositionKept,olderEvidenceMerged,corridorExpired,sameContext,wrongDirection,wrongDestination,lostAlarm,lostClaims,freshClaims,wrongBoardDirection};
+    }finally{Object.assign(state,saved);}
+  });
+  assert.equal(gpsSafety.newestPositionKept,true);
+  assert.equal(gpsSafety.olderEvidenceMerged,true);
+  assert.equal(gpsSafety.corridorExpired,true);
+  assert.equal(gpsSafety.sameContext,true);
+  assert.equal(gpsSafety.wrongDirection,false);
+  assert.equal(gpsSafety.wrongDestination,false);
+  assert.equal(gpsSafety.lostAlarm,false);
+  assert.equal(gpsSafety.lostClaims,false);
+  assert.equal(gpsSafety.freshClaims,true);
+  assert.equal(gpsSafety.wrongBoardDirection,false);
+
   const emptyFeed = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,originalFetch=window.fetch;
     const saved={stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge,feedEmptyReason:state.feedEmptyReason};
@@ -654,6 +699,22 @@ try {
   });
   assert.equal(emptyFeed.count,0);
   assert.match(emptyFeed.reason,/No buses were reported/);
+
+  const partialFeed = await page.evaluate(async () => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,originalFetch=window.fetch;
+    const saved={stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge,feedEmptyReason:state.feedEmptyReason,feedPartial:state.feedPartial};
+    state.stop={id:'partial-feed-stop',lat:52.5,lon:-2.1,name:'Partial feed stop'};state.origin={lat:52.5,lon:-2.1,label:'Partial feed'};state.proxy='https://partial-feed.test';state.key='';state.demo=false;state.lastWideFetch=0;
+    const empty='<?xml version="1.0"?><Siri><ServiceDelivery><VehicleMonitoringDelivery></VehicleMonitoringDelivery></ServiceDelivery></Siri>';let calls=0;
+    window.fetch=async () => {calls++;if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});throw new TypeError('offline');};
+    try{
+      try{await api.fetchLive();return {resolved:true,calls,partial:state.feedPartial,msg:''};}
+      catch(e){return {resolved:false,calls,partial:state.feedPartial,msg:String(e&&e.msg||e)};}
+    }finally{window.fetch=originalFetch;Object.assign(state,saved);}
+  });
+  assert.equal(partialFeed.resolved,false);
+  assert.equal(partialFeed.partial,true);
+  assert.equal(partialFeed.calls,3);
+  assert.match(partialFeed.msg,/coverage was incomplete/i);
 
   const wideFallback = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
@@ -863,7 +924,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.50'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.51'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
