@@ -23,7 +23,7 @@ s=rep(s,"const ROUTE_SCAN_PATTERN_LIMIT = 36;\n","const ROUTE_SCAN_PATTERN_LIMIT
 
 s=rep(s,"function timetablePatternRecord(journey){\n  const tt=S.timetable;\n  if(!tt||!journey||!tt.tripPatterns) return null;\n  const journeyKey=String(journey), aliasKey='trip:'+journeyKey;\n  let id=tt.tripPatterns[journeyKey];\n  if(!id){\n",
 "function timetablePatternRecord(journey,preferredPatternId){\n  const tt=S.timetable;\n  if(!tt||!tt.tripPatterns) return null;\n  const journeyKey=String(journey||''), aliasKey='trip:'+journeyKey;\n  let id=String(preferredPatternId||'')||tt.tripPatterns[journeyKey];\n  if(!id&&journeyKey){\n",'pattern id')
-s=rep(s,"  const pattern=timetablePatternRecord(vehicleJourneyRef(v));\n","  const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);\n",'geometry progress ref')
+s=rep(s,"function journeyGeometry(v,stop){\n  if(!v || !stop) return null;\n  const pattern=timetablePatternRecord(vehicleJourneyRef(v));\n","function journeyGeometry(v,stop){\n  if(!v || !stop) return null;\n  const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);\n",'geometry progress ref')
 s=rep(s,"function journeyProgress(v){\n  const pattern=timetablePatternRecord(vehicleJourneyRef(v));\n","function journeyProgress(v){\n  const pattern=timetablePatternRecord(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern);\n",'progress ref')
 
 s=rep(s,"  v.corridorTrip=match.trip; v.corridorTracked=true; v.corridorRemaining=remaining;\n",
@@ -34,10 +34,8 @@ s=rep(s,"    if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete
 "    const sameJourney=!prev||!prev.journey||!v.journey||prev.journey===v.journey;\n    const keepCorridor=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&now-Number(prev.corridorConfirmedAt||0)<=CORRIDOR_TAG_GRACE_MS);\n    const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;\n    if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete rec.routeProjection; delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; }\n    Object.assign(rec, v);\n    if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }\n",'corridor persistence')
 s=rep(s,"    if(now - v.ts > MAX_AGE_MS) S.vehicles.delete(id);\n","    if(now-v.ts>MAX_AGE_MS+GPS_RESULT_GRACE_MS) S.vehicles.delete(id);\n",'vehicle retention')
 
-# Hard direction uses only sustained GPS movement; bearing remains display evidence.
 s=rep(s,"function inferDirection(v){\n","function gpsMovementDirection(v){\n  if(!S.anchor||!v||!Array.isArray(v.hist)||v.hist.length<2) return 'unknown';\n  const a=v.hist[0],b=v.hist[v.hist.length-1];\n  if(dist(a.lat,a.lon,b.lat,b.lon)<=60) return 'unknown';\n  const d0=dist(a.lat,a.lon,S.anchor.lat,S.anchor.lon),d1=dist(b.lat,b.lon,S.anchor.lat,S.anchor.lon);\n  return Math.abs(d0-d1)>40?(d1<d0?'in':'out'):'unknown';\n}\nfunction inferDirection(v){\n",'gps movement direction')
 
-# Resolve the matched timetable trip before geometry so aliased live refs can use the direct pattern id.
 s=rep(s,"    const journeyRef=vehicleJourneyRef(v), evidence=routeEvidence(v.line,v.dest,journeyRef);\n    const geometry=journeyGeometry(v,S.stop);\n",
 "    const journeyRef=vehicleJourneyRef(v), evidence=routeEvidence(v.line,v.dest,journeyRef);\n    const matchedRow=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).find(row=>String(row.trip)===String(evidence.matchedTrip)):null;\n    v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';\n    v.progressPattern=String(matchedRow&&matchedRow.pattern||'');\n    const geometry=journeyGeometry(v,S.stop);\n",'matched progress row')
 
@@ -93,7 +91,6 @@ new="""    if(est.schedule){ v.progressTrip=est.schedule.trip||v.progressTrip; v
 """
 s=rep(s,old,new,'row snapshot')
 
-# Hold a previously verified row when the operator feed pauses, but never show a stale countdown.
 s=rep(s,"    if(age>MAX_AGE_MS){ rejectLive(diagnostics,'stale'); continue; }\n",
 "    if(age>MAX_AGE_MS){\n      const held=v.lastShownSnapshot&&v.lastShownStopId===String(S.stop.id)&&now-Number(v.lastShownAt||0)<=GPS_RESULT_GRACE_MS&&Number(v.lastShownArrivalAt||0)>=now-3*60000;\n      if(held){ out.push({...v.lastShownSnapshot,v,secs:Math.max(0,(v.lastShownArrivalAt-now)/1000),gpsLost:true,confidence:'low',recovered:false}); }\n      else rejectLive(diagnostics,'stale');\n      continue;\n    }\n",'stale row grace')
 
@@ -112,7 +109,6 @@ s=rep(s,"        +'<span class=\"eta'+(due?' due':'')+'\">'+etaText+'<small>'+(d
 s=rep(s,"    ['Heading',isFinite(v.bearing)?compass(v.bearing):'unknown'],\n    ['Route evidence',r.evidence?r.evidence.label:'unverified'],\n",
       "    ['Heading',isFinite(v.bearing)?compass(v.bearing):'unknown'],\n    ['Travel direction',r.directionLabel||'direction unclear'],\n    ['GPS state',r.gpsLost?'signal lost · countdown paused':'position active'],\n    ['Route evidence',r.evidence?r.evidence.label:'unverified'],\n",'detail facts')
 
-# Clear stop-specific retained evidence.
 s=rep(s,"    S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError='';\n    S.destFilter=null; S.selected=null; S.manualStop=manual===true;\n",
 "    S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError='';\n    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; vehicle.corridorTracked=false; }\n    S.destFilter=null; S.selected=null; S.manualStop=manual===true;\n",'stop reset')
 
@@ -128,7 +124,6 @@ end=r.find('\n',pos)
 note="\n\nKerbside 0.6.49 prevents verified GPS results from disappearing during short operator-feed gaps and makes ETA direction checks stricter. Route-scan trip identity now survives ordinary nearby refreshes for five minutes. A previously verified row can remain for up to six minutes as `GPS signal lost`, but its live countdown is removed. Sustained GPS movement that conflicts with the selected town direction, the matched timetable direction, or movement towards the stop now rejects the live ETA. The result row states whether direction comes from GPS movement or the matched journey. Journey progress now resolves through the timetable trip and direct pattern ID retained on the live vehicle, allowing aliased journey references to display the ordered stop timeline."
 r=r[:end]+note+r[end:]; D.write_text(r)
 
-# Regression: version, static guarantees, and one runtime scenario.
 t=T.read_text(); t=rep(t,"const APP_VERSION = '0\\.6\\.48'","const APP_VERSION = '0\\.6\\.49'",'test version')
 t=rep(t,"version: '0.6.48'","version: '0.6.49'",'health stub'); t=rep(t,'app 0.6.48','app 0.6.49','app text')
 a="assert.match(busSource, /route scan<\\/span>/);\n"
