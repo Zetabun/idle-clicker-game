@@ -25,6 +25,8 @@ assert.match(busSource, /function lineLearningKey\(value\)/);
 assert.doesNotMatch(busSource, /LINES\[v\.line\]/);
 assert.doesNotMatch(busSource, /st:'Street'/);
 assert.match(busSource, /if\(bare==='st'\) return 'St'/);
+assert.match(busSource, /const ALERT_MISSING_GRACE_MS = 120\*1000/);
+assert.match(busSource, /function retainFiredAlarm\(alarm,now\)/);
 assert.match(busSource, /far && \(!gate \|\| !evidence\.journeyMatch\)/);
 assert.match(busSource, /if\(!shown&&!nearby\) continue/);
 assert.match(busSource, /function timetablePatternRecord\(journey\)/);
@@ -32,7 +34,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.25'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.26'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -128,7 +130,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.25', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.26', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
@@ -165,12 +167,18 @@ try {
     return [clean('ST HELENS'), clean('BURY ST EDMUNDS'), clean('HIGH ST')];
   });
   assert.deepEqual(cleanedNames, ['St Helens', 'Bury St Edmunds', 'High St']);
+  const alertGrace = await page.evaluate(() => {
+    const retain=window.__KERBSIDE_TEST__.retainFiredAlarm;
+    const alarm={fired:true,lastSeenAt:1000};
+    return [retain(alarm,120999),retain(alarm,121001),retain({fired:false,lastSeenAt:1000},2000)];
+  });
+  assert.deepEqual(alertGrace, [true,false,false]);
 
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.25'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.26'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
