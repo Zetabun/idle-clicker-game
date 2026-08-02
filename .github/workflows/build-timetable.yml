@@ -1,0 +1,61 @@
+name: Build Kerbside timetable
+
+on:
+  schedule:
+    - cron: '45 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-timetable
+  cancel-in-progress: true
+
+env:
+  REGION: west_midlands
+  LAT: '52.5089'
+  LON: '-2.0870'
+  RADIUS: '8000'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download current regional GTFS
+        env:
+          BODS_KEY: ${{ secrets.BODS_KEY }}
+        run: |
+          test -n "$BODS_KEY"
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/${REGION}/?api_key=${BODS_KEY}" \
+            --output gtfs.zip
+          unzip -tq gtfs.zip
+
+      - name: Build timetable.json
+        run: |
+          rm -rf gtfs
+          mkdir gtfs
+          unzip -oq gtfs.zip -d gtfs
+          node build-timetable.js ./gtfs "$LAT" "$LON" "$RADIUS"
+          node -e "const x=require('./timetable.json'); if(x.version!==3 || !Object.keys(x.stops||{}).length || !x.tripPatterns || !x.patterns) process.exit(1)"
+          ls -lh timetable.json
+
+      - name: Commit only a valid changed timetable
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add timetable.json
+          if git diff --cached --quiet; then
+            echo "No timetable change."
+          else
+            git commit -m "Update Kerbside timetable ($(date -u +%Y-%m-%d))"
+            git push
+          fi
