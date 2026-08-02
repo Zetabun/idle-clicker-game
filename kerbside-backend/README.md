@@ -77,6 +77,8 @@ Kerbside 0.6.29 caches expanded timetable rows per selected stop, timetable obje
 
 Kerbside 0.6.30 makes route projection continuity-aware. At loops, overlapping roads and crossing shapes, candidate segments are ranked using GPS bearing plus the vehicle's previous along-route position. Large backward jumps and physically implausible forward jumps are penalised, while ordinary GPS jitter remains possible. Passed-stop, next-stop, route split and progress displays now share the same retained projection.
 
+Kerbside 0.6.31 restores browser page zoom for accessibility. The viewport no longer disables user scaling, Settings no longer blocks two-finger zoom, and the document-level gesture suppression has been removed. Mobile inputs and selects remain at 16px to prevent Safari's automatic focus zoom, while Leaflet continues to handle map pinch gestures.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
