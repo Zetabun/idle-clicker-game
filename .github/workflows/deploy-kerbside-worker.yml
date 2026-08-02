@@ -54,7 +54,7 @@ jobs:
             fi
           done
 
-      - name: Install Wrangler and validate Worker
+      - name: Install Wrangler and validate live Worker
         shell: bash
         run: |
           set -euo pipefail
@@ -62,7 +62,7 @@ jobs:
           npm run check
           npm test
 
-      - name: Deploy Worker and configure BODS secret
+      - name: Deploy live-only Worker and configure BODS secret
         shell: bash
         run: |
           set -euo pipefail
