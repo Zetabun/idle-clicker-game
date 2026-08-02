@@ -35,14 +35,13 @@ assert.doesNotMatch(busSource, /st:'Street'/);
 assert.match(busSource, /if\(bare==='st'\) return 'St'/);
 assert.match(busSource, /const ALERT_MISSING_GRACE_MS = 120\*1000/);
 assert.match(busSource, /function retainFiredAlarm\(alarm,now\)/);
-assert.match(busSource, /far && \(!gate \|\| !evidence\.journeyMatch\)/);
 assert.match(busSource, /if\(!shown&&!nearby\) continue/);
 assert.match(busSource, /function timetablePatternRecord\(journey\)/);
 assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.47'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.48'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -152,6 +151,16 @@ assert.match(busSource, /function validDataTile\(data,region,tile,expectedBuild\
 assert.match(busSource, /DATA_TILE_NEGATIVE\.set\(key,Date\.now\(\)\+DATA_TILE_NEGATIVE_TTL\)/);
 assert.match(busSource, /if\(fallbackUsed\|\|data===null\) DATA_TILE_CACHE\.delete\(key\)/);
 assert.doesNotMatch(busSource, /const key=region\+'\/'\+tile; if\(DATA_TILE_CACHE\.has\(key\)\)/);
+assert.match(busSource, /const ROUTE_SCAN_INTERVAL_MS = 60\*1000/);
+assert.match(busSource, /const ROUTE_SCAN_MAX_BOXES = 3/);
+assert.match(busSource, /const ROUTE_SCAN_MAX_ROUTE_METRES = 55000/);
+assert.match(busSource, /function routeScanPlans\(now=Date\.now\(\)\)/);
+assert.match(busSource, /function matchRouteScanVehicle\(plan,v\)/);
+assert.match(busSource, /uniqueCompatibleTrips\(plan\.matches,v\.journey,item=>item\.trip\)/);
+assert.match(busSource, /d>FAR_VEH_DIST&&!corridorFar/);
+assert.match(busSource, /dist\(centre\.lat,centre\.lon,S\.stop\.lat,S\.stop\.lon\)\+ROUTE_SCAN_BOX_RADIUS<=FAR_VEH_DIST/);
+assert.match(busSource, /void pollRouteCorridor\(\)/);
+assert.match(busSource, /route scan<\/span>/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -259,7 +268,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.47', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.48', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -550,6 +559,68 @@ try {
     lines:['9']
   });
 
+  const corridorBoard = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
+    const saved={
+      stop:state.stop,origin:state.origin,anchor:state.anchor,dir:state.dir,onlyServing:state.onlyServing,
+      hideAway:state.hideAway,destFilter:state.destFilter,demo:state.demo,vehicles:state.vehicles,
+      ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun,
+      timetableSource:state.timetableSource,timetableRegion:state.timetableRegion,
+      lastRouteScan:state.lastRouteScan,routeScanBoxes:state.routeScanBoxes,
+      routeScanPatterns:state.routeScanPatterns,routeScanVehicles:state.routeScanVehicles,
+      routeScanError:state.routeScanError
+    };
+    const at=new Date(now+45*60000),base=at.getHours()*60+at.getMinutes();
+    const trips=[1,2,3,4,5].map(index=>`corridor-trip-${index}`);
+    const patternId='aa48corridorpattern0001';
+    state.stop={id:'corridor-stop',timetableId:'corridor-stop',lat:52.54,lon:-2.1,name:'Corridor stop',d:0};
+    state.origin={lat:52.54,lon:-2.1,label:'Corridor stop'};state.anchor=null;state.dir='all';
+    state.onlyServing=true;state.hideAway=true;state.destFilter=null;state.demo=false;state.vehicles=new Map();
+    state.ttStop={id:'corridor-stop',d:trips.map((trip,index)=>[base+index*3,'9','Town Centre','daily','',trip,patternId])};
+    state.timetable={
+      services:{daily:{days:'1111111',start:'20260101',end:'20261231',add:[],remove:[]}},
+      tripPatterns:Object.fromEntries(trips.map(trip=>[trip,patternId])),
+      patterns:{[patternId]:{p:[[51.95,-2.1],[52.1,-2.1],[52.25,-2.1],[52.4,-2.1],[52.54,-2.1],[52.62,-2.1]],s:[['route-start','Route start',51.95,-2.1],['corridor-stop','Corridor stop',52.54,-2.1],['route-end','Route end',52.62,-2.1]],g:1}}
+    };
+    state.timetableSource='national';state.timetableRegion='west_midlands';state.timetableRun=Number(state.timetableRun||0)+1;
+    state.lastRouteScan=0;state.routeScanBoxes=0;state.routeScanPatterns=0;state.routeScanVehicles=0;state.routeScanError='';
+    try{
+      const plans=api.routeScanPlans(now);
+      const positions=[52.08,52.13,52.18,52.23,52.28];
+      const accepted=trips.map((trip,index)=>{
+        const vehicle={id:`CORRIDOR|journey|${trip}`,journey:trip,vehicleRef:'shared',line:'9',lineRef:'9',dest:'Town Centre',operator:'CORRIDOR',declaredDir:'',lat:positions[index],lon:-2.1,bearing:0,feedSpeed:8,ts:now,timestampKnown:true,corridorTracked:false};
+        return plans.map(plan=>api.matchRouteScanVehicle(plan,vehicle)).find(Boolean)||null;
+      }).filter(Boolean);
+      const wrong={id:'wrong',journey:'wrong-trip',line:'9',dest:'Town Centre',lat:52.2,lon:-2.1,bearing:0,ts:now,corridorTracked:false};
+      const passed={id:'passed',journey:trips[0],line:'9',dest:'Town Centre',lat:52.58,lon:-2.1,bearing:0,ts:now,corridorTracked:false};
+      const wrongRejected=!plans.some(plan=>api.matchRouteScanVehicle(plan,wrong));
+      const passedRejected=!plans.some(plan=>api.matchRouteScanVehicle(plan,passed));
+      api.ingest(accepted);
+      const rows=api.relevant();
+      const spans=plans.map(plan=>{const b=plan.bbox.split(',').map(Number);return [b[2]-b[0],b[3]-b[1]];});
+      return {
+        boxes:plans.length,patterns:new Set(plans.flatMap(plan=>plan.matches.map(match=>match.pattern.id))).size,
+        matches:plans[0]?.matches.length||0,accepted:accepted.length,stored:state.vehicles.size,shown:rows.length,
+        shownIds:rows.map(row=>row.v.id).sort(),allTagged:rows.every(row=>row.v.corridorTracked),
+        minStraight:Math.min(...rows.map(row=>row.metres)),maxRoute:Math.max(...rows.map(row=>row.routeMetres||0)),
+        spansSafe:spans.every(([lon,lat])=>lon<=0.34001&&lat<=0.34001),wrongRejected,passedRejected
+      };
+    }finally{Object.assign(state,saved);}
+  });
+  assert.equal(corridorBoard.boxes,3);
+  assert.equal(corridorBoard.patterns,1);
+  assert.equal(corridorBoard.matches,5);
+  assert.equal(corridorBoard.accepted,5);
+  assert.equal(corridorBoard.stored,5);
+  assert.equal(corridorBoard.shown,5);
+  assert.deepEqual(corridorBoard.shownIds,[1,2,3,4,5].map(index=>`CORRIDOR|journey|corridor-trip-${index}`));
+  assert.equal(corridorBoard.allTagged,true);
+  assert.ok(corridorBoard.minStraight>18000);
+  assert.ok(corridorBoard.maxRoute<=55000);
+  assert.equal(corridorBoard.spansSafe,true);
+  assert.equal(corridorBoard.wrongRejected,true);
+  assert.equal(corridorBoard.passedRejected,true);
+
   const wideFallback = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
     const saved={
@@ -758,7 +829,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.47'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.48'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

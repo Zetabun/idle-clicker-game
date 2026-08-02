@@ -262,6 +262,7 @@ button{cursor:pointer;border:0;background:none}
 .chip.conf-high{border-color:rgba(63,217,164,.55);color:var(--live)}
 .chip.conf-medium{border-color:var(--led-dim);color:var(--led)}
 .chip.conf-low{border-color:var(--rule);color:var(--text-dim)}
+.chip.route-scan{border-color:rgba(92,143,189,.55);background:rgba(92,143,189,.1);color:#A9C9E6}
 .depwrap{position:relative;border-bottom:1px solid var(--rule)}
 .depmain{position:relative}
 .depwrap .dep{border-bottom:0;padding-right:52px}
@@ -745,7 +746,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.47 also validates and snapshots national stop-index tiles, while genuine empty-tile responses use a five-minute negative cache instead of remaining unavailable for the life of the tab.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.48 also follows ordered timetable journeys upstream, checking at most three additional route-corridor areas once per minute and retaining only exact live journeys that have not passed this stop.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +787,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.47';
+const APP_VERSION = '0.6.48';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -828,7 +829,9 @@ const S = {
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
   timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
-  lastWideFetch:0
+  lastWideFetch:0,
+  routeScanBusy:false, routeScanAbort:null, lastRouteScan:0,
+  routeScanBoxes:0, routeScanPatterns:0, routeScanVehicles:0, routeScanError:''
 };
 
 const R_EARTH = 6371000;
@@ -844,6 +847,13 @@ const FETCH_TIMEOUT_MS = 12000;
 const VISUAL_MOTION_TICK_MS = 1000;
 const VISUAL_MAX_LEAD_SECONDS = 20;
 const VISUAL_MAX_LEAD_METRES = 180;
+const ROUTE_SCAN_INTERVAL_MS = 60*1000;
+const ROUTE_SCAN_LOOKAHEAD_MS = 3*60*60*1000;
+const ROUTE_SCAN_OFFSETS = [16000,32000,48000];
+const ROUTE_SCAN_BOX_RADIUS = 8000;
+const ROUTE_SCAN_MAX_BOXES = 3;
+const ROUTE_SCAN_MAX_ROUTE_METRES = 55000;
+const ROUTE_SCAN_PATTERN_LIMIT = 36;
 
 /* ============================================================
    Helpers
@@ -2270,9 +2280,24 @@ function projectVehicleToPattern(pattern,v){
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),patternProjectionCandidates,choosePatternProjection};
 }
+function pointAlongPattern(points,along){
+  if(!Array.isArray(points)||points.length<2) return null;
+  const metrics=patternMetrics(points), wanted=Math.max(0,Math.min(metrics.total,Number(along)||0));
+  for(let i=0;i<points.length-1;i++){
+    const start=metrics.starts[i], length=metrics.lengths[i];
+    if(!isFinite(length)||length<1) continue;
+    if(wanted<=start+length){
+      const fraction=Math.max(0,Math.min(1,(wanted-start)/length));
+      return {lat:points[i].lat+(points[i+1].lat-points[i].lat)*fraction,lon:points[i].lon+(points[i+1].lon-points[i].lon)*fraction,along:wanted};
+    }
+  }
+  const last=points[points.length-1];
+  return {lat:last.lat,lon:last.lon,along:metrics.total};
+}
+function vehicleJourneyRef(v){ return String(v&&(v.corridorTrip||v.journey)||''); }
 function journeyGeometry(v,stop){
   if(!v || !stop) return null;
-  const pattern=timetablePatternRecord(v.journey);
+  const pattern=timetablePatternRecord(vehicleJourneyRef(v));
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
   const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
@@ -2317,7 +2342,7 @@ function selectedPatternStopIndex(stops){
   return bestDistance<=180?best:-1;
 }
 function journeyProgress(v){
-  const pattern=timetablePatternRecord(v&&v.journey);
+  const pattern=timetablePatternRecord(vehicleJourneyRef(v));
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
   if(!vehicle||vehicle.metres>800) return null;
@@ -2366,7 +2391,12 @@ function updateStopMeta(){
 function selectStop(s,manual){
   if(!s) return;
   const changed=!S.stop||String(S.stop.id)!==String(s.id); S.stop=s;
-  if(changed){ S.destFilter=null; S.selected=null; S.manualStop=manual===true; } else if(manual===true) S.manualStop=true;
+  if(changed){
+    if(S.routeScanAbort) S.routeScanAbort.abort();
+    S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
+    S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError='';
+    S.destFilter=null; S.selected=null; S.manualStop=manual===true;
+  } else if(manual===true) S.manualStop=true;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
   S.ttStop=matchTimetableStop(s); $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':''); updateStopMeta();
   drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
@@ -2436,18 +2466,78 @@ function bboxes(wide){
     return [minLon.toFixed(5),minLat.toFixed(5),maxLon.toFixed(5),maxLat.toFixed(5)].join(',');
   }))];
 }
-function feedUrls(wide){
-  const boxes=bboxes(wide);
+function feedUrlsForBoxes(boxes){
+  const list=Array.isArray(boxes)?boxes.filter(Boolean):[];
   if(S.proxy){
-    return boxes.map(box=>{
+    return list.map(box=>{
       const u = new URL(S.proxy, location.href);
       u.searchParams.set('bbox',box);
       return u.toString();
     });
   }
   if(!S.key) return [];
-  return boxes.map(box=>'https://data.bus-data.dft.gov.uk/api/v1/datafeed/?api_key='
+  return list.map(box=>'https://data.bus-data.dft.gov.uk/api/v1/datafeed/?api_key='
        + encodeURIComponent(S.key) + '&boundingBox=' + box);
+}
+function feedUrls(wide){ return feedUrlsForBoxes(bboxes(wide)); }
+function mergeRouteScanMatches(target,items){
+  const seen=new Set(target.map(item=>String(item.trip)));
+  for(const item of items) if(item&&item.trip&&!seen.has(String(item.trip))){target.push(item);seen.add(String(item.trip));}
+}
+function routeScanPlans(now=Date.now()){
+  if(!S.stop||!S.ttStop||!S.timetable) return [];
+  const rows=timetableRows(new Date(now)).filter(row=>
+    row.trip&&row.at>=now-2*60000&&row.at<=now+ROUTE_SCAN_LOOKAHEAD_MS
+  ).sort((a,b)=>a.at-b.at).slice(0,ROUTE_SCAN_PATTERN_LIMIT);
+  const groups=new Map();
+  for(const row of rows){
+    const pattern=timetablePatternRecord(row.trip); if(!pattern) continue;
+    const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
+    const selected=selectedIndex>=0?ordered[selectedIndex]:null;
+    const projected=selected?null:projectToPattern(pattern.points,S.stop.lat,S.stop.lon);
+    const targetAlong=selected?selected.along:projected&&projected.along;
+    const targetOffset=selected?dist(selected.lat,selected.lon,S.stop.lat,S.stop.lon):projected&&projected.metres;
+    if(!isFinite(targetAlong)||!isFinite(targetOffset)||targetOffset>250) continue;
+    const key=pattern.id+'|'+Math.round(targetAlong/50), existing=groups.get(key);
+    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong};
+    if(existing){existing.due=Math.min(existing.due,row.at);mergeRouteScanMatches(existing.matches,[match]);}
+    else groups.set(key,{pattern,targetAlong,due:row.at,matches:[match]});
+  }
+  const candidates=[];
+  for(const group of groups.values()){
+    for(const offset of ROUTE_SCAN_OFFSETS){
+      if(group.targetAlong<offset+1000) continue;
+      const centre=pointAlongPattern(group.pattern.points,group.targetAlong-offset);
+      if(!centre||dist(centre.lat,centre.lon,S.stop.lat,S.stop.lon)+ROUTE_SCAN_BOX_RADIUS<=FAR_VEH_DIST) continue;
+      candidates.push({
+        lat:centre.lat,lon:centre.lon,offset,due:group.due,
+        bbox:boxAround(centre,ROUTE_SCAN_BOX_RADIUS),matches:[...group.matches]
+      });
+    }
+  }
+  candidates.sort((a,b)=>a.due-b.due||a.offset-b.offset);
+  const selected=[];
+  for(const candidate of candidates){
+    const existing=selected.find(item=>dist(item.lat,item.lon,candidate.lat,candidate.lon)<ROUTE_SCAN_BOX_RADIUS+1000);
+    if(existing){ mergeRouteScanMatches(existing.matches,candidate.matches); continue; }
+    selected.push(candidate);
+    if(selected.length>=ROUTE_SCAN_MAX_BOXES) break;
+  }
+  return selected;
+}
+function matchRouteScanVehicle(plan,v){
+  if(!plan||!v||!v.journey) return null;
+  const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
+  if(!tripMatch.items.length||tripMatch.ambiguous) return null;
+  const match=tripMatch.items[0];
+  if(String(v.line)!==String(match.line)) return null;
+  if(v.dest&&match.head&&destinationSimilarity(v.dest,match.head)<.34) return null;
+  const position=projectVehicleToPattern(match.pattern,v);
+  if(!position||position.metres>800) return null;
+  const remaining=match.targetAlong-position.along;
+  if(remaining < -120 || remaining > ROUTE_SCAN_MAX_ROUTE_METRES) return null;
+  v.corridorTrip=match.trip; v.corridorTracked=true; v.corridorRemaining=remaining;
+  return v;
 }
 
 /* flatten a <VehicleActivity> subtree into {localName: text} */
@@ -2495,7 +2585,7 @@ function parseLivePayloads(items,now){
       const id=liveVehicleIdentity(f);
       if(!id) continue;
       const record={
-        id,journey,vehicleRef:f.VehicleRef||'',
+        id,journey,vehicleRef:f.VehicleRef||'',corridorTracked:false,
         line:cleanLine(f.PublishedLineName||f.LineRef||'?'),
         lineRef:f.LineRef||'',
         dest:cleanName(f.DestinationName||f.DirectionName||''),
@@ -2517,7 +2607,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -2577,6 +2667,47 @@ async function fetchLive(signal){
   if(!out.length&&(parsed.stale||parsed.unknownAge)) throw {soft:true,msg:'BODS returned no fresh timestamped vehicle positions, so Kerbside hid them instead of showing ghost buses.'};
   if(!out.length) throw {soft:true,msg:'The live feed returned no usable vehicle positions for this area.'};
   return out;
+}
+
+async function pollRouteCorridor(){
+  if(S.demo||!S.origin||!S.stop||!S.ttStop||S.routeScanBusy||Date.now()-S.lastRouteScan<ROUTE_SCAN_INTERVAL_MS) return [];
+  const started=Date.now(), stopId=String(S.stop.id), timetableRun=S.timetableRun;
+  S.lastRouteScan=started;
+  const plans=routeScanPlans(started);
+  S.routeScanBoxes=plans.length;
+  S.routeScanPatterns=new Set(plans.flatMap(plan=>plan.matches.map(match=>match.pattern.id))).size;
+  S.routeScanVehicles=0; S.routeScanError='';
+  if(!plans.length){ renderLiveDiagnostics(); return []; }
+  const urls=feedUrlsForBoxes(plans.map(plan=>plan.bbox));
+  if(urls.length!==plans.length){ S.routeScanError='Upstream route scan is not configured'; renderLiveDiagnostics(); return []; }
+  const ctl=new AbortController(); S.routeScanAbort=ctl; S.routeScanBusy=true; renderLiveDiagnostics();
+  try{
+    const settled=await Promise.allSettled(urls.map((url,index)=>fetchLiveResponse(url,ctl.signal).then(item=>({item,plan:plans[index]}))));
+    if(ctl.signal.aborted||!S.stop||String(S.stop.id)!==stopId||S.timetableRun!==timetableRun) return [];
+    const merged=new Map();
+    for(const result of settled){
+      if(result.status!=='fulfilled') continue;
+      const parsed=parseLivePayloads([result.value.item],Date.now());
+      for(const vehicle of parsed.vehicles){
+        const matched=matchRouteScanVehicle(result.value.plan,vehicle); if(!matched) continue;
+        const current=merged.get(matched.id); if(!current||matched.ts>current.ts) merged.set(matched.id,matched);
+      }
+    }
+    const vehicles=[...merged.values()];
+    S.routeScanVehicles=vehicles.length;
+    const failures=settled.filter(result=>result.status==='rejected').length;
+    if(failures===settled.length) S.routeScanError='Upstream route scan temporarily unavailable';
+    else if(failures) S.routeScanError='Part of the upstream route scan was unavailable';
+    if(vehicles.length){ ingest(vehicles); learnDests(); renderDests(); render(); }
+    else renderLiveDiagnostics();
+    return vehicles;
+  }catch(e){
+    if(!ctl.signal.aborted) S.routeScanError='Upstream route scan temporarily unavailable';
+    return [];
+  }finally{
+    if(S.routeScanAbort===ctl) S.routeScanAbort=null;
+    S.routeScanBusy=false; renderLiveDiagnostics();
+  }
 }
 
 /* ============================================================
@@ -2692,6 +2823,8 @@ function ingest(list){
       rec.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
       if(rec.hist.length>8) rec.hist.shift();
     }
+    if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete rec.routeProjection; delete rec.corridorTrip; delete rec.corridorRemaining; }
+    if(!v.corridorTracked){ delete rec.corridorTrip; delete rec.corridorRemaining; }
     Object.assign(rec, v);
     learnLine(rec);
     S.vehicles.set(v.id, rec);
@@ -2884,9 +3017,10 @@ function estimate(v, stop){
   const dwell = (road/1000) * 24;
   const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 75);
   let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - age*0.35);
-  const evidence=routeEvidence(v.line,v.dest,v.journey);
+  const journeyRef=vehicleJourneyRef(v);
+  const evidence=routeEvidence(v.line,v.dest,journeyRef);
   const strength=approachStrength(v,stop);
-  const schedules=scheduledMatches(v.line,v.dest,spatial,v.journey);
+  const schedules=scheduledMatches(v.line,v.dest,spatial,journeyRef);
   let schedule=null;
   if(schedules.length){
     const cand=schedules[0], schedSecs=(cand.at-Date.now())/1000;
@@ -3246,15 +3380,17 @@ function collect(gate,diagnostics){
     if(age>MAX_AGE_MS){ rejectLive(diagnostics,'stale'); continue; }
     if(diagnostics) diagnostics.recent++;
     const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon), far=d>MAX_VEH_DIST;
-    if(d>(gate?FAR_VEH_DIST:1300)){ rejectLive(diagnostics,'range'); continue; }
-    if(diagnostics) diagnostics.nearby++;
-
-    const evidence=routeEvidence(v.line,v.dest,v.journey);
+    const journeyRef=vehicleJourneyRef(v), evidence=routeEvidence(v.line,v.dest,journeyRef);
     const geometry=journeyGeometry(v,S.stop);
     if(geometry && geometry.passed){ rejectLive(diagnostics,'passed'); continue; }
-    // The expanded search area remains exact-only. This prevents a vehicle
-    // on another branch of a long route being attached to this stop.
-    if(far && (!gate || !evidence.journeyMatch)){ rejectLive(diagnostics,'route'); continue; }
+    const corridorFar=!!(v.corridorTracked&&geometry&&geometry.remaining>80&&geometry.remaining<=ROUTE_SCAN_MAX_ROUTE_METRES&&evidence.journeyMatch&&evidence.pathMatch);
+    const range=corridorFar?ROUTE_SCAN_MAX_ROUTE_METRES:(gate?FAR_VEH_DIST:1300);
+    if(d>range){ rejectLive(diagnostics,'range'); continue; }
+    if(diagnostics) diagnostics.nearby++;
+
+    // Beyond the ordinary 18 km scan, only a vehicle found in a timetable-
+    // guided corridor and uniquely matched to the ordered journey can pass.
+    if(far && (!gate || !evidence.journeyMatch || (d>FAR_VEH_DIST&&!corridorFar))){ rejectLive(diagnostics,'route'); continue; }
 
     const strength=geometry && geometry.remaining>80 ? 2 : approachStrength(v,S.stop);
     if(gate && evidence.score<2){ rejectLive(diagnostics,'route'); continue; }
@@ -3331,6 +3467,11 @@ function renderLiveDiagnostics(){
   const rejected=Object.entries(d.rejected||{}).filter(([,value])=>value>0)
     .map(([reason,value])=>value+' '+rejectionLabels[reason]).join(' · ');
   const upstreamHidden=(Number(S.feedStale)||0)+(Number(S.feedUnknownAge)||0);
+  const routeScanNote=!S.ttStop?'':S.routeScanBusy
+    ? '<br><b>Upstream route scan:</b> checking '+S.routeScanBoxes+' timetable-guided area'+(S.routeScanBoxes===1?'':'s')+'.'
+    : S.routeScanBoxes
+      ? '<br><b>Upstream route scan:</b> '+S.routeScanBoxes+' area'+(S.routeScanBoxes===1?'':'s')+' across '+S.routeScanPatterns+' route pattern'+(S.routeScanPatterns===1?'':'s')+' · '+S.routeScanVehicles+' matching bus'+(S.routeScanVehicles===1?'':'es')+'.'
+      : '<br><b>Upstream route scan:</b> waiting for eligible ordered journey patterns.';
   el.innerHTML='<div class="diag-title">Live matching for this stop</div><div class="diag-grid">'
     +stages.map(([label,value])=>'<span><b>'+value+'</b><small>'+esc(label)+'</small></span>').join('')
     +'</div><div class="diag-note">Counts narrow from fresh BODS positions to the buses shown for this stop. '
@@ -3338,6 +3479,7 @@ function renderLiveDiagnostics(){
     +(d.recovered?'Recovered buses were kept because an exact journey, route path or matching scheduled call outweighed weaker bearing or town-centre direction evidence. ':'')
     +(rejected?'<br><b>Filtered:</b> '+esc(rejected)+'. ':'')
     +(upstreamHidden?'<br><b>Hidden before matching:</b> '+upstreamHidden+' stale or timestamp-invalid BODS positions.':'')
+    +routeScanNote+(S.routeScanError?'<br><b>Route scan note:</b> '+esc(S.routeScanError)+'.':'')
     +'</div>';
 }
 
@@ -3349,7 +3491,7 @@ function renderDests(){
   timetableRows(new Date()).filter(r=>r.at>now-2*3600000 && r.at<now+20*3600000 && r.head).forEach(r=>{ if(!bag[r.head]) bag[r.head]=now-1; });
   const live={};
   for(const v of S.vehicles.values()){
-    if(v.dest && servesHere(v.line,v.dest) && dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<MAX_VEH_DIST) live[v.dest]=true;
+    if(v.dest && servesHere(v.line,v.dest) && (dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<MAX_VEH_DIST||v.corridorTracked)) live[v.dest]=true;
   }
   const names=Object.keys(bag).sort((a,b)=>{
     if(!!live[b]!==!!live[a]) return live[b]?1:-1;
@@ -3429,7 +3571,7 @@ function lineDetail(r){
     ['Route evidence',r.evidence?r.evidence.label:'unverified'],
     ['Estimate confidence',r.confidence==='high'?'higher':r.confidence==='medium'?'moderate':'rough']
   ];
-  const schedules=scheduledMatches(v.line,v.dest,r.secs,v.journey).slice(0,4);
+  const schedules=scheduledMatches(v.line,v.dest,r.secs,vehicleJourneyRef(v)).slice(0,4);
   const times=schedules.length?'<div class="dlabel">Nearby scheduled departures</div><div class="dtimes">'+schedules.map((x,i)=>'<span class="dtime">'+esc(formatClock(x.at))+(i===0?'<i>closest</i>':'')+'</span>').join('')+'</div>':'';
   return '<div class="detail">'+journeyProgressHtml(v)+times
     +'<div class="dfacts">'+facts.map(([k,val])=>'<div><span class="dk">'+esc(k)+'</span><span class="dv">'+esc(val)+'</span></div>').join('')+'</div>'
@@ -3543,6 +3685,7 @@ function render(){
         +(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
         +'<span class="chip '+(gpsFresh?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>'
         +'<span class="chip gps-age">'+esc(gpsAge)+'</span>'
+        +(r.v.corridorTracked?'<span class="chip route-scan" title="Found farther upstream through this exact timetable journey">route scan</span>':'')
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
 +(r.recovered?'<span class="chip timing" title="Kept live because stronger timetable or journey evidence overruled weak direction or bearing evidence.">GPS recovered</span>':'')
 +(r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
@@ -3679,8 +3822,8 @@ function startPolling(){
 }
 function stopPolling(){
   if(S.timer) clearInterval(S.timer);if(S.tick) clearInterval(S.tick);if(S.motionTimer) clearInterval(S.motionTimer);
-  if(S.pollAbort) S.pollAbort.abort();
-  S.timer=S.tick=S.motionTimer=null;S.pollAbort=null;
+  if(S.pollAbort) S.pollAbort.abort(); if(S.routeScanAbort) S.routeScanAbort.abort();
+  S.timer=S.tick=S.motionTimer=null;S.pollAbort=null;S.routeScanAbort=null;S.routeScanBusy=false;
 }
 let lastPoll=Date.now();
 async function poll(force){
@@ -3701,6 +3844,7 @@ async function poll(force){
     setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+fresh+' fresh'+delayedText+hidden+tt+cached+updated,S.demo?'demo':'');
     renderGpsStats();
     render();
+    if(!S.demo) void pollRouteCorridor();
   }catch(e){
     if(!ctl.signal.aborted){
       const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
