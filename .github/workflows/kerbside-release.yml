@@ -117,6 +117,8 @@ jobs:
             bus.html \
             kerbside-backend/package.json \
             kerbside-backend/README.md \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
             kerbside-backend/scripts/build-region.js \
             kerbside-backend/test/build-region.test.js \
             kerbside-backend/tests/browser-regression.mjs
