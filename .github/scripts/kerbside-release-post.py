@@ -40,6 +40,18 @@ browser = replace_once(
     "assert.match(busSource, /const emptySummary=S\\.feedEmptyReason\\.includes\\('timestamped'\\)\\?'no fresh GPS positions reported':'no buses reported'/);\nassert.match(busSource, /'Live · '\\+emptySummary/);",
     "healthy empty-feed assertions",
 )
+browser = replace_once(
+    browser,
+    "body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.50', bods: true })",
+    "body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.51', bods: true })",
+    "browser Worker health fixture version",
+)
+browser = replace_once(
+    browser,
+    "await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.50'));",
+    "await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.51'));",
+    "browser settings version wait",
+)
 browser_path.write_text(browser, encoding="utf-8")
 
 print("Applied Kerbside 0.6.51 post-release guard fixes")
