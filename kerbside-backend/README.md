@@ -49,7 +49,7 @@ Do not put BODS or Cloudflare credentials in `bus.html`, source code or reposito
 
 ## Pages free-tier safeguards
 
-The builder writes lightweight 0.05-degree stop-index tiles plus balanced two-character departure and pattern shards. The workflow fails before deployment when:
+The builder writes lightweight 0.05-degree stop-index tiles plus balanced two-character departure and pattern shards. This prevents dense city timetables from producing oversized geographic files. The workflow fails before deployment when:
 
 - the site contains more than 20,000 files; or
 - any individual asset reaches 25 MiB.
