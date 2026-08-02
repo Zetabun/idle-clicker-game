@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.40 also generates the displayed three-day timetable window from each departure's actual arrival date, keeping extreme GTFS hours such as 100:05 on the correct day and service calendar.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.41 also supplements incomplete national stop-tile responses with OpenStreetMap, avoids week-long caching of partial results and uses a finer location key so nearby searches do not incorrectly share stop lists.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.40';
+const APP_VERSION = '0.6.41';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1260,7 +1260,7 @@ async function overpass(query,quiet){
    Saves hammering Overpass on every visit. */
 const STOP_TTL = 7*24*3600*1000;
 function stopCacheKey(lat,lon,radius){
-  return 'kerbside.stops.v5.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
+  return 'kerbside.stops.v6.'+lat.toFixed(4)+','+lon.toFixed(4)+','+radius;
 }
 function readStopCache(lat,lon,radius){
   if(!store.ok || !S.remember) return null;
@@ -1439,6 +1439,7 @@ async function fetchOfficialStops(lat,lon,radius){
   try{
     const manifest=await loadDataManifest(false), regions=dataRegionsFor(lat,lon,radius,manifest), tiles=dataTilesForRadius(lat,lon,radius);
     const settled=await Promise.allSettled(regions.flatMap(region=>tiles.map(async tile=>({region,tile,data:await loadDataTile(region,tile)}))));
+    const failed=settled.filter(result=>result.status==='rejected').length;
     const loaded=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
     if(!loaded.length) return null;
     const unique=new Map();
@@ -1452,8 +1453,53 @@ async function fetchOfficialStops(lat,lon,radius){
         const old=unique.get(stop.id); if(!old||stop.d<old.d) unique.set(stop.id,stop);
       }
     }
-    return [...unique.values()].sort((a,b)=>a.d-b.d).slice(0,120);
+    return {
+      stops:[...unique.values()].sort((a,b)=>a.d-b.d).slice(0,120),
+      complete:failed===0, failed, requested:settled.length
+    };
   }catch(e){ return null; }
+}
+function discoveredStopCodes(stop){
+  return new Set([stop&&stop.timetableId,stop&&stop.atco,stop&&stop.naptan,stop&&stop.code]
+    .map(value=>String(value||'').trim().toLowerCase()).filter(Boolean));
+}
+function sameDiscoveredStop(a,b){
+  const codesA=discoveredStopCodes(a), codesB=discoveredStopCodes(b);
+  if([...codesA].some(code=>codesB.has(code))) return true;
+  if(!a||!b||!isFinite(a.lat)||!isFinite(a.lon)||!isFinite(b.lat)||!isFinite(b.lon)) return false;
+  const indA=normName(a.ind||''), indB=normName(b.ind||'');
+  if(indA&&indB&&indA!==indB) return false;
+  return dist(a.lat,a.lon,b.lat,b.lon)<=12 && nameSimilarity(a.name||'',b.name||'')>=.6;
+}
+function mergeDiscoveredStops(primary,secondary,lat,lon){
+  const out=[];
+  for(const original of [...(primary||[]),...(secondary||[])]){
+    if(!original||!isFinite(original.lat)||!isFinite(original.lon)) continue;
+    const candidate={...original,d:dist(lat,lon,original.lat,original.lon)};
+    const index=out.findIndex(existing=>sameDiscoveredStop(existing,candidate));
+    if(index<0){ out.push(candidate); continue; }
+    const current=out[index];
+    const preferred=candidate.source==='official'&&current.source!=='official'?candidate:current;
+    const other=preferred===candidate?current:candidate;
+    const combined={...other,...preferred};
+    for(const field of ['ind','atco','naptan','code','timetableId','region','tile','shard']){
+      combined[field]=preferred[field]||other[field]||'';
+    }
+    combined.d=dist(lat,lon,combined.lat,combined.lon);
+    out[index]=combined;
+  }
+  return out.sort((a,b)=>a.d-b.d).slice(0,120);
+}
+function showDiscoveredStops(stops,lat,lon,cacheable){
+  S.stops=mergeDiscoveredStops([],stops,lat,lon);
+  drawStops();
+  if(cacheable&&S.stops.length) writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
+  if(!S.stops.length) return false;
+  const want=S.pendingStopId?S.stops.find(stop=>String(stop.id)===String(S.pendingStopId)):null;
+  S.pendingStopId=null; selectStop(want||S.stops[0]); return true;
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),stopCacheKey,sameDiscoveredStop,mergeDiscoveredStops};
 }
 
 async function findStops(lat,lon,run){
@@ -1469,12 +1515,11 @@ async function findStops(lat,lon,run){
     selectStop(want || S.stops[0]);
     return;
   }
-  const official=await fetchOfficialStops(lat,lon,S.radius);
+  const officialResult=await fetchOfficialStops(lat,lon,S.radius);
   if(run!==S.locationRun) return;
-  if(official && official.length){
-    S.stops=official; drawStops(); writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
-    const want=S.pendingStopId?S.stops.find(s=>String(s.id)===String(S.pendingStopId)):null;
-    S.pendingStopId=null; selectStop(want||S.stops[0]); return;
+  const official=officialResult&&Array.isArray(officialResult.stops)?officialResult.stops:[];
+  if(official.length&&officialResult.complete){
+    showDiscoveredStops(official,lat,lon,true); return;
   }
   const q = `[out:json][timeout:25];
 (node["highway"="bus_stop"](around:${S.radius},${lat},${lon});
@@ -1484,7 +1529,7 @@ out body 120;`;
     const j = await overpass(q);
     if(run!==S.locationRun) return;
     const seen=new Set();
-    S.stops = (j.elements||[]).map(el=>{
+    const discovered=(j.elements||[]).map(el=>{
       const tags=el.tags||{};
       const atco=tags['naptan:AtcoCode']||'';
       const naptan=tags['naptan:NaptanCode']||tags['naptan:SmsCode']||'';
@@ -1495,28 +1540,27 @@ out body 120;`;
         ind:tags['naptan:Indicator']||tags.local_ref||'',
         lat:el.lat, lon:el.lon, d:dist(lat,lon,el.lat,el.lon)
       };
-    }).filter(s=>{
-      const k=String(s.id)+'|'+Math.round(s.lat*25000)+'|'+Math.round(s.lon*25000);
-      if(seen.has(k)) return false; seen.add(k); return true;
-    }).sort((a,b)=>a.d-b.d);
-
-    drawStops();
-    writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
-    if(S.stops.length){
-      const want = S.pendingStopId ? S.stops.find(s=>s.id===S.pendingStopId) : null;
-      S.pendingStopId = null;
-      selectStop(want || S.stops[0]);
-    }
-    else {
-      $('stopName').textContent='No bus stops mapped here';
-      $('stopMeta').textContent='TRY A WIDER RADIUS IN SETTINGS';
-      showEmpty('<strong>No stops within '+fmtDist(S.radius)+'</strong>OpenStreetMap has no bus stops mapped around this point. Widen the radius in settings, or move the search somewhere more built up.');
-    }
+    }).filter(stop=>{
+      const key=String(stop.id)+'|'+Math.round(stop.lat*25000)+'|'+Math.round(stop.lon*25000);
+      if(seen.has(key)) return false; seen.add(key); return true;
+    });
+    const merged=mergeDiscoveredStops(official,discovered,lat,lon);
+    if(showDiscoveredStops(merged,lat,lon,true)) return;
+    $('stopName').textContent='No bus stops mapped here';
+    $('stopMeta').textContent='TRY A WIDER RADIUS IN SETTINGS';
+    showEmpty('<strong>No stops within '+fmtDist(S.radius)+'</strong>No official or OpenStreetMap bus stops were found around this point. Widen the radius in settings, or move the search somewhere more built up.');
   }catch(e){
     if(run!==S.locationRun) return;
+    // A partial Pages response is useful for this visit, but never cache it:
+    // the missing tile should be retried on the next search or page load.
+    if(official.length){
+      showDiscoveredStops(official,lat,lon,false);
+      setStatus('Some official stop tiles were unavailable — using partial results','err');
+      return;
+    }
     $('stopName').textContent='Could not load stops';
-    $('stopMeta').textContent='OVERPASS UNAVAILABLE';
-    showEmpty('<strong>Stop lookup failed</strong>The OpenStreetMap query service didn\'t respond. It rate-limits under load — wait a moment and <button id="retryStops">try again</button>.');
+    $('stopMeta').textContent='STOP DATA UNAVAILABLE';
+    showEmpty('<strong>Stop lookup failed</strong>National timetable tiles and OpenStreetMap did not respond. Wait a moment and <button id="retryStops">try again</button>.');
     const rb=$('retryStops'); if(rb) rb.addEventListener('click',()=>findStops(lat,lon,S.locationRun));
   }
 }
