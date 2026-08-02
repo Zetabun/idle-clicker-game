@@ -8,6 +8,8 @@ new = '"S.timetableSource===\'national\'?\' · official timetable stop\'"'
 if source.count(old) != 1:
     raise SystemExit(f"release loader: expected one stop-label replacement, found {source.count(old)}")
 source = source.replace(old, new, 1)
+source = source.replace("let node=$('mapTileError');", "let node=document.getElementById('mapTileError');")
+source = source.replace("$('map').appendChild(node);", "document.getElementById('map').appendChild(node);")
 for label in ("browser source guards", "map source guards"):
     pattern = rf'^browser = replace_once\(browser, .*?, "{re.escape(label)}"\)\n'
     source, count = re.subn(pattern, "browser = browser\n", source, count=1, flags=re.M)
