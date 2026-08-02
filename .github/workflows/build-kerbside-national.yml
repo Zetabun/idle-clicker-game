@@ -271,16 +271,59 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.28.1 pages project list --json > pages-projects.json
-          if ! PROJECT_NAME="$PAGES_PROJECT" node - <<'NODE'
-          const fs = require('fs');
-          const raw = JSON.parse(fs.readFileSync('pages-projects.json', 'utf8'));
-          const projects = Array.isArray(raw) ? raw : (raw.result || []);
-          process.exit(projects.some(project => project.name === process.env.PROJECT_NAME) ? 0 : 1);
+          node --input-type=module <<'NODE'
+          const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+          const projectName = process.env.PAGES_PROJECT;
+          const baseUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`;
+          const headers = {
+            Authorization: `Bearer ${apiToken}`,
+            'Content-Type': 'application/json'
+          };
+
+          async function responseBody(response) {
+            const text = await response.text();
+            if (!text) return null;
+            try {
+              return JSON.parse(text);
+            } catch {
+              return text;
+            }
+          }
+
+          function cloudflareError(action, response, body) {
+            const detail = body && typeof body === 'object'
+              ? JSON.stringify(body.errors || body)
+              : String(body || 'No response body');
+            return new Error(`${action} failed with HTTP ${response.status}: ${detail}`);
+          }
+
+          const lookup = await fetch(`${baseUrl}/${encodeURIComponent(projectName)}`, { headers });
+          const lookupBody = await responseBody(lookup);
+
+          if (lookup.ok) {
+            if (lookupBody && lookupBody.success === false) {
+              throw cloudflareError('Pages project lookup', lookup, lookupBody);
+            }
+            console.log(`Pages project ${projectName} already exists.`);
+          } else if (lookup.status === 404) {
+            const create = await fetch(baseUrl, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                name: projectName,
+                production_branch: 'main'
+              })
+            });
+            const createBody = await responseBody(create);
+            if (!create.ok || (createBody && createBody.success === false)) {
+              throw cloudflareError('Pages project creation', create, createBody);
+            }
+            console.log(`Created Pages project ${projectName}.`);
+          } else {
+            throw cloudflareError('Pages project lookup', lookup, lookupBody);
+          }
           NODE
-          then
-            npx --yes wrangler@4.28.1 pages project create "$PAGES_PROJECT" --production-branch main
-          fi
 
       - name: Deploy national timetable to Cloudflare Pages
         shell: bash
