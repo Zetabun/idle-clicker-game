@@ -32,6 +32,7 @@ jobs:
         env:
           APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
           WORKER_URL: https://kerbside-bus.adambullas.workers.dev/health
+          WORKER_FEED_URL: https://kerbside-bus.adambullas.workers.dev/feed
           LEAFLET_JS_URL: https://zetabun.github.io/idle-clicker-game/kerbside-backend/vendor/leaflet/leaflet.js
           LEAFLET_CSS_URL: https://zetabun.github.io/idle-clicker-game/kerbside-backend/vendor/leaflet/leaflet.css
           EXPECTED_LEAFLET_JS_HASH: 20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=
@@ -47,9 +48,10 @@ jobs:
 
           app_file="$(mktemp)"
           worker_file="$(mktemp)"
+          feed_file="$(mktemp)"
           leaflet_js="$(mktemp)"
           leaflet_css="$(mktemp)"
-          trap 'rm -f "$app_file" "$worker_file" "$leaflet_js" "$leaflet_css"' EXIT
+          trap 'rm -f "$app_file" "$worker_file" "$feed_file" "$leaflet_js" "$leaflet_css"' EXIT
 
           deployed=false
           for attempt in $(seq 1 36); do
@@ -95,6 +97,28 @@ jobs:
             cat "$worker_file" || true
             exit 1
           fi
+
+          feed_cache_buster="smoke=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-feed"
+          curl --fail --location --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            -H 'Cache-Control: no-cache' \
+            "$WORKER_FEED_URL?bbox=-2.15000,52.45000,-2.05000,52.55000&$feed_cache_buster" -o "$feed_file"
+          python3 - "$feed_file" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          path = sys.argv[1]
+          try:
+              root = ET.parse(path).getroot()
+          except Exception as exc:
+              raise SystemExit(f"::error::Production Worker feed is not valid XML: {exc}")
+
+          local = lambda tag: tag.rsplit('}', 1)[-1]
+          names = {local(node.tag) for node in root.iter()}
+          if local(root.tag) != 'Siri' or 'VehicleMonitoringDelivery' not in names:
+              raise SystemExit('::error::Production Worker feed is not a SIRI vehicle-monitoring document')
+          print('Production Worker returned valid SIRI vehicle-monitoring XML.')
+          PY
 
           cache_buster="smoke=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-assets"
           curl --fail --location --silent --show-error \
