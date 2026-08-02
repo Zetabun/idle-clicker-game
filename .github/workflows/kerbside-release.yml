@@ -69,7 +69,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .github/scripts/__pycache__
+          if [[ -d .github/scripts/__pycache__ ]]; then
+            find .github/scripts/__pycache__ -maxdepth 1 -type f -name 'release-kerbside-*.pyc' -delete
+          fi
           rm -f .github/scripts/release-kerbside-*.py
           rm -f .github/triggers/release-kerbside-*.txt
 
