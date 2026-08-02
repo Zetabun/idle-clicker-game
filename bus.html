@@ -659,7 +659,6 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
           </div>
 
           <div id="sourceStatus" class="settings-status">No source check has run yet.</div>
-          <button class="copybtn" id="copyStopBtn" type="button">Copy current stop for Cloudflare recorder</button>
 
           <div class="row">
             <div class="field">
@@ -743,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.21 also clears the previous town anchor immediately when a new location is chosen, preventing old-area direction evidence from filtering buses while the new anchor lookup is still running.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.22 also removes the retired Cloudflare recorder controls and silent /history requests; the public Worker is now represented accurately as a live-feed proxy only.</p>
           </div>
 
           <div class="stats-section">
@@ -774,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.21';
+const APP_VERSION = '0.6.22';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -799,7 +798,7 @@ const S = {
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
   timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
-  workerHistory:{}, lastWideFetch:0
+  lastWideFetch:0
 };
 
 const R_EARTH = 6371000;
@@ -1832,28 +1831,6 @@ function scheduledMatches(line,dest,spatialSecs,journey){
   if(tripMatch.items.length) rows=tripMatch.items;
   return rows.sort((a,b)=>Math.abs(a.at-target)-Math.abs(b.at-target));
 }
-async function loadWorkerHistory(stop){
-  if(!S.proxy || !stop) return;
-  const id=String(stop.code || (S.ttStop&&S.ttStop.id) || stop.id);
-  try{
-    const u=new URL(S.proxy,location.href); u.pathname=u.pathname.replace(/\/$/,'')+'/history';
-    u.searchParams.set('days','30'); u.searchParams.set('stop',id);
-    const r=await fetchTimed(u.toString(),{headers:{Accept:'application/json'},cache:'no-store'},8000);
-    if(!r.ok) return;
-    const j=await r.json();
-    if(!Array.isArray(j.arrivals)) return;
-    S.workerHistory[id]=j.arrivals;
-    const sid=String(stop.id), bag=SERVING[sid]||(SERVING[sid]={});
-    const lines={};
-    j.arrivals.forEach(a=>{ const l=cleanLine(a.l||a.line||''); if(l) lines[l]=(lines[l]||0)+1; });
-    Object.entries(lines).forEach(([line,count])=>{
-      const old=normaliseServingRecord(bag[line]);
-      bag[line]={last:Date.now(),count:Math.max(old.count,count),vehicles:old.vehicles||[],confirmed:count>=2,source:'worker'};
-    });
-    saveServing(); renderServingNote(); render();
-  }catch(e){}
-}
-
 function updateStopMeta(){
   if(!S.stop) return;
   const s=S.stop, displayCode=s.atco||s.naptan||s.code||'';
@@ -1871,7 +1848,7 @@ function selectStop(s,manual){
   S.ttStop=matchTimetableStop(s); $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':''); updateStopMeta();
   drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
   if(!MAPPED[String(s.id)] && !s.region && !s.shard && !s.timetableId){ S.loadingRoutes=true; renderServingNote(); fetchRoutesFor(s).then(()=>{ S.loadingRoutes=false; if(S.stop&&S.stop.id===s.id){ renderServingNote(); render(); } }); }
-  loadWorkerHistory(s); loadStopTimetable(s); savePrefs(); render();
+  loadStopTimetable(s); savePrefs(); render();
   if(changed&&S.timer){ setStatus('Refreshing selected stop',''); poll(true); }
 }
 
@@ -3256,7 +3233,6 @@ $('setBtn').addEventListener('click',()=>{
     $('rememberHint').textContent='Unavailable here — this browser context blocks local storage, so settings last for this tab only.';
     $('rememberSw').setAttribute('aria-pressed','false'); $('rememberSw').disabled=true; $('rememberSw').style.opacity='.4';
   }
-  $('copyStopBtn').disabled=!S.stop; $('copyStopBtn').style.opacity=S.stop?'1':'.45';
   $('scrim').classList.add('show'); checkSourceStatus();
 });
 $('dataTab').addEventListener('click',()=>setSettingsTab('data'));
@@ -3266,16 +3242,9 @@ $('scrim').addEventListener('click',e=>{ if(e.target===$('scrim')) $('scrim').cl
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ $('scrim').classList.remove('show'); closePicker(); }});
 function bindSwitch(el){ el.addEventListener('click',()=>el.setAttribute('aria-pressed',el.getAttribute('aria-pressed')!=='true')); }
 bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw')); bindSwitch($('serveSw'));
-$('copyStopBtn').addEventListener('click',async()=>{
-  if(!S.stop){ toast('Choose a stop first.',true); return; }
-  const item={id:String(S.stop.code||(S.ttStop&&S.ttStop.id)||S.stop.id),name:S.stop.name,lat:+S.stop.lat.toFixed(6),lon:+S.stop.lon.toFixed(6)};
-  const text=JSON.stringify([item]);
-  try{ await navigator.clipboard.writeText(text); toast('Stop configuration copied for WATCHED_STOPS.'); }
-  catch(e){ toast(text); }
-});
 $('forgetBtn').addEventListener('click',()=>{
   store.clearAll();
-  S.remember=false; S.key=''; S.proxy=''; S.demo=true; S.destsByStop={}; S.workerHistory={};
+  S.remember=false; S.key=''; S.proxy=''; S.demo=true; S.destsByStop={};
   LINES={}; SERVING={}; MAPPED={}; S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false;
   $('rememberSw').setAttribute('aria-pressed','false'); $('demoSw').setAttribute('aria-pressed','true');
   $('apiKey').value=''; $('proxy').value='';
@@ -3299,7 +3268,6 @@ $('saveSet').addEventListener('click',async()=>{
   if(S.origin){
     S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false; drawOrigin();
     if(S.radius!==oldRadius||S.proxy!==oldProxy) await findStops(S.origin.lat,S.origin.lon,S.locationRun);
-    if(S.stop) loadWorkerHistory(S.stop);
     startPolling();
   }
 });

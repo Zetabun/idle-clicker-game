@@ -59,6 +59,8 @@ Kerbside 0.6.20 separates stop discovery from live-feed coverage. The selectable
 
 Kerbside 0.6.21 resets location-dependent direction state immediately. Choosing a new address or device location now clears the previous town anchor before stops or live vehicles are loaded, so a slow place lookup cannot temporarily classify buses using the town centre from the user's former area. Inbound/outbound remains neutral until the new anchor resolves.
 
+Kerbside 0.6.22 removes the retired recorder/history client. The Settings button for copying `WATCHED_STOPS`, the silent `/history` request, its in-memory state and all call sites have been deleted because the live-only Worker exposes only `/`, `/feed` and `/health`. Local observed-arrival learning remains available in the browser, but the interface no longer implies that a Cloudflare recorder is active.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
