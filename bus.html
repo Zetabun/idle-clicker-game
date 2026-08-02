@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.24 also isolates locally learned speed and route-detour data by operator, route reference and displayed line, so unrelated services sharing a number cannot influence one another's ETA fallback.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.25 also preserves ambiguous `St` place-name abbreviations instead of expanding them blindly to `Street`, preventing destinations such as St Helens and Bury St Edmunds from being corrupted.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.24';
+const APP_VERSION = '0.6.25';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -935,7 +935,7 @@ function titleCase(s){
 }
 /* Operators send destinations straight out of their scheduling
    system: CASTLE_SQ__Beckbury_Rd and similar. Make it readable. */
-const ABBREV = {rd:'Road',st:'Street',sq:'Square',ave:'Avenue',av:'Avenue',ln:'Lane',
+const ABBREV = {rd:'Road',sq:'Square',ave:'Avenue',av:'Avenue',ln:'Lane',
   dr:'Drive',cl:'Close',gdns:'Gardens',pk:'Park',ctr:'Centre',cen:'Centre',
   stn:'Station',intg:'Interchange',ind:'Industrial',est:'Estate',ter:'Terrace',
   cres:'Crescent',hosp:'Hospital',sch:'School',bus:'Bus'};
@@ -944,6 +944,10 @@ function cleanName(s){
   let t = String(s).replace(/[_]+/g,' ').replace(/\s+/g,' ').trim();
   return t.split(' ').map(w=>{
     const bare = w.replace(/[^A-Za-z]/g,'').toLowerCase();
+    // `St` is ambiguous: it can mean Saint or Street. Keeping the readable
+    // abbreviation avoids corrupting place names such as St Helens and
+    // Bury St Edmunds while still displaying street names clearly.
+    if(bare==='st') return 'St';
     if(ABBREV[bare] && bare.length>=2) return ABBREV[bare];
     // shouty words become Title Case; anything already mixed is left alone
     if(w === w.toUpperCase() && /[A-Z]{2,}/.test(w) && w.length>3){
@@ -951,6 +955,9 @@ function cleanName(s){
     }
     return w;
   }).join(' ');
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),cleanName};
 }
 /* "002" and "0002" are the same bus as "2" */
 function cleanLine(s){

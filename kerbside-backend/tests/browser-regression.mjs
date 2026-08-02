@@ -23,6 +23,8 @@ assert.match(busSource, /if\(run!==geocodeRun\) return/);
 assert.match(busSource, /const LINE_KEY = 'kerbside\.lines\.v2'/);
 assert.match(busSource, /function lineLearningKey\(value\)/);
 assert.doesNotMatch(busSource, /LINES\[v\.line\]/);
+assert.doesNotMatch(busSource, /st:'Street'/);
+assert.match(busSource, /if\(bare==='st'\) return 'St'/);
 assert.match(busSource, /far && \(!gate \|\| !evidence\.journeyMatch\)/);
 assert.match(busSource, /if\(!shown&&!nearby\) continue/);
 assert.match(busSource, /function timetablePatternRecord\(journey\)/);
@@ -30,7 +32,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.24'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.25'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -126,7 +128,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.24', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.25', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
@@ -158,12 +160,17 @@ try {
     ];
   });
   assert.equal(new Set(learningKeys).size, 3);
+  const cleanedNames = await page.evaluate(() => {
+    const clean=window.__KERBSIDE_TEST__.cleanName;
+    return [clean('ST HELENS'), clean('BURY ST EDMUNDS'), clean('HIGH ST')];
+  });
+  assert.deepEqual(cleanedNames, ['St Helens', 'Bury St Edmunds', 'High St']);
 
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.24'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.25'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

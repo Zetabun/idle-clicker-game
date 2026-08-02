@@ -65,6 +65,8 @@ Kerbside 0.6.23 makes address lookup race-safe and country-scoped. Each Photon r
 
 Kerbside 0.6.24 isolates local ETA learning by service identity. Learned detour factors and speeds now use a composite operator, route-reference and displayed-line key instead of the line number alone. The unsafe version-1 cache is discarded rather than migrated, preventing a route `9` in one city or operator from affecting another route `9` elsewhere.
 
+Kerbside 0.6.25 corrects ambiguous `St` name cleanup. The app no longer expands every standalone `St` token to `Street`; it keeps the readable abbreviation instead, preserving place names such as St Helens and Bury St Edmunds while still normalising unambiguous road suffixes.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
