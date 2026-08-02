@@ -90,8 +90,8 @@ package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
 
 readme_path = Path("kerbside-backend/README.md")
 readme = readme_path.read_text(encoding="utf-8")
-anchor = "Kerbside 0.6.4 places the settings tabs beside the dialog title, adds live GPS and Worker statistics, and continuously animates a short bounded visual estimate between confirmed vehicle snapshots. The compact Times header keeps destination filters on one horizontal scroller and moves route-source and confidence explanations behind its information button. Timetable matching and ETA calculations continue to use confirmed vehicle records rather than the visual estimate.\n"
-addition = anchor + "\nKerbside 0.6.5 increases the visual separation between the Settings title and its tabs. It also suppresses two-finger browser zoom on the controls, departure board and settings dialog while preserving Leaflet pinch-zoom on the map.\n"
+anchor = "\nThe Worker remains backwards-compatible for live data:\n"
+addition = "\nKerbside 0.6.5 increases the visual separation between the Settings title and its tabs. It also suppresses two-finger browser zoom on the controls, departure board and settings dialog while preserving Leaflet pinch-zoom on the map.\n" + anchor
 readme = replace_once(readme, anchor, addition, "README release note")
 readme_path.write_text(readme, encoding="utf-8")
 
