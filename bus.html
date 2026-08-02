@@ -743,7 +743,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.16 also recovers timetable-linked GPS vehicles when exact route or scheduled-call evidence is stronger than a temporary bearing or town-centre direction estimate, and the board explains why each remaining timetable row has no live match.</p>
           </div>
 
           <div class="stats-section">
@@ -774,7 +774,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.15';
+const APP_VERSION = '0.6.16';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1615,9 +1615,31 @@ function destinationSimilarity(a,b){
   if(A.includes(B) || B.includes(A)) return .8;
   return nameSimilarity(A,B);
 }
+function compactTripRef(value){
+  return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
+}
+function meaningfulTripTokens(value){
+  return String(value||'').trim().toLowerCase().split(/[^a-z0-9]+/)
+    .filter(token=>token.length>=8 && /[a-z]/.test(token) && /[0-9]/.test(token));
+}
 function tripRefMatches(a,b){
   const A=String(a||'').trim(), B=String(b||'').trim();
-  return !!A && !!B && A===B;
+  if(!A || !B) return false;
+  if(A===B) return true;
+  const compactA=compactTripRef(A), compactB=compactTripRef(B);
+  if(!compactA || !compactB) return false;
+  if(compactA===compactB) return true;
+  const shorter=compactA.length<=compactB.length?compactA:compactB;
+  const longer=shorter===compactA?compactB:compactA;
+  if(shorter.length>=12 && (longer.startsWith(shorter) || longer.endsWith(shorter))) return true;
+  const tokensA=meaningfulTripTokens(A), tokensB=new Set(meaningfulTripTokens(B));
+  return tokensA.some(token=>tokensB.has(token));
+}
+function timetableDirection(value){
+  const direction=String(value||'').trim().toLowerCase();
+  if(direction==='0' || direction.startsWith('in')) return 'in';
+  if(direction==='1' || direction.startsWith('out')) return 'out';
+  return 'unknown';
 }
 async function queuePattern(patternId){
   if(!patternId||!S.timetableRegion||S.patternPending.has(patternId)) return;
@@ -1632,7 +1654,17 @@ async function queuePattern(patternId){
 function timetablePatternRecord(journey){
   const tt=S.timetable;
   if(!tt||!journey||!tt.tripPatterns) return null;
-  const id=tt.tripPatterns[String(journey)]; if(!id) return null;
+  const journeyKey=String(journey), aliasKey='trip:'+journeyKey;
+  let id=tt.tripPatterns[journeyKey];
+  if(!id){
+    if(PATTERN_CACHE.has(aliasKey)) id=PATTERN_CACHE.get(aliasKey)||null;
+    else{
+      const matches=Object.keys(tt.tripPatterns).filter(ref=>tripRefMatches(ref,journeyKey));
+      id=matches.length===1?tt.tripPatterns[matches[0]]:null;
+      PATTERN_CACHE.set(aliasKey,id||'');
+    }
+  }
+  if(!id) return null;
   if(PATTERN_CACHE.has(id)) return PATTERN_CACHE.get(id);
   const raw=tt.patterns&&tt.patterns[id];
   if(!raw){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
@@ -2546,7 +2578,14 @@ function renderServingNote(){
   }
 }
 function newLiveDiagnostics(gate){
-  return {gate:!!gate,received:S.vehicles.size,recent:0,nearby:0,route:0,direction:0,approaching:0,confidence:0,shown:0};
+  return {
+    gate:!!gate,received:S.vehicles.size,recent:0,nearby:0,route:0,direction:0,
+    approaching:0,confidence:0,recovered:0,shown:0,
+    rejected:{stale:0,range:0,passed:0,route:0,destination:0,direction:0,away:0,confidence:0}
+  };
+}
+function rejectLive(diagnostics,reason){
+  if(diagnostics&&diagnostics.rejected&&reason in diagnostics.rejected) diagnostics.rejected[reason]++;
 }
 function relevant(){
   if(!S.stop){ S.liveDiag=null; return []; }
@@ -2554,8 +2593,8 @@ function relevant(){
   const gated=servingReady();
   let diagnostics=newLiveDiagnostics(gated);
   let out=collect(gated,diagnostics);
-  // A matched timetable stop is authoritative. Never replace an empty,
-  // verified board with nearby buses that may belong to an adjacent stop.
+  // Only use the close-range fallback when no authoritative timetable stop
+  // exists. A matched stop instead uses resilient timetable-linked recovery.
   if(!out.length && gated && !S.ttStop){
     diagnostics=newLiveDiagnostics(false);
     out=collect(false,diagnostics);
@@ -2569,34 +2608,69 @@ function collect(gate,diagnostics){
   const out=[], now=Date.now();
   for(const v of S.vehicles.values()){
     const age=now-v.ts;
-    if(age>MAX_AGE_MS) continue;
+    if(age>MAX_AGE_MS){ rejectLive(diagnostics,'stale'); continue; }
     if(diagnostics) diagnostics.recent++;
     const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon), far=d>MAX_VEH_DIST;
-    if(d>(gate?FAR_VEH_DIST:1300)) continue;
+    if(d>(gate?FAR_VEH_DIST:1300)){ rejectLive(diagnostics,'range'); continue; }
     if(diagnostics) diagnostics.nearby++;
+
     const evidence=routeEvidence(v.line,v.dest,v.journey);
     const geometry=journeyGeometry(v,S.stop);
-    if(geometry && geometry.passed) continue;
-    // The expanded search area is deliberately stricter: a distant bus is
-    // eligible only when its exact live journey is scheduled at this stop.
-    if(far && (!gate || !evidence.journeyMatch)) continue;
+    if(geometry && geometry.passed){ rejectLive(diagnostics,'passed'); continue; }
+    // The expanded search area remains exact-only. This prevents a vehicle
+    // on another branch of a long route being attached to this stop.
+    if(far && (!gate || !evidence.journeyMatch)){ rejectLive(diagnostics,'route'); continue; }
+
     const strength=geometry && geometry.remaining>80 ? 2 : approachStrength(v,S.stop);
-    if(gate && evidence.score<2) continue;
-    if(!gate && !(d<260 || (d<1300 && strength>=1))) continue;
+    if(gate && evidence.score<2){ rejectLive(diagnostics,'route'); continue; }
+    if(!gate && !(d<260 || (d<1300 && strength>=1))){ rejectLive(diagnostics,'route'); continue; }
     if(diagnostics) diagnostics.route++;
-    const dir=inferDirection(v);
-    if(S.destFilter){
-      if(destinationSimilarity(v.dest,S.destFilter)<.75) continue;
-    }else if(S.dir!=='all' && dir!==S.dir && dir!=='unknown') continue;
-    if(diagnostics) diagnostics.direction++;
-    if(S.hideAway && strength<0 && d>100) continue;
-    if(diagnostics) diagnostics.approaching++;
+
+    // Calculate the timetable-linked estimate before direction and bearing
+    // gates. Exact journey geometry and a plausible scheduled call are more
+    // reliable than a straight-line town-centre or compass inference.
     const est=estimate(v,S.stop);
-    if(!gate && est.confidence==='low') continue;
-    if(gate && est.confidence==='low' && d>500) continue;
-    if(far && !est.evidence.journeyMatch) continue;
+    const scheduleBacked=!!(est.schedule && evidence.score>=4);
+    const trustedJourney=!!(evidence.journeyMatch || geometry);
+    const scheduledDir=timetableDirection(est.schedule&&est.schedule.direction);
+    const candidateDest=v.dest || (est.schedule&&est.schedule.head) || '';
+
+    if(S.destFilter && destinationSimilarity(candidateDest,S.destFilter)<.75){
+      rejectLive(diagnostics,'destination'); continue;
+    }
+
+    const dir=inferDirection(v);
+    if(S.dir!=='all'){
+      const timetableContradicts=scheduledDir!=='unknown' && scheduledDir!==S.dir;
+      const liveDirectionOk=dir===S.dir || dir==='unknown';
+      const timetableDirectionOk=scheduledDir===S.dir;
+      if(timetableContradicts || (!liveDirectionOk && !timetableDirectionOk && !trustedJourney)){
+        rejectLive(diagnostics,'direction'); continue;
+      }
+    }
+    if(diagnostics) diagnostics.direction++;
+
+    if(S.hideAway && strength<0 && d>100 && !trustedJourney && !scheduleBacked){
+      rejectLive(diagnostics,'away'); continue;
+    }
+    if(diagnostics) diagnostics.approaching++;
+
+    if(est.confidence==='low'){
+      const recoverable=trustedJourney || (scheduleBacked && d<=MAX_VEH_DIST);
+      if(!recoverable && (!gate || d>500)){ rejectLive(diagnostics,'confidence'); continue; }
+    }
+    if(far && !est.evidence.journeyMatch){ rejectLive(diagnostics,'route'); continue; }
     if(diagnostics) diagnostics.confidence++;
-    out.push({v,dir,app:strength>=0,strength,secs:est.secs,metres:est.metres,routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,spread:est.spread,evidence:est.evidence,schedule:est.schedule});
+
+    const directionDisagreed=S.dir!=='all' && dir!==S.dir && dir!=='unknown';
+    const recovered=!!((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low'));
+    if(recovered && diagnostics) diagnostics.recovered++;
+    const match=geometry?'journey path':evidence.journeyMatch?'exact journey':scheduleBacked?'timetable linked':'route evidence';
+    out.push({
+      v,dir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
+      routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
+      spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match
+    });
   }
   out.sort((a,b)=>a.secs-b.secs);
   const limited=out.slice(0,25);
@@ -2616,12 +2690,20 @@ function renderLiveDiagnostics(){
   const stages=[
     ['received',d.received],['recent',d.recent],['within range',d.nearby],
     ['route evidence',d.route],['direction',d.direction],['approaching',d.approaching],
-    ['confidence',d.confidence],['shown',d.shown]
+    ['confidence',d.confidence],['recovered',d.recovered],['shown',d.shown]
   ];
+  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence'};
+  const rejected=Object.entries(d.rejected||{}).filter(([,value])=>value>0)
+    .map(([reason,value])=>value+' '+rejectionLabels[reason]).join(' · ');
+  const upstreamHidden=(Number(S.feedStale)||0)+(Number(S.feedUnknownAge)||0);
   el.innerHTML='<div class="diag-title">Live matching for this stop</div><div class="diag-grid">'
     +stages.map(([label,value])=>'<span><b>'+value+'</b><small>'+esc(label)+'</small></span>').join('')
-    +'</div><div class="diag-note">Counts narrow from all tracked vehicles to the buses shown for the current stop, destination and direction. Scheduled rows are not included. '
-    +(d.gate?'Official timetable stop rules are active.':'Nearby fallback rules are active.')+'</div>';
+    +'</div><div class="diag-note">Counts narrow from fresh BODS positions to the buses shown for this stop. '
+    +(d.gate?'Official timetable stop rules are active. ':'Nearby fallback rules are active. ')
+    +(d.recovered?'Recovered buses were kept because an exact journey, route path or matching scheduled call outweighed weaker bearing or town-centre direction evidence. ':'')
+    +(rejected?'<br><b>Filtered:</b> '+esc(rejected)+'. ':'')
+    +(upstreamHidden?'<br><b>Hidden before matching:</b> '+upstreamHidden+' stale or timestamp-invalid BODS positions.':'')
+    +'</div>';
 }
 
 function renderDests(){
@@ -2730,6 +2812,19 @@ function scheduleKey(r){
   const trip=String((r&&r.trip)||'').trim();
   return trip ? 'trip|'+trip+'|'+r.at : [r&&r.at,r&&r.line,normName(r&&r.head)].join('|');
 }
+function scheduleLiveReason(schedule){
+  if(S.demo) return 'simulator only';
+  if(S.feedFallback) return 'live feed delayed';
+  const now=Date.now();
+  const active=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
+  if(!active.length) return 'operator GPS unavailable';
+  const sameLine=active.filter(v=>String(v.line)===String(schedule.line));
+  if(!sameLine.length) return 'no GPS matched';
+  const sameBranch=sameLine.filter(v=>!schedule.head || !v.dest || destinationSimilarity(v.dest,schedule.head)>=.34);
+  if(!sameBranch.length) return 'GPS branch uncertain';
+  if(schedule.trip && sameBranch.some(v=>tripRefMatches(schedule.trip,v.journey))) return 'GPS received · filtered';
+  return 'journey uncertain';
+}
 function scheduledBoardRows(liveRows){
   if(!S.ttStop) return [];
   const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set();
@@ -2737,11 +2832,13 @@ function scheduledBoardRows(liveRows){
   return timetableRows(new Date(now)).filter(r=>{
     if(r.at<now-60000 || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
+    const rowDir=timetableDirection(r.direction);
+    if(S.dir!=='all' && rowDir!=='unknown' && rowDir!==S.dir) return false;
     const key=scheduleKey(r);
     if(claimed.has(key) || seen.has(key)) return false;
     seen.add(key); return true;
   }).sort((a,b)=>a.at-b.at).slice(0,36)
-    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000)}));
+    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule)}));
 }
 function liveTimingLabel(r){
   if(!r.schedule) return '';
@@ -2751,12 +2848,14 @@ function liveTimingLabel(r){
 }
 function renderScheduledRow(r){
   const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), due=mins<=1;
-  return '<div class="dep schedule-only" aria-label="Scheduled '+esc(s.line)+' to '+esc(s.head||'destination unknown')+'">'
+  const reason=r.liveReason||'no live match';
+  return '<div class="dep schedule-only" aria-label="Scheduled '+esc(s.line)+' to '+esc(s.head||'destination unknown')+' · '+esc(reason)+'">'
     +'<span class="route">'+esc(s.line)+'</span>'
     +'<span style="min-width:0"><span class="dest">'+esc(s.head||'Destination unknown')+'</span><span class="deprow2">'
-    +'<span class="chip schedule-source">scheduled</span><span class="chip">'+esc(formatClock(s.at))+'</span></span></span>'
+    +'<span class="chip schedule-source">scheduled</span><span class="chip">'+esc(reason)+'</span><span class="chip">'+esc(formatClock(s.at))+'</span></span></span>'
     +'<span class="eta scheduled">'+(due?'due':mins)+'<small>'+(due?'scheduled':'min')+'</small></span></div>';
 }
+
 
 function showEmpty(html){
   $('empty').innerHTML=html;
@@ -2808,6 +2907,7 @@ function render(){
         +'<span class="chip '+(gpsFresh?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>'
         +'<span class="chip gps-age">'+esc(gpsAge)+'</span>'
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
++(r.recovered?'<span class="chip timing" title="Kept live because stronger timetable or journey evidence overruled weak direction or bearing evidence.">GPS recovered</span>':'')
 +(r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
 +(tight?'<span class="chip tight">Tight</span>':'')
         +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'

@@ -47,6 +47,8 @@ Kerbside 0.6.14 periodically expands live GPS coverage to an 18 km area around t
 
 Kerbside 0.6.15 adds exact live journey progress. Tapping a timetable-matched vehicle shows its ordered stops, passed stops, next stop, selected-stop position, stops remaining and percentage through the journey. The national builder now retains optional GTFS `shapes.txt` geometry and stop metadata. Kerbside draws the map route only when that exact journey has an authoritative GTFS shape; older or shape-less patterns continue to support matching but never produce a guessed road line.
 
+Kerbside 0.6.16 improves live-GPS recovery. It normalises compatible SIRI and timetable journey references, resolves uniquely matching route-pattern aliases, and lets exact journey geometry or a plausible scheduled call override weaker straight-line bearing and town-centre direction inferences. Official timetable direction still blocks a contradictory journey. The live diagnostics panel now reports rejection reasons and recovered vehicles, while each schedule-only row explains whether no GPS was received, no vehicle matched the route, the branch was uncertain, or a received position was filtered.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
