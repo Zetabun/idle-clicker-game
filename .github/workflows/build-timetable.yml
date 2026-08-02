@@ -38,83 +38,89 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate configuration
+      - name: Build timetable with diagnostics
+        id: timetable_build
+        continue-on-error: true
         env:
           BODS_KEY: ${{ secrets.BODS_KEY }}
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          if [[ -z "${BODS_KEY:-}" ]]; then
-            echo "::error::The BODS_KEY repository secret is missing or empty. Add it under Settings > Secrets and variables > Actions."
-            exit 1
-          fi
+          LOG_FILE="$RUNNER_TEMP/kerbside-timetable-build.log"
+          STATUS_FILE="$RUNNER_TEMP/kerbside-timetable-build.status"
+          : > "$LOG_FILE"
 
-          if [[ ! -f build-timetable.js ]]; then
-            echo "::error::build-timetable.js is missing from the repository root."
-            exit 1
-          fi
+          run_build() {
+            set -euo pipefail
 
-          node --version
-          node --check build-timetable.js
+            echo "Kerbside timetable diagnostic"
+            echo "UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Commit: $GITHUB_SHA"
+            echo "Region: $REGION"
+            echo "Centre: $LAT,$LON"
+            echo "Radius: $RADIUS"
+            echo
 
-      - name: Download current regional GTFS
-        env:
-          BODS_KEY: ${{ secrets.BODS_KEY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          curl --fail --location --silent --show-error \
-            --retry 3 --retry-all-errors --connect-timeout 30 \
-            "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/${REGION}/?api_key=${BODS_KEY}" \
-            --output gtfs.zip
-
-          if [[ ! -s gtfs.zip ]]; then
-            echo "::error::BODS returned an empty GTFS download."
-            exit 1
-          fi
-
-          unzip -tq gtfs.zip
-          ls -lh gtfs.zip
-
-      - name: Extract and locate GTFS files
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          rm -rf gtfs
-          mkdir -p gtfs
-          unzip -oq gtfs.zip -d gtfs
-
-          STOPS_FILE="$(find gtfs -type f -name stops.txt -print -quit)"
-          if [[ -z "$STOPS_FILE" ]]; then
-            echo "::error::The downloaded archive does not contain stops.txt."
-            find gtfs -maxdepth 3 -type f | head -100
-            exit 1
-          fi
-
-          GTFS_DIR="$(dirname "$STOPS_FILE")"
-          for required in stops.txt routes.txt trips.txt stop_times.txt; do
-            if [[ ! -f "$GTFS_DIR/$required" ]]; then
-              echo "::error::The GTFS archive is missing $required in $GTFS_DIR."
-              exit 1
+            if [[ -z "${BODS_KEY:-}" ]]; then
+              echo "ERROR: The BODS_KEY repository secret is missing or empty."
+              return 11
             fi
-          done
 
-          echo "GTFS_DIR=$GTFS_DIR" >> "$GITHUB_ENV"
-          echo "Using GTFS files from $GTFS_DIR"
-          ls -lh "$GTFS_DIR" | head -40
+            if [[ ! -f build-timetable.js ]]; then
+              echo "ERROR: build-timetable.js is missing from the repository root."
+              return 12
+            fi
 
-      - name: Build and validate timetable.json
-        shell: bash
-        run: |
-          set -euo pipefail
+            echo "Node version: $(node --version)"
+            node --check build-timetable.js
 
-          node --max-old-space-size=6144 build-timetable.js \
-            "$GTFS_DIR" "$LAT" "$LON" "$RADIUS"
+            echo
+            echo "Downloading BODS regional GTFS..."
+            curl --fail --location --silent --show-error \
+              --retry 3 --retry-all-errors --connect-timeout 30 \
+              "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/${REGION}/?api_key=${BODS_KEY}" \
+              --output gtfs.zip
 
-          node <<'NODE'
+            if [[ ! -s gtfs.zip ]]; then
+              echo "ERROR: BODS returned an empty GTFS download."
+              return 13
+            fi
+
+            unzip -tq gtfs.zip
+            ls -lh gtfs.zip
+
+            echo
+            echo "Extracting GTFS..."
+            rm -rf gtfs
+            mkdir -p gtfs
+            unzip -oq gtfs.zip -d gtfs
+
+            STOPS_FILE="$(find gtfs -type f -name stops.txt -print -quit)"
+            if [[ -z "$STOPS_FILE" ]]; then
+              echo "ERROR: The downloaded archive does not contain stops.txt."
+              find gtfs -maxdepth 3 -type f | head -100
+              return 14
+            fi
+
+            GTFS_DIR="$(dirname "$STOPS_FILE")"
+            echo "Using GTFS directory: $GTFS_DIR"
+            for required in stops.txt routes.txt trips.txt stop_times.txt; do
+              if [[ ! -f "$GTFS_DIR/$required" ]]; then
+                echo "ERROR: The GTFS archive is missing $required in $GTFS_DIR."
+                return 15
+              fi
+            done
+            ls -lh "$GTFS_DIR" | head -40
+
+            echo
+            echo "Building timetable.json..."
+            node --max-old-space-size=6144 build-timetable.js \
+              "$GTFS_DIR" "$LAT" "$LON" "$RADIUS"
+
+            echo
+            echo "Validating timetable.json..."
+            node <<'NODE'
           const fs = require('fs');
           const timetable = JSON.parse(fs.readFileSync('timetable.json', 'utf8'));
           const stopCount = Object.keys(timetable.stops || {}).length;
@@ -143,20 +149,54 @@ jobs:
           }, null, 2));
           NODE
 
-          ls -lh timetable.json
+            ls -lh timetable.json
+          }
 
-      - name: Commit valid timetable when changed
+          set +e
+          run_build 2>&1 | tee "$LOG_FILE"
+          STATUS=${PIPESTATUS[0]}
+          set -e
+
+          echo "$STATUS" > "$STATUS_FILE"
+          cp "$LOG_FILE" timetable-build-diagnostic.txt
+          exit "$STATUS"
+
+      - name: Commit timetable or failure diagnostic
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add timetable.json
+
+          if [[ "${{ steps.timetable_build.outcome }}" == "success" ]]; then
+            rm -f timetable-build-diagnostic.txt
+            git add -A timetable.json timetable-build-diagnostic.txt
+            MESSAGE="Update Kerbside timetable ($(date -u +%Y-%m-%d))"
+          else
+            {
+              echo "Kerbside timetable build failed."
+              echo "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+              echo "Run attempt: ${GITHUB_RUN_ATTEMPT}"
+              echo
+              cat timetable-build-diagnostic.txt 2>/dev/null || echo "No diagnostic output was captured."
+            } > timetable-build-diagnostic.tmp
+            mv timetable-build-diagnostic.tmp timetable-build-diagnostic.txt
+            git add timetable-build-diagnostic.txt
+            MESSAGE="Record Kerbside timetable build failure"
+          fi
 
           if git diff --cached --quiet; then
-            echo "No timetable change to commit."
+            echo "No repository change to commit."
           else
-            git commit -m "Update Kerbside timetable ($(date -u +%Y-%m-%d))"
+            git commit -m "$MESSAGE"
             git push
           fi
+
+      - name: Mark workflow failed when build failed
+        if: steps.timetable_build.outcome != 'success'
+        shell: bash
+        run: |
+          echo "::error::Kerbside timetable build failed. See timetable-build-diagnostic.txt in the repository for the exact cause."
+          exit 1
