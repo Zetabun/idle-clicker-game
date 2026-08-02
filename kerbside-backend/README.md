@@ -91,6 +91,8 @@ Kerbside 0.6.36 makes the periodic expanded live scan fail open. Every 18 km att
 
 Kerbside 0.6.37 completes expanded-scan recovery for partial failures. If one split 18 km box succeeds and another fails, the ordinary 9 km box is fetched once and merged with the successful distant response. SIRI identity deduplication keeps the newest copy of overlapping vehicles while preserving unique distant and nearby buses. WebKit verifies one wide success, one wide failure and one nearby supplement in the same refresh.
 
+Kerbside 0.6.38 makes OpenStreetMap route discovery recoverable. Exact `node(...)` lookups are now used only for numeric OSM node IDs; official GTFS/NaPTAN stops, including alphanumeric ATCO codes, start with the coordinate-based adjacent-platform query instead of generating invalid Overpass syntax. Verified stop mappings remain cached for 30 days, nearby mappings for 7 days, road-only mappings for 24 hours and empty results for 2 hours. Expired records are removed both at startup and before use, while concurrent lookups for the same stop share one pending request. WebKit verifies the query plans and every cache boundary.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

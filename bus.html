@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.37 also supplements any incomplete split 18 km scan with the normal 9 km box, retaining successful distant results while restoring nearby coverage from the failed half.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.38 also prevents alphanumeric official stop codes from becoming invalid OpenStreetMap node queries and refreshes empty or low-confidence route lookups far sooner than verified stop mappings.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.37';
+const APP_VERSION = '0.6.38';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2679,15 +2679,29 @@ function learnServing(){
    so observed arrivals still fill the gaps.
    ------------------------------------------------------------ */
 const MAPPED_KEY = 'kerbside.routes.v1';
-const MAPPED_TTL = 30*24*3600*1000;
-let MAPPED = {};          // stopId -> {routes:[{ref,to,from,name}], ts}
+const MAPPED_STOP_TTL = 30*24*3600*1000;
+const MAPPED_NEARBY_TTL = 7*24*3600*1000;
+const MAPPED_ALONG_TTL = 24*3600*1000;
+const MAPPED_EMPTY_TTL = 2*3600*1000;
+let MAPPED = {};          // stopId -> {routes:[{ref,to,from,name}], ts, source}
+const MAPPED_PENDING = new Map();
 
+function mappedRecordTtl(record){
+  if(!record||!Array.isArray(record.routes)||!record.routes.length) return MAPPED_EMPTY_TTL;
+  if(record.source==='stop') return MAPPED_STOP_TTL;
+  if(record.source==='nearby') return MAPPED_NEARBY_TTL;
+  return MAPPED_ALONG_TTL;
+}
+function mappedRecordFresh(record,now){
+  if(!record||!isFinite(Number(record.ts))) return false;
+  return Math.max(0,(isFinite(now)?Number(now):Date.now())-Number(record.ts))<=mappedRecordTtl(record);
+}
 function loadMapped(){
   if(!store.ok || !S.remember) return;
   try{
     const o = JSON.parse(localStorage.getItem(MAPPED_KEY)||'{}');
     const now=Date.now();
-    for(const k of Object.keys(o)) if(now-(o[k].ts||0) > MAPPED_TTL) delete o[k];
+    for(const k of Object.keys(o)) if(!mappedRecordFresh(o[k],now)) delete o[k];
     MAPPED = o;
   }catch(e){ MAPPED = {}; }
 }
@@ -2695,63 +2709,68 @@ function saveMapped(){
   if(!store.ok || !S.remember) return;
   try{ localStorage.setItem(MAPPED_KEY, JSON.stringify(MAPPED)); }catch(e){}
 }
-
-async function fetchRoutesFor(stop){
-  const sid = String(stop.id);
-  if(MAPPED[sid]) return MAPPED[sid];
-
-  const parse = (j)=>{
-    const seen = new Set(), routes = [];
-    for(const el of (j.elements||[])){
-      const t = el.tags||{};
-      const ref = cleanLine(t.ref || t['route_ref'] || '');
-      if(!ref) continue;
-      const key = ref+'|'+(t.to||'');
-      if(seen.has(key)) continue;
-      seen.add(key);
-      routes.push({ref, to:cleanName(t.to||''), from:cleanName(t.from||''), op:t.operator||''});
-    }
-    return routes;
-  };
-
-  // First: relations this exact stop node belongs to.
-  const exact = `[out:json][timeout:25];
-node(${stop.id});
+function canQueryExactOsmStop(stop){
+  return !!(stop&&stop.source!=='official'&&/^\d+$/.test(String(stop.id||'')));
+}
+function routeLookupQueries(stop){
+  const queries=[];
+  if(canQueryExactOsmStop(stop)){
+    queries.push({source:'stop',query:`[out:json][timeout:25];
+node(${String(stop.id)});
 rel(bn)["type"="route"]["route"~"^(bus|trolleybus)$"];
-out tags;`;
-
-  // Fallback: OSM often maps the route against a sibling node a few
-  // metres away (a platform, or a duplicate of the same flag).
-  const nearby = `[out:json][timeout:25];
+out tags;`});
+  }
+  queries.push({source:'nearby',query:`[out:json][timeout:25];
 (node["highway"="bus_stop"](around:70,${stop.lat},${stop.lon});
  node["public_transport"~"^(platform|stop_position)$"](around:70,${stop.lat},${stop.lon}););
 rel(bn)["type"="route"]["route"~"^(bus|trolleybus)$"];
-out tags;`;
-
-  // Last resort: which bus routes physically run along this bit of road.
-  // Higher hit rate, lower confidence — an express may pass without calling.
-  const along = `[out:json][timeout:25];
+out tags;`});
+  queries.push({source:'along',query:`[out:json][timeout:25];
 way(around:30,${stop.lat},${stop.lon})["highway"];
 rel(bw)["type"="route"]["route"~"^(bus|trolleybus)$"];
-out tags;`;
+out tags;`});
+  return queries;
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries};
+}
 
-  try{
-    let routes = parse(await overpass(exact,true));
-    let source = 'stop';
-    if(!routes.length){
-      routes = parse(await overpass(nearby,true));
-      source = 'nearby';
+async function fetchRoutesFor(stop){
+  const sid = String(stop.id), cached=MAPPED[sid];
+  if(mappedRecordFresh(cached)) return cached;
+  if(cached){ delete MAPPED[sid]; saveMapped(); }
+  if(MAPPED_PENDING.has(sid)) return MAPPED_PENDING.get(sid);
+
+  const pending=(async()=>{
+    const parse = (j)=>{
+      const seen = new Set(), routes = [];
+      for(const el of (j.elements||[])){
+        const t = el.tags||{};
+        const ref = cleanLine(t.ref || t['route_ref'] || '');
+        if(!ref) continue;
+        const key = ref+'|'+(t.to||'');
+        if(seen.has(key)) continue;
+        seen.add(key);
+        routes.push({ref, to:cleanName(t.to||''), from:cleanName(t.from||''), op:t.operator||''});
+      }
+      return routes;
+    };
+    try{
+      let routes=[], source='empty';
+      for(const lookup of routeLookupQueries(stop)){
+        routes=parse(await overpass(lookup.query,true));
+        source=lookup.source;
+        if(routes.length) break;
+      }
+      MAPPED[sid] = {routes, ts:Date.now(), source:routes.length?source:'empty'};
+      saveMapped();
+      return MAPPED[sid];
+    }catch(e){
+      return null;      // Overpass busy — fall back to observed learning
     }
-    if(!routes.length){
-      routes = parse(await overpass(along,true));
-      source = 'along';
-    }
-    MAPPED[sid] = {routes, ts:Date.now(), source};
-    saveMapped();
-    return MAPPED[sid];
-  }catch(e){
-    return null;      // Overpass busy — fall back to observed learning
-  }
+  })();
+  MAPPED_PENDING.set(sid,pending);
+  try{return await pending;}finally{MAPPED_PENDING.delete(sid);}
 }
 function mappedRefs(trustedOnly){
   if(!S.stop) return null;
