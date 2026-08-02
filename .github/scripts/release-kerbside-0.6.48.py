@@ -10,7 +10,7 @@ for revision in subprocess.check_output(['git', 'rev-list', 'HEAD'], cwd=ROOT, t
         candidate = subprocess.check_output(['git', 'show', f'{revision}:{PATH}'], cwd=ROOT, text=True, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
         continue
-    if "bus_path = 'bus.html'" in candidate and 'route_scan_runtime = """' in candidate:
+    if len(candidate) > 20000 and "Prepared Kerbside 0.6.48 route-corridor GPS release" in candidate:
         source = candidate
         break
 if source is None:
