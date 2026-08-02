@@ -1,0 +1,82 @@
+name: Release Kerbside 0.4.0
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/triggers/release-kerbside-0.4.0.txt
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-kerbside-0.4.0
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply and validate Kerbside 0.4.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/scripts/release-kerbside-0.4.0.py
+          python3 .github/scripts/release-kerbside-0.4.0.py
+          grep -F "const APP_VERSION = '0.4.0';" bus.html
+          git diff --check
+
+      - name: Validate installed timetable when readable
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -s timetable.json ]]; then
+            node <<'NODE'
+          const fs = require('fs');
+          const raw = fs.readFileSync('timetable.json', 'utf8');
+          const data = JSON.parse(raw);
+          const stops = Object.keys(data.stops || {}).length;
+          if (!stops) throw new Error('timetable.json contains no stops');
+          console.log(`Timetable available with ${stops} stops.`);
+          NODE
+          else
+            echo "::warning::timetable.json is empty; Kerbside will clearly report timetable unavailable and continue in live-only mode."
+          fi
+
+      - name: Remove temporary release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/scripts/release-kerbside-0.3.1.py \
+            .github/scripts/release-kerbside-0.4.0.py \
+            .github/workflows/release-kerbside-0.4.0.yml \
+            .github/triggers/release-kerbside-0.4.0.txt
+
+      - name: Commit release to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bus.html .github
+          if git diff --cached --quiet; then
+            echo "::error::The release produced no committed changes."
+            exit 1
+          fi
+          git commit -m "Release Kerbside 0.4.0"
+          git push origin HEAD:main
