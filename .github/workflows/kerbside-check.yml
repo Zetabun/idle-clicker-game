@@ -1,0 +1,87 @@
+name: Validate Kerbside
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - bus.html
+      - build-timetable.js
+      - kerbside-backend/**
+      - .github/workflows/build-kerbside-national.yml
+      - .github/workflows/deploy-kerbside-worker.yml
+      - .github/workflows/kerbside-check.yml
+  push:
+    branches:
+      - main
+    paths:
+      - bus.html
+      - build-timetable.js
+      - kerbside-backend/**
+      - .github/workflows/build-kerbside-national.yml
+      - .github/workflows/deploy-kerbside-worker.yml
+      - .github/workflows/kerbside-check.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Validate browser JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          print(f'Validated {len(scripts)} inline browser script(s).')
+          PY
+
+      - name: Validate timetable builders and Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check build-timetable.js
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+
+      - name: Parse Kerbside workflow YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e "require 'yaml'; ARGV.each { |file| YAML.parse_file(file) or abort(file) }" \
+            .github/workflows/build-kerbside-national.yml \
+            .github/workflows/deploy-kerbside-worker.yml \
+            .github/workflows/kerbside-check.yml
+
+      - name: Check whitespace
+        shell: bash
+        run: git diff --check HEAD~1 HEAD
