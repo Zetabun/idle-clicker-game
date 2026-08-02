@@ -23,7 +23,7 @@ jobs:
   release:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - name: Check out release branch
@@ -57,6 +57,14 @@ jobs:
           python3 "$RELEASE_SCRIPT"
           git diff --check
 
+      - name: Install browser test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+
       - name: Validate backend and existing builders
         shell: bash
         run: |
@@ -64,6 +72,12 @@ jobs:
           node --check build-timetable.js
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
+
+      - name: Run WebKit mobile regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
 
       - name: Prepare repository-safe release commit
         shell: bash
@@ -75,9 +89,9 @@ jobs:
           rm -f .github/scripts/release-kerbside-*.py
           rm -f .github/triggers/release-kerbside-*.txt
 
-          # GITHUB_TOKEN cannot create or update workflow files. Those two
-          # validated files are added through the connected GitHub app after
-          # this release commit succeeds.
+          # GITHUB_TOKEN cannot create or update protected workflow files.
+          # Connected GitHub tooling applies any required workflow updates
+          # after the validated release commit succeeds.
           rm -f .github/workflows/build-kerbside-national.yml
           rm -f .github/workflows/deploy-kerbside-worker.yml
 
@@ -94,5 +108,5 @@ jobs:
             echo "::error::The release produced no committed changes."
             exit 1
           fi
-          git commit -m "Release Kerbside 0.5.0"
+          git commit -m "Release Kerbside browser update"
           git push origin "HEAD:${RELEASE_BRANCH}"
