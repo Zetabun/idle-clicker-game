@@ -131,7 +131,9 @@ jobs:
           trigger_path="${trigger_path%.py}.txt"
           TREE="$(jq --arg path "$RELEASE_SCRIPT" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
           TREE="$(jq --arg path "$trigger_path" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
-          TREE="$(jq --arg path '.github/scripts/kerbside-release-post.py' '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
+          if git cat-file -e "$BASE_SHA:.github/scripts/kerbside-release-post.py" 2>/dev/null; then
+            TREE="$(jq --arg path '.github/scripts/kerbside-release-post.py' '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
+          fi
 
           TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
             '{base_tree: $base_tree, tree: $tree}' | \
