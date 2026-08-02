@@ -176,6 +176,7 @@ button{cursor:pointer;border:0;background:none}
 .eta.scheduled{min-width:82px;color:var(--text-dim);text-shadow:none}
 .eta.scheduled small{color:var(--text-dim);opacity:.7;letter-spacing:.08em;white-space:nowrap}
 .chip.timing{border-color:rgba(63,217,164,.35);color:#A9EED7}
+.chip.live-gps{border-color:rgba(63,217,164,.6);background:rgba(63,217,164,.08);color:#A9EED7}
 .chip.schedule-source{border-color:var(--rule);color:var(--text-dim)}
 
 .dep.unreachable{opacity:.6}
@@ -243,8 +244,9 @@ button{cursor:pointer;border:0;background:none}
 .chip.conf-medium{border-color:var(--led-dim);color:var(--led)}
 .chip.conf-low{border-color:var(--rule);color:var(--text-dim)}
 .depwrap{position:relative;border-bottom:1px solid var(--rule)}
+.depmain{position:relative}
 .depwrap .dep{border-bottom:0;padding-right:52px}
-.depwrap > .bell{position:absolute;right:15px;top:50%;transform:translateY(-50%);z-index:2}
+.depmain > .bell{position:absolute;right:15px;top:50%;transform:translateY(-50%);z-index:2}
 .depwrap .detail{border-top:1px solid rgba(34,48,63,.55);border-bottom:0}
 .settings-status{font-size:11px;color:var(--text-dim);line-height:1.5;margin:-6px 0 14px;padding:8px 10px;background:var(--ink);border:1px solid var(--rule);border-radius:7px}
 .settings-status.good{border-color:rgba(63,217,164,.35);color:#A9EED7}
@@ -547,7 +549,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
         <div class="walkline" id="walkLine" style="display:none"></div>
         <div class="destbar" id="destBar" role="group" aria-label="Filter by destination"></div>
         <div class="board-info-panel" id="boardInfoPanel" hidden>
-          <div class="confidence-guide"><b>Likely</b> means live GPS, route and direction evidence strongly suggest this bus will serve the stop, but its live journey is not fully matched. <b>Verified</b> has stronger journey/stop evidence; <b>rough</b> has limited evidence.</div>
+          <div class="confidence-guide"><b>LIVE GPS</b> means a real bus is currently broadcasting a fresh BODS position and has been matched to this stop. Later timetable departures remain <b>scheduled</b> until a matching vehicle begins service. <b>Likely</b> means route and direction evidence strongly suggest the live bus will serve the stop, while <b>Verified</b> has stronger journey/stop evidence and <b>rough</b> has limited evidence.</div>
           <div class="destnote" id="destNote" style="display:none"></div>
           <div class="servenote" id="serveNote" style="display:none"></div>
         </div>
@@ -730,7 +732,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.10';
+const APP_VERSION = '0.6.11';
 const MY_KEY   = '';
 const MY_PROXY = '';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1109,7 +1111,7 @@ const OVERPASS = [
 ];
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
-async function overpass(query){
+async function overpass(query,quiet){
   let lastErr;
   const deadline=Date.now()+32000;
   for(let i=0;i<OVERPASS.length;i++){
@@ -1124,7 +1126,7 @@ async function overpass(query){
       if(!r.ok) throw new Error(String(r.status));
       return await r.json();
     }catch(e){ lastErr=e; }
-    if(i===1) setStatus('Stop service busy — trying another map server','err');
+    if(i===1 && !quiet) setStatus('Map stop lookup busy — trying another server','err');
   }
   throw lastErr || new Error('Overpass timeout');
 }
@@ -1157,7 +1159,7 @@ async function findAnchor(lat,lon,run){
 (node["place"~"^(city|town)$"](around:22000,${lat},${lon}););
 out body 40;`;
   try{
-    const j = await overpass(q);
+    const j = await overpass(q,true);
     let best=null, bestScore=Infinity;
     const weight = {city:0.45, town:1};
     for(const el of (j.elements||[])){
@@ -1665,7 +1667,7 @@ function selectStop(s,manual){
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
   S.ttStop=matchTimetableStop(s); $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':''); updateStopMeta();
   drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
-  if(!MAPPED[String(s.id)]){ S.loadingRoutes=true; renderServingNote(); fetchRoutesFor(s).then(()=>{ S.loadingRoutes=false; if(S.stop&&S.stop.id===s.id){ renderServingNote(); render(); } }); }
+  if(!MAPPED[String(s.id)] && !s.region && !s.shard && !s.timetableId){ S.loadingRoutes=true; renderServingNote(); fetchRoutesFor(s).then(()=>{ S.loadingRoutes=false; if(S.stop&&S.stop.id===s.id){ renderServingNote(); render(); } }); }
   loadWorkerHistory(s); loadStopTimetable(s); savePrefs(); render();
   if(changed&&S.timer){ setStatus('Refreshing selected stop',''); poll(true); }
 }
@@ -2292,14 +2294,14 @@ rel(bw)["type"="route"]["route"~"^(bus|trolleybus)$"];
 out tags;`;
 
   try{
-    let routes = parse(await overpass(exact));
+    let routes = parse(await overpass(exact,true));
     let source = 'stop';
     if(!routes.length){
-      routes = parse(await overpass(nearby));
+      routes = parse(await overpass(nearby,true));
       source = 'nearby';
     }
     if(!routes.length){
-      routes = parse(await overpass(along));
+      routes = parse(await overpass(along,true));
       source = 'along';
     }
     MAPPED[sid] = {routes, ts:Date.now(), source};
@@ -2549,18 +2551,19 @@ function render(){
       const confLabel=r.confidence==='high'?'verified':r.confidence==='medium'?'likely':'rough';
       const confHelp=r.confidence==='high'?'Journey or timetable evidence strongly confirms this bus serves the selected stop.':r.confidence==='medium'?'Live GPS, route and direction evidence suggest this bus serves the stop, but the journey is not fully matched.':'Limited route or movement evidence; treat this ETA as approximate.';
       const etaText=due?'due':(r.confidence==='low'?'~':'')+mins;
-      return '<div class="depwrap">'
+      return '<div class="depwrap"><div class="depmain">'
         +'<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'" aria-expanded="'+(S.selected===r.v.id)+'">'
         +'<span class="route'+(age>75000?' stale':'')+'">'+esc(r.v.line)+'</span>'
         +'<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span><span class="deprow2">'
         +'<span class="chip'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
         +(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
+        +'<span class="chip live-gps" title="Fresh vehicle position from BODS">live GPS</span>'
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
 +(r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
 +(tight?'<span class="chip tight">Tight</span>':'')
         +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(due?'arriving':r.confidence==='low'?'est':'min')+'</small></span></button>'
         +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
-        +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>'
+        +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button></div>'
         +(S.selected===r.v.id?lineDetail(r):'')+'</div>';
     }).join('');
     [...deps.querySelectorAll('.dep[data-id]')].forEach(b=>b.addEventListener('click',()=>focusVehicle(b.dataset.id)));
