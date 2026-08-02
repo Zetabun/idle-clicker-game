@@ -37,7 +37,9 @@ Kerbside 0.6.9 prevents iOS focus zoom inside Settings by keeping mobile form co
 
 Kerbside 0.6.10 avoids the WebKit installed-app viewport gap by removing `viewport-fit=cover` and switching from the translucent status bar to Apple's normally inset black standalone status bar. The saved iOS app now receives a stable viewport below the status bar instead of relying on the broken edge-to-edge height calculation; map pinch zoom remains available.
 
-Kerbside 0.6.11 pins the leave-alert bell to the compact departure header when live details expand, labels every real tracked vehicle with a clear `LIVE GPS` badge, and explains why future timetable rows remain scheduled until a vehicle begins broadcasting. The live-data badge is kept separate from the Verified, Likely and Rough route-confidence labels. Background OpenStreetMap anchor and route lookups no longer display a misleading stop-service error, and official national timetable stops skip the redundant route lookup entirely.
+Kerbside 0.6.11 pins the leave-alert bell to the compact departure header when live details expand, labels every real tracked vehicle with a clear `LIVE GPS` badge, and explains why future timetable rows remain scheduled until a vehicle begins broadcasting. Background OpenStreetMap anchor and route lookups no longer display a misleading stop-service error, and official national timetable stops skip the redundant route lookup entirely.
+
+Kerbside 0.6.12 removes the misleading visible town-centre direction marker, labels the green point as the user's search point, and prevents accidental taps on map attribution links on touch devices while preserving clickable source links in Settings. Returning from an external page now repairs the iOS layout and refetches without clearing the existing board. Fresh GPS reports retain the `LIVE GPS` badge; reports between two and four minutes old remain briefly visible as `GPS DELAYED` rather than disappearing between irregular operator updates.
 
 The Worker remains backwards-compatible for live data:
 
