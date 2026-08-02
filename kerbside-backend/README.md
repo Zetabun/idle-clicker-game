@@ -31,7 +31,7 @@ Kerbside 0.6.6 adds dedicated Apple touch and PWA icons plus an installable web-
 
 Kerbside 0.6.7 corrects standalone iPhone safe-area layout. The top controls now sit below the status bar and Dynamic Island, the app shell uses the dynamic viewport height, and the outer page canvas matches the mobile navigation so no contrasting strip appears beneath it. The navigation remains above the home-indicator safety area rather than placing controls inside it.
 
-Kerbside 0.6.8 pins the standalone app shell to all four viewport edges, removing the remaining iOS home-screen gap. The Settings overlay now starts beneath the status bar and constrains its height between the top and bottom safe areas, preventing its title and close control from being clipped.
+Kerbside 0.6.8 pins the standalone app shell to all four viewport edges, removing the remaining iOS home-screen gap. The Settings overlay now starts beneath the status bar and constrains its height between the top and bottom safe areas, preventing its title and close control from being clipped. This keeps the same safe layout after reopening the saved home-screen app.
 
 The Worker remains backwards-compatible for live data:
 
