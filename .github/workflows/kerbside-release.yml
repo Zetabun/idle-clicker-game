@@ -111,6 +111,8 @@ jobs:
             bus.html \
             kerbside-backend/package.json \
             kerbside-backend/README.md \
+            kerbside-backend/scripts/build-region.js \
+            kerbside-backend/test/build-region.test.js \
             kerbside-backend/tests/browser-regression.mjs
           do
             blob_sha="$(base64 -w 0 "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
