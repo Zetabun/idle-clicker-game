@@ -33,6 +33,8 @@ Kerbside 0.6.7 corrects standalone iPhone safe-area layout. The top controls now
 
 Kerbside 0.6.8 pins the standalone app shell to all four viewport edges, removing the remaining iOS home-screen gap. The Settings overlay now starts beneath the status bar and constrains its height between the top and bottom safe areas, preventing its title and close control from being clipped. This keeps the same safe layout after reopening the saved home-screen app.
 
+Kerbside 0.6.9 prevents iOS focus zoom inside Settings by keeping mobile form controls at 16px, locking browser-page scaling, and containing Settings gestures. Leaflet map pinch zoom remains handled by the map itself. This prevents the main standalone viewport remaining enlarged or shortened after the Settings sheet closes.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
