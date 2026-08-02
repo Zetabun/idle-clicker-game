@@ -50,6 +50,12 @@ db.exec(`
     pattern_id TEXT PRIMARY KEY,
     coords TEXT NOT NULL
   );
+  CREATE TABLE shape_points (
+    shape_id TEXT NOT NULL,
+    seq REAL NOT NULL,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL
+  );
 `);
 
 const stops = new Map();
@@ -58,6 +64,7 @@ const trips = new Map();
 const services = new Map();
 const tripPattern = new Map();
 let stopTimeRows = 0;
+let shapePointRows = 0;
 let invalidTimes = 0;
 
 function fail(message) {
@@ -200,7 +207,8 @@ async function main() {
       line: routes.get(String(row.route_id || '')) || row.route_short_name || '',
       head: row.trip_headsign || '',
       service: String(row.service_id || ''),
-      direction: row.direction_id == null ? '' : String(row.direction_id)
+      direction: row.direction_id == null ? '' : String(row.direction_id),
+      shape: String(row.shape_id || '').trim()
     });
   });
 
@@ -226,6 +234,26 @@ async function main() {
     if (String(row.exception_type) === '2') service.remove.push(date);
     services.set(id, service);
   }, { optional: true });
+
+  console.log(`[${region}] Importing optional GTFS route shapes...`);
+  const insertShape = db.prepare('INSERT INTO shape_points(shape_id, seq, lat, lon) VALUES (?, ?, ?, ?)');
+  db.exec('BEGIN');
+  let shapeBatch = 0;
+  await eachRow('shapes.txt', (row, number) => {
+    const id = String(row.shape_id || '').trim();
+    const lat = Number(row.shape_pt_lat);
+    const lon = Number(row.shape_pt_lon);
+    if (!id || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    insertShape.run(id, sequence(row.shape_pt_sequence, number), lat, lon);
+    shapePointRows++;
+    shapeBatch++;
+    if (shapeBatch >= 50000) {
+      db.exec('COMMIT; BEGIN');
+      shapeBatch = 0;
+    }
+  }, { optional: true });
+  db.exec('COMMIT');
+  if (shapePointRows) db.exec('CREATE INDEX idx_shape_sequence ON shape_points(shape_id, seq);');
 
   console.log(`[${region}] Importing stop_times into temporary SQLite...`);
   const insert = db.prepare('INSERT INTO stop_times(tile, shard, stop_id, trip_id, mins, seq) VALUES (?, ?, ?, ?, ?, ?)');
@@ -257,25 +285,79 @@ async function main() {
   db.exec('CREATE INDEX idx_trip_sequence ON stop_times(trip_id, seq);');
   db.exec('CREATE INDEX idx_shard_stop_time ON stop_times(shard, stop_id, mins, trip_id);');
 
-  console.log(`[${region}] Deduplicating ordered journey patterns...`);
+  console.log(`[${region}] Deduplicating ordered journey patterns and authoritative shapes...`);
   const putPattern = db.prepare('INSERT OR IGNORE INTO patterns(pattern_id, coords) VALUES (?, ?)');
+  const readShape = db.prepare('SELECT lat, lon FROM shape_points WHERE shape_id = ? ORDER BY seq');
+  const builtPatterns = new Set();
   let currentTrip = '';
   let sequenceStops = [];
+  let shapedPatternCount = 0;
+
+  function pointSegmentDistanceSquared(point, start, end) {
+    const scaleX = 111320 * Math.cos(((point.lat + start.lat + end.lat) / 3) * Math.PI / 180);
+    const px = point.lon * scaleX, py = point.lat * 111320;
+    const ax = start.lon * scaleX, ay = start.lat * 111320;
+    const bx = end.lon * scaleX, by = end.lat * 111320;
+    const dx = bx - ax, dy = by - ay;
+    const denom = dx * dx + dy * dy;
+    const t = denom ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / denom)) : 0;
+    const x = ax + dx * t, y = ay + dy * t;
+    return (px - x) ** 2 + (py - y) ** 2;
+  }
+
+  function simplifyShape(points, tolerance = 8) {
+    if (points.length <= 2) return points;
+    const keep = new Uint8Array(points.length);
+    keep[0] = keep[points.length - 1] = 1;
+    const stack = [[0, points.length - 1]];
+    const threshold = tolerance * tolerance;
+    while (stack.length) {
+      const [start, end] = stack.pop();
+      let best = threshold, index = -1;
+      for (let i = start + 1; i < end; i++) {
+        const distance = pointSegmentDistanceSquared(points[i], points[start], points[end]);
+        if (distance > best) { best = distance; index = i; }
+      }
+      if (index >= 0) {
+        keep[index] = 1;
+        stack.push([start, index], [index, end]);
+      }
+    }
+    return points.filter((_, index) => keep[index]);
+  }
 
   function flushPattern() {
     if (!currentTrip || sequenceStops.length < 2) {
       sequenceStops = [];
       return;
     }
-    const signature = sequenceStops.join('\u001f');
+    const trip = trips.get(currentTrip);
+    const shapeId = String(trip && trip.shape || '');
+    const signature = sequenceStops.join('\u001f') + '\u001e' + shapeId;
     const patternId = shortHash(signature);
-    const coordinates = sequenceStops
-      .map(id => stops.get(id))
-      .filter(Boolean)
-      .map(stop => [stop.lat, stop.lon]);
-    if (coordinates.length >= 2) {
-      tripPattern.set(currentTrip, patternId);
-      putPattern.run(patternId, JSON.stringify(coordinates));
+    tripPattern.set(currentTrip, patternId);
+    if (builtPatterns.has(patternId)) {
+      sequenceStops = [];
+      return;
+    }
+    const orderedStops = sequenceStops
+      .map(id => [id, stops.get(id)])
+      .filter(([, stop]) => Boolean(stop));
+    let routePoints = [];
+    if (shapeId && shapePointRows) {
+      routePoints = [...readShape.iterate(shapeId)].map(row => ({ lat: Number(row.lat), lon: Number(row.lon) }));
+    }
+    const hasShape = routePoints.length >= 2;
+    if (hasShape) routePoints = simplifyShape(routePoints);
+    else routePoints = orderedStops.map(([, stop]) => ({ lat: stop.lat, lon: stop.lon }));
+    if (routePoints.length >= 2 && orderedStops.length >= 2) {
+      putPattern.run(patternId, JSON.stringify({
+        p: routePoints.map(point => [Number(point.lat.toFixed(6)), Number(point.lon.toFixed(6))]),
+        s: orderedStops.map(([id, stop]) => [id, stop.name, stop.lat, stop.lon]),
+        g: hasShape ? 1 : 0
+      }));
+      builtPatterns.add(patternId);
+      if (hasShape) shapedPatternCount++;
     }
     sequenceStops = [];
   }
@@ -293,15 +375,18 @@ async function main() {
   let shardPrefix = '';
   let shard = {};
   let patternCount = 0;
+  let maxPatternBytes = 0;
 
   function flushShard() {
     if (!shardPrefix) return;
-    writeJson(path.join(patternRoot, `${shardPrefix}.json`), {
-      version: 2,
+    const filename = path.join(patternRoot, `${shardPrefix}.json`);
+    writeJson(filename, {
+      version: 3,
       built: nowIso,
       region,
       patterns: shard
     });
+    maxPatternBytes = Math.max(maxPatternBytes, fs.statSync(filename).size);
     shard = {};
   }
 
@@ -381,7 +466,7 @@ async function main() {
 
     const filename = path.join(departureRoot, `${currentShard}.json`);
     writeJson(filename, {
-      version: 7,
+      version: 8,
       built: nowIso,
       scope: 'departure-shard',
       region,
@@ -460,10 +545,12 @@ async function main() {
     stops: activeStopCount,
     departures: departureCount,
     patterns: patternCount,
+    shapedPatterns: shapedPatternCount,
+    shapePoints: shapePointRows,
     tiles: tileCount,
     departureShards: departureShardCount,
     files: tileCount + departureShardCount + Math.min(16 ** PATTERN_PREFIX_LENGTH, patternCount) + 1,
-    maxTileBytes: maxAssetBytes,
+    maxTileBytes: Math.max(maxAssetBytes, maxPatternBytes),
     invalidTimes
   };
 

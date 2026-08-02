@@ -12,6 +12,11 @@ assert.match(busSource, /const FAR_VEH_DIST = 18000/);
 assert.match(busSource, /function bboxes\(wide\)/);
 assert.match(busSource, /far && \(!gate \|\| !evidence\.journeyMatch\)/);
 assert.match(busSource, /if\(!shown&&!nearby\) continue/);
+assert.match(busSource, /function timetablePatternRecord\(journey\)/);
+assert.match(busSource, /function journeyProgress\(v\)/);
+assert.match(busSource, /routeLayer=L\.layerGroup/);
+assert.match(busSource, /data-route-map/);
+assert.match(busSource, /progress\.pattern\.shape/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -64,11 +69,13 @@ const leafletStub = `
       return {
         attributionControl:{ getContainer:() => attribution },
         setView(){ return this; }, on(){ return this; }, removeLayer(){},
-        invalidateSize(){ return this; }, panTo(){ return this; }
+        invalidateSize(){ return this; }, panTo(){ return this; }, fitBounds(){ return this; }, getZoom(){ return 16; }
       };
     },
     tileLayer(){ return passiveLayer(); }, layerGroup(){ return passiveLayer(); },
-    marker, circle(){ return passiveLayer(); }, divIcon(options){ return options; }
+    marker, circle(){ return passiveLayer(); }, polyline(){ return passiveLayer(); },
+    circleMarker(){ return { ...passiveLayer(), bindTooltip(){ return this; } }; },
+    divIcon(options){ return options; }
   };
 })();`;
 
@@ -102,7 +109,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.14'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.15'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

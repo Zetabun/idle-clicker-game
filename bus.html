@@ -264,6 +264,30 @@ button{cursor:pointer;border:0;background:none}
 .depwrap .dep{border-bottom:0;padding-right:52px}
 .depmain > .bell{position:absolute;right:15px;top:50%;transform:translateY(-50%);z-index:2}
 .depwrap .detail{border-top:1px solid rgba(34,48,63,.55);border-bottom:0}
+.journey-progress{margin-bottom:12px;padding:12px;border:1px solid var(--rule);border-radius:9px;background:rgba(11,17,25,.55)}
+.journey-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
+.journey-progress-title{font-size:12px;font-weight:700;color:var(--text)}
+.journey-progress-sub{margin-top:2px;font-size:10px;color:var(--text-dim);line-height:1.4}
+.journey-progress-pct{font-family:'Martian Mono',monospace;color:var(--led);font-size:16px;font-weight:700;letter-spacing:-.05em}
+.journey-progress-track{height:6px;border-radius:999px;background:var(--rule);overflow:hidden}
+.journey-progress-fill{height:100%;background:linear-gradient(90deg,var(--live),var(--led));border-radius:inherit}
+.journey-progress-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:9px}
+.journey-progress-stats span{padding:7px 8px;border:1px solid rgba(34,48,63,.75);border-radius:6px;min-width:0}
+.journey-progress-stats b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.journey-progress-stats small{display:block;margin-top:2px;font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim)}
+.route-map-btn{width:100%;margin-top:9px;padding:8px 10px;border:1px solid var(--led-dim);border-radius:7px;color:var(--led);font-size:11.5px;font-weight:700}
+.route-map-btn:hover{background:rgba(255,176,0,.07)}
+.route-map-btn:disabled{border-color:var(--rule);color:var(--text-dim);opacity:.7}
+.journey-stops{margin-top:10px;max-height:210px;overflow:auto;border-top:1px solid var(--rule);padding-top:6px;scrollbar-width:thin}
+.journey-stop{position:relative;display:grid;grid-template-columns:16px minmax(0,1fr);gap:7px;padding:5px 2px;font-size:10.5px;color:var(--text-dim)}
+.journey-stop::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--rule)}
+.journey-stop:first-child::before{top:50%}.journey-stop:last-child::before{bottom:50%}
+.journey-stop-dot{position:relative;z-index:1;align-self:center;width:7px;height:7px;margin-left:4px;border-radius:50%;background:var(--ink-2);border:1px solid var(--text-dim)}
+.journey-stop.passed{opacity:.55}.journey-stop.passed .journey-stop-dot{background:#526276;border-color:#526276}
+.journey-stop.next{color:var(--live);font-weight:700}.journey-stop.next .journey-stop-dot{background:var(--live);border-color:var(--live);box-shadow:0 0 8px rgba(63,217,164,.5)}
+.journey-stop.selected{color:var(--led)}.journey-stop.selected .journey-stop-dot{background:var(--led);border-color:var(--led);box-shadow:0 0 8px rgba(255,176,0,.45)}
+.journey-stop em{display:block;margin-top:1px;font-size:8.5px;font-style:normal;text-transform:uppercase;letter-spacing:.07em;color:inherit;opacity:.78}
+.journey-progress-unavailable{font-size:10.5px;color:var(--text-dim);line-height:1.5}
 .settings-status{font-size:11px;color:var(--text-dim);line-height:1.5;margin:-6px 0 14px;padding:8px 10px;background:var(--ink);border:1px solid var(--rule);border-radius:7px}
 .settings-status.good{border-color:rgba(63,217,164,.35);color:#A9EED7}
 .settings-status.bad{border-color:rgba(255,107,90,.45);color:#FFD0CA}
@@ -565,7 +589,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
         <div class="walkline" id="walkLine" style="display:none"></div>
         <div class="destbar" id="destBar" role="group" aria-label="Filter by destination"></div>
         <div class="board-info-panel" id="boardInfoPanel" hidden>
-          <div class="confidence-guide"><b>LIVE GPS</b> means a real bus has reported a position within the last two minutes. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old; Kerbside keeps it briefly instead of making the bus flicker out, but marks its ETA as estimated. Later timetable departures remain <b>scheduled</b> until a matching vehicle begins service. <b>Likely</b> means route and direction evidence strongly suggest the live bus will serve the stop, while <b>Verified</b> has stronger journey/stop evidence and <b>rough</b> has limited evidence.</div>
+          <div class="confidence-guide"><b>LIVE GPS</b> means a real bus has reported a position within the last two minutes. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old; Kerbside keeps it briefly instead of making the bus flicker out, but marks its ETA as estimated. Later timetable departures remain <b>scheduled</b> until a matching vehicle begins service. <b>Likely</b> means route and direction evidence strongly suggest the live bus will serve the stop, while <b>Verified</b> has stronger journey/stop evidence and <b>rough</b> has limited evidence. Tap a matched live bus for its ordered stop progress; a map route is drawn only when the national GTFS feed supplies an official shape for that exact journey.</div>
           <div class="live-diagnostics" id="liveDiagnostics">Live matching diagnostics will appear after a stop and live feed are loaded.</div>
           <div class="destnote" id="destNote" style="display:none"></div>
           <div class="servenote" id="serveNote" style="display:none"></div>
@@ -750,7 +774,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.14';
+const APP_VERSION = '0.6.15';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -994,7 +1018,7 @@ if(attributionEl){
   attributionEl.querySelectorAll('a').forEach(link=>{link.target='_blank';link.rel='noopener noreferrer';});
 }
 
-let meMarker=null, anchorMarker=null, stopLayer=L.layerGroup().addTo(map), vehLayer=L.layerGroup().addTo(map);
+let meMarker=null, anchorMarker=null, routeLayer=L.layerGroup().addTo(map), stopLayer=L.layerGroup().addTo(map), vehLayer=L.layerGroup().addTo(map);
 let ring=null;
 
 /* Leaflet moves markers with the same transform property the glide
@@ -1101,7 +1125,7 @@ async function setOrigin(lat,lon,label){
   const run=++S.locationRun;
   if(S.pollAbort) S.pollAbort.abort();
   S.origin={lat,lon,label:label||'Chosen point'};
-  S.stop=null; S.ttStop=null; S.manualStop=false; S.destFilter=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers();
+  S.stop=null; S.ttStop=null; S.manualStop=false; S.destFilter=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers(); routeLayer.clearLayers();
   savePrefs();
   drawOrigin();
   map.setView([lat,lon], Math.max(map.getZoom(),16));
@@ -1605,21 +1629,45 @@ async function queuePattern(patternId){
     if(data&&data.patterns&&S.timetable){Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns);PATTERN_CACHE.clear();render();}
   }catch(e){} finally{S.patternPending.delete(patternId);}
 }
-function timetablePattern(journey){
+function timetablePatternRecord(journey){
   const tt=S.timetable;
   if(!tt||!journey||!tt.tripPatterns) return null;
   const id=tt.tripPatterns[String(journey)]; if(!id) return null;
   if(PATTERN_CACHE.has(id)) return PATTERN_CACHE.get(id);
   const raw=tt.patterns&&tt.patterns[id];
-  if(!Array.isArray(raw)||raw.length<2){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
-  const points=raw.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])})).filter(p=>isFinite(p.lat)&&isFinite(p.lon));
-  const value=points.length>=2?points:null; PATTERN_CACHE.set(id,value); return value;
+  if(!raw){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
+  const pointRows=Array.isArray(raw)?raw:raw&&raw.p;
+  const stopRows=Array.isArray(raw&&raw.s)?raw.s:[];
+  if(!Array.isArray(pointRows)||pointRows.length<2){ if(S.timetableSource==='national') queuePattern(id); PATTERN_CACHE.set(id,null); return null; }
+  const points=pointRows.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])})).filter(p=>isFinite(p.lat)&&isFinite(p.lon));
+  const stops=stopRows.map(s=>({
+    id:String(s&&s[0]||''), name:cleanName(s&&s[1]||'Unnamed stop'),
+    lat:Number(s&&s[2]), lon:Number(s&&s[3])
+  })).filter(s=>s.id&&isFinite(s.lat)&&isFinite(s.lon));
+  const value=points.length>=2?{id,points,stops,shape:!Array.isArray(raw)&&raw.g===1,stopProgress:null}:null;
+  PATTERN_CACHE.set(id,value); return value;
 }
-function projectToPattern(points,lat,lon){
-  let best=null, travelled=0;
+function timetablePattern(journey){
+  const pattern=timetablePatternRecord(journey);
+  return pattern&&pattern.points;
+}
+function patternMetrics(points){
+  if(points._kerbsideMetrics) return points._kerbsideMetrics;
+  const lengths=[], starts=[]; let total=0;
   for(let i=0;i<points.length-1;i++){
-    const a=points[i], b=points[i+1];
-    const seg=dist(a.lat,a.lon,b.lat,b.lon);
+    starts.push(total);
+    const seg=dist(points[i].lat,points[i].lon,points[i+1].lat,points[i+1].lon);
+    lengths.push(isFinite(seg)?seg:0); total+=isFinite(seg)?seg:0;
+  }
+  const value={lengths,starts,total};
+  try{ Object.defineProperty(points,'_kerbsideMetrics',{value,enumerable:false}); }catch(e){ points._kerbsideMetrics=value; }
+  return value;
+}
+function projectToPattern(points,lat,lon,minSegment){
+  const metrics=patternMetrics(points); let best=null;
+  const start=Math.max(0,Math.min(points.length-2,Number(minSegment)||0));
+  for(let i=start;i<points.length-1;i++){
+    const a=points[i], b=points[i+1], seg=metrics.lengths[i];
     if(!isFinite(seg) || seg<1) continue;
     const scaleX=111320*Math.cos(rad((a.lat+b.lat+lat)/3));
     const dx=(b.lon-a.lon)*scaleX, dy=(b.lat-a.lat)*111320;
@@ -1627,17 +1675,21 @@ function projectToPattern(points,lat,lon){
     const denom=dx*dx+dy*dy;
     const t=denom?Math.max(0,Math.min(1,(px*dx+py*dy)/denom)):0;
     const metres=Math.hypot(px-dx*t,py-dy*t);
-    if(!best || metres<best.metres) best={metres,along:travelled+seg*t,segment:i,t};
-    travelled+=seg;
+    if(!best || metres<best.metres) best={metres,along:metrics.starts[i]+seg*t,segment:i,t};
   }
-  return best ? {...best,total:travelled} : null;
+  return best ? {...best,total:metrics.total} : null;
 }
 function journeyGeometry(v,stop){
   if(!v || !stop) return null;
-  const points=timetablePattern(v.journey);
-  if(!points) return null;
-  const vehicle=projectToPattern(points,v.lat,v.lon);
-  const target=projectToPattern(points,stop.lat,stop.lon);
+  const pattern=timetablePatternRecord(v.journey);
+  if(!pattern) return null;
+  const vehicle=projectToPattern(pattern.points,v.lat,v.lon);
+  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
+  const selected=selectedIndex>=0?ordered[selectedIndex]:null;
+  const projectedTarget=projectToPattern(pattern.points,stop.lat,stop.lon);
+  const target=selected
+    ? {along:selected.along,metres:dist(selected.lat,selected.lon,stop.lat,stop.lon),total:vehicle&&vehicle.total}
+    : projectedTarget;
   if(!vehicle || !target || vehicle.metres>650 || target.metres>250) return null;
   const remaining=target.along-vehicle.along;
   return {
@@ -1645,7 +1697,59 @@ function journeyGeometry(v,stop){
     passed:remaining < -120,
     vehicleOffset:vehicle.metres,
     stopOffset:target.metres,
-    total:vehicle.total
+    total:vehicle.total,
+    pattern
+  };
+}
+function orderedPatternStops(pattern){
+  if(!pattern||!pattern.stops||pattern.stops.length<2) return [];
+  if(pattern.stopProgress) return pattern.stopProgress;
+  let minSegment=0, lastAlong=0;
+  const projected=[];
+  for(const stop of pattern.stops){
+    const point=projectToPattern(pattern.points,stop.lat,stop.lon,Math.max(0,minSegment-1));
+    if(!point||point.metres>900){ pattern.stopProgress=[]; return pattern.stopProgress; }
+    const along=Math.max(lastAlong,point.along);
+    projected.push({...stop,along,segment:point.segment});
+    lastAlong=along; minSegment=Math.max(minSegment,point.segment);
+  }
+  pattern.stopProgress=projected;
+  return projected;
+}
+function selectedPatternStopIndex(stops){
+  if(!stops.length||!S.stop) return -1;
+  const ids=[S.ttStop&&S.ttStop.id,S.stop.timetableId,S.stop.atco,S.stop.code,S.stop.id].map(v=>String(v||'')).filter(Boolean);
+  let index=stops.findIndex(stop=>ids.includes(String(stop.id)));
+  if(index>=0) return index;
+  let best=-1,bestDistance=Infinity;
+  stops.forEach((stop,i)=>{ const metres=dist(stop.lat,stop.lon,S.stop.lat,S.stop.lon); if(metres<bestDistance){bestDistance=metres;best=i;} });
+  return bestDistance<=180?best:-1;
+}
+function journeyProgress(v){
+  const pattern=timetablePatternRecord(v&&v.journey);
+  if(!pattern) return null;
+  const vehicle=projectToPattern(pattern.points,v.lat,v.lon);
+  if(!vehicle||vehicle.metres>800) return null;
+  const stops=orderedPatternStops(pattern);
+  if(stops.length<2) return null;
+  let nextIndex=stops.findIndex(stop=>stop.along>=vehicle.along-25);
+  if(nextIndex<0) nextIndex=stops.length;
+  const selectedIndex=selectedPatternStopIndex(stops);
+  return {
+    pattern,vehicle,stops,nextIndex,selectedIndex,
+    remainingStops:Math.max(0,stops.length-nextIndex),
+    percent:Math.max(0,Math.min(100,vehicle.along/Math.max(1,vehicle.total)*100))
+  };
+}
+function pointAtProjection(points,projection){
+  const a=points[projection.segment],b=points[projection.segment+1];
+  return {lat:a.lat+(b.lat-a.lat)*projection.t,lon:a.lon+(b.lon-a.lon)*projection.t};
+}
+function splitPatternAt(pattern,projection){
+  const here=pointAtProjection(pattern.points,projection);
+  return {
+    passed:[...pattern.points.slice(0,projection.segment+1),here],
+    remaining:[here,...pattern.points.slice(projection.segment+1)]
   };
 }
 function scheduledMatches(line,dest,spatialSecs,journey){
@@ -2568,6 +2672,35 @@ function formatPositionAge(ms){
   if(seconds<60) return seconds+'s ago';
   return Math.max(1,Math.round(seconds/60))+'m ago';
 }
+function journeyProgressHtml(v){
+  const progress=journeyProgress(v);
+  if(!progress){
+    return '<div class="journey-progress journey-progress-unavailable"><b>Journey progress unavailable.</b> Kerbside only shows route progress after this live vehicle is matched to an exact ordered timetable journey.</div>';
+  }
+  const next=progress.nextIndex>=0&&progress.nextIndex<progress.stops.length?progress.stops[progress.nextIndex]:null;
+  const selected=progress.selectedIndex>=0?progress.stops[progress.selectedIndex]:null;
+  const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops available · road shape awaiting timetable rebuild';
+  const stopList=progress.stops.length?'<div class="journey-stops">'+progress.stops.map((stop,index)=>{
+    const states=[];
+    if(index<progress.nextIndex) states.push('passed');
+    if(index===progress.nextIndex) states.push('next');
+    if(index===progress.selectedIndex) states.push('selected');
+    const labels=[];
+    if(index===progress.nextIndex) labels.push('next stop');
+    if(index===progress.selectedIndex) labels.push(index<progress.nextIndex?'your stop · passed':'your stop');
+    return '<div class="journey-stop '+states.join(' ')+'"><span class="journey-stop-dot"></span><span>'+esc(stop.name)+(labels.length?'<em>'+esc(labels.join(' · '))+'</em>':'')+'</span></div>';
+  }).join('')+'</div>':'';
+  return '<div class="journey-progress">'
+    +'<div class="journey-progress-head"><div><div class="journey-progress-title">Live journey progress</div><div class="journey-progress-sub">'+esc(shapeNote)+'</div></div><div class="journey-progress-pct">'+Math.round(progress.percent)+'%</div></div>'
+    +'<div class="journey-progress-track"><div class="journey-progress-fill" style="width:'+progress.percent.toFixed(1)+'%"></div></div>'
+    +'<div class="journey-progress-stats">'
+    +'<span><b>'+esc(next?next.name:'Route complete')+'</b><small>Next stop</small></span>'
+    +'<span><b>'+progress.remainingStops+'</b><small>Stops remaining</small></span>'
+    +'<span><b>'+esc(selected?(progress.selectedIndex<progress.nextIndex?'Passed':Math.max(0,progress.selectedIndex-progress.nextIndex)+' ahead'):'Not identified')+'</b><small>Your stop</small></span>'
+    +'</div>'
+    +'<button class="route-map-btn" data-route-map="'+esc(v.id)+'" '+(progress.pattern.shape?'':'disabled')+'>'+(progress.pattern.shape?'View accurate route on map':'Accurate road shape unavailable')+'</button>'
+    +stopList+'</div>';
+}
 function lineDetail(r){
   const v=r.v, rec=LINES[v.line];
   const speed=(v.speed==null || !isFinite(v.speed))?'unknown':v.speed<.6?'stationary':Math.round(v.speed*2.237)+' mph';
@@ -2581,10 +2714,10 @@ function lineDetail(r){
   ];
   const schedules=scheduledMatches(v.line,v.dest,r.secs,v.journey).slice(0,4);
   const times=schedules.length?'<div class="dlabel">Nearby scheduled departures</div><div class="dtimes">'+schedules.map((x,i)=>'<span class="dtime">'+esc(formatClock(x.at))+(i===0?'<i>closest</i>':'')+'</span>').join('')+'</div>':'';
-  return '<div class="detail">'+times
+  return '<div class="detail">'+journeyProgressHtml(v)+times
     +'<div class="dfacts">'+facts.map(([k,val])=>'<div><span class="dk">'+esc(k)+'</span><span class="dv">'+esc(val)+'</span></div>').join('')+'</div>'
     +'<div class="dnote">ETA is calculated from the fresh vehicle position, movement towards this stop, locally observed speed and '
-    +(r.geometry?'the matched journey stop sequence':'route factor')
+    +(r.geometry?'the matched journey geometry':'route factor')
     +(r.schedule?', then checked against the timetable':'')+'. It is an estimate, not an operator prediction.'
     +(v.origin?' Running '+esc(v.origin)+' to '+esc(v.dest||'?')+(v.operator?' · '+esc(v.operator):'')+'.':'')+'</div></div>';
 }
@@ -2687,13 +2820,38 @@ function render(){
       const row=liveRows.find(r=>String(r.v.id)===String(b.dataset.bell));
       if(row) toggleAlarm(row.v.line,row.v.dest);
     }));
+    [...deps.querySelectorAll('[data-route-map]')].forEach(b=>b.addEventListener('click',event=>{
+      event.stopPropagation(); showJourneyOnMap(b.dataset.routeMap);
+    }));
     checkAlarms(liveRows);
   }
   renderVehicles(liveRows); renderServingNote(); renderLiveDiagnostics();
 }
 
-function clearVehicleMarkers(){ vehLayer.clearLayers(); S.markers.clear(); }
+function clearVehicleMarkers(){ vehLayer.clearLayers(); routeLayer.clearLayers(); S.markers.clear(); }
 
+function renderSelectedJourney(rows){
+  routeLayer.clearLayers();
+  if(!S.selected) return;
+  const row=rows.find(item=>String(item.v.id)===String(S.selected));
+  const progress=row&&journeyProgress(row.v);
+  if(!progress||!progress.pattern.shape) return;
+  const split=splitPatternAt(progress.pattern,progress.vehicle);
+  if(split.passed.length>1) L.polyline(split.passed,{color:'#526276',weight:4,opacity:.72,dashArray:'5 7',interactive:false}).addTo(routeLayer);
+  if(split.remaining.length>1) L.polyline(split.remaining,{color:'#FFB000',weight:5,opacity:.92,interactive:false}).addTo(routeLayer);
+  progress.stops.forEach((stop,index)=>{
+    const selected=index===progress.selectedIndex, next=index===progress.nextIndex, passed=index<progress.nextIndex;
+    const marker=L.circleMarker([stop.lat,stop.lon],{
+      radius:selected?6:next?5:3,
+      color:selected?'#FFB000':next?'#3FD9A4':passed?'#526276':'#9AAABD',
+      weight:selected||next?2:1,
+      fillColor:selected?'#FFB000':next?'#3FD9A4':passed?'#526276':'#111A26',
+      fillOpacity:(selected||next)?0.95:0.78,
+      opacity:passed?0.58:0.9
+    }).addTo(routeLayer);
+    marker.bindTooltip(stop.name+(selected?' · your stop':next?' · next stop':''),{direction:'top',className:'stoptip'});
+  });
+}
 function renderVehicles(rows){
   const wanted = new Map(rows.map(r=>[r.v.id,r]));
   for(const [id,m] of S.markers){
@@ -2708,9 +2866,6 @@ function renderVehicles(rows){
     const cls = 'veh'+(shown?'':' dim')+(S.selected===v.id?' sel':'');
     const brg = isFinite(v.bearing)?v.bearing:0;
     const visual=visualVehiclePosition(v);
-    // Replacing the icon rebuilds the DOM node, which cancels the CSS
-    // transition mid-flight — so the marker never appears to move.
-    // Patch the existing node instead, and only when something changed.
     const sig = cls+'|'+Math.round(brg/5)+'|'+v.line;
     let m = S.markers.get(v.id);
     if(!m){
@@ -2744,6 +2899,15 @@ function renderVehicles(rows){
       + (r ? '<br>'+Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name) : '<br>Not calling at your stop')
       + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':'');
     if(m.getPopup()) m.setPopupContent(popup); else m.bindPopup(popup);
+  }
+  renderSelectedJourney(rows);
+}
+function showJourneyOnMap(id){
+  const v=S.vehicles.get(id); if(!v) return;
+  S.selected=id; render(); setAppView('map');
+  const progress=journeyProgress(v);
+  if(progress&&progress.pattern.shape){
+    setTimeout(()=>{ try{ map.fitBounds(progress.pattern.points.map(p=>[p.lat,p.lon]),{padding:[24,24],maxZoom:15,animate:true}); }catch(e){} },80);
   }
 }
 
