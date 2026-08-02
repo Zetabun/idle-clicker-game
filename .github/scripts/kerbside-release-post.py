@@ -11,7 +11,7 @@ def write(path, text):
 
 
 bus = read("bus.html")
-explicit_helper = "function mapVehicleVisible(v,shown,now=Date.now()){if(shown) return true;const ts=Number(v&&v.ts),age=now-ts;return Number.isFinite(ts)&&Number.isFinite(age)&&age>=0&&age<=240000;}"
+explicit_helper = "function mapVehicleVisible(v,shown,now=Date.now()){if(shown) return true;const ts=Number(v&&v.ts),age=now-ts;return Number.isFinite(ts)&&Number.isFinite(age)&&age>=0&&age<=4*60*1000;}"
 bus, helper_count = re.subn(
     r"function mapVehicleVisible\(v,shown,now=Date\.now\(\)\)\{.*?\}",
     explicit_helper,
