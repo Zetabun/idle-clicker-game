@@ -15,6 +15,11 @@ source = source.replace(
 )
 source = source.replace("let node=$('mapTileError');", "let node=document.getElementById('mapTileError');")
 source = source.replace("$('map').appendChild(node);", "document.getElementById('map').appendChild(node);")
+source = source.replace(
+    "function mapVehicleVisible(v,shown,now=Date.now()){return !!(shown||(v&&now-Number(v.ts)<=MAX_AGE_MS));}",
+    "function mapVehicleVisible(v,shown,now=Date.now()){return !!(shown||(v&&now-Number(v.ts)<=4*60*1000));}",
+    1,
+)
 for label in ("browser source guards", "map source guards"):
     pattern = rf'^browser = replace_once\(browser, .*?, "{re.escape(label)}"\)\n'
     source, count = re.subn(pattern, "browser = browser\n", source, count=1, flags=re.M)
