@@ -1,40 +1,59 @@
-# Kerbside national data backend
+# Kerbside Pages data and live Worker
 
-This directory contains the Cloudflare Worker and regional timetable builder used by Kerbside 0.5.
+Kerbside 0.6 separates static timetable delivery from live bus positions:
 
-## What it provides
+- **Cloudflare Pages** serves official stop, timetable and journey-pattern JSON.
+- **Cloudflare Worker** protects the BODS key and proxies live vehicle positions only.
+- **GitHub Actions** rebuilds England's regional BODS timetable data and deploys it to Pages.
 
-- `GET /?bbox=minLon,minLat,maxLon,maxLat` - backwards-compatible BODS live vehicle proxy.
-- `GET /health` - BODS, R2 and timetable manifest status.
-- `GET /nearby-stops?lat=...&lon=...&radius=1500` - official GTFS/NaPTAN stop identifiers near a location.
-- `GET /departures/{stopId}?region=west_midlands&tile=2850-3558` - the compact timetable tile containing the selected stop.
-- `GET /pattern/{patternId}?region=west_midlands` - the route-pattern shard containing an ordered journey pattern.
+No R2 bucket, R2 API token or R2 billing setup is required.
 
-The Worker retries failed BODS requests and can return a very recent cached feed during a brief upstream outage. This prevents a temporary BODS 5xx response from immediately emptying the live board.
+## Public endpoints
 
-## Cloudflare setup
+Static data is deployed to `https://kerbside-data-zetabun.pages.dev`:
 
-1. Create an R2 bucket named `kerbside-data`.
-2. Create an R2 API token with object read/write access to that bucket.
-3. Create a Cloudflare API token with Workers Scripts edit permission for the account.
-4. Add these GitHub Actions repository secrets:
-   - `BODS_KEY` (already used by the existing timetable workflow)
+- `GET /manifest.json` - national build status and regional bounds.
+- `GET /regions/{region}/tiles/{tile}.json` - nearby official stops and scheduled departures for one geographic tile.
+- `GET /regions/{region}/patterns/{prefix}.json` - ordered journey patterns loaded only when needed.
+
+`bus.html` uses that Pages hostname directly, so timetable traffic does not consume Worker requests.
+
+The Worker remains backwards-compatible for live data:
+
+- `GET /?bbox=minLon,minLat,maxLon,maxLat`
+- `GET /feed?bbox=minLon,minLat,maxLon,maxLat`
+- `GET /health`
+
+Each live bounding-box span must be no more than 0.35 degrees. Kerbside 0.6 clamps its requests to 0.34 degrees so the BODS upstream limit is not exceeded.
+
+## One-time Cloudflare setup
+
+1. Create a Cloudflare API token with:
+   - **Account / Cloudflare Pages / Edit**
+   - **Account / Workers Scripts / Edit**
+2. Add these GitHub Actions repository secrets:
+   - `BODS_KEY`
    - `CLOUDFLARE_ACCOUNT_ID`
    - `CLOUDFLARE_API_TOKEN`
-   - `R2_ACCESS_KEY_ID`
-   - `R2_SECRET_ACCESS_KEY`
-5. Run **Build Kerbside national timetable data** manually.
-6. Run **Deploy Kerbside Worker** manually.
-7. Confirm `/health` reports `bods: true`, `timetable: true`, and a national manifest.
-8. Add a repository Actions variable named `KERBSIDE_NATIONAL_ENABLED` with value `true` to enable automatic daily builds and Worker deployments after future code changes.
+3. Run **Build Kerbside national timetable data** manually.
+   - The workflow creates the `kerbside-data-zetabun` Pages project when it does not exist.
+   - It builds all nine English BODS regions and deploys the static site.
+4. Run **Deploy Kerbside Worker** manually.
+5. Confirm:
+   - `https://kerbside-data-zetabun.pages.dev/manifest.json` returns a national manifest.
+   - the Worker's `/health` response says `role: "live-only"` and `bods: true`.
+6. Add the repository Actions variable `KERBSIDE_NATIONAL_ENABLED=true` to enable automatic daily timetable deployments and Worker deployments after future code changes.
 
-Do not place BODS or Cloudflare credentials in `bus.html`, `wrangler.toml`, source code or repository variables.
+Do not put BODS or Cloudflare credentials in `bus.html`, source code or repository variables.
 
-## Data design
+## Pages free-tier safeguards
 
-BODS publishes very large national files. Kerbside processes the smaller regional GTFS packages in parallel and uploads compact geographic tiles to R2. The browser downloads only nearby stop metadata, one selected-stop timetable tile, and route-pattern shards as they are needed.
+The builder writes one combined data file per 0.05-degree tile and two-character pattern shards. The workflow fails before deployment when:
 
-Regional timetable jobs extract only `stops.txt`, `routes.txt`, `trips.txt`, `stop_times.txt`, `calendar.txt` and `calendar_dates.txt`. Large GTFS shape files are deliberately excluded. Ordered paths are reconstructed from stop sequences, which is sufficient for determining whether a live bus is before or after the selected stop.
+- the site contains more than 20,000 files; or
+- any individual asset reaches 25 MiB.
+
+A `_headers` file enables cross-origin browser access and sets CDN caching for manifests, tiles and pattern shards.
 
 ## Local checks
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { candidateRegions, normaliseBoundingBox, tileKey, tileKeysForRadius } from '../src/worker.js';
+import { MAX_BBOX_SPAN, normaliseBoundingBox, routeRequest } from '../src/worker.js';
 
 test('normalises a safe England bounding box', () => {
   assert.equal(normaliseBoundingBox('-2.20,52.40,-2.00,52.60'), '-2.20000,52.40000,-2.00000,52.60000');
@@ -8,12 +8,17 @@ test('normalises a safe England bounding box', () => {
   assert.equal(normaliseBoundingBox('-2,52,-3,53'), '');
 });
 
-test('tile keys are stable and radius search includes centre', () => {
-  const centre = tileKey(52.5089, -2.0870);
-  assert.match(centre, /^\d+-\d+$/);
-  assert.ok(tileKeysForRadius(52.5089, -2.0870, 1500).includes(centre));
+test('rejects BODS boxes wider than the upstream 0.35 degree limit', () => {
+  assert.equal(MAX_BBOX_SPAN, 0.35);
+  assert.equal(normaliseBoundingBox('-2.20,52.40,-1.84,52.60'), '');
+  assert.equal(normaliseBoundingBox('-2.20,52.40,-1.85,52.75'), '-2.20000,52.40000,-1.85000,52.75000');
 });
 
-test('West Midlands coordinates select the expected regional feed', () => {
-  assert.ok(candidateRegions(52.5089, -2.0870).includes('west_midlands'));
+test('health describes a live-only Worker', async () => {
+  const response = await routeRequest(new Request('https://example.test/health'), { BODS_KEY: 'present' });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.role, 'live-only');
+  assert.equal(body.version, '0.6.0');
+  assert.equal(body.bods, true);
 });
