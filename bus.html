@@ -263,6 +263,8 @@ button{cursor:pointer;border:0;background:none}
 .chip.conf-medium{border-color:var(--led-dim);color:var(--led)}
 .chip.conf-low{border-color:var(--rule);color:var(--text-dim)}
 .chip.route-scan{border-color:rgba(92,143,189,.55);background:rgba(92,143,189,.1);color:#A9C9E6}
+.chip.direction-gps{border-color:rgba(63,217,164,.5);background:rgba(63,217,164,.08);color:#8CE8C6}
+.chip.gps-lost{border-color:rgba(255,122,122,.5);background:rgba(255,122,122,.08);color:#FFAAAA}
 .depwrap{position:relative;border-bottom:1px solid var(--rule)}
 .depmain{position:relative}
 .depwrap .dep{border-bottom:0;padding-right:52px}
@@ -787,7 +789,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.48';
+const APP_VERSION = '0.6.49';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -854,6 +856,8 @@ const ROUTE_SCAN_BOX_RADIUS = 8000;
 const ROUTE_SCAN_MAX_BOXES = 3;
 const ROUTE_SCAN_MAX_ROUTE_METRES = 55000;
 const ROUTE_SCAN_PATTERN_LIMIT = 36;
+const CORRIDOR_TAG_GRACE_MS = 5*60*1000;
+const GPS_RESULT_GRACE_MS = 6*60*1000;
 
 /* ============================================================
    Helpers
@@ -2171,12 +2175,12 @@ async function queuePattern(patternId){
   }catch(e){ DATA_PATTERN_RETRY.set(requestKey,Date.now()+DATA_PATTERN_RETRY_MS); }
   finally{S.patternPending.delete(requestKey);}
 }
-function timetablePatternRecord(journey){
+function timetablePatternRecord(journey,preferredPatternId){
   const tt=S.timetable;
-  if(!tt||!journey||!tt.tripPatterns) return null;
-  const journeyKey=String(journey), aliasKey='trip:'+journeyKey;
-  let id=tt.tripPatterns[journeyKey];
-  if(!id){
+  if(!tt||!tt.tripPatterns) return null;
+  const journeyKey=String(journey||''), aliasKey='trip:'+journeyKey;
+  let id=String(preferredPatternId||'')||tt.tripPatterns[journeyKey];
+  if(!id&&journeyKey){
     if(PATTERN_CACHE.has(aliasKey)) id=PATTERN_CACHE.get(aliasKey)||null;
     else{
       const match=uniqueCompatibleTrips(Object.keys(tt.tripPatterns),journeyKey,ref=>ref);
@@ -2297,7 +2301,7 @@ function pointAlongPattern(points,along){
 function vehicleJourneyRef(v){ return String(v&&(v.corridorTrip||v.journey)||''); }
 function journeyGeometry(v,stop){
   if(!v || !stop) return null;
-  const pattern=timetablePatternRecord(vehicleJourneyRef(v));
+  const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
   const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
@@ -2342,7 +2346,7 @@ function selectedPatternStopIndex(stops){
   return bestDistance<=180?best:-1;
 }
 function journeyProgress(v){
-  const pattern=timetablePatternRecord(vehicleJourneyRef(v));
+  const pattern=timetablePatternRecord(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern);
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
   if(!vehicle||vehicle.metres>800) return null;
@@ -2395,6 +2399,7 @@ function selectStop(s,manual){
     if(S.routeScanAbort) S.routeScanAbort.abort();
     S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
     S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError='';
+    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; vehicle.corridorTracked=false; }
     S.destFilter=null; S.selected=null; S.manualStop=manual===true;
   } else if(manual===true) S.manualStop=true;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
@@ -2536,7 +2541,7 @@ function matchRouteScanVehicle(plan,v){
   if(!position||position.metres>800) return null;
   const remaining=match.targetAlong-position.along;
   if(remaining < -120 || remaining > ROUTE_SCAN_MAX_ROUTE_METRES) return null;
-  v.corridorTrip=match.trip; v.corridorTracked=true; v.corridorRemaining=remaining;
+  v.corridorTrip=match.trip; v.corridorTracked=true; v.corridorRemaining=remaining; v.corridorConfirmedAt=Date.now();
   return v;
 }
 
@@ -2607,7 +2612,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,gpsMovementDirection};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -2823,15 +2828,18 @@ function ingest(list){
       rec.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
       if(rec.hist.length>8) rec.hist.shift();
     }
-    if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete rec.routeProjection; delete rec.corridorTrip; delete rec.corridorRemaining; }
-    if(!v.corridorTracked){ delete rec.corridorTrip; delete rec.corridorRemaining; }
+    const sameJourney=!prev||!prev.journey||!v.journey||prev.journey===v.journey;
+    const keepCorridor=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&now-Number(prev.corridorConfirmedAt||0)<=CORRIDOR_TAG_GRACE_MS);
+    const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
+    if(prev&&prev.journey&&v.journey&&prev.journey!==v.journey){ delete rec.routeProjection; delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; }
     Object.assign(rec, v);
+    if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }
     learnLine(rec);
     S.vehicles.set(v.id, rec);
   }
   // drop anything whose last reported position has gone stale
   for(const [id,v] of S.vehicles){
-    if(now - v.ts > MAX_AGE_MS) S.vehicles.delete(id);
+    if(now-v.ts>MAX_AGE_MS+GPS_RESULT_GRACE_MS) S.vehicles.delete(id);
   }
 }
 
@@ -2865,6 +2873,13 @@ function updateVehicleMotion(){
 }
 
 /* inbound = getting closer to the town anchor */
+function gpsMovementDirection(v){
+  if(!S.anchor||!v||!Array.isArray(v.hist)||v.hist.length<2) return 'unknown';
+  const a=v.hist[0],b=v.hist[v.hist.length-1];
+  if(dist(a.lat,a.lon,b.lat,b.lon)<=60) return 'unknown';
+  const d0=dist(a.lat,a.lon,S.anchor.lat,S.anchor.lon),d1=dist(b.lat,b.lon,S.anchor.lat,S.anchor.lon);
+  return Math.abs(d0-d1)>40?(d1<d0?'in':'out'):'unknown';
+}
 function inferDirection(v){
   if(S.anchor && v.hist.length>=2){
     const a=v.hist[0], b=v.hist[v.hist.length-1];
@@ -3377,10 +3392,18 @@ function collect(gate,diagnostics){
   const out=[], now=Date.now();
   for(const v of S.vehicles.values()){
     const age=now-v.ts;
-    if(age>MAX_AGE_MS){ rejectLive(diagnostics,'stale'); continue; }
+    if(age>MAX_AGE_MS){
+      const held=v.lastShownSnapshot&&v.lastShownStopId===String(S.stop.id)&&now-Number(v.lastShownAt||0)<=GPS_RESULT_GRACE_MS&&Number(v.lastShownArrivalAt||0)>=now-3*60000;
+      if(held){ out.push({...v.lastShownSnapshot,v,secs:Math.max(0,(v.lastShownArrivalAt-now)/1000),gpsLost:true,confidence:'low',recovered:false}); }
+      else rejectLive(diagnostics,'stale');
+      continue;
+    }
     if(diagnostics) diagnostics.recent++;
     const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon), far=d>MAX_VEH_DIST;
     const journeyRef=vehicleJourneyRef(v), evidence=routeEvidence(v.line,v.dest,journeyRef);
+    const matchedRow=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).find(row=>String(row.trip)===String(evidence.matchedTrip)):null;
+    v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';
+    v.progressPattern=String(matchedRow&&matchedRow.pattern||'');
     const geometry=journeyGeometry(v,S.stop);
     if(geometry && geometry.passed){ rejectLive(diagnostics,'passed'); continue; }
     const corridorFar=!!(v.corridorTracked&&geometry&&geometry.remaining>80&&geometry.remaining<=ROUTE_SCAN_MAX_ROUTE_METRES&&evidence.journeyMatch&&evidence.pathMatch);
@@ -3410,18 +3433,16 @@ function collect(gate,diagnostics){
       rejectLive(diagnostics,'destination'); continue;
     }
 
-    const dir=inferDirection(v);
+    const dir=inferDirection(v), gpsMoveDir=gpsMovementDirection(v);
     if(S.dir!=='all'){
       const timetableContradicts=scheduledDir!=='unknown' && scheduledDir!==S.dir;
-      const liveDirectionOk=dir===S.dir || dir==='unknown';
-      const timetableDirectionOk=scheduledDir===S.dir;
-      if(timetableContradicts || (!liveDirectionOk && !timetableDirectionOk && !trustedJourney)){
-        rejectLive(diagnostics,'direction'); continue;
-      }
+      const gpsContradicts=gpsMoveDir!=='unknown' && gpsMoveDir!==S.dir;
+      if(timetableContradicts || gpsContradicts){ rejectLive(diagnostics,'direction'); continue; }
     }
+    if(gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir){ rejectLive(diagnostics,'direction'); continue; }
     if(diagnostics) diagnostics.direction++;
 
-    if(S.hideAway && strength<0 && d>100 && !trustedJourney && !scheduleBacked){
+    if(S.hideAway && strength<0 && d>100){
       rejectLive(diagnostics,'away'); continue;
     }
     if(diagnostics) diagnostics.approaching++;
@@ -3437,11 +3458,19 @@ function collect(gate,diagnostics){
     const recovered=!!((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low'));
     if(recovered && diagnostics) diagnostics.recovered++;
     const match=geometry?'journey path':evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
-    out.push({
-      v,dir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
+    if(est.schedule){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
+    const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'';
+    const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
+    const directionWord=shownDir==='in'?(namedAnchor?'into '+namedAnchor:'inbound'):shownDir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound'):'direction unclear';
+    const directionLabel=(gpsMoveDir!=='unknown'?'GPS movement: ':scheduledDir!=='unknown'?'Journey: ':dir!=='unknown'?'Live: ':'')+directionWord;
+    const row={
+      v,dir:shownDir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
       routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
-      spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match
-    });
+      spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match,directionLabel
+    };
+    v.lastShownStopId=String(S.stop.id); v.lastShownAt=now; v.lastShownArrivalAt=now+Math.max(0,row.secs)*1000;
+    v.lastShownSnapshot={...row,v:null};
+    out.push(row);
   }
   out.sort((a,b)=>a.secs-b.secs);
   const limited=out.slice(0,25);
@@ -3568,6 +3597,8 @@ function lineDetail(r){
     ['Speed',speed],
     ['Position age',(function(){ const n=Math.max(0,Math.round((Date.now()-v.ts)/1000)); return n<90?n+' s':Math.round(n/60)+' min'; })()],
     ['Heading',isFinite(v.bearing)?compass(v.bearing):'unknown'],
+    ['Travel direction',r.directionLabel||'direction unclear'],
+    ['GPS state',r.gpsLost?'signal lost · countdown paused':'position active'],
     ['Route evidence',r.evidence?r.evidence.label:'unverified'],
     ['Estimate confidence',r.confidence==='high'?'higher':r.confidence==='medium'?'moderate':'rough']
   ];
@@ -3667,30 +3698,30 @@ function render(){
     deps.innerHTML=rows.map(r=>{
       if(r.kind==='scheduled') return renderScheduledRow(r);
       const mins=Math.max(0,Math.round(r.secs/60));
-      const age=Date.now()-r.v.ts, gpsFresh=age<=GPS_FRESH_MS, gpsAge=formatPositionAge(age);
-      const due=gpsFresh && r.confidence!=='low' && mins<=1;
+      const age=Date.now()-r.v.ts, gpsLost=!!r.gpsLost, gpsFresh=!gpsLost&&age<=GPS_FRESH_MS, gpsAge=formatPositionAge(age);
+      const due=!gpsLost&&gpsFresh&&r.confidence!=='low'&&mins<=1;
       const tight=S.walkSecs>90 && r.secs<S.walkSecs-30;
       const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'Inbound';
-      const dirChip=S.destFilter?fmtDist(r.metres)+' away':r.dir==='in'?'→ '+namedAnchor:r.dir==='out'?'← Outbound':'Direction unclear';
+      const dirChip=r.directionLabel||(S.destFilter?fmtDist(r.metres)+' away':r.dir==='in'?'→ '+namedAnchor:r.dir==='out'?'← Outbound':'Direction unclear');
       const confLabel=r.confidence==='high'?'verified':r.confidence==='medium'?'likely':'rough';
       const confHelp=r.confidence==='high'?'Journey or timetable evidence strongly confirms this bus serves the selected stop.':r.confidence==='medium'?'Live GPS, route and direction evidence suggest this bus serves the stop, but the journey is not fully matched.':'Limited route or movement evidence; treat this ETA as approximate.';
-      const gpsLabel=gpsFresh?'live GPS':'GPS delayed';
-      const gpsHelp=gpsFresh?'Fresh vehicle position from BODS':'Last confirmed BODS position is over two minutes old; retained briefly while waiting for the next report.';
-      const etaText=due?'due':((!gpsFresh||r.confidence==='low')?'~':'')+mins;
+      const gpsLabel=gpsLost?'GPS signal lost':gpsFresh?'live GPS':'GPS delayed';
+      const gpsHelp=gpsLost?'The operator feed stopped reporting this previously verified bus. Kerbside is holding the row briefly without a live countdown.':gpsFresh?'Fresh vehicle position from BODS':'Last confirmed BODS position is over two minutes old; retained briefly while waiting for the next report.';
+      const etaText=gpsLost?'—':due?'due':((!gpsFresh||r.confidence==='low')?'~':'')+mins;
       return '<div class="depwrap"><div class="depmain">'
         +'<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'" aria-expanded="'+(S.selected===r.v.id)+'">'
         +'<span class="route'+(age>75000?' stale':'')+'">'+esc(r.v.line)+'</span>'
         +'<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span><span class="deprow2">'
-        +'<span class="chip'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
+        +'<span class="chip direction-gps'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
         +(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
-        +'<span class="chip '+(gpsFresh?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>'
+        +'<span class="chip '+(gpsLost?'gps-lost':gpsFresh?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>'
         +'<span class="chip gps-age">'+esc(gpsAge)+'</span>'
         +(r.v.corridorTracked?'<span class="chip route-scan" title="Found farther upstream through this exact timetable journey">route scan</span>':'')
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
 +(r.recovered?'<span class="chip timing" title="Kept live because stronger timetable or journey evidence overruled weak direction or bearing evidence.">GPS recovered</span>':'')
 +(r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
 +(tight?'<span class="chip tight">Tight</span>':'')
-        +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'
+        +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?'last seen':due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'
         +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
         +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button></div>'
         +(S.selected===r.v.id?lineDetail(r):'')+'</div>';
