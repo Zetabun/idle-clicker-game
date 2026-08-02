@@ -19,7 +19,7 @@ Static data is deployed to `https://kerbside-data-zetabun.pages.dev`:
 
 `bus.html` uses that Pages hostname directly, so timetable traffic does not consume Worker requests.
 
-Kerbside 0.6.2 tolerates individual regional tile failures and resolves cached or overlapping stop records against every matching timetable shard, preferring the regional copy with the fullest departure set.
+Kerbside 0.6.2 tolerates individual regional tile failures and resolves cached or overlapping stop records against every matching timetable shard, preferring the regional copy with the fullest departure set. This also self-heals older OpenStreetMap stop selections when they contain an official ATCO or NaPTAN code.
 
 The Worker remains backwards-compatible for live data:
 
