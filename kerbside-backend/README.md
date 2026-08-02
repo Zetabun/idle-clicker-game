@@ -87,6 +87,8 @@ Kerbside 0.6.34 adds an automatic interactive basemap fallback. CARTO remains th
 
 Kerbside 0.6.35 extracts SIRI-VM parsing into a fixture-tested path. Namespaced XML fixtures cover fresh, stale, future, timestamp-free, malformed and overlapping records. Live identities now combine OperatorRef with VehicleRef (or the journey fallback), preventing operator-local vehicle codes from overwriting one another while still deduplicating overlapping bounding-box responses by newest timestamp.
 
+Kerbside 0.6.36 makes the periodic expanded live scan fail open. Every 18 km attempt records its 45-second cooldown immediately, including partial or complete failures. When all expanded requests fail, the browser retries the ordinary 9 km box in the same poll, so distant-feed trouble cannot blank healthy nearby departures or create repeated wide-request bursts. WebKit forces the expanded requests to fail and verifies the nearby SIRI response is still returned.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

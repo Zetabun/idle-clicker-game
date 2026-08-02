@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.35'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.36'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -91,6 +91,10 @@ assert.match(busSource, /function liveVehicleIdentity\(fields\)/);
 assert.match(busSource, /function parseLivePayloads\(items,now\)/);
 assert.match(busSource, /vehicleRef:f\.VehicleRef\|\|''/);
 assert.doesNotMatch(busSource, /const id = f\.VehicleRef \|\| journey/);
+assert.match(busSource, /async function fetchLiveBatch\(wide,signal\)/);
+assert.match(busSource, /if\(wide\) S\.lastWideFetch=Date\.now\(\)/);
+assert.match(busSource, /batch=await fetchLiveBatch\(false,signal\)/);
+assert.match(busSource, /liveState:S/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -127,7 +131,7 @@ const context = await browser.newContext({ viewport: { width: 393, height: 852 }
 const page = await context.newPage();
 
 try {
-  let leafletCdnRequests = 0, cartoTileRequests = 0, osmTileRequests = 0;
+  let leafletCdnRequests = 0, cartoTileRequests = 0, osmTileRequests = 0, wideFeedRequests = 0, nearbyFeedRequests = 0;
   const transparentTile = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
   await page.route('https://unpkg.com/leaflet@1.9.4/dist/**', route => { leafletCdnRequests++; return route.abort(); });
   await page.route('https://*.basemaps.cartocdn.com/**', route => { cartoTileRequests++; return route.abort(); });
@@ -142,8 +146,26 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.35', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.36', bods: true })
   }));
+
+  await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
+    const url=new URL(route.request().url());
+    const box=(url.searchParams.get('bbox')||'').split(',').map(Number);
+    const latitudeSpan=box.length===4?box[3]-box[1]:0;
+    if(latitudeSpan>0.25){
+      wideFeedRequests++;
+      return route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:'synthetic wide outage'})});
+    }
+    nearbyFeedRequests++;
+    const recorded=new Date().toISOString();
+    const body=`<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri"><ServiceDelivery><VehicleMonitoringDelivery><VehicleActivity>
+      <RecordedAtTime>${recorded}</RecordedAtTime><MonitoredVehicleJourney><LineRef>9</LineRef><PublishedLineName>9</PublishedLineName>
+      <OperatorRef>TEST</OperatorRef><VehicleRef>nearby-1</VehicleRef><DatedVehicleJourneyRef>nearby-trip</DatedVehicleJourneyRef>
+      <DestinationName>Town Centre</DestinationName><VehicleLocation><Longitude>-2.1000</Longitude><Latitude>52.5010</Latitude></VehicleLocation>
+      <Bearing>0</Bearing></MonitoredVehicleJourney></VehicleActivity></VehicleMonitoringDelivery></ServiceDelivery></Siri>`;
+    return route.fulfill({status:200,contentType:'application/xml',body});
+  });
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
   assert.match(await page.title(), /Kerbside/i);
@@ -194,6 +216,27 @@ try {
     ids:['OP-A|vehicle|42','OP-B|vehicle|42'],count:2,newestLat:52.501,
     rawRef:'42',line:'9',dest:'St Helens',stale:2,unknownAge:1,malformed:1
   });
+
+  const wideFallback = await page.evaluate(async () => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState;
+    const saved={
+      stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,lastWideFetch:state.lastWideFetch,
+      feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge
+    };
+    state.stop={id:'test-stop',lat:52.5,lon:-2.1,name:'Test stop'};
+    state.origin={lat:52.5,lon:-2.1,label:'Test'};
+    state.proxy='https://kerbside-bus.adambullas.workers.dev';
+    state.key='';state.lastWideFetch=0;
+    try{
+      const vehicles=await api.fetchLive();
+      return {count:vehicles.length,id:vehicles[0]?.id,cooldown:Date.now()-state.lastWideFetch<5000};
+    }finally{
+      Object.assign(state,saved);
+    }
+  });
+  assert.deepEqual(wideFallback,{count:1,id:'TEST|vehicle|nearby-1',cooldown:true});
+  assert.ok(wideFeedRequests>=1);
+  assert.equal(nearbyFeedRequests,1);
 
   const tripMatching = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
@@ -263,7 +306,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.35'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.36'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
