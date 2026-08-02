@@ -97,6 +97,24 @@ jobs:
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
 
+      - name: Validate timetable cache policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/build-kerbside-national.yml').read_text(encoding='utf-8')
+          required = [
+              "/regions/*/departures/*\n            Cache-Control: public, max-age=86400, s-maxage=604800, immutable",
+              "/regions/*/patterns/*\n            Cache-Control: public, max-age=86400, s-maxage=604800, immutable",
+          ]
+          missing = [block.splitlines()[0] for block in required if block not in source]
+          if missing:
+              raise SystemExit(f'Missing immutable timetable cache policies: {missing}')
+          print('Validated versioned departure and pattern cache policies.')
+          PY
+
       - name: Parse Kerbside workflow YAML
         shell: bash
         run: |
