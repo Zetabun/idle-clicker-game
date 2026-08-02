@@ -8,6 +8,13 @@
 <title>Kerbside — live buses near you</title>
 <meta name="application-name" content="Kerbside">
 <meta name="description" content="A route-aware live bus board using BODS vehicle positions and optional timetable validation.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kerbside">
+<link rel="apple-touch-icon" sizes="180x180" href="kerbside-backend/icons/kerbside-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="kerbside-backend/icons/kerbside-192.png">
+<link rel="manifest" href="kerbside-backend/kerbside.webmanifest">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -711,7 +718,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.5';
+const APP_VERSION = '0.6.6';
 const MY_KEY   = '';
 const MY_PROXY = '';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';

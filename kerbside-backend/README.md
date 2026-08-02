@@ -27,6 +27,8 @@ Kerbside 0.6.4 places the settings tabs beside the dialog title, adds live GPS a
 
 Kerbside 0.6.5 increases the visual separation between the Settings title and its tabs. It suppresses two-finger browser zoom on the controls, departure board and settings dialog while preserving pinch-to-zoom on the Leaflet map.
 
+Kerbside 0.6.6 adds dedicated Apple touch and PWA icons plus an installable web-app manifest. iOS home-screen saves use the 180px Kerbside icon, while other supported browsers can use the 192px and 512px icons and launch the app in standalone mode.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
