@@ -95,18 +95,42 @@ jobs:
           rm -f .github/workflows/build-kerbside-national.yml
           rm -f .github/workflows/deploy-kerbside-worker.yml
 
-      - name: Commit validated release to branch
+      - name: Publish validated release atomically
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- bus.html kerbside-backend .github/scripts .github/triggers
-          if git diff --cached --quiet; then
-            echo "::error::The release produced no committed changes."
-            exit 1
-          fi
-          git commit -m "Release Kerbside browser update"
-          git push origin "HEAD:${RELEASE_BRANCH}"
+
+          BASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq '.object.sha')"
+          BASE_TREE="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$BASE_SHA" --jq '.tree.sha')"
+          TREE='[]'
+
+          for path in \
+            bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/README.md \
+            kerbside-backend/tests/browser-regression.mjs
+          do
+            blob_sha="$(base64 -w 0 "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
+            TREE="$(jq --arg path "$path" --arg sha "$blob_sha" \
+              '. + [{path: $path, mode: "100644", type: "blob", sha: $sha}]' <<<"$TREE")"
+          done
+
+          trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
+          trigger_path="${trigger_path%.py}.txt"
+          TREE="$(jq --arg path "$RELEASE_SCRIPT" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
+          TREE="$(jq --arg path "$trigger_path" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
+
+          TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
+            '{base_tree: $base_tree, tree: $tree}' | \
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq '.sha')"
+          COMMIT_SHA="$(jq -n --arg message 'Release Kerbside browser update' --arg tree "$TREE_SHA" --arg parent "$BASE_SHA" \
+            '{message: $message, tree: $tree, parents: [$parent]}' | \
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq '.sha')"
+          jq -n --arg sha "$COMMIT_SHA" '{sha: $sha, force: false}' | \
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$RELEASE_BRANCH" --input - >/dev/null
+
+          echo "Published validated release commit $COMMIT_SHA to $RELEASE_BRANCH"
