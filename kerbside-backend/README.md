@@ -71,6 +71,8 @@ Kerbside 0.6.26 adds a leave-alert disappearance grace period. Once an alert has
 
 Kerbside 0.6.27 makes schedule-only explanations evidence-based. The app now distinguishes no fresh GPS in the fetched area, no fresh GPS for the route, an uncertain destination, a filtered possible match, an ambiguous alias and no unique journey match. It no longer infers that an operator's GPS service is unavailable from an empty or filtered local snapshot.
 
+Kerbside 0.6.28 versions static timetable assets by the national manifest build timestamp. Tile, departure and route-pattern requests now receive a stable `v` query for the active build, while the manifest itself remains unversioned so it can update. When a forced manifest refresh detects a new build, the browser clears its in-memory tile, departure and pattern caches before using the new assets.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
@@ -95,7 +97,7 @@ Each live bounding-box span must be no more than 0.35 degrees. Kerbside 0.6 clam
 5. Confirm:
    - `https://kerbside-data-zetabun.pages.dev/manifest.json` returns a national manifest.
    - the Worker's `/health` response says `role: "live-only"` and `bods: true`.
-6. Add the repository Actions variable `KERBSIDE_NATIONAL_ENABLED=true` to enable automatic daily timetable deployments and Worker deployments after future code changes.
+6. Add the repository Actions variable `KERBSIDE_NATIONAL_ENABLED=true` to enable automatic daily timetable deployments. Worker deployments run independently whenever Worker source, package or Wrangler configuration changes.
 
 Do not put BODS or Cloudflare credentials in `bus.html`, source code or repository variables.
 

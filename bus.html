@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.27 also makes timetable-only explanations evidence-based: the board now reports whether fresh GPS, route, destination or a unique journey match was missing without claiming the operator has no GPS service.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.28 also versions timetable tiles, departure shards and route-pattern requests with the active national build timestamp, and clears open-tab caches when that build changes.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.27';
+const APP_VERSION = '0.6.28';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1258,7 +1258,16 @@ function updateDirLabels(){
   $('dOut').querySelector('.lbl').textContent = n?'Out of '+n:'Outbound';
 }
 
-function dataUrl(path){ return DATA_BASE.replace(/\/$/,'')+'/'+String(path||'').replace(/^\//,''); }
+function versionedDataUrl(path,built){
+  const clean=String(path||'').replace(/^\//,'');
+  const raw=DATA_BASE.replace(/\/$/,'')+'/'+clean;
+  if(!built||clean==='manifest.json') return raw;
+  const u=new URL(raw); u.searchParams.set('v',String(built)); return u.toString();
+}
+function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl};
+}
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
   return Math.floor((Number(lat)+90)/size)+'-'+Math.floor((Number(lon)+180)/size);
@@ -1279,6 +1288,11 @@ async function loadDataManifest(force){
     if(!r.ok) throw new Error('Pages timetable HTTP '+r.status);
     const data=await r.json();
     if(!data||!data.regions||!Object.keys(data.regions).length) throw new Error('Pages timetable manifest is empty');
+    const previousBuild=DATA_MANIFEST&&String(DATA_MANIFEST.built||'');
+    const nextBuild=String(data.built||'');
+    if(previousBuild&&nextBuild&&previousBuild!==nextBuild){
+      DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); PATTERN_CACHE.clear();
+    }
     DATA_MANIFEST=data; return data;
   })();
   try{return await DATA_MANIFEST_PROMISE;}finally{DATA_MANIFEST_PROMISE=null;}
