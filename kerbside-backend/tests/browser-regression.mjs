@@ -7,6 +7,11 @@ import { webkit } from 'playwright';
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
+const busSource = await readFile(path.join(root, 'bus.html'), 'utf8');
+assert.match(busSource, /const FAR_VEH_DIST = 18000/);
+assert.match(busSource, /function bboxes\(wide\)/);
+assert.match(busSource, /far && \(!gate \|\| !evidence\.journeyMatch\)/);
+assert.match(busSource, /if\(!shown&&!nearby\) continue/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -97,7 +102,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.13'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.14'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
