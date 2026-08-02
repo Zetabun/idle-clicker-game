@@ -9,6 +9,11 @@ const LIVE_CACHE_SECONDS = 150;
 const LIVE_FRESH_CACHE_MS = 5000;
 const LIVE_CACHE_WAIT_MS = 1800;
 const MAX_BBOX_SPAN = 0.35;
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_DEFAULT = 60;
+const MAX_RATE_BUCKETS = 2048;
+const RATE_BUCKETS = new Map();
+const INFLIGHT_REFRESHES = new Map();
 
 export default {
   async fetch(request, env, ctx) {
@@ -31,7 +36,20 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
   const path = url.pathname.replace(/\/+$/, '') || '/';
 
   if (path === '/health') return health(request, env);
-  if (path === '/' || path === '/feed') return liveFeed(request, env, ctx);
+  if (path === '/' || path === '/feed') {
+    if (!requestOriginAllowed(request, env)) {
+      return json({ error: 'Origin is not allowed' }, 403, request, env, { 'Cache-Control': 'no-store' });
+    }
+    const rate = consumeRateLimit(request, env);
+    if (!rate.allowed) {
+      return json({ error: 'Too many live-feed requests', retryable: true }, 429, request, env, {
+        ...rateLimitHeaders(rate),
+        'Retry-After': String(rate.retryAfter),
+        'Cache-Control': 'no-store'
+      });
+    }
+    return withRateLimitHeaders(await liveFeed(request, env, ctx), rate);
+  }
 
   return json({ error: 'Not found' }, 404, request, env);
 }
@@ -41,12 +59,13 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.6.31',
+    version: '0.6.32',
     bods: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
     upstreamTimeoutMs: LIVE_TIMEOUT_MS,
     upstreamAttempts: LIVE_ATTEMPTS,
-    cacheSeconds: LIVE_CACHE_SECONDS
+    cacheSeconds: LIVE_CACHE_SECONDS,
+    rateLimitPerMinute: configuredRateLimit(env)
   }, 200, request, env, { 'Cache-Control': 'no-store' });
 }
 
@@ -64,7 +83,7 @@ async function liveFeed(request, env, ctx) {
   }
 
   const cache = caches.default;
-  const lineRef = String(incoming.searchParams.get('lineRef') || '').slice(0, 40);
+  const lineRef = normaliseLineRef(incoming.searchParams.get('lineRef'));
   const cacheUrl = new URL(request.url);
   cacheUrl.pathname = '/__live-cache';
   cacheUrl.search = `?bbox=${encodeURIComponent(bbox)}${lineRef ? `&lineRef=${encodeURIComponent(lineRef)}` : ''}`;
@@ -77,7 +96,7 @@ async function liveFeed(request, env, ctx) {
   }
 
   if (cached) {
-    const refreshPromise = refreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey);
+    const refreshPromise = sharedRefreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey);
     const waitMs = configuredCacheWaitMs(env);
     const refreshed = await Promise.race([
       refreshPromise,
@@ -88,7 +107,7 @@ async function liveFeed(request, env, ctx) {
     return cachedLiveResponse(cached, request, env, true, cacheAge);
   }
 
-  const refreshed = await refreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey);
+  const refreshed = await sharedRefreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey);
   if (refreshed.response) return refreshed.response;
 
   return json({
@@ -96,6 +115,21 @@ async function liveFeed(request, env, ctx) {
     upstream: refreshed.failures.slice(-LIVE_ATTEMPTS),
     retryable: true
   }, 502, request, env, { 'Retry-After': '15', 'Cache-Control': 'no-store' });
+}
+
+async function sharedRefreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey) {
+  const key = cacheKey.url;
+  let pending = INFLIGHT_REFRESHES.get(key);
+  if (!pending) {
+    pending = refreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey)
+      .finally(() => INFLIGHT_REFRESHES.delete(key));
+    INFLIGHT_REFRESHES.set(key, pending);
+  }
+  const result = await pending;
+  return {
+    failures: result.failures,
+    response: result.response ? result.response.clone() : null
+  };
 }
 
 async function refreshLiveCache(request, env, incoming, bbox, lineRef, cache, cacheKey) {
@@ -201,21 +235,102 @@ function textSnippet(buffer) {
   }
 }
 
-function allowedOrigin(request, env) {
-  const origin = request.headers.get('Origin') || '';
-  const configured = String(env.ALLOWED_ORIGINS || 'https://zetabun.github.io')
+function configuredOrigins(env) {
+  return String(env.ALLOWED_ORIGINS || 'https://zetabun.github.io')
     .split(',')
     .map(value => value.trim())
     .filter(Boolean);
+}
+
+function requestOriginAllowed(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  if (!origin) return true;
+  const configured = configuredOrigins(env);
+  return configured.includes('*') || configured.includes(origin);
+}
+
+function allowedOrigin(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  const configured = configuredOrigins(env);
   if (!origin) return configured[0] || '*';
   return configured.includes('*') || configured.includes(origin) ? origin : '';
+}
+
+function normaliseLineRef(value) {
+  return String(value || '').trim().replace(/[^A-Za-z0-9 .:_/-]/g, '').slice(0, 40);
+}
+
+function configuredRateLimit(env) {
+  const configured = Number(env && env.RATE_LIMIT_PER_MINUTE);
+  return Number.isFinite(configured)
+    ? Math.max(2, Math.min(600, Math.floor(configured)))
+    : RATE_LIMIT_DEFAULT;
+}
+
+function clientRateKey(request) {
+  const ip = String(request.headers.get('CF-Connecting-IP') || '').trim();
+  return ip ? `ip:${ip}` : '';
+}
+
+function pruneRateBuckets(now) {
+  for (const [key, bucket] of RATE_BUCKETS) {
+    if (!bucket || bucket.resetAt <= now) RATE_BUCKETS.delete(key);
+  }
+  while (RATE_BUCKETS.size > MAX_RATE_BUCKETS) {
+    const oldest = RATE_BUCKETS.keys().next().value;
+    if (oldest === undefined) break;
+    RATE_BUCKETS.delete(oldest);
+  }
+}
+
+function consumeRateLimit(request, env) {
+  const limit = configuredRateLimit(env);
+  const key = clientRateKey(request);
+  const now = Date.now();
+  if (!key) return { allowed: true, limit, remaining: limit, resetAt: now + RATE_WINDOW_MS, retryAfter: 0 };
+  if (RATE_BUCKETS.size >= MAX_RATE_BUCKETS) pruneRateBuckets(now);
+  let bucket = RATE_BUCKETS.get(key);
+  if (!bucket || bucket.resetAt <= now) bucket = { count: 0, resetAt: now + RATE_WINDOW_MS };
+  bucket.count = Math.min(limit + 1, bucket.count + 1);
+  RATE_BUCKETS.set(key, bucket);
+  const allowed = bucket.count <= limit;
+  return {
+    allowed,
+    limit,
+    remaining: Math.max(0, limit - bucket.count),
+    resetAt: bucket.resetAt,
+    retryAfter: allowed ? 0 : Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))
+  };
+}
+
+function rateLimitHeaders(rate) {
+  return {
+    'X-RateLimit-Limit': String(rate.limit),
+    'X-RateLimit-Remaining': String(rate.remaining),
+    'X-RateLimit-Reset': String(Math.ceil(rate.resetAt / 1000))
+  };
+}
+
+function withRateLimitHeaders(response, rate) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(rateLimitHeaders(rate))) headers.set(name, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function resetWorkerStateForTests() {
+  RATE_BUCKETS.clear();
+  INFLIGHT_REFRESHES.clear();
 }
 
 function applyCors(headers, request, env) {
   const origin = allowedOrigin(request, env);
   if (origin) headers.set('Access-Control-Allow-Origin', origin);
   headers.set('Vary', 'Origin');
-  headers.set('Access-Control-Expose-Headers', 'X-Kerbside-Upstream,X-Kerbside-Stale,X-Kerbside-Cache,X-Kerbside-Cache-Age,Warning');
+  headers.set('Access-Control-Expose-Headers', 'X-Kerbside-Upstream,X-Kerbside-Stale,X-Kerbside-Cache,X-Kerbside-Cache-Age,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,Retry-After,Warning');
 }
 
 function corsPreflight(request, env) {
@@ -235,4 +350,4 @@ function json(value, status, request, env, extraHeaders = {}) {
   return new Response(JSON.stringify(value), { status, headers });
 }
 
-export { MAX_BBOX_SPAN };
+export { MAX_BBOX_SPAN, resetWorkerStateForTests };

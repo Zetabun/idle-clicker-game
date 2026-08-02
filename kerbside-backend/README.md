@@ -79,6 +79,8 @@ Kerbside 0.6.30 makes route projection continuity-aware. At loops, overlapping r
 
 Kerbside 0.6.31 restores browser page zoom for accessibility. The viewport no longer disables user scaling, Settings no longer blocks two-finger zoom, and the document-level gesture suppression has been removed. Mobile inputs and selects remain at 16px to prevent Safari's automatic focus zoom, while Leaflet continues to handle map pinch gestures.
 
+Kerbside 0.6.32 adds best-effort live Worker abuse safeguards without requiring an additional paid Cloudflare binding. Browser requests with an Origin outside the configured allowlist are rejected before cache or BODS work, Cloudflare client IPs receive a conservative per-isolate request budget, and simultaneous identical cache refreshes share one upstream promise. Rate metadata is exposed in response headers, while normal Kerbside polling remains well below the default 60 requests per minute.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
