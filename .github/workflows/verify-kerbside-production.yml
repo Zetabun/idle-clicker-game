@@ -1,0 +1,127 @@
+name: Verify Kerbside production
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Deploy Kerbside Worker
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-production-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Check out expected production source
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Verify live app, Worker and local map assets
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+          WORKER_URL: https://kerbside-bus.adambullas.workers.dev/health
+          LEAFLET_JS_URL: https://zetabun.github.io/idle-clicker-game/kerbside-backend/vendor/leaflet/leaflet.js
+          LEAFLET_CSS_URL: https://zetabun.github.io/idle-clicker-game/kerbside-backend/vendor/leaflet/leaflet.css
+          EXPECTED_LEAFLET_JS_HASH: 20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=
+          EXPECTED_LEAFLET_CSS_HASH: p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=
+        run: |
+          set -euo pipefail
+
+          expected_version="$(sed -n "s/^const APP_VERSION = '\([^']*\)';$/\1/p" bus.html)"
+          if [[ -z "$expected_version" ]]; then
+            echo "::error::Could not read APP_VERSION from bus.html"
+            exit 1
+          fi
+
+          app_file="$(mktemp)"
+          worker_file="$(mktemp)"
+          leaflet_js="$(mktemp)"
+          leaflet_css="$(mktemp)"
+          trap 'rm -f "$app_file" "$worker_file" "$leaflet_js" "$leaflet_css"' EXIT
+
+          deployed=false
+          for attempt in $(seq 1 36); do
+            cache_buster="smoke=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
+            app_ok=false
+            worker_ok=false
+
+            if curl --fail --location --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "$APP_URL?$cache_buster" -o "$app_file"; then
+              if grep -Fq "const APP_VERSION = '$expected_version';" "$app_file"; then
+                app_ok=true
+              fi
+            fi
+
+            if curl --fail --location --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "$WORKER_URL?$cache_buster" -o "$worker_file"; then
+              if jq -e --arg version "$expected_version" \
+                '.ok == true and .version == $version and .bods == true' \
+                "$worker_file" >/dev/null; then
+                worker_ok=true
+              fi
+            fi
+
+            if [[ "$app_ok" == true && "$worker_ok" == true ]]; then
+              deployed=true
+              echo "Kerbside app and Worker both report $expected_version."
+              break
+            fi
+
+            echo "Attempt $attempt: app=$app_ok worker=$worker_ok; waiting for deployment convergence."
+            sleep 10
+          done
+
+          if [[ "$deployed" != true ]]; then
+            echo "::error::Production did not converge on Kerbside $expected_version within the smoke-test window."
+            echo "App version line:"
+            grep -F 'const APP_VERSION' "$app_file" || true
+            echo "Worker response:"
+            cat "$worker_file" || true
+            exit 1
+          fi
+
+          cache_buster="smoke=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-assets"
+          curl --fail --location --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            -H 'Cache-Control: no-cache' \
+            "$LEAFLET_JS_URL?$cache_buster" -o "$leaflet_js"
+          curl --fail --location --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            -H 'Cache-Control: no-cache' \
+            "$LEAFLET_CSS_URL?$cache_buster" -o "$leaflet_css"
+
+          actual_js_hash="$(openssl dgst -sha256 -binary "$leaflet_js" | base64 -w 0)"
+          actual_css_hash="$(openssl dgst -sha256 -binary "$leaflet_css" | base64 -w 0)"
+          if [[ "$actual_js_hash" != "$EXPECTED_LEAFLET_JS_HASH" ]]; then
+            echo "::error::Production Leaflet JavaScript hash mismatch: $actual_js_hash"
+            exit 1
+          fi
+          if [[ "$actual_css_hash" != "$EXPECTED_LEAFLET_CSS_HASH" ]]; then
+            echo "::error::Production Leaflet CSS hash mismatch: $actual_css_hash"
+            exit 1
+          fi
+
+          grep -Fq 'kerbside-backend/vendor/leaflet/leaflet.js' "$app_file"
+          grep -Fq 'kerbside-backend/vendor/leaflet/leaflet.css' "$app_file"
+          if grep -Fq 'cdnjs.cloudflare.com/ajax/libs/leaflet' "$app_file"; then
+            echo "::error::Production app still contains the retired cdnjs Leaflet dependency."
+            exit 1
+          fi
+
+          echo "Production smoke verification passed for Kerbside $expected_version."
