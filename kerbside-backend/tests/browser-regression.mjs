@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.40'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.41'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -114,6 +114,13 @@ assert.match(busSource, /departureDayOffset=Math\.floor\(mins\/1440\)/);
 assert.match(busSource, /targetOffset-departureDayOffset/);
 assert.match(busSource, /indexTimetableRows,timetableRows/);
 assert.doesNotMatch(busSource, /for\(const offset of \[-1,0,1\]\)\{\n    const serviceDate/);
+assert.match(busSource, /kerbside\.stops\.v6/);
+assert.match(busSource, /lat\.toFixed\(4\)/);
+assert.match(busSource, /complete:failed===0/);
+assert.match(busSource, /function mergeDiscoveredStops\(primary,secondary,lat,lon\)/);
+assert.match(busSource, /if\(official\.length&&officialResult\.complete\)/);
+assert.match(busSource, /showDiscoveredStops\(official,lat,lon,false\)/);
+assert.doesNotMatch(busSource, /kerbside\.stops\.v5/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -165,7 +172,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.40', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.41', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -347,6 +354,30 @@ try {
     extended:[[2026,8,2,4,5],[2026,8,4,4,5]]
   });
 
+  const stopDiscoveryPolicy = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__;
+    const official={id:'490G00012345',timetableId:'490G00012345',source:'official',name:'High Street',atco:'490G00012345',ind:'Stop A',lat:52.5,lon:-2.1};
+    const duplicate={id:123456,name:'High Street',atco:'490G00012345',ind:'',lat:52.50001,lon:-2.10001};
+    const otherSide={id:123457,name:'High Street',ind:'Stop B',lat:52.50018,lon:-2.1};
+    const merged=api.mergeDiscoveredStops([official],[duplicate,otherSide],52.5,-2.1);
+    return {
+      cacheA:api.stopCacheKey(52.50004,-2.10004,1200),
+      cacheB:api.stopCacheKey(52.50006,-2.10006,1200),
+      sameCode:api.sameDiscoveredStop(official,duplicate),
+      otherSideSame:api.sameDiscoveredStop(official,otherSide),
+      count:merged.length,
+      ids:merged.map(stop=>String(stop.id)).sort(),
+      officialSource:merged.find(stop=>String(stop.id)==='490G00012345')?.source,
+      officialIndicator:merged.find(stop=>String(stop.id)==='490G00012345')?.ind
+    };
+  });
+  assert.notEqual(stopDiscoveryPolicy.cacheA,stopDiscoveryPolicy.cacheB);
+  assert.match(stopDiscoveryPolicy.cacheA,/kerbside\.stops\.v6/);
+  assert.deepEqual({...stopDiscoveryPolicy,cacheA:undefined,cacheB:undefined},{
+    cacheA:undefined,cacheB:undefined,sameCode:true,otherSideSame:false,count:2,
+    ids:['123457','490G00012345'],officialSource:'official',officialIndicator:'Stop A'
+  });
+
   const tripMatching = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
     const unique=api.uniqueCompatibleTrips([{trip:'trip-AB12345678'},{trip:'unrelated-XY87654321'}],'operator:trip-AB12345678');
@@ -415,7 +446,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.40'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.41'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

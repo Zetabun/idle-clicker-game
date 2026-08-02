@@ -97,6 +97,8 @@ Kerbside 0.6.39 hardens service-calendar and overnight departure handling. A ser
 
 Kerbside 0.6.40 generates timetable rows by their displayed target date rather than by a fixed set of nearby origin service dates. For each GTFS departure, the browser subtracts the number of whole days encoded in its extended hour before applying weekday and calendar-exception rules. This keeps ordinary, 25:30 and even 100:05 departures within the same yesterday/today/tomorrow board window while associating them with the correct originating service day. WebKit verifies all three time forms and confirms that a removed July 30 service suppresses only its August 3 100:05 departure.
 
+Kerbside 0.6.41 makes national stop discovery resilient to partial Cloudflare Pages responses. Tile requests now report whether the result set is complete. A complete official list is used and cached immediately; an incomplete list is supplemented with OpenStreetMap and merged by official codes or tightly matching coordinates. If OpenStreetMap is also unavailable, partial official stops remain usable for the current visit but are deliberately not cached, allowing the missing tile to be retried. The stop cache moves to `v6` with four-decimal location keys so origins more than a few metres apart no longer share a potentially incomplete week-long list. WebKit verifies cache separation, official-stop preference and duplicate/opposite-stop handling.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
