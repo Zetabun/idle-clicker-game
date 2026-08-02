@@ -1,0 +1,13 @@
+{
+  "name": "kerbside-backend",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/worker.js && node --check scripts/build-region.js",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "wrangler": "^4.28.1"
+  }
+}

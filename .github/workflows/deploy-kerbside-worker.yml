@@ -1,0 +1,71 @@
+name: Deploy Kerbside Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - kerbside-backend/src/**
+      - kerbside-backend/wrangler.toml
+      - kerbside-backend/package.json
+      - .github/workflows/deploy-kerbside-worker.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-worker-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || vars.KERBSIDE_NATIONAL_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: kerbside-backend
+
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BODS_KEY: ${{ secrets.BODS_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: kerbside-backend/package.json
+
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN BODS_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required secret $name is missing or empty."
+              exit 1
+            fi
+          done
+
+      - name: Install Wrangler and validate Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+          npm run check
+          npm test
+
+      - name: Deploy Worker and configure BODS secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy
+          printf '%s' "$BODS_KEY" | npx wrangler secret put BODS_KEY
+          npx wrangler deployments list

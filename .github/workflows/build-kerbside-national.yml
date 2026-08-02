@@ -1,0 +1,202 @@
+name: Build Kerbside national timetable data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 5 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-national-data
+  cancel-in-progress: true
+
+jobs:
+  build-region:
+    if: github.event_name == 'workflow_dispatch' || vars.KERBSIDE_NATIONAL_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        region:
+          - east_anglia
+          - east_midlands
+          - london
+          - north_east
+          - north_west
+          - south_east
+          - south_west
+          - west_midlands
+          - yorkshire
+
+    env:
+      REGION: ${{ matrix.region }}
+      BODS_KEY: ${{ secrets.BODS_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_EC2_METADATA_DISABLED: 'true'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Validate build configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in BODS_KEY CLOUDFLARE_ACCOUNT_ID AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required secret $name is missing or empty."
+              exit 1
+            fi
+          done
+          node --check kerbside-backend/scripts/build-region.js
+          aws --version
+
+      - name: Download current regional BODS GTFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            --retry 4 --retry-all-errors --connect-timeout 30 \
+            "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/${REGION}/?api_key=${BODS_KEY}" \
+            --output gtfs.zip
+          test -s gtfs.zip
+          unzip -tq gtfs.zip
+          ls -lh gtfs.zip
+
+      - name: Extract only required GTFS tables
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf gtfs dist
+          mkdir -p gtfs dist
+          python3 - <<'PY'
+          from pathlib import PurePosixPath, Path
+          from zipfile import ZipFile
+
+          required = {'stops.txt', 'routes.txt', 'trips.txt', 'stop_times.txt'}
+          optional = {'calendar.txt', 'calendar_dates.txt'}
+          wanted = required | optional
+          selected = {}
+
+          with ZipFile('gtfs.zip') as archive:
+              for info in archive.infolist():
+                  if info.is_dir():
+                      continue
+                  name = PurePosixPath(info.filename).name.lower()
+                  if name in wanted and name not in selected:
+                      selected[name] = info
+              missing = sorted(required - selected.keys())
+              if missing:
+                  raise SystemExit(f'Missing required GTFS files: {missing}')
+              for name, info in selected.items():
+                  Path('gtfs', name).write_bytes(archive.read(info))
+
+          print('Extracted:', ', '.join(sorted(selected)))
+          PY
+          ls -lh gtfs
+
+      - name: Build compact regional indexes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --max-old-space-size=6144 \
+            kerbside-backend/scripts/build-region.js gtfs "$REGION" dist
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const region = process.env.REGION;
+          const file = `dist/regions/${region}/manifest.json`;
+          const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+          for (const key of ['stops', 'departures', 'patterns', 'tiles']) {
+            if (!Number.isFinite(manifest[key]) || manifest[key] <= 0) {
+              throw new Error(`${region} manifest has no ${key}`);
+            }
+          }
+          console.log(JSON.stringify(manifest, null, 2));
+          NODE
+
+      - name: Upload region to Cloudflare R2
+        shell: bash
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 sync \
+            "dist/regions/${REGION}/" \
+            "s3://kerbside-data/regions/${REGION}/" \
+            --endpoint-url "$ENDPOINT" \
+            --delete \
+            --no-progress \
+            --cache-control 'public,max-age=3600'
+
+  publish-manifest:
+    if: github.event_name == 'workflow_dispatch' || vars.KERBSIDE_NATIONAL_ENABLED == 'true'
+    needs: build-region
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_EC2_METADATA_DISABLED: 'true'
+
+    steps:
+      - name: Publish combined national manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          mkdir -p manifests
+          regions=(east_anglia east_midlands london north_east north_west south_east south_west west_midlands yorkshire)
+          for region in "${regions[@]}"; do
+            aws s3 cp \
+              "s3://kerbside-data/regions/${region}/manifest.json" \
+              "manifests/${region}.json" \
+              --endpoint-url "$ENDPOINT" \
+              --no-progress
+          done
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const regions = {};
+          for (const filename of fs.readdirSync('manifests').sort()) {
+            const name = path.basename(filename, '.json');
+            regions[name] = JSON.parse(fs.readFileSync(path.join('manifests', filename), 'utf8'));
+          }
+          const totals = { stops: 0, departures: 0, patterns: 0, tiles: 0 };
+          for (const manifest of Object.values(regions)) {
+            for (const key of Object.keys(totals)) totals[key] += Number(manifest[key]) || 0;
+          }
+          const manifest = {
+            version: 1,
+            scope: 'england-regional',
+            built: new Date().toISOString(),
+            regions,
+            totals
+          };
+          fs.writeFileSync('manifest.json', JSON.stringify(manifest));
+          console.log(JSON.stringify(manifest, null, 2));
+          NODE
+
+          aws s3 cp manifest.json s3://kerbside-data/manifest.json \
+            --endpoint-url "$ENDPOINT" \
+            --no-progress \
+            --cache-control 'public,max-age=300' \
+            --content-type 'application/json'
+
+          aws s3 cp s3://kerbside-data/manifest.json - \
+            --endpoint-url "$ENDPOINT" \
+            --no-progress | head -c 1000
