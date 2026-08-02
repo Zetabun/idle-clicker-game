@@ -111,6 +111,8 @@ Kerbside 0.6.46 applies the last-known-good policy to route-pattern geometry. Pa
 
 Kerbside 0.6.47 completes validation for national stop-index tiles. A tile must match its region, key and regional build, use the expected stop-index schema and contain valid coordinates plus departure-shard references. Valid populated tiles are retained in memory and Cache Storage for 14 days. Malformed, wrong-build, missing and unavailable responses can use a recent snapshot. A 404 with no prior populated tile is treated as a legitimate empty tile for five minutes, after which it is requested again; server and validation failures are never permanently cached. WebKit tests snapshot recovery, negative-cache coalescing, expiry retry and repeated server-failure retries.
 
+Kerbside 0.6.48 adds bounded timetable-guided route-corridor GPS discovery. The ordinary 9 km feed and periodic 18 km expansion remain unchanged. Once per minute, Kerbside may derive at most three additional 8 km boxes from ordered journeys due at the selected stop within three hours. A returned vehicle is retained only when its live journey uniquely matches one of those scheduled trips, its position lies close to that ordered pattern, and the selected stop remains ahead by no more than 55 km of route. Wrong journeys, conflicting branches and already-passed vehicles are rejected. The live diagnostics and each recovered departure identify route-scan results. WebKit builds five simultaneous long-route journeys 20–50 km upstream and verifies that all five remain separate stop-result rows while invalid vehicles are excluded.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
