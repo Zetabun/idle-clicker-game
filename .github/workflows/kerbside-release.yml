@@ -66,6 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
           cd kerbside-backend
           npx playwright install --with-deps webkit
 
@@ -120,8 +121,18 @@ jobs:
             kerbside-backend/src/worker.js \
             kerbside-backend/test/worker.test.js \
             kerbside-backend/scripts/build-region.js \
+            kerbside-backend/scripts/vendor-leaflet.js \
             kerbside-backend/test/build-region.test.js \
-            kerbside-backend/tests/browser-regression.mjs
+            kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/vendor/leaflet/leaflet.js \
+            kerbside-backend/vendor/leaflet/leaflet.css \
+            kerbside-backend/vendor/leaflet/LICENSE \
+            kerbside-backend/vendor/leaflet/README.md \
+            kerbside-backend/vendor/leaflet/images/layers.png \
+            kerbside-backend/vendor/leaflet/images/layers-2x.png \
+            kerbside-backend/vendor/leaflet/images/marker-icon.png \
+            kerbside-backend/vendor/leaflet/images/marker-icon-2x.png \
+            kerbside-backend/vendor/leaflet/images/marker-shadow.png
           do
             blob_sha="$(base64 -w 0 "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
               gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
