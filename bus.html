@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="theme-color" content="#0B1119">
 <title>Kerbside — live buses near you</title>
@@ -526,7 +526,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 /* Keep two-finger page zoom off the controls and departure board.
    The map remains the one surface where pinch gestures are enabled. */
 #topbar,#board,#viewbar{touch-action:pan-x pan-y}
-#scrim{touch-action:none;overscroll-behavior:contain}
+#scrim{touch-action:pan-x pan-y pinch-zoom;overscroll-behavior:contain}
 #map{touch-action:auto}
 @media (max-width:820px){
   /* Safari zooms focused controls below 16px and can leave the standalone
@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.30 also keeps matched journey progress continuous through loops and crossing route shapes by combining GPS bearing with the vehicle's previous along-route position, preventing false passed-stop and next-stop jumps.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.31 also restores browser page zoom for accessibility while retaining 16 px mobile form controls to prevent unwanted Safari focus zoom; Leaflet map gestures continue to work normally.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.30';
+const APP_VERSION = '0.6.31';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3466,19 +3466,9 @@ if(saved && saved.origin && isFinite(saved.origin.lat)){
   );
 }
 
-function gestureIsOnMap(target){
-  const el=target&&target.nodeType===1?target:target&&target.parentElement;
-  return !!(el&&el.closest&&el.closest('#map'));
-}
-function stopUiPinch(event){
-  if(event.touches&&event.touches.length>1&&!gestureIsOnMap(event.target)) event.preventDefault();
-}
-document.addEventListener('touchmove',stopUiPinch,{passive:false});
-['gesturestart','gesturechange'].forEach(type=>{
-  document.addEventListener(type,event=>{
-    if(!gestureIsOnMap(event.target)) event.preventDefault();
-  },{passive:false});
-});
+// Browser page zoom remains available for accessibility. Mobile form
+// controls stay at 16px below, avoiding Safari focus zoom without suppressing
+// the user's own pinch-to-zoom gesture. Leaflet continues to own map gestures.
 
 window.addEventListener('resize',()=>map.invalidateSize());
 })();

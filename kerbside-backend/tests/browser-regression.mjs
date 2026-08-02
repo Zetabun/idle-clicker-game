@@ -34,7 +34,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.30'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.31'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -65,6 +65,11 @@ assert.match(busSource, /function patternProjectionCandidates\(points,lat,lon,mi
 assert.match(busSource, /function choosePatternProjection\(candidates,options\)/);
 assert.match(busSource, /function projectVehicleToPattern\(pattern,v\)/);
 assert.match(busSource, /rollback>80/);
+assert.doesNotMatch(busSource, /user-scalable=no/);
+assert.doesNotMatch(busSource, /maximum-scale=1/);
+assert.match(busSource, /#scrim\{touch-action:pan-x pan-y pinch-zoom/);
+assert.doesNotMatch(busSource, /gesturestart/);
+assert.doesNotMatch(busSource, /function stopUiPinch/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -146,12 +151,17 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.30', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.31', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
   assert.match(await page.title(), /Kerbside/i);
   assert.equal(await page.locator('#setBtn').isVisible(), true);
+  const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('content');
+  assert.match(viewportContent, /width=device-width/);
+  assert.doesNotMatch(viewportContent, /user-scalable|maximum-scale/);
+  const scrimTouchAction=await page.evaluate(() => getComputedStyle(document.getElementById('scrim')).touchAction);
+  assert.match(scrimTouchAction, /pinch-zoom/);
 
   const tripMatching = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
@@ -221,7 +231,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.30'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.31'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
