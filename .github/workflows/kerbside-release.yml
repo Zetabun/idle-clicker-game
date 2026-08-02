@@ -65,12 +65,19 @@ jobs:
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
-      - name: Remove one-time release files
+      - name: Prepare repository-safe release commit
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf .github/scripts/__pycache__
           rm -f .github/scripts/release-kerbside-*.py
           rm -f .github/triggers/release-kerbside-*.txt
+
+          # GITHUB_TOKEN cannot create or update workflow files. Those two
+          # validated files are added through the connected GitHub app after
+          # this release commit succeeds.
+          rm -f .github/workflows/build-kerbside-national.yml
+          rm -f .github/workflows/deploy-kerbside-worker.yml
 
       - name: Commit validated release to branch
         env:
@@ -80,7 +87,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A -- bus.html kerbside-backend .github/scripts .github/triggers
           if git diff --cached --quiet; then
             echo "::error::The release produced no committed changes."
             exit 1
