@@ -73,6 +73,8 @@ Kerbside 0.6.27 makes schedule-only explanations evidence-based. The app now dis
 
 Kerbside 0.6.28 versions static timetable assets by the national manifest build timestamp. Tile, departure and route-pattern requests now receive a stable `v` query for the active build, while the manifest itself remains unversioned so it can update. When a forced manifest refresh detects a new build, the browser clears its in-memory tile, departure and pattern caches before using the new assets.
 
+Kerbside 0.6.29 caches expanded timetable rows per selected stop, timetable object, load run and local service day. The cached rows are indexed once by displayed line, while the active route set is reused for the current minute. Route evidence and scheduled ETA matching now read the line index instead of repeatedly expanding and scanning the full three-day timetable for every live vehicle.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
