@@ -12,6 +12,7 @@ on:
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/kerbside-check.yml
       - .github/workflows/kerbside-release.yml
+      - .github/workflows/verify-kerbside-production.yml
   push:
     branches:
       - main
@@ -23,6 +24,7 @@ on:
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/kerbside-check.yml
       - .github/workflows/kerbside-release.yml
+      - .github/workflows/verify-kerbside-production.yml
 
 permissions:
   contents: read
@@ -103,7 +105,8 @@ jobs:
             .github/workflows/build-kerbside-national.yml \
             .github/workflows/deploy-kerbside-worker.yml \
             .github/workflows/kerbside-check.yml \
-            .github/workflows/kerbside-release.yml
+            .github/workflows/kerbside-release.yml \
+            .github/workflows/verify-kerbside-production.yml
 
       - name: Check whitespace
         shell: bash
