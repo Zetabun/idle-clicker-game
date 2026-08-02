@@ -156,6 +156,13 @@ button{cursor:pointer;border:0;background:none}
 }
 .rdest{font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rsrc{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-top:7px}
+.dep.schedule-only{grid-template-columns:46px minmax(0,1fr) 64px;cursor:default;opacity:.82}
+.dep.schedule-only:hover{background:transparent}
+.dep.schedule-only .route{background:var(--ink-3);color:var(--led);border:1px solid var(--led-dim)}
+.eta.scheduled{color:var(--text-dim);text-shadow:none}
+.eta.scheduled small{color:var(--text-dim);opacity:.7}
+.chip.timing{border-color:rgba(63,217,164,.35);color:#A9EED7}
+.chip.schedule-source{border-color:var(--rule);color:var(--text-dim)}
 
 .dep.unreachable{opacity:.6}
 .chip.tight{border-color:var(--warn);color:var(--warn)}
@@ -584,7 +591,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.3.0';
+const APP_VERSION = '0.4.0';
 const MY_KEY   = '';
 const MY_PROXY = '';
 
@@ -594,13 +601,13 @@ const S = {
   dir:'in',                 // 'in' | 'out' | 'all'
   origin:null,              // {lat,lon,label}
   anchor:null,              // town centre {lat,lon,name}
-  stops:[], stop:null, pendingStopId:null, loadingRoutes:false, filterFellBack:false,
+  stops:[], stop:null, pendingStopId:null, loadingRoutes:false, filterFellBack:false, manualStop:false,
   destFilter:null,          // reset per stop; never leaks between stops
   destsByStop:{},           // stopId -> { destName: lastSeenTs }
   vehicles:new Map(),       // id -> live vehicle state and short position history
   markers:new Map(),
   selected:null,
-  timer:null, tick:null, busy:false, lastOk:0,
+  timer:null, tick:null, busy:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0,
   timetable:null, ttStop:null, ttError:null,
@@ -909,15 +916,17 @@ async function setOrigin(lat,lon,label){
   const run=++S.locationRun;
   if(S.pollAbort) S.pollAbort.abort();
   S.origin={lat,lon,label:label||'Chosen point'};
-  S.stop=null; S.ttStop=null; S.destFilter=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers();
+  S.stop=null; S.ttStop=null; S.manualStop=false; S.destFilter=null; S.stops=[]; S.vehicles.clear(); clearVehicleMarkers();
   savePrefs();
   drawOrigin();
   map.setView([lat,lon], Math.max(map.getZoom(),16));
   $('stopName').textContent='Looking for stops…';
   $('stopMeta').textContent=(label||'').toUpperCase();
   setStatus('Loading stops','');
-  await Promise.all([findAnchor(lat,lon,run), findStops(lat,lon,run)]);
+  const anchorPromise=findAnchor(lat,lon,run);
+  await findStops(lat,lon,run);
   if(run===S.locationRun) startPolling();
+  await anchorPromise;
 }
 
 $('locBtn').addEventListener('click', ()=>{
@@ -1037,14 +1046,18 @@ out body 120;`;
     const j = await overpass(q);
     if(run!==S.locationRun) return;
     const seen=new Set();
-    S.stops = (j.elements||[]).map(el=>({
-      id:el.id,
-      name: titleCase(el.tags.name || el.tags['naptan:CommonName'] || 'Unnamed stop'),
-      code: el.tags['naptan:AtcoCode'] || el.tags['naptan:Indicator'] || el.tags.ref || '',
-      ind: el.tags['naptan:Indicator'] || el.tags.local_ref || '',
-      lat:el.lat, lon:el.lon,
-      d: dist(lat,lon,el.lat,el.lon)
-    })).filter(s=>{
+    S.stops = (j.elements||[]).map(el=>{
+      const tags=el.tags||{};
+      const atco=tags['naptan:AtcoCode']||'';
+      const naptan=tags['naptan:NaptanCode']||tags['naptan:SmsCode']||'';
+      return {
+        id:el.id,
+        name:titleCase(tags.name||tags['naptan:CommonName']||'Unnamed stop'),
+        atco,naptan, code:atco||naptan||tags.ref||'',
+        ind:tags['naptan:Indicator']||tags.local_ref||'',
+        lat:el.lat, lon:el.lon, d:dist(lat,lon,el.lat,el.lon)
+      };
+    }).filter(s=>{
       const k=String(s.id)+'|'+Math.round(s.lat*25000)+'|'+Math.round(s.lon*25000);
       if(seen.has(k)) return false; seen.add(k); return true;
     }).sort((a,b)=>a.d-b.d);
@@ -1079,7 +1092,7 @@ function drawStops(){
         iconSize:sel?[15,15]:[11,11], iconAnchor:sel?[7,7]:[5,5]}),
       zIndexOffset: sel?500:0
     }).addTo(stopLayer);
-    m.on('click',()=>selectStop(s));
+    m.on('click',()=>selectStop(s,true));
     m.bindTooltip(s.name+(s.ind?' ('+s.ind+')':''),{direction:'top',offset:[0,-8],className:'stoptip'});
   });
 }
@@ -1160,35 +1173,48 @@ function serviceRuns(ref, serviceDate){
   return !svc.days || String(svc.days)[day]==='1';
 }
 async function loadTimetable(){
+  S.ttError=null;
   try{
-    const r=await fetchTimed('timetable.json',{cache:'no-cache'},8000);
-    if(!r.ok){ S.ttError=r.status===404?'not installed':'HTTP '+r.status; return; }
-    const data=await r.json();
-    if(!data || !data.stops || typeof data.stops!=='object') throw new Error('bad format');
-    S.timetable=data; PATTERN_CACHE.clear(); S.ttError=null;
-    if(S.stop){ S.ttStop=matchTimetableStop(S.stop); renderServingNote(); render(); }
+    const r=await fetchTimed('timetable.json',{cache:'no-cache'},12000);
+    if(!r.ok) throw new Error(r.status===404?'not installed':'HTTP '+r.status);
+    const raw=await r.text();
+    if(!raw.trim()) throw new Error('empty timetable file');
+    const data=JSON.parse(raw);
+    if(!data || !data.stops || typeof data.stops!=='object' || !Object.keys(data.stops).length) throw new Error('no stop data');
+    S.timetable=data; PATTERN_CACHE.clear();
   }catch(e){
-    S.ttError=(e && e.name==='AbortError')?'timed out':'could not be read';
+    S.timetable=null; S.ttStop=null;
+    S.ttError=(e&&e.name==='AbortError')?'timed out':String((e&&e.message)||'could not be read');
+  }
+  if(S.stop){
+    S.ttStop=matchTimetableStop(S.stop);
+    updateStopMeta(); renderServingNote(); renderDests(); render();
   }
 }
+function looksLikeAtco(value){ return /^\d{3}0[A-Za-z0-9]{4,8}$/.test(String(value||'').trim()); }
 function matchTimetableStop(stop){
   if(!S.timetable || !stop) return null;
   const entries=Object.entries(S.timetable.stops);
-  const code=String(stop.code||'').trim().toLowerCase();
-  if(code){
+  const codes=[stop.atco,stop.naptan,looksLikeAtco(stop.code)?stop.code:'']
+    .map(v=>String(v||'').trim().toLowerCase()).filter(Boolean);
+  if(codes.length){
     for(const [id,t] of entries){
-      if(String(id).toLowerCase()===code || String(t.c||'').trim().toLowerCase()===code) return {id,...t,match:'code'};
+      const candidates=[id,t&&t.c,t&&t.sms].map(v=>String(v||'').trim().toLowerCase());
+      if(codes.some(code=>candidates.includes(code))) return {id,...t,match:'code'};
     }
   }
+  const strict=!!S.manualStop, maxDistance=strict?60:140;
   let best=null, bestScore=-Infinity;
   for(const [id,t] of entries){
     if(!Array.isArray(t.ll)) continue;
     const d=dist(stop.lat,stop.lon,Number(t.ll[0]),Number(t.ll[1]));
-    if(d>140) continue;
+    if(d>maxDistance) continue;
     const sim=nameSimilarity(stop.name,t.n||'');
+    if(strict && sim<.45) continue;
     const score=sim*120-d;
-    if(score>bestScore){ bestScore=score; best={id,...t,match:'nearby',distance:d}; }
+    if(score>bestScore){ bestScore=score; best={id,...t,match:'nearby',distance:d,similarity:sim}; }
   }
+  if(strict) return best && best.distance<=60 && best.similarity>=.45 ? best : null;
   return best && (bestScore>-45 || best.distance<45) ? best : null;
 }
 function timetableRows(now){
@@ -1304,26 +1330,39 @@ async function loadWorkerHistory(stop){
   }catch(e){}
 }
 
-function selectStop(s){
+function updateStopMeta(){
+  if(!S.stop) return;
+  const s=S.stop, displayCode=s.atco||s.naptan||s.code||'';
+  const code=displayCode?' · '+esc(displayCode):'';
+  let tt=' · checking timetable';
+  if(S.ttStop) tt=S.ttStop.match==='code'?' · exact timetable stop':' · nearby timetable match';
+  else if(S.timetable) tt=' · live only';
+  else if(S.ttError) tt=' · timetable unavailable';
+  $('stopMeta').innerHTML='<b>'+fmtDist(s.d)+'</b> from your point'+code+tt;
+}
+function selectStop(s,manual){
   if(!s) return;
   const changed=!S.stop || String(S.stop.id)!==String(s.id);
   S.stop=s;
-  if(changed){ S.destFilter=null; S.selected=null; }
+  if(changed){ S.destFilter=null; S.selected=null; S.manualStop=manual===true; }
+  else if(manual===true) S.manualStop=true;
   S.ttStop=matchTimetableStop(s);
-  $('stopName').textContent = s.name + (s.ind ? ' ('+s.ind+')' : '');
-  const code=s.code ? ' · '+esc(s.code) : '';
-  const tt=S.ttStop ? ' · timetable matched' : '';
-  $('stopMeta').innerHTML = '<b>'+fmtDist(s.d)+'</b> from your point' + code + tt;
+  $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':'');
+  updateStopMeta();
   drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
   if(!MAPPED[String(s.id)]){
-    S.loadingRoutes = true; renderServingNote();
+    S.loadingRoutes=true; renderServingNote();
     fetchRoutesFor(s).then(()=>{
-      S.loadingRoutes = false;
+      S.loadingRoutes=false;
       if(S.stop && S.stop.id===s.id){ renderServingNote(); render(); }
     });
   }
   loadWorkerHistory(s);
   savePrefs(); render();
+  if(changed && S.timer){
+    setStatus('Refreshing selected stop','');
+    poll(true);
+  }
 }
 
 /* stop picker */
@@ -1339,7 +1378,7 @@ $('changeStop').addEventListener('click', ()=>{
       (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+
       badge+'<span class="dist">'+fmtDist(s.d)+'</span></button>';
   }).join('');
-  [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i])));
+  [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i],true)));
   $('stopPicker').classList.add('show');
 });
 $('closePicker').addEventListener('click', closePicker);
@@ -1946,7 +1985,7 @@ function knownRoutes(){
 function knownRouteCount(){ return knownRoutes().length; }
 function servingReady(){
   if(!S.onlyServing || !S.stop) return false;
-  return timetableRouteSet().size>0 || !!mappedRefs(true) || knownRouteCount()>0;
+  return !!S.ttStop || timetableRouteSet().size>0 || !!mappedRefs(true) || knownRouteCount()>0;
 }
 function renderServingNote(){
   const el=$('serveNote');
@@ -1984,8 +2023,12 @@ function renderServingNote(){
   }
   if(routes.length){
     el.innerHTML='<b>Confirmed from observed arrivals:</b> '+esc(routes.join(', '))+'. A route needs repeated stop evidence before it is trusted.';
+  }else if(S.timetable){
+    el.innerHTML='<b>This selected stop is outside the installed timetable pack.</b> Live GPS remains available, but scheduled departures and exact journey verification are unavailable here.';
+  }else if(S.ttError){
+    el.innerHTML='<b>Timetable unavailable.</b> '+esc(S.ttError)+'. Live GPS remains available while Kerbside retries on the next page load.';
   }else{
-    el.innerHTML='<b>No verified route list is available yet.</b> Kerbside will show only buses close to the stop and moving towards it. Add timetable.json for much stronger route and branch matching.';
+    el.innerHTML='<b>No verified route list is available yet.</b> Kerbside will show only buses close to the stop and moving towards it.';
   }
 }
 function relevant(){
@@ -1993,7 +2036,9 @@ function relevant(){
   S.filterFellBack=false;
   const gated=servingReady();
   let out=collect(gated);
-  if(!out.length && gated){
+  // A matched timetable stop is authoritative. Never replace an empty,
+  // verified board with nearby buses that may belong to an adjacent stop.
+  if(!out.length && gated && !S.ttStop){
     out=collect(false);
     S.filterFellBack=out.length>0;
   }
@@ -2091,6 +2136,38 @@ function compass(b){
   return pts[Math.round(((b%360)+360)%360/45)%8];
 }
 
+function scheduleKey(r){
+  const trip=String((r&&r.trip)||'').trim();
+  return trip ? 'trip|'+trip+'|'+r.at : [r&&r.at,r&&r.line,normName(r&&r.head)].join('|');
+}
+function scheduledBoardRows(liveRows){
+  if(!S.ttStop) return [];
+  const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set();
+  liveRows.forEach(r=>{ if(r.schedule) claimed.add(scheduleKey(r.schedule)); });
+  return timetableRows(new Date(now)).filter(r=>{
+    if(r.at<now-60000 || r.at>end) return false;
+    if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
+    const key=scheduleKey(r);
+    if(claimed.has(key) || seen.has(key)) return false;
+    seen.add(key); return true;
+  }).sort((a,b)=>a.at-b.at).slice(0,36)
+    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000)}));
+}
+function liveTimingLabel(r){
+  if(!r.schedule) return '';
+  const diff=Math.round(((Date.now()+r.secs*1000)-r.schedule.at)/60000);
+  if(Math.abs(diff)<=1) return 'on schedule';
+  return diff>0?diff+' min late':Math.abs(diff)+' min early';
+}
+function renderScheduledRow(r){
+  const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), due=mins<=1;
+  return '<div class="dep schedule-only" aria-label="Scheduled '+esc(s.line)+' to '+esc(s.head||'destination unknown')+'">'
+    +'<span class="route">'+esc(s.line)+'</span>'
+    +'<span style="min-width:0"><span class="dest">'+esc(s.head||'Destination unknown')+'</span><span class="deprow2">'
+    +'<span class="chip schedule-source">scheduled</span><span class="chip">'+esc(formatClock(s.at))+'</span></span></span>'
+    +'<span class="eta scheduled">'+(due?'due':mins)+'<small>'+(due?'scheduled':'sched min')+'</small></span></div>';
+}
+
 function showEmpty(html){
   $('empty').innerHTML=html;
   $('empty').style.display='block';
@@ -2098,7 +2175,9 @@ function showEmpty(html){
 }
 
 function render(){
-  const rows=relevant(), deps=$('deps');
+  const liveRows=relevant(), scheduledRows=scheduledBoardRows(liveRows);
+  const rows=[...liveRows.map(r=>({...r,kind:'live'})),...scheduledRows].sort((a,b)=>a.secs-b.secs);
+  const deps=$('deps');
   if(!S.origin){
     showEmpty('<strong>Nothing on the board yet</strong>Search an address or use your location, then pick the direction you\'re travelling.');
   }else if(!S.stop){
@@ -2117,6 +2196,7 @@ function render(){
   }else{
     $('empty').style.display='none';
     deps.innerHTML=rows.map(r=>{
+      if(r.kind==='scheduled') return renderScheduledRow(r);
       const mins=Math.max(0,Math.round(r.secs/60));
       const due=r.confidence!=='low' && mins<=1;
       const age=Date.now()-r.v.ts, tight=S.walkSecs>90 && r.secs<S.walkSecs-30;
@@ -2129,20 +2209,22 @@ function render(){
         +'<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span><span class="deprow2">'
         +'<span class="chip'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
         +(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
-        +'<span class="chip conf-'+r.confidence+'">'+confLabel+'</span>'+(tight?'<span class="chip tight">Tight</span>':'')
+        +'<span class="chip conf-'+r.confidence+'">'+confLabel+'</span>'
++(r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
++(tight?'<span class="chip tight">Tight</span>':'')
         +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(due?'arriving':r.confidence==='low'?'est':'min')+'</small></span></button>'
         +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
         +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>'
         +(S.selected===r.v.id?lineDetail(r):'')+'</div>';
     }).join('');
-    [...deps.querySelectorAll('.dep')].forEach(b=>b.addEventListener('click',()=>focusVehicle(b.dataset.id)));
+    [...deps.querySelectorAll('.dep[data-id]')].forEach(b=>b.addEventListener('click',()=>focusVehicle(b.dataset.id)));
     [...deps.querySelectorAll('[data-bell]')].forEach(b=>b.addEventListener('click',()=>{
-      const row=rows.find(r=>String(r.v.id)===String(b.dataset.bell));
+      const row=liveRows.find(r=>String(r.v.id)===String(b.dataset.bell));
       if(row) toggleAlarm(row.v.line,row.v.dest);
     }));
-    checkAlarms(rows);
+    checkAlarms(liveRows);
   }
-  renderVehicles(rows); renderServingNote();
+  renderVehicles(liveRows); renderServingNote();
 }
 
 function clearVehicleMarkers(){ vehLayer.clearLayers(); S.markers.clear(); }
@@ -2211,7 +2293,7 @@ function focusVehicle(id){
 function startPolling(){
   stopPolling();
   document.documentElement.style.setProperty('--glide',Math.max(1.5,S.interval*.8)+'s');
-  S.vehicles.clear(); clearVehicleMarkers(); poll();
+  S.vehicles.clear(); clearVehicleMarkers(); poll(true);
   S.timer=setInterval(poll,S.interval*1000);
   S.tick=setInterval(()=>{ if(S.stop) render(); },5000);
 }
@@ -2221,27 +2303,31 @@ function stopPolling(){
   S.timer=S.tick=null; S.pollAbort=null;
 }
 let lastPoll=Date.now();
-async function poll(){
-  if(!S.origin || S.busy) return;
+async function poll(force){
+  if(!S.origin) return;
+  if(S.busy){ if(force) S.pollAgain=true; return; }
   S.busy=true;
   const ctl=new AbortController(); S.pollAbort=ctl;
   const dt=Math.min(90,(Date.now()-lastPoll)/1000)||S.interval; lastPoll=Date.now();
   try{
     const list=S.demo?fetchSim(dt):await fetchLive(ctl.signal);
-    ingest(list); learnDests(); learnServing(); S.lastOk=Date.now();
+    ingest(list); learnDests(); learnServing(); S.lastOk=Date.now(); S.lastFeedAt=Date.now();
     const hidden=!S.demo&&S.feedStale?' · '+S.feedStale+' stale hidden':'';
     const tt=S.ttStop?' · timetable checked':'';
-    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+S.vehicles.size+' fresh'+hidden+tt,S.demo?'demo':'');
+    const updated=' · updated '+formatClock(S.lastFeedAt);
+    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+S.vehicles.size+' fresh'+hidden+tt+updated,S.demo?'demo':'');
     render();
   }catch(e){
-    if(ctl.signal.aborted) return;
-    const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
-    setStatus('Feed problem','err');
-    if(Date.now()-S.lastOk>25000) toast(msg,true);
-    render();
+    if(!ctl.signal.aborted){
+      const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
+      setStatus('Feed problem','err');
+      if(Date.now()-S.lastOk>25000) toast(msg,true);
+      render();
+    }
   }finally{
     if(S.pollAbort===ctl) S.pollAbort=null;
     S.busy=false;
+    if(S.pollAgain){ S.pollAgain=false; setTimeout(()=>poll(false),0); }
   }
 }
 document.addEventListener('visibilitychange',()=>{
@@ -2250,7 +2336,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 // iOS keeps pages alive in the back/forward cache; treat that as a fresh load too
 window.addEventListener('pageshow', e=>{ if(e.persisted && S.origin) startPolling(); });
-$('refreshBtn').addEventListener('click',()=>{ poll(); toast('Refreshing…'); });
+$('refreshBtn').addEventListener('click',()=>{ poll(true); toast('Refreshing…'); });
 
 /* ============================================================
    Settings
@@ -2355,7 +2441,7 @@ loadLines();
 loadServing();
 loadMapped();
 $('pairBtn').addEventListener('click',()=>{
-  if(S.pair) selectStop(S.pair);
+  if(S.pair) selectStop(S.pair,true);
 });
 
 /* key via address bar: kerbside.html#key=...&proxy=... — read once, then wiped */
