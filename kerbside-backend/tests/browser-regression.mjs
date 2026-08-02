@@ -17,8 +17,11 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.18'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.19'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
+assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
+assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
+assert.match(busSource, /possible GPS match ambiguous/);
 assert.match(busSource, /function timetableDirection\(value\)/);
 assert.match(busSource, /function scheduledJourneyDirection\(row\)/);
 assert.match(busSource, /direction==='inbound'/);
@@ -110,18 +113,35 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.18', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.19', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
   assert.match(await page.title(), /Kerbside/i);
   assert.equal(await page.locator('#setBtn').isVisible(), true);
 
+  const tripMatching = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__;
+    const unique=api.uniqueCompatibleTrips([{trip:'trip-AB12345678'},{trip:'unrelated-XY87654321'}],'operator:trip-AB12345678');
+    const ambiguous=api.uniqueCompatibleTrips([{trip:'one|AB12345678'},{trip:'two|AB12345678'}],'live|AB12345678|x');
+    return {
+      exact:api.tripRefMatchStrength('trip-AB12345678','trip-AB12345678'),
+      compact:api.tripRefMatchStrength('Trip-AB12345678','trip_AB12345678'),
+      uniqueRef:unique.ref, uniqueStrength:unique.strength, uniqueCount:unique.items.length,
+      ambiguous:ambiguous.ambiguous, ambiguousCount:ambiguous.items.length
+    };
+  });
+  assert.deepEqual(tripMatching, {
+    exact:4, compact:3,
+    uniqueRef:'trip-AB12345678', uniqueStrength:2, uniqueCount:1,
+    ambiguous:true, ambiguousCount:0
+  });
+
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.18'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.19'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

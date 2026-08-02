@@ -743,7 +743,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.18 also makes the live Worker cache-first: a recent cached feed is returned within the browser deadline while slow BODS refreshes continue safely, instead of waiting through several long upstream attempts.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.19 also requires fuzzy live and timetable trip references to resolve to one uniquely strongest journey before they receive exact-journey matching privileges.</p>
           </div>
 
           <div class="stats-section">
@@ -774,7 +774,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.18';
+const APP_VERSION = '0.6.19';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1622,18 +1622,36 @@ function meaningfulTripTokens(value){
   return String(value||'').trim().toLowerCase().split(/[^a-z0-9]+/)
     .filter(token=>token.length>=8 && /[a-z]/.test(token) && /[0-9]/.test(token));
 }
-function tripRefMatches(a,b){
+function tripRefMatchStrength(a,b){
   const A=String(a||'').trim(), B=String(b||'').trim();
-  if(!A || !B) return false;
-  if(A===B) return true;
+  if(!A || !B) return 0;
+  if(A===B) return 4;
   const compactA=compactTripRef(A), compactB=compactTripRef(B);
-  if(!compactA || !compactB) return false;
-  if(compactA===compactB) return true;
+  if(!compactA || !compactB) return 0;
+  if(compactA===compactB) return 3;
   const shorter=compactA.length<=compactB.length?compactA:compactB;
   const longer=shorter===compactA?compactB:compactA;
-  if(shorter.length>=12 && (longer.startsWith(shorter) || longer.endsWith(shorter))) return true;
+  if(shorter.length>=12 && (longer.startsWith(shorter) || longer.endsWith(shorter))) return 2;
   const tokensA=meaningfulTripTokens(A), tokensB=new Set(meaningfulTripTokens(B));
-  return tokensA.some(token=>tokensB.has(token));
+  return tokensA.some(token=>tokensB.has(token))?1:0;
+}
+function tripRefMatches(a,b){ return tripRefMatchStrength(a,b)>0; }
+function uniqueCompatibleTrips(items,journey,getRef){
+  const refOf=typeof getRef==='function'?getRef:item=>item&&item.trip;
+  const ranked=(Array.isArray(items)?items:[]).map(item=>{
+    const ref=String(refOf(item)||'').trim();
+    return {item,ref,strength:tripRefMatchStrength(ref,journey)};
+  }).filter(match=>match.strength>0&&match.ref);
+  if(!ranked.length) return {items:[],ref:'',strength:0,ambiguous:false};
+  const strength=Math.max(...ranked.map(match=>match.strength));
+  const strongest=ranked.filter(match=>match.strength===strength);
+  const refs=[...new Set(strongest.map(match=>match.ref))];
+  if(refs.length!==1) return {items:[],ref:'',strength,ambiguous:true};
+  const ref=refs[0];
+  return {items:strongest.filter(match=>match.ref===ref).map(match=>match.item),ref,strength,ambiguous:false};
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),tripRefMatchStrength,uniqueCompatibleTrips};
 }
 function timetableDirection(value){
   const direction=String(value||'').trim().toLowerCase();
@@ -1674,8 +1692,8 @@ function timetablePatternRecord(journey){
   if(!id){
     if(PATTERN_CACHE.has(aliasKey)) id=PATTERN_CACHE.get(aliasKey)||null;
     else{
-      const matches=Object.keys(tt.tripPatterns).filter(ref=>tripRefMatches(ref,journeyKey));
-      id=matches.length===1?tt.tripPatterns[matches[0]]:null;
+      const match=uniqueCompatibleTrips(Object.keys(tt.tripPatterns),journeyKey,ref=>ref);
+      id=match.items.length?tt.tripPatterns[match.ref]:null;
       PATTERN_CACHE.set(aliasKey,id||'');
     }
   }
@@ -1806,8 +1824,9 @@ function scheduledMatches(line,dest,spatialSecs,journey){
     if(r.at<now-3*60000 || r.at>now+3*3600000) return false;
     return !dest || !r.head || destinationSimilarity(dest,r.head)>=.34;
   });
-  const exact=journey ? rows.filter(r=>tripRefMatches(r.trip,journey)) : [];
-  if(exact.length) rows=exact;
+  const tripMatch=journey?uniqueCompatibleTrips(rows,journey):{items:[],ambiguous:false};
+  if(tripMatch.ambiguous) return [];
+  if(tripMatch.items.length) rows=tripMatch.items;
   return rows.sort((a,b)=>Math.abs(a.at-target)-Math.abs(b.at-target));
 }
 async function loadWorkerHistory(stop){
@@ -2262,15 +2281,23 @@ function routeEvidence(line,dest,journey){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
   const ttRows=timetableRows(new Date()).filter(r=>String(r.line)===l);
-  if(journey && ttRows.some(r=>tripRefMatches(r.trip,journey))){
-    const path=!!timetablePattern(journey);
-    return {score:path?6:5,label:path?'journey and stop sequence matched':'journey matched to timetable',journeyMatch:true,pathMatch:path};
+  const tripMatch=journey?uniqueCompatibleTrips(ttRows,journey):{items:[],ref:'',strength:0,ambiguous:false};
+  if(tripMatch.items.length){
+    const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
+    return {
+      score:path?6:5,
+      label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
+      journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref
+    };
   }
   const tt=timetableRouteSet();
   if(tt.has(l)){
     const heads=ttRows.map(r=>r.head).filter(Boolean);
     const branchOk=!dest || !heads.length || heads.some(h=>destinationSimilarity(dest,h)>=.34);
-    return {score:branchOk?4:2,label:branchOk?'timetable verified':'route verified; branch uncertain'};
+    const label=tripMatch.ambiguous
+      ? (branchOk?'route verified; journey alias ambiguous':'route verified; branch and journey uncertain')
+      : (branchOk?'timetable verified':'route verified; branch uncertain');
+    return {score:branchOk?4:2,label,journeyAmbiguous:tripMatch.ambiguous};
   }
   const m=MAPPED[String(S.stop.id)];
   if(m && m.routes.some(r=>String(r.ref)===l)){
@@ -2680,7 +2707,7 @@ function collect(gate,diagnostics){
     const directionDisagreed=S.dir!=='all' && dir!==S.dir && dir!=='unknown';
     const recovered=!!((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low'));
     if(recovered && diagnostics) diagnostics.recovered++;
-    const match=geometry?'journey path':evidence.journeyMatch?'exact journey':scheduleBacked?'timetable linked':'route evidence';
+    const match=geometry?'journey path':evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
     out.push({
       v,dir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
       routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
@@ -2837,7 +2864,9 @@ function scheduleLiveReason(schedule){
   if(!sameLine.length) return 'no GPS matched';
   const sameBranch=sameLine.filter(v=>!schedule.head || !v.dest || destinationSimilarity(v.dest,schedule.head)>=.34);
   if(!sameBranch.length) return 'GPS branch uncertain';
-  if(schedule.trip && sameBranch.some(v=>tripRefMatches(schedule.trip,v.journey))) return 'GPS received · filtered';
+  const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
+  if(liveTrip.items.length) return 'GPS received · filtered';
+  if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
   return 'journey uncertain';
 }
 function scheduledBoardRows(liveRows){
