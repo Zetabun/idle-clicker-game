@@ -51,6 +51,8 @@ Kerbside 0.6.16 improves live-GPS recovery. It normalises compatible SIRI and ti
 
 Kerbside 0.6.17 corrects timetable direction handling. GTFS `direction_id` values `0` and `1` are route-local identifiers rather than universal inbound/outbound labels, so Kerbside no longer rejects vehicles or scheduled rows on that assumption. Explicit inbound/outbound text is still honoured, while other scheduled direction is derived conservatively from the ordered journey around the selected stop and the current town anchor.
 
+Kerbside 0.6.18 makes the live Worker cache-first and deadline-safe. Very recent cached responses are returned without another upstream call. For older cached positions, the Worker gives BODS a short opportunity to refresh, then returns the cache immediately and completes the refresh with `waitUntil`. Uncached requests use at most two four-second attempts, keeping the Worker within the browser's twelve-second request deadline. Cache keys now include optional `lineRef`, and Worker tests cover fresh cache hits, stale background refresh and bounded outages.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
