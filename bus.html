@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.35 also parses namespaced SIRI-VM payloads through an executed fixture suite and scopes vehicle identities by operator, preventing two operators that reuse the same VehicleRef from overwriting one another.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.36 also falls back immediately to the normal 9 km live feed when an expanded 18 km scan fails, while every expanded attempt now observes the 45-second cooldown instead of retrying on each poll.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.35';
+const APP_VERSION = '0.6.36';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2144,7 +2144,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,liveState:S};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -2166,18 +2166,30 @@ async function fetchLiveResponse(url,signal){
   }
   return {fallback:r.headers.get('X-Kerbside-Stale')==='1',text:await r.text()};
 }
+async function fetchLiveBatch(wide,signal){
+  const urls=feedUrls(wide);
+  if(!urls.length){
+    return {successful:[],failure:{soft:true,msg:'No Worker URL or local API key is configured.'}};
+  }
+  const settled=await Promise.allSettled(urls.map(url=>fetchLiveResponse(url,signal)));
+  return {
+    successful:settled.filter(result=>result.status==='fulfilled').map(result=>result.value),
+    failure:(settled.find(result=>result.status==='rejected')||{}).reason||{soft:true,msg:'Could not reach the live feed.'}
+  };
+}
 async function fetchLive(signal){
   S.feedFallback=false;
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
-  const urls=feedUrls(wide);
-  if(!urls.length) throw {soft:true, msg:'No Worker URL or local API key is configured.'};
-  const settled=await Promise.allSettled(urls.map(url=>fetchLiveResponse(url,signal)));
-  const successful=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
-  if(!successful.length){
-    const failure=settled.find(result=>result.status==='rejected');
-    throw failure ? failure.reason : {soft:true,msg:'Could not reach the live feed.'};
+  if(wide) S.lastWideFetch=Date.now();
+  let batch=await fetchLiveBatch(wide,signal);
+  // Expanded scans are optional discovery work. If every wide request fails,
+  // retry the ordinary nearby box immediately so a distant outage cannot
+  // blank an otherwise healthy local departure board.
+  if(wide&&!batch.successful.length&&!(signal&&signal.aborted)){
+    batch=await fetchLiveBatch(false,signal);
   }
-  if(wide && successful.length===urls.length) S.lastWideFetch=Date.now();
+  const successful=batch.successful;
+  if(!successful.length) throw batch.failure;
   S.feedFallback=successful.some(item=>item.fallback);
   const parsed=parseLivePayloads(successful,Date.now());
   const out=parsed.vehicles;
