@@ -95,6 +95,8 @@ Kerbside 0.6.38 makes OpenStreetMap route discovery recoverable. Exact `node(...
 
 Kerbside 0.6.39 hardens service-calendar and overnight departure handling. A service reference is now resolved against the timetable `services` map before the legacy seven-bit weekday fallback, so a legitimate binary-looking GTFS `service_id` still honours date additions, removals and validity ranges. Departures are constructed by setting local calendar days and wall-clock hours rather than adding elapsed milliseconds to midnight, preventing one-hour shifts after the UK spring and autumn clock changes. The fallback parser now also accepts three-digit GTFS hours. WebKit runs in `Europe/London` and verifies both 2026 clock-change Sundays, a 25:30 overnight trip and binary-looking service exceptions.
 
+Kerbside 0.6.40 generates timetable rows by their displayed target date rather than by a fixed set of nearby origin service dates. For each GTFS departure, the browser subtracts the number of whole days encoded in its extended hour before applying weekday and calendar-exception rules. This keeps ordinary, 25:30 and even 100:05 departures within the same yesterday/today/tomorrow board window while associating them with the correct originating service day. WebKit verifies all three time forms and confirms that a removed July 30 service suppresses only its August 3 100:05 departure.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

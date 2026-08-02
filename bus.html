@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.39 also preserves local timetable clock times across UK daylight-saving changes and applies calendar exceptions even when a GTFS service ID happens to resemble a seven-day binary mask.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.40 also generates the displayed three-day timetable window from each departure's actual arrival date, keeping extreme GTFS hours such as 100:05 on the correct day and service calendar.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.39';
+const APP_VERSION = '0.6.40';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1703,7 +1703,7 @@ function indexTimetableRows(rows){
   return byLine;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),indexTimetableRows};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),indexTimetableRows,timetableRows};
 }
 function timetableRows(now){
   const stop=S.ttStop;
@@ -1712,12 +1712,16 @@ function timetableRows(now){
   if(cache.stop===stop&&cache.timetable===S.timetable&&cache.run===S.timetableRun&&cache.day===day) return cache.rows;
   const out=[];
   const today=localMidnight(moment);
-  for(const offset of [-1,0,1]){
-    const serviceDate=new Date(today); serviceDate.setDate(serviceDate.getDate()+offset);
-    for(const e of stop.d){
-      if(!Array.isArray(e) || e.length<3) continue;
-      const mins=parseDepMinutes(e[0]); if(!isFinite(mins)) continue;
-      const service=e[3]||'';
+  for(const e of stop.d){
+    if(!Array.isArray(e) || e.length<3) continue;
+    const mins=parseDepMinutes(e[0]); if(!isFinite(mins)) continue;
+    const service=e[3]||'', departureDayOffset=Math.floor(mins/1440);
+    // Build rows by the calendar day on which the departure is shown. GTFS
+    // times above 24:00 belong to an earlier service day, so derive that
+    // origin date before applying weekday and calendar exception rules.
+    for(const targetOffset of [-1,0,1]){
+      const serviceDate=new Date(today);
+      serviceDate.setDate(serviceDate.getDate()+targetOffset-departureDayOffset);
       if(!serviceRuns(service,serviceDate)) continue;
       const at=serviceDepartureTime(serviceDate,mins);
       out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||''});

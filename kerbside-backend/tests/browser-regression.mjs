@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.39'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.40'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -110,6 +110,10 @@ assert.match(busSource, /if\(svc\)\{/);
 assert.match(busSource, /at\.setHours\(Math\.floor\(minuteOfDay\/60\),minuteOfDay%60,0,0\)/);
 assert.match(busSource, /serviceDepartureTime\(serviceDate,mins\)/);
 assert.doesNotMatch(busSource, /new Date\(serviceDate\.getTime\(\)\+mins\*60000\)/);
+assert.match(busSource, /departureDayOffset=Math\.floor\(mins\/1440\)/);
+assert.match(busSource, /targetOffset-departureDayOffset/);
+assert.match(busSource, /indexTimetableRows,timetableRows/);
+assert.doesNotMatch(busSource, /for\(const offset of \[-1,0,1\]\)\{\n    const serviceDate/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -161,7 +165,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.39', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.40', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -313,6 +317,36 @@ try {
     spring:[2026,3,29,3,0],autumn:[2026,10,25,3,0],overnight:[2026,8,3,1,30],extendedHours:6005
   });
 
+  const targetDayRows = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState;
+    const saved={ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun};
+    state.ttStop={id:'target-day-test',d:[
+      ['23:55','L23','Late','daily','','trip-23',''],
+      ['25:30','N25','Overnight','daily','','trip-25',''],
+      ['100:05','X100','Extended','extreme','','trip-100','']
+    ]};
+    state.timetable={services:{
+      daily:{days:'1111111',start:'20260101',end:'20261231',add:[],remove:[]},
+      extreme:{days:'1111111',start:'20260101',end:'20261231',add:[],remove:['20260730']}
+    }};
+    state.timetableRun=Number(state.timetableRun||0)+1;
+    try{
+      const rows=api.timetableRows(new Date(2026,7,3,12,0));
+      const summary=trip=>rows.filter(row=>row.trip===trip).sort((a,b)=>a.at-b.at).map(row=>{
+        const at=new Date(row.at);
+        return [at.getFullYear(),at.getMonth()+1,at.getDate(),at.getHours(),at.getMinutes()];
+      });
+      return {late:summary('trip-23'),overnight:summary('trip-25'),extended:summary('trip-100')};
+    }finally{
+      state.ttStop=saved.ttStop;state.timetable=saved.timetable;state.timetableRun=saved.timetableRun;
+    }
+  });
+  assert.deepEqual(targetDayRows,{
+    late:[[2026,8,2,23,55],[2026,8,3,23,55],[2026,8,4,23,55]],
+    overnight:[[2026,8,2,1,30],[2026,8,3,1,30],[2026,8,4,1,30]],
+    extended:[[2026,8,2,4,5],[2026,8,4,4,5]]
+  });
+
   const tripMatching = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
     const unique=api.uniqueCompatibleTrips([{trip:'trip-AB12345678'},{trip:'unrelated-XY87654321'}],'operator:trip-AB12345678');
@@ -381,7 +415,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.39'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.40'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
