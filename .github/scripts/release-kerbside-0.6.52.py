@@ -35,6 +35,17 @@ if source.count(bad_resolver) != 1:
     raise SystemExit(f"release loader: expected one resolver cleanup, found {source.count(bad_resolver)}")
 source = source.replace(bad_resolver, good_resolver, 1)
 
+movement_min_old = "if(!target) return 0;const points=recentMovementPoints(v);if(points.length<3) return 0;"
+movement_min_new = "if(!target) return 0;const points=recentMovementPoints(v);if(points.length<2) return 0;"
+if source.count(movement_min_old) != 1:
+    raise SystemExit(f"release loader: expected one movement minimum, found {source.count(movement_min_old)}")
+source = source.replace(movement_min_old, movement_min_new, 1)
+movement_vote_old = "return toward>=2&&toward>away?1:away>=2&&away>toward?-1:0;"
+movement_vote_new = "const needed=points.length===2?1:2;return toward>=needed&&toward>away?1:away>=needed&&away>toward?-1:0;"
+if source.count(movement_vote_old) != 1:
+    raise SystemExit(f"release loader: expected one movement vote, found {source.count(movement_vote_old)}")
+source = source.replace(movement_vote_old, movement_vote_new, 1)
+
 bus_write = 'write("bus.html", bus)'
 bus_guard = r'''old_map_helper = "function mapVehicleVisible(v,shown,now=Date.now()){return !!(shown||(v&&now-Number(v.ts)<=MAX_AGE_MS));}"
 new_map_helper = "function mapVehicleVisible(v,shown,now=Date.now()){const age=now-Number(v&&v.ts);return !!(shown||(Number.isFinite(age)&&age>=0&&age<=4*60*1000));}"
@@ -129,7 +140,7 @@ browser_write = 'write("kerbside-backend/tests/browser-regression.mjs", browser)
 browser_guard = '''browser = replace_once(
     browser,
     "assert.match(busSource, /const APP_VERSION = '0\\\\.6\\\\.52'/);",
-    "assert.match(busSource, /const APP_VERSION = '0\\\\.6\\\\.52'/);\\nassert.match(busSource, /age<=4\\\\*60\\\\*1000/);\\nassert.match(busSource, /function boardRefreshCanRender/);\\nassert.match(busSource, /feedRefreshing:false/);",
+    "assert.match(busSource, /const APP_VERSION = '0\\\\.6\\\\.52'/);\\nassert.match(busSource, /age<=4\\\\*60\\\\*1000/);\\nassert.match(busSource, /points\\\\.length===2\\\\?1:2/);\\nassert.match(busSource, /function boardRefreshCanRender/);\\nassert.match(busSource, /feedRefreshing:false/);",
     "resilience source guards",
 )
 browser = browser.replace(
