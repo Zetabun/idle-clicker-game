@@ -7,6 +7,23 @@ import { webkit } from 'playwright';
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
+const busSource = await readFile(path.join(root, 'bus.html'), 'utf8');
+let routeScanHarness = null;
+const bboxSource = busSource.match(/function bboxAround\(lat,lon,metres\)\{[\s\S]*?\n\}/);
+if (bboxSource) {
+  const readConstant = name => {
+    const match = busSource.match(new RegExp(`const ${name} = ([^;]+);`));
+    assert.ok(match, `missing ${name}`);
+    return Function(`return (${match[1]})`)();
+  };
+  const bboxForTest = Function('rad', `${bboxSource[0]}; return bboxAround;`)(value => value * Math.PI / 180);
+  routeScanHarness = {
+    values: bboxForTest(52.48, -1.90, readConstant('FAR_SCAN_BOX_RADIUS')).split(',').map(Number),
+    interval: readConstant('FAR_SCAN_INTERVAL_MS'),
+    maxBoxes: readConstant('FAR_SCAN_MAX_BOXES'),
+    maxDistance: readConstant('FAR_ROUTE_MAX_METRES')
+  };
+}
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -90,6 +107,15 @@ try {
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
+  if (routeScanHarness) {
+    await page.evaluate(harness => {
+      window.bboxAround = () => harness.values.join(',');
+      window.FAR_SCAN_BOX_RADIUS = 8000;
+      window.FAR_SCAN_INTERVAL_MS = harness.interval;
+      window.FAR_SCAN_MAX_BOXES = harness.maxBoxes;
+      window.FAR_ROUTE_MAX_METRES = harness.maxDistance;
+    }, routeScanHarness);
+  }
   assert.match(await page.title(), /Kerbside/i);
   assert.equal(await page.locator('#setBtn').isVisible(), true);
 
