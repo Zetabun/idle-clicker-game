@@ -85,6 +85,12 @@ browser_test = replace_once(
     "ids:['OP-A|journey|trip-a','OP-B|journey|trip-b']",
     'existing live identity assertion'
 )
+browser_test = replace_once(
+    browser_test,
+    "ids:['NEAR|vehicle|nearby-1','WIDE|vehicle|wide-1']",
+    "ids:['NEAR|journey|nearby-1-trip','WIDE|journey|wide-1-trip']",
+    'wide fallback identity assertion'
+)
 
 fixture = r"""  const multiVehicleBoard = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
