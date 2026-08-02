@@ -24,6 +24,8 @@ marker = 'browser = read("kerbside-backend/tests/browser-regression.mjs").replac
 addition = (
     'browser = browser.replace("assert.match(busSource, /if\\\\(!shown&&!nearby\\\\) continue/);", "assert.match(busSource, /function mapVehicleVisible/);")\n'
     'browser = browser.replace("assert.match(busSource, /const APP_VERSION = \'0\\\\.6\\\\.51\'/);", "assert.match(busSource, /const APP_VERSION = \'0\\\\.6\\\\.52\'/);")\n'
+    'browser = browser.replace("  await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: \'domcontentloaded\' });", "  const pageErrors=[];\\n  page.on(\'pageerror\',error=>pageErrors.push(error.message));\\n  await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: \'domcontentloaded\' });")\n'
+    'browser = browser.replace("  assert.equal(await page.locator(\'#map.leaflet-container\').count(), 1);", "  assert.equal(await page.locator(\'#map.leaflet-container\').count(), 1, pageErrors.join(\'\\\\n\'));" )\n'
 )
 if source.count(marker) != 1:
     raise SystemExit(f"release loader: expected one browser test load, found {source.count(marker)}")
