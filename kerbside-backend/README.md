@@ -105,6 +105,8 @@ Kerbside 0.6.43 validates national timetable manifests before they become active
 
 Kerbside 0.6.44 fixes live multi-vehicle identity. The DfT SIRI-VM profile defines `VehicleJourneyRef` as globally unique, while `VehicleRef` identifies the physical vehicle. Kerbside previously preferred `VehicleRef`, allowing a non-compliant operator that reused a placeholder or fleet code to collapse several simultaneous journeys into one record. Live identity now uses operator plus journey first, then falls back to vehicle and item identifiers only when no journey reference exists. WebKit parses five simultaneous route-9 activities with one shared vehicle code and verifies all five survive ingestion, stop matching and board-row generation.
 
+Kerbside 0.6.45 validates every national departure shard before use. The shard must match its expected region, prefix and regional build, include the expected departure-shard schema, and contain structurally valid stops and departure rows. Valid shards are retained in memory and in a browser Cache Storage snapshot for 14 days. Malformed JSON, wrong-build content, 404s and server failures can use that recent last-known-good copy, while fallback and failed requests are removed from the active promise cache so the current build is retried later. The Settings “forget everything” action also removes these snapshots. WebKit executes valid, malformed, wrong-build, missing and retry-without-fallback scenarios.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

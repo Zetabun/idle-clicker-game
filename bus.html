@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.44 also identifies live buses by their globally unique journey reference before falling back to the vehicle code, so several buses running the same route remain separate even when an operator reuses a generic VehicleRef.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.45 also validates timetable departure shards and retains recent last-known-good copies, so a temporary 404, malformed response or incomplete Pages deployment does not erase working departures.</p>
           </div>
 
           <div class="stats-section">
@@ -786,12 +786,16 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.44';
+const APP_VERSION = '0.6.45';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
 const DATA_TILE_CACHE = new Map();
 const DATA_DEPARTURE_CACHE = new Map();
+const DATA_DEPARTURE_LAST_GOOD = new Map();
+const DATA_DEPARTURE_SOURCE = new Map();
+const DATA_SNAPSHOT_CACHE = 'kerbside-timetable-snapshots-v1';
+const DATA_SHARD_MAX_AGE = 14*24*3600*1000;
 const DATA_MANIFEST_STORAGE = 'kerbside.data.manifest.v1';
 const DATA_MANIFEST_MAX_AGE = 14*24*3600*1000;
 const REQUIRED_DATA_REGIONS = ['east_anglia','east_midlands','london','north_east','north_west','south_east','south_west','west_midlands','yorkshire'];
@@ -1321,7 +1325,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||''};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -1414,15 +1418,84 @@ async function loadDataTile(region,tile){
   DATA_TILE_CACHE.set(key,pending);
   try{return await pending;}catch(e){DATA_TILE_CACHE.delete(key);throw e;}
 }
+function departureLogicalKey(region,shard){ return String(region||'')+'/'+String(shard||''); }
+function departureSnapshotRequest(region,shard){
+  return new Request(location.origin+'/__kerbside_snapshot__/departure/'+encodeURIComponent(String(region||''))+'/'+encodeURIComponent(String(shard||'')));
+}
+function plainDataObject(value){ return !!value&&typeof value==='object'&&!Array.isArray(value); }
+function validDataDeparture(data,region,shard,expectedBuild){
+  if(!data||Number(data.version)<8||data.scope!=='departure-shard') return false;
+  if(String(data.region||'')!==String(region||'')||String(data.shard||'')!==String(shard||'')) return false;
+  const built=String(data.built||'');
+  if(!Number.isFinite(Date.parse(built))||(expectedBuild&&built!==String(expectedBuild))) return false;
+  if(!plainDataObject(data.services)||!plainDataObject(data.stops)||!plainDataObject(data.tripPatterns)||!plainDataObject(data.patterns)) return false;
+  const stops=Object.values(data.stops); if(!stops.length) return false;
+  let departures=0;
+  for(const stop of stops){
+    if(!plainDataObject(stop)||!Array.isArray(stop.d)) return false;
+    for(const row of stop.d){
+      if(!Array.isArray(row)||row.length<6||!Number.isFinite(Number(row[0]))) return false;
+      departures++;
+    }
+  }
+  return departures>0;
+}
+async function readDepartureSnapshot(region,shard,now=Date.now()){
+  if(!S.remember||!('caches' in window)) return null;
+  try{
+    const cache=await caches.open(DATA_SNAPSHOT_CACHE), response=await cache.match(departureSnapshotRequest(region,shard));
+    if(!response) return null;
+    const record=await response.json();
+    if(!record||!Number.isFinite(Number(record.ts))||now-Number(record.ts)>DATA_SHARD_MAX_AGE) return null;
+    return validDataDeparture(record.data,region,shard)?record.data:null;
+  }catch(e){ return null; }
+}
+async function writeDepartureSnapshot(region,shard,data){
+  if(!S.remember||!('caches' in window)||!validDataDeparture(data,region,shard)) return;
+  try{
+    const cache=await caches.open(DATA_SNAPSHOT_CACHE);
+    await cache.put(departureSnapshotRequest(region,shard),new Response(JSON.stringify({ts:Date.now(),data}),{headers:{'Content-Type':'application/json'}}));
+  }catch(e){}
+}
+async function clearDataSnapshots(){
+  DATA_DEPARTURE_CACHE.clear(); DATA_DEPARTURE_LAST_GOOD.clear(); DATA_DEPARTURE_SOURCE.clear();
+  if('caches' in window){ try{await caches.delete(DATA_SNAPSHOT_CACHE);}catch(e){} }
+}
+async function resetDataDepartureForTest(clearSnapshot){
+  DATA_DEPARTURE_CACHE.clear(); DATA_DEPARTURE_LAST_GOOD.clear(); DATA_DEPARTURE_SOURCE.clear();
+  if(clearSnapshot&&'caches' in window){ try{await caches.delete(DATA_SNAPSHOT_CACHE);}catch(e){} }
+}
 async function loadDataDeparture(region,shard){
-  const key=region+'/'+shard; if(DATA_DEPARTURE_CACHE.has(key)) return DATA_DEPARTURE_CACHE.get(key);
+  const logical=departureLogicalKey(region,shard);
+  const expectedBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
+  if(!expectedBuild) throw new Error('Pages departures have no validated regional build');
+  const key=expectedBuild+'|'+logical;
+  if(DATA_DEPARTURE_CACHE.has(key)) return DATA_DEPARTURE_CACHE.get(key);
+  let fallbackUsed=false;
   const pending=(async()=>{
-    const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/departures/'+encodeURIComponent(shard)+'.json'),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
-    if(r.status===404) return null; if(!r.ok) throw new Error('Pages departures HTTP '+r.status);
-    const data=await r.json(); return data&&data.stops?data:null;
+    let fallback=DATA_DEPARTURE_LAST_GOOD.get(logical)||null, fallbackSource=fallback?'memory':'';
+    if(!fallback){ fallback=await readDepartureSnapshot(region,shard); if(fallback) fallbackSource='snapshot'; }
+    try{
+      const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/departures/'+encodeURIComponent(shard)+'.json'),{headers:{Accept:'application/json'},cache:'no-cache'},12000);
+      if(!r.ok) throw new Error('Pages departures HTTP '+r.status);
+      const data=await r.json();
+      if(!validDataDeparture(data,region,shard,expectedBuild)) throw new Error('Pages departure shard failed validation');
+      DATA_DEPARTURE_LAST_GOOD.set(logical,data); DATA_DEPARTURE_SOURCE.set(logical,'network');
+      await writeDepartureSnapshot(region,shard,data);
+      return data;
+    }catch(e){
+      if(fallback&&validDataDeparture(fallback,region,shard)){
+        fallbackUsed=true; DATA_DEPARTURE_LAST_GOOD.set(logical,fallback); DATA_DEPARTURE_SOURCE.set(logical,fallbackSource||'fallback'); return fallback;
+      }
+      throw e;
+    }
   })();
   DATA_DEPARTURE_CACHE.set(key,pending);
-  try{return await pending;}catch(e){DATA_DEPARTURE_CACHE.delete(key);throw e;}
+  try{
+    const data=await pending;
+    if(fallbackUsed) DATA_DEPARTURE_CACHE.delete(key);
+    return data;
+  }catch(e){ DATA_DEPARTURE_CACHE.delete(key); throw e; }
 }
 function nationalStopCodes(stop){
   const values=[stop&&stop.timetableId,stop&&stop.atco,stop&&stop.naptan,stop&&stop.code];
@@ -3607,7 +3680,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ $('scrim').classL
 function bindSwitch(el){ el.addEventListener('click',()=>el.setAttribute('aria-pressed',el.getAttribute('aria-pressed')!=='true')); }
 bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw')); bindSwitch($('serveSw'));
 $('forgetBtn').addEventListener('click',()=>{
-  store.clearAll();
+  store.clearAll(); clearDataSnapshots();
   S.remember=false; S.key=''; S.proxy=''; S.demo=true; S.destsByStop={};
   LINES={}; SERVING={}; MAPPED={}; S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false;
   $('rememberSw').setAttribute('aria-pressed','false'); $('demoSw').setAttribute('aria-pressed','true');
