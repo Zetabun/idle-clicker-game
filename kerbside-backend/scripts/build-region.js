@@ -13,19 +13,20 @@ if (!gtfsDir || !regionArg || !outArg) {
   console.error('Usage: node scripts/build-region.js <gtfs-folder> <region> <output-folder>');
   process.exit(1);
 }
+
 const region = String(regionArg).trim().toLowerCase();
 if (!/^[a-z_]+$/.test(region)) fail('Region must contain lower-case letters and underscores only.');
 if (!fs.existsSync(gtfsDir) || !fs.statSync(gtfsDir).isDirectory()) fail(`GTFS folder not found: ${gtfsDir}`);
 
 const outRoot = path.resolve(outArg);
 const regionRoot = path.join(outRoot, 'regions', region);
-const indexRoot = path.join(regionRoot, 'tiles');
-const timetableRoot = path.join(regionRoot, 'timetables');
+const tileRoot = path.join(regionRoot, 'tiles');
 const patternRoot = path.join(regionRoot, 'patterns');
 fs.rmSync(regionRoot, { recursive: true, force: true });
-for (const directory of [indexRoot, timetableRoot, patternRoot]) fs.mkdirSync(directory, { recursive: true });
+for (const directory of [tileRoot, patternRoot]) fs.mkdirSync(directory, { recursive: true });
 
 const TILE_SIZE = 0.05;
+const PATTERN_PREFIX_LENGTH = 2;
 const nowIso = new Date().toISOString();
 const dbPath = path.join(os.tmpdir(), `kerbside-${region}-${process.pid}.sqlite`);
 fs.rmSync(dbPath, { force: true });
@@ -62,38 +63,55 @@ function fail(message) {
   try { fs.rmSync(dbPath, { force: true }); } catch {}
   process.exit(1);
 }
-function objectName(value) { return encodeURIComponent(String(value)).replace(/%/g, '_'); }
+
 function tileKey(lat, lon) {
   const y = Math.floor((Number(lat) + 90) / TILE_SIZE);
   const x = Math.floor((Number(lon) + 180) / TILE_SIZE);
   return `${y}-${x}`;
 }
+
 function splitCsv(line) {
   const out = [];
-  let current = '', quoted = false;
+  let current = '';
+  let quoted = false;
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (quoted) {
       if (char === '"') {
-        if (line[i + 1] === '"') { current += '"'; i++; }
-        else quoted = false;
-      } else current += char;
-    } else if (char === '"') quoted = true;
-    else if (char === ',') { out.push(current); current = ''; }
-    else current += char;
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          quoted = false;
+        }
+      } else {
+        current += char;
+      }
+    } else if (char === '"') {
+      quoted = true;
+    } else if (char === ',') {
+      out.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
   }
   out.push(current);
   return out;
 }
+
 async function eachRow(file, onRow, { optional = false } = {}) {
   const filename = path.join(gtfsDir, file);
   if (!fs.existsSync(filename)) {
     if (optional) return 0;
     throw new Error(`Missing ${file} in ${gtfsDir}`);
   }
+
   const input = fs.createReadStream(filename);
   const lines = readline.createInterface({ input, crlfDelay: Infinity });
-  let headers = null, count = 0;
+  let headers = null;
+  let count = 0;
+
   for await (const line of lines) {
     if (!line.trim()) continue;
     const cells = splitCsv(line);
@@ -107,46 +125,47 @@ async function eachRow(file, onRow, { optional = false } = {}) {
   }
   return count;
 }
+
 function parseGtfsMinutes(value) {
   const match = String(value || '').trim().match(/^(\d{1,3}):(\d{2})(?::\d{2})?$/);
   if (!match) return NaN;
-  const hours = Number(match[1]), minutes = Number(match[2]);
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
   return Number.isFinite(hours) && minutes >= 0 && minutes <= 59 ? hours * 60 + minutes : NaN;
 }
+
 function dateKey(value) {
   const key = String(value || '').replace(/[^0-9]/g, '');
   return /^\d{8}$/.test(key) ? key : '';
 }
+
 function sequence(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 }
+
 function shortHash(value) {
   return crypto.createHash('sha256').update(value).digest('hex').slice(0, 20);
 }
+
 function writeJson(filename, value) {
   fs.mkdirSync(path.dirname(filename), { recursive: true });
   fs.writeFileSync(filename, JSON.stringify(value));
 }
-function compactStop(stop, id) {
-  return {
-    id,
-    name: stop.name,
-    atco: id,
-    code: stop.code,
-    sms: stop.sms,
-    ind: stop.ind,
-    lat: stop.lat,
-    lon: stop.lon,
-    tile: stop.tile
-  };
+
+function updateBounds(bounds, stop) {
+  bounds[0] = Math.min(bounds[0], stop.lon);
+  bounds[1] = Math.min(bounds[1], stop.lat);
+  bounds[2] = Math.max(bounds[2], stop.lon);
+  bounds[3] = Math.max(bounds[3], stop.lat);
 }
 
 async function main() {
   console.log(`[${region}] Reading stops...`);
   await eachRow('stops.txt', row => {
     const id = String(row.stop_id || '').trim();
-    const lat = Number(row.stop_lat), lon = Number(row.stop_lon);
+    const lat = Number(row.stop_lat);
+    const lon = Number(row.stop_lon);
     if (!id || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
     if (lat < 49 || lat > 61 || lon < -9 || lon > 3) return;
     stops.set(id, {
@@ -166,6 +185,7 @@ async function main() {
     const id = String(row.route_id || '').trim();
     if (id) routes.set(id, row.route_short_name || row.route_long_name || id);
   });
+
   await eachRow('trips.txt', row => {
     const id = String(row.trip_id || '').trim();
     if (!id) return;
@@ -176,6 +196,7 @@ async function main() {
       direction: row.direction_id == null ? '' : String(row.direction_id)
     });
   });
+
   await eachRow('calendar.txt', row => {
     const id = String(row.service_id || '').trim();
     if (!id) return;
@@ -184,9 +205,11 @@ async function main() {
         .map(day => row[day] === '1' ? '1' : '0').join(''),
       start: dateKey(row.start_date),
       end: dateKey(row.end_date),
-      add: [], remove: []
+      add: [],
+      remove: []
     });
   }, { optional: true });
+
   await eachRow('calendar_dates.txt', row => {
     const id = String(row.service_id || '').trim();
     const date = dateKey(row.date);
@@ -201,13 +224,17 @@ async function main() {
   const insert = db.prepare('INSERT INTO stop_times(tile, stop_id, trip_id, mins, seq) VALUES (?, ?, ?, ?, ?)');
   db.exec('BEGIN');
   let batch = 0;
+
   await eachRow('stop_times.txt', (row, number) => {
     const stopId = String(row.stop_id || '').trim();
     const tripId = String(row.trip_id || '').trim();
     const stop = stops.get(stopId);
     if (!stop || !trips.has(tripId)) return;
     const mins = parseGtfsMinutes(row.departure_time || row.arrival_time);
-    if (!Number.isFinite(mins)) { invalidTimes++; return; }
+    if (!Number.isFinite(mins)) {
+      invalidTimes++;
+      return;
+    }
     insert.run(stop.tile, stopId, tripId, mins, sequence(row.stop_sequence, number));
     stopTimeRows++;
     batch++;
@@ -218,24 +245,34 @@ async function main() {
     if (number % 2000000 === 0) console.log(`[${region}] ${(number / 1000000).toFixed(0)}M stop-time rows scanned...`);
   });
   db.exec('COMMIT');
+
   if (!stopTimeRows) throw new Error('No usable stop times found.');
   db.exec('CREATE INDEX idx_trip_sequence ON stop_times(trip_id, seq);');
   db.exec('CREATE INDEX idx_tile_stop_time ON stop_times(tile, stop_id, mins, trip_id);');
 
   console.log(`[${region}] Deduplicating ordered journey patterns...`);
   const putPattern = db.prepare('INSERT OR IGNORE INTO patterns(pattern_id, coords) VALUES (?, ?)');
-  let currentTrip = '', sequenceStops = [];
+  let currentTrip = '';
+  let sequenceStops = [];
+
   function flushPattern() {
-    if (!currentTrip || sequenceStops.length < 2) { sequenceStops = []; return; }
+    if (!currentTrip || sequenceStops.length < 2) {
+      sequenceStops = [];
+      return;
+    }
     const signature = sequenceStops.join('\u001f');
     const patternId = shortHash(signature);
-    const coordinates = sequenceStops.map(id => stops.get(id)).filter(Boolean).map(stop => [stop.lat, stop.lon]);
+    const coordinates = sequenceStops
+      .map(id => stops.get(id))
+      .filter(Boolean)
+      .map(stop => [stop.lat, stop.lon]);
     if (coordinates.length >= 2) {
       tripPattern.set(currentTrip, patternId);
       putPattern.run(patternId, JSON.stringify(coordinates));
     }
     sequenceStops = [];
   }
+
   for (const row of db.prepare('SELECT trip_id, stop_id FROM stop_times ORDER BY trip_id, seq').iterate()) {
     if (row.trip_id !== currentTrip) {
       flushPattern();
@@ -245,28 +282,51 @@ async function main() {
   }
   flushPattern();
 
-  console.log(`[${region}] Writing pattern shards...`);
-  let shardPrefix = '', shard = {}, patternCount = 0;
+  console.log(`[${region}] Writing compact pattern shards...`);
+  let shardPrefix = '';
+  let shard = {};
+  let patternCount = 0;
+
   function flushShard() {
     if (!shardPrefix) return;
-    writeJson(path.join(patternRoot, `${shardPrefix}.json`), { version: 1, built: nowIso, region, patterns: shard });
+    writeJson(path.join(patternRoot, `${shardPrefix}.json`), {
+      version: 2,
+      built: nowIso,
+      region,
+      patterns: shard
+    });
     shard = {};
   }
+
   for (const row of db.prepare('SELECT pattern_id, coords FROM patterns ORDER BY pattern_id').iterate()) {
-    const prefix = row.pattern_id.slice(0, 3);
-    if (prefix !== shardPrefix) { flushShard(); shardPrefix = prefix; }
+    const prefix = row.pattern_id.slice(0, PATTERN_PREFIX_LENGTH);
+    if (prefix !== shardPrefix) {
+      flushShard();
+      shardPrefix = prefix;
+    }
     shard[row.pattern_id] = JSON.parse(row.coords);
     patternCount++;
   }
   flushShard();
 
-  console.log(`[${region}] Writing stop indexes and timetable tiles...`);
-  let currentTile = '', currentStop = '', departures = [], tileStops = {}, tileServices = new Set(), tileTripPatterns = {};
-  const activeTiles = new Map();
-  let activeStopCount = 0, departureCount = 0, tileCount = 0;
+  console.log(`[${region}] Writing combined stop and timetable tiles...`);
+  let currentTile = '';
+  let currentStop = '';
+  let departures = [];
+  let tileStops = {};
+  let tileServices = new Set();
+  let tileTripPatterns = {};
+  let activeStopCount = 0;
+  let departureCount = 0;
+  let tileCount = 0;
+  let maxTileBytes = 0;
+  const bounds = [Infinity, Infinity, -Infinity, -Infinity];
 
   function flushStop() {
-    if (!currentStop || !departures.length) { departures = []; return; }
+    if (!currentStop || !departures.length) {
+      departures = [];
+      return;
+    }
     const stop = stops.get(currentStop);
     const unique = [];
     let previous = '';
@@ -284,19 +344,21 @@ async function main() {
       ll: [stop.lat, stop.lon],
       d: unique
     };
-    const list = activeTiles.get(currentTile) || [];
-    list.push(compactStop(stop, currentStop));
-    activeTiles.set(currentTile, list);
+    updateBounds(bounds, stop);
     activeStopCount++;
     departureCount += unique.length;
     departures = [];
   }
+
   function flushTile() {
     flushStop();
     if (!currentTile || !Object.keys(tileStops).length) {
-      tileStops = {}; tileServices = new Set(); tileTripPatterns = {};
+      tileStops = {};
+      tileServices = new Set();
+      tileTripPatterns = {};
       return;
     }
+
     const serviceSubset = {};
     for (const id of tileServices) {
       const service = services.get(id);
@@ -307,19 +369,25 @@ async function main() {
         remove: [...new Set(service.remove)].sort()
       };
     }
-    writeJson(path.join(timetableRoot, `${currentTile}.json`), {
-      version: 5,
+
+    const filename = path.join(tileRoot, `${currentTile}.json`);
+    writeJson(filename, {
+      version: 6,
       built: nowIso,
       scope: 'tile',
       region,
       tile: currentTile,
+      tileSize: TILE_SIZE,
       services: serviceSubset,
       stops: tileStops,
       tripPatterns: tileTripPatterns,
       patterns: {}
     });
+    maxTileBytes = Math.max(maxTileBytes, fs.statSync(filename).size);
     tileCount++;
-    tileStops = {}; tileServices = new Set(); tileTripPatterns = {};
+    tileStops = {};
+    tileServices = new Set();
+    tileTripPatterns = {};
   }
 
   for (const row of db.prepare('SELECT tile, stop_id, trip_id, mins FROM stop_times ORDER BY tile, stop_id, mins, trip_id').iterate()) {
@@ -341,29 +409,22 @@ async function main() {
   }
   flushTile();
 
-  for (const [tile, tileStopList] of activeTiles) {
-    const byId = new Map();
-    for (const stop of tileStopList) byId.set(stop.id, stop);
-    writeJson(path.join(indexRoot, `${tile}.json`), {
-      version: 1,
-      built: nowIso,
-      region,
-      tile,
-      stops: [...byId.values()]
-    });
-  }
-
   const manifest = {
-    version: 1,
+    version: 2,
     built: nowIso,
     region,
     tileSize: TILE_SIZE,
+    patternPrefixLength: PATTERN_PREFIX_LENGTH,
+    bounds: bounds.every(Number.isFinite) ? bounds.map(value => Number(value.toFixed(6))) : null,
     stops: activeStopCount,
     departures: departureCount,
     patterns: patternCount,
     tiles: tileCount,
+    files: tileCount + Math.min(16 ** PATTERN_PREFIX_LENGTH, patternCount) + 1,
+    maxTileBytes,
     invalidTimes
   };
+
   writeJson(path.join(regionRoot, 'manifest.json'), manifest);
   console.log(JSON.stringify(manifest, null, 2));
 }
