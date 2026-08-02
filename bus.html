@@ -35,9 +35,13 @@
   --board-dot:2px;
 }
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{width:100%;height:100%;min-height:100dvh}
+/* iOS may expose a small area outside the standalone layout viewport.
+   Match that outer canvas to the fixed mobile navigation rather than
+   leaving a visually separate dark strip. */
+html,body{background:var(--ink-2)}
 body{
-  margin:0;background:var(--ink);color:var(--text);
+  margin:0;color:var(--text);
   font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   font-size:15px;line-height:1.45;overflow:hidden;
   -webkit-font-smoothing:antialiased;
@@ -47,9 +51,13 @@ button{cursor:pointer;border:0;background:none}
 :focus-visible{outline:2px solid var(--led);outline-offset:2px;border-radius:4px}
 
 /* ---------- shell ---------- */
-#app{display:flex;flex-direction:column;height:100%}
+#app{
+  display:flex;flex-direction:column;width:100%;
+  height:100vh;height:100dvh;min-height:100%;background:var(--ink);
+}
 #topbar{
-  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  display:flex;align-items:center;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
   background:var(--ink-2);border-bottom:1px solid var(--rule);
   flex-wrap:wrap;z-index:1200;position:relative;
 }
@@ -421,7 +429,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .board-head{padding:10px 14px 8px}
   .stopname{font-size:14.5px}
   .destnote{display:none}
-  #topbar{padding:8px 11px;gap:8px}
+  #topbar{padding:calc(8px + env(safe-area-inset-top)) 11px 8px;gap:8px}
   .brand small{display:none}
   .brand h1{font-size:14px}
   .dirswitch{margin-left:auto}
@@ -718,7 +726,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.6';
+const APP_VERSION = '0.6.7';
 const MY_KEY   = '';
 const MY_PROXY = '';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
