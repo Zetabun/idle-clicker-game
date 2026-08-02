@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="theme-color" content="#0B1119">
 <title>Kerbside — live buses near you</title>
@@ -483,9 +483,13 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 .leaflet-marker-icon.vehmark{transition:transform var(--glide,950ms) linear;will-change:transform}
 /* Keep two-finger page zoom off the controls and departure board.
    The map remains the one surface where pinch gestures are enabled. */
-#topbar,#board,#viewbar,#scrim{touch-action:pan-x pan-y}
+#topbar,#board,#viewbar{touch-action:pan-x pan-y}
+#scrim{touch-action:none;overscroll-behavior:contain}
 #map{touch-action:auto}
 @media (max-width:820px){
+  /* Safari zooms focused controls below 16px and can leave the standalone
+     visual viewport enlarged after Settings closes. */
+  input,select,textarea{font-size:16px!important}
   .sheet header{padding:11px 13px;gap:8px}
   .settings-heading{column-gap:12px;row-gap:0;flex-wrap:nowrap}
   .settings-tab{padding:6px 8px;font-size:11.5px}
@@ -726,7 +730,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.8';
+const APP_VERSION = '0.6.9';
 const MY_KEY   = '';
 const MY_PROXY = '';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
