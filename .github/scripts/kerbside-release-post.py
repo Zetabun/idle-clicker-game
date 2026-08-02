@@ -33,17 +33,21 @@ new_return = "      return {direction,recent,synthetic,staleMap,heldMap,loading,
 if browser.count(old_return) != 1:
     raise SystemExit(f"post release: expected one resilience return, found {browser.count(old_return)}")
 browser = browser.replace(old_return, new_return, 1)
-old_asserts = "  assert.equal(resilience.direction,'out');assert.equal(resilience.recent,4);assert.equal(resilience.synthetic,'unknown');assert.equal(resilience.staleMap,false);assert.equal(resilience.heldMap,true);assert.equal(resilience.loading,'loading');assert.match(resilience.html,/Loading journey progress/);assert.deepEqual(resilience.primary,['west_midlands']);assert.deepEqual(resilience.fallback,['north_west']);"
-new_asserts = """  assert.equal(resilience.direction,'out');
-  assert.equal(resilience.recent,4);
-  assert.equal(resilience.synthetic,'unknown');
-  assert.equal(resilience.staleMap,false,JSON.stringify(resilience));
-  assert.equal(resilience.heldMap,true,JSON.stringify(resilience));
-  assert.equal(resilience.loading,'loading');
-  assert.match(resilience.html,/Loading journey progress/);
-  assert.deepEqual(resilience.primary,['west_midlands']);
-  assert.deepEqual(resilience.fallback,['north_west']);"""
-if browser.count(old_asserts) != 1:
-    raise SystemExit(f"post release: expected one resilience assertion block, found {browser.count(old_asserts)}")
-browser = browser.replace(old_asserts, new_asserts, 1)
+
+browser, stale_count = re.subn(
+    r"assert\.equal\(resilience\.staleMap,false(?:,JSON\.stringify\(resilience\))?\);",
+    "assert.equal(resilience.staleMap,false,JSON.stringify(resilience));",
+    browser,
+    count=1,
+)
+if stale_count != 1:
+    raise SystemExit(f"post release: expected one stale-map assertion, found {stale_count}")
+browser, held_count = re.subn(
+    r"assert\.equal\(resilience\.heldMap,true(?:,JSON\.stringify\(resilience\))?\);",
+    "assert.equal(resilience.heldMap,true,JSON.stringify(resilience));",
+    browser,
+    count=1,
+)
+if held_count != 1:
+    raise SystemExit(f"post release: expected one held-map assertion, found {held_count}")
 write("kerbside-backend/tests/browser-regression.mjs", browser)
