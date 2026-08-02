@@ -69,6 +69,8 @@ Kerbside 0.6.25 corrects ambiguous `St` name cleanup. The app no longer expands 
 
 Kerbside 0.6.26 adds a leave-alert disappearance grace period. Once an alert has fired for a particular vehicle or journey, a missing live row is retained for up to two minutes rather than resetting immediately. The alert still resets for a genuinely different vehicle or after the grace period, preventing duplicate notifications caused by one missed GPS poll.
 
+Kerbside 0.6.27 makes schedule-only explanations evidence-based. The app now distinguishes no fresh GPS in the fetched area, no fresh GPS for the route, an uncertain destination, a filtered possible match, an ambiguous alias and no unique journey match. It no longer infers that an operator's GPS service is unavailable from an empty or filtered local snapshot.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
