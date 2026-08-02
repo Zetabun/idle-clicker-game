@@ -41,6 +41,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/release-kerbside-0.4.0.py')
+          text = path.read_text(encoding='utf-8')
+          old = "text, count = re.subn(pattern, replacement, text, count=1, flags=flags)"
+          new = "text, count = re.subn(pattern, lambda _match: replacement, text, count=1, flags=flags)"
+          if old in text:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           python3 -m py_compile .github/scripts/release-kerbside-0.4.0.py
           python3 .github/scripts/release-kerbside-0.4.0.py
           grep -F "const APP_VERSION = '0.4.0';" bus.html
@@ -83,7 +92,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bus.html .github noop 2>/dev/null || true
           git add -A
           if git diff --cached --quiet; then
             echo "::error::The release produced no committed changes."
