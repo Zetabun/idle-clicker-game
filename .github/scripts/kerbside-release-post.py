@@ -34,6 +34,12 @@ browser = replace_once(
     "assert.match(busSource, /const directionSchedule=est\\.schedule\\|\\|matchedRow/);\nassert.match(busSource, /scheduledJourneyDirection\\(directionSchedule\\)/);",
     "matched timetable direction assertion",
 )
+browser = replace_once(
+    browser,
+    "assert.match(busSource, /Live · no fresh buses reported/);",
+    "assert.match(busSource, /const emptySummary=S\\.feedEmptyReason\\.includes\\('timestamped'\\)\\?'no fresh GPS positions reported':'no buses reported'/);\nassert.match(busSource, /'Live · '\\+emptySummary/);",
+    "healthy empty-feed assertions",
+)
 browser_path.write_text(browser, encoding="utf-8")
 
 print("Applied Kerbside 0.6.51 post-release guard fixes")
