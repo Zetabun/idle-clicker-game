@@ -55,6 +55,10 @@ jobs:
           set -euo pipefail
           python3 -m py_compile "$RELEASE_SCRIPT"
           python3 "$RELEASE_SCRIPT"
+          if [[ -f .github/scripts/kerbside-release-post.py ]]; then
+            python3 -m py_compile .github/scripts/kerbside-release-post.py
+            python3 .github/scripts/kerbside-release-post.py
+          fi
           git diff --check
 
       - name: Install browser test dependencies
@@ -85,8 +89,10 @@ jobs:
           set -euo pipefail
           if [[ -d .github/scripts/__pycache__ ]]; then
             find .github/scripts/__pycache__ -maxdepth 1 -type f -name 'release-kerbside-*.pyc' -delete
+            find .github/scripts/__pycache__ -maxdepth 1 -type f -name 'kerbside-release-post*.pyc' -delete
           fi
           rm -f .github/scripts/release-kerbside-*.py
+          rm -f .github/scripts/kerbside-release-post.py
           rm -f .github/triggers/release-kerbside-*.txt
 
           # GITHUB_TOKEN cannot create or update protected workflow files.
@@ -125,6 +131,7 @@ jobs:
           trigger_path="${trigger_path%.py}.txt"
           TREE="$(jq --arg path "$RELEASE_SCRIPT" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
           TREE="$(jq --arg path "$trigger_path" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
+          TREE="$(jq --arg path '.github/scripts/kerbside-release-post.py' '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
 
           TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
             '{base_tree: $base_tree, tree: $tree}' | \
