@@ -117,6 +117,8 @@ Kerbside 0.6.49 prevents verified GPS results from disappearing during short ope
 
 Kerbside 0.6.50 separates a healthy empty BODS response from a genuine feed failure. Valid XML with no fresh vehicles now reports `Live · no fresh buses reported` and retains any still-valid prior GPS rows instead of showing `Feed problem`. Real Worker, network or upstream failures now state `Live feed delayed · last GPS retained` or `Live feed unavailable · retrying`, while scheduled departures remain available when present. WebKit verifies that valid empty SIRI XML returns an empty live result without entering the error path.
 
+Kerbside 0.6.51 makes live GPS ordering and lost-signal behaviour safety-critical rather than cosmetic. Older responses from overlapping nearby, expanded and route-corridor requests can contribute compatible journey evidence but can no longer overwrite a newer position or timestamp. Held rows are bound to the active direction and destination filter, do not trigger leave alerts, tight-walk warnings, early/late labels or moving route progress, and no longer hide the corresponding scheduled departure. Exact matched timetable rows continue to provide direction and destination even when their ETA is too far from the spatial estimate to blend. Expired corridor identity is removed, incomplete expanded coverage enters the retry path, and the Worker validates SIRI vehicle-monitoring structure before caching or serving an upstream HTTP 200 response. Browser and Worker fixtures cover all of these cases.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
