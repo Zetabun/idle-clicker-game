@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.26 also keeps a fired leave alert through a brief two-minute missing-GPS gap, preventing the same bus from generating duplicate notifications when it disappears for one poll and returns.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.27 also makes timetable-only explanations evidence-based: the board now reports whether fresh GPS, route, destination or a unique journey match was missing without claiming the operator has no GPS service.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.26';
+const APP_VERSION = '0.6.27';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2888,15 +2888,15 @@ function scheduleLiveReason(schedule){
   if(S.feedFallback) return 'live feed delayed';
   const now=Date.now();
   const active=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
-  if(!active.length) return 'operator GPS unavailable';
+  if(!active.length) return 'no fresh GPS found nearby';
   const sameLine=active.filter(v=>String(v.line)===String(schedule.line));
-  if(!sameLine.length) return 'no GPS matched';
+  if(!sameLine.length) return 'no fresh GPS for this route';
   const sameBranch=sameLine.filter(v=>!schedule.head || !v.dest || destinationSimilarity(v.dest,schedule.head)>=.34);
-  if(!sameBranch.length) return 'GPS branch uncertain';
+  if(!sameBranch.length) return 'destination match uncertain';
   const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
-  if(liveTrip.items.length) return 'GPS received · filtered';
+  if(liveTrip.items.length) return 'possible GPS match was filtered';
   if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
-  return 'journey uncertain';
+  return 'no unique journey match';
 }
 function scheduledBoardRows(liveRows){
   if(!S.ttStop) return [];
@@ -2921,7 +2921,7 @@ function liveTimingLabel(r){
 }
 function renderScheduledRow(r){
   const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), due=mins<=1;
-  const reason=r.liveReason||'no live match';
+  const reason=r.liveReason||'no fresh GPS match';
   return '<div class="dep schedule-only" aria-label="Scheduled '+esc(s.line)+' to '+esc(s.head||'destination unknown')+' · '+esc(reason)+'">'
     +'<span class="route">'+esc(s.line)+'</span>'
     +'<span style="min-width:0"><span class="dest">'+esc(s.head||'Destination unknown')+'</span><span class="deprow2">'
