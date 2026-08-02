@@ -83,6 +83,8 @@ Kerbside 0.6.32 adds best-effort live Worker abuse safeguards without requiring 
 
 Kerbside 0.6.33 self-hosts the complete pinned Leaflet 1.9.4 distribution. The release workflow generates JavaScript, CSS, licence and image assets from the npm package only after its JavaScript and CSS match Leaflet's official SHA-256 values. The browser loads those local files first, retains the official unpkg build as an emergency fallback, and presents a readable map-unavailable message if neither copy can load. WebKit regression now blocks the CDN and verifies the real local Leaflet runtime.
 
+Kerbside 0.6.34 adds an automatic interactive basemap fallback. CARTO remains the primary dark map. Four accumulated tile errors switch the current map once to `https://tile.openstreetmap.org/{z}/{x}/{y}.png`; successful tile loads reduce the error count so isolated failures do not trigger a switch. The fallback uses normal browser caching and Referer behaviour, requests only the visible Leaflet viewport, and retains visible OpenStreetMap attribution. WebKit now forces CARTO failures and verifies successful OpenStreetMap recovery.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

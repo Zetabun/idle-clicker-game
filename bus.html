@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.33 also loads Leaflet 1.9.4 from integrity-checked repository assets first, uses the official CDN only as an emergency fallback, and shows a clear map error if both copies fail.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.34 also recovers from repeated CARTO basemap tile failures by switching once to the standard OpenStreetMap tile endpoint with visible attribution; the live board continues to work throughout.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.33';
+const APP_VERSION = '0.6.34';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1028,10 +1028,48 @@ function nameSimilarity(a,b){
    Map
    ============================================================ */
 const map = L.map('map',{zoomControl:true, attributionControl:true}).setView([52.509,-2.087],16);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; OpenStreetMap contributors &copy; CARTO &middot; vehicles via BODS',
-  subdomains:'abcd', maxZoom:19
-}).addTo(map);
+const TILE_ERROR_THRESHOLD=4;
+const TILE_PROVIDERS=[
+  {
+    name:'CARTO',
+    url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options:{
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &middot; vehicles via BODS',
+      subdomains:'abcd',maxZoom:19
+    }
+  },
+  {
+    name:'OpenStreetMap',
+    url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options:{
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; vehicles via BODS',
+      maxZoom:19
+    }
+  }
+];
+let baseLayer=null,tileProviderIndex=-1,tileErrorCount=0;
+function currentTileProvider(){return TILE_PROVIDERS[tileProviderIndex]&&TILE_PROVIDERS[tileProviderIndex].name||'';}
+function useTileProvider(index,reason){
+  const provider=TILE_PROVIDERS[index];
+  if(!provider||index===tileProviderIndex) return;
+  if(baseLayer) map.removeLayer(baseLayer);
+  tileProviderIndex=index;tileErrorCount=0;
+  baseLayer=L.tileLayer(provider.url,provider.options);
+  baseLayer.on('tileload',()=>{if(tileProviderIndex===index) tileErrorCount=Math.max(0,tileErrorCount-1);});
+  baseLayer.on('tileerror',()=>{
+    if(tileProviderIndex!==index) return;
+    tileErrorCount++;
+    if(tileErrorCount>=TILE_ERROR_THRESHOLD&&index+1<TILE_PROVIDERS.length){
+      useTileProvider(index+1,'Primary map tiles unavailable');
+    }
+  });
+  baseLayer.addTo(map);
+  if(reason) toast(reason+' — using '+provider.name+'.');
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),currentTileProvider};
+}
+useTileProvider(0);
 const attributionEl=map.attributionControl&&map.attributionControl.getContainer();
 if(attributionEl){
   attributionEl.querySelectorAll('a').forEach(link=>{link.target='_blank';link.rel='noopener noreferrer';});
