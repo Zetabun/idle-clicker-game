@@ -59,7 +59,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.6.37',
+    version: '0.6.38',
     bods: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
     upstreamTimeoutMs: LIVE_TIMEOUT_MS,
