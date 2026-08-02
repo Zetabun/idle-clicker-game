@@ -89,6 +89,8 @@ Kerbside 0.6.35 extracts SIRI-VM parsing into a fixture-tested path. Namespaced 
 
 Kerbside 0.6.36 makes the periodic expanded live scan fail open. Every 18 km attempt records its 45-second cooldown immediately, including partial or complete failures. When all expanded requests fail, the browser retries the ordinary 9 km box in the same poll, so distant-feed trouble cannot blank healthy nearby departures or create repeated wide-request bursts. WebKit forces the expanded requests to fail and verifies the nearby SIRI response is still returned.
 
+Kerbside 0.6.37 completes expanded-scan recovery for partial failures. If one split 18 km box succeeds and another fails, the ordinary 9 km box is fetched once and merged with the successful distant response. SIRI identity deduplication keeps the newest copy of overlapping vehicles while preserving unique distant and nearby buses. WebKit verifies one wide success, one wide failure and one nearby supplement in the same refresh.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
