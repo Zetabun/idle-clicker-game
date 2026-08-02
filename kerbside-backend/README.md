@@ -13,7 +13,8 @@ No R2 bucket, R2 API token or R2 billing setup is required.
 Static data is deployed to `https://kerbside-data-zetabun.pages.dev`:
 
 - `GET /manifest.json` - national build status and regional bounds.
-- `GET /regions/{region}/tiles/{tile}.json` - nearby official stops and scheduled departures for one geographic tile.
+- `GET /regions/{region}/tiles/{tile}.json` - nearby official stop metadata for one geographic tile.
+- `GET /regions/{region}/departures/{prefix}.json` - a balanced timetable shard selected by the stop's hash.
 - `GET /regions/{region}/patterns/{prefix}.json` - ordered journey patterns loaded only when needed.
 
 `bus.html` uses that Pages hostname directly, so timetable traffic does not consume Worker requests.
@@ -48,7 +49,7 @@ Do not put BODS or Cloudflare credentials in `bus.html`, source code or reposito
 
 ## Pages free-tier safeguards
 
-The builder writes one combined data file per 0.05-degree tile and two-character pattern shards. The workflow fails before deployment when:
+The builder writes lightweight 0.05-degree stop-index tiles plus balanced two-character departure and pattern shards. This prevents dense city timetables from producing oversized geographic files. The workflow fails before deployment when:
 
 - the site contains more than 20,000 files; or
 - any individual asset reaches 25 MiB.
