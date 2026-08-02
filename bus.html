@@ -743,7 +743,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.16 also recovers timetable-linked GPS vehicles when exact route or scheduled-call evidence is stronger than a temporary bearing or town-centre direction estimate, and the board explains why each remaining timetable row has no live match.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.17 recovers timetable-linked GPS vehicles when exact route or scheduled-call evidence is stronger than a temporary bearing or town-centre direction estimate, explains why timetable rows have no live match, and no longer treats raw GTFS direction values 0 and 1 as universal inbound/outbound labels.</p>
           </div>
 
           <div class="stats-section">
@@ -774,7 +774,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.16';
+const APP_VERSION = '0.6.17';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1637,9 +1637,24 @@ function tripRefMatches(a,b){
 }
 function timetableDirection(value){
   const direction=String(value||'').trim().toLowerCase();
-  if(direction==='0' || direction.startsWith('in')) return 'in';
-  if(direction==='1' || direction.startsWith('out')) return 'out';
+  if(direction==='in' || direction==='inbound' || direction.startsWith('inbound ')) return 'in';
+  if(direction==='out' || direction==='outbound' || direction.startsWith('outbound ')) return 'out';
   return 'unknown';
+}
+function scheduledJourneyDirection(row){
+  const explicit=timetableDirection(row&&row.direction);
+  if(explicit!=='unknown') return explicit;
+  if(!row||!S.anchor||S.anchor.synthetic) return 'unknown';
+  const pattern=timetablePatternRecord(row.trip);
+  if(!pattern) return 'unknown';
+  const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops);
+  if(index<0) return 'unknown';
+  const before=stops[Math.max(0,index-1)], after=stops[Math.min(stops.length-1,index+1)];
+  if(!before||!after||before===after) return 'unknown';
+  const beforeDistance=dist(before.lat,before.lon,S.anchor.lat,S.anchor.lon);
+  const afterDistance=dist(after.lat,after.lon,S.anchor.lat,S.anchor.lon);
+  if(Math.abs(beforeDistance-afterDistance)<80) return 'unknown';
+  return afterDistance<beforeDistance?'in':'out';
 }
 async function queuePattern(patternId){
   if(!patternId||!S.timetableRegion||S.patternPending.has(patternId)) return;
@@ -2632,7 +2647,7 @@ function collect(gate,diagnostics){
     const est=estimate(v,S.stop);
     const scheduleBacked=!!(est.schedule && evidence.score>=4);
     const trustedJourney=!!(evidence.journeyMatch || geometry);
-    const scheduledDir=timetableDirection(est.schedule&&est.schedule.direction);
+    const scheduledDir=scheduledJourneyDirection(est.schedule);
     const candidateDest=v.dest || (est.schedule&&est.schedule.head) || '';
 
     if(S.destFilter && destinationSimilarity(candidateDest,S.destFilter)<.75){
@@ -2832,7 +2847,7 @@ function scheduledBoardRows(liveRows){
   return timetableRows(new Date(now)).filter(r=>{
     if(r.at<now-60000 || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
-    const rowDir=timetableDirection(r.direction);
+    const rowDir=scheduledJourneyDirection(r);
     if(S.dir!=='all' && rowDir!=='unknown' && rowDir!==S.dir) return false;
     const key=scheduleKey(r);
     if(claimed.has(key) || seen.has(key)) return false;
