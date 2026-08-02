@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_BBOX_SPAN, normaliseBoundingBox, routeRequest } from '../src/worker.js';
+import { MAX_BBOX_SPAN, normaliseBoundingBox, resetWorkerStateForTests, routeRequest } from '../src/worker.js';
 
 const BBOX = '-2.20,52.40,-2.00,52.60';
 const LIVE_URL = `https://example.test/feed?bbox=${encodeURIComponent(BBOX)}&lineRef=9`;
@@ -65,10 +65,64 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.6.31');
+  assert.equal(body.version, '0.6.32');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);
+  assert.equal(body.rateLimitPerMinute, 60);
+});
+
+ test('rejects an unapproved browser origin before cache or BODS work', async () => {
+  resetWorkerStateForTests();
+  const response = await routeRequest(new Request(LIVE_URL, {
+    headers: { Origin: 'https://unapproved.example', 'CF-Connecting-IP': '203.0.113.10' }
+  }), { BODS_KEY: 'present' });
+  assert.equal(response.status, 403);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), null);
+});
+
+ test('applies a conservative per-IP live-feed request limit', async () => {
+  resetWorkerStateForTests();
+  const runtime = installRuntime(cachedResponse('<cached/>', 1000), async () => {
+    throw new Error('upstream should not be called');
+  });
+  try {
+    const request = () => new Request(LIVE_URL, { headers: { 'CF-Connecting-IP': '203.0.113.11' } });
+    const env = { BODS_KEY: 'present', RATE_LIMIT_PER_MINUTE: '2' };
+    assert.equal((await routeRequest(request(), env)).status, 200);
+    assert.equal((await routeRequest(request(), env)).status, 200);
+    const blocked = await routeRequest(request(), env);
+    assert.equal(blocked.status, 429);
+    assert.equal(blocked.headers.get('X-RateLimit-Limit'), '2');
+    assert.equal(blocked.headers.get('X-RateLimit-Remaining'), '0');
+    assert.ok(Number(blocked.headers.get('Retry-After')) >= 1);
+  } finally {
+    runtime.restore();
+    resetWorkerStateForTests();
+  }
+});
+
+ test('coalesces simultaneous identical cache misses into one BODS request', async () => {
+  resetWorkerStateForTests();
+  const runtime = installRuntime(null, async () => {
+    await new Promise(resolve => setTimeout(resolve, 20));
+    return new Response('<fresh/>', { status: 200, headers: { 'Content-Type': 'application/xml' } });
+  });
+  try {
+    const request = () => new Request(LIVE_URL, { headers: { 'CF-Connecting-IP': '203.0.113.12' } });
+    const [first, second] = await Promise.all([
+      routeRequest(request(), { BODS_KEY: 'present' }),
+      routeRequest(request(), { BODS_KEY: 'present' })
+    ]);
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal(await first.text(), '<fresh/>');
+    assert.equal(await second.text(), '<fresh/>');
+    assert.equal(runtime.state.fetches, 1);
+  } finally {
+    runtime.restore();
+    resetWorkerStateForTests();
+  }
 });
 
 test('serves a very recent cache hit without contacting BODS', async () => {
