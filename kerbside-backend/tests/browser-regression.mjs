@@ -41,7 +41,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.49'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.50'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -165,6 +165,9 @@ assert.match(busSource, /const GPS_RESULT_GRACE_MS = 6\*60\*1000/);
 assert.match(busSource, /function gpsMovementDirection\(v\)/);
 assert.match(busSource, /GPS signal lost/);
 assert.match(busSource, /v\.progressPattern/);
+assert.match(busSource, /Live · no fresh buses reported/);
+assert.match(busSource, /Live feed delayed · last GPS retained/);
+assert.doesNotMatch(busSource, /setStatus\(scheduled\?'Live unavailable · scheduled times shown':'Feed problem'/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -272,7 +275,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.49', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.50', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -635,6 +638,23 @@ try {
   });
   assert.equal(gpsFixes.corridor,true);assert.equal(gpsFixes.live,1);assert.equal(gpsFixes.progress,true);assert.equal(gpsFixes.held,true);assert.equal(gpsFixes.away,false);
 
+  const emptyFeed = await page.evaluate(async () => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,originalFetch=window.fetch;
+    const saved={stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge,feedEmptyReason:state.feedEmptyReason};
+    state.stop={id:'empty-feed-stop',lat:52.5,lon:-2.1,name:'Empty feed stop'};
+    state.origin={lat:52.5,lon:-2.1,label:'Empty feed'};
+    state.proxy='https://empty-feed.test';state.key='';state.demo=false;state.lastWideFetch=Date.now();
+    window.fetch=async () => new Response('<?xml version="1.0"?><Siri><ServiceDelivery><VehicleMonitoringDelivery></VehicleMonitoringDelivery></ServiceDelivery></Siri>',{status:200,headers:{'Content-Type':'application/xml'}});
+    try{
+      const rows=await api.fetchLive();
+      return {count:rows.length,reason:state.feedEmptyReason};
+    }finally{
+      window.fetch=originalFetch;Object.assign(state,saved);
+    }
+  });
+  assert.equal(emptyFeed.count,0);
+  assert.match(emptyFeed.reason,/No buses were reported/);
+
   const wideFallback = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
     const saved={
@@ -843,7 +863,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.49'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.50'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
