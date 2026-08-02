@@ -2,9 +2,11 @@ name: Release Kerbside 0.4.0
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
       - main
+    types:
+      - opened
     paths:
       - .github/triggers/release-kerbside-0.4.0.txt
 
@@ -17,14 +19,16 @@ concurrency:
 
 jobs:
   release:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Check out repository
+      - name: Check out release branch
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -67,8 +71,10 @@ jobs:
             .github/workflows/release-kerbside-0.4.0.yml \
             .github/triggers/release-kerbside-0.4.0.txt
 
-      - name: Commit release to main
+      - name: Commit release to branch
         shell: bash
+        env:
+          RELEASE_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -79,4 +85,4 @@ jobs:
             exit 1
           fi
           git commit -m "Release Kerbside 0.4.0"
-          git push origin HEAD:main
+          git push origin "HEAD:${RELEASE_BRANCH}"
