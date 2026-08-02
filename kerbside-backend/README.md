@@ -45,6 +45,8 @@ Kerbside 0.6.13 makes the public Worker the default so new visitors start with r
 
 Kerbside 0.6.14 periodically expands live GPS coverage to an 18 km area around the selected stop. The wider area is guarded by exact timetable journey matching: distant vehicles are shown only when the live journey is scheduled to call at that stop, while the existing nearby route matching and dim background markers remain limited to the original 9 km area. Wide scans run less often than nearby refreshes to limit extra BODS traffic.
 
+Kerbside 0.6.15 adds exact live journey progress. Tapping a timetable-matched vehicle shows its ordered stops, passed stops, next stop, selected-stop position, stops remaining and percentage through the journey. The national builder now retains optional GTFS `shapes.txt` geometry and stop metadata. Kerbside draws the map route only when that exact journey has an authoritative GTFS shape; older or shape-less patterns continue to support matching but never produce a guessed road line.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
