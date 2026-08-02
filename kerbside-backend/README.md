@@ -101,6 +101,8 @@ Kerbside 0.6.41 makes national stop discovery resilient to partial Cloudflare Pa
 
 Kerbside 0.6.42 tightens stop identity merging. Official timetable IDs, ATCO codes and NaPTAN/SMS codes remain authoritative across national and OpenStreetMap sources. A generic OSM `ref`, however, is treated only as a local stand label and no longer merges geographically separate stops that both happen to use values such as `A`. Exact source IDs still match, while close same-name coordinates can merge genuine duplicates. WebKit verifies official-code matching, repeated local refs, close duplicates, stable IDs and opposite-side stops.
 
+Kerbside 0.6.43 validates national timetable manifests before they become active. A manifest must identify the England regional Pages dataset, contain all nine expected regions, include valid build timestamps and bounds, report positive regional asset counts, and have totals that exactly match the regional sums. Valid manifests are stored locally for 14 days. Malformed JSON, incomplete deployments, inconsistent totals and HTTP failures now fall back to that recent last-known-good snapshot without clearing working tile, departure or pattern caches. WebKit executes successful, malformed, partial and unavailable manifest scenarios.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

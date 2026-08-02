@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.42'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.43'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -124,6 +124,12 @@ assert.doesNotMatch(busSource, /kerbside\.stops\.v5/);
 assert.match(busSource, /stop\.source==='official'\|\|looksLikeAtco\(stop\.code\)/);
 assert.match(busSource, /if\(idA&&idA===idB\) return true/);
 assert.doesNotMatch(busSource, /stop&&stop\.code\]\n    \.map/);
+assert.match(busSource, /const DATA_MANIFEST_MAX_AGE = 14\*24\*3600\*1000/);
+assert.match(busSource, /function validDataManifest\(data\)/);
+assert.match(busSource, /Object\.keys\(regions\)\.length!==REQUIRED_DATA_REGIONS\.length/);
+assert.match(busSource, /DATA_MANIFEST_SOURCE='stored'/);
+assert.match(busSource, /cache:force\?'reload':'no-cache'/);
+assert.doesNotMatch(busSource, /cache:force\?'reload':'force-cache'/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -167,15 +173,26 @@ try {
   await page.route('https://tile.openstreetmap.org/**', route => { osmTileRequests++; return route.fulfill({ status: 200, contentType: 'image/png', body: transparentTile }); });
   await page.route('https://fonts.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
-  await page.route('https://kerbside-data-zetabun.pages.dev/manifest.json**', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ built: '2026-08-02T00:00:00.000Z', tileSize: 0.05, totals: { stops: 275965, departures: 50753499, patterns: 42204 }, regions: { west_midlands: { stops: 1, departures: 1 } } })
-  }));
+  const requiredManifestRegions=['east_anglia','east_midlands','london','north_east','north_west','south_east','south_west','west_midlands','yorkshire'];
+  const validManifestRegions=Object.fromEntries(requiredManifestRegions.map((name,index)=>[name,{
+    version:2,built:'2026-08-02T00:00:00.000Z',region:name,tileSize:0.05,
+    bounds:[-6+index*.1,50,-5.5+index*.1,50.5],stops:1,departures:2,patterns:1,tiles:1,departureShards:1
+  }]));
+  const validManifest={
+    version:3,scope:'england-regional-pages',built:'2026-08-02T00:00:00.000Z',tileSize:0.05,
+    regions:validManifestRegions,totals:{stops:9,departures:18,patterns:9,tiles:9}
+  };
+  let manifestMode='valid';
+  await page.route('https://kerbside-data-zetabun.pages.dev/manifest.json**', route => {
+    if(manifestMode==='bad-json') return route.fulfill({status:200,contentType:'application/json',body:'{"broken"'});
+    if(manifestMode==='partial') return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...validManifest,regions:{west_midlands:validManifestRegions.west_midlands},totals:{stops:1,departures:2,patterns:1,tiles:1}})});
+    if(manifestMode==='error') return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'synthetic manifest outage'})});
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(validManifest)});
+  });
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.42', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.43', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -213,6 +230,34 @@ try {
   assert.doesNotMatch(viewportContent, /user-scalable|maximum-scale/);
   const scrimTouchAction=await page.evaluate(() => getComputedStyle(document.getElementById('scrim')).touchAction);
   assert.match(scrimTouchAction, /pinch-zoom/);
+
+  const manifestPolicy = await page.evaluate(async () => {
+    const api=window.__KERBSIDE_TEST__;
+    api.resetDataManifestForTest(true);
+    const manifest=await api.loadDataManifest(true);
+    return {built:manifest.built,valid:api.validDataManifest(manifest),source:api.dataManifestSource(),stored:api.readStoredDataManifest()?.built};
+  });
+  assert.deepEqual(manifestPolicy,{built:'2026-08-02T00:00:00.000Z',valid:true,source:'network',stored:'2026-08-02T00:00:00.000Z'});
+  manifestMode='bad-json';
+  const badJsonFallback=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;api.resetDataManifestForTest(false);
+    const manifest=await api.loadDataManifest(true);return {built:manifest.built,source:api.dataManifestSource()};
+  });
+  assert.deepEqual(badJsonFallback,{built:'2026-08-02T00:00:00.000Z',source:'stored'});
+  manifestMode='partial';
+  const partialFallback=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;api.resetDataManifestForTest(false);
+    const manifest=await api.loadDataManifest(true);return {built:manifest.built,source:api.dataManifestSource()};
+  });
+  assert.deepEqual(partialFallback,{built:'2026-08-02T00:00:00.000Z',source:'stored'});
+  manifestMode='error';
+  const outageFallback=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;api.resetDataManifestForTest(false);
+    const manifest=await api.loadDataManifest(true);return {built:manifest.built,source:api.dataManifestSource()};
+  });
+  assert.deepEqual(outageFallback,{built:'2026-08-02T00:00:00.000Z',source:'stored'});
+  manifestMode='valid';
+  await page.evaluate(async()=>{const api=window.__KERBSIDE_TEST__;api.resetDataManifestForTest(false);await api.loadDataManifest(true);});
 
   const liveParsing = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,now=Date.now(),iso=value=>new Date(value).toISOString();
@@ -457,7 +502,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.42'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.43'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

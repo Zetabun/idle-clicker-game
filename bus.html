@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.42 also treats ordinary OpenStreetMap stop refs as local labels rather than global identities, preventing unrelated stops that both use labels such as A from being merged.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.43 also validates the complete national timetable manifest and keeps a recent last-known-good copy, so malformed or incomplete data deployments cannot replace working timetable coverage.</p>
           </div>
 
           <div class="stats-section">
@@ -786,14 +786,18 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.42';
+const APP_VERSION = '0.6.43';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
 const DATA_TILE_CACHE = new Map();
 const DATA_DEPARTURE_CACHE = new Map();
+const DATA_MANIFEST_STORAGE = 'kerbside.data.manifest.v1';
+const DATA_MANIFEST_MAX_AGE = 14*24*3600*1000;
+const REQUIRED_DATA_REGIONS = ['east_anglia','east_midlands','london','north_east','north_west','south_east','south_west','west_midlands','yorkshire'];
 let DATA_MANIFEST = null;
 let DATA_MANIFEST_PROMISE = null;
+let DATA_MANIFEST_SOURCE = '';
 
 const S = {
   key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
@@ -1317,7 +1321,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -1331,20 +1335,63 @@ function dataTilesForRadius(lat,lon,radius){
   const keys=[]; for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++) keys.push(y+'-'+x);
   return keys;
 }
+function validDataManifest(data){
+  if(!data||Number(data.version)<3||data.scope!=='england-regional-pages') return false;
+  if(!Number.isFinite(Date.parse(String(data.built||'')))) return false;
+  const tileSize=Number(data.tileSize); if(!(tileSize>.001&&tileSize<=.25)) return false;
+  const regions=data.regions, totals=data.totals;
+  if(!regions||typeof regions!=='object'||!totals||typeof totals!=='object') return false;
+  const sums={stops:0,departures:0,patterns:0,tiles:0};
+  for(const name of REQUIRED_DATA_REGIONS){
+    const region=regions[name]; if(!region||typeof region!=='object') return false;
+    if(!Number.isFinite(Date.parse(String(region.built||'')))) return false;
+    const bounds=region.bounds;
+    if(!Array.isArray(bounds)||bounds.length!==4||bounds.some(value=>!Number.isFinite(Number(value)))) return false;
+    if(Number(bounds[0])>=Number(bounds[2])||Number(bounds[1])>=Number(bounds[3])) return false;
+    for(const key of ['stops','departures','patterns','tiles','departureShards']){
+      if(!Number.isFinite(Number(region[key]))||Number(region[key])<=0) return false;
+    }
+    for(const key of Object.keys(sums)) sums[key]+=Number(region[key]);
+  }
+  if(Object.keys(regions).length!==REQUIRED_DATA_REGIONS.length) return false;
+  return Object.entries(sums).every(([key,total])=>Number(totals[key])===total&&total>0);
+}
+function readStoredDataManifest(now=Date.now()){
+  try{
+    const record=JSON.parse(localStorage.getItem(DATA_MANIFEST_STORAGE)||'null');
+    if(!record||!Number.isFinite(Number(record.ts))||now-Number(record.ts)>DATA_MANIFEST_MAX_AGE) return null;
+    return validDataManifest(record.data)?record.data:null;
+  }catch(e){ return null; }
+}
+function writeStoredDataManifest(data){
+  if(!validDataManifest(data)) return;
+  try{ localStorage.setItem(DATA_MANIFEST_STORAGE,JSON.stringify({ts:Date.now(),data})); }catch(e){}
+}
+function resetDataManifestForTest(clearStored){
+  DATA_MANIFEST=null; DATA_MANIFEST_PROMISE=null; DATA_MANIFEST_SOURCE='';
+  DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); PATTERN_CACHE.clear();
+  if(clearStored){ try{localStorage.removeItem(DATA_MANIFEST_STORAGE);}catch(e){} }
+}
 async function loadDataManifest(force){
   if(DATA_MANIFEST&&!force) return DATA_MANIFEST;
-  if(DATA_MANIFEST_PROMISE&&!force) return DATA_MANIFEST_PROMISE;
+  if(DATA_MANIFEST_PROMISE) return DATA_MANIFEST_PROMISE;
   DATA_MANIFEST_PROMISE=(async()=>{
-    const r=await fetchTimed(dataUrl('/manifest.json'),{headers:{Accept:'application/json'},cache:force?'reload':'force-cache'},10000);
-    if(!r.ok) throw new Error('Pages timetable HTTP '+r.status);
-    const data=await r.json();
-    if(!data||!data.regions||!Object.keys(data.regions).length) throw new Error('Pages timetable manifest is empty');
-    const previousBuild=DATA_MANIFEST&&String(DATA_MANIFEST.built||'');
-    const nextBuild=String(data.built||'');
-    if(previousBuild&&nextBuild&&previousBuild!==nextBuild){
-      DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); PATTERN_CACHE.clear();
+    const fallback=DATA_MANIFEST||readStoredDataManifest();
+    try{
+      const r=await fetchTimed(dataUrl('/manifest.json'),{headers:{Accept:'application/json'},cache:force?'reload':'no-cache'},10000);
+      if(!r.ok) throw new Error('Pages timetable HTTP '+r.status);
+      const data=await r.json();
+      if(!validDataManifest(data)) throw new Error('Pages timetable manifest failed validation');
+      const previousBuild=DATA_MANIFEST&&String(DATA_MANIFEST.built||'');
+      const nextBuild=String(data.built||'');
+      if(previousBuild&&nextBuild&&previousBuild!==nextBuild){
+        DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); PATTERN_CACHE.clear();
+      }
+      DATA_MANIFEST=data; DATA_MANIFEST_SOURCE='network'; writeStoredDataManifest(data); return data;
+    }catch(e){
+      if(fallback){ DATA_MANIFEST=fallback; DATA_MANIFEST_SOURCE='stored'; return fallback; }
+      throw e;
     }
-    DATA_MANIFEST=data; return data;
   })();
   try{return await DATA_MANIFEST_PROMISE;}finally{DATA_MANIFEST_PROMISE=null;}
 }
