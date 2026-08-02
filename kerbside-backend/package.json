@@ -4,11 +4,13 @@
   "version": "0.6.32",
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check tests/browser-regression.mjs",
+    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs",
     "test": "node --test",
-    "test:browser": "node tests/browser-regression.mjs"
+    "test:browser": "node tests/browser-regression.mjs",
+    "vendor:leaflet": "node scripts/vendor-leaflet.js"
   },
   "devDependencies": {
+    "leaflet": "1.9.4",
     "wrangler": "^4.28.1",
     "playwright": "1.62.0"
   }

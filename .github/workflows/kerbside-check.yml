@@ -52,6 +52,10 @@ jobs:
         run: |
           set -euo pipefail
           npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          if git ls-files --error-unmatch kerbside-backend/vendor/leaflet/leaflet.js >/dev/null 2>&1; then
+            git diff --exit-code -- kerbside-backend/vendor/leaflet
+          fi
           cd kerbside-backend
           npx playwright install --with-deps webkit
 
