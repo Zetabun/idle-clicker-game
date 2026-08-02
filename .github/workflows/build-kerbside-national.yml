@@ -2,6 +2,12 @@ name: Build Kerbside national timetable data
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - kerbside-backend/scripts/build-region.js
+      - .github/workflows/build-kerbside-national.yml
   schedule:
     - cron: '20 5 * * *'
 
@@ -70,7 +76,7 @@ jobs:
           unzip -tq gtfs.zip
           ls -lh gtfs.zip
 
-      - name: Extract only required GTFS tables
+      - name: Extract required and route-shape GTFS tables
         shell: bash
         run: |
           set -euo pipefail
@@ -81,7 +87,7 @@ jobs:
           from zipfile import ZipFile
 
           required = {'stops.txt', 'routes.txt', 'trips.txt', 'stop_times.txt'}
-          optional = {'calendar.txt', 'calendar_dates.txt'}
+          optional = {'calendar.txt', 'calendar_dates.txt', 'shapes.txt'}
           wanted = required | optional
           selected = {}
 
@@ -99,6 +105,8 @@ jobs:
                   Path('gtfs', name).write_bytes(archive.read(info))
 
           print('Extracted:', ', '.join(sorted(selected)))
+          if 'shapes.txt' not in selected:
+              print('Warning: this regional GTFS archive has no shapes.txt; Kerbside will not draw road route lines for its journeys.')
           PY
           ls -lh gtfs
 
@@ -123,8 +131,9 @@ jobs:
             throw new Error(`${region} manifest has no geographic bounds`);
           }
           if (manifest.maxTileBytes >= 25 * 1024 * 1024) {
-            throw new Error(`${region} contains a tile above the Cloudflare Pages 25 MiB limit`);
+            throw new Error(`${region} contains an asset above the Cloudflare Pages 25 MiB limit`);
           }
+          console.log(`${region}: ${manifest.shapedPatterns || 0} shaped patterns from ${manifest.shapePoints || 0} GTFS shape points`);
           console.log(JSON.stringify(manifest, null, 2));
           NODE
 
@@ -188,12 +197,12 @@ jobs:
           if (Object.keys(regions).length !== 9) {
             throw new Error(`Expected 9 region manifests, found ${Object.keys(regions).length}`);
           }
-          const totals = { stops: 0, departures: 0, patterns: 0, tiles: 0, files: 0 };
+          const totals = { stops: 0, departures: 0, patterns: 0, shapedPatterns: 0, shapePoints: 0, tiles: 0, files: 0 };
           for (const manifest of Object.values(regions)) {
             for (const key of Object.keys(totals)) totals[key] += Number(manifest[key]) || 0;
           }
           const manifest = {
-            version: 2,
+            version: 3,
             scope: 'england-regional-pages',
             built: new Date().toISOString(),
             project: process.env.PAGES_PROJECT,
