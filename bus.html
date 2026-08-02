@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.23 also cancels obsolete address lookups and restricts Photon suggestions to Great Britain, preventing a slower earlier query or unsupported overseas result from replacing the user's latest search.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.24 also isolates locally learned speed and route-detour data by operator, route reference and displayed line, so unrelated services sharing a number cannot influence one another's ETA fallback.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.23';
+const APP_VERSION = '0.6.24';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2230,12 +2230,26 @@ function approaching(v, stop){ return approachStrength(v,stop)>=0; }
    each line actually travels versus how far it displaces, and use
    the measured ratio. Converges within a few minutes of watching.
    ------------------------------------------------------------ */
-const LINE_KEY = 'kerbside.lines.v1';
-let LINES = {};   // line -> {f: detour factor, n: samples, sp: m/s, sn: samples}
+const LINE_KEY = 'kerbside.lines.v2';
+const LEGACY_LINE_KEY = 'kerbside.lines.v1';
+let LINES = {};   // operator/route/line key -> {f,n,sp,sn}
 
+function lineLearningKey(value){
+  const v=value&&typeof value==='object'?value:{line:value};
+  const operator=String(v.operator||'').trim().toLowerCase();
+  const route=String(v.lineRef||v.routeRef||v.line||'').trim().toLowerCase();
+  const line=cleanLine(v.line||route||'?').toLowerCase();
+  return [operator||'unknown-operator',route||line,line].join('|');
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),lineLearningKey};
+}
 function loadLines(){
   if(!store.ok || !S.remember) return;
-  try{ LINES = JSON.parse(localStorage.getItem(LINE_KEY)||'{}') || {}; }catch(e){ LINES={}; }
+  try{
+    LINES = JSON.parse(localStorage.getItem(LINE_KEY)||'{}') || {};
+    localStorage.removeItem(LEGACY_LINE_KEY);
+  }catch(e){ LINES={}; }
 }
 let lineSaveT;
 function saveLines(){
@@ -2253,7 +2267,8 @@ function learnLine(v){
   if(straight < 250 || path < 250 || secs < 20) return;   // too little movement to mean anything
   const f = path/straight;
   if(f < 1 || f > 3) return;                              // turning circle or bad GPS
-  const rec = LINES[v.line] || (LINES[v.line]={f:ROAD_FACTOR,n:0,sp:DEFAULT_SPEED,sn:0});
+  const key=lineLearningKey(v);
+  const rec = LINES[key] || (LINES[key]={f:ROAD_FACTOR,n:0,sp:DEFAULT_SPEED,sn:0});
   rec.n = Math.min(rec.n+1, 200);
   rec.f += (f - rec.f) / Math.min(rec.n, 40);             // running mean, capped so it stays responsive
   const sp = path/secs;
@@ -2263,12 +2278,12 @@ function learnLine(v){
   }
   saveLines();
 }
-function lineFactor(line){
-  const r = LINES[line];
+function lineFactor(v){
+  const r = LINES[lineLearningKey(v)];
   return (r && r.n >= 3) ? r.f : ROAD_FACTOR;
 }
-function lineSpeed(line){
-  const r = LINES[line];
+function lineSpeed(v){
+  const r = LINES[lineLearningKey(v)];
   return (r && r.sn >= 3) ? r.sp : DEFAULT_SPEED;
 }
 
@@ -2311,9 +2326,9 @@ function estimate(v, stop){
   const geometry=journeyGeometry(v,stop);
   const road = geometry && geometry.remaining>0
     ? Math.max(straight,geometry.remaining)
-    : straight * lineFactor(v.line);
+    : straight * lineFactor(v);
   let sp = v.speed;
-  if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = lineSpeed(v.line);
+  if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = lineSpeed(v);
   const dwell = (road/1000) * 24;
   const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 75);
   let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - age*0.35);
@@ -2332,7 +2347,8 @@ function estimate(v, stop){
   let points=evidence.score + (strength>=2?2:strength===1?1:strength<0?-2:0) + (straight<250?1:0) + (schedule?1:0);
   const confidence=points>=6?'high':points>=3?'medium':'low';
   const spread=confidence==='high'?90:confidence==='medium'?210:360;
-  return {secs:spatial, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(LINES[v.line]&&LINES[v.line].n>=3), confidence, spread, evidence, schedule};
+  const learned=LINES[lineLearningKey(v)];
+  return {secs:spatial, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule};
 }
 
 /* ============================================================
@@ -2821,7 +2837,7 @@ function journeyProgressHtml(v){
     +stopList+'</div>';
 }
 function lineDetail(r){
-  const v=r.v, rec=LINES[v.line];
+  const v=r.v;
   const speed=(v.speed==null || !isFinite(v.speed))?'unknown':v.speed<.6?'stationary':Math.round(v.speed*2.237)+' mph';
   const facts=[
     ['Distance',fmtDist(r.metres)+' away'+(r.routeMetres&&r.routeMetres>r.metres+80?' · '+fmtDist(r.routeMetres)+' by route':'')],
