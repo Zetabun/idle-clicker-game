@@ -13,6 +13,11 @@ for label in ("browser source guards", "map source guards"):
     source, count = re.subn(pattern, "browser = browser\n", source, count=1, flags=re.M)
     if count != 1:
         raise SystemExit(f"release loader: could not remove {label}")
+bad_resolver = 'bus = sub_once(bus, r"\\n  if\\(!id&&journeyKey\\)\\{.*?\\n  \\}\\n  if\\(!id\\) return null;", "\\n  if(!id) return null;", "remove duplicate pattern resolver", re.S)'
+good_resolver = 'bus = sub_once(bus, r"(const id=timetablePatternId\\(journey,preferredPatternId\\);)\\n  if\\(!id&&journeyKey\\)\\{.*?\\n  \\}\\n  if\\(!id\\) return null;", r"\\1\\n  if(!id) return null;", "remove duplicate pattern resolver", re.S)'
+if source.count(bad_resolver) != 1:
+    raise SystemExit(f"release loader: expected one resolver cleanup, found {source.count(bad_resolver)}")
+source = source.replace(bad_resolver, good_resolver, 1)
 marker = 'browser = read("kerbside-backend/tests/browser-regression.mjs").replace(OLD, NEW)\n'
 addition = 'browser = browser.replace("assert.match(busSource, /if\\\\(!shown&&!nearby\\\\) continue/);", "assert.match(busSource, /function mapVehicleVisible/);")\n'
 if source.count(marker) != 1:
