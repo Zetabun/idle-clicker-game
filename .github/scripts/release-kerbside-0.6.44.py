@@ -79,6 +79,12 @@ browser_test = replace_once(
 )
 browser_test = replace_once(browser_test, "version: '0.6.43'", "version: '0.6.44'", 'browser mocked Worker version')
 browser_test = replace_once(browser_test, "includes('app 0.6.43')", "includes('app 0.6.44')", 'browser settings version')
+browser_test = replace_once(
+    browser_test,
+    "ids:['OP-A|vehicle|42','OP-B|vehicle|42']",
+    "ids:['OP-A|journey|trip-a','OP-B|journey|trip-b']",
+    'existing live identity assertion'
+)
 
 fixture = r"""  const multiVehicleBoard = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
