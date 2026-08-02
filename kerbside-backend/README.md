@@ -25,7 +25,7 @@ Kerbside 0.6.3 adds a Settings Stats tab that reads current network totals and p
 
 Kerbside 0.6.4 places the settings tabs beside the dialog title, adds live GPS and Worker statistics, and continuously animates a short bounded visual estimate between confirmed vehicle snapshots. The compact Times header keeps destination filters on one horizontal scroller and moves route-source and confidence explanations behind its information button. The information panel explains the Verified, Likely and Rough labels without permanently occupying departure-board space. Timetable matching and ETA calculations continue to use confirmed vehicle records rather than the visual estimate.
 
-Kerbside 0.6.5 increases the visual separation between the Settings title and its tabs. It also suppresses two-finger browser zoom on the controls, departure board and settings dialog while preserving Leaflet pinch-zoom on the map.
+Kerbside 0.6.5 increases the visual separation between the Settings title and its tabs. It suppresses two-finger browser zoom on the controls, departure board and settings dialog while preserving pinch-to-zoom on the Leaflet map.
 
 The Worker remains backwards-compatible for live data:
 
