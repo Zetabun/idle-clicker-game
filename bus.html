@@ -743,7 +743,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.19 also requires fuzzy live and timetable trip references to resolve to one uniquely strongest journey before they receive exact-journey matching privileges.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.20 also keeps routine live GPS polling fixed to 9 km around the selected stop, so widening the stop-search radius no longer downloads a much larger BODS feed every fifteen seconds.</p>
           </div>
 
           <div class="stats-section">
@@ -774,7 +774,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.19';
+const APP_VERSION = '0.6.20';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1919,7 +1919,9 @@ function boxAround(c,metres){
 function bboxes(wide){
   const c=S.stop||S.origin;
   if(!c) return [];
-  if(!wide) return [boxAround(c,S.radius+MAX_VEH_DIST)];
+  // Stop discovery radius affects only which stops are offered. Routine
+  // live polling remains a fixed 9 km area around the selected stop.
+  if(!wide) return [boxAround(c,MAX_VEH_DIST)];
   const maxHalf=.17, latPad=Math.min(FAR_VEH_DIST/111320,maxHalf);
   const wantedLonPad=FAR_VEH_DIST/(111320*Math.max(.2,Math.cos(rad(c.lat))));
   const centres=wantedLonPad<=maxHalf

@@ -55,6 +55,8 @@ Kerbside 0.6.18 makes the live Worker cache-first and deadline-safe. Very recent
 
 Kerbside 0.6.19 makes compatible journey-reference matching uniqueness-safe. Literal, compact, prefix/suffix and shared-token matches are ranked; only one uniquely strongest timetable trip may receive exact-journey privileges, distant-bus admission or exact pattern geometry. Ambiguous aliases fall back to route-level evidence, are excluded from timetable ETA blending, and are reported explicitly. The WebKit regression suite now executes the matching helpers with exact, compact, unique-alias and ambiguous fixtures instead of checking source strings alone.
 
+Kerbside 0.6.20 separates stop discovery from live-feed coverage. The selectable 800 m to 6 km radius controls which nearby stops are loaded, but routine BODS polling is now always the existing 9 km vehicle area around the selected stop. The deliberate 18 km exact-journey scan remains periodic. This prevents a 6 km stop-search setting from expanding every normal live request to roughly 15 km and reduces XML size, mobile parsing work and upstream traffic.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
