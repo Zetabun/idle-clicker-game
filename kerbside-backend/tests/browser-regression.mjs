@@ -16,6 +16,10 @@ assert.match(busSource, /S\.anchor=null; drawAnchor\(\); updateDirLabels\(\);/);
 assert.doesNotMatch(busSource, /loadWorkerHistory/);
 assert.doesNotMatch(busSource, /copyStopBtn/);
 assert.doesNotMatch(busSource, /WATCHED_STOPS/);
+assert.match(busSource, /geocodeRun=0, geocodeAbort=null/);
+assert.match(busSource, /countrycode=GB&bbox=-9,49,3,61/);
+assert.match(busSource, /fetchTimed\(url,\{signal:ctl\.signal\},8000\)/);
+assert.match(busSource, /if\(run!==geocodeRun\) return/);
 assert.match(busSource, /far && \(!gate \|\| !evidence\.journeyMatch\)/);
 assert.match(busSource, /if\(!shown&&!nearby\) continue/);
 assert.match(busSource, /function timetablePatternRecord\(journey\)/);
@@ -23,7 +27,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.22'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.23'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -119,7 +123,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.22', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.23', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
@@ -147,7 +151,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.22'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.23'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
