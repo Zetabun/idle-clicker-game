@@ -85,6 +85,8 @@ Kerbside 0.6.33 self-hosts the complete pinned Leaflet 1.9.4 distribution. The r
 
 Kerbside 0.6.34 adds an automatic interactive basemap fallback. CARTO remains the primary dark map. Four accumulated tile errors switch the current map once to `https://tile.openstreetmap.org/{z}/{x}/{y}.png`; successful tile loads reduce the error count so isolated failures do not trigger a switch. The fallback uses normal browser caching and Referer behaviour, requests only the visible Leaflet viewport, and retains visible OpenStreetMap attribution. WebKit now forces CARTO failures and verifies successful OpenStreetMap recovery.
 
+Kerbside 0.6.35 extracts SIRI-VM parsing into a fixture-tested path. Namespaced XML fixtures cover fresh, stale, future, timestamp-free, malformed and overlapping records. Live identities now combine OperatorRef with VehicleRef (or the journey fallback), preventing operator-local vehicle codes from overwriting one another while still deduplicating overlapping bounding-box responses by newest timestamp.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
