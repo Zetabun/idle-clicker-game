@@ -29,6 +29,8 @@ Kerbside 0.6.5 increases the visual separation between the Settings title and it
 
 Kerbside 0.6.6 adds dedicated Apple touch and PWA icons plus an installable web-app manifest. iPhone and iPad home-screen saves use the 180px Kerbside icon, while other supported browsers can use the 192px and 512px icons and launch the app in standalone mode.
 
+Kerbside 0.6.7 corrects standalone iPhone safe-area layout. The top controls now sit below the status bar and Dynamic Island, the app shell uses the dynamic viewport height, and the outer page canvas matches the mobile navigation so no contrasting strip appears beneath it. The navigation remains above the home-indicator safety area rather than placing controls inside it.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
