@@ -49,10 +49,23 @@ addition = (
     'browser = browser.replace("assert.match(busSource, /const APP_VERSION = \'0\\\\.6\\\\.51\'/);", "assert.match(busSource, /const APP_VERSION = \'0\\\\.6\\\\.52\'/);")\n'
     'browser = browser.replace("  await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: \'domcontentloaded\' });", "  const pageErrors=[];\\n  page.on(\'pageerror\',error=>pageErrors.push(error.message));\\n  await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: \'domcontentloaded\' });")\n'
     'browser = browser.replace("  assert.equal(await page.locator(\'#map.leaflet-container\').count(), 1);", "  assert.equal(await page.locator(\'#map.leaflet-container\').count(), 1, pageErrors.join(\'\\\\n\'));" )\n'
-    'browser = browser.replace("assert.equal(resilience.staleMap,false);", "assert.equal(resilience.staleMap,false,JSON.stringify(resilience));")\n'
 )
 if source.count(marker) != 1:
     raise SystemExit(f"release loader: expected one browser test load, found {source.count(marker)}")
 source = source.replace(marker, marker + addition, 1)
+
+browser_write = 'write("kerbside-backend/tests/browser-regression.mjs", browser)'
+browser_guard = '''browser = browser.replace(
+    "return {direction,recent,synthetic,staleMap,heldMap,loading,html,primary:plan.primary,fallback:plan.fallback};",
+    "return {direction,recent,synthetic,staleMap,heldMap,loading,html,primary:plan.primary,fallback:plan.fallback,helper:api.mapVehicleVisible.toString(),now,staleTs:now-5*60000};",
+)
+browser = browser.replace(
+    "assert.equal(resilience.staleMap,false);",
+    "assert.equal(resilience.staleMap,false,JSON.stringify(resilience));",
+)
+write("kerbside-backend/tests/browser-regression.mjs", browser)'''
+if source.count(browser_write) != 1:
+    raise SystemExit(f"release loader: expected one browser write, found {source.count(browser_write)}")
+source = source.replace(browser_write, browser_guard, 1)
 
 exec(compile(source, URL, "exec"), {"__name__": "__main__"})
