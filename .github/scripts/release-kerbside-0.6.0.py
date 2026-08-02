@@ -34,9 +34,9 @@ replace_once(
     'static Pages data configuration',
 )
 replace_once(
-    "  return 'kerbside.stops.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;",
     "  return 'kerbside.stops.v3.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;",
-    'invalidate pre-official stop cache',
+    "  return 'kerbside.stops.v4.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;",
+    'invalidate pre-Pages stop cache',
 )
 
 sub_once(
@@ -180,7 +180,7 @@ PATH.write_text(text, encoding='utf-8')
 required = [
     "const APP_VERSION = '0.6.0';",
     "const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';",
-    "return 'kerbside.stops.v3.'",
+    "return 'kerbside.stops.v4.'",
     'async function loadDataManifest(force)',
     'async function loadDataTile(region,tile)',
     "activateTimetable(data,'national',stop.region)",
