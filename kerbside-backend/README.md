@@ -21,6 +21,8 @@ Static data is deployed to `https://kerbside-data-zetabun.pages.dev`:
 
 Kerbside 0.6.2 tolerates individual regional tile failures and resolves cached or overlapping stop records against every matching timetable shard, preferring the regional copy with the fullest departure set. This also self-heals older OpenStreetMap stop selections when they contain an official ATCO or NaPTAN code.
 
+Kerbside 0.6.3 adds a Settings Stats tab that reads current network totals and per-region coverage directly from the live Pages manifest. It also wraps long destination filters and gives scheduled ETA values a wider, clearer column.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
