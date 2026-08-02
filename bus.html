@@ -789,7 +789,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.49';
+const APP_VERSION = '0.6.50';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -829,7 +829,7 @@ const S = {
   selected:null,
   timer:null, tick:null, motionTimer:null, busy:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
-  feedStale:0, feedUnknownAge:0, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
+  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
   timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
   routeScanBusy:false, routeScanAbort:null, lastRouteScan:0,
@@ -2647,7 +2647,7 @@ async function fetchLiveBatch(wide,signal){
   };
 }
 async function fetchLive(signal){
-  S.feedFallback=false;
+  S.feedFallback=false; S.feedEmptyReason='';
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
   if(wide) S.lastWideFetch=Date.now();
   let batch=await fetchLiveBatch(wide,signal);
@@ -2669,8 +2669,14 @@ async function fetchLive(signal){
   const out=parsed.vehicles;
   S.feedStale=parsed.stale;S.feedUnknownAge=parsed.unknownAge;
   if(!out.length&&parsed.malformed===successful.length) throw {soft:true,msg:'The live feed returned malformed XML.'};
-  if(!out.length&&(parsed.stale||parsed.unknownAge)) throw {soft:true,msg:'BODS returned no fresh timestamped vehicle positions, so Kerbside hid them instead of showing ghost buses.'};
-  if(!out.length) throw {soft:true,msg:'The live feed returned no usable vehicle positions for this area.'};
+  if(!out.length&&(parsed.stale||parsed.unknownAge)){
+    S.feedEmptyReason='No fresh timestamped GPS positions were reported in the latest feed.';
+    return [];
+  }
+  if(!out.length){
+    S.feedEmptyReason='No buses were reported in the latest feed for this area.';
+    return [];
+  }
   return out;
 }
 
@@ -3872,7 +3878,10 @@ async function poll(force){
     const delayedText=!S.demo&&delayed?' · '+delayed+' delayed':'';
     const tt=S.ttStop?' · timetable checked':'';
     const updated=' · updated '+formatClock(S.lastFeedAt), cached=S.feedFallback?' · cached during BODS outage':'';
-    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':'Live · '+fresh+' fresh'+delayedText+hidden+tt+cached+updated,S.demo?'demo':'');
+    const liveStatus=!list.length&&fresh===0&&!delayed
+      ? 'Live · no fresh buses reported'+tt+cached+updated
+      : 'Live · '+fresh+' fresh'+delayedText+hidden+tt+cached+updated;
+    setStatus(S.demo?'Simulated · '+S.vehicles.size+' buses':liveStatus,S.demo?'demo':'');
     renderGpsStats();
     render();
     if(!S.demo) void pollRouteCorridor();
@@ -3880,7 +3889,8 @@ async function poll(force){
     if(!ctl.signal.aborted){
       const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
       const scheduled=S.ttStop&&timetableRows(new Date()).some(row=>row.at>Date.now()-60000&&row.at<Date.now()+3*3600000);
-      setStatus(scheduled?'Live unavailable · scheduled times shown':'Feed problem','err');
+      const retained=[...S.vehicles.values()].some(v=>Date.now()-v.ts<=MAX_AGE_MS+GPS_RESULT_GRACE_MS);
+      setStatus(scheduled?'Live unavailable · scheduled times shown':retained?'Live feed delayed · last GPS retained':'Live feed unavailable · retrying','err');
       if(Date.now()-S.lastOk>25000) toast(msg,true);
       render();
     }

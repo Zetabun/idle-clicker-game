@@ -115,6 +115,8 @@ Kerbside 0.6.48 adds bounded timetable-guided route-corridor GPS discovery. The 
 
 Kerbside 0.6.49 prevents verified GPS results from disappearing during short operator-feed gaps and makes ETA direction checks stricter. Route-scan trip identity now survives ordinary nearby refreshes for five minutes. A previously verified row can remain for up to six minutes as `GPS signal lost`, but its live countdown is removed. Sustained GPS movement that conflicts with the selected town direction, the matched timetable direction, or movement towards the stop now rejects the live ETA. The result row states whether direction comes from GPS movement or the matched journey. Journey progress now resolves through the timetable trip and direct pattern ID retained on the live vehicle, allowing aliased journey references to display the ordered stop timeline.
 
+Kerbside 0.6.50 separates a healthy empty BODS response from a genuine feed failure. Valid XML with no fresh vehicles now reports `Live · no fresh buses reported` and retains any still-valid prior GPS rows instead of showing `Feed problem`. Real Worker, network or upstream failures now state `Live feed delayed · last GPS retained` or `Live feed unavailable · retrying`, while scheduled departures remain available when present. WebKit verifies that valid empty SIRI XML returns an empty live result without entering the error path.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
