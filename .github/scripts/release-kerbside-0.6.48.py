@@ -16,21 +16,25 @@ for revision in subprocess.check_output(['git', 'rev-list', 'HEAD'], cwd=ROOT, t
 if source is None:
     raise SystemExit('Could not locate the original 0.6.48 release implementation in branch history')
 
-old_geometry = "bus = replace_count(bus, \"const pattern=timetablePatternRecord(v.journey);\", \"const pattern=timetablePatternRecord(vehicleJourneyRef(v));\", 2, 'resolved journey geometry')"
-new_geometry = """bus = replace_once(bus, \"const pattern=timetablePatternRecord(v.journey);\", \"const pattern=timetablePatternRecord(vehicleJourneyRef(v));\", 'resolved journey geometry')
-bus = replace_once(bus, \"const pattern=timetablePatternRecord(v&&v.journey);\", \"const pattern=timetablePatternRecord(vehicleJourneyRef(v));\", 'resolved journey progress')"""
-if source.count(old_geometry) != 1:
-    raise SystemExit(f'Expected one geometry transformation, found {source.count(old_geometry)}')
-source = source.replace(old_geometry, new_geometry, 1)
+lines = source.splitlines()
+geometry = [index for index, line in enumerate(lines) if "'resolved journey geometry'" in line]
+if len(geometry) != 1:
+    raise SystemExit(f'Expected one labelled geometry transformation, found {len(geometry)}')
+lines[geometry[0]:geometry[0] + 1] = [
+    "bus = replace_once(bus, \"const pattern=timetablePatternRecord(v.journey);\", \"const pattern=timetablePatternRecord(vehicleJourneyRef(v));\", 'resolved journey geometry')",
+    "bus = replace_once(bus, \"const pattern=timetablePatternRecord(v&&v.journey);\", \"const pattern=timetablePatternRecord(vehicleJourneyRef(v));\", 'resolved journey progress')",
+]
 
-old_evidence = "bus = replace_once(bus, \"  const evidence=routeEvidence(v.line,v.dest,v.journey);\", \"  const journeyRef=vehicleJourneyRef(v);\\n  const evidence=routeEvidence(v.line,v.dest,journeyRef);\", 'estimate route evidence')"
-new_evidence = """estimate_evidence_old = \"  const evidence=routeEvidence(v.line,v.dest,v.journey);\"
-if bus.count(estimate_evidence_old) < 1:
-    raise SystemExit('estimate route evidence: expected at least one match')
-bus = bus.replace(estimate_evidence_old, \"  const journeyRef=vehicleJourneyRef(v);\\n  const evidence=routeEvidence(v.line,v.dest,journeyRef);\", 1)"""
-if source.count(old_evidence) != 1:
-    raise SystemExit(f'Expected one estimate evidence transformation, found {source.count(old_evidence)}')
-source = source.replace(old_evidence, new_evidence, 1)
+evidence = [index for index, line in enumerate(lines) if "'estimate route evidence'" in line]
+if len(evidence) != 1:
+    raise SystemExit(f'Expected one labelled estimate transformation, found {len(evidence)}')
+lines[evidence[0]:evidence[0] + 1] = [
+    "estimate_evidence_old = \"  const evidence=routeEvidence(v.line,v.dest,v.journey);\"",
+    "if bus.count(estimate_evidence_old) < 1:",
+    "    raise SystemExit('estimate route evidence: expected at least one match')",
+    "bus = bus.replace(estimate_evidence_old, \"  const journeyRef=vehicleJourneyRef(v);\\n  const evidence=routeEvidence(v.line,v.dest,journeyRef);\", 1)",
+]
+source = '\n'.join(lines) + '\n'
 
 impl = ROOT / '.github/scripts/kerbside-0.6.48-impl.py'
 try:
