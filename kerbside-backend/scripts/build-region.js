@@ -383,7 +383,9 @@ async function main() {
     writeJson(filename, {
       version: 3,
       built: nowIso,
+      scope: 'pattern-shard',
       region,
+      shard: shardPrefix,
       patterns: shard
     });
     maxPatternBytes = Math.max(maxPatternBytes, fs.statSync(filename).size);

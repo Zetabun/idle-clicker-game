@@ -107,6 +107,8 @@ Kerbside 0.6.44 fixes live multi-vehicle identity. The DfT SIRI-VM profile defin
 
 Kerbside 0.6.45 validates every national departure shard before use. The shard must match its expected region, prefix and regional build, include the expected departure-shard schema, and contain structurally valid stops and departure rows. Valid shards are retained in memory and in a browser Cache Storage snapshot for 14 days. Malformed JSON, wrong-build content, 404s and server failures can use that recent last-known-good copy, while fallback and failed requests are removed from the active promise cache so the current build is retried later. The Settings “forget everything” action also removes these snapshots. WebKit executes valid, malformed, wrong-build, missing and retry-without-fallback scenarios.
 
+Kerbside 0.6.46 applies the last-known-good policy to route-pattern geometry. Pattern shards are validated against their region, two-character prefix and regional build, including every coordinate and ordered stop row. Valid shards are retained in memory and Cache Storage for 14 days. Malformed, wrong-build, missing and unavailable responses can use the recent snapshot, while failed or fallback loads remain retryable. Pattern requests are coalesced by region and shard prefix, and a one-minute failure backoff replaces the previous permanent `PATTERN_CACHE` null entry. The regional builder now labels new geometry files with `scope: pattern-shard` and their prefix. WebKit tests snapshot recovery, uncached 404 retries, queue backoff and successful journey-geometry activation.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
