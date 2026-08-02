@@ -16,6 +16,8 @@ Static data is deployed to `https://kerbside-data-zetabun.pages.dev`:
 - `GET /regions/{region}/tiles/{tile}.json` - nearby official stops and scheduled departures for one geographic tile.
 - `GET /regions/{region}/patterns/{prefix}.json` - ordered journey patterns loaded only when needed.
 
+`bus.html` uses that Pages hostname directly, so timetable traffic does not consume Worker requests.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
