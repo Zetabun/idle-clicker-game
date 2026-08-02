@@ -38,12 +38,16 @@ backend = Path("kerbside-backend")
 icons_dir = backend / "icons"
 icons_dir.mkdir(parents=True, exist_ok=True)
 for target in (180, 192, 512):
-    source = Path(f".github/triggers/kerbside-icon-{target}.b64")
+    sources = sorted(Path(".github/triggers").glob(f"kerbside-icon-{target}*.b64"))
+    if not sources:
+        raise SystemExit(f"missing encoded {target}px icon source")
+    encoded = "".join(source.read_text(encoding="ascii") for source in sources)
     path = icons_dir / f"kerbside-{target}.png"
-    path.write_bytes(base64.b64decode(source.read_text(encoding="ascii")))
+    path.write_bytes(base64.b64decode(encoded))
     if png_size(path.read_bytes()) != (target, target):
         raise SystemExit(f"failed to create {target}px icon")
-    source.unlink()
+    for source in sources:
+        source.unlink()
 
 manifest = {
     "name": "Kerbside — Live Buses",
