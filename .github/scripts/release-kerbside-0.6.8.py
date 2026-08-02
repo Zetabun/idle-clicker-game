@@ -42,7 +42,7 @@ package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
 
 readme_path = Path("kerbside-backend/README.md")
 readme = readme_path.read_text(encoding="utf-8")
-anchor = "Kerbside 0.6.7 corrects standalone iPhone safe-area layout. The top controls now sit below the status bar and Dynamic Island, the app shell uses the dynamic viewport height, and the outer page canvas matches the mobile navigation so no contrasting strip appears beneath it.\n"
+anchor = "Kerbside 0.6.7 corrects standalone iPhone safe-area layout. The top controls now sit below the status bar and Dynamic Island, the app shell uses the dynamic viewport height, and the outer page canvas matches the mobile navigation so no contrasting strip appears beneath it. The navigation remains above the home-indicator safety area rather than placing controls inside it.\n"
 addition = anchor + "\nKerbside 0.6.8 pins the standalone app shell to all four viewport edges, removing the remaining iOS home-screen gap. The Settings overlay now starts beneath the status bar and constrains its height between the top and bottom safe areas, preventing its title and close control from being clipped.\n"
 readme = replace_once(readme, anchor, addition, "README release note")
 readme_path.write_text(readme, encoding="utf-8")
