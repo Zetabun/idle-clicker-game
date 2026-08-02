@@ -81,6 +81,8 @@ Kerbside 0.6.31 restores browser page zoom for accessibility. The viewport no lo
 
 Kerbside 0.6.32 adds best-effort live Worker abuse safeguards without requiring an additional paid Cloudflare binding. Browser requests with an Origin outside the configured allowlist are rejected before cache or BODS work, Cloudflare client IPs receive a conservative per-isolate request budget, and simultaneous identical cache refreshes share one upstream promise. Rate metadata is exposed in response headers, while normal Kerbside polling remains well below the default 60 requests per minute.
 
+Kerbside 0.6.33 self-hosts the complete pinned Leaflet 1.9.4 distribution. The release workflow generates JavaScript, CSS, licence and image assets from the npm package only after its JavaScript and CSS match Leaflet's official SHA-256 values. The browser loads those local files first, retains the official unpkg build as an emergency fallback, and presents a readable map-unavailable message if neither copy can load. WebKit regression now blocks the CDN and verifies the real local Leaflet runtime.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

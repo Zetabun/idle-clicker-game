@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import path from 'node:path';
@@ -8,6 +9,13 @@ import { webkit } from 'playwright';
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
 const busSource = await readFile(path.join(root, 'bus.html'), 'utf8');
+const leafletRoot = path.join(root, 'kerbside-backend', 'vendor', 'leaflet');
+const leafletJs = await readFile(path.join(leafletRoot, 'leaflet.js'));
+const leafletCss = await readFile(path.join(leafletRoot, 'leaflet.css'));
+const leafletLicense = await readFile(path.join(leafletRoot, 'LICENSE'), 'utf8');
+assert.equal(createHash('sha256').update(leafletJs).digest('base64'), '20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=');
+assert.equal(createHash('sha256').update(leafletCss).digest('base64'), 'p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=');
+assert.match(leafletLicense, /Redistribution and use in source and binary forms/);
 assert.match(busSource, /const FAR_VEH_DIST = 18000/);
 assert.match(busSource, /function bboxes\(wide\)/);
 assert.match(busSource, /if\(!wide\) return \[boxAround\(c,MAX_VEH_DIST\)\]/);
@@ -34,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.32'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.33'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -70,6 +78,11 @@ assert.doesNotMatch(busSource, /maximum-scale=1/);
 assert.match(busSource, /#scrim\{touch-action:pan-x pan-y pinch-zoom/);
 assert.doesNotMatch(busSource, /gesturestart/);
 assert.doesNotMatch(busSource, /function stopUiPinch/);
+assert.match(busSource, /vendor\/leaflet\/leaflet\.css/);
+assert.match(busSource, /vendor\/leaflet\/leaflet\.js/);
+assert.match(busSource, /unpkg\.com\/leaflet@1\.9\.4\/dist\/leaflet\.js/);
+assert.match(busSource, /Map unavailable/);
+assert.doesNotMatch(busSource, /cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -99,39 +112,6 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
-const leafletStub = `
-(() => {
-  function passiveLayer(){ return { addTo(){ return this; }, clearLayers(){}, removeLayer(){} }; }
-  function marker(latlng){
-    let popup = null;
-    return {
-      addTo(){ return this; }, setLatLng(){ return this; }, setIcon(){ return this; },
-      bindTooltip(){ return this; }, setTooltipContent(){ return this; },
-      bindPopup(value){ popup = value; return this; }, getPopup(){ return popup; },
-      setPopupContent(value){ popup = value; return this; }, on(){ return this; },
-      openPopup(){ return this; }, setZIndexOffset(){ return this; }, getElement(){ return null; }
-    };
-  }
-  window.L = {
-    map(id){
-      const element = document.getElementById(id);
-      const attribution = document.createElement('div');
-      attribution.className = 'leaflet-control-attribution';
-      attribution.innerHTML = '<a href="https://leafletjs.com">Leaflet</a> | <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-      element.appendChild(attribution);
-      return {
-        attributionControl:{ getContainer:() => attribution },
-        setView(){ return this; }, on(){ return this; }, removeLayer(){},
-        invalidateSize(){ return this; }, panTo(){ return this; }, fitBounds(){ return this; }, getZoom(){ return 16; }
-      };
-    },
-    tileLayer(){ return passiveLayer(); }, layerGroup(){ return passiveLayer(); },
-    marker, circle(){ return passiveLayer(); }, polyline(){ return passiveLayer(); },
-    circleMarker(){ return { ...passiveLayer(), bindTooltip(){ return this; } }; },
-    divIcon(options){ return options; }
-  };
-})();`;
-
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const browser = await webkit.launch({ headless: true });
@@ -139,8 +119,9 @@ const context = await browser.newContext({ viewport: { width: 393, height: 852 }
 const page = await context.newPage();
 
 try {
-  await page.route('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js', route => route.fulfill({ status: 200, contentType: 'text/javascript', body: leafletStub }));
-  await page.route('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css', route => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  let leafletCdnRequests = 0;
+  await page.route('https://unpkg.com/leaflet@1.9.4/dist/**', route => { leafletCdnRequests++; return route.abort(); });
+  await page.route('https://*.basemaps.cartocdn.com/**', route => route.abort());
   await page.route('https://fonts.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
   await page.route('https://kerbside-data-zetabun.pages.dev/manifest.json**', route => route.fulfill({
@@ -151,11 +132,14 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.32', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.33', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
   assert.match(await page.title(), /Kerbside/i);
+  assert.equal(await page.evaluate(() => window.L && window.L.version), '1.9.4');
+  assert.equal(leafletCdnRequests, 0);
+  assert.equal(await page.locator('#map.leaflet-container').count(), 1);
   assert.equal(await page.locator('#setBtn').isVisible(), true);
   const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('content');
   assert.match(viewportContent, /width=device-width/);
@@ -231,7 +215,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.32'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.33'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
