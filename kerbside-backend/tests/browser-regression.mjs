@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.34'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.35'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -87,6 +87,10 @@ assert.match(busSource, /const TILE_ERROR_THRESHOLD=4/);
 assert.match(busSource, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
 assert.match(busSource, /function useTileProvider\(index,reason\)/);
 assert.match(busSource, /currentTileProvider/);
+assert.match(busSource, /function liveVehicleIdentity\(fields\)/);
+assert.match(busSource, /function parseLivePayloads\(items,now\)/);
+assert.match(busSource, /vehicleRef:f\.VehicleRef\|\|''/);
+assert.doesNotMatch(busSource, /const id = f\.VehicleRef \|\| journey/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -138,7 +142,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.34', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.35', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
@@ -155,6 +159,41 @@ try {
   assert.doesNotMatch(viewportContent, /user-scalable|maximum-scale/);
   const scrimTouchAction=await page.evaluate(() => getComputedStyle(document.getElementById('scrim')).touchAction);
   assert.match(scrimTouchAction, /pinch-zoom/);
+
+  const liveParsing = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,now=Date.now(),iso=value=>new Date(value).toISOString();
+    const activity=({operator,vehicle,journey,time,lat,line='009',dest='ST HELENS'})=>`<VehicleActivity>
+      ${time===null?'':`<RecordedAtTime>${time}</RecordedAtTime>`}
+      <MonitoredVehicleJourney><LineRef>${line}</LineRef><PublishedLineName>${line}</PublishedLineName>
+      <OperatorRef>${operator}</OperatorRef><VehicleRef>${vehicle}</VehicleRef><DatedVehicleJourneyRef>${journey}</DatedVehicleJourneyRef>
+      <DestinationName>${dest}</DestinationName><VehicleLocation><Longitude>-2.1000</Longitude><Latitude>${lat}</Latitude></VehicleLocation>
+      <Bearing>90</Bearing><Velocity>8.5</Velocity></MonitoredVehicleJourney></VehicleActivity>`;
+    const wrap=activities=>`<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri"><ServiceDelivery><VehicleMonitoringDelivery>${activities}</VehicleMonitoringDelivery></ServiceDelivery></Siri>`;
+    const parsed=api.parseLivePayloads([
+      {text:wrap(
+        activity({operator:'OP-A',vehicle:'42',journey:'trip-a',time:iso(now-30000),lat:'52.5000'})+
+        activity({operator:'OP-X',vehicle:'stale',journey:'old',time:iso(now-300001),lat:'52.4900'})+
+        activity({operator:'OP-X',vehicle:'unknown',journey:'unknown',time:null,lat:'52.4900'})
+      )},
+      {text:wrap(
+        activity({operator:'OP-A',vehicle:'42',journey:'trip-a',time:iso(now-5000),lat:'52.5010'})+
+        activity({operator:'OP-B',vehicle:'42',journey:'trip-b',time:iso(now-6000),lat:'52.5020'})+
+        activity({operator:'OP-X',vehicle:'future',journey:'future',time:iso(now+120001),lat:'52.4900'})
+      )},
+      {text:'<Siri><broken>'}
+    ],now);
+    const vehicles=parsed.vehicles.sort((a,b)=>a.id.localeCompare(b.id));
+    return {
+      ids:vehicles.map(v=>v.id),count:vehicles.length,
+      newestLat:vehicles.find(v=>v.operator==='OP-A')?.lat,
+      rawRef:vehicles[0]?.vehicleRef,line:vehicles[0]?.line,dest:vehicles[0]?.dest,
+      stale:parsed.stale,unknownAge:parsed.unknownAge,malformed:parsed.malformed
+    };
+  });
+  assert.deepEqual(liveParsing, {
+    ids:['OP-A|vehicle|42','OP-B|vehicle|42'],count:2,newestLat:52.501,
+    rawRef:'42',line:'9',dest:'St Helens',stale:2,unknownAge:1,malformed:1
+  });
 
   const tripMatching = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
@@ -224,7 +263,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.34'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.35'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

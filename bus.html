@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.34 also recovers from repeated CARTO basemap tile failures by switching once to the standard OpenStreetMap tile endpoint with visible attribution; the live board continues to work throughout.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.35 also parses namespaced SIRI-VM payloads through an executed fixture suite and scopes vehicle identities by operator, preventing two operators that reuse the same VehicleRef from overwriting one another.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.34';
+const APP_VERSION = '0.6.35';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2094,6 +2094,59 @@ function flatten(node, out){
   return out;
 }
 
+function liveVehicleIdentity(fields){
+  const operator=String(fields&&fields.OperatorRef||'').trim();
+  const vehicle=String(fields&&fields.VehicleRef||'').trim();
+  const journey=String(fields&&(fields.DatedVehicleJourneyRef||fields.VehicleJourneyRef)||'').trim();
+  if(vehicle) return (operator?operator+'|':'')+'vehicle|'+vehicle;
+  if(journey) return (operator?operator+'|':'')+'journey|'+journey;
+  return '';
+}
+function parseLivePayloads(items,now){
+  const observedAt=isFinite(now)?Number(now):Date.now(), byId=new Map();
+  let stale=0,unknownAge=0,malformed=0;
+  for(const item of Array.isArray(items)?items:[]){
+    const xml=new DOMParser().parseFromString(String(item&&item.text||''),'application/xml');
+    if(xml.querySelector('parsererror')){malformed++;continue;}
+    const acts=[...xml.getElementsByTagName('*')].filter(node=>node.localName==='VehicleActivity');
+    for(const activity of acts){
+      const f=flatten(activity);
+      const lat=parseFloat(f.Latitude),lon=parseFloat(f.Longitude);
+      if(!isFinite(lat)||!isFinite(lon)) continue;
+      const parsed=f.RecordedAtTime?Date.parse(f.RecordedAtTime):NaN;
+      const timestampKnown=isFinite(parsed);
+      if(!timestampKnown){unknownAge++;continue;}
+      const ts=parsed,age=observedAt-ts;
+      if(age>MAX_AGE_MS||age < -120000){stale++;continue;}
+      const journey=f.DatedVehicleJourneyRef||f.VehicleJourneyRef||'';
+      const id=liveVehicleIdentity(f);
+      if(!id) continue;
+      const record={
+        id,journey,vehicleRef:f.VehicleRef||'',
+        line:cleanLine(f.PublishedLineName||f.LineRef||'?'),
+        lineRef:f.LineRef||'',
+        dest:cleanName(f.DestinationName||f.DirectionName||''),
+        destRef:f.DestinationRef||'',
+        origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',
+        operator:f.OperatorRef||'',
+        declaredDir:(f.DirectionRef||'').toLowerCase(),
+        lat,lon,
+        bearing:parseFloat(f.Bearing),
+        feedSpeed:parseFloat(f.Velocity),
+        aimedOriginAt:f.OriginAimedDepartureTime?Date.parse(f.OriginAimedDepartureTime):NaN,
+        aimedDestinationAt:f.DestinationAimedArrivalTime?Date.parse(f.DestinationAimedArrivalTime):NaN,
+        ts,timestampKnown
+      };
+      const current=byId.get(id);
+      if(!current||record.ts>current.ts) byId.set(id,record);
+    }
+  }
+  return {vehicles:[...byId.values()],stale,unknownAge,malformed};
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads};
+}
+
 async function fetchLiveResponse(url,signal){
   let r;
   try{
@@ -2126,47 +2179,11 @@ async function fetchLive(signal){
   }
   if(wide && successful.length===urls.length) S.lastWideFetch=Date.now();
   S.feedFallback=successful.some(item=>item.fallback);
-  const now = Date.now(), byId=new Map();
-  let stale = 0, unknownAge=0;
-  for(const item of successful){
-    const xml = new DOMParser().parseFromString(item.text,'application/xml');
-    if(xml.querySelector('parsererror')) continue;
-    const acts = [...xml.getElementsByTagName('*')].filter(n=>n.localName==='VehicleActivity');
-    for(const a of acts){
-      const f = flatten(a);
-      const lat = parseFloat(f.Latitude), lon = parseFloat(f.Longitude);
-      if(!isFinite(lat) || !isFinite(lon)) continue;
-      const parsed = f.RecordedAtTime ? Date.parse(f.RecordedAtTime) : NaN;
-      const timestampKnown = isFinite(parsed);
-      if(!timestampKnown){ unknownAge++; continue; }
-      const ts = parsed, age = now-ts;
-      if(age>MAX_AGE_MS || age < -120000){ stale++; continue; }
-      const journey = f.DatedVehicleJourneyRef || f.VehicleJourneyRef || '';
-      const id = f.VehicleRef || journey;
-      if(!id) continue;
-      const record={
-        id, journey,
-        line: cleanLine(f.PublishedLineName || f.LineRef || '?'),
-        lineRef: f.LineRef || '',
-        dest: cleanName(f.DestinationName || f.DirectionName || ''),
-        destRef: f.DestinationRef || '',
-        origin: cleanName(f.OriginName || ''), originRef:f.OriginRef||'',
-        operator: f.OperatorRef || '',
-        declaredDir: (f.DirectionRef||'').toLowerCase(),
-        lat, lon,
-        bearing: parseFloat(f.Bearing),
-        feedSpeed: parseFloat(f.Velocity),
-        aimedOriginAt: f.OriginAimedDepartureTime ? Date.parse(f.OriginAimedDepartureTime) : NaN,
-        aimedDestinationAt: f.DestinationAimedArrivalTime ? Date.parse(f.DestinationAimedArrivalTime) : NaN,
-        ts, timestampKnown
-      };
-      const current=byId.get(id);
-      if(!current || record.ts>current.ts) byId.set(id,record);
-    }
-  }
-  const out=[...byId.values()];
-  S.feedStale=stale; S.feedUnknownAge=unknownAge;
-  if(!out.length && (stale || unknownAge)) throw {soft:true,msg:'BODS returned no fresh timestamped vehicle positions, so Kerbside hid them instead of showing ghost buses.'};
+  const parsed=parseLivePayloads(successful,Date.now());
+  const out=parsed.vehicles;
+  S.feedStale=parsed.stale;S.feedUnknownAge=parsed.unknownAge;
+  if(!out.length&&parsed.malformed===successful.length) throw {soft:true,msg:'The live feed returned malformed XML.'};
+  if(!out.length&&(parsed.stale||parsed.unknownAge)) throw {soft:true,msg:'BODS returned no fresh timestamped vehicle positions, so Kerbside hid them instead of showing ghost buses.'};
   if(!out.length) throw {soft:true,msg:'The live feed returned no usable vehicle positions for this area.'};
   return out;
 }
