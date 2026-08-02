@@ -99,6 +99,8 @@ Kerbside 0.6.40 generates timetable rows by their displayed target date rather t
 
 Kerbside 0.6.41 makes national stop discovery resilient to partial Cloudflare Pages responses. Tile requests now report whether the result set is complete. A complete official list is used and cached immediately; an incomplete list is supplemented with OpenStreetMap and merged by official codes or tightly matching coordinates. If OpenStreetMap is also unavailable, partial official stops remain usable for the current visit but are deliberately not cached, allowing the missing tile to be retried. The stop cache moves to `v6` with four-decimal location keys so origins more than a few metres apart no longer share a potentially incomplete week-long list. WebKit verifies cache separation, official-stop preference and duplicate/opposite-stop handling.
 
+Kerbside 0.6.42 tightens stop identity merging. Official timetable IDs, ATCO codes and NaPTAN/SMS codes remain authoritative across national and OpenStreetMap sources. A generic OSM `ref`, however, is treated only as a local stand label and no longer merges geographically separate stops that both happen to use values such as `A`. Exact source IDs still match, while close same-name coordinates can merge genuine duplicates. WebKit verifies official-code matching, repeated local refs, close duplicates, stable IDs and opposite-side stops.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
