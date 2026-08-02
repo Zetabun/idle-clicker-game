@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.41 also supplements incomplete national stop-tile responses with OpenStreetMap, avoids week-long caching of partial results and uses a finer location key so nearby searches do not incorrectly share stop lists.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.42 also treats ordinary OpenStreetMap stop refs as local labels rather than global identities, preventing unrelated stops that both use labels such as A from being merged.</p>
           </div>
 
           <div class="stats-section">
@@ -786,7 +786,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.41';
+const APP_VERSION = '0.6.42';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1460,10 +1460,16 @@ async function fetchOfficialStops(lat,lon,radius){
   }catch(e){ return null; }
 }
 function discoveredStopCodes(stop){
-  return new Set([stop&&stop.timetableId,stop&&stop.atco,stop&&stop.naptan,stop&&stop.code]
-    .map(value=>String(value||'').trim().toLowerCase()).filter(Boolean));
+  const values=[stop&&stop.timetableId,stop&&stop.atco,stop&&stop.naptan];
+  // OSM `ref` is frequently only a local stand label such as A or B. It is
+  // not safe as a cross-source identity unless the stop is official or the
+  // value itself has the structure of an ATCO identifier.
+  if(stop&&(stop.source==='official'||looksLikeAtco(stop.code))) values.push(stop.code);
+  return new Set(values.map(value=>String(value||'').trim().toLowerCase()).filter(Boolean));
 }
 function sameDiscoveredStop(a,b){
+  const idA=String(a&&a.id||''), idB=String(b&&b.id||'');
+  if(idA&&idA===idB) return true;
   const codesA=discoveredStopCodes(a), codesB=discoveredStopCodes(b);
   if([...codesA].some(code=>codesB.has(code))) return true;
   if(!a||!b||!isFinite(a.lat)||!isFinite(a.lon)||!isFinite(b.lat)||!isFinite(b.lon)) return false;
