@@ -591,7 +591,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.1';
+const APP_VERSION = '0.6.2';
 const MY_KEY   = '';
 const MY_PROXY = '';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -991,7 +991,7 @@ async function overpass(query){
    Saves hammering Overpass on every visit. */
 const STOP_TTL = 7*24*3600*1000;
 function stopCacheKey(lat,lon,radius){
-  return 'kerbside.stops.v4.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
+  return 'kerbside.stops.v5.'+lat.toFixed(3)+','+lon.toFixed(3)+','+radius;
 }
 function readStopCache(lat,lon,radius){
   if(!store.ok || !S.remember) return null;
@@ -1092,10 +1092,70 @@ async function loadDataDeparture(region,shard){
   DATA_DEPARTURE_CACHE.set(key,pending);
   try{return await pending;}catch(e){DATA_DEPARTURE_CACHE.delete(key);throw e;}
 }
+function nationalStopCodes(stop){
+  const values=[stop&&stop.timetableId,stop&&stop.atco,stop&&stop.naptan,stop&&stop.code];
+  if(stop&&(stop.source==='official'||looksLikeAtco(stop.id))) values.unshift(stop.id);
+  return [...new Set(values.map(value=>String(value||'').trim().toLowerCase()).filter(Boolean))];
+}
+function matchNationalTileStop(tileData,stop){
+  if(!tileData||!tileData.stops||!stop) return null;
+  const entries=Object.entries(tileData.stops), codes=nationalStopCodes(stop);
+  if(codes.length){
+    for(const [id,raw] of entries){
+      const candidates=[id,raw&&raw.c,raw&&raw.sms].map(value=>String(value||'').trim().toLowerCase());
+      if(codes.some(code=>candidates.includes(code))) return {id:String(id),raw};
+    }
+    return null;
+  }
+  let best=null, bestScore=-Infinity;
+  for(const [id,raw] of entries){
+    const ll=raw&&raw.ll, lat=Number(ll&&ll[0]), lon=Number(ll&&ll[1]);
+    if(!isFinite(lat)||!isFinite(lon)) continue;
+    const metres=dist(stop.lat,stop.lon,lat,lon), similarity=nameSimilarity(stop.name,raw.n||'');
+    if(metres>45||similarity<.72) continue;
+    const score=similarity*100-metres;
+    if(score>bestScore){ bestScore=score; best={id:String(id),raw}; }
+  }
+  return best;
+}
+async function nationalStopCandidates(stop){
+  const manifest=await loadDataManifest(false), tile=stop.tile||dataTileKey(stop.lat,stop.lon);
+  const allRegions=Object.keys((manifest&&manifest.regions)||{});
+  const likely=dataRegionsFor(stop.lat,stop.lon,250,manifest);
+  const regions=[...new Set([stop.region,...likely,...allRegions].filter(Boolean))];
+  const settled=await Promise.allSettled(regions.map(async region=>({region,tile,data:await loadDataTile(region,tile)})));
+  const candidates=[];
+  for(const result of settled){
+    if(result.status!=='fulfilled'||!result.value.data) continue;
+    const matched=matchNationalTileStop(result.value.data,stop);
+    if(matched) candidates.push({...result.value,...matched});
+  }
+  return candidates;
+}
+async function loadBestNationalStop(stop){
+  const candidates=await nationalStopCandidates(stop);
+  if(!candidates.length) throw new Error('official stop was not found in the national timetable tiles');
+  const settled=await Promise.allSettled(candidates.map(async candidate=>{
+    const shard=String(candidate.raw&&candidate.raw.shard||'');
+    if(!shard) throw new Error('no Pages departure shard for this stop');
+    const data=await loadDataDeparture(candidate.region,shard);
+    const timetableStop=data&&data.stops&&data.stops[candidate.id];
+    if(!timetableStop) throw new Error('no Pages timetable data for this stop');
+    return {...candidate,shard,data,timetableStop,departureCount:Array.isArray(timetableStop.d)?timetableStop.d.length:0};
+  }));
+  const valid=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
+  if(!valid.length) throw new Error('no regional timetable shard contained this official stop');
+  valid.sort((a,b)=>b.departureCount-a.departureCount
+    ||(a.region===stop.region?-1:b.region===stop.region?1:0)
+    ||a.region.localeCompare(b.region));
+  return valid[0];
+}
 async function fetchOfficialStops(lat,lon,radius){
   try{
     const manifest=await loadDataManifest(false), regions=dataRegionsFor(lat,lon,radius,manifest), tiles=dataTilesForRadius(lat,lon,radius);
-    const loaded=await Promise.all(regions.flatMap(region=>tiles.map(async tile=>({region,tile,data:await loadDataTile(region,tile)}))));
+    const settled=await Promise.allSettled(regions.flatMap(region=>tiles.map(async tile=>({region,tile,data:await loadDataTile(region,tile)}))));
+    const loaded=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
+    if(!loaded.length) return null;
     const unique=new Map();
     for(const item of loaded){
       if(!item.data||!item.data.stops) continue;
@@ -1103,7 +1163,7 @@ async function fetchOfficialStops(lat,lon,radius){
         const ll=raw&&raw.ll, stopLat=Number(ll&&ll[0]), stopLon=Number(ll&&ll[1]);
         if(!isFinite(stopLat)||!isFinite(stopLon)) continue;
         const metres=dist(lat,lon,stopLat,stopLon); if(metres>radius) continue;
-        const stop={id:String(id),name:titleCase(raw.n||'Unnamed stop'),atco:String(raw.c||id),naptan:String(raw.sms||''),code:String(raw.c||id),ind:String(raw.ind||''),lat:stopLat,lon:stopLon,region:item.region,tile:item.tile,shard:String(raw.shard||''),source:'official',d:metres};
+        const stop={id:String(id),timetableId:String(id),name:titleCase(raw.n||'Unnamed stop'),atco:String(raw.c||id),naptan:String(raw.sms||''),code:String(raw.c||id),ind:String(raw.ind||''),lat:stopLat,lon:stopLon,region:item.region,tile:item.tile,shard:String(raw.shard||''),source:'official',d:metres};
         const old=unique.get(stop.id); if(!old||stop.d<old.d) unique.set(stop.id,stop);
       }
     }
@@ -1287,18 +1347,18 @@ async function loadTimetable(){
 }
 async function loadStopTimetable(stop){
   const run=++S.timetableRun;
+  S.ttError=null;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
   S.ttStop=matchTimetableStop(stop); updateStopMeta(); renderServingNote(); renderDests(); render();
-  if(!stop.region||!stop.tile) return;
   try{
-    const tileData=await loadDataTile(stop.region,stop.tile);
-    const raw=tileData&&tileData.stops&&tileData.stops[String(stop.id)];
-    const shard=String(stop.shard||(raw&&raw.shard)||'');
-    if(!shard) throw new Error('no Pages departure shard for this stop');
-    const data=await loadDataDeparture(stop.region,shard);
-    if(!data||!data.stops||!data.stops[String(stop.id)]) throw new Error('no Pages timetable data for this stop');
+    const matched=await loadBestNationalStop(stop);
     if(run!==S.timetableRun||!S.stop||String(S.stop.id)!==String(stop.id)) return;
-    stop.shard=shard; activateTimetable(data,'national',stop.region); S.ttError=null; S.ttStop=matchTimetableStop(stop);
+    const raw=matched.raw||matched.timetableStop||{};
+    stop.timetableId=matched.id; stop.region=matched.region; stop.tile=matched.tile; stop.shard=matched.shard; stop.source='official';
+    stop.atco=String(raw.c||matched.id); stop.naptan=String(raw.sms||stop.naptan||''); stop.code=String(raw.c||matched.id);
+    if(!stop.ind&&raw.ind) stop.ind=String(raw.ind);
+    activateTimetable(matched.data,'national',matched.region); S.ttError=null;
+    S.ttStop={id:matched.id,...matched.timetableStop,match:'code'};
   }catch(e){ if(run!==S.timetableRun) return; S.ttError=String((e&&e.message)||'national timetable unavailable'); }
   updateStopMeta(); renderServingNote(); renderDests(); render();
 }
@@ -1453,7 +1513,7 @@ function updateStopMeta(){
   const code=displayCode?' · '+esc(displayCode):'';
   let tt=' · checking timetable';
   if(S.ttStop) tt=S.timetableSource==='national'?' · official timetable stop':S.ttStop.match==='code'?' · regional timetable stop':' · nearby timetable match';
-  else if(S.timetable) tt=' · live only'; else if(S.ttError) tt=' · timetable unavailable';
+  else if(S.ttError) tt=' · timetable unavailable'; else if(S.timetable) tt=' · live only';
   $('stopMeta').innerHTML='<b>'+fmtDist(s.d)+'</b> from your point'+code+tt;
 }
 function selectStop(s,manual){
@@ -2130,10 +2190,10 @@ function renderServingNote(){
   }
   if(routes.length){
     el.innerHTML='<b>Confirmed from observed arrivals:</b> '+esc(routes.join(', '))+'. A route needs repeated stop evidence before it is trusted.';
-  }else if(S.timetable){
-    el.innerHTML='<b>This selected stop is outside the installed timetable pack.</b> Live GPS remains available, but scheduled departures and exact journey verification are unavailable here.';
   }else if(S.ttError){
     el.innerHTML='<b>Timetable unavailable.</b> '+esc(S.ttError)+'. Live GPS remains available while Kerbside retries on the next page load.';
+  }else if(S.timetable){
+    el.innerHTML='<b>This selected stop is outside the installed timetable pack.</b> Live GPS remains available, but scheduled departures and exact journey verification are unavailable here.';
   }else{
     el.innerHTML='<b>No verified route list is available yet.</b> Kerbside will show only buses close to the stop and moving towards it.';
   }
