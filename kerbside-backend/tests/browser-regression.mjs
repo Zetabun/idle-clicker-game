@@ -34,7 +34,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.28'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.29'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -57,6 +57,10 @@ assert.match(busSource, /possible GPS match was filtered/);
 assert.match(busSource, /no unique journey match/);
 assert.match(busSource, /function versionedDataUrl\(path,built\)/);
 assert.match(busSource, /DATA_TILE_CACHE\.clear\(\); DATA_DEPARTURE_CACHE\.clear\(\); PATTERN_CACHE\.clear\(\);/);
+assert.match(busSource, /function indexTimetableRows\(rows\)/);
+assert.match(busSource, /function timetableRowsForLine\(line,now\)/);
+assert.match(busSource, /TIMETABLE_ROUTE_CACHE=\{rows,minute,set\}/);
+assert.doesNotMatch(busSource, /const ttRows=timetableRows\(new Date\(\)\)\.filter/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -138,7 +142,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.28', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.29', bods: true })
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
@@ -188,12 +192,19 @@ try {
   });
   assert.equal(new URL(dataUrls.manifest).searchParams.has('v'), false);
   assert.equal(new URL(dataUrls.pattern).searchParams.get('v'), dataUrls.build);
+  const timetableIndex = await page.evaluate(() => {
+    const index=window.__KERBSIDE_TEST__.indexTimetableRows([
+      {line:'9',id:1},{line:'9',id:2},{line:'X8',id:3}
+    ]);
+    return {nine:index.get('9').length,x8:index.get('X8').length,missing:index.get('1')||null};
+  });
+  assert.deepEqual(timetableIndex, {nine:2,x8:1,missing:null});
 
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.28'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.29'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

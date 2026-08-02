@@ -742,7 +742,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.28 also versions timetable tiles, departure shards and route-pattern requests with the active national build timestamp, and clears open-tab caches when that build changes.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.29 also caches each selected stop's three-day timetable expansion, indexes it once by route, and reuses the active route set for the current minute to reduce repeated mobile CPU work.</p>
           </div>
 
           <div class="stats-section">
@@ -773,7 +773,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.28';
+const APP_VERSION = '0.6.29';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1622,11 +1622,27 @@ function matchTimetableStop(stop){
   if(strict) return best && best.distance<=60 && best.similarity>=.45 ? best : null;
   return best && (bestScore>-45 || best.distance<45) ? best : null;
 }
+let TIMETABLE_ROWS_CACHE={stop:null,timetable:null,run:-1,day:'',rows:[],byLine:new Map()};
+let TIMETABLE_ROUTE_CACHE={rows:null,minute:-1,set:new Set()};
+function indexTimetableRows(rows){
+  const byLine=new Map();
+  for(const row of rows||[]){
+    const line=String(row&&row.line||'');
+    if(!byLine.has(line)) byLine.set(line,[]);
+    byLine.get(line).push(row);
+  }
+  return byLine;
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),indexTimetableRows};
+}
 function timetableRows(now){
   const stop=S.ttStop;
   if(!stop || !Array.isArray(stop.d)) return [];
+  const moment=now||new Date(), day=ymd(moment), cache=TIMETABLE_ROWS_CACHE;
+  if(cache.stop===stop&&cache.timetable===S.timetable&&cache.run===S.timetableRun&&cache.day===day) return cache.rows;
   const out=[];
-  const today=localMidnight(now||new Date());
+  const today=localMidnight(moment);
   for(const offset of [-1,0,1]){
     const serviceDate=new Date(today); serviceDate.setDate(serviceDate.getDate()+offset);
     for(const e of stop.d){
@@ -1638,11 +1654,19 @@ function timetableRows(now){
       out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||''});
     }
   }
+  TIMETABLE_ROWS_CACHE={stop,timetable:S.timetable,run:S.timetableRun,day,rows:out,byLine:indexTimetableRows(out)};
+  TIMETABLE_ROUTE_CACHE={rows:null,minute:-1,set:new Set()};
   return out;
 }
+function timetableRowsForLine(line,now){
+  const rows=timetableRows(now), cache=TIMETABLE_ROWS_CACHE;
+  return cache.rows===rows?(cache.byLine.get(String(line))||[]):rows.filter(row=>String(row.line)===String(line));
+}
 function timetableRouteSet(){
-  const now=Date.now();
-  return new Set(timetableRows(new Date(now)).filter(r=>r.at>now-4*3600000 && r.at<now+20*3600000).map(r=>String(r.line)));
+  const now=Date.now(), rows=timetableRows(new Date(now)), minute=Math.floor(now/60000), cache=TIMETABLE_ROUTE_CACHE;
+  if(cache.rows===rows&&cache.minute===minute) return cache.set;
+  const set=new Set(rows.filter(r=>r.at>now-4*3600000&&r.at<now+20*3600000).map(r=>String(r.line)));
+  TIMETABLE_ROUTE_CACHE={rows,minute,set}; return set;
 }
 function destinationSimilarity(a,b){
   if(!a || !b) return 0;
@@ -1855,8 +1879,7 @@ function splitPatternAt(pattern,projection){
 }
 function scheduledMatches(line,dest,spatialSecs,journey){
   const now=Date.now(), target=now+Math.max(0,Number(spatialSecs)||0)*1000;
-  let rows=timetableRows(new Date(now)).filter(r=>{
-    if(String(r.line)!==String(line)) return false;
+  let rows=timetableRowsForLine(line,new Date(now)).filter(r=>{
     if(r.at<now-3*60000 || r.at>now+3*3600000) return false;
     return !dest || !r.head || destinationSimilarity(dest,r.head)>=.34;
   });
@@ -2311,7 +2334,7 @@ function lineSpeed(v){
 function routeEvidence(line,dest,journey){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
-  const ttRows=timetableRows(new Date()).filter(r=>String(r.line)===l);
+  const ttRows=timetableRowsForLine(l,new Date());
   const tripMatch=journey?uniqueCompatibleTrips(ttRows,journey):{items:[],ref:'',strength:0,ambiguous:false};
   if(tripMatch.items.length){
     const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
