@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.36'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.37'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -93,7 +93,9 @@ assert.match(busSource, /vehicleRef:f\.VehicleRef\|\|''/);
 assert.doesNotMatch(busSource, /const id = f\.VehicleRef \|\| journey/);
 assert.match(busSource, /async function fetchLiveBatch\(wide,signal\)/);
 assert.match(busSource, /if\(wide\) S\.lastWideFetch=Date\.now\(\)/);
-assert.match(busSource, /batch=await fetchLiveBatch\(false,signal\)/);
+assert.match(busSource, /requested:urls\.length/);
+assert.match(busSource, /batch\.successful\.length<batch\.requested/);
+assert.match(busSource, /successful:\[\.\.\.batch\.successful,\.\.\.nearby\.successful\]/);
 assert.match(busSource, /liveState:S/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -146,25 +148,28 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.36', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.37', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
     const url=new URL(route.request().url());
     const box=(url.searchParams.get('bbox')||'').split(',').map(Number);
     const latitudeSpan=box.length===4?box[3]-box[1]:0;
+    const liveXml=(operator,vehicle,lat)=>{
+      const recorded=new Date().toISOString();
+      return `<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri"><ServiceDelivery><VehicleMonitoringDelivery><VehicleActivity>
+        <RecordedAtTime>${recorded}</RecordedAtTime><MonitoredVehicleJourney><LineRef>9</LineRef><PublishedLineName>9</PublishedLineName>
+        <OperatorRef>${operator}</OperatorRef><VehicleRef>${vehicle}</VehicleRef><DatedVehicleJourneyRef>${vehicle}-trip</DatedVehicleJourneyRef>
+        <DestinationName>Town Centre</DestinationName><VehicleLocation><Longitude>-2.1000</Longitude><Latitude>${lat}</Latitude></VehicleLocation>
+        <Bearing>0</Bearing></MonitoredVehicleJourney></VehicleActivity></VehicleMonitoringDelivery></ServiceDelivery></Siri>`;
+    };
     if(latitudeSpan>0.25){
       wideFeedRequests++;
-      return route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:'synthetic wide outage'})});
+      if(wideFeedRequests===1) return route.fulfill({status:200,contentType:'application/xml',body:liveXml('WIDE','wide-1','52.6000')});
+      return route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:'synthetic partial wide outage'})});
     }
     nearbyFeedRequests++;
-    const recorded=new Date().toISOString();
-    const body=`<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri"><ServiceDelivery><VehicleMonitoringDelivery><VehicleActivity>
-      <RecordedAtTime>${recorded}</RecordedAtTime><MonitoredVehicleJourney><LineRef>9</LineRef><PublishedLineName>9</PublishedLineName>
-      <OperatorRef>TEST</OperatorRef><VehicleRef>nearby-1</VehicleRef><DatedVehicleJourneyRef>nearby-trip</DatedVehicleJourneyRef>
-      <DestinationName>Town Centre</DestinationName><VehicleLocation><Longitude>-2.1000</Longitude><Latitude>52.5010</Latitude></VehicleLocation>
-      <Bearing>0</Bearing></MonitoredVehicleJourney></VehicleActivity></VehicleMonitoringDelivery></ServiceDelivery></Siri>`;
-    return route.fulfill({status:200,contentType:'application/xml',body});
+    return route.fulfill({status:200,contentType:'application/xml',body:liveXml('NEAR','nearby-1','52.5010')});
   });
 
   await page.goto(`http://127.0.0.1:${address.port}/bus.html`, { waitUntil: 'domcontentloaded' });
@@ -229,13 +234,13 @@ try {
     state.key='';state.lastWideFetch=0;
     try{
       const vehicles=await api.fetchLive();
-      return {count:vehicles.length,id:vehicles[0]?.id,cooldown:Date.now()-state.lastWideFetch<5000};
+      return {count:vehicles.length,ids:vehicles.map(vehicle=>vehicle.id).sort(),cooldown:Date.now()-state.lastWideFetch<5000};
     }finally{
       Object.assign(state,saved);
     }
   });
-  assert.deepEqual(wideFallback,{count:1,id:'TEST|vehicle|nearby-1',cooldown:true});
-  assert.ok(wideFeedRequests>=1);
+  assert.deepEqual(wideFallback,{count:2,ids:['NEAR|vehicle|nearby-1','WIDE|vehicle|wide-1'],cooldown:true});
+  assert.ok(wideFeedRequests>=2);
   assert.equal(nearbyFeedRequests,1);
 
   const tripMatching = await page.evaluate(() => {
@@ -306,7 +311,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.36'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.37'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
