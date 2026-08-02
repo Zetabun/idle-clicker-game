@@ -591,11 +591,12 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.0';
+const APP_VERSION = '0.6.1';
 const MY_KEY   = '';
 const MY_PROXY = '';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
 const DATA_TILE_CACHE = new Map();
+const DATA_DEPARTURE_CACHE = new Map();
 let DATA_MANIFEST = null;
 let DATA_MANIFEST_PROMISE = null;
 
@@ -1081,6 +1082,16 @@ async function loadDataTile(region,tile){
   DATA_TILE_CACHE.set(key,pending);
   try{return await pending;}catch(e){DATA_TILE_CACHE.delete(key);throw e;}
 }
+async function loadDataDeparture(region,shard){
+  const key=region+'/'+shard; if(DATA_DEPARTURE_CACHE.has(key)) return DATA_DEPARTURE_CACHE.get(key);
+  const pending=(async()=>{
+    const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/departures/'+encodeURIComponent(shard)+'.json'),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
+    if(r.status===404) return null; if(!r.ok) throw new Error('Pages departures HTTP '+r.status);
+    const data=await r.json(); return data&&data.stops?data:null;
+  })();
+  DATA_DEPARTURE_CACHE.set(key,pending);
+  try{return await pending;}catch(e){DATA_DEPARTURE_CACHE.delete(key);throw e;}
+}
 async function fetchOfficialStops(lat,lon,radius){
   try{
     const manifest=await loadDataManifest(false), regions=dataRegionsFor(lat,lon,radius,manifest), tiles=dataTilesForRadius(lat,lon,radius);
@@ -1092,7 +1103,7 @@ async function fetchOfficialStops(lat,lon,radius){
         const ll=raw&&raw.ll, stopLat=Number(ll&&ll[0]), stopLon=Number(ll&&ll[1]);
         if(!isFinite(stopLat)||!isFinite(stopLon)) continue;
         const metres=dist(lat,lon,stopLat,stopLon); if(metres>radius) continue;
-        const stop={id:String(id),name:titleCase(raw.n||'Unnamed stop'),atco:String(raw.c||id),naptan:String(raw.sms||''),code:String(raw.c||id),ind:String(raw.ind||''),lat:stopLat,lon:stopLon,region:item.region,tile:item.tile,source:'official',d:metres};
+        const stop={id:String(id),name:titleCase(raw.n||'Unnamed stop'),atco:String(raw.c||id),naptan:String(raw.sms||''),code:String(raw.c||id),ind:String(raw.ind||''),lat:stopLat,lon:stopLon,region:item.region,tile:item.tile,shard:String(raw.shard||''),source:'official',d:metres};
         const old=unique.get(stop.id); if(!old||stop.d<old.d) unique.set(stop.id,stop);
       }
     }
@@ -1280,10 +1291,14 @@ async function loadStopTimetable(stop){
   S.ttStop=matchTimetableStop(stop); updateStopMeta(); renderServingNote(); renderDests(); render();
   if(!stop.region||!stop.tile) return;
   try{
-    const data=await loadDataTile(stop.region,stop.tile);
-    if(!data||!data.stops||!Object.keys(data.stops).length) throw new Error('no Pages timetable tile');
+    const tileData=await loadDataTile(stop.region,stop.tile);
+    const raw=tileData&&tileData.stops&&tileData.stops[String(stop.id)];
+    const shard=String(stop.shard||(raw&&raw.shard)||'');
+    if(!shard) throw new Error('no Pages departure shard for this stop');
+    const data=await loadDataDeparture(stop.region,shard);
+    if(!data||!data.stops||!data.stops[String(stop.id)]) throw new Error('no Pages timetable data for this stop');
     if(run!==S.timetableRun||!S.stop||String(S.stop.id)!==String(stop.id)) return;
-    activateTimetable(data,'national',stop.region); S.ttError=null; S.ttStop=matchTimetableStop(stop);
+    stop.shard=shard; activateTimetable(data,'national',stop.region); S.ttError=null; S.ttStop=matchTimetableStop(stop);
   }catch(e){ if(run!==S.timetableRun) return; S.ttError=String((e&&e.message)||'national timetable unavailable'); }
   updateStopMeta(); renderServingNote(); renderDests(); render();
 }

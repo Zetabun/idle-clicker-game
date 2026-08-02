@@ -21,11 +21,13 @@ if (!fs.existsSync(gtfsDir) || !fs.statSync(gtfsDir).isDirectory()) fail(`GTFS f
 const outRoot = path.resolve(outArg);
 const regionRoot = path.join(outRoot, 'regions', region);
 const tileRoot = path.join(regionRoot, 'tiles');
+const departureRoot = path.join(regionRoot, 'departures');
 const patternRoot = path.join(regionRoot, 'patterns');
 fs.rmSync(regionRoot, { recursive: true, force: true });
-for (const directory of [tileRoot, patternRoot]) fs.mkdirSync(directory, { recursive: true });
+for (const directory of [tileRoot, departureRoot, patternRoot]) fs.mkdirSync(directory, { recursive: true });
 
 const TILE_SIZE = 0.05;
+const DEPARTURE_PREFIX_LENGTH = 2;
 const PATTERN_PREFIX_LENGTH = 2;
 const nowIso = new Date().toISOString();
 const dbPath = path.join(os.tmpdir(), `kerbside-${region}-${process.pid}.sqlite`);
@@ -38,6 +40,7 @@ db.exec(`
   PRAGMA cache_size=-200000;
   CREATE TABLE stop_times (
     tile TEXT NOT NULL,
+    shard TEXT NOT NULL,
     stop_id TEXT NOT NULL,
     trip_id TEXT NOT NULL,
     mins INTEGER NOT NULL,
@@ -148,6 +151,10 @@ function shortHash(value) {
   return crypto.createHash('sha256').update(value).digest('hex').slice(0, 20);
 }
 
+function departureShardKey(value) {
+  return shortHash(String(value)).slice(0, DEPARTURE_PREFIX_LENGTH);
+}
+
 function writeJson(filename, value) {
   fs.mkdirSync(path.dirname(filename), { recursive: true });
   fs.writeFileSync(filename, JSON.stringify(value));
@@ -221,7 +228,7 @@ async function main() {
   }, { optional: true });
 
   console.log(`[${region}] Importing stop_times into temporary SQLite...`);
-  const insert = db.prepare('INSERT INTO stop_times(tile, stop_id, trip_id, mins, seq) VALUES (?, ?, ?, ?, ?)');
+  const insert = db.prepare('INSERT INTO stop_times(tile, shard, stop_id, trip_id, mins, seq) VALUES (?, ?, ?, ?, ?, ?)');
   db.exec('BEGIN');
   let batch = 0;
 
@@ -235,7 +242,7 @@ async function main() {
       invalidTimes++;
       return;
     }
-    insert.run(stop.tile, stopId, tripId, mins, sequence(row.stop_sequence, number));
+    insert.run(stop.tile, departureShardKey(stopId), stopId, tripId, mins, sequence(row.stop_sequence, number));
     stopTimeRows++;
     batch++;
     if (batch >= 50000) {
@@ -248,7 +255,7 @@ async function main() {
 
   if (!stopTimeRows) throw new Error('No usable stop times found.');
   db.exec('CREATE INDEX idx_trip_sequence ON stop_times(trip_id, seq);');
-  db.exec('CREATE INDEX idx_tile_stop_time ON stop_times(tile, stop_id, mins, trip_id);');
+  db.exec('CREATE INDEX idx_shard_stop_time ON stop_times(shard, stop_id, mins, trip_id);');
 
   console.log(`[${region}] Deduplicating ordered journey patterns...`);
   const putPattern = db.prepare('INSERT OR IGNORE INTO patterns(pattern_id, coords) VALUES (?, ?)');
@@ -309,17 +316,18 @@ async function main() {
   }
   flushShard();
 
-  console.log(`[${region}] Writing combined stop and timetable tiles...`);
-  let currentTile = '';
+  console.log(`[${region}] Writing balanced departure shards...`);
+  let currentShard = '';
   let currentStop = '';
   let departures = [];
-  let tileStops = {};
-  let tileServices = new Set();
-  let tileTripPatterns = {};
+  let shardStops = {};
+  let shardServices = new Set();
+  let shardTripPatterns = {};
   let activeStopCount = 0;
   let departureCount = 0;
-  let tileCount = 0;
-  let maxTileBytes = 0;
+  let departureShardCount = 0;
+  let maxAssetBytes = 0;
+  const activeStopIds = new Set();
   const bounds = [Infinity, Infinity, -Infinity, -Infinity];
 
   function flushStop() {
@@ -336,7 +344,7 @@ async function main() {
       unique.push(departure);
       previous = signature;
     }
-    tileStops[currentStop] = {
+    shardStops[currentStop] = {
       n: stop.name,
       c: currentStop,
       sms: stop.sms,
@@ -344,23 +352,24 @@ async function main() {
       ll: [stop.lat, stop.lon],
       d: unique
     };
+    activeStopIds.add(currentStop);
     updateBounds(bounds, stop);
     activeStopCount++;
     departureCount += unique.length;
     departures = [];
   }
 
-  function flushTile() {
+  function flushDepartureShard() {
     flushStop();
-    if (!currentTile || !Object.keys(tileStops).length) {
-      tileStops = {};
-      tileServices = new Set();
-      tileTripPatterns = {};
+    if (!currentShard || !Object.keys(shardStops).length) {
+      shardStops = {};
+      shardServices = new Set();
+      shardTripPatterns = {};
       return;
     }
 
     const serviceSubset = {};
-    for (const id of tileServices) {
+    for (const id of shardServices) {
       const service = services.get(id);
       if (!service) continue;
       serviceSubset[id] = {
@@ -370,30 +379,29 @@ async function main() {
       };
     }
 
-    const filename = path.join(tileRoot, `${currentTile}.json`);
+    const filename = path.join(departureRoot, `${currentShard}.json`);
     writeJson(filename, {
-      version: 6,
+      version: 7,
       built: nowIso,
-      scope: 'tile',
+      scope: 'departure-shard',
       region,
-      tile: currentTile,
-      tileSize: TILE_SIZE,
+      shard: currentShard,
       services: serviceSubset,
-      stops: tileStops,
-      tripPatterns: tileTripPatterns,
+      stops: shardStops,
+      tripPatterns: shardTripPatterns,
       patterns: {}
     });
-    maxTileBytes = Math.max(maxTileBytes, fs.statSync(filename).size);
-    tileCount++;
-    tileStops = {};
-    tileServices = new Set();
-    tileTripPatterns = {};
+    maxAssetBytes = Math.max(maxAssetBytes, fs.statSync(filename).size);
+    departureShardCount++;
+    shardStops = {};
+    shardServices = new Set();
+    shardTripPatterns = {};
   }
 
-  for (const row of db.prepare('SELECT tile, stop_id, trip_id, mins FROM stop_times ORDER BY tile, stop_id, mins, trip_id').iterate()) {
-    if (row.tile !== currentTile) {
-      flushTile();
-      currentTile = row.tile;
+  for (const row of db.prepare('SELECT shard, stop_id, trip_id, mins FROM stop_times ORDER BY shard, stop_id, mins, trip_id').iterate()) {
+    if (row.shard !== currentShard) {
+      flushDepartureShard();
+      currentShard = row.shard;
       currentStop = '';
     }
     if (row.stop_id !== currentStop) {
@@ -404,24 +412,58 @@ async function main() {
     if (!trip) continue;
     const patternId = tripPattern.get(row.trip_id) || '';
     departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId]);
-    if (trip.service) tileServices.add(trip.service);
-    if (patternId) tileTripPatterns[row.trip_id] = patternId;
+    if (trip.service) shardServices.add(trip.service);
+    if (patternId) shardTripPatterns[row.trip_id] = patternId;
   }
-  flushTile();
+  flushDepartureShard();
+
+  console.log(`[${region}] Writing lightweight stop-index tiles...`);
+  const tileStops = new Map();
+  for (const stopId of [...activeStopIds].sort()) {
+    const stop = stops.get(stopId);
+    if (!stop) continue;
+    if (!tileStops.has(stop.tile)) tileStops.set(stop.tile, {});
+    tileStops.get(stop.tile)[stopId] = {
+      n: stop.name,
+      c: stopId,
+      sms: stop.sms,
+      ind: stop.ind,
+      ll: [stop.lat, stop.lon],
+      shard: departureShardKey(stopId)
+    };
+  }
+
+  let tileCount = 0;
+  for (const tile of [...tileStops.keys()].sort()) {
+    const filename = path.join(tileRoot, `${tile}.json`);
+    writeJson(filename, {
+      version: 7,
+      built: nowIso,
+      scope: 'stop-index',
+      region,
+      tile,
+      tileSize: TILE_SIZE,
+      stops: tileStops.get(tile)
+    });
+    maxAssetBytes = Math.max(maxAssetBytes, fs.statSync(filename).size);
+    tileCount++;
+  }
 
   const manifest = {
     version: 2,
     built: nowIso,
     region,
     tileSize: TILE_SIZE,
+    departurePrefixLength: DEPARTURE_PREFIX_LENGTH,
     patternPrefixLength: PATTERN_PREFIX_LENGTH,
     bounds: bounds.every(Number.isFinite) ? bounds.map(value => Number(value.toFixed(6))) : null,
     stops: activeStopCount,
     departures: departureCount,
     patterns: patternCount,
     tiles: tileCount,
-    files: tileCount + Math.min(16 ** PATTERN_PREFIX_LENGTH, patternCount) + 1,
-    maxTileBytes,
+    departureShards: departureShardCount,
+    files: tileCount + departureShardCount + Math.min(16 ** PATTERN_PREFIX_LENGTH, patternCount) + 1,
+    maxTileBytes: maxAssetBytes,
     invalidTimes
   };
 
@@ -434,4 +476,4 @@ main().then(() => {
   fs.rmSync(dbPath, { force: true });
 }).catch(error => fail(error && error.message ? error.message : String(error)));
 
-export { parseGtfsMinutes, splitCsv, tileKey };
+export { departureShardKey, parseGtfsMinutes, splitCsv, tileKey };
