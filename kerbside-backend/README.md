@@ -75,6 +75,8 @@ Kerbside 0.6.28 versions static timetable assets by the national manifest build 
 
 Kerbside 0.6.29 caches expanded timetable rows per selected stop, timetable object, load run and local service day. The cached rows are indexed once by displayed line, while the active route set is reused for the current minute. Route evidence and scheduled ETA matching now read the line index instead of repeatedly expanding and scanning the full three-day timetable for every live vehicle.
 
+Kerbside 0.6.30 makes route projection continuity-aware. At loops, overlapping roads and crossing shapes, candidate segments are ranked using GPS bearing plus the vehicle's previous along-route position. Large backward jumps and physically implausible forward jumps are penalised, while ordinary GPS jitter remains possible. Passed-stop, next-stop, route split and progress displays now share the same retained projection.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
