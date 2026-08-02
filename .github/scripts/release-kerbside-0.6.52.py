@@ -36,7 +36,7 @@ if source.count(bad_resolver) != 1:
 source = source.replace(bad_resolver, good_resolver, 1)
 
 bus_write = 'write("bus.html", bus)'
-bus_guard = '''old_map_helper = "function mapVehicleVisible(v,shown,now=Date.now()){return !!(shown||(v&&now-Number(v.ts)<=MAX_AGE_MS));}"
+bus_guard = r'''old_map_helper = "function mapVehicleVisible(v,shown,now=Date.now()){return !!(shown||(v&&now-Number(v.ts)<=MAX_AGE_MS));}"
 new_map_helper = "function mapVehicleVisible(v,shown,now=Date.now()){const age=now-Number(v&&v.ts);return !!(shown||(Number.isFinite(age)&&age>=0&&age<=4*60*1000));}"
 if bus.count(old_map_helper) == 1:
     bus = bus.replace(old_map_helper, new_map_helper, 1)
