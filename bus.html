@@ -745,7 +745,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.46 also validates and snapshots route-pattern shards, coalesces requests by shard prefix and retries failed geometry instead of caching a permanent unavailable result for the tab.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.47 also validates and snapshots national stop-index tiles, while genuine empty-tile responses use a five-minute negative cache instead of remaining unavailable for the life of the tab.</p>
           </div>
 
           <div class="stats-section">
@@ -786,11 +786,15 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.46';
+const APP_VERSION = '0.6.47';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
 const DATA_TILE_CACHE = new Map();
+const DATA_TILE_LAST_GOOD = new Map();
+const DATA_TILE_SOURCE = new Map();
+const DATA_TILE_NEGATIVE = new Map();
+const DATA_TILE_NEGATIVE_TTL = 5*60*1000;
 const DATA_DEPARTURE_CACHE = new Map();
 const DATA_DEPARTURE_LAST_GOOD = new Map();
 const DATA_DEPARTURE_SOURCE = new Map();
@@ -1330,7 +1334,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||''};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||''};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -1378,7 +1382,7 @@ function writeStoredDataManifest(data){
 }
 function resetDataManifestForTest(clearStored){
   DATA_MANIFEST=null; DATA_MANIFEST_PROMISE=null; DATA_MANIFEST_SOURCE='';
-  DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_RETRY.clear(); PATTERN_CACHE.clear();
+  DATA_TILE_CACHE.clear(); DATA_TILE_NEGATIVE.clear(); DATA_DEPARTURE_CACHE.clear(); DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_RETRY.clear(); PATTERN_CACHE.clear();
   if(clearStored){ try{localStorage.removeItem(DATA_MANIFEST_STORAGE);}catch(e){} }
 }
 async function loadDataManifest(force){
@@ -1394,7 +1398,7 @@ async function loadDataManifest(force){
       const previousBuild=DATA_MANIFEST&&String(DATA_MANIFEST.built||'');
       const nextBuild=String(data.built||'');
       if(previousBuild&&nextBuild&&previousBuild!==nextBuild){
-        DATA_TILE_CACHE.clear(); DATA_DEPARTURE_CACHE.clear(); DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_RETRY.clear(); PATTERN_CACHE.clear();
+        DATA_TILE_CACHE.clear(); DATA_TILE_NEGATIVE.clear(); DATA_DEPARTURE_CACHE.clear(); DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_RETRY.clear(); PATTERN_CACHE.clear();
       }
       DATA_MANIFEST=data; DATA_MANIFEST_SOURCE='network'; writeStoredDataManifest(data); return data;
     }catch(e){
@@ -1413,15 +1417,93 @@ function dataRegionsFor(lat,lon,radius,manifest){
   }
   return names.length?names:Object.keys((manifest&&manifest.regions)||{});
 }
+function tileLogicalKey(region,tile){ return String(region||'')+'/'+String(tile||''); }
+function tileSnapshotRequest(region,tile){
+  return new Request(location.origin+'/__kerbside_snapshot__/tile/'+encodeURIComponent(String(region||''))+'/'+encodeURIComponent(String(tile||'')));
+}
+function validDataTile(data,region,tile,expectedBuild){
+  if(!data||Number(data.version)<7||data.scope!=='stop-index') return false;
+  if(String(data.region||'')!==String(region||'')||String(data.tile||'')!==String(tile||'')) return false;
+  const built=String(data.built||'');
+  if(!Number.isFinite(Date.parse(built))||(expectedBuild&&built!==String(expectedBuild))) return false;
+  const tileSize=Number(data.tileSize), manifestTileSize=Number(DATA_MANIFEST&&DATA_MANIFEST.tileSize);
+  if(!(tileSize>.001&&tileSize<=.25)||(Number.isFinite(manifestTileSize)&&Math.abs(tileSize-manifestTileSize)>1e-9)) return false;
+  if(!plainDataObject(data.stops)||!Object.keys(data.stops).length) return false;
+  for(const [id,stop] of Object.entries(data.stops)){
+    if(!String(id)||!plainDataObject(stop)||!Array.isArray(stop.ll)||stop.ll.length<2) return false;
+    if(!Number.isFinite(Number(stop.ll[0]))||!Number.isFinite(Number(stop.ll[1]))) return false;
+    if(!String(stop.n||'').trim()||!/^[a-f0-9]{2}$/i.test(String(stop.shard||''))) return false;
+  }
+  return true;
+}
+async function readTileSnapshot(region,tile,now=Date.now()){
+  if(!S.remember||!('caches' in window)) return null;
+  try{
+    const cache=await caches.open(DATA_SNAPSHOT_CACHE), response=await cache.match(tileSnapshotRequest(region,tile));
+    if(!response) return null;
+    const record=await response.json();
+    if(!record||!Number.isFinite(Number(record.ts))||now-Number(record.ts)>DATA_SHARD_MAX_AGE) return null;
+    return validDataTile(record.data,region,tile)?record.data:null;
+  }catch(e){ return null; }
+}
+async function writeTileSnapshot(region,tile,data){
+  if(!S.remember||!('caches' in window)||!validDataTile(data,region,tile)) return;
+  try{
+    const cache=await caches.open(DATA_SNAPSHOT_CACHE);
+    await cache.put(tileSnapshotRequest(region,tile),new Response(JSON.stringify({ts:Date.now(),data}),{headers:{'Content-Type':'application/json'}}));
+  }catch(e){}
+}
+async function resetDataTileForTest(clearSnapshot){
+  DATA_TILE_CACHE.clear(); DATA_TILE_LAST_GOOD.clear(); DATA_TILE_SOURCE.clear(); DATA_TILE_NEGATIVE.clear();
+  if(clearSnapshot&&'caches' in window){
+    try{
+      const cache=await caches.open(DATA_SNAPSHOT_CACHE), keys=await cache.keys();
+      await Promise.all(keys.filter(request=>request.url.includes('/__kerbside_snapshot__/tile/')).map(request=>cache.delete(request)));
+    }catch(e){}
+  }
+}
+function expireDataTileNegativeForTest(region,tile){
+  const expectedBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
+  DATA_TILE_NEGATIVE.set(expectedBuild+'|'+tileLogicalKey(region,tile),0);
+}
 async function loadDataTile(region,tile){
-  const key=region+'/'+tile; if(DATA_TILE_CACHE.has(key)) return DATA_TILE_CACHE.get(key);
+  const logical=tileLogicalKey(region,tile);
+  const expectedBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
+  if(!expectedBuild) throw new Error('Pages tiles have no validated regional build');
+  const key=expectedBuild+'|'+logical;
+  if(Date.now()<(DATA_TILE_NEGATIVE.get(key)||0)) return null;
+  if(DATA_TILE_CACHE.has(key)) return DATA_TILE_CACHE.get(key);
+  let fallbackUsed=false;
   const pending=(async()=>{
-    const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/tiles/'+encodeURIComponent(tile)+'.json'),{headers:{Accept:'application/json'},cache:'force-cache'},12000);
-    if(r.status===404) return null; if(!r.ok) throw new Error('Pages tile HTTP '+r.status);
-    const data=await r.json(); return data&&data.stops?data:null;
+    let fallback=DATA_TILE_LAST_GOOD.get(logical)||null, fallbackSource=fallback?'memory':'';
+    if(!fallback){ fallback=await readTileSnapshot(region,tile); if(fallback) fallbackSource='snapshot'; }
+    try{
+      const r=await fetchTimed(dataUrl('/regions/'+encodeURIComponent(region)+'/tiles/'+encodeURIComponent(tile)+'.json'),{headers:{Accept:'application/json'},cache:'no-cache'},12000);
+      if(r.status===404){
+        if(fallback&&validDataTile(fallback,region,tile)){
+          fallbackUsed=true; DATA_TILE_LAST_GOOD.set(logical,fallback); DATA_TILE_SOURCE.set(logical,fallbackSource||'fallback'); return fallback;
+        }
+        DATA_TILE_NEGATIVE.set(key,Date.now()+DATA_TILE_NEGATIVE_TTL); DATA_TILE_SOURCE.set(logical,'empty'); return null;
+      }
+      if(!r.ok) throw new Error('Pages tile HTTP '+r.status);
+      const data=await r.json();
+      if(!validDataTile(data,region,tile,expectedBuild)) throw new Error('Pages stop-index tile failed validation');
+      DATA_TILE_NEGATIVE.delete(key); DATA_TILE_LAST_GOOD.set(logical,data); DATA_TILE_SOURCE.set(logical,'network');
+      await writeTileSnapshot(region,tile,data);
+      return data;
+    }catch(e){
+      if(fallback&&validDataTile(fallback,region,tile)){
+        fallbackUsed=true; DATA_TILE_LAST_GOOD.set(logical,fallback); DATA_TILE_SOURCE.set(logical,fallbackSource||'fallback'); return fallback;
+      }
+      throw e;
+    }
   })();
   DATA_TILE_CACHE.set(key,pending);
-  try{return await pending;}catch(e){DATA_TILE_CACHE.delete(key);throw e;}
+  try{
+    const data=await pending;
+    if(fallbackUsed||data===null) DATA_TILE_CACHE.delete(key);
+    return data;
+  }catch(e){ DATA_TILE_CACHE.delete(key); throw e; }
 }
 function departureLogicalKey(region,shard){ return String(region||'')+'/'+String(shard||''); }
 function departureSnapshotRequest(region,shard){
@@ -1463,6 +1545,7 @@ async function writeDepartureSnapshot(region,shard,data){
   }catch(e){}
 }
 async function clearDataSnapshots(){
+  DATA_TILE_CACHE.clear(); DATA_TILE_LAST_GOOD.clear(); DATA_TILE_SOURCE.clear(); DATA_TILE_NEGATIVE.clear();
   DATA_DEPARTURE_CACHE.clear(); DATA_DEPARTURE_LAST_GOOD.clear(); DATA_DEPARTURE_SOURCE.clear();
   DATA_PATTERN_SHARD_CACHE.clear(); DATA_PATTERN_LAST_GOOD.clear(); DATA_PATTERN_SOURCE.clear(); DATA_PATTERN_RETRY.clear();
   if('caches' in window){ try{await caches.delete(DATA_SNAPSHOT_CACHE);}catch(e){} }

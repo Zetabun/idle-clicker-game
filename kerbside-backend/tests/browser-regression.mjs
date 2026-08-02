@@ -42,7 +42,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.46'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.47'/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -64,7 +64,7 @@ assert.match(busSource, /destination match uncertain/);
 assert.match(busSource, /possible GPS match was filtered/);
 assert.match(busSource, /no unique journey match/);
 assert.match(busSource, /function versionedDataUrl\(path,built\)/);
-assert.match(busSource, /DATA_TILE_CACHE\.clear\(\); DATA_DEPARTURE_CACHE\.clear\(\); DATA_PATTERN_SHARD_CACHE\.clear\(\); DATA_PATTERN_RETRY\.clear\(\); PATTERN_CACHE\.clear\(\);/);
+assert.match(busSource, /DATA_TILE_CACHE\.clear\(\); DATA_TILE_NEGATIVE\.clear\(\); DATA_DEPARTURE_CACHE\.clear\(\); DATA_PATTERN_SHARD_CACHE\.clear\(\); DATA_PATTERN_RETRY\.clear\(\); PATTERN_CACHE\.clear\(\);/);
 assert.match(busSource, /function indexTimetableRows\(rows\)/);
 assert.match(busSource, /function timetableRowsForLine\(line,now\)/);
 assert.match(busSource, /TIMETABLE_ROUTE_CACHE=\{rows,minute,set\}/);
@@ -147,6 +147,11 @@ assert.match(busSource, /S\.patternPending\.has\(requestKey\)/);
 assert.match(busSource, /DATA_PATTERN_RETRY\.set\(requestKey,Date\.now\(\)\+DATA_PATTERN_RETRY_MS\)/);
 assert.match(busSource, /if\(S\.timetableSource==='national'\) queuePattern\(id\); else PATTERN_CACHE\.set\(id,null\)/);
 assert.doesNotMatch(busSource, /cache:'force-cache'\},12000\);\n    if\(!r\.ok\) return; const data=await r\.json\(\);/);
+assert.match(busSource, /const DATA_TILE_NEGATIVE_TTL = 5\*60\*1000/);
+assert.match(busSource, /function validDataTile\(data,region,tile,expectedBuild\)/);
+assert.match(busSource, /DATA_TILE_NEGATIVE\.set\(key,Date\.now\(\)\+DATA_TILE_NEGATIVE_TTL\)/);
+assert.match(busSource, /if\(fallbackUsed\|\|data===null\) DATA_TILE_CACHE\.delete\(key\)/);
+assert.doesNotMatch(busSource, /const key=region\+'\/'\+tile; if\(DATA_TILE_CACHE\.has\(key\)\)/);
 const mime = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -183,7 +188,7 @@ const context = await browser.newContext({ viewport: { width: 393, height: 852 }
 const page = await context.newPage();
 
 try {
-  let leafletCdnRequests = 0, cartoTileRequests = 0, osmTileRequests = 0, wideFeedRequests = 0, nearbyFeedRequests = 0, departureRequests = 0, patternRequests = 0;
+  let leafletCdnRequests = 0, cartoTileRequests = 0, osmTileRequests = 0, wideFeedRequests = 0, nearbyFeedRequests = 0, departureRequests = 0, patternRequests = 0, stopTileRequests = 0;
   const transparentTile = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
   await page.route('https://unpkg.com/leaflet@1.9.4/dist/**', route => { leafletCdnRequests++; return route.abort(); });
   await page.route('https://*.basemaps.cartocdn.com/**', route => { cartoTileRequests++; return route.abort(); });
@@ -206,6 +211,20 @@ try {
     if(manifestMode==='error') return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'synthetic manifest outage'})});
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(validManifest)});
   });
+  const validStopTile={
+    version:7,built:'2026-08-02T00:00:00.000Z',scope:'stop-index',region:'west_midlands',tile:'tile-test',tileSize:0.05,
+    stops:{'stop-a':{n:'Test stop',c:'stop-a',sms:'',ind:'A',ll:[52.5,-2.1],shard:'aa'}}
+  };
+  let stopTileMode='valid';
+  await page.route(/^https:\/\/kerbside-data-zetabun\.pages\.dev\/regions\/west_midlands\/tiles\/tile-test\.json/, route => {
+    stopTileRequests++;
+    if(stopTileMode==='bad-json') return route.fulfill({status:200,contentType:'application/json',body:'{"broken"'});
+    if(stopTileMode==='wrong-build') return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...validStopTile,built:'2026-08-01T00:00:00.000Z'})});
+    if(stopTileMode==='404') return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'synthetic empty tile'})});
+    if(stopTileMode==='error') return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'synthetic tile outage'})});
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(validStopTile)});
+  });
+
   const validDeparture={
     version:8,built:'2026-08-02T00:00:00.000Z',scope:'departure-shard',region:'west_midlands',shard:'aa',
     services:{daily:{days:'1111111',start:'20260101',end:'20261231',add:[],remove:[]}},
@@ -240,7 +259,7 @@ try {
   await page.route('https://kerbside-bus.adambullas.workers.dev/health**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.46', bods: true })
+    body: JSON.stringify({ ok: true, service: 'kerbside-live', role: 'live-only', version: '0.6.47', bods: true })
   }));
 
   await page.route(/^https:\/\/kerbside-bus\.adambullas\.workers\.dev\/\?bbox=/, route => {
@@ -306,6 +325,55 @@ try {
   assert.deepEqual(outageFallback,{built:'2026-08-02T00:00:00.000Z',source:'stored'});
   manifestMode='valid';
   await page.evaluate(async()=>{const api=window.__KERBSIDE_TEST__;api.resetDataManifestForTest(false);await api.loadDataManifest(true);});
+
+  stopTileMode='valid'; stopTileRequests=0;
+  const stopTilePolicy=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataTileForTest(true);
+    const data=await api.loadDataTile('west_midlands','tile-test');
+    return {valid:api.validDataTile(data,'west_midlands','tile-test','2026-08-02T00:00:00.000Z'),source:api.dataTileSource('west_midlands','tile-test'),stops:Object.keys(data.stops).length};
+  });
+  assert.deepEqual(stopTilePolicy,{valid:true,source:'network',stops:1});
+  stopTileMode='bad-json';
+  const malformedTile=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataTileForTest(false);
+    const data=await api.loadDataTile('west_midlands','tile-test');return {source:api.dataTileSource('west_midlands','tile-test'),stops:Object.keys(data.stops).length};
+  });
+  assert.deepEqual(malformedTile,{source:'snapshot',stops:1});
+  stopTileMode='wrong-build';
+  const wrongBuildTile=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataTileForTest(false);
+    const data=await api.loadDataTile('west_midlands','tile-test');return {source:api.dataTileSource('west_midlands','tile-test'),built:data.built};
+  });
+  assert.deepEqual(wrongBuildTile,{source:'snapshot',built:'2026-08-02T00:00:00.000Z'});
+  stopTileMode='404';
+  const missingTileFallback=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;await api.resetDataTileForTest(false);
+    const data=await api.loadDataTile('west_midlands','tile-test');return {source:api.dataTileSource('west_midlands','tile-test'),stops:Object.keys(data.stops).length};
+  });
+  assert.deepEqual(missingTileFallback,{source:'snapshot',stops:1});
+  await page.evaluate(async()=>window.__KERBSIDE_TEST__.resetDataTileForTest(true));
+  const beforeNegative=stopTileRequests;
+  const emptyTile=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;
+    const first=await api.loadDataTile('west_midlands','tile-test');
+    const second=await api.loadDataTile('west_midlands','tile-test');
+    return {first,second,source:api.dataTileSource('west_midlands','tile-test')};
+  });
+  assert.deepEqual(emptyTile,{first:null,second:null,source:'empty'});
+  assert.equal(stopTileRequests-beforeNegative,1);
+  await page.evaluate(()=>window.__KERBSIDE_TEST__.expireDataTileNegativeForTest('west_midlands','tile-test'));
+  await page.evaluate(()=>window.__KERBSIDE_TEST__.loadDataTile('west_midlands','tile-test'));
+  assert.equal(stopTileRequests-beforeNegative,2);
+  stopTileMode='error';
+  await page.evaluate(async()=>window.__KERBSIDE_TEST__.resetDataTileForTest(true));
+  const tileFailures=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TEST__;let failures=0;
+    for(let i=0;i<2;i++){try{await api.loadDataTile('west_midlands','tile-test');}catch(e){failures++;}}
+    return failures;
+  });
+  assert.equal(tileFailures,2);
+  stopTileMode='valid';
+  await page.evaluate(async()=>{const api=window.__KERBSIDE_TEST__;await api.resetDataTileForTest(true);await api.loadDataTile('west_midlands','tile-test');});
 
   departureMode='valid'; departureRequests=0;
   const departurePolicy=await page.evaluate(async()=>{
@@ -690,7 +758,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.46'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.47'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

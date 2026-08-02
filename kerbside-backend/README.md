@@ -109,6 +109,8 @@ Kerbside 0.6.45 validates every national departure shard before use. The shard m
 
 Kerbside 0.6.46 applies the last-known-good policy to route-pattern geometry. Pattern shards are validated against their region, two-character prefix and regional build, including every coordinate and ordered stop row. Valid shards are retained in memory and Cache Storage for 14 days. Malformed, wrong-build, missing and unavailable responses can use the recent snapshot, while failed or fallback loads remain retryable. Pattern requests are coalesced by region and shard prefix, and a one-minute failure backoff replaces the previous permanent `PATTERN_CACHE` null entry. The regional builder now labels new geometry files with `scope: pattern-shard` and their prefix. WebKit tests snapshot recovery, uncached 404 retries, queue backoff and successful journey-geometry activation.
 
+Kerbside 0.6.47 completes validation for national stop-index tiles. A tile must match its region, key and regional build, use the expected stop-index schema and contain valid coordinates plus departure-shard references. Valid populated tiles are retained in memory and Cache Storage for 14 days. Malformed, wrong-build, missing and unavailable responses can use a recent snapshot. A 404 with no prior populated tile is treated as a legitimate empty tile for five minutes, after which it is requested again; server and validation failures are never permanently cached. WebKit tests snapshot recovery, negative-cache coalescing, expiry retry and repeated server-failure retries.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
