@@ -85,15 +85,11 @@ jobs:
             node tests/identity-regression.mjs
             npx wrangler deploy
             cd ..
-            python3 - <<'PY'
-          import json, urllib.request
-          with urllib.request.urlopen('https://kerbside-bus.adambullas.workers.dev/health', timeout=20) as response:
-              data=json.load(response)
-          assert data.get('ok') is True, data
-          assert data.get('version') == '0.6.69', data
-          assert data.get('bodsKeyConfigured') is True, data
-          print(data)
-          PY
+            HEALTH_JSON=$(curl --fail --silent --show-error --retry 4 --retry-all-errors --retry-delay 2 \
+              -H 'Origin: https://zetabun.github.io' \
+              -H 'User-Agent: Mozilla/5.0 Kerbside-Release/0.6.69' \
+              'https://kerbside-bus.adambullas.workers.dev/health')
+            node -e "const data=JSON.parse(process.argv[1]); if(data.ok!==true||data.version!=='0.6.69'||data.bods!==true){console.error(data);process.exit(1)} console.log(data)" "$HEALTH_JSON"
           } 2>&1 | tee "$LOG"
           STATUS=${PIPESTATUS[0]}
           git config user.name github-actions[bot]
