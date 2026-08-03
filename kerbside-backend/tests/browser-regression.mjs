@@ -61,7 +61,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.63'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.64'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -99,6 +99,19 @@ assert.doesNotMatch(busSource, /Math\.max\(4,cadence\*\.9\)/);
 // to the confirmed point by the whole distance it was shown covering.
 assert.doesNotMatch(busSource, /age>Math\.max\(60,cadence\*2\.5\)/);
 // Journey stop list: the stop the bus is standing at is current, not passed.
+// An absolutely positioned ::after only covers the visible screenful of a
+// scrolling container, so the dot texture ran out partway down a long board.
+assert.match(busSource, /\.boardscroll\{[\s\S]{0,400}background-attachment:local;/);
+assert.doesNotMatch(busSource, /\.boardscroll::after\{/);
+// Rebuilding the board wholesale each refresh threw the reader back to the top.
+assert.match(busSource, /function captureBoardScroll\(\)/);
+assert.match(busSource, /function restoreBoardScroll\(state\)/);
+assert.match(busSource, /const scrollState=captureBoardScroll\(\);/);
+assert.match(busSource, /restoreBoardScroll\(scrollState\);/);
+// The expanded list belongs to the previously rendered vehicle, not S.selected,
+// which has already changed by the time render() runs.
+assert.match(busSource, /let renderedDetailId='';/);
+assert.match(busSource, /stopsKey:renderedDetailId/);
 assert.match(busSource, /const atHere=index===progress\.atIndex/);
 assert.match(busSource, /if\(index<progress\.nextIndex && !atHere\) states\.push\('passed'\)/);
 assert.match(busSource, /if\(atHere\) states\.push\('at'\)/);
@@ -1228,7 +1241,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.63'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.64'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

@@ -222,16 +222,20 @@ button{cursor:pointer;border:0;background:none}
 .dv{display:block;font-size:12.5px;margin-top:2px;font-weight:500}
 .dnote{font-size:11.5px;color:var(--text-dim);line-height:1.55;margin-top:9px}
 
-.boardscroll{flex:1;overflow-y:auto;position:relative;scrollbar-width:thin;scrollbar-color:var(--rule) transparent}
+/* Dot-matrix texture across the departures list. It used to be an absolutely
+   positioned ::after covering inset:0, which on a scrolling container is only
+   the visible screenful — it then scrolled away with the content and left the
+   rest of a long board bare. Painting it as the scroll container's own
+   background with background-attachment:local tiles the whole scrollable
+   height and travels with the rows. */
+.boardscroll{
+  flex:1;overflow-y:auto;position:relative;scrollbar-width:thin;scrollbar-color:var(--rule) transparent;
+  background-image:radial-gradient(circle at center, rgba(0,0,0,.2) 0.9px, transparent 1px);
+  background-size:var(--board-dot) var(--board-dot);
+  background-attachment:local;
+}
 .boardscroll::-webkit-scrollbar{width:8px}
 .boardscroll::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
-/* dot-matrix texture sits over the departures list only */
-.boardscroll::after{
-  content:'';position:absolute;inset:0;pointer-events:none;z-index:5;
-  background-image:radial-gradient(circle at center, rgba(0,0,0,.42) 0.9px, transparent 1px);
-  background-size:var(--board-dot) var(--board-dot);
-  mix-blend-mode:multiply;opacity:.45;
-}
 .dep{
   display:grid;grid-template-columns:46px minmax(0,1fr) 56px 26px;gap:11px;align-items:center;
   padding:12px 16px;border-bottom:1px solid var(--rule);width:100%;text-align:left;
@@ -834,7 +838,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.63';
+const APP_VERSION = '0.6.64';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4058,6 +4062,43 @@ function renderScheduledRow(r){
 }
 
 
+/* ------------------------------------------------------------
+   Scroll preservation across a board rebuild.
+
+   render() replaces the whole departure list's markup on every refresh, and
+   every five-second tick, so anyone reading a long board or scrolling through
+   an expanded journey's stop list was thrown back to the top each time. The
+   expanded row is identified by the selected vehicle, so its inner list can be
+   matched back to the same journey after the swap.
+   ------------------------------------------------------------ */
+/* Which journey the stop list currently on screen belongs to. S.selected is
+   already the new vehicle by the time render() runs, so it cannot identify the
+   list being replaced — tapping a different bus would otherwise inherit the
+   previous journey's scroll offset. */
+let renderedDetailId='';
+function captureBoardScroll(){
+  const scroll=$('scroll'), stops=$('deps').querySelector('.journey-stops');
+  return {
+    top:scroll?scroll.scrollTop:0,
+    stopsKey:renderedDetailId,
+    stops:stops?stops.scrollTop:0
+  };
+}
+function restoreBoardScroll(state){
+  const current=S.selected==null?'':String(S.selected);
+  if(!state){ renderedDetailId=current; return; }
+  const scroll=$('scroll');
+  if(scroll&&state.top>0) scroll.scrollTop=state.top;
+  // Only carry the journey list offset over when the same journey is expanded.
+  if(state.stops&&state.stopsKey===current){
+    const stops=$('deps').querySelector('.journey-stops');
+    if(stops) stops.scrollTop=state.stops;
+  }
+  renderedDetailId=current;
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),captureBoardScroll,restoreBoardScroll};
+}
 function showEmpty(html){
   $('empty').innerHTML=html;
   $('empty').style.display='block';
@@ -4086,6 +4127,10 @@ function render(){
     }
   }else{
     $('empty').style.display='none';
+    // The board is rebuilt wholesale on every refresh, which threw away where
+    // the reader was — both down the departure list and inside the expanded
+    // journey's own scrolling stop list. Put them back after the swap.
+    const scrollState=captureBoardScroll();
     deps.innerHTML=rows.map(r=>{
       if(r.kind==='scheduled') return renderScheduledRow(r);
       const mins=Math.max(0,Math.round(r.secs/60));
@@ -4125,6 +4170,7 @@ function render(){
     [...deps.querySelectorAll('[data-route-map]')].forEach(b=>b.addEventListener('click',event=>{
       event.stopPropagation(); showJourneyOnMap(b.dataset.routeMap);
     }));
+    restoreBoardScroll(scrollState);
   }
   // Runs for an empty board too: that is exactly when a fired alarm needs to
   // notice its bus has gone and re-arm for the next one.
