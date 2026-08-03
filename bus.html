@@ -838,7 +838,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.65';
+const APP_VERSION = '0.6.66';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3750,8 +3750,15 @@ function retainedSnapshotRow(v,now=Date.now(),gpsLost=true){
    the second means the user changed the filter.
    ------------------------------------------------------------ */
 const HOLDABLE_REJECTIONS = new Set(['range','route','direction','away','confidence']);
+/* The hold above exists for momentary weakness — a bearing wobble at a
+   junction, a shard still loading. Consecutive GPS fixes measurably retreating
+   from the stop are not momentary, and holding on that evidence kept a bus
+   counting down on the board after it had turned away. Bearing alone is not
+   enough to refuse the hold; this is the measured movement trend only. */
+function movementRetreating(v){ return S.stop ? movementTrend(v,S.stop)<0 : false; }
 function holdLive(out,v,diagnostics,reason,now){
   if(!HOLDABLE_REJECTIONS.has(reason)) return false;
+  if((reason==='direction'||reason==='away')&&movementRetreating(v)) return false;
   const held=retainedSnapshotRow(v,now,false);
   if(!held) return false;
   if(diagnostics) diagnostics.recovered++;

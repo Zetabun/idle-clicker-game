@@ -33,6 +33,11 @@ assert.match(busSource, /function lineLearningKey\(value\)/);
 assert.doesNotMatch(busSource, /LINES\[v\.line\]/);
 assert.doesNotMatch(busSource, /st:'Street'/);
 assert.match(busSource, /if\(bare==='st'\) return 'St'/);
+// The hold-open is for momentary weak evidence. Consecutive fixes measurably
+// retreating from the stop are not momentary, and holding on that kept a bus
+// counting down after it had turned away. Bearing alone must still be holdable.
+assert.match(busSource, /function movementRetreating\(v\)\{ return S\.stop \? movementTrend\(v,S\.stop\)<0 : false; \}/);
+assert.match(busSource, /if\(\(reason==='direction'\|\|reason==='away'\)&&movementRetreating\(v\)\) return false;/);
 assert.match(busSource, /const ALERT_MISSING_GRACE_MS = 120\*1000/);
 assert.match(busSource, /function retainFiredAlarm\(alarm,now\)/);
 // checkAlarms must run even when the board is empty — that is precisely when a
@@ -61,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.65'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.66'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -661,8 +666,11 @@ try {
       stale:parsed.stale,unknownAge:parsed.unknownAge,malformed:parsed.malformed
     };
   });
+  // Identity combines journey and vehicle, so two buses sharing a journey code
+  // stay separate. These two already differed by operator, so both are still
+  // kept — the id simply now carries the vehicle reference as well.
   assert.deepEqual(liveParsing, {
-    ids:['OP-A|journey|trip-a','OP-B|journey|trip-b'],count:2,newestLat:52.501,
+    ids:['OP-A|journey|trip-a|vehicle|42','OP-B|journey|trip-b|vehicle|42'],count:2,newestLat:52.501,
     rawRef:'42',line:'9',dest:'St Helens',stale:2,unknownAge:1,malformed:1
   });
 
@@ -1252,7 +1260,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.65'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.66'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
