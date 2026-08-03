@@ -9,6 +9,7 @@ import { webkit } from 'playwright';
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
 const busSource = await readFile(path.join(root, 'bus.html'), 'utf8');
+const headerIconSource = await readFile(path.join(root, 'kerbside-backend', 'icons', 'kerbside-header.svg'), 'utf8');
 const leafletRoot = path.join(root, 'kerbside-backend', 'vendor', 'leaflet');
 const leafletJs = await readFile(path.join(leafletRoot, 'leaflet.js'));
 const leafletCss = await readFile(path.join(leafletRoot, 'leaflet.css'));
@@ -41,8 +42,12 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.57'/);
-assert.match(busSource, /class="brand-icon" src="kerbside-backend\/icons\/kerbside-192\.png"/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.58'/);
+assert.match(busSource, /class="brand-icon" src="kerbside-backend\/icons\/kerbside-header\.svg"/);
+assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
+assert.match(headerIconSource, /viewBox="0 0 192 192"/);
+assert.match(headerIconSource, /linearGradient id="kerbside-amber"/);
+assert.doesNotMatch(headerIconSource, /<rect[^>]+width="192"[^>]+height="192"[^>]+fill=/);
 assert.match(busSource, /\.brand-icon\{display:none\}/);
 assert.match(busSource, /grid-template-areas:"brand brand brand" "search directions settings"/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px/);
@@ -204,6 +209,7 @@ const mime = new Map([
   ['.mjs', 'text/javascript; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
   ['.png', 'image/png'],
+  ['.svg', 'image/svg+xml; charset=utf-8'],
   ['.css', 'text/css; charset=utf-8']
 ]);
 
@@ -354,6 +360,8 @@ try {
       topDisplay:getComputedStyle(topbar).display,
       iconDisplay:getComputedStyle(icon).display,
       iconSrc:new URL(icon.getAttribute('src'),location.href).pathname,
+      iconLoaded:icon.complete&&icon.naturalWidth===192,
+      iconFit:getComputedStyle(icon).objectFit,
       brandAbove:b.bottom<=controlTop+2,
       controlsAligned:Math.max(s.top,d.top,g.top)-controlTop<=2,
       controlsOrdered:s.left<d.left&&d.right<=g.left,
@@ -363,7 +371,8 @@ try {
     };
   });
   assert.deepEqual(mobileHeader,{
-    topDisplay:'grid',iconDisplay:'block',iconSrc:'/kerbside-backend/icons/kerbside-192.png',
+    topDisplay:'grid',iconDisplay:'block',iconSrc:'/kerbside-backend/icons/kerbside-header.svg',
+    iconLoaded:true,iconFit:'contain',
     brandAbove:true,controlsAligned:true,controlsOrdered:true,withinViewport:true,
     searchHeight:46,settingsHeight:46
   });
@@ -1127,7 +1136,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.57'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.58'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

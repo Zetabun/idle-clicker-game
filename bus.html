@@ -490,7 +490,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
     grid-area:brand;width:100%;min-width:0;margin:0;padding:1px 3px 9px;
     align-items:center;gap:9px;border-bottom:1px solid rgba(34,48,63,.65);
   }
-  .brand-icon{display:block;width:38px;height:38px;flex:0 0 38px;border-radius:9px;object-fit:cover}
+  .brand-icon{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain}
   .brand .dot,.brand small{display:none}
   .brand h1{font-size:22px;line-height:1;letter-spacing:-.055em}
   .searchwrap{grid-area:search;order:initial;flex:none;min-width:0;width:100%;height:46px}
@@ -577,7 +577,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 <div id="app">
 
   <div id="topbar">
-    <div class="brand"><img class="brand-icon" src="kerbside-backend/icons/kerbside-192.png" alt="" width="38" height="38"><span class="dot"></span><h1>Kerbside</h1><small>live buses</small></div>
+    <div class="brand"><img class="brand-icon" src="kerbside-backend/icons/kerbside-header.svg" alt="" width="38" height="38"><span class="dot"></span><h1>Kerbside</h1><small>live buses</small></div>
 
     <div class="searchwrap">
       <span class="pin">
@@ -817,7 +817,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.57';
+const APP_VERSION = '0.6.58';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
