@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: kerbside-release-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   release:
@@ -150,5 +150,24 @@ jobs:
           fi
 
           git commit -m 'Release Kerbside browser update'
-          git push --force-with-lease="refs/heads/$RELEASE_BRANCH:$CHECKED_OUT_SHA" origin "HEAD:refs/heads/$RELEASE_BRANCH"
-          echo "Published validated release commit $(git rev-parse HEAD) to $RELEASE_BRANCH"
+
+          # The release commit is a direct child of CHECKED_OUT_SHA, so a normal
+          # push is already atomic: Git rejects it if the branch moved. Retry only
+          # transient transport/API failures, checking the exact remote SHA first.
+          for attempt in 1 2 3; do
+            REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH" | awk 'NR==1 {print $1}')"
+            if [[ -z "$REMOTE_SHA" || "$REMOTE_SHA" != "$CHECKED_OUT_SHA" ]]; then
+              echo "::error::Release branch moved before publish attempt $attempt: expected $CHECKED_OUT_SHA but remote is ${REMOTE_SHA:-missing}."
+              exit 1
+            fi
+            if git push origin "HEAD:refs/heads/$RELEASE_BRANCH"; then
+              echo "Published validated release commit $(git rev-parse HEAD) to $RELEASE_BRANCH"
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep $((attempt * 5))
+            fi
+          done
+
+          echo "::error::Unable to publish the validated release after 3 attempts."
+          exit 1
