@@ -41,7 +41,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.54'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.55'/);
 assert.match(busSource, /age<=4\*60\*1000/);
 assert.match(busSource, /points\.length===2\?1:2/);
 assert.match(busSource, /function boardRefreshCanRender/);
@@ -51,6 +51,12 @@ assert.match(busSource, /function journeyRouteContext/);
 assert.match(busSource, /function shouldClearJourneyRoute/);
 assert.match(busSource, /function ignoreMapContextMenu\(e\)/);
 assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
+assert.match(busSource, /function routePatternMovementFit\(pattern,v,stop\)/);
+assert.match(busSource, /function inferVehicleJourneyPattern\(v,stop,now=Date\.now\(\)\)/);
+assert.match(busSource, /function visualRoutePosition\(v,pattern,metres\)/);
+assert.match(busSource, /const inference=!evidence\.journeyMatch\?inferVehicleJourneyPattern/);
+assert.match(busSource, /const est=estimate\(v,S\.stop,evidence\)/);
+assert.match(busSource, /Current position/);
 assert.match(busSource, /-webkit-touch-callout:none/);
 assert.doesNotMatch(busSource, /Town centre moved/);
 assert.doesNotMatch(busSource, /S\.anchor=\{lat:e\.latlng\.lat/);
@@ -1018,12 +1024,52 @@ try {
     return {east:east.segment,north:north.segment,continuous:continuous.segment,forward:continuous.along>=north.along-80};
   });
   assert.deepEqual(routeProjection, {east:0,north:3,continuous:3,forward:true});
+  const routeIntelligence = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__;
+    const patternA={id:'pattern-a',shape:true,stopProgress:null,points:[
+      {lat:0,lon:0},{lat:0,lon:.01},{lat:0,lon:.02}
+    ],stops:[
+      {id:'a',name:'First',lat:0,lon:.002},{id:'target',name:'Target',lat:0,lon:.018}
+    ]};
+    const patternB={id:'pattern-b',shape:true,stopProgress:null,points:[
+      {lat:.005,lon:0},{lat:.005,lon:.01},{lat:.005,lon:.02}
+    ],stops:[
+      {id:'b',name:'Other first',lat:.005,lon:.002},{id:'other-target',name:'Other target',lat:.005,lon:.018}
+    ]};
+    const vehicle={lat:0,lon:.006,bearing:90,ts:30000,speed:7,cadence:15,hist:[
+      {lat:0,lon:.002,ts:0},{lat:0,lon:.004,ts:15000},{lat:0,lon:.006,ts:30000}
+    ]};
+    const target={id:'target',lat:0,lon:.018};
+    const fitA=api.routePatternMovementFit(patternA,vehicle,target);
+    const fitB=api.routePatternMovementFit(patternB,vehicle,{id:'other-target',lat:.005,lon:.018});
+    const chosen=api.chooseInferredJourneyCandidate([
+      {trip:'trip-a',pattern:patternA,fit:fitA,score:40},
+      {trip:'trip-b',pattern:patternB,fit:fitB,score:240}
+    ]);
+    const ambiguous=api.chooseInferredJourneyCandidate([
+      {trip:'trip-a',pattern:patternA,fit:fitA,score:40},
+      {trip:'trip-b',pattern:patternB,fit:fitB,score:100}
+    ]);
+    const routed=api.visualRoutePosition(vehicle,patternA,120);
+    return {
+      fitA:fitA&&Math.round(fitA.current.metres),
+      fitB:fitB&&Math.round(fitB.current.metres),
+      chosen:chosen&&chosen.trip,
+      ambiguous:ambiguous&&ambiguous.trip,
+      routed:routed&&{east:routed.lon>vehicle.lon,onRoute:Math.abs(routed.lat)<1e-7,routeGuided:routed.routeGuided}
+    };
+  });
+  assert.equal(routeIntelligence.fitA,0);
+  assert.ok(routeIntelligence.fitB>400);
+  assert.equal(routeIntelligence.chosen,'trip-a');
+  assert.equal(routeIntelligence.ambiguous,null);
+  assert.deepEqual(routeIntelligence.routed,{east:true,onRoute:true,routeGuided:true});
 
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.54'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.55'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
