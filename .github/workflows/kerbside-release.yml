@@ -97,32 +97,27 @@ jobs:
           trigger_path="${trigger_path%.py}.txt"
           rm -f "$RELEASE_SCRIPT" "$trigger_path" .github/scripts/kerbside-release-post.py
 
-          # The GITHUB_TOKEN cannot update protected workflow files. A release
-          # patch must not smuggle workflow changes into the generated commit;
-          # connected GitHub tooling applies reviewed workflow edits separately.
+          # A release patch must not smuggle workflow changes into its generated
+          # commit. Reviewed workflow edits already present in the branch remain.
           git restore --source=HEAD --worktree -- .github/workflows
           git diff --check
 
       - name: Publish validated release atomically
         env:
-          GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
         shell: bash
         run: |
           set -euo pipefail
 
           CHECKED_OUT_SHA="$(git rev-parse HEAD)"
-          BASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq '.object.sha')"
-          if [[ "$BASE_SHA" != "$CHECKED_OUT_SHA" ]]; then
-            echo "::error::Release branch moved during validation: checked out $CHECKED_OUT_SHA but remote is $BASE_SHA."
+          REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH" | awk 'NR==1 {print $1}')"
+          if [[ -z "$REMOTE_SHA" || "$REMOTE_SHA" != "$CHECKED_OUT_SHA" ]]; then
+            echo "::error::Release branch moved during validation: checked out $CHECKED_OUT_SHA but remote is ${REMOTE_SHA:-missing}."
             exit 1
           fi
 
-          BASE_TREE="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$BASE_SHA" --jq '.tree.sha')"
-          TREE='[]'
           trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
           trigger_path="${trigger_path%.py}.txt"
-
           mapfile -d '' -t CHANGED < <(
             {
               git diff --name-only -z HEAD --
@@ -143,27 +138,17 @@ jobs:
                 exit 1
                 ;;
             esac
-
-            mode="$(git ls-files -s -- "$path" | awk 'NR==1 {print $1}')"
-            mode="${mode:-100644}"
-            if [[ -f "$path" ]]; then
-              blob_sha="$(base64 -w 0 -- "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
-                gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
-              TREE="$(jq --arg path "$path" --arg mode "$mode" --arg sha "$blob_sha" \
-                '. + [{path: $path, mode: $mode, type: "blob", sha: $sha}]' <<<"$TREE")"
-            else
-              TREE="$(jq --arg path "$path" --arg mode "$mode" \
-                '. + [{path: $path, mode: $mode, type: "blob", sha: null}]' <<<"$TREE")"
-            fi
           done
 
-          TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
-            '{base_tree: $base_tree, tree: $tree}' | \
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq '.sha')"
-          COMMIT_SHA="$(jq -n --arg message 'Release Kerbside browser update' --arg tree "$TREE_SHA" --arg parent "$BASE_SHA" \
-            '{message: $message, tree: $tree, parents: [$parent]}' | \
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq '.sha')"
-          jq -n --arg sha "$COMMIT_SHA" '{sha: $sha, force: false}' | \
-            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$RELEASE_BRANCH" --input - >/dev/null
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- "${CHANGED[@]}"
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "::error::Validated release produced no staged repository changes."
+            exit 1
+          fi
 
-          echo "Published validated release commit $COMMIT_SHA to $RELEASE_BRANCH"
+          git commit -m 'Release Kerbside browser update'
+          git push origin "HEAD:$RELEASE_BRANCH"
+          echo "Published validated release commit $(git rev-parse HEAD) to $RELEASE_BRANCH"
