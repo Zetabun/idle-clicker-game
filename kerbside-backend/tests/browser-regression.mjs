@@ -41,7 +41,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.53'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.54'/);
 assert.match(busSource, /age<=4\*60\*1000/);
 assert.match(busSource, /points\.length===2\?1:2/);
 assert.match(busSource, /function boardRefreshCanRender/);
@@ -49,6 +49,11 @@ assert.match(busSource, /feedRefreshing:false/);
 assert.match(busSource, /function clearJourneyRoute/);
 assert.match(busSource, /function journeyRouteContext/);
 assert.match(busSource, /function shouldClearJourneyRoute/);
+assert.match(busSource, /function ignoreMapContextMenu\(e\)/);
+assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
+assert.match(busSource, /-webkit-touch-callout:none/);
+assert.doesNotMatch(busSource, /Town centre moved/);
+assert.doesNotMatch(busSource, /S\.anchor=\{lat:e\.latlng\.lat/);
 assert.doesNotMatch(busSource, /function renderSelectedJourney\(rows\)\{\n  routeLayer\.clearLayers\(\);/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
@@ -966,6 +971,20 @@ try {
     return [clean('ST HELENS'), clean('BURY ST EDMUNDS'), clean('HIGH ST')];
   });
   assert.deepEqual(cleanedNames, ['St Helens', 'Bury St Edmunds', 'High St']);
+  const mapContextMenu = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,previous=state.anchor;
+    const anchor={lat:52.509,lon:-2.087,name:'Original town'};
+    let prevented=false,stopped=false;
+    state.anchor=anchor;
+    try{
+      const result=api.ignoreMapContextMenu({originalEvent:{
+        preventDefault(){prevented=true;},
+        stopPropagation(){stopped=true;}
+      }});
+      return {same:state.anchor===anchor,prevented,stopped,result};
+    }finally{state.anchor=previous;}
+  });
+  assert.deepEqual(mapContextMenu,{same:true,prevented:true,stopped:true,result:false});
   const alertGrace = await page.evaluate(() => {
     const retain=window.__KERBSIDE_TEST__.retainFiredAlarm;
     const alarm={fired:true,lastSeenAt:1000};
@@ -1004,7 +1023,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.53'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.54'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

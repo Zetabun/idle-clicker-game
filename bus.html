@@ -112,7 +112,7 @@ button{cursor:pointer;border:0;background:none}
 
 /* ---------- body ---------- */
 #main{flex:1;display:flex;min-height:0;position:relative}
-#map{flex:1;background:#0A0F16;z-index:1}
+#map{flex:1;background:#0A0F16;z-index:1;-webkit-touch-callout:none}
 .map-library-error{height:100%;display:grid;place-content:center;gap:8px;padding:28px;text-align:center;color:var(--text-dim)}
 .map-library-error strong{font-family:'Martian Mono',monospace;font-size:15px;color:var(--led)}
 .map-library-error span{max-width:32rem;font-size:13px;line-height:1.55}
@@ -793,7 +793,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.53';
+const APP_VERSION = '0.6.54';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2652,7 +2652,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -4160,11 +4160,15 @@ $('vTimes').addEventListener('click',()=>setAppView('times'));
 $('vMap').addEventListener('click',()=>setAppView('map'));
 setAppView('times');
 
-map.on('contextmenu', e=>{
-  S.anchor={lat:e.latlng.lat, lon:e.latlng.lng, name:'Town centre'};
-  drawAnchor(); updateDirLabels(); render();
-  toast('Town centre moved. "Into town" now means heading here.');
-});
+function ignoreMapContextMenu(e){
+  const original=e&&e.originalEvent;
+  if(original){
+    L.DomEvent.preventDefault(original);
+    L.DomEvent.stopPropagation(original);
+  }
+  return false;
+}
+map.on('contextmenu',ignoreMapContextMenu);
 
 /* restore anything saved on this device — the address bar still wins */
 const saved = loadPrefs();
