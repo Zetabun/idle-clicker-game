@@ -6,10 +6,10 @@ const releaseWorkflow = await readFile(new URL('../../.github/workflows/kerbside
 const productionWorkflow = await readFile(new URL('../../.github/workflows/verify-kerbside-production.yml', import.meta.url), 'utf8');
 
 test('Kerbside release and production workflows guard deployment completeness', () => {
-  assert.match(releaseWorkflow, /git diff --name-only', '-z', 'HEAD/);
-  assert.match(releaseWorkflow, /git ls-files', '--others', '--exclude-standard', '-z/);
+  assert.match(releaseWorkflow, /\['git', 'diff', '--name-only', '-z', 'HEAD', '--'\]/);
+  assert.match(releaseWorkflow, /\['git', 'ls-files', '--others', '--exclude-standard', '-z'\]/);
   assert.match(releaseWorkflow, /Unexpected release path\(s\):/);
-  assert.match(releaseWorkflow, /path\.startsWith\('kerbside-backend\/'\)/);
+  assert.match(releaseWorkflow, /path\.startswith\('kerbside-backend\/'\)/);
   assert.match(releaseWorkflow, /Release branch moved during validation/);
   assert.match(releaseWorkflow, /Release branch moved before publication/);
   assert.match(releaseWorkflow, /cancel-in-progress: true/);
