@@ -41,11 +41,15 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.52'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.53'/);
 assert.match(busSource, /age<=4\*60\*1000/);
 assert.match(busSource, /points\.length===2\?1:2/);
 assert.match(busSource, /function boardRefreshCanRender/);
 assert.match(busSource, /feedRefreshing:false/);
+assert.match(busSource, /function clearJourneyRoute/);
+assert.match(busSource, /function journeyRouteContext/);
+assert.match(busSource, /function shouldClearJourneyRoute/);
+assert.doesNotMatch(busSource, /function renderSelectedJourney\(rows\)\{\n  routeLayer\.clearLayers\(\);/);
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
@@ -715,6 +719,50 @@ try {
   assert.equal(refreshGate.busy,false);
   assert.equal(refreshGate.idle,true);
 
+  const routeOverlayRetention = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
+    const saved={
+      selected:state.selected,stop:state.stop,dir:state.dir,destFilter:state.destFilter,
+      timetable:state.timetable,timetableSource:state.timetableSource,
+      timetableRegion:state.timetableRegion,timetableRun:state.timetableRun,
+      vehicles:state.vehicles
+    };
+    const trip='route-overlay-trip',patternId='aa53routeoverlaypattern',vehicleId='route-overlay-vehicle';
+    try{
+      state.stop={id:'route-overlay-stop',timetableId:'route-overlay-stop',lat:52.5,lon:-2.1,name:'Route overlay stop',d:0};
+      state.dir='all';state.destFilter=null;state.selected=vehicleId;
+      state.timetable={services:{},tripPatterns:{[trip]:patternId},patterns:{
+        [patternId]:{p:[[52.4,-2.1],[52.5,-2.1],[52.6,-2.1]],s:[
+          ['start','Start',52.4,-2.1],['route-overlay-stop','Route overlay stop',52.5,-2.1],['end','End',52.6,-2.1]
+        ],g:1}
+      }};
+      state.timetableSource='national';state.timetableRegion='west_midlands';state.timetableRun++;
+      const vehicle={id:vehicleId,journey:trip,progressTrip:trip,progressPattern:patternId,lat:52.45,lon:-2.1,bearing:0,ts:now,hist:[]};
+      state.vehicles=new Map([[vehicleId,vehicle]]);
+      api.clearJourneyRoute();
+      api.renderSelectedJourney([{v:vehicle,gpsLost:false}]);
+      const initial=api.journeyRouteLayerSize();
+      api.renderSelectedJourney([]);
+      const retained=api.journeyRouteLayerSize();
+      api.renderSelectedJourney([{v:vehicle,gpsLost:true}]);
+      const lostCleared=api.journeyRouteLayerSize();
+      api.renderSelectedJourney([{v:vehicle,gpsLost:false}]);
+      const redrawn=api.journeyRouteLayerSize();
+      state.dir='in';
+      api.renderSelectedJourney([]);
+      const contextCleared=api.journeyRouteLayerSize();
+      return {initial,retained,lostCleared,redrawn,contextCleared};
+    }finally{
+      api.clearJourneyRoute();
+      Object.assign(state,saved);
+    }
+  });
+  assert.ok(routeOverlayRetention.initial>0,JSON.stringify(routeOverlayRetention));
+  assert.equal(routeOverlayRetention.retained,routeOverlayRetention.initial,JSON.stringify(routeOverlayRetention));
+  assert.equal(routeOverlayRetention.lostCleared,0,JSON.stringify(routeOverlayRetention));
+  assert.ok(routeOverlayRetention.redrawn>0,JSON.stringify(routeOverlayRetention));
+  assert.equal(routeOverlayRetention.contextCleared,0,JSON.stringify(routeOverlayRetention));
+
   const emptyFeed = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,originalFetch=window.fetch;
     const saved={stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge,feedEmptyReason:state.feedEmptyReason};
@@ -956,7 +1004,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.52'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.53'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

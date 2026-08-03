@@ -793,7 +793,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.52';
+const APP_VERSION = '0.6.53';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1125,6 +1125,7 @@ if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostn
 useTileProvider(0);hardenMapAttributionLinks();
 
 let meMarker=null, anchorMarker=null, routeLayer=L.layerGroup().addTo(map), stopLayer=L.layerGroup().addTo(map), vehLayer=L.layerGroup().addTo(map);
+let renderedJourneyContext='';
 let ring=null;
 
 /* Leaflet moves markers with the same transform property the glide
@@ -2651,7 +2652,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -3799,15 +3800,31 @@ function render(){
   renderVehicles(liveRows); renderServingNote(); renderLiveDiagnostics();
 }
 
-function clearVehicleMarkers(){ vehLayer.clearLayers(); routeLayer.clearLayers(); S.markers.clear(); }
+function journeyRouteContext(selectedId){
+  if(selectedId==null||selectedId==='') return '';
+  return [String(selectedId),S.stop?String(S.stop.id):'',S.dir,String(S.destFilter||'')].join('|');
+}
+function shouldClearJourneyRoute(nextContext,currentContext){
+  return !nextContext || (!!currentContext&&String(nextContext)!==String(currentContext));
+}
+function clearJourneyRoute(){ routeLayer.clearLayers(); renderedJourneyContext=''; }
+function clearVehicleMarkers(){ vehLayer.clearLayers(); clearJourneyRoute(); S.markers.clear(); }
 
 function renderSelectedJourney(rows){
-  routeLayer.clearLayers();
-  if(!S.selected) return;
-  const row=rows.find(item=>String(item.v.id)===String(S.selected));
-  if(!row||row.gpsLost) return;
+  const selectedId=S.selected==null?'':String(S.selected), nextContext=journeyRouteContext(selectedId);
+  if(shouldClearJourneyRoute(nextContext,renderedJourneyContext)){
+    clearJourneyRoute();
+    if(!nextContext) return;
+  }
+  const row=rows.find(item=>String(item.v.id)===selectedId);
+  // Preserve the last valid exact route for this same selection when one
+  // intermediate render temporarily lacks the row or lazy-loaded pattern.
+  if(!row) return;
+  // A held lost-signal row must not continue to present moving route progress.
+  if(row.gpsLost){ clearJourneyRoute(); return; }
   const progress=journeyProgress(row.v);
   if(!progress||!progress.pattern.shape) return;
+  routeLayer.clearLayers(); renderedJourneyContext=nextContext;
   const split=splitPatternAt(progress.pattern,progress.vehicle);
   if(split.passed.length>1) L.polyline(split.passed,{color:'#526276',weight:4,opacity:.72,dashArray:'5 7',interactive:false}).addTo(routeLayer);
   if(split.remaining.length>1) L.polyline(split.remaining,{color:'#FFB000',weight:5,opacity:.92,interactive:false}).addTo(routeLayer);
