@@ -123,6 +123,8 @@ Kerbside 0.6.52 improves timetable and interface resilience. Direction and appro
 
 Kerbside 0.6.53 keeps an already displayed exact journey route visible when an intermediate board render temporarily lacks the selected row or its lazy-loaded pattern. The overlay is still cleared immediately when the user changes vehicle, stop, direction or destination context, and it is removed when GPS enters the held lost-signal state so stale movement is never presented as live progress. WebKit regression now draws a real route layer, verifies it survives a transient empty render, and confirms GPS-loss and context changes clear it.
 
+Kerbside 0.6.54 removes the hidden map long-press/right-click shortcut that previously redefined the town anchor. Mobile press-and-hold and desktop context-menu gestures are now suppressed without changing the selected town, stop, direction filters or map position; location changes remain available only through the explicit search and current-location controls. WebKit regression verifies the gesture is cancelled and the existing town anchor remains untouched.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
