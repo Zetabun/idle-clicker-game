@@ -133,6 +133,8 @@ Kerbside 0.6.57 redesigns only the mobile top header to match the supplied two-r
 
 Kerbside 0.6.58 replaces the small mobile wordmark image with a dedicated transparent SVG based on the supplied yellow bus-and-location artwork. The icon uses no background rectangle, keeps the existing 38-pixel footprint and switches to `object-fit: contain` so the complete symbol is visible without cropping. The installed-app icons and desktop header remain unchanged. WebKit regression verifies the SVG loads at its intrinsic size, remains transparent, uses contain sizing and preserves the validated mobile header alignment.
 
+Kerbside 0.6.59 fixes the 0.6.58 deployment packaging gap by embedding the transparent yellow bus-and-location artwork directly inside `bus.html` as an SVG data URI. This keeps the icon background-free and preserves the validated 38-pixel mobile header layout while ensuring GitHub Pages receives the artwork atomically with the page instead of depending on a separately generated untracked asset. WebKit regression verifies that the embedded SVG loads at 192 × 192, uses `object-fit: contain`, has no full-canvas background rectangle and requires no external header-icon file.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
