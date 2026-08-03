@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.66'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.67'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -198,13 +198,20 @@ assert.match(busSource, /function liveVehicleIdentity\(fields\)/);
 // reset every poll by the apparent jump between them.
 assert.match(busSource, /if\(journey&&vehicle\) return owner\+'\|journey\|'\+journey\+'\|vehicle\|'\+vehicle;/);
 assert.match(busSource, /function physicalVehicleKey\(v\)/);
+// VehicleRef alone does not identify a bus: some operators publish one
+// placeholder code for every bus on a route. A code repeated within a single
+// snapshot therefore carries no identity and must never retire a sibling.
+assert.match(busSource, /function ingestBatchIndex\(list\)/);
+assert.match(busSource, /function retirableVehicleKey\(v,batch\)/);
+assert.match(busSource, /return physical&&!batch\.shared\.has\(physical\)\?physical:'';/);
+assert.match(busSource, /if\(otherId===v\.id\|\|batch\.ids\.has\(otherId\)\) continue;/);
 // ...and the bus that moves on to its next journey must not be left behind as
 // a second, frozen row under the identity it was reporting a moment ago.
 assert.match(busSource, /if\(physicalVehicleKey\(other\)===physical && Number\(other\.ts\)<=Number\(rec\.ts\)\) S\.vehicles\.delete\(otherId\)/);
 // ...and the mirror case: a straggling report must not resurrect an identity
 // the bus has already moved on from, beside the newer record.
-assert.match(busSource, /function supersededByNewerRecord\(v\)/);
-assert.match(busSource, /if\(!prev && supersededByNewerRecord\(v\)\) continue;/);
+assert.match(busSource, /function supersededByNewerRecord\(v,batch\)/);
+assert.match(busSource, /if\(!prev && supersededByNewerRecord\(v,batch\)\) continue;/);
 assert.match(busSource, /function parseLivePayloads\(items,now\)/);
 assert.match(busSource, /vehicleRef:f\.VehicleRef\|\|''/);
 assert.doesNotMatch(busSource, /const id = f\.VehicleRef \|\| journey/);
@@ -713,11 +720,15 @@ try {
       Object.assign(state,saved);
     }
   });
+  // Five simultaneous buses publishing one placeholder fleet code. The id now
+  // carries the vehicle reference, and all five must survive: a code repeated
+  // within a single snapshot cannot identify one bus, so it never retires a
+  // sibling journey.
   assert.deepEqual(multiVehicleBoard,{
     parsed:5,
-    parsedIds:[1,2,3,4,5].map(index=>`OP-FIVE|journey|route-9-trip-${index}`),
+    parsedIds:[1,2,3,4,5].map(index=>`OP-FIVE|journey|route-9-trip-${index}|vehicle|SHARED-FLEET-CODE`),
     stored:5,shown:5,
-    shownIds:[1,2,3,4,5].map(index=>`OP-FIVE|journey|route-9-trip-${index}`),
+    shownIds:[1,2,3,4,5].map(index=>`OP-FIVE|journey|route-9-trip-${index}|vehicle|SHARED-FLEET-CODE`),
     lines:['9']
   });
 
@@ -1260,7 +1271,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.66'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.67'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

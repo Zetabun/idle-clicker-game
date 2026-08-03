@@ -838,7 +838,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.66';
+const APP_VERSION = '0.6.67';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3085,14 +3085,35 @@ function fetchSim(dt){
 /* ============================================================
    Merge, infer direction, estimate arrival
    ============================================================ */
+/* Retiring a superseded journey depends on knowing that two records are the
+   same physical bus, and VehicleRef alone does not establish that: some
+   operators publish one placeholder or fleet code for every bus on a route.
+   One snapshot settles it. A single bus cannot report two journeys at once, so
+   a code appearing more than once in the same batch is a shared placeholder
+   and carries no identity — and a record that reported in this batch is
+   plainly still running, whatever else shares its code. */
+function ingestBatchIndex(list){
+  const ids=new Set(), shared=new Set(), seen=new Set();
+  for(const v of Array.isArray(list)?list:[]){
+    ids.add(v.id);
+    const key=physicalVehicleKey(v);
+    if(!key) continue;
+    if(seen.has(key)) shared.add(key); else seen.add(key);
+  }
+  return {ids,shared};
+}
+function retirableVehicleKey(v,batch){
+  const physical=physicalVehicleKey(v);
+  return physical&&!batch.shared.has(physical)?physical:'';
+}
 /* True when this physical bus is already tracked under a different identity
    holding a more recent position — so the incoming record is a straggler for
    a journey it has already finished. */
-function supersededByNewerRecord(v){
-  const physical=physicalVehicleKey(v);
+function supersededByNewerRecord(v,batch){
+  const physical=retirableVehicleKey(v,batch);
   if(!physical) return false;
   for(const [otherId,other] of S.vehicles){
-    if(otherId===v.id) continue;
+    if(otherId===v.id||batch.ids.has(otherId)) continue;
     if(physicalVehicleKey(other)===physical && Number(other.ts)>Number(v.ts)) return true;
   }
   return false;
@@ -3107,14 +3128,14 @@ function mergeOlderVehicleEvidence(rec,v,now){
   }
 }
 function ingest(list){
-  const now=Date.now();
+  const now=Date.now(), batch=ingestBatchIndex(list);
   for(const v of list){
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null, cadence:null};
     if(prev && Number(v.ts)<Number(prev.ts)){mergeOlderVehicleEvidence(prev,v,now);continue;}
     // A straggling report for an identity this bus has already moved on from
     // must not reappear beside the newer record as a second, older departure.
-    if(!prev && supersededByNewerRecord(v)) continue;
+    if(!prev && supersededByNewerRecord(v,batch)) continue;
     const journeyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
     const routeIdentityChanged=!!(prev&&(String(prev.line)!==String(v.line)||String(prev.operator||'')!==String(v.operator||'')));
     const reportGap=prev&&v.ts>prev.ts?(v.ts-prev.ts)/1000:0;
@@ -3159,10 +3180,11 @@ function ingest(list){
     // bus lingers on the board for minutes as a second, frozen departure.
     // Only a newly seen identity can have a predecessor to retire, so an
     // established record skips the scan entirely.
-    const physical=prev?'':physicalVehicleKey(rec);
+    const physical=prev?'':retirableVehicleKey(rec,batch);
     if(physical){
       for(const [otherId,other] of S.vehicles){
-        if(otherId===v.id) continue;
+        // Anything reporting in this same batch is a separate bus still running.
+        if(otherId===v.id||batch.ids.has(otherId)) continue;
         if(physicalVehicleKey(other)===physical && Number(other.ts)<=Number(rec.ts)) S.vehicles.delete(otherId);
       }
     }
