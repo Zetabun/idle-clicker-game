@@ -41,7 +41,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.59'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.60'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -68,6 +68,10 @@ assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
 assert.match(busSource, /function routePatternMovementFit\(pattern,v,stop\)/);
 assert.match(busSource, /function inferVehicleJourneyPattern\(v,stop,now=Date\.now\(\)\)/);
 assert.match(busSource, /function visualRoutePosition\(v,pattern,metres\)/);
+assert.match(busSource, /function rememberRouteScanVehicle\(v,now=Date\.now\(\)\)/);
+assert.match(busSource, /const stationaryFix=/);
+assert.match(busSource, /const routeAhead=/);
+assert.match(busSource, /confirmedVehicle,stops,nextIndex/);
 assert.match(busSource, /const inference=!evidence\.journeyMatch\?inferVehicleJourneyPattern/);
 assert.match(busSource, /const est=estimate\(v,S\.stop,evidence\)/);
 assert.match(busSource, /Current position/);
@@ -1132,11 +1136,48 @@ try {
   assert.equal(routeIntelligence.ambiguous,null);
   assert.deepEqual(routeIntelligence.routed,{east:true,onRoute:true,routeGuided:true});
 
+  const reliability = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
+    const saved={stop:state.stop,origin:state.origin,anchor:state.anchor,dir:state.dir,onlyServing:state.onlyServing,hideAway:state.hideAway,destFilter:state.destFilter,demo:state.demo,vehicles:state.vehicles,ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion,routeScanHistory:state.routeScanHistory};
+    try{
+      const stationary={id:'stationary',line:'63',lat:52.5,lon:-2.1,bearing:90,ts:now,stationaryAt:now,speed:8,cadence:15,hist:[{lat:52.5,lon:-2.11,ts:now-30000},{lat:52.5,lon:-2.1,ts:now-15000},{lat:52.5,lon:-2.1,ts:now}]};
+      const stationaryVisual=api.visualVehiclePosition(stationary,now+12000);
+
+      state.vehicles=new Map();
+      api.ingest([{id:'gap',journey:'gap-trip',line:'63',operator:'TEST',lat:52.4,lon:-2.2,bearing:90,feedSpeed:8,ts:now-240000,timestampKnown:true,corridorTracked:false}]);
+      api.ingest([{id:'gap',journey:'gap-trip',line:'63',operator:'TEST',lat:52.5,lon:-2.1,bearing:90,feedSpeed:8,ts:now,timestampKnown:true,corridorTracked:false}]);
+      const resetVehicle=state.vehicles.get('gap');
+
+      const trip='priority-trip',patternId='priority-pattern',at=new Date(now+20*60000),mins=at.getHours()*60+at.getMinutes();
+      const pattern={id:patternId,shape:true,stopProgress:null,points:[{lat:52.52,lon:-2.2},{lat:52.51,lon:-2.17},{lat:52.5,lon:-2.14},{lat:52.5,lon:-2.1}],stops:[{id:'start',name:'Start',lat:52.52,lon:-2.2},{id:'priority-stop',name:'Priority stop',lat:52.5,lon:-2.1}]};
+      state.stop={id:'priority-stop',timetableId:'priority-stop',lat:52.5,lon:-2.1,name:'Priority stop',d:0};state.origin={lat:52.5,lon:-2.1,label:'Test'};state.anchor={lat:52.6,lon:-2.1,name:'Town Centre',synthetic:false};state.dir='all';state.onlyServing=true;state.hideAway=true;state.destFilter=null;state.demo=false;state.vehicles=new Map();state.ttStop={id:'priority-stop',d:[[mins,'63','Town Centre','daily','in',trip,patternId]]};state.timetable={services:{daily:{days:'1111111',start:'20260101',end:'20261231',add:[],remove:[]}},tripPatterns:{[trip]:patternId},patterns:{[patternId]:{p:pattern.points.map(p=>[p.lat,p.lon]),s:pattern.stops.map(s=>[s.id,s.name,s.lat,s.lon]),g:1}}};state.timetableSource='national';state.timetableRegion='west_midlands';state.timetableRun++;
+      api.ingest([{id:'priority',journey:trip,line:'63',lineRef:'63',dest:'Town Centre',operator:'TEST',declaredDir:'',lat:52.51,lon:-2.17,bearing:120,feedSpeed:7,ts:now,timestampKnown:true,corridorTracked:false,hist:[{lat:52.52,lon:-2.2,ts:now-60000},{lat:52.51,lon:-2.17,ts:now}]}]);
+      const bothShown=api.relevant().some(row=>row.v.id==='priority');
+      state.dir='in';
+      const inShown=api.relevant().some(row=>row.v.id==='priority');
+
+      state.routeScanHistory=new Map();
+      const remotePattern={id:'remote-pattern',shape:true,stopProgress:null,points:[{lat:52.5,lon:-2.3},{lat:52.5,lon:-2.2},{lat:52.5,lon:-2.1}],stops:[{id:'remote-start',name:'Remote start',lat:52.5,lon:-2.3},{id:'priority-stop',name:'Priority stop',lat:52.5,lon:-2.1}]};
+      api.rememberRouteScanVehicle({id:'remote-bus',journey:'',line:'63',dest:'Town Centre',lat:52.5,lon:-2.27,bearing:90,ts:now-60000,feedSpeed:8},now-60000);
+      const remote=api.rememberRouteScanVehicle({id:'remote-bus',journey:'',line:'63',dest:'Town Centre',lat:52.5,lon:-2.22,bearing:90,ts:now,feedSpeed:8},now);
+      const remoteFit=api.routePatternMovementFit(remotePattern,remote,state.stop);
+      const plan={matches:[{trip:'remote-trip',line:'63',head:'Town Centre',pattern:remotePattern,targetAlong:remoteFit.target.along}]};
+      const remoteMatched=api.matchRouteScanVehicle(plan,remote);
+      return {
+        stationaryHeld:!stationaryVisual.estimated&&stationaryVisual.lat===stationary.lat&&stationaryVisual.lon===stationary.lon,
+        historyReset:resetVehicle.hist.length===1,
+        bothShown,inShown,
+        remoteInferred:!!(remoteMatched&&remoteMatched.corridorTracked&&remoteMatched.inferredTrip==='remote-trip')
+      };
+    }finally{Object.assign(state,saved);}
+  });
+  assert.deepEqual(reliability,{stationaryHeld:true,historyReset:true,bothShown:true,inShown:true,remoteInferred:true});
+
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.59'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.60'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
@@ -1172,7 +1213,38 @@ try {
   assert.ok(after.scrollWidth <= before.width + 1);
   assert.ok(after.viewbarBottom <= after.height + 1);
 
-  console.log('Kerbside WebKit mobile regression checks passed.');
+
+  const mobileLayouts=[];
+  for(const viewport of [{width:320,height:568},{width:360,height:800},{width:393,height:852},{width:430,height:932}]){
+    await page.setViewportSize(viewport);
+    await page.waitForTimeout(40);
+    mobileLayouts.push(await page.evaluate(() => {
+      const search=document.querySelector('.searchwrap').getBoundingClientRect();
+      const directions=document.querySelector('.dirswitch').getBoundingClientRect();
+      const settings=document.getElementById('setBtn').getBoundingClientRect();
+      return {overflow:document.documentElement.scrollWidth-window.innerWidth,searchWidth:search.width,aligned:Math.max(search.top,directions.top,settings.top)-Math.min(search.top,directions.top,settings.top),viewbar:getComputedStyle(document.getElementById('viewbar')).display};
+    }));
+  }
+  for(const layout of mobileLayouts){
+    assert.ok(layout.overflow<=1,JSON.stringify(layout));
+    assert.ok(layout.searchWidth>=125,JSON.stringify(layout));
+    assert.ok(layout.aligned<=2,JSON.stringify(layout));
+    assert.equal(layout.viewbar,'flex');
+  }
+  await page.setViewportSize({width:1440,height:900});
+  await page.waitForTimeout(40);
+  const desktopLayout=await page.evaluate(()=>({
+    overflow:document.documentElement.scrollWidth-window.innerWidth,
+    topbar:getComputedStyle(document.getElementById('topbar')).display,
+    viewbar:getComputedStyle(document.getElementById('viewbar')).display,
+    icon:getComputedStyle(document.querySelector('.brand-icon')).display,
+    map:getComputedStyle(document.getElementById('map')).display,
+    board:getComputedStyle(document.getElementById('board')).display
+  }));
+  assert.deepEqual(desktopLayout,{overflow:0,topbar:'flex',viewbar:'none',icon:'none',map:'block',board:'flex'});
+  await page.setViewportSize({width:393,height:852});
+
+  console.log('Kerbside WebKit mobile and desktop regression checks passed.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

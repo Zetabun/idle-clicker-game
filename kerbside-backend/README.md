@@ -185,3 +185,5 @@ Build one extracted regional GTFS folder with:
 ```bash
 node scripts/build-region.js /path/to/gtfs west_midlands ./dist
 ```
+
+Kerbside 0.6.60 is a reliability release for live route allocation and deployment. Exact ordered-route evidence now overrides contradictory town-anchor GPS movement without weakening explicit timetable direction filters, and Both mode no longer discards a valid journey merely because route and town-centre direction labels disagree. New stationary fixes stop marker extrapolation immediately, while long reporting gaps or implausible jumps reset inherited movement, speed and route-projection state. Timetable-guided distant scans can now infer a missing journey reference after repeated GPS movement clearly follows one route pattern. Display-only journey progress advances with the bounded route-guided marker while at-stop claims remain tied to confirmed GPS. Narrow mobile widths and desktop geometry join the WebKit matrix. The release and production workflows are hardened separately so new assets cannot be silently omitted and live GitHub Pages is browser-smoke-tested after UI changes.

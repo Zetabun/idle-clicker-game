@@ -518,6 +518,18 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .dfacts{grid-template-columns:repeat(2,1fr)}
   .region-stats{grid-template-columns:1fr}
 }
+
+@media (max-width:360px){
+  #topbar{grid-template-columns:minmax(125px,1fr) auto 38px;column-gap:4px;padding-left:8px;padding-right:8px}
+  .searchwrap .pin{display:none}
+  .searchwrap input{padding-left:10px;padding-right:58px}
+  .searchwrap .go{right:27px;padding-left:1px;padding-right:1px;font-size:10.5px}
+  .searchwrap .locate{right:1px}
+  .dirswitch{padding-left:2px;padding-right:2px;gap:0}
+  .dirswitch button{padding-left:4px;padding-right:4px;font-size:11px}
+  .dirswitch button .arrow{display:none}
+  #setBtn{width:38px}
+}
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
 }
@@ -817,7 +829,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.59';
+const APP_VERSION = '0.6.60';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -861,7 +873,7 @@ const S = {
   feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
   timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
-  routeScanBusy:false, routeScanAbort:null, lastRouteScan:0,
+  routeScanBusy:false, routeScanAbort:null, lastRouteScan:0, routeScanHistory:new Map(),
   routeScanBoxes:0, routeScanPatterns:0, routeScanVehicles:0, routeScanError:''
 };
 
@@ -2512,8 +2524,14 @@ function inferredRouteEvidence(base,inference){
 function journeyProgress(v){
   const pattern=timetablePatternRecord(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern);
   if(!pattern) return null;
-  const vehicle=projectVehicleToPattern(pattern,v);
-  if(!vehicle||vehicle.metres>800) return null;
+  const confirmedVehicle=projectVehicleToPattern(pattern,v);
+  if(!confirmedVehicle||confirmedVehicle.metres>800) return null;
+  let vehicle=confirmedVehicle;
+  const visual=visualVehiclePosition(v);
+  if(visual&&visual.estimated){
+    const displayVehicle=projectVehicleToPattern(pattern,{...v,lat:visual.lat,lon:visual.lon,routeProjection:null});
+    if(displayVehicle&&displayVehicle.metres<=800&&displayVehicle.along>=confirmedVehicle.along-40) vehicle=displayVehicle;
+  }
   const stops=orderedPatternStops(pattern);
   if(stops.length<2) return null;
   let nextIndex=stops.findIndex(stop=>stop.along>=vehicle.along-25);
@@ -2521,7 +2539,7 @@ function journeyProgress(v){
   const selectedIndex=selectedPatternStopIndex(stops);
   let atIndex=-1,atDistance=Infinity;
   stops.forEach((stop,index)=>{
-    const direct=dist(v.lat,v.lon,stop.lat,stop.lon),along=Math.abs(stop.along-vehicle.along);
+    const direct=dist(v.lat,v.lon,stop.lat,stop.lon),along=Math.abs(stop.along-confirmedVehicle.along);
     if(direct<=85&&along<=140&&direct<atDistance){atDistance=direct;atIndex=index;}
   });
   const previousIndex=atIndex>=0?Math.max(-1,atIndex-1):(nextIndex>0?nextIndex-1:-1);
@@ -2529,7 +2547,7 @@ function journeyProgress(v){
   const next=nextIndex>=0&&nextIndex<stops.length?stops[nextIndex]:null;
   const locationLabel=atIndex>=0?'At or near '+stops[atIndex].name:previous&&next?'Between '+previous.name+' and '+next.name:next?'Approaching '+next.name:previous?'After '+previous.name:'Position on route';
   return {
-    pattern,vehicle,stops,nextIndex,selectedIndex,atIndex,previousIndex,locationLabel,
+    pattern,vehicle,confirmedVehicle,stops,nextIndex,selectedIndex,atIndex,previousIndex,locationLabel,
     remainingStops:Math.max(0,stops.length-nextIndex),
     percent:Math.max(0,Math.min(100,vehicle.along/Math.max(1,vehicle.total)*100))
   };
@@ -2573,7 +2591,7 @@ function selectStop(s,manual){
   if(changed){
     if(S.routeScanAbort) S.routeScanAbort.abort();
     S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
-    S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError='';
+    S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError=''; S.routeScanHistory.clear();
     for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; delete vehicle.inferredJourney; delete vehicle.inferredTrip; delete vehicle.inferredPattern; delete vehicle.inferredAt; delete vehicle.inferenceStopId; delete vehicle.inferenceGpsTs; vehicle.corridorTracked=false; }
     S.destFilter=null; S.selected=null; S.manualStop=manual===true;
   } else if(manual===true) S.manualStop=true;
@@ -2705,11 +2723,48 @@ function routeScanPlans(now=Date.now()){
   }
   return selected;
 }
+function rememberRouteScanVehicle(v,now=Date.now()){
+  if(!v||!v.id) return v;
+  const current=S.routeScanHistory.get(v.id)||{hist:[],lastSeen:0};
+  const latest=current.hist[current.hist.length-1];
+  if(!latest||latest.ts!==v.ts||latest.lat!==v.lat||latest.lon!==v.lon){
+    current.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
+  }
+  current.hist=current.hist.filter(point=>now-Number(point.ts)<=ROUTE_INFERENCE_GRACE_MS).slice(-6);
+  current.lastSeen=now;
+  S.routeScanHistory.set(v.id,current);
+  for(const [id,record] of S.routeScanHistory){
+    if(now-Number(record.lastSeen||0)>ROUTE_INFERENCE_GRACE_MS) S.routeScanHistory.delete(id);
+  }
+  return {...v,hist:[...current.hist],speed:isFinite(Number(v.feedSpeed))?Number(v.feedSpeed):null};
+}
+function inferredRouteScanMatch(plan,v){
+  const byPattern=new Map();
+  for(const match of plan.matches||[]){
+    if(String(v.line)!==String(match.line)) continue;
+    const similarity=v.dest&&match.head?destinationSimilarity(v.dest,match.head):1;
+    if(v.dest&&match.head&&similarity<.34) continue;
+    const fit=routePatternMovementFit(match.pattern,v,S.stop);
+    if(!fit) continue;
+    const score=fit.meanOffset*.55+fit.current.metres*.45+(1-similarity)*90;
+    const candidate={trip:String(match.trip),pattern:match.pattern,fit,score,row:match};
+    const current=byPattern.get(match.pattern.id);
+    if(!current||candidate.score<current.score) byPattern.set(match.pattern.id,candidate);
+  }
+  const best=chooseInferredJourneyCandidate([...byPattern.values()]);
+  return best&&best.row||null;
+}
 function matchRouteScanVehicle(plan,v){
-  if(!plan||!v||!v.journey) return null;
-  const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
-  if(!tripMatch.items.length||tripMatch.ambiguous) return null;
-  const match=tripMatch.items[0];
+  if(!plan||!v) return null;
+  let match=null,inferred=false;
+  if(v.journey){
+    const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
+    if(!tripMatch.items.length||tripMatch.ambiguous) return null;
+    match=tripMatch.items[0];
+  }else{
+    match=inferredRouteScanMatch(plan,v); inferred=!!match;
+    if(!match) return null;
+  }
   if(String(v.line)!==String(match.line)) return null;
   if(v.dest&&match.head&&destinationSimilarity(v.dest,match.head)<.34) return null;
   const position=projectVehicleToPattern(match.pattern,v);
@@ -2717,6 +2772,7 @@ function matchRouteScanVehicle(plan,v){
   const remaining=match.targetAlong-position.along;
   if(remaining < -120 || remaining > ROUTE_SCAN_MAX_ROUTE_METRES) return null;
   v.corridorTrip=match.trip; v.corridorTracked=true; v.corridorRemaining=remaining; v.corridorConfirmedAt=Date.now();
+  if(inferred){v.inferredTrip=match.trip;v.inferredPattern=match.pattern.id;v.inferredAt=Date.now();}
   return v;
 }
 
@@ -2787,7 +2843,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -2878,7 +2934,8 @@ async function pollRouteCorridor(){
       if(result.status!=='fulfilled') continue;
       const parsed=parseLivePayloads([result.value.item],Date.now());
       for(const vehicle of parsed.vehicles){
-        const matched=matchRouteScanVehicle(result.value.plan,vehicle); if(!matched) continue;
+        const tracked=rememberRouteScanVehicle(vehicle);
+        const matched=matchRouteScanVehicle(result.value.plan,tracked); if(!matched) continue;
         const current=merged.get(matched.id); if(!current||matched.ts>current.ts) merged.set(matched.id,matched);
       }
     }
@@ -3003,22 +3060,26 @@ function ingest(list){
     if(prev && Number(v.ts)<Number(prev.ts)){mergeOlderVehicleEvidence(prev,v,now);continue;}
     const journeyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
     const routeIdentityChanged=!!(prev&&(String(prev.line)!==String(v.line)||String(prev.operator||'')!==String(v.operator||'')));
-    if(journeyChanged){rec.hist=[];rec.speed=null;rec.cadence=null;}
-    if(journeyChanged||routeIdentityChanged){delete rec.inferredJourney;delete rec.inferredTrip;delete rec.inferredPattern;delete rec.inferredAt;delete rec.inferenceStopId;delete rec.inferenceGpsTs;}
-    if(prev && !journeyChanged && v.ts>prev.ts){
-      const gap=(v.ts-prev.ts)/1000;
-      if(gap>=2 && gap<=180) rec.cadence=rec.cadence==null?gap:rec.cadence*.65+gap*.35;
+    const reportGap=prev&&v.ts>prev.ts?(v.ts-prev.ts)/1000:0;
+    const reportMove=prev&&v.ts>prev.ts?dist(prev.lat,prev.lon,v.lat,v.lon):0;
+    const trackDiscontinuity=!!(prev&&!journeyChanged&&(reportGap>180||reportMove>3000));
+    if(journeyChanged||routeIdentityChanged||trackDiscontinuity){
+      rec.hist=[];rec.speed=null;rec.cadence=null;delete rec.routeProjection;delete rec.stationaryAt;
+      delete rec.inferredJourney;delete rec.inferredTrip;delete rec.inferredPattern;delete rec.inferredAt;delete rec.inferenceStopId;delete rec.inferenceGpsTs;
     }
-    if(prev && !journeyChanged && (prev.lat!==v.lat || prev.lon!==v.lon)){
-      const dt = Math.max(1,(v.ts - prev.ts)/1000);
-      const dd = dist(prev.lat,prev.lon,v.lat,v.lon);
-      if(dt<180 && dd<3000){
-        const inst = dd/dt;
-        rec.speed = rec.speed==null ? inst : rec.speed*0.6 + inst*0.4;
-      }
+    if(prev && !journeyChanged && !routeIdentityChanged && !trackDiscontinuity && v.ts>prev.ts){
+      if(reportGap>=2 && reportGap<=180) rec.cadence=rec.cadence==null?reportGap:rec.cadence*.65+reportGap*.35;
+    }
+    const stationaryFix=!!(prev&&!journeyChanged&&!routeIdentityChanged&&!trackDiscontinuity&&reportGap>=2&&reportGap<=180&&reportMove<8);
+    if(prev && !journeyChanged && !routeIdentityChanged && !trackDiscontinuity && reportMove>=8){
+      const dt=Math.max(1,reportGap),inst=reportMove/dt;
+      if(dt<180&&reportMove<3000) rec.speed=rec.speed==null?inst:rec.speed*.6+inst*.4;
+      delete rec.stationaryAt;
     }
     const feedSpeed=Number(v.feedSpeed);
-    if(isFinite(feedSpeed) && feedSpeed>=0 && feedSpeed<=35){
+    if(stationaryFix){
+      rec.speed=0;rec.stationaryAt=v.ts;
+    }else if(isFinite(feedSpeed) && feedSpeed>=0 && feedSpeed<=35){
       rec.speed = rec.speed==null ? feedSpeed : rec.speed*0.72 + feedSpeed*0.28;
     }
     const latest=rec.hist[rec.hist.length-1];
@@ -3026,7 +3087,7 @@ function ingest(list){
       rec.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
       if(rec.hist.length>8) rec.hist.shift();
     }
-    const sameJourney=!journeyChanged&&(!prev||!prev.journey||!v.journey||prev.journey===v.journey);
+    const sameJourney=!journeyChanged&&!routeIdentityChanged&&!trackDiscontinuity&&(!prev||!prev.journey||!v.journey||prev.journey===v.journey);
     const keepCorridor=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&now-Number(prev.corridorConfirmedAt||0)<=CORRIDOR_TAG_GRACE_MS);
     const corridorExpired=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&!keepCorridor);
     const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
@@ -3053,7 +3114,8 @@ function visualRoutePosition(v,pattern,metres){
 function visualVehiclePosition(v,now=Date.now()){
   const confirmed={lat:v.lat,lon:v.lon,estimated:false};
   if(S.demo||!Array.isArray(v.hist)||v.hist.length<2) return confirmed;
-  const b=v.hist[v.hist.length-1];
+  const b=v.hist[v.hist.length-1],previousLatest=v.hist[v.hist.length-2];
+  if(Number(v.stationaryAt)===Number(b.ts)||(previousLatest&&previousLatest.ts<b.ts&&dist(previousLatest.lat,previousLatest.lon,b.lat,b.lon)<8)) return confirmed;
   let a=null;
   for(let i=v.hist.length-2;i>=0;i--){
     const point=v.hist[i];
@@ -3639,12 +3701,14 @@ function collect(gate,diagnostics){
     }
 
     const dir=inferDirection(v), gpsMoveDir=gpsMovementDirection(v);
+    const orderedMovement=geometry?routePatternMovementFit(geometry.pattern,v,S.stop):null;
+    const routeAhead=!!(geometry&&!geometry.passed&&geometry.remaining>=-120&&orderedMovement);
     if(S.dir!=='all'){
       const timetableContradicts=scheduledDir!=='unknown' && scheduledDir!==S.dir;
       const gpsContradicts=gpsMoveDir!=='unknown' && gpsMoveDir!==S.dir;
-      if(timetableContradicts || gpsContradicts){ rejectLive(diagnostics,'direction'); continue; }
+      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead)){ rejectLive(diagnostics,'direction'); continue; }
     }
-    if(gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir){ rejectLive(diagnostics,'direction'); continue; }
+    if(S.dir!=='all'&&gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir&&!routeAhead){ rejectLive(diagnostics,'direction'); continue; }
     if(diagnostics) diagnostics.direction++;
 
     if(S.hideAway && strength<0 && d>100){
@@ -4277,7 +4341,7 @@ bindSwitch($('demoSw')); bindSwitch($('awaySw')); bindSwitch($('rememberSw')); b
 $('forgetBtn').addEventListener('click',()=>{
   store.clearAll(); clearDataSnapshots();
   S.remember=false; S.key=''; S.proxy=''; S.demo=true; S.destsByStop={};
-  LINES={}; SERVING={}; MAPPED={}; S.vehicles.clear(); clearVehicleMarkers(); SIM.built=false;
+  LINES={}; SERVING={}; MAPPED={}; S.vehicles.clear(); S.routeScanHistory.clear(); clearVehicleMarkers(); SIM.built=false;
   $('rememberSw').setAttribute('aria-pressed','false'); $('demoSw').setAttribute('aria-pressed','true');
   $('apiKey').value=''; $('proxy').value='';
   checkSourceStatus();
