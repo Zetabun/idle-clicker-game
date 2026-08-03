@@ -838,7 +838,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.64';
+const APP_VERSION = '0.6.65';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3173,12 +3173,31 @@ function ingest(list){
   }
 }
 
+/* Guiding the glide along the journey's own geometry.
+
+   Only about 60% of national patterns carry an authoritative GTFS road shape,
+   and in London almost none do. For the rest the builder stores the ordered
+   stop positions as the pattern's points, and the app already measures along
+   that corridor for route distance, remaining metres and journey progress —
+   but the glide refused it, and fell back to projecting the last bearing in a
+   straight line, which carries straight on through every bend.
+
+   A chord between two real stops is a far better guess at the road than a
+   tangent, so use it. It is still only a chord, so require the vehicle to be
+   much closer to it than to a true shape before trusting it: a large offset
+   means the road departs from the corridor here and following it would drag
+   the marker across the gap. The drawn route line stays gated on a real
+   shape — this guides motion, it does not draw a road Kerbside cannot verify. */
+const VISUAL_SHAPE_MAX_OFFSET = 500;
+const VISUAL_CORRIDOR_MAX_OFFSET = 200;
 function visualRoutePosition(v,pattern,metres){
-  if(!v||!pattern||!pattern.shape||!isFinite(metres)||metres<=0) return null;
+  if(!v||!pattern||!Array.isArray(pattern.points)||pattern.points.length<2) return null;
+  if(!isFinite(metres)||metres<=0) return null;
   const projection=projectVehicleToPattern(pattern,v);
-  if(!projection||projection.metres>500) return null;
+  if(!projection) return null;
+  if(projection.metres>(pattern.shape?VISUAL_SHAPE_MAX_OFFSET:VISUAL_CORRIDOR_MAX_OFFSET)) return null;
   const point=pointAlongPattern(pattern.points,projection.along+metres);
-  return point?{lat:point.lat,lon:point.lon,estimated:true,routeGuided:true}:null;
+  return point?{lat:point.lat,lon:point.lon,estimated:true,routeGuided:true,corridorOnly:!pattern.shape}:null;
 }
 function visualVehiclePosition(v,now=Date.now()){
   const confirmed={lat:v.lat,lon:v.lon,estimated:false};
@@ -3949,7 +3968,7 @@ function journeyProgressHtml(v){
   }
   const next=progress.nextIndex>=0&&progress.nextIndex<progress.stops.length?progress.stops[progress.nextIndex]:null;
   const selected=progress.selectedIndex>=0?progress.stops[progress.selectedIndex]:null;
-  const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops available · road shape awaiting timetable rebuild';
+  const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops guide progress · this operator publishes no road shape';
   const stopList=progress.stops.length?'<div class="journey-stops">'+progress.stops.map((stop,index)=>{
     const states=[];
     // The stop the bus is standing at is the current one, not a previous one:

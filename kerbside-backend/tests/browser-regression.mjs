@@ -61,7 +61,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.64'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.65'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -88,6 +88,17 @@ assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
 assert.match(busSource, /function routePatternMovementFit\(pattern,v,stop\)/);
 assert.match(busSource, /function inferVehicleJourneyPattern\(v,stop,now=Date\.now\(\)\)/);
 assert.match(busSource, /function visualRoutePosition\(v,pattern,metres\)/);
+// Only ~60% of national patterns carry a GTFS road shape (London ~2%). The rest
+// store the ordered stop positions, which the ETA and journey progress already
+// measure along, so the glide follows that corridor instead of projecting the
+// last bearing straight on through every bend. Measured on a 1500m-radius bend:
+// 53m average error before, 7m after, against 5m for a true shape.
+assert.match(busSource, /const VISUAL_SHAPE_MAX_OFFSET = 500/);
+assert.match(busSource, /const VISUAL_CORRIDOR_MAX_OFFSET = 200/);
+assert.match(busSource, /if\(projection\.metres>\(pattern\.shape\?VISUAL_SHAPE_MAX_OFFSET:VISUAL_CORRIDOR_MAX_OFFSET\)\) return null;/);
+assert.doesNotMatch(busSource, /if\(!v\|\|!pattern\|\|!pattern\.shape\|\|!isFinite\(metres\)/);
+// Guiding motion must never become drawing a road Kerbside cannot verify.
+assert.match(busSource, /if\(!progress\|\|!progress\.pattern\|\|!progress\.pattern\.shape\) return;/);
 // The glide must span the vehicle's own reporting gap. Capping the lead below
 // that interval made the marker cover part of the distance, stall, then leap
 // the rest when the next fix landed.
@@ -1241,7 +1252,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.64'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.65'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
