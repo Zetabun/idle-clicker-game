@@ -16,7 +16,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,51 +28,35 @@ jobs:
           cache: npm
           cache-dependency-path: kerbside-backend/package-lock.json
 
-      - name: Verify predecessor
-        run: |
-          grep -q "const APP_VERSION = '0.6.68';" bus.html
-          node -e "const p=require('./kerbside-backend/package.json'); if(p.version!=='0.6.68') process.exit(1)"
-          grep -q "version: '0.6.68'" kerbside-backend/src/worker.js
-
-      - name: Apply release patch
-        run: python3 .github/scripts/release-kerbside-0.6.69.py
-
-      - name: Install dependencies
-        working-directory: kerbside-backend
-        run: npm ci
-
-      - name: Install WebKit
-        working-directory: kerbside-backend
-        run: npx playwright install --with-deps webkit
-
-      - name: Verification pass one
-        working-directory: kerbside-backend
-        run: |
-          npm run check
-          npm test
-          npm run test:browser
-          node tests/multi-vehicle-regression.mjs
-          node tests/identity-regression.mjs
-
-      - name: Verification pass two
-        working-directory: kerbside-backend
-        run: |
-          npm run check
-          npm test
-          npm run test:browser
-          node tests/multi-vehicle-regression.mjs
-          node tests/identity-regression.mjs
-
-      - name: Deploy Worker
-        working-directory: kerbside-backend
+      - name: Run, verify and publish release
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy
-
-      - name: Verify Worker
         run: |
-          python3 - <<'PY'
+          set +e
+          LOG="$RUNNER_TEMP/kerbside-0.6.69.log"
+          {
+            set -euxo pipefail
+            grep -q "const APP_VERSION = '0.6.68';" bus.html
+            node -e "const p=require('./kerbside-backend/package.json'); if(p.version!=='0.6.68') process.exit(1)"
+            grep -q "version: '0.6.68'" kerbside-backend/src/worker.js
+            python3 .github/scripts/release-kerbside-0.6.69.py
+            cd kerbside-backend
+            npm ci
+            npx playwright install --with-deps webkit
+            npm run check
+            npm test
+            npm run test:browser
+            node tests/multi-vehicle-regression.mjs
+            node tests/identity-regression.mjs
+            npm run check
+            npm test
+            npm run test:browser
+            node tests/multi-vehicle-regression.mjs
+            node tests/identity-regression.mjs
+            npx wrangler deploy
+            cd ..
+            python3 - <<'PY'
           import json, urllib.request
           with urllib.request.urlopen('https://kerbside-bus.adambullas.workers.dev/health', timeout=20) as response:
               data=json.load(response)
@@ -81,14 +65,21 @@ jobs:
           assert data.get('bodsKeyConfigured') is True, data
           print(data)
           PY
-
-      - name: Commit completed release
-        run: |
+          } 2>&1 | tee "$LOG"
+          STATUS=${PIPESTATUS[0]}
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          if [ "$STATUS" -ne 0 ]; then
+            cp "$LOG" .github/kerbside-0.6.69-failure.log
+            git add .github/kerbside-0.6.69-failure.log
+            git commit -m "Record Kerbside 0.6.69 release failure" || true
+            git push origin HEAD:main
+            exit "$STATUS"
+          fi
+          rm -f .github/kerbside-0.6.69-failure.log
           rm -f .github/scripts/release-kerbside-0.6.69.py
           rm -f .github/workflows/release-kerbside-0.6.69.yml
           rm -f .github/triggers/release-kerbside-0.6.69.txt
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add bus.html kerbside-backend .github
           git commit -m "Release Kerbside 0.6.69"
           git push origin HEAD:main
