@@ -125,6 +125,8 @@ Kerbside 0.6.53 keeps an already displayed exact journey route visible when an i
 
 Kerbside 0.6.54 removes the hidden map long-press/right-click shortcut that previously redefined the town anchor. Mobile press-and-hold and desktop context-menu gestures are now suppressed without changing the selected town, stop, direction filters or map position; location changes remain available only through the explicit search and current-location controls. WebKit regression verifies the gesture is cancelled and the existing town anchor remains untouched.
 
+Kerbside 0.6.55 adds an internal GPS-and-timetable route-allocation layer for live vehicles whose operator journey reference is missing or cannot be matched. The matcher compares recent forward movement against every eligible ordered pattern for the reported line, rejects buses that are off-route or have passed the selected stop, checks destination and schedule plausibility, and only assigns a journey when one route pattern is clearly better than the alternatives. No confidence score is exposed in the interface. Once assigned, the existing live GPS marker interpolation follows the official road shape between reports, remains capped at 20 seconds and 180 metres, and snaps back to every authoritative GPS update; buses without a reliable route match retain the conservative straight-line fallback. Journey details now also describe whether the bus is at a stop, between two stops or approaching the next stop.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
