@@ -41,15 +41,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t SCRIPTS < <(find .github/scripts -maxdepth 1 -type f -name 'release-kerbside-*.py' | sort)
+          mapfile -t SCRIPTS < <(find .github/scripts -maxdepth 1 -type f -name 'release-kerbside-*.py' ! -name '*.test.py' | sort)
+          if [[ "${#SCRIPTS[@]}" -eq 0 ]]; then
+            echo "NO_RELEASE=true" >> "$GITHUB_ENV"
+            echo "No Kerbside release patch remains; the validated release has already been published."
+            exit 0
+          fi
           if [[ "${#SCRIPTS[@]}" -ne 1 ]]; then
             echo "::error::Expected exactly one Kerbside release patch, found ${#SCRIPTS[@]}."
-            printf '%s\n' "${SCRIPTS[@]:-}"
+            printf '%s\n' "${SCRIPTS[@]}"
             exit 1
           fi
           echo "RELEASE_SCRIPT=${SCRIPTS[0]}" >> "$GITHUB_ENV"
 
       - name: Apply browser release
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -62,6 +68,7 @@ jobs:
           git diff --check
 
       - name: Install browser test dependencies
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -71,6 +78,7 @@ jobs:
           npx playwright install --with-deps webkit
 
       - name: Validate backend and existing builders
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -79,12 +87,14 @@ jobs:
           npm test --prefix kerbside-backend
 
       - name: Run WebKit browser regression checks
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
 
       - name: Prepare repository-safe release commit
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -95,7 +105,8 @@ jobs:
 
           trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
           trigger_path="${trigger_path%.py}.txt"
-          rm -f "$RELEASE_SCRIPT" "$trigger_path" .github/scripts/kerbside-release-post.py
+          test_path="${RELEASE_SCRIPT%.py}.test.py"
+          rm -f "$RELEASE_SCRIPT" "$trigger_path" "$test_path" .github/scripts/kerbside-release-post.py
 
           # A release patch must not smuggle workflow changes into its generated
           # commit. Reviewed workflow edits already present in the branch remain.
@@ -103,6 +114,7 @@ jobs:
           git diff --check
 
       - name: Export validated release files
+        if: env.NO_RELEASE != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: kerbside-0.6.61-validated
@@ -117,71 +129,116 @@ jobs:
             kerbside-backend/tests/browser-regression.mjs
 
       - name: Publish validated release atomically
+        if: env.NO_RELEASE != 'true'
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import time
+          from urllib import error, parse, request
 
-          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
-          REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH" | awk 'NR==1 {print $1}')"
-          if [[ -z "$REMOTE_SHA" || "$REMOTE_SHA" != "$CHECKED_OUT_SHA" ]]; then
-            echo "::error::Release branch moved during validation: checked out $CHECKED_OUT_SHA but remote is ${REMOTE_SHA:-missing}."
-            exit 1
-          fi
+          repository = os.environ['GITHUB_REPOSITORY']
+          branch = os.environ['RELEASE_BRANCH']
+          token = os.environ['GITHUB_TOKEN']
+          release_script = os.environ['RELEASE_SCRIPT']
+          checked_out_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          api_root = f'https://api.github.com/repos/{repository}'
+          transient_statuses = {429, 500, 502, 503, 504}
 
-          trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
-          trigger_path="${trigger_path%.py}.txt"
-          mapfile -d '' -t CHANGED < <(
-            {
-              git diff --name-only -z HEAD --
-              git ls-files --others --exclude-standard -z
-            } | sort -zu
-          )
-          if [[ "${#CHANGED[@]}" -eq 0 ]]; then
-            echo "::error::Validated release produced no repository changes."
-            exit 1
-          fi
+          def api(method, path, payload=None, attempts=5):
+              body = None if payload is None else json.dumps(payload).encode('utf-8')
+              headers = {
+                  'Accept': 'application/vnd.github+json',
+                  'Authorization': f'Bearer {token}',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'kerbside-release-workflow',
+              }
+              if body is not None:
+                  headers['Content-Type'] = 'application/json'
+              for attempt in range(1, attempts + 1):
+                  try:
+                      req = request.Request(api_root + path, data=body, headers=headers, method=method)
+                      with request.urlopen(req, timeout=90) as response:
+                          raw = response.read()
+                          return json.loads(raw) if raw else {}
+                  except error.HTTPError as exc:
+                      detail = exc.read().decode('utf-8', 'replace')
+                      if exc.code not in transient_statuses or attempt == attempts:
+                          raise RuntimeError(f'{method} {path} failed with HTTP {exc.code}: {detail}') from exc
+                  except error.URLError as exc:
+                      if attempt == attempts:
+                          raise RuntimeError(f'{method} {path} failed: {exc}') from exc
+                  time.sleep(min(30, attempt * 5))
+              raise RuntimeError(f'{method} {path} exhausted retries')
 
-          for path in "${CHANGED[@]}"; do
-            case "$path" in
-              bus.html|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
-                ;;
-              *)
-                echo "::error::Unexpected release path: $path"
-                exit 1
-                ;;
-            esac
-          done
+          branch_path = parse.quote(branch, safe='/')
+          ref_path = f'/git/ref/heads/{branch_path}'
+          update_ref_path = f'/git/refs/heads/{branch_path}'
+          remote_sha = api('GET', ref_path)['object']['sha']
+          if remote_sha != checked_out_sha:
+              raise SystemExit(
+                  f'Release branch moved during validation: checked out {checked_out_sha} but remote is {remote_sha}.'
+              )
 
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A -- "${CHANGED[@]}"
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo "::error::Validated release produced no staged repository changes."
-            exit 1
-          fi
+          changed = set()
+          for command in (
+              ['git', 'diff', '--name-only', '-z', 'HEAD', '--'],
+              ['git', 'ls-files', '--others', '--exclude-standard', '-z'],
+          ):
+              for raw_path in subprocess.check_output(command).split(b'\0'):
+                  if raw_path:
+                      changed.add(raw_path.decode('utf-8'))
+          if not changed:
+              raise SystemExit('Validated release produced no repository changes.')
 
-          git commit -m 'Release Kerbside browser update'
+          trigger_path = release_script.replace('.github/scripts/', '.github/triggers/').removesuffix('.py') + '.txt'
+          test_path = release_script.removesuffix('.py') + '.test.py'
+          temporary_paths = {release_script, trigger_path, test_path, '.github/scripts/kerbside-release-post.py'}
 
-          # The release commit is a direct child of CHECKED_OUT_SHA, so a normal
-          # push is already atomic: Git rejects it if the branch moved. Retry only
-          # transient transport/API failures, checking the exact remote SHA first.
-          for attempt in 1 2 3; do
-            REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH" | awk 'NR==1 {print $1}')"
-            if [[ -z "$REMOTE_SHA" || "$REMOTE_SHA" != "$CHECKED_OUT_SHA" ]]; then
-              echo "::error::Release branch moved before publish attempt $attempt: expected $CHECKED_OUT_SHA but remote is ${REMOTE_SHA:-missing}."
-              exit 1
-            fi
-            if git push origin "HEAD:refs/heads/$RELEASE_BRANCH"; then
-              echo "Published validated release commit $(git rev-parse HEAD) to $RELEASE_BRANCH"
-              exit 0
-            fi
-            if [[ "$attempt" -lt 3 ]]; then
-              sleep $((attempt * 5))
-            fi
-          done
+          def allowed(path):
+              return (
+                  path in {'bus.html', 'build-timetable.js', 'timetable.json'}
+                  or path.startswith('kerbside-backend/')
+                  or path in temporary_paths
+              )
 
-          echo "::error::Unable to publish the validated release after 3 attempts."
-          exit 1
+          unexpected = sorted(path for path in changed if not allowed(path))
+          if unexpected:
+              raise SystemExit('Unexpected release path(s): ' + ', '.join(unexpected))
+
+          parent = api('GET', f'/git/commits/{checked_out_sha}')
+          entries = []
+          for path in sorted(changed):
+              file_path = Path(path)
+              if not file_path.exists():
+                  entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': None})
+                  continue
+              blob = api('POST', '/git/blobs', {
+                  'content': base64.b64encode(file_path.read_bytes()).decode('ascii'),
+                  'encoding': 'base64',
+              })
+              entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': blob['sha']})
+
+          tree = api('POST', '/git/trees', {'base_tree': parent['tree']['sha'], 'tree': entries})
+          commit = api('POST', '/git/commits', {
+              'message': 'Release Kerbside browser update',
+              'tree': tree['sha'],
+              'parents': [checked_out_sha],
+          })
+
+          remote_sha = api('GET', ref_path)['object']['sha']
+          if remote_sha != checked_out_sha:
+              raise SystemExit(
+                  f'Release branch moved before publication: expected {checked_out_sha} but remote is {remote_sha}.'
+              )
+          api('PATCH', update_ref_path, {'sha': commit['sha'], 'force': False})
+          print(f"Published validated release commit {commit['sha']} to {branch}")
+          PY
