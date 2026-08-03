@@ -967,7 +967,8 @@ try {
       Object.assign(state,saved);
     }
   });
-  assert.deepEqual(wideFallback,{count:2,ids:['NEAR|journey|nearby-1-trip','WIDE|journey|wide-1-trip'],cooldown:true});
+  // Ids carry the vehicle reference alongside the journey since 0.6.61.
+  assert.deepEqual(wideFallback,{count:2,ids:['NEAR|journey|nearby-1-trip|vehicle|nearby-1','WIDE|journey|wide-1-trip|vehicle|wide-1'],cooldown:true});
   assert.ok(wideFeedRequests>=2);
   assert.equal(nearbyFeedRequests,1);
 
