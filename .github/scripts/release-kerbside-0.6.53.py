@@ -107,6 +107,12 @@ new_version_regex = NEW.replace('.', '\\.')
 browser = replace_once(browser, f"assert.match(busSource, /const APP_VERSION = '{old_version_regex}'/);", f"assert.match(busSource, /const APP_VERSION = '{new_version_regex}'/);", "browser version guard")
 browser = replace_once(
     browser,
+    f"await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app {OLD}'));",
+    f"await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app {NEW}'));",
+    "settings version wait",
+)
+browser = replace_once(
+    browser,
     "assert.match(busSource, /feedRefreshing:false/);",
     "assert.match(busSource, /feedRefreshing:false/);\nassert.match(busSource, /function clearJourneyRoute/);\nassert.match(busSource, /function journeyRouteContext/);\nassert.match(busSource, /function shouldClearJourneyRoute/);\nassert.doesNotMatch(busSource, /function renderSelectedJourney\\(rows\\)\\{\\n  routeLayer\\.clearLayers\\(\\);/);",
     "route overlay source guards",
