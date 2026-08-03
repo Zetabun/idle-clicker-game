@@ -1,0 +1,173 @@
+name: Run Kerbside 0.6.68 release v2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/triggers/release-kerbside-0.6.68-v2.txt
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release-kerbside-0.6.68
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BODS_KEY: ${{ secrets.BODS_KEY }}
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Publish run marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .github/status
+          printf 'run_id=%s\nhead_sha=%s\nstarted=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > .github/status/kerbside-0.6.68-run.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/status/kerbside-0.6.68-run.txt
+          git commit -m "Mark Kerbside 0.6.68 release run $GITHUB_RUN_ID"
+          git push origin HEAD:main
+
+      - name: Verify expected predecessor
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "const APP_VERSION = '0.6.67';" bus.html
+          test "$(git branch --show-current)" = main
+          test -z "$(git status --porcelain)"
+
+      - name: Apply corrected release patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/scripts/release-kerbside-0.6.68.py
+          python3 .github/scripts/release-kerbside-0.6.68.py
+          git diff --check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: kerbside-backend/package.json
+
+      - name: Install test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+
+      - name: Verify first pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          npm run check
+          npm test
+          npm run test:browser
+          node --check tests/multi-vehicle-regression.mjs
+          node tests/multi-vehicle-regression.mjs
+
+      - name: Verify second pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          npm run check
+          npm test
+          npm run test:browser
+          node --check tests/multi-vehicle-regression.mjs
+          node tests/multi-vehicle-regression.mjs
+
+      - name: Commit verified release to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "const APP_VERSION = '0.6.68';" bus.html
+          grep -Fq "version: '0.6.68'" kerbside-backend/src/worker.js
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add bus.html kerbside-backend/README.md kerbside-backend/package.json \
+            kerbside-backend/src/worker.js kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/tests/multi-vehicle-regression.mjs
+          git diff --cached --check
+          git commit -m "Kerbside 0.6.68: preserve multiple live buses"
+          git push origin HEAD:main
+
+      - name: Deploy matching Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN BODS_KEY; do
+            test -n "${!name:-}" || { echo "::error::$name is missing"; exit 1; }
+          done
+          cd kerbside-backend
+          npx wrangler deploy
+          printf '%s' "$BODS_KEY" | npx wrangler secret put BODS_KEY
+
+      - name: Request GitHub Pages rebuild
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          status="$(curl -sS -o /tmp/pages-build.json -w '%{http_code}' \
+            -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds")"
+          if [[ "$status" != 201 && "$status" != 204 ]]; then
+            cat /tmp/pages-build.json || true
+            echo "::error::Could not request GitHub Pages rebuild (HTTP $status)."
+            exit 1
+          fi
+
+      - name: Verify production convergence
+        shell: bash
+        run: |
+          set -euo pipefail
+          app='https://zetabun.github.io/idle-clicker-game/bus.html'
+          health='https://kerbside-bus.adambullas.workers.dev/health'
+          app_file="$(mktemp)"
+          worker_file="$(mktemp)"
+          trap 'rm -f "$app_file" "$worker_file"' EXIT
+          for attempt in $(seq 1 48); do
+            token="release=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
+            app_ok=false
+            worker_ok=false
+            curl -fsSL -H 'Cache-Control: no-cache' "$app?$token" -o "$app_file" \
+              && grep -Fq "const APP_VERSION = '0.6.68';" "$app_file" && app_ok=true || true
+            curl -fsSL -H 'Cache-Control: no-cache' "$health?$token" -o "$worker_file" \
+              && jq -e '.ok==true and .version=="0.6.68" and .bods==true' "$worker_file" >/dev/null \
+              && worker_ok=true || true
+            if [[ "$app_ok" == true && "$worker_ok" == true ]]; then
+              echo 'Kerbside 0.6.68 is live.'
+              exit 0
+            fi
+            echo "Attempt $attempt: app=$app_ok worker=$worker_ok"
+            sleep 10
+          done
+          echo '::error::Production did not converge on 0.6.68.'
+          exit 1
