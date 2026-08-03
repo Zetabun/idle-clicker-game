@@ -1,0 +1,5 @@
++ grep -q 'const APP_VERSION = '\''0.6.68'\'';' bus.html
++ node -e 'const p=require('\''./kerbside-backend/package.json'\''); if(p.version!=='\''0.6.68'\'') process.exit(1)'
++ grep -q 'version: '\''0.6.68'\''' kerbside-backend/src/worker.js
++ python3 .github/scripts/release-kerbside-0.6.69.py
+browser version: expected at least two matches, found 1
