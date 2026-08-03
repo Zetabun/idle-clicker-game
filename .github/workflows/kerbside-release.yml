@@ -102,6 +102,20 @@ jobs:
           git restore --source=HEAD --worktree -- .github/workflows
           git diff --check
 
+      - name: Export validated release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerbside-0.6.61-validated
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            bus.html
+            kerbside-backend/README.md
+            kerbside-backend/package.json
+            kerbside-backend/src/worker.js
+            kerbside-backend/test/worker.test.js
+            kerbside-backend/tests/browser-regression.mjs
+
       - name: Publish validated release atomically
         env:
           RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
