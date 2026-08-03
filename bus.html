@@ -829,7 +829,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.60';
+const APP_VERSION = '0.6.61';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -903,6 +903,7 @@ const ROUTE_SCAN_MAX_BOXES = 3;
 const ROUTE_SCAN_MAX_ROUTE_METRES = 55000;
 const ROUTE_SCAN_PATTERN_LIMIT = 36;
 const CORRIDOR_TAG_GRACE_MS = 5*60*1000;
+const ROUTE_FOCUS_ZOOM = 16;     // close enough to read the road the tracked bus is on
 const GPS_RESULT_GRACE_MS = 6*60*1000;
 
 /* ============================================================
@@ -3625,14 +3626,42 @@ function newLiveDiagnostics(gate){
 function rejectLive(diagnostics,reason){
   if(diagnostics&&diagnostics.rejected&&reason in diagnostics.rejected) diagnostics.rejected[reason]++;
 }
-function retainedSnapshotRow(v,now=Date.now()){
+function retainedSnapshotRow(v,now=Date.now(),gpsLost=true){
   if(!v||!v.lastShownSnapshot||!S.stop) return null;
   if(v.lastShownStopId!==String(S.stop.id)) return null;
   if(v.lastShownBoardDir!==S.dir) return null;
   if(String(v.lastShownDestFilter||'')!==String(S.destFilter||'')) return null;
   if(now-Number(v.lastShownAt||0)>GPS_RESULT_GRACE_MS) return null;
   if(Number(v.lastShownArrivalAt||0)<now-3*60000) return null;
-  return {...v.lastShownSnapshot,v,secs:Math.max(0,(v.lastShownArrivalAt-now)/1000),gpsLost:true,confidence:'low',recovered:false};
+  return {...v.lastShownSnapshot,v,secs:Math.max(0,(v.lastShownArrivalAt-now)/1000),gpsLost,confidence:'low',recovered:!gpsLost};
+}
+/* ------------------------------------------------------------
+   Hold-open for transient matching failures.
+
+   Only the stale-GPS path used to consult the retained snapshot. Every
+   other gate below dropped the bus outright, so a vehicle with perfectly
+   fresh GPS vanished from the board the moment one poll produced weaker
+   evidence — a pattern shard still lazy-loading, a bearing wobble at a
+   junction, one skipped operator report — and reappeared on the next poll.
+   That is the flicker where buses "fall off the list".
+
+   These reasons are momentary, so a bus confidently shown seconds ago is
+   held on its existing countdown instead of deleted. 'passed' and
+   'destination' stay hard drops: the first is a genuine end of journey,
+   the second means the user changed the filter.
+   ------------------------------------------------------------ */
+const HOLDABLE_REJECTIONS = new Set(['range','route','direction','away','confidence']);
+function holdLive(out,v,diagnostics,reason,now){
+  if(!HOLDABLE_REJECTIONS.has(reason)) return false;
+  const held=retainedSnapshotRow(v,now,false);
+  if(!held) return false;
+  if(diagnostics) diagnostics.recovered++;
+  out.push(held);
+  return true;
+}
+function dropLive(out,v,diagnostics,reason,now){
+  if(holdLive(out,v,diagnostics,reason,now)) return;
+  rejectLive(diagnostics,reason);
 }
 function relevant(){
   if(!S.stop){ S.liveDiag=null; return []; }
@@ -3674,16 +3703,16 @@ function collect(gate,diagnostics){
     if(geometry && geometry.passed){ rejectLive(diagnostics,'passed'); continue; }
     const corridorFar=!!(v.corridorTracked&&geometry&&geometry.remaining>80&&geometry.remaining<=ROUTE_SCAN_MAX_ROUTE_METRES&&evidence.journeyMatch&&evidence.pathMatch);
     const range=corridorFar?ROUTE_SCAN_MAX_ROUTE_METRES:(gate?FAR_VEH_DIST:1300);
-    if(d>range){ rejectLive(diagnostics,'range'); continue; }
+    if(d>range){ dropLive(out,v,diagnostics,'range',now); continue; }
     if(diagnostics) diagnostics.nearby++;
 
     // Beyond the ordinary 18 km scan, only a vehicle found in a timetable-
     // guided corridor and uniquely matched to the ordered journey can pass.
-    if(far && (!gate || !evidence.journeyMatch || (d>FAR_VEH_DIST&&!corridorFar))){ rejectLive(diagnostics,'route'); continue; }
+    if(far && (!gate || !evidence.journeyMatch || (d>FAR_VEH_DIST&&!corridorFar))){ dropLive(out,v,diagnostics,'route',now); continue; }
 
     const strength=geometry && geometry.remaining>80 ? 2 : approachStrength(v,S.stop);
-    if(gate && evidence.score<2){ rejectLive(diagnostics,'route'); continue; }
-    if(!gate && !(d<260 || (d<1300 && strength>=1))){ rejectLive(diagnostics,'route'); continue; }
+    if(gate && evidence.score<2){ dropLive(out,v,diagnostics,'route',now); continue; }
+    if(!gate && !(d<260 || (d<1300 && strength>=1))){ dropLive(out,v,diagnostics,'route',now); continue; }
     if(diagnostics) diagnostics.route++;
 
     // Calculate the timetable-linked estimate before direction and bearing
@@ -3706,21 +3735,21 @@ function collect(gate,diagnostics){
     if(S.dir!=='all'){
       const timetableContradicts=scheduledDir!=='unknown' && scheduledDir!==S.dir;
       const gpsContradicts=gpsMoveDir!=='unknown' && gpsMoveDir!==S.dir;
-      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead)){ rejectLive(diagnostics,'direction'); continue; }
+      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead)){ dropLive(out,v,diagnostics,'direction',now); continue; }
     }
-    if(S.dir!=='all'&&gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir&&!routeAhead){ rejectLive(diagnostics,'direction'); continue; }
+    if(S.dir!=='all'&&gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir&&!routeAhead){ dropLive(out,v,diagnostics,'direction',now); continue; }
     if(diagnostics) diagnostics.direction++;
 
     if(S.hideAway && strength<0 && d>100){
-      rejectLive(diagnostics,'away'); continue;
+      dropLive(out,v,diagnostics,'away',now); continue;
     }
     if(diagnostics) diagnostics.approaching++;
 
     if(est.confidence==='low'){
       const recoverable=trustedJourney || (scheduleBacked && d<=MAX_VEH_DIST);
-      if(!recoverable && (!gate || d>500)){ rejectLive(diagnostics,'confidence'); continue; }
+      if(!recoverable && (!gate || d>500)){ dropLive(out,v,diagnostics,'confidence',now); continue; }
     }
-    if(far && !est.evidence.journeyMatch){ rejectLive(diagnostics,'route'); continue; }
+    if(far && !est.evidence.journeyMatch){ dropLive(out,v,diagnostics,'route',now); continue; }
     if(diagnostics) diagnostics.confidence++;
 
     const directionDisagreed=S.dir!=='all' && dir!==S.dir && dir!=='unknown';
@@ -4033,18 +4062,21 @@ function clearVehicleMarkers(){ vehLayer.clearLayers(); clearJourneyRoute(); S.m
 
 function renderSelectedJourney(rows){
   const selectedId=S.selected==null?'':String(S.selected), nextContext=journeyRouteContext(selectedId);
-  if(shouldClearJourneyRoute(nextContext,renderedJourneyContext)){
-    clearJourneyRoute();
-    if(!nextContext) return;
-  }
+  // Nothing selected — drop whatever is drawn.
+  if(!nextContext){ clearJourneyRoute(); return; }
+  // A different selection must never inherit the previous bus's route, but
+  // clearing before we know a replacement can be drawn is what made the
+  // yellow line appear only intermittently: the layer was wiped, then an
+  // early return left the map bare until some later poll happened to have
+  // the lazy-loaded pattern shard ready.
+  if(shouldClearJourneyRoute(nextContext,renderedJourneyContext)) clearJourneyRoute();
   const row=rows.find(item=>String(item.v.id)===selectedId);
+  // A held lost-signal row must not continue to present moving route progress.
+  if(row&&row.gpsLost){ clearJourneyRoute(); return; }
+  const progress=row?journeyProgress(row.v):null;
   // Preserve the last valid exact route for this same selection when one
   // intermediate render temporarily lacks the row or lazy-loaded pattern.
-  if(!row) return;
-  // A held lost-signal row must not continue to present moving route progress.
-  if(row.gpsLost){ clearJourneyRoute(); return; }
-  const progress=journeyProgress(row.v);
-  if(!progress||!progress.pattern.shape) return;
+  if(!progress||!progress.pattern||!progress.pattern.shape) return;
   routeLayer.clearLayers(); renderedJourneyContext=nextContext;
   const split=splitPatternAt(progress.pattern,progress.vehicle);
   if(split.passed.length>1) L.polyline(split.passed,{color:'#526276',weight:4,opacity:.72,dashArray:'5 7',interactive:false}).addTo(routeLayer);
@@ -4117,9 +4149,17 @@ function showJourneyOnMap(id){
   const v=S.vehicles.get(id); if(!v) return;
   S.selected=id; render(); setAppView('map');
   const progress=journeyProgress(v);
-  if(progress&&progress.pattern.shape){
-    setTimeout(()=>{ try{ map.fitBounds(progress.pattern.points.map(p=>[p.lat,p.lon]),{padding:[24,24],maxZoom:15,animate:true}); }catch(e){} },80);
-  }
+  if(!progress||!progress.pattern||!progress.pattern.shape) return;
+  // Fitting the whole pattern zoomed out far enough that the bus being
+  // tracked was an unreadable speck at one end of the line. Centre on where
+  // the vehicle actually is instead; the full route stays drawn underneath,
+  // so zooming out still shows the rest of it.
+  setTimeout(()=>{
+    try{
+      const visual=visualVehiclePosition(v);
+      map.setView([visual.lat,visual.lon],Math.max(map.getZoom(),ROUTE_FOCUS_ZOOM),{animate:true});
+    }catch(e){}
+  },80);
 }
 
 function focusVehicle(id){
