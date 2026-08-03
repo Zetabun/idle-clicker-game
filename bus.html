@@ -292,9 +292,15 @@ button{cursor:pointer;border:0;background:none}
 .journey-stop::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--rule)}
 .journey-stop:first-child::before{top:50%}.journey-stop:last-child::before{bottom:50%}
 .journey-stop-dot{position:relative;z-index:1;align-self:center;width:7px;height:7px;margin-left:4px;border-radius:50%;background:var(--ink-2);border:1px solid var(--text-dim)}
-.journey-stop.passed{opacity:.55}.journey-stop.passed .journey-stop-dot{background:#526276;border-color:#526276}
-.journey-stop.next{color:var(--live);font-weight:700}.journey-stop.next .journey-stop-dot{background:var(--live);border-color:var(--live);box-shadow:0 0 8px rgba(63,217,164,.5)}
-.journey-stop.selected{color:var(--led)}.journey-stop.selected .journey-stop-dot{background:var(--led);border-color:var(--led);box-shadow:0 0 8px rgba(255,176,0,.45)}
+/* Order matters: these all have equal specificity, so the later rule wins
+   where a stop is in more than one state. Behind the bus reads dullest, the
+   stop it is at or heading for reads live, and the user's own stop always
+   wins so it stays findable in a long list. */
+.journey-stop.passed{opacity:.55;color:#5E6E81}.journey-stop.passed .journey-stop-dot{background:#3F4D5D;border-color:#3F4D5D;box-shadow:none}
+.journey-stop.next{color:var(--live);font-weight:700;opacity:1}.journey-stop.next .journey-stop-dot{background:var(--live);border-color:var(--live);box-shadow:0 0 8px rgba(63,217,164,.5)}
+/* The bus is standing at this stop right now. */
+.journey-stop.at{color:var(--live);font-weight:700;opacity:1}.journey-stop.at .journey-stop-dot{background:var(--live);border-color:var(--live);box-shadow:0 0 0 3px rgba(63,217,164,.22),0 0 10px rgba(63,217,164,.6)}
+.journey-stop.selected{color:var(--led);opacity:1}.journey-stop.selected .journey-stop-dot{background:var(--led);border-color:var(--led);box-shadow:0 0 8px rgba(255,176,0,.45)}
 .journey-stop em{display:block;margin-top:1px;font-size:8.5px;font-style:normal;text-transform:uppercase;letter-spacing:.07em;color:inherit;opacity:.78}
 .journey-progress-unavailable{font-size:10.5px;color:var(--text-dim);line-height:1.5}
 .settings-status{font-size:11px;color:var(--text-dim);line-height:1.5;margin:-6px 0 14px;padding:8px 10px;background:var(--ink);border:1px solid var(--rule);border-radius:7px}
@@ -447,7 +453,7 @@ button{cursor:pointer;border:0;background:none}
 /* Vehicle markers glide between polls instead of jumping. Leaflet
    positions markers with a transform, so easing that is enough.
    Duration is set from the refresh interval at runtime. */
-.leaflet-marker-icon.vehmark{transition:transform var(--glide, 3s) linear}
+.leaflet-marker-icon.vehmark{transition:transform var(--glide,1150ms) linear;will-change:transform}
 /* Panning and zooming also move markers by transform — easing those
    makes icons lag behind the map and appear to drift. */
 body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
@@ -564,7 +570,6 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 .gps-grid .stat-value{font-size:clamp(16px,4vw,21px);letter-spacing:-.05em}
 .gps-note{margin:0;padding:10px 11px;border-left:2px solid var(--live);background:rgba(63,217,164,.045);color:var(--text-dim);font-size:10.5px;line-height:1.55}
 .gps-note b{color:#A9EED7;font-weight:600}
-.leaflet-marker-icon.vehmark{transition:transform var(--glide,950ms) linear;will-change:transform}
 /* Keep two-finger page zoom off the controls and departure board.
    The map remains the one surface where pinch gestures are enabled. */
 #topbar,#board,#viewbar{touch-action:pan-x pan-y}
@@ -829,7 +834,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.61';
+const APP_VERSION = '0.6.62';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -888,8 +893,15 @@ const FAR_VEH_DIST = 18000;  // farther vehicles need an exact timetable journey
 const FAR_FETCH_INTERVAL_MS = 45*1000;
 const FETCH_TIMEOUT_MS = 12000;
 const VISUAL_MOTION_TICK_MS = 1000;
-const VISUAL_MAX_LEAD_SECONDS = 20;
-const VISUAL_MAX_LEAD_METRES = 180;
+/* The glide has to cover the whole gap between operator reports. Sizing it
+   below the reporting interval made the marker travel part of the way, stall,
+   then leap the remainder the moment the next fix arrived. The lead is taken
+   from each vehicle's own measured cadence with a margin, bounded by these
+   ceilings so a bus that stops reporting drifts no further than the caps. */
+const VISUAL_LEAD_MARGIN = 1.25;
+const VISUAL_MIN_LEAD_SECONDS = 12;
+const VISUAL_MAX_LEAD_SECONDS = 45;
+const VISUAL_MAX_LEAD_METRES = 420;
 const ROUTE_INFERENCE_MAX_OFFSET = 650;
 const ROUTE_INFERENCE_MIN_MOVEMENT = 30;
 const ROUTE_INFERENCE_MIN_FORWARD = 12;
@@ -3175,8 +3187,14 @@ function visualVehiclePosition(v,now=Date.now()){
   if(dt<3||dt>180||moved<8) return confirmed;
   const observed=moved/dt,smoothed=Number(v.speed),speed=isFinite(smoothed)&&smoothed>=.8&&smoothed<=18?smoothed:observed;
   const age=Math.max(0,(now-b.ts)/1000),cadence=Number(v.cadence)||dt;
-  if(speed<.8||speed>18||age>Math.max(60,cadence*2.5)) return confirmed;
-  const lead=Math.min(age,VISUAL_MAX_LEAD_SECONDS,Math.max(4,cadence*.9));
+  if(speed<.8||speed>18) return confirmed;
+  // Glide across the vehicle's own expected gap rather than a fixed slice of
+  // it, so the marker is still moving when the next report lands instead of
+  // having stalled at a cap. Once the lead ceiling is reached the marker holds
+  // its last estimate: reverting to the confirmed point instead threw it
+  // backwards by the whole distance it had just been shown covering.
+  const expectedGap=Math.min(VISUAL_MAX_LEAD_SECONDS,Math.max(VISUAL_MIN_LEAD_SECONDS,cadence*VISUAL_LEAD_MARGIN));
+  const lead=Math.min(age,expectedGap);
   const metres=Math.min(speed*lead,VISUAL_MAX_LEAD_METRES);
   if(metres<1) return confirmed;
   const pattern=timetablePatternRecord(v.progressTrip||v.inferredTrip||vehicleJourneyRef(v),v.progressPattern||v.inferredPattern);
@@ -3926,8 +3944,12 @@ function journeyProgressHtml(v){
   const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops available · road shape awaiting timetable rebuild';
   const stopList=progress.stops.length?'<div class="journey-stops">'+progress.stops.map((stop,index)=>{
     const states=[];
-    if(index<progress.nextIndex) states.push('passed');
+    // The stop the bus is standing at is the current one, not a previous one:
+    // it sits behind nextIndex, so without this it was greyed out as passed.
+    const atHere=index===progress.atIndex;
+    if(index<progress.nextIndex && !atHere) states.push('passed');
     if(index===progress.nextIndex) states.push('next');
+    if(atHere) states.push('at');
     if(index===progress.selectedIndex) states.push('selected');
     const labels=[];
     if(index===progress.nextIndex) labels.push('next stop');
@@ -4241,7 +4263,9 @@ $('boardInfoBtn').addEventListener('click',()=>setBoardInfo($('boardInfoBtn').ge
    ============================================================ */
 function startPolling(){
   stopPolling();
-  document.documentElement.style.setProperty('--glide','950ms');
+  // Ease each step over slightly longer than the tick that produces it, so one
+  // step is still easing when the next replaces it and the marker never rests.
+  document.documentElement.style.setProperty('--glide',Math.round(VISUAL_MOTION_TICK_MS*1.15)+'ms');
   poll(true);
   S.timer=setInterval(poll,S.interval*1000);
   S.motionTimer=setInterval(updateVehicleMotion,VISUAL_MOTION_TICK_MS);

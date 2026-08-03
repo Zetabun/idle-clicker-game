@@ -50,7 +50,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.61'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.62'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -77,6 +77,21 @@ assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
 assert.match(busSource, /function routePatternMovementFit\(pattern,v,stop\)/);
 assert.match(busSource, /function inferVehicleJourneyPattern\(v,stop,now=Date\.now\(\)\)/);
 assert.match(busSource, /function visualRoutePosition\(v,pattern,metres\)/);
+// The glide must span the vehicle's own reporting gap. Capping the lead below
+// that interval made the marker cover part of the distance, stall, then leap
+// the rest when the next fix landed.
+assert.match(busSource, /const VISUAL_LEAD_MARGIN = 1\.25/);
+assert.match(busSource, /const expectedGap=Math\.min\(VISUAL_MAX_LEAD_SECONDS,Math\.max\(VISUAL_MIN_LEAD_SECONDS,cadence\*VISUAL_LEAD_MARGIN\)\)/);
+assert.match(busSource, /const lead=Math\.min\(age,expectedGap\)/);
+assert.doesNotMatch(busSource, /Math\.max\(4,cadence\*\.9\)/);
+// Reaching the ceiling must hold the last estimate, not throw the marker back
+// to the confirmed point by the whole distance it was shown covering.
+assert.doesNotMatch(busSource, /age>Math\.max\(60,cadence\*2\.5\)/);
+// Journey stop list: the stop the bus is standing at is current, not passed.
+assert.match(busSource, /const atHere=index===progress\.atIndex/);
+assert.match(busSource, /if\(index<progress\.nextIndex && !atHere\) states\.push\('passed'\)/);
+assert.match(busSource, /if\(atHere\) states\.push\('at'\)/);
+assert.match(busSource, /\.journey-stop\.at\{color:var\(--live\);font-weight:700;opacity:1\}/);
 assert.match(busSource, /function rememberRouteScanVehicle\(v,now=Date\.now\(\)\)/);
 assert.match(busSource, /const stationaryFix=/);
 assert.match(busSource, /const routeAhead=/);
@@ -1202,7 +1217,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.61'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.62'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
