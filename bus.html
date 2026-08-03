@@ -795,7 +795,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.55';
+const APP_VERSION = '0.6.56';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1909,6 +1909,14 @@ out body 120;`;
   }
 }
 
+function selectStopFromMap(s){
+  if(!s) return;
+  selectStop(s,true);
+  setAppView('times');
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),selectStopFromMap};
+}
 function drawStops(){
   stopLayer.clearLayers();
   S.stops.slice(0,80).forEach(s=>{
@@ -1918,7 +1926,7 @@ function drawStops(){
         iconSize:sel?[15,15]:[11,11], iconAnchor:sel?[7,7]:[5,5]}),
       zIndexOffset: sel?500:0
     }).addTo(stopLayer);
-    m.on('click',()=>selectStop(s,true));
+    m.on('click',()=>selectStopFromMap(s));
     m.bindTooltip(s.name+(s.ind?' ('+s.ind+')':''),{direction:'top',offset:[0,-8],className:'stoptip'});
   });
 }

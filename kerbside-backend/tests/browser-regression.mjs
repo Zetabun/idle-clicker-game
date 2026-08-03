@@ -41,7 +41,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.55'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.56'/);
 assert.match(busSource, /age<=4\*60\*1000/);
 assert.match(busSource, /points\.length===2\?1:2/);
 assert.match(busSource, /function boardRefreshCanRender/);
@@ -50,6 +50,10 @@ assert.match(busSource, /function clearJourneyRoute/);
 assert.match(busSource, /function journeyRouteContext/);
 assert.match(busSource, /function shouldClearJourneyRoute/);
 assert.match(busSource, /function ignoreMapContextMenu\(e\)/);
+assert.match(busSource, /function selectStopFromMap\(s\)/);
+assert.match(busSource, /selectStop\(s,true\);\n  setAppView\('times'\);/);
+assert.match(busSource, /m\.on\('click',\(\)=>selectStopFromMap\(s\)\)/);
+assert.doesNotMatch(busSource, /m\.on\('click',\(\)=>selectStop\(s,true\)\)/);
 assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
 assert.match(busSource, /function routePatternMovementFit\(pattern,v,stop\)/);
 assert.match(busSource, /function inferVehicleJourneyPattern\(v,stop,now=Date\.now\(\)\)/);
@@ -991,6 +995,28 @@ try {
     }finally{state.anchor=previous;}
   });
   assert.deepEqual(mapContextMenu,{same:true,prevented:true,stopped:true,result:false});
+  const mapStopSelection = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState;
+    const before=state.stop&&String(state.stop.id);
+    const base=state.stop||state.origin||{lat:52.509,lon:-2.087};
+    const target={id:'map-test-stop',name:'Map-selected stop',ind:'B',lat:Number(base.lat)+.0001,lon:Number(base.lon)+.0001,d:120,region:'test',shard:'aa',timetableId:'map-test-stop'};
+    state.stops=[...state.stops.filter(stop=>String(stop.id)!==target.id),target];
+    document.getElementById('vMap').click();
+    api.selectStopFromMap(target);
+    return {
+      changed:before!==String(state.stop&&state.stop.id),
+      selected:String(state.stop&&state.stop.id),
+      target:target.id,
+      heading:document.getElementById('stopName').textContent,
+      appView:state.appView,
+      timesSelected:document.getElementById('vTimes').getAttribute('aria-selected'),
+      mapSelected:document.getElementById('vMap').getAttribute('aria-selected')
+    };
+  });
+  assert.deepEqual(mapStopSelection,{
+    changed:true,selected:'map-test-stop',target:'map-test-stop',heading:'Map-selected stop (B)',
+    appView:'times',timesSelected:'true',mapSelected:'false'
+  });
   const alertGrace = await page.evaluate(() => {
     const retain=window.__KERBSIDE_TEST__.retainFiredAlarm;
     const alarm={fired:true,lastSeenAt:1000};
@@ -1069,7 +1095,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.55'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.56'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
