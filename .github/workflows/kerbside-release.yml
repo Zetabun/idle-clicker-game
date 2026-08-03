@@ -150,5 +150,5 @@ jobs:
           fi
 
           git commit -m 'Release Kerbside browser update'
-          git push origin "HEAD:$RELEASE_BRANCH"
+          git push --force-with-lease="refs/heads/$RELEASE_BRANCH:$CHECKED_OUT_SHA" origin "HEAD:refs/heads/$RELEASE_BRANCH"
           echo "Published validated release commit $(git rev-parse HEAD) to $RELEASE_BRANCH"
