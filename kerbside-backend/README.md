@@ -129,6 +129,8 @@ Kerbside 0.6.55 adds an internal GPS-and-timetable route-allocation layer for li
 
 Kerbside 0.6.56 makes every bus-stop marker on the map use the same shared stop-selection path as the Times stop picker. Tapping a marker now updates the selected stop, timetable, route filters and departure board, then opens the Times view on mobile so the result is immediately visible. WebKit regression verifies the shared stop state, displayed stop heading and tab selection all update together.
 
+Kerbside 0.6.57 redesigns only the mobile top header to match the supplied two-row reference: the existing installed-app icon now sits beside the Kerbside wordmark on a dedicated brand row, while location search, compact In/Out/Both direction controls and Settings align on one control row beneath it. The desktop header remains on its existing layout. WebKit regression verifies the mobile grid, icon, vertical hierarchy, control alignment, viewport fit and 46-pixel touch targets.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`

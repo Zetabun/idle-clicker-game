@@ -41,7 +41,12 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.56'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.57'/);
+assert.match(busSource, /class="brand-icon" src="kerbside-backend\/icons\/kerbside-192\.png"/);
+assert.match(busSource, /\.brand-icon\{display:none\}/);
+assert.match(busSource, /grid-template-areas:"brand brand brand" "search directions settings"/);
+assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px/);
+assert.doesNotMatch(busSource, /\.searchwrap\{order:3;flex-basis:100%\}/);
 assert.match(busSource, /age<=4\*60\*1000/);
 assert.match(busSource, /points\.length===2\?1:2/);
 assert.match(busSource, /function boardRefreshCanRender/);
@@ -335,6 +340,33 @@ try {
   assert.ok(cartoTileRequests >= 4);
   assert.ok(osmTileRequests > 0);
   assert.equal(await page.locator('#setBtn').isVisible(), true);
+  const mobileHeader = await page.evaluate(() => {
+    const topbar=document.getElementById('topbar');
+    const brand=topbar.querySelector('.brand');
+    const icon=topbar.querySelector('.brand-icon');
+    const search=topbar.querySelector('.searchwrap');
+    const directions=topbar.querySelector('.dirswitch');
+    const settings=document.getElementById('setBtn');
+    const rect=element=>{const r=element.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+    const b=rect(brand),s=rect(search),d=rect(directions),g=rect(settings);
+    const controlTop=Math.min(s.top,d.top,g.top);
+    return {
+      topDisplay:getComputedStyle(topbar).display,
+      iconDisplay:getComputedStyle(icon).display,
+      iconSrc:new URL(icon.getAttribute('src'),location.href).pathname,
+      brandAbove:b.bottom<=controlTop+2,
+      controlsAligned:Math.max(s.top,d.top,g.top)-controlTop<=2,
+      controlsOrdered:s.left<d.left&&d.right<=g.left,
+      withinViewport:g.right<=innerWidth,
+      searchHeight:Math.round(s.height),
+      settingsHeight:Math.round(g.height)
+    };
+  });
+  assert.deepEqual(mobileHeader,{
+    topDisplay:'grid',iconDisplay:'block',iconSrc:'/kerbside-backend/icons/kerbside-192.png',
+    brandAbove:true,controlsAligned:true,controlsOrdered:true,withinViewport:true,
+    searchHeight:46,settingsHeight:46
+  });
   const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('content');
   assert.match(viewportContent, /width=device-width/);
   assert.doesNotMatch(viewportContent, /user-scalable|maximum-scale/);
@@ -1095,7 +1127,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.56'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.57'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
