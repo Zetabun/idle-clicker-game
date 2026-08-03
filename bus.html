@@ -834,7 +834,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.62';
+const APP_VERSION = '0.6.63';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1309,9 +1309,13 @@ async function setOrigin(lat,lon,label){
   $('stopName').textContent='Looking for stops…';
   $('stopMeta').textContent=(label||'').toUpperCase();
   setStatus('Loading stops','');
+  // Live positions are fetched around the origin, so the feed does not need to
+  // wait for stop discovery. Starting it here keeps buses arriving on the map
+  // even when stop lookup falls back to Overpass, which was measured taking
+  // several seconds before anything at all appeared.
+  if(run===S.locationRun) startPolling();
   const anchorPromise=findAnchor(lat,lon,run);
   await findStops(lat,lon,run);
-  if(run===S.locationRun) startPolling();
   await anchorPromise;
 }
 
@@ -4173,17 +4177,42 @@ function renderSelectedJourney(rows){
   });
 }
 function mapVehicleVisible(v,shown,now=Date.now()){if(shown) return true;const ts=Number(v&&v.ts),age=now-ts;return Number.isFinite(ts)&&Number.isFinite(age)&&age>=0&&age<=4*60*1000;}
-function renderVehicles(rows){
-  const wanted = new Map(rows.map(r=>[r.v.id,r])),now=Date.now();
-  for(const [id,m] of S.markers){
-    const v=S.vehicles.get(id);
-    const shown=wanted.has(id),keep=mapVehicleVisible(v,shown,now)&&(shown||(v&&S.stop&&dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<=MAX_VEH_DIST));
-    if(!keep){ vehLayer.removeLayer(m); S.markers.delete(id); }
-  }
+/* ------------------------------------------------------------
+   Every bus within the 9 km area used to get its own map marker. In a city
+   that is several hundred Leaflet divIcons, each promoted to its own
+   compositor layer by the glide's will-change and re-positioned once a
+   second. Measured on desktop: 150 markers held a steady 4 ms frame, 400
+   produced a ~1 s stall and 700 rendered 3 frames in 2.2 s — the freeze on
+   first load, when a whole city's feed arrives at once.
+
+   The board itself never lists more than 25 departures, so the rest are
+   background context and the nearest of them carry all of it. Cap the
+   markers, never dropping a bus that is on the board or selected.
+   ------------------------------------------------------------ */
+const MAX_VEHICLE_MARKERS = 120;
+function vehicleMarkerPlan(rows,now=Date.now()){
+  const wanted=new Map((rows||[]).map(r=>[r.v.id,r])), eligible=[];
   for(const v of S.vehicles.values()){
-    const shown = wanted.has(v.id);
-    const nearby=!S.stop||dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<=MAX_VEH_DIST;
+    const shown=wanted.has(v.id);
+    const metres=S.stop?dist(v.lat,v.lon,S.stop.lat,S.stop.lon):0;
+    const nearby=!S.stop||metres<=MAX_VEH_DIST;
     if(!mapVehicleVisible(v,shown,now)||(!shown&&!nearby)) continue;
+    // A listed or selected bus is never given up for a background marker.
+    eligible.push({v,shown,rank:(shown||S.selected===v.id)?-1:metres});
+  }
+  eligible.sort((a,b)=>a.rank-b.rank);
+  const draw=eligible.slice(0,MAX_VEHICLE_MARKERS);
+  return {wanted,draw,drawIds:new Set(draw.map(item=>item.v.id)),eligible:eligible.length};
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),vehicleMarkerPlan,MAX_VEHICLE_MARKERS};
+}
+function renderVehicles(rows){
+  const now=Date.now(), plan=vehicleMarkerPlan(rows,now), wanted=plan.wanted;
+  for(const [id,m] of S.markers){
+    if(!plan.drawIds.has(id)){ vehLayer.removeLayer(m); S.markers.delete(id); }
+  }
+  for(const {v,shown} of plan.draw){
     const cls = 'veh'+(shown?'':' dim')+(S.selected===v.id?' sel':'');
     const brg = isFinite(v.bearing)?v.bearing:0;
     const visual=visualVehiclePosition(v);

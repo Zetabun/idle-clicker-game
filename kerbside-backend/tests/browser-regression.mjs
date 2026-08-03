@@ -45,12 +45,23 @@ assert.doesNotMatch(busSource, /const set=timetableRouteSet\(\);/);
 // Saved stop restore compares ids as strings on both discovery paths.
 assert.doesNotMatch(busSource, /S\.stops\.find\(s=>s\.id===S\.pendingStopId\)/);
 assert.match(busSource, /function mapVehicleVisible/);
+// One Leaflet marker per bus froze the map when a city's feed arrived at once:
+// 400 markers stalled a frame for ~1s, 700 rendered 3 frames in 2.2s. Cap the
+// markers without capping the vehicles that matching and ETAs run over.
+assert.match(busSource, /const MAX_VEHICLE_MARKERS = 120/);
+assert.match(busSource, /function vehicleMarkerPlan\(rows,now=Date\.now\(\)\)/);
+assert.match(busSource, /eligible\.push\(\{v,shown,rank:\(shown\|\|S\.selected===v\.id\)\?-1:metres\}\)/);
+assert.match(busSource, /const draw=eligible\.slice\(0,MAX_VEHICLE_MARKERS\)/);
+assert.match(busSource, /if\(!plan\.drawIds\.has\(id\)\)\{ vehLayer\.removeLayer\(m\); S\.markers\.delete\(id\); \}/);
+// The live feed is fetched around the origin, so it must not queue behind stop
+// discovery falling back to a slow Overpass lookup.
+assert.match(busSource, /if\(run===S\.locationRun\) startPolling\(\);\n  const anchorPromise=findAnchor\(lat,lon,run\);\n  await findStops\(lat,lon,run\);/);
 assert.match(busSource, /function timetablePatternRecord\(journey,preferredPatternId\)/);
 assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.62'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.63'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -1217,7 +1228,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.62'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.63'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
