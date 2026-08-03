@@ -2,6 +2,14 @@ name: Verify Kerbside production
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - bus.html
+      - kerbside-backend/**
+      - .github/workflows/deploy-kerbside-worker.yml
+      - .github/workflows/verify-kerbside-production.yml
   workflow_run:
     workflows:
       - Deploy Kerbside Worker
@@ -17,15 +25,28 @@ concurrency:
 
 jobs:
   verify:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
 
     steps:
       - name: Check out expected production source
         uses: actions/checkout@v5
         with:
           ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install live browser smoke dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
 
       - name: Verify live app, Worker and local map assets
         shell: bash
@@ -148,4 +169,90 @@ jobs:
             exit 1
           fi
 
-          echo "Production smoke verification passed for Kerbside $expected_version."
+          echo "Production source and Worker verification passed for Kerbside $expected_version."
+
+      - name: Open the live GitHub Pages app in WebKit
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          expected_version="$(sed -n "s/^const APP_VERSION = '\([^']*\)';$/\1/p" bus.html)"
+          cd kerbside-backend
+          EXPECTED_VERSION="$expected_version" node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { webkit } from 'playwright';
+
+          const appUrl = process.env.APP_URL;
+          const expectedVersion = process.env.EXPECTED_VERSION;
+          const cacheBuster = `browser-smoke=${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
+          const target = `${appUrl}?${cacheBuster}`;
+          const productionOrigin = new URL(appUrl).origin;
+          const browser = await webkit.launch({ headless: true });
+          const context = await browser.newContext({
+            viewport: { width: 393, height: 852 },
+            isMobile: true,
+            hasTouch: true,
+            timezoneId: 'Europe/London'
+          });
+          const page = await context.newPage();
+          const pageErrors = [];
+          const localFailures = [];
+
+          page.on('pageerror', error => pageErrors.push(error.message));
+          page.on('response', response => {
+            const url = new URL(response.url());
+            if (url.origin === productionOrigin && response.status() >= 400) {
+              localFailures.push(`${response.status()} ${url.pathname}`);
+            }
+          });
+          page.on('requestfailed', request => {
+            const url = new URL(request.url());
+            if (url.origin === productionOrigin) {
+              localFailures.push(`request failed ${url.pathname}: ${request.failure()?.errorText || 'unknown'}`);
+            }
+          });
+
+          try {
+            await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.locator('#map.leaflet-container').waitFor({ state: 'visible', timeout: 30000 });
+            await page.locator('#setBtn').waitFor({ state: 'visible', timeout: 10000 });
+            await page.waitForTimeout(2500);
+
+            assert.match(await page.content(), new RegExp(`const APP_VERSION = '${expectedVersion.replaceAll('.', '\\.')}'`));
+            const liveState = await page.evaluate(() => {
+              const icon = document.querySelector('.brand-icon');
+              const topbar = document.getElementById('topbar');
+              return {
+                overflow: document.documentElement.scrollWidth - window.innerWidth,
+                iconLoaded: Boolean(icon && icon.complete && icon.naturalWidth > 0 && icon.naturalHeight > 0),
+                settingsVisible: Boolean(document.getElementById('setBtn')?.getBoundingClientRect().width),
+                topbarVisible: Boolean(topbar?.getBoundingClientRect().height),
+                localAssets: [...new Set([...document.querySelectorAll('img[src],script[src],link[href],source[src]')]
+                  .map(element => element.getAttribute('src') || element.getAttribute('href'))
+                  .filter(Boolean)
+                  .map(value => new URL(value, location.href))
+                  .filter(url => url.origin === location.origin && (url.protocol === 'http:' || url.protocol === 'https:'))
+                  .map(url => url.href))]
+              };
+            });
+
+            assert.ok(liveState.overflow <= 1, `Live mobile page overflows by ${liveState.overflow}px`);
+            assert.equal(liveState.iconLoaded, true, 'Live brand icon did not load');
+            assert.equal(liveState.settingsVisible, true, 'Live Settings control is not visible');
+            assert.equal(liveState.topbarVisible, true, 'Live header is not visible');
+
+            for (const asset of liveState.localAssets) {
+              const response = await context.request.get(asset, { headers: { 'Cache-Control': 'no-cache' }, timeout: 25000 });
+              assert.ok(response.ok(), `Local production asset failed: ${response.status()} ${asset}`);
+            }
+
+            await page.locator('#setBtn').click();
+            await page.locator('#scrim.show').waitFor({ state: 'visible', timeout: 10000 });
+            assert.deepEqual(pageErrors, []);
+            assert.deepEqual(localFailures, []);
+            console.log(`Live WebKit smoke passed for Kerbside ${expectedVersion} with ${liveState.localAssets.length} local assets.`);
+          } finally {
+            await browser.close();
+          }
+          NODE
