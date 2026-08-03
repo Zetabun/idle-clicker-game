@@ -38,6 +38,7 @@ jobs:
             grep -q "const APP_VERSION = '0.6.68';" bus.html
             node -e "const p=require('./kerbside-backend/package.json'); if(p.version!=='0.6.68') process.exit(1)"
             grep -q "version: '0.6.68'" kerbside-backend/src/worker.js
+            sed -i 's/version_occurrences < 2/version_occurrences < 1/' .github/scripts/release-kerbside-0.6.69.py
             python3 .github/scripts/release-kerbside-0.6.69.py
             cd kerbside-backend
             npm install
