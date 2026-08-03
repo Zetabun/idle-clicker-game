@@ -838,7 +838,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.68';
+const APP_VERSION = '0.6.69';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -923,6 +923,10 @@ const ROUTE_FOCUS_ZOOM = 16;     // close enough to read the road the tracked bu
 const GPS_RESULT_GRACE_MS = 6*60*1000;
 const LIVE_ID_COLLISION_TTL_MS = MAX_AGE_MS+GPS_RESULT_GRACE_MS;
 const LIVE_ID_COLLISIONS = new Map();
+const LIVE_ID_ACTIVITIES = new Map();
+const LIVE_ANONYMOUS_TRACKS = new Map();
+const LIVE_ANONYMOUS_MATCH_MAX_METRES = 3000;
+let LIVE_ANONYMOUS_SLOT = 0;
 const SHARED_PHYSICAL_KEYS = new Map();
 
 /* ============================================================
@@ -2864,15 +2868,63 @@ function liveActivityDiscriminator(fields){
 }
 function pruneLiveIdentityCaches(now=Date.now()){
   for(const [key,expires] of LIVE_ID_COLLISIONS) if(Number(expires)<=now) LIVE_ID_COLLISIONS.delete(key);
+  for(const [baseId,activities] of LIVE_ID_ACTIVITIES){
+    for(const [identity,expires] of activities) if(Number(expires)<=now) activities.delete(identity);
+    if(!activities.size) LIVE_ID_ACTIVITIES.delete(baseId);
+  }
+  for(const [baseId,tracks] of LIVE_ANONYMOUS_TRACKS){
+    for(const [slot,track] of tracks) if(Number(track&&track.expires)<=now) tracks.delete(slot);
+    if(!tracks.size) LIVE_ANONYMOUS_TRACKS.delete(baseId);
+  }
   for(const [key,expires] of SHARED_PHYSICAL_KEYS) if(Number(expires)<=now) SHARED_PHYSICAL_KEYS.delete(key);
 }
-function collisionVehicleIdentity(baseId,discriminator){
-  return discriminator?baseId+'|activity|'+discriminator:baseId;
+function rememberLiveActivity(baseId,identity,now=Date.now()){
+  if(!baseId||!identity) return 0;
+  let activities=LIVE_ID_ACTIVITIES.get(baseId);
+  if(!activities){activities=new Map();LIVE_ID_ACTIVITIES.set(baseId,activities);}
+  activities.set(identity,now+LIVE_ID_COLLISION_TTL_MS);
+  return activities.size;
+}
+function anonymousActivityIdentity(baseId,record,usedSlots,now=Date.now()){
+  let tracks=LIVE_ANONYMOUS_TRACKS.get(baseId);
+  if(!tracks){tracks=new Map();LIVE_ANONYMOUS_TRACKS.set(baseId,tracks);}
+  const signature=[record.line||'',record.dest||'',record.origin||''].join('|');
+  let best=null;
+  for(const [slot,track] of tracks){
+    if(!track||track.signature!==signature) continue;
+    const elapsed=(Number(record.ts)-Number(track.ts))/1000;
+    if(!(elapsed>=8&&elapsed<=90)) continue;
+    const maxMove=Math.min(LIVE_ANONYMOUS_MATCH_MAX_METRES,Math.max(120,elapsed*30+80));
+    const metres=dist(Number(track.lat),Number(track.lon),Number(record.lat),Number(record.lon));
+    if(!isFinite(metres)||metres>maxMove) continue;
+    if(!best||metres<best.metres) best={slot,metres};
+  }
+  const slot=best?best.slot:String(++LIVE_ANONYMOUS_SLOT);
+  usedSlots.add(slot);
+  tracks.set(slot,{slot,signature,lat:record.lat,lon:record.lon,ts:record.ts,expires:now+LIVE_ID_COLLISION_TTL_MS});
+  return 'anonymous|'+slot;
+}
+function collisionVehicleIdentity(baseId,identity){
+  return identity?baseId+'|activity|'+identity:baseId;
+}
+function promoteCollisionRecord(baseId){
+  const legacy=S.vehicles.get(baseId);
+  if(!legacy) return;
+  const identity=String(legacy.activityIdentity||legacy.activityDiscriminator||'').trim();
+  if(!identity) return;
+  const promotedId=collisionVehicleIdentity(baseId,identity);
+  if(promotedId===baseId) return;
+  const current=S.vehicles.get(promotedId);
+  S.vehicles.delete(baseId);
+  legacy.id=promotedId;
+  if(!current||Number(legacy.ts)>=Number(current.ts)) S.vehicles.set(promotedId,legacy);
 }
 function parseLivePayloads(items,now){
   const observedAt=isFinite(now)?Number(now):Date.now(), candidates=[];
   let stale=0,unknownAge=0,malformed=0;
-  for(const item of Array.isArray(items)?items:[]){
+  const payloads=Array.isArray(items)?items:[];
+  for(let payloadIndex=0;payloadIndex<payloads.length;payloadIndex++){
+    const item=payloads[payloadIndex];
     const xml=new DOMParser().parseFromString(String(item&&item.text||''),'application/xml');
     if(xml.querySelector('parsererror')){malformed++;continue;}
     const acts=[...xml.getElementsByTagName('*')].filter(node=>node.localName==='VehicleActivity');
@@ -2882,13 +2934,14 @@ function parseLivePayloads(items,now){
       if(!isFinite(lat)||!isFinite(lon)) continue;
       const parsed=f.RecordedAtTime?Date.parse(f.RecordedAtTime):NaN;
       if(!isFinite(parsed)){unknownAge++;continue;}
+      const validUntil=f.ValidUntilTime?Date.parse(f.ValidUntilTime):NaN;
       const ts=parsed,age=observedAt-ts;
-      if(age>MAX_AGE_MS||age < -120000){stale++;continue;}
+      if(age>MAX_AGE_MS||age < -120000||(isFinite(validUntil)&&observedAt>validUntil)){stale++;continue;}
       const journey=f.DatedVehicleJourneyRef||f.VehicleJourneyRef||'';
       const baseId=liveVehicleIdentity(f);
       if(!baseId) continue;
       candidates.push({
-        id:baseId,baseId,activityDiscriminator:liveActivityDiscriminator(f),itemIdentifier:f.ItemIdentifier||'',
+        id:baseId,baseId,activityDiscriminator:liveActivityDiscriminator(f),activityIdentity:'',payloadIndexes:[payloadIndex],itemIdentifier:f.ItemIdentifier||'',
         journey,vehicleRef:f.VehicleRef||'',corridorTracked:false,
         line:cleanLine(f.PublishedLineName||f.LineRef||'?'),lineRef:f.LineRef||'',
         dest:cleanName(f.DestinationName||f.DirectionName||''),destRef:f.DestinationRef||'',
@@ -2896,22 +2949,58 @@ function parseLivePayloads(items,now){
         declaredDir:(f.DirectionRef||'').toLowerCase(),lat,lon,bearing:parseFloat(f.Bearing),
         feedSpeed:parseFloat(f.Velocity),aimedOriginAt:f.OriginAimedDepartureTime?Date.parse(f.OriginAimedDepartureTime):NaN,
         aimedDestinationAt:f.DestinationAimedArrivalTime?Date.parse(f.DestinationAimedArrivalTime):NaN,
-        ts,timestampKnown:true
+        validUntilAt:validUntil,ts,timestampKnown:true
       });
     }
   }
   pruneLiveIdentityCaches(observedAt);
+  const uniqueCandidates=new Map();
+  for(const record of candidates){
+    const key=[record.baseId,record.activityDiscriminator,record.ts,Number(record.lat).toFixed(6),Number(record.lon).toFixed(6)].join('|');
+    const current=uniqueCandidates.get(key);
+    if(current){
+      current.payloadIndexes=[...new Set([...(current.payloadIndexes||[]),...(record.payloadIndexes||[])])];
+    }else uniqueCandidates.set(key,record);
+  }
   const groups=new Map();
-  for(const record of candidates){const group=groups.get(record.baseId)||[];group.push(record);groups.set(record.baseId,group);}
+  for(const record of uniqueCandidates.values()){
+    const group=groups.get(record.baseId)||[];group.push(record);groups.set(record.baseId,group);
+  }
   const byId=new Map();let identityCollisions=0;
   for(const [baseId,records] of groups){
-    const discriminators=new Set(records.map(record=>record.activityDiscriminator).filter(Boolean));
-    if(discriminators.size>1){LIVE_ID_COLLISIONS.set(baseId,observedAt+LIVE_ID_COLLISION_TTL_MS);identityCollisions+=discriminators.size-1;}
-    const split=LIVE_ID_COLLISIONS.has(baseId);
+    const counts=new Map();
+    for(const record of records){
+      if(record.activityDiscriminator) counts.set(record.activityDiscriminator,(counts.get(record.activityDiscriminator)||0)+1);
+    }
+    const ordered=[...records].sort((a,b)=>
+      String(a.activityDiscriminator||'').localeCompare(String(b.activityDiscriminator||''))||
+      String(a.line||'').localeCompare(String(b.line||''),undefined,{numeric:true})||
+      String(a.dest||'').localeCompare(String(b.dest||''))||Number(a.ts)-Number(b.ts)||Number(a.lat)-Number(b.lat)||Number(a.lon)-Number(b.lon)
+    );
+    const usedAnonymous=new Set(),identityByRecord=new Map();
+    for(const record of ordered){
+      const duplicate=record.activityDiscriminator&&(counts.get(record.activityDiscriminator)||0)>1;
+      const identity=!record.activityDiscriminator||duplicate?anonymousActivityIdentity(baseId,record,usedAnonymous,observedAt):record.activityDiscriminator;
+      identityByRecord.set(record,identity);rememberLiveActivity(baseId,identity,observedAt);
+    }
+    const identities=new Set(identityByRecord.values()),known=LIVE_ID_ACTIVITIES.get(baseId),split=identities.size>1||!!(known&&known.size>1)||LIVE_ID_COLLISIONS.has(baseId);
+    if(split){
+      LIVE_ID_COLLISIONS.set(baseId,observedAt+LIVE_ID_COLLISION_TTL_MS);
+      identityCollisions+=Math.max(0,identities.size-1,(known?known.size:0)-1);
+      for(const record of records){
+        const physical=physicalVehicleKey(record);
+        if(physical) SHARED_PHYSICAL_KEYS.set(physical,observedAt+LIVE_ID_COLLISION_TTL_MS);
+      }
+    }
     for(const original of records){
-      const id=split?collisionVehicleIdentity(baseId,original.activityDiscriminator):baseId;
-      const record={...original,id};delete record.baseId;delete record.activityDiscriminator;
-      const current=byId.get(id);if(!current||record.ts>current.ts) byId.set(id,record);
+      const activityIdentity=identityByRecord.get(original)||'';
+      const id=split?collisionVehicleIdentity(baseId,activityIdentity):baseId;
+      const record={...original,id,activityIdentity};
+      const current=byId.get(id);
+      if(!current){byId.set(id,record);continue;}
+      const payloadIndexes=[...new Set([...(current.payloadIndexes||[]),...(record.payloadIndexes||[])])];
+      if(record.ts>current.ts){record.payloadIndexes=payloadIndexes;byId.set(id,record);}
+      else current.payloadIndexes=payloadIndexes;
     }
   }
   return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
@@ -3004,14 +3093,18 @@ async function pollRouteCorridor(){
     const settled=await Promise.allSettled(urls.map((url,index)=>fetchLiveResponse(url,ctl.signal).then(item=>({item,plan:plans[index]}))));
     if(ctl.signal.aborted||!S.stop||String(S.stop.id)!==stopId||S.timetableRun!==timetableRun) return [];
     const merged=new Map();
-    for(const result of settled){
-      if(result.status!=='fulfilled') continue;
-      const parsed=parseLivePayloads([result.value.item],Date.now());
-      for(const vehicle of parsed.vehicles){
-        const tracked=rememberRouteScanVehicle(vehicle);
-        const matched=matchRouteScanVehicle(result.value.plan,tracked); if(!matched) continue;
-        const current=merged.get(matched.id); if(!current||matched.ts>current.ts) merged.set(matched.id,matched);
+    const successful=settled.filter(result=>result.status==='fulfilled').map(result=>result.value);
+    const parsed=parseLivePayloads(successful.map(entry=>entry.item),Date.now());
+    for(const vehicle of parsed.vehicles){
+      const tracked=rememberRouteScanVehicle(vehicle);
+      const indexes=Array.isArray(vehicle.payloadIndexes)&&vehicle.payloadIndexes.length?vehicle.payloadIndexes:successful.map((_,index)=>index);
+      let matched=null;
+      for(const index of indexes){
+        const plan=successful[index]&&successful[index].plan;if(!plan) continue;
+        matched=matchRouteScanVehicle(plan,tracked);if(matched) break;
       }
+      if(!matched) continue;
+      const current=merged.get(matched.id); if(!current||matched.ts>current.ts) merged.set(matched.id,matched);
     }
     const vehicles=[...merged.values()];
     S.routeScanVehicles=vehicles.length;
@@ -3165,6 +3258,7 @@ function mergeOlderVehicleEvidence(rec,v,now){
 function ingest(list){
   const now=Date.now(), batch=ingestBatchIndex(list,now);
   for(const v of list){
+    if(v&&v.baseId&&v.id!==v.baseId) promoteCollisionRecord(v.baseId);
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null, cadence:null};
     if(prev && Number(v.ts)<Number(prev.ts)){mergeOlderVehicleEvidence(prev,v,now);continue;}
@@ -3226,7 +3320,8 @@ function ingest(list){
   }
   // drop anything whose last reported position has gone stale
   for(const [id,v] of S.vehicles){
-    if(now-v.ts>MAX_AGE_MS+GPS_RESULT_GRACE_MS) S.vehicles.delete(id);
+    const producerExpired=isFinite(Number(v.validUntilAt))&&now>Number(v.validUntilAt);
+    if(producerExpired||now-v.ts>MAX_AGE_MS+GPS_RESULT_GRACE_MS) S.vehicles.delete(id);
   }
 }
 
@@ -3847,6 +3942,8 @@ function collect(gate,diagnostics){
   const out=[], now=Date.now();
   for(const v of S.vehicles.values()){
     const age=now-v.ts;
+    const producerExpired=isFinite(Number(v.validUntilAt))&&now>Number(v.validUntilAt);
+    if(producerExpired){ rejectLive(diagnostics,'stale'); continue; }
     if(age>MAX_AGE_MS){
       const held=retainedSnapshotRow(v,now);
       if(held) out.push(held);

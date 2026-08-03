@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.68'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.69'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -213,6 +213,12 @@ assert.match(busSource, /if\(physicalVehicleKey\(other\)===physical && Number\(o
 assert.match(busSource, /function supersededByNewerRecord\(v,batch\)/);
 assert.match(busSource, /if\(!prev && supersededByNewerRecord\(v,batch\)\) continue;/);
 assert.match(busSource, /function parseLivePayloads\(items,now\)/);
+assert.match(busSource, /const LIVE_ID_ACTIVITIES = new Map\(\)/);
+assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedSlots,now=Date\.now\(\)\)/);
+assert.match(busSource, /function promoteCollisionRecord\(baseId\)/);
+assert.match(busSource, /validUntilAt:validUntil/);
+assert.match(busSource, /parseLivePayloads\(successful\.map\(entry=>entry\.item\),Date\.now\(\)\)/);
+assert.doesNotMatch(busSource, /parseLivePayloads\(\[result\.value\.item\],Date\.now\(\)\)/);
 assert.match(busSource, /vehicleRef:f\.VehicleRef\|\|''/);
 assert.doesNotMatch(busSource, /const id = f\.VehicleRef \|\| journey/);
 assert.match(busSource, /async function fetchLiveBatch\(wide,signal\)/);
@@ -1272,7 +1278,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.68'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.69'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
