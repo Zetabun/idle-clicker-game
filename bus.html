@@ -829,7 +829,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.60';
+const APP_VERSION = '0.6.61';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1889,7 +1889,11 @@ async function findStops(lat,lon,run){
     S.stops = cached.stops.map(s=>({...s, d:dist(lat,lon,s.lat,s.lon)})).sort((a,b)=>a.d-b.d);
     if(cached.anchor && !S.anchor){ S.anchor=cached.anchor; drawAnchor(); updateDirLabels(); }
     drawStops();
-    const want = S.pendingStopId ? S.stops.find(s=>s.id===S.pendingStopId) : null;
+    // Compare as strings: official stop ids are strings, OpenStreetMap ids are
+    // numbers, and a merged stop can take either. showDiscoveredStops() already
+    // normalises here, so a strict match silently reopened the nearest stop
+    // instead of the saved one.
+    const want = S.pendingStopId ? S.stops.find(s=>String(s.id)===String(S.pendingStopId)) : null;
     S.pendingStopId = null;
     selectStop(want || S.stops[0]);
     return;
@@ -2392,12 +2396,15 @@ function journeyGeometry(v,stop){
   const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
-  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
+  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop);
   const selected=selectedIndex>=0?ordered[selectedIndex]:null;
-  const projectedTarget=projectToPattern(pattern.points,stop.lat,stop.lon);
+  // Only project the stop onto the whole pattern when the ordered stop list
+  // could not place it. That scan walks every point of the route and its
+  // result was previously discarded whenever `selected` was found — on every
+  // vehicle, on every render.
   const target=selected
     ? {along:selected.along,metres:dist(selected.lat,selected.lon,stop.lat,stop.lon),total:vehicle&&vehicle.total}
-    : projectedTarget;
+    : projectToPattern(pattern.points,stop.lat,stop.lon);
   if(!vehicle || !target || vehicle.metres>650 || target.metres>250) return null;
   const remaining=target.along-vehicle.along;
   return {
@@ -2794,13 +2801,27 @@ function liveVehicleIdentity(fields){
   const journey=String(fields&&(fields.DatedVehicleJourneyRef||fields.VehicleJourneyRef)||'').trim();
   const item=String(fields&&fields.ItemIdentifier||'').trim();
   const owner=operator||producer||'unknown';
-  // BODS specifies VehicleJourneyRef as globally unique. Use it before the
-  // physical vehicle code because some real feeds reuse placeholder or fleet
-  // values in VehicleRef across several simultaneous journeys.
+  // Neither reference is reliably unique on its own in real BODS data:
+  // some feeds reuse a placeholder or fleet value in VehicleRef across
+  // simultaneous journeys, and others publish one journey/block code for
+  // every bus working it. Keying on journey alone silently discarded all
+  // but the last bus on a shared code — the survivor then looked like a
+  // single vehicle teleporting between them, which reset its track every
+  // poll and left it with no movement direction or learned speed. Combine
+  // both when both exist so neither collision can merge two vehicles.
+  if(journey&&vehicle) return owner+'|journey|'+journey+'|vehicle|'+vehicle;
   if(journey) return owner+'|journey|'+journey;
   if(vehicle) return owner+'|vehicle|'+vehicle;
   if(item) return owner+'|item|'+item;
   return '';
+}
+/* The physical bus behind a record, independent of the journey it is
+   working. Used to retire a superseded journey rather than leave it on
+   the board as a second, stale copy of the same vehicle. */
+function physicalVehicleKey(v){
+  const owner=String(v&&v.operator||'').trim()||'unknown';
+  const vehicle=String(v&&v.vehicleRef||'').trim();
+  return vehicle?owner+'|'+vehicle:'';
 }
 function parseLivePayloads(items,now){
   const observedAt=isFinite(now)?Number(now):Date.now(), byId=new Map();
@@ -3044,6 +3065,18 @@ function fetchSim(dt){
 /* ============================================================
    Merge, infer direction, estimate arrival
    ============================================================ */
+/* True when this physical bus is already tracked under a different identity
+   holding a more recent position — so the incoming record is a straggler for
+   a journey it has already finished. */
+function supersededByNewerRecord(v){
+  const physical=physicalVehicleKey(v);
+  if(!physical) return false;
+  for(const [otherId,other] of S.vehicles){
+    if(otherId===v.id) continue;
+    if(physicalVehicleKey(other)===physical && Number(other.ts)>Number(v.ts)) return true;
+  }
+  return false;
+}
 function mergeOlderVehicleEvidence(rec,v,now){
   const sameJourney=!rec.journey||!v.journey||rec.journey===v.journey;
   if(v.corridorTracked&&sameJourney&&v.corridorTrip){
@@ -3059,6 +3092,9 @@ function ingest(list){
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null, cadence:null};
     if(prev && Number(v.ts)<Number(prev.ts)){mergeOlderVehicleEvidence(prev,v,now);continue;}
+    // A straggling report for an identity this bus has already moved on from
+    // must not reappear beside the newer record as a second, older departure.
+    if(!prev && supersededByNewerRecord(v)) continue;
     const journeyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
     const routeIdentityChanged=!!(prev&&(String(prev.line)!==String(v.line)||String(prev.operator||'')!==String(v.operator||'')));
     const reportGap=prev&&v.ts>prev.ts?(v.ts-prev.ts)/1000:0;
@@ -3098,6 +3134,18 @@ function ingest(list){
     else if(corridorExpired){ delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; rec.corridorTracked=false; }
     learnLine(rec);
     S.vehicles.set(v.id, rec);
+    // A bus that has started its next journey gets a new identity. Retire the
+    // record it was reporting under a moment ago, otherwise the same physical
+    // bus lingers on the board for minutes as a second, frozen departure.
+    // Only a newly seen identity can have a predecessor to retire, so an
+    // established record skips the scan entirely.
+    const physical=prev?'':physicalVehicleKey(rec);
+    if(physical){
+      for(const [otherId,other] of S.vehicles){
+        if(otherId===v.id) continue;
+        if(physicalVehicleKey(other)===physical && Number(other.ts)<=Number(rec.ts)) S.vehicles.delete(otherId);
+      }
+    }
   }
   // drop anything whose last reported position has gone stale
   for(const [id,v] of S.vehicles){
@@ -3274,9 +3322,11 @@ function routeEvidence(line,dest,journey){
   if(rec.count===1) return {score:1,label:'seen once'};
   return {score:0,label:'unverified'};
 }
-function estimate(v, stop, evidenceOverride){
+function estimate(v, stop, evidenceOverride, geometryOverride){
   const straight = dist(v.lat,v.lon,stop.lat,stop.lon);
-  const geometry=journeyGeometry(v,stop);
+  // collect() has already resolved this vehicle's journey geometry; recomputing
+  // it here repeated the pattern projection for every bus on every render.
+  const geometry=geometryOverride!==undefined?geometryOverride:journeyGeometry(v,stop);
   const road = geometry && geometry.remaining>0
     ? Math.max(straight,geometry.remaining)
     : straight * lineFactor(v);
@@ -3509,7 +3559,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,physicalVehicleKey,estimate,journeyGeometry};
 }
 
 async function fetchRoutesFor(stop){
@@ -3561,7 +3611,11 @@ function servesHere(line,dest){
   return routeEvidence(line,dest).score>=2;
 }
 function knownRoutes(){
-  const set=timetableRouteSet();
+  // timetableRouteSet() hands back the live cached Set. Adding mapped and
+  // observed lines to it directly poisoned that cache, so routeEvidence()
+  // then reported an OpenStreetMap or seen-once route as score 4
+  // "timetable verified" until the minute rolled over. Work on a copy.
+  const set=new Set(timetableRouteSet());
   const mapped=mappedRefs(true); if(mapped) mapped.forEach(r=>set.add(r));
   const bag=S.stop && SERVING[String(S.stop.id)];
   if(bag) Object.entries(bag).forEach(([line,val])=>{ const r=normaliseServingRecord(val); if(r.confirmed||r.count>=2) set.add(line); });
@@ -3718,7 +3772,7 @@ function collect(gate,diagnostics){
     // Calculate the timetable-linked estimate before direction and bearing
     // gates. Exact journey geometry and a plausible scheduled call are more
     // reliable than a straight-line town-centre or compass inference.
-    const est=estimate(v,S.stop,evidence);
+    const est=estimate(v,S.stop,evidence,geometry);
     const scheduleBacked=!!(est.schedule && evidence.score>=4);
     const trustedJourney=!!(evidence.journeyMatch || geometry);
     const directionSchedule=est.schedule||matchedRow;
@@ -4045,8 +4099,10 @@ function render(){
     [...deps.querySelectorAll('[data-route-map]')].forEach(b=>b.addEventListener('click',event=>{
       event.stopPropagation(); showJourneyOnMap(b.dataset.routeMap);
     }));
-    checkAlarms(liveRows);
   }
+  // Runs for an empty board too: that is exactly when a fired alarm needs to
+  // notice its bus has gone and re-arm for the next one.
+  checkAlarms(liveRows);
   renderVehicles(liveRows); renderServingNote(); renderLiveDiagnostics();
 }
 

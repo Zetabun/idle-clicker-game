@@ -35,13 +35,22 @@ assert.doesNotMatch(busSource, /st:'Street'/);
 assert.match(busSource, /if\(bare==='st'\) return 'St'/);
 assert.match(busSource, /const ALERT_MISSING_GRACE_MS = 120\*1000/);
 assert.match(busSource, /function retainFiredAlarm\(alarm,now\)/);
+// checkAlarms must run even when the board is empty — that is precisely when a
+// fired alarm needs to notice its bus is gone and re-arm for the next one.
+assert.match(busSource, /\}\n  \/\/ Runs for an empty board too[\s\S]{0,180}\n  checkAlarms\(liveRows\);\n  renderVehicles\(liveRows\)/);
+// knownRoutes() must not add mapped/observed lines into the cached timetable
+// route Set, or routeEvidence() reports them as "timetable verified".
+assert.match(busSource, /const set=new Set\(timetableRouteSet\(\)\);/);
+assert.doesNotMatch(busSource, /const set=timetableRouteSet\(\);/);
+// Saved stop restore compares ids as strings on both discovery paths.
+assert.doesNotMatch(busSource, /S\.stops\.find\(s=>s\.id===S\.pendingStopId\)/);
 assert.match(busSource, /function mapVehicleVisible/);
 assert.match(busSource, /function timetablePatternRecord\(journey,preferredPatternId\)/);
 assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.60'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.61'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -73,7 +82,11 @@ assert.match(busSource, /const stationaryFix=/);
 assert.match(busSource, /const routeAhead=/);
 assert.match(busSource, /confirmedVehicle,stops,nextIndex/);
 assert.match(busSource, /const inference=!evidence\.journeyMatch\?inferVehicleJourneyPattern/);
-assert.match(busSource, /const est=estimate\(v,S\.stop,evidence\)/);
+// collect() already resolved the journey geometry; estimate() must reuse it
+// rather than projecting every vehicle onto its whole pattern a second time.
+assert.match(busSource, /const est=estimate\(v,S\.stop,evidence,geometry\)/);
+assert.match(busSource, /function estimate\(v, stop, evidenceOverride, geometryOverride\)/);
+assert.match(busSource, /geometryOverride!==undefined\?geometryOverride:journeyGeometry\(v,stop\)/);
 assert.match(busSource, /Current position/);
 assert.match(busSource, /-webkit-touch-callout:none/);
 assert.doesNotMatch(busSource, /Town centre moved/);
@@ -125,6 +138,18 @@ assert.match(busSource, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}
 assert.match(busSource, /function useTileProvider\(index,reason\)/);
 assert.match(busSource, /currentTileProvider/);
 assert.match(busSource, /function liveVehicleIdentity\(fields\)/);
+// Two buses working one journey/block code must stay two records. Keying on
+// the journey alone dropped all but the last, and the survivor's track was
+// reset every poll by the apparent jump between them.
+assert.match(busSource, /if\(journey&&vehicle\) return owner\+'\|journey\|'\+journey\+'\|vehicle\|'\+vehicle;/);
+assert.match(busSource, /function physicalVehicleKey\(v\)/);
+// ...and the bus that moves on to its next journey must not be left behind as
+// a second, frozen row under the identity it was reporting a moment ago.
+assert.match(busSource, /if\(physicalVehicleKey\(other\)===physical && Number\(other\.ts\)<=Number\(rec\.ts\)\) S\.vehicles\.delete\(otherId\)/);
+// ...and the mirror case: a straggling report must not resurrect an identity
+// the bus has already moved on from, beside the newer record.
+assert.match(busSource, /function supersededByNewerRecord\(v\)/);
+assert.match(busSource, /if\(!prev && supersededByNewerRecord\(v\)\) continue;/);
 assert.match(busSource, /function parseLivePayloads\(items,now\)/);
 assert.match(busSource, /vehicleRef:f\.VehicleRef\|\|''/);
 assert.doesNotMatch(busSource, /const id = f\.VehicleRef \|\| journey/);
@@ -1177,7 +1202,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.60'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.61'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
