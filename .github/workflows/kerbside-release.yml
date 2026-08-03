@@ -78,7 +78,7 @@ jobs:
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
-      - name: Run WebKit mobile regression checks
+      - name: Run WebKit browser regression checks
         shell: bash
         run: |
           set -euo pipefail
@@ -92,15 +92,16 @@ jobs:
             find .github/scripts/__pycache__ -maxdepth 1 -type f -name 'release-kerbside-*.pyc' -delete
             find .github/scripts/__pycache__ -maxdepth 1 -type f -name 'kerbside-release-post*.pyc' -delete
           fi
-          rm -f .github/scripts/release-kerbside-*.py
-          rm -f .github/scripts/kerbside-release-post.py
-          rm -f .github/triggers/release-kerbside-*.txt
 
-          # GITHUB_TOKEN cannot create or update protected workflow files.
-          # Connected GitHub tooling applies any required workflow updates
-          # after the validated release commit succeeds.
-          rm -f .github/workflows/build-kerbside-national.yml
-          rm -f .github/workflows/deploy-kerbside-worker.yml
+          trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
+          trigger_path="${trigger_path%.py}.txt"
+          rm -f "$RELEASE_SCRIPT" "$trigger_path" .github/scripts/kerbside-release-post.py
+
+          # The GITHUB_TOKEN cannot update protected workflow files. A release
+          # patch must not smuggle workflow changes into the generated commit;
+          # connected GitHub tooling applies reviewed workflow edits separately.
+          git restore --source=HEAD --worktree -- .github/workflows
+          git diff --check
 
       - name: Publish validated release atomically
         env:
@@ -110,43 +111,51 @@ jobs:
         run: |
           set -euo pipefail
 
+          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
           BASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq '.object.sha')"
+          if [[ "$BASE_SHA" != "$CHECKED_OUT_SHA" ]]; then
+            echo "::error::Release branch moved during validation: checked out $CHECKED_OUT_SHA but remote is $BASE_SHA."
+            exit 1
+          fi
+
           BASE_TREE="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$BASE_SHA" --jq '.tree.sha')"
           TREE='[]'
-
-          for path in \
-            bus.html \
-            kerbside-backend/package.json \
-            kerbside-backend/README.md \
-            kerbside-backend/src/worker.js \
-            kerbside-backend/test/worker.test.js \
-            kerbside-backend/scripts/build-region.js \
-            kerbside-backend/scripts/vendor-leaflet.js \
-            kerbside-backend/test/build-region.test.js \
-            kerbside-backend/tests/browser-regression.mjs \
-            kerbside-backend/vendor/leaflet/leaflet.js \
-            kerbside-backend/vendor/leaflet/leaflet.css \
-            kerbside-backend/vendor/leaflet/LICENSE \
-            kerbside-backend/vendor/leaflet/README.md \
-            kerbside-backend/vendor/leaflet/images/layers.png \
-            kerbside-backend/vendor/leaflet/images/layers-2x.png \
-            kerbside-backend/vendor/leaflet/images/marker-icon.png \
-            kerbside-backend/vendor/leaflet/images/marker-icon-2x.png \
-            kerbside-backend/vendor/leaflet/images/marker-shadow.png
-          do
-            blob_sha="$(base64 -w 0 "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
-              gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
-            TREE="$(jq --arg path "$path" --arg sha "$blob_sha" \
-              '. + [{path: $path, mode: "100644", type: "blob", sha: $sha}]' <<<"$TREE")"
-          done
-
           trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
           trigger_path="${trigger_path%.py}.txt"
-          TREE="$(jq --arg path "$RELEASE_SCRIPT" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
-          TREE="$(jq --arg path "$trigger_path" '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
-          if git cat-file -e "$BASE_SHA:.github/scripts/kerbside-release-post.py" 2>/dev/null; then
-            TREE="$(jq --arg path '.github/scripts/kerbside-release-post.py' '. + [{path: $path, mode: "100644", type: "blob", sha: null}]' <<<"$TREE")"
+
+          mapfile -d '' -t CHANGED < <(
+            {
+              git diff --name-only -z HEAD --
+              git ls-files --others --exclude-standard -z
+            } | sort -zu
+          )
+          if [[ "${#CHANGED[@]}" -eq 0 ]]; then
+            echo "::error::Validated release produced no repository changes."
+            exit 1
           fi
+
+          for path in "${CHANGED[@]}"; do
+            case "$path" in
+              bus.html|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
+                ;;
+              *)
+                echo "::error::Unexpected release path: $path"
+                exit 1
+                ;;
+            esac
+
+            mode="$(git ls-files -s -- "$path" | awk 'NR==1 {print $1}')"
+            mode="${mode:-100644}"
+            if [[ -f "$path" ]]; then
+              blob_sha="$(base64 -w 0 -- "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
+                gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
+              TREE="$(jq --arg path "$path" --arg mode "$mode" --arg sha "$blob_sha" \
+                '. + [{path: $path, mode: $mode, type: "blob", sha: $sha}]' <<<"$TREE")"
+            else
+              TREE="$(jq --arg path "$path" --arg mode "$mode" \
+                '. + [{path: $path, mode: $mode, type: "blob", sha: null}]' <<<"$TREE")"
+            fi
+          done
 
           TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
             '{base_tree: $base_tree, tree: $tree}' | \
