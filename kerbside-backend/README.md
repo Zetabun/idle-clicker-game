@@ -121,6 +121,8 @@ Kerbside 0.6.51 makes live GPS ordering and lost-signal behaviour safety-critica
 
 Kerbside 0.6.52 improves timetable and interface resilience. Direction and approach decisions now use the most recent monotonic GPS segments, synthetic search anchors no longer act as strong direction evidence, and movement state resets on a confirmed journey change. Lazy journey patterns display loading and retry states, stop matching checks likely regions before widening nationally, and snapshot-backed schedules are labelled as last-known timetable data with a shorter departure fallback lifetime. Live feed refreshes now update atomically without clearing the displayed board. Stale map ghosts are removed, complete basemap failure shows a persistent warning, and replacement attribution links remain hardened.
 
+Kerbside 0.6.53 keeps an already displayed exact journey route visible when an intermediate board render temporarily lacks the selected row or its lazy-loaded pattern. The overlay is still cleared immediately when the user changes vehicle, stop, direction or destination context, and it is removed when GPS enters the held lost-signal state so stale movement is never presented as live progress. WebKit regression now draws a real route layer, verifies it survives a transient empty render, and confirms GPS-loss and context changes clear it.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
