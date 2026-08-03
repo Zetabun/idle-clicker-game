@@ -214,6 +214,18 @@ bus_path.write_text(bus, encoding='utf-8')
 browser = Path('kerbside-backend/tests/browser-regression.mjs')
 text = browser.read_text(encoding='utf-8')
 text = once(text, "assert.match(busSource, /const APP_VERSION = '0\\.6\\.67'/);", "assert.match(busSource, /const APP_VERSION = '0\\.6\\.68'/);", 'browser version')
+old_ingest_assert = "assert.match(busSource, /function ingestBatchIndex\\(list\\)/);"
+new_ingest_assert = "assert.match(busSource, /function ingestBatchIndex\\(list,now=Date\\.now\\(\\)\\)/);"
+ingest_assertions = text.count(old_ingest_assert)
+if ingest_assertions < 1:
+    raise SystemExit('browser ingest signature: no matching assertions found')
+text = text.replace(old_ingest_assert, new_ingest_assert)
+text = once(
+    text,
+    "document.getElementById('sourceStatus')?.textContent.includes('app 0.6.67')",
+    "document.getElementById('sourceStatus')?.textContent.includes('app 0.6.68')",
+    'browser source status version',
+)
 browser.write_text(text, encoding='utf-8')
 
 multi = Path('kerbside-backend/tests/multi-vehicle-regression.mjs')
