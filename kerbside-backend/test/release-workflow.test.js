@@ -19,8 +19,8 @@ test('Kerbside release and production workflows guard deployment completeness', 
   assert.match(releaseWorkflow, /actions\/upload-artifact@v4/);
   assert.match(releaseWorkflow, /git diff --cached --check/);
   assert.match(releaseWorkflow, /git commit -m "Release Kerbside browser update"/);
-  assert.match(releaseWorkflow, /git push origin "HEAD:refs\/heads\/\$\{RELEASE_BRANCH\}"/);
-  assert.doesNotMatch(releaseWorkflow, /git push --force/);
+  assert.match(releaseWorkflow, /git push --force-with-lease="refs\/heads\/\$\{RELEASE_BRANCH\}:\$\{EXPECTED_SOURCE_SHA\}" origin "HEAD:refs\/heads\/\$\{RELEASE_BRANCH\}"/);
+  assert.doesNotMatch(releaseWorkflow, /git push --force(?:\s|$)/);
   assert.doesNotMatch(releaseWorkflow, /for path in \\\n\s+bus\.html/);
 
   assert.match(productionWorkflow, /\n  push:\n    branches:\n      - main/);
