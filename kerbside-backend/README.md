@@ -127,6 +127,8 @@ Kerbside 0.6.54 removes the hidden map long-press/right-click shortcut that prev
 
 Kerbside 0.6.55 adds an internal GPS-and-timetable route-allocation layer for live vehicles whose operator journey reference is missing or cannot be matched. The matcher compares recent forward movement against every eligible ordered pattern for the reported line, rejects buses that are off-route or have passed the selected stop, checks destination and schedule plausibility, and only assigns a journey when one route pattern is clearly better than the alternatives. No confidence score is exposed in the interface. Once assigned, the existing live GPS marker interpolation follows the official road shape between reports, remains capped at 20 seconds and 180 metres, and snaps back to every authoritative GPS update; buses without a reliable route match retain the conservative straight-line fallback. Journey details now also describe whether the bus is at a stop, between two stops or approaching the next stop.
 
+Kerbside 0.6.56 makes every bus-stop marker on the map use the same shared stop-selection path as the Times stop picker. Tapping a marker now updates the selected stop, timetable, route filters and departure board, then opens the Times view on mobile so the result is immediately visible. WebKit regression verifies the shared stop state, displayed stop heading and tab selection all update together.
+
 The Worker remains backwards-compatible for live data:
 
 - `GET /?bbox=minLon,minLat,maxLon,maxLat`
