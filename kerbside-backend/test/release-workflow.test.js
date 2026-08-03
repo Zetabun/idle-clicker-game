@@ -12,7 +12,7 @@ test('Kerbside release and production workflows guard deployment completeness', 
   assert.match(releaseWorkflow, /kerbside-backend\/\*/);
   assert.match(releaseWorkflow, /Release branch moved during validation/);
   assert.match(releaseWorkflow, /git add -A -- "\$\{CHANGED\[@\]\}"/);
-  assert.match(releaseWorkflow, /git push origin "HEAD:\$RELEASE_BRANCH"/);
+  assert.match(releaseWorkflow, /git push --force-with-lease="refs\/heads\/\$RELEASE_BRANCH:\$CHECKED_OUT_SHA" origin "HEAD:refs\/heads\/\$RELEASE_BRANCH"/);
   assert.doesNotMatch(releaseWorkflow, /repos\/\$GITHUB_REPOSITORY\/git\/blobs/);
   assert.doesNotMatch(releaseWorkflow, /for path in \\\n\s+bus\.html/);
 
