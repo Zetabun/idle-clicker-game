@@ -82,6 +82,7 @@ try {
       const partial = api.parseLivePayloads([{ text: wrap(activity(3, now + 15000)) }], now + 15000);
       api.ingest(partial.vehicles);
       const rows = api.relevant();
+      const storedAfterPartial = state.vehicles.size;
 
       const trips = [1, 2, 3, 4, 5].map(index => `corridor-trip-${index}`);
       const patternId = 'aa68multivehiclepattern';
@@ -116,7 +117,7 @@ try {
         collisions: parsed.identityCollisions,
         parsedIds: parsed.vehicles.map(vehicle => vehicle.id).sort(),
         partialId: partial.vehicles[0]?.id,
-        storedAfterPartial: state.vehicles.size,
+        storedAfterPartial,
         shown: rows.length,
         shownLines: [...new Set(rows.map(row => row.v.line))],
         accepted: accepted.length,

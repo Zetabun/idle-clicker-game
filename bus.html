@@ -838,7 +838,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.67';
+const APP_VERSION = '0.6.68';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -917,10 +917,13 @@ const ROUTE_SCAN_OFFSETS = [16000,32000,48000];
 const ROUTE_SCAN_BOX_RADIUS = 8000;
 const ROUTE_SCAN_MAX_BOXES = 3;
 const ROUTE_SCAN_MAX_ROUTE_METRES = 55000;
-const ROUTE_SCAN_PATTERN_LIMIT = 36;
+const ROUTE_SCAN_PATTERN_LIMIT = 72;
 const CORRIDOR_TAG_GRACE_MS = 5*60*1000;
 const ROUTE_FOCUS_ZOOM = 16;     // close enough to read the road the tracked bus is on
 const GPS_RESULT_GRACE_MS = 6*60*1000;
+const LIVE_ID_COLLISION_TTL_MS = MAX_AGE_MS+GPS_RESULT_GRACE_MS;
+const LIVE_ID_COLLISIONS = new Map();
+const SHARED_PHYSICAL_KEYS = new Map();
 
 /* ============================================================
    Helpers
@@ -2725,7 +2728,7 @@ function routeScanPlans(now=Date.now()){
     const targetOffset=selected?dist(selected.lat,selected.lon,S.stop.lat,S.stop.lon):projected&&projected.metres;
     if(!isFinite(targetAlong)||!isFinite(targetOffset)||targetOffset>250) continue;
     const key=pattern.id+'|'+Math.round(targetAlong/50), existing=groups.get(key);
-    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong};
+    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0};
     if(existing){existing.due=Math.min(existing.due,row.at);mergeRouteScanMatches(existing.matches,[match]);}
     else groups.set(key,{pattern,targetAlong,due:row.at,matches:[match]});
   }
@@ -2766,7 +2769,7 @@ function rememberRouteScanVehicle(v,now=Date.now()){
   }
   return {...v,hist:[...current.hist],speed:isFinite(Number(v.feedSpeed))?Number(v.feedSpeed):null};
 }
-function inferredRouteScanMatch(plan,v){
+function inferredRouteScanMatch(plan,v,now=Date.now()){
   const byPattern=new Map();
   for(const match of plan.matches||[]){
     if(String(v.line)!==String(match.line)) continue;
@@ -2774,8 +2777,13 @@ function inferredRouteScanMatch(plan,v){
     if(v.dest&&match.head&&similarity<.34) continue;
     const fit=routePatternMovementFit(match.pattern,v,S.stop);
     if(!fit) continue;
-    const score=fit.meanOffset*.55+fit.current.metres*.45+(1-similarity)*90;
-    const candidate={trip:String(match.trip),pattern:match.pattern,fit,score,row:match};
+    const rawSpeed=Number(v.speed),feedSpeed=Number(v.feedSpeed);
+    const speed=isFinite(rawSpeed)&&rawSpeed>=MIN_SPEED&&rawSpeed<=MAX_SPEED?rawSpeed:isFinite(feedSpeed)&&feedSpeed>=MIN_SPEED&&feedSpeed<=MAX_SPEED?feedSpeed:DEFAULT_SPEED;
+    const routeSecs=Math.max(0,fit.remaining)/speed+(Math.max(0,fit.remaining)/1000)*24;
+    const scheduleSecs=(Number(match.at)-now)/1000;
+    const scheduleGap=isFinite(scheduleSecs)?Math.abs(scheduleSecs-routeSecs):0;
+    const score=fit.meanOffset*.55+fit.current.metres*.45+(1-similarity)*90+Math.min(900,scheduleGap*.45);
+    const candidate={trip:String(match.trip),pattern:match.pattern,fit,score,scheduleGap,row:match};
     const current=byPattern.get(match.pattern.id);
     if(!current||candidate.score<current.score) byPattern.set(match.pattern.id,candidate);
   }
@@ -2787,9 +2795,11 @@ function matchRouteScanVehicle(plan,v){
   let match=null,inferred=false;
   if(v.journey){
     const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
-    if(!tripMatch.items.length||tripMatch.ambiguous) return null;
-    match=tripMatch.items[0];
-  }else{
+    if(tripMatch.items.length&&!tripMatch.ambiguous) match=tripMatch.items[0];
+  }
+  // Private operator journey aliases often do not equal the public timetable trip.
+  // Fall back to ordered route movement and schedule timing rather than hiding the bus.
+  if(!match){
     match=inferredRouteScanMatch(plan,v); inferred=!!match;
     if(!match) return null;
   }
@@ -2843,8 +2853,24 @@ function physicalVehicleKey(v){
   const vehicle=String(v&&v.vehicleRef||'').trim();
   return vehicle?owner+'|'+vehicle:'';
 }
+function liveActivityDiscriminator(fields){
+  const item=String(fields&&fields.ItemIdentifier||'').trim();
+  if(item) return 'item|'+item;
+  const originTime=String(fields&&fields.OriginAimedDepartureTime||'').trim();
+  if(originTime) return 'origin-time|'+originTime;
+  const destinationTime=String(fields&&fields.DestinationAimedArrivalTime||'').trim();
+  if(destinationTime) return 'destination-time|'+destinationTime;
+  return '';
+}
+function pruneLiveIdentityCaches(now=Date.now()){
+  for(const [key,expires] of LIVE_ID_COLLISIONS) if(Number(expires)<=now) LIVE_ID_COLLISIONS.delete(key);
+  for(const [key,expires] of SHARED_PHYSICAL_KEYS) if(Number(expires)<=now) SHARED_PHYSICAL_KEYS.delete(key);
+}
+function collisionVehicleIdentity(baseId,discriminator){
+  return discriminator?baseId+'|activity|'+discriminator:baseId;
+}
 function parseLivePayloads(items,now){
-  const observedAt=isFinite(now)?Number(now):Date.now(), byId=new Map();
+  const observedAt=isFinite(now)?Number(now):Date.now(), candidates=[];
   let stale=0,unknownAge=0,malformed=0;
   for(const item of Array.isArray(items)?items:[]){
     const xml=new DOMParser().parseFromString(String(item&&item.text||''),'application/xml');
@@ -2855,34 +2881,40 @@ function parseLivePayloads(items,now){
       const lat=parseFloat(f.Latitude),lon=parseFloat(f.Longitude);
       if(!isFinite(lat)||!isFinite(lon)) continue;
       const parsed=f.RecordedAtTime?Date.parse(f.RecordedAtTime):NaN;
-      const timestampKnown=isFinite(parsed);
-      if(!timestampKnown){unknownAge++;continue;}
+      if(!isFinite(parsed)){unknownAge++;continue;}
       const ts=parsed,age=observedAt-ts;
       if(age>MAX_AGE_MS||age < -120000){stale++;continue;}
       const journey=f.DatedVehicleJourneyRef||f.VehicleJourneyRef||'';
-      const id=liveVehicleIdentity(f);
-      if(!id) continue;
-      const record={
-        id,journey,vehicleRef:f.VehicleRef||'',corridorTracked:false,
-        line:cleanLine(f.PublishedLineName||f.LineRef||'?'),
-        lineRef:f.LineRef||'',
-        dest:cleanName(f.DestinationName||f.DirectionName||''),
-        destRef:f.DestinationRef||'',
-        origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',
-        operator:f.OperatorRef||'',
-        declaredDir:(f.DirectionRef||'').toLowerCase(),
-        lat,lon,
-        bearing:parseFloat(f.Bearing),
-        feedSpeed:parseFloat(f.Velocity),
-        aimedOriginAt:f.OriginAimedDepartureTime?Date.parse(f.OriginAimedDepartureTime):NaN,
+      const baseId=liveVehicleIdentity(f);
+      if(!baseId) continue;
+      candidates.push({
+        id:baseId,baseId,activityDiscriminator:liveActivityDiscriminator(f),itemIdentifier:f.ItemIdentifier||'',
+        journey,vehicleRef:f.VehicleRef||'',corridorTracked:false,
+        line:cleanLine(f.PublishedLineName||f.LineRef||'?'),lineRef:f.LineRef||'',
+        dest:cleanName(f.DestinationName||f.DirectionName||''),destRef:f.DestinationRef||'',
+        origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',operator:f.OperatorRef||'',
+        declaredDir:(f.DirectionRef||'').toLowerCase(),lat,lon,bearing:parseFloat(f.Bearing),
+        feedSpeed:parseFloat(f.Velocity),aimedOriginAt:f.OriginAimedDepartureTime?Date.parse(f.OriginAimedDepartureTime):NaN,
         aimedDestinationAt:f.DestinationAimedArrivalTime?Date.parse(f.DestinationAimedArrivalTime):NaN,
-        ts,timestampKnown
-      };
-      const current=byId.get(id);
-      if(!current||record.ts>current.ts) byId.set(id,record);
+        ts,timestampKnown:true
+      });
     }
   }
-  return {vehicles:[...byId.values()],stale,unknownAge,malformed};
+  pruneLiveIdentityCaches(observedAt);
+  const groups=new Map();
+  for(const record of candidates){const group=groups.get(record.baseId)||[];group.push(record);groups.set(record.baseId,group);}
+  const byId=new Map();let identityCollisions=0;
+  for(const [baseId,records] of groups){
+    const discriminators=new Set(records.map(record=>record.activityDiscriminator).filter(Boolean));
+    if(discriminators.size>1){LIVE_ID_COLLISIONS.set(baseId,observedAt+LIVE_ID_COLLISION_TTL_MS);identityCollisions+=discriminators.size-1;}
+    const split=LIVE_ID_COLLISIONS.has(baseId);
+    for(const original of records){
+      const id=split?collisionVehicleIdentity(baseId,original.activityDiscriminator):baseId;
+      const record={...original,id};delete record.baseId;delete record.activityDiscriminator;
+      const current=byId.get(id);if(!current||record.ts>current.ts) byId.set(id,record);
+    }
+  }
+  return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
@@ -3092,14 +3124,17 @@ function fetchSim(dt){
    a code appearing more than once in the same batch is a shared placeholder
    and carries no identity — and a record that reported in this batch is
    plainly still running, whatever else shares its code. */
-function ingestBatchIndex(list){
+function ingestBatchIndex(list,now=Date.now()){
+  pruneLiveIdentityCaches(now);
   const ids=new Set(), shared=new Set(), seen=new Set();
   for(const v of Array.isArray(list)?list:[]){
     ids.add(v.id);
     const key=physicalVehicleKey(v);
     if(!key) continue;
-    if(seen.has(key)) shared.add(key); else seen.add(key);
+    if(seen.has(key)){shared.add(key);SHARED_PHYSICAL_KEYS.set(key,now+LIVE_ID_COLLISION_TTL_MS);}else seen.add(key);
   }
+  // Shared placeholders remain shared across partial and overlapping feed responses.
+  for(const [key,expires] of SHARED_PHYSICAL_KEYS) if(Number(expires)>now) shared.add(key);
   return {ids,shared};
 }
 function retirableVehicleKey(v,batch){
@@ -3128,7 +3163,7 @@ function mergeOlderVehicleEvidence(rec,v,now){
   }
 }
 function ingest(list){
-  const now=Date.now(), batch=ingestBatchIndex(list);
+  const now=Date.now(), batch=ingestBatchIndex(list,now);
   for(const v of list){
     const prev = S.vehicles.get(v.id);
     const rec = prev || {hist:[], speed:null, cadence:null};

@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.67'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.68'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -201,7 +201,7 @@ assert.match(busSource, /function physicalVehicleKey\(v\)/);
 // VehicleRef alone does not identify a bus: some operators publish one
 // placeholder code for every bus on a route. A code repeated within a single
 // snapshot therefore carries no identity and must never retire a sibling.
-assert.match(busSource, /function ingestBatchIndex\(list\)/);
+assert.match(busSource, /function ingestBatchIndex\(list,now=Date\.now\(\)\)/);
 assert.match(busSource, /function retirableVehicleKey\(v,batch\)/);
 assert.match(busSource, /return physical&&!batch\.shared\.has\(physical\)\?physical:'';/);
 assert.match(busSource, /if\(otherId===v\.id\|\|batch\.ids\.has\(otherId\)\) continue;/);
@@ -1272,7 +1272,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.67'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.68'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
