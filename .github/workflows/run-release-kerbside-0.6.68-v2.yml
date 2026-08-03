@@ -2,13 +2,6 @@ name: Run Kerbside 0.6.68 release v2
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
-  push:
-    branches:
-      - main
-    paths:
-      - .github/triggers/release-kerbside-0.6.68-v2.txt
 
 permissions:
   contents: write
@@ -110,13 +103,6 @@ jobs:
           grep -Fq "version: '0.6.68'" kerbside-backend/src/worker.js
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git rm -f .github/workflows/release-kerbside-0.6.68.yml \
-            .github/workflows/run-release-kerbside-0.6.68.yml \
-            .github/workflows/run-release-kerbside-0.6.68-v2.yml \
-            .github/scripts/release-kerbside-0.6.68.py \
-            .github/triggers/release-kerbside-0.6.68.txt \
-            .github/triggers/release-kerbside-0.6.68-v2.txt \
-            .github/status/kerbside-0.6.68-run.txt || true
           git add bus.html kerbside-backend/README.md kerbside-backend/package.json \
             kerbside-backend/src/worker.js kerbside-backend/test/worker.test.js \
             kerbside-backend/tests/browser-regression.mjs \
