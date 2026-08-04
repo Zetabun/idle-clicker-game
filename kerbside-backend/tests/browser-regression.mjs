@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.73'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.74'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -191,6 +191,14 @@ assert.doesNotMatch(busSource, /maximum-scale=1/);
 // exception to that: Leaflet drives its pinch and double-tap from JavaScript
 // and its stylesheet asks for touch-action:none, so letting the map fall back
 // to the browser default zoomed the page instead of the map.
+// The town anchor is the nearest OSM place by distance alone, so it may be
+// somewhere no route from this stop goes. Its name is only used once a loaded
+// pattern is seen to pass it; unknown must not be treated as no, or the label
+// flickers while the patterns are still arriving.
+assert.match(busSource, /function anchorServedByRoutes\(\)/);
+assert.match(busSource, /if\(!records\.size\) return null;/);
+assert.match(busSource, /return anchorServedByRoutes\(\)===false\?'':S\.anchor\.name;/);
+assert.doesNotMatch(busSource, /const namedAnchor=S\.anchor&&!S\.anchor\.synthetic/);
 // A bus to Halesowen is heading towards Halesowen, not "out of Birmingham".
 // The town anchor is a fallback for a journey that reports no destination, and
 // the arrow on the chip carries the in/out sense the wording used to spell out.
@@ -1304,7 +1312,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.73'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.74'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

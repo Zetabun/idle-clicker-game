@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.73';
+const APP_VERSION = '0.6.74';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -995,6 +995,10 @@ const DEFAULT_SPEED = 6.2;     // m/s ≈ 14 mph, typical urban bus incl. stops
 const MIN_SPEED = 1.8, MAX_SPEED = 16;
 const GPS_FRESH_MS = 2*60*1000;
 const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but never revive old ghost buses
+// How close a route must come to the town anchor before the anchor's name is
+// treated as somewhere this stop's buses actually serve.
+const ANCHOR_ROUTE_RADIUS = 4000;
+let ANCHOR_RELEVANCE = {key:'',value:null};
 const MAX_VEH_DIST = 9000;   // preserve the existing nearby route-matching and dim-marker area
 const FAR_VEH_DIST = 18000;  // farther vehicles need an exact timetable journey match for this stop
 const FAR_FETCH_INTERVAL_MS = 45*1000;
@@ -1525,8 +1529,7 @@ out body 40;`;
   if(run===S.locationRun) updateDirLabels();
 }
 function updateDirLabels(){
-  const named=S.anchor&&!S.anchor.synthetic;
-  const n=named?S.anchor.name:'';
+  const n=boardAnchorName();
   $('dIn').querySelector('.lbl').textContent = n?'Into '+n:'Inbound';
   $('dOut').querySelector('.lbl').textContent = n?'Out of '+n:'Outbound';
 }
@@ -1539,7 +1542,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',value:null};}};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -4124,7 +4127,7 @@ function collect(gate,diagnostics){
     if(recovered && diagnostics) diagnostics.recovered++;
     const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
     if(est.schedule){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
-    const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'';
+    const namedAnchor=boardAnchorName();
     const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
     /* Where a bus is going is its own destination, not the town it happens to
        be leaving. Calling a Halesowen service "out of Birmingham" names the
@@ -4572,6 +4575,37 @@ function boardPatternRecords(now){
   }
   return out;
 }
+/* The anchor is whichever OSM town or city centre is nearest, scored by
+   distance alone, so nothing ties it to the routes at this stop. That is how a
+   Halesowen service came to be described as leaving Birmingham. Trust the name
+   only when a route calling here actually passes the anchor.
+
+   Unknown is not the same as no: until the ordered patterns have loaded there
+   is nothing to test against, so the name stands rather than flickering. */
+function anchorServedByRoutes(){
+  if(!S.anchor||S.anchor.synthetic||!S.stop) return false;
+  const records=boardPatternRecords(Date.now());
+  if(!records.size) return null;
+  // The record count is part of the key so the answer is recomputed as more
+  // patterns arrive, rather than settling on an early, under-informed no.
+  const key=[S.stop.id,S.anchor.lat,S.anchor.lon,records.size].join('|');
+  if(ANCHOR_RELEVANCE.key===key) return ANCHOR_RELEVANCE.value;
+  let served=false;
+  for(const entry of records.values()){
+    for(const stop of entry.record.stops){
+      if(dist(stop.lat,stop.lon,S.anchor.lat,S.anchor.lon)<=ANCHOR_ROUTE_RADIUS){ served=true; break; }
+    }
+    if(served) break;
+  }
+  ANCHOR_RELEVANCE={key,value:served};
+  return served;
+}
+/* The anchor name, or nothing when the routes here demonstrably never reach it.
+   Callers fall back to plain inbound/outbound wording. */
+function boardAnchorName(){
+  if(!S.anchor||S.anchor.synthetic) return '';
+  return anchorServedByRoutes()===false?'':S.anchor.name;
+}
 function disruptionMatches(now){
   if(!disruptionFeedReady()||!S.stop) return [];
   const moment=isFinite(now)?now:Date.now();
@@ -4702,7 +4736,7 @@ function render(){
       showEmpty('<strong>Nothing verified to '+esc(S.destFilter)+'</strong>No fresh matching vehicle is confidently approaching this stop. <button id="clearDest">Show all destinations</button>');
       const cd=$('clearDest'); if(cd) cd.addEventListener('click',()=>{ S.destFilter=null; renderDests(); render(); });
     }else{
-      const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'';
+      const namedAnchor=boardAnchorName();
       const dirWord=S.dir==='in'?(namedAnchor?'into '+namedAnchor:'inbound'):S.dir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound'):'either way';
       showEmpty('<strong>Nothing verified heading '+esc(dirWord)+'</strong>'
         +(S.vehicles.size?S.vehicles.size+' tracked buses are broadcasting nearby, but none currently have enough route and movement evidence for this stop. Try <button id="flipDir">the other direction</button> or Both.'
@@ -4766,6 +4800,9 @@ function render(){
   // Runs even when nothing is on the board: a closure at this stop is often
   // exactly why there is nothing to show.
   renderDisruptions();
+  // Whether the anchor is on any route here is unknown until the ordered
+  // patterns arrive, so the direction labels settle as that evidence lands.
+  updateDirLabels();
 }
 
 function journeyRouteContext(selectedId){
