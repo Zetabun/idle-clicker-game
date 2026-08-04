@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.74';
+const APP_VERSION = '0.6.75';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4050,6 +4050,10 @@ function relevant(){
 }
 function collect(gate,diagnostics){
   const out=[], now=Date.now();
+  // Resolved once per pass, not per vehicle: naming the anchor walks every
+  // timetable row looking for a pattern that passes it, and doing that inside
+  // the loop multiplied that scan by the number of tracked buses.
+  const namedAnchor=boardAnchorName();
   for(const v of S.vehicles.values()){
     const age=now-v.ts;
     const producerExpired=isFinite(Number(v.validUntilAt))&&now>Number(v.validUntilAt);
@@ -4127,7 +4131,6 @@ function collect(gate,diagnostics){
     if(recovered && diagnostics) diagnostics.recovered++;
     const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
     if(est.schedule){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
-    const namedAnchor=boardAnchorName();
     const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
     /* Where a bus is going is its own destination, not the town it happens to
        be leaving. Calling a Halesowen service "out of Birmingham" names the
@@ -5095,9 +5098,12 @@ function renderNetworkStats(manifest,error){
       +formatStat(info&&info.stops)+' stops · '+formatStat(info&&info.departures)+' departures</small></div>';
   }).join(''):'<div class="region-stat"><b>No regional statistics available</b></div>';
   renderGpsStats();
+  // Both ways into the panel land here. Hanging this off refreshNetworkStats
+  // instead left the disruption and stop-detail cards empty whenever the
+  // manifest was already cached, which is the usual case.
+  refreshFeedStats();
 }
 async function refreshNetworkStats(force){
-  refreshFeedStats();
   try{
     const manifest=await loadDataManifest(!!force);
     renderNetworkStats(manifest,null);

@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.74'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.75'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -191,6 +191,15 @@ assert.doesNotMatch(busSource, /maximum-scale=1/);
 // exception to that: Leaflet drives its pinch and double-tap from JavaScript
 // and its stylesheet asks for touch-action:none, so letting the map fall back
 // to the browser default zoomed the page instead of the map.
+// Naming the anchor scans every timetable row for a pattern that passes it, so
+// it is resolved once per collect pass. Inside the vehicle loop it ran per bus,
+// and collect runs twice per render, which starved the pattern loader.
+assert.match(busSource, /const namedAnchor=boardAnchorName\(\);\s*\n\s*for\(const v of S\.vehicles\.values\(\)\)\{/);
+// Both ways into the Stats panel go through renderNetworkStats: with a cached
+// manifest the refresh wrapper is skipped entirely, so the feed cards must be
+// refreshed from the renderer or they stay empty.
+assert.match(busSource, /renderGpsStats\(\);[\s\S]{0,240}refreshFeedStats\(\);\n\}/);
+assert.doesNotMatch(busSource, /async function refreshNetworkStats\(force\)\{\s*\n\s*refreshFeedStats\(\);/);
 // The town anchor is the nearest OSM place by distance alone, so it may be
 // somewhere no route from this stop goes. Its name is only used once a loaded
 // pattern is seen to pass it; unknown must not be treated as no, or the label
@@ -1312,7 +1321,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.74'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.75'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
