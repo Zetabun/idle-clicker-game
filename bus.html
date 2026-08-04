@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.78';
+const APP_VERSION = '0.6.79';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3004,17 +3004,27 @@ function anonymousActivityIdentity(baseId,record,usedSlots,now=Date.now()){
   let tracks=LIVE_ANONYMOUS_TRACKS.get(baseId);
   if(!tracks){tracks=new Map();LIVE_ANONYMOUS_TRACKS.set(baseId,tracks);}
   const signature=[record.line||'',record.dest||'',record.origin||''].join('|');
+  const payloads=new Set(record.payloadIndexes||[]);
   let best=null;
   for(const [slot,track] of tracks){
     if(!track||track.signature!==signature) continue;
-    // A slot already claimed in this batch belongs to another record in the
-    // same payload, so it cannot also be this one: a vehicle reports its
-    // position once per snapshot. Claiming a slot rewrites its track to the
-    // claimant's time and position, which left the next bunched bus on the
-    // same route looking exactly like that vehicle's next report — two buses
-    // 300m and 20s apart collapsed onto one identity, and the later record
-    // then replaced the earlier one.
-    if(usedSlots.has(slot)) continue;
+    /* A feed reports a vehicle at most once per response, so two records from
+       the same payload are necessarily different buses and must not share a
+       slot. Claiming a slot rewrites its track to the claimant's time and
+       position, which left the next bunched bus on the same route looking
+       exactly like that vehicle's own next report: two buses 300m and 20s
+       apart collapsed onto one identity, and the later record replaced the
+       earlier one.
+
+       Records from different payloads are the opposite case — the app fetches
+       overlapping bounding boxes, so one bus legitimately appears in several
+       of them and those must still merge onto one slot. */
+    const claimedBy=usedSlots.get(slot);
+    if(claimedBy){
+      let sharesPayload=false;
+      for(const index of payloads) if(claimedBy.has(index)){ sharesPayload=true; break; }
+      if(sharesPayload) continue;
+    }
     const elapsed=(Number(record.ts)-Number(track.ts))/1000;
     if(!(elapsed>=8&&elapsed<=90)) continue;
     const maxMove=Math.min(LIVE_ANONYMOUS_MATCH_MAX_METRES,Math.max(120,elapsed*30+80));
@@ -3023,7 +3033,9 @@ function anonymousActivityIdentity(baseId,record,usedSlots,now=Date.now()){
     if(!best||metres<best.metres) best={slot,metres};
   }
   const slot=best?best.slot:String(++LIVE_ANONYMOUS_SLOT);
-  usedSlots.add(slot);
+  const claimed=usedSlots.get(slot)||new Set();
+  for(const index of payloads) claimed.add(index);
+  usedSlots.set(slot,claimed);
   tracks.set(slot,{slot,signature,lat:record.lat,lon:record.lon,ts:record.ts,expires:now+LIVE_ID_COLLISION_TTL_MS});
   return 'anonymous|'+slot;
 }
@@ -3100,7 +3112,7 @@ function parseLivePayloads(items,now){
       String(a.line||'').localeCompare(String(b.line||''),undefined,{numeric:true})||
       String(a.dest||'').localeCompare(String(b.dest||''))||Number(a.ts)-Number(b.ts)||Number(a.lat)-Number(b.lat)||Number(a.lon)-Number(b.lon)
     );
-    const usedAnonymous=new Set(),identityByRecord=new Map();
+    const usedAnonymous=new Map(),identityByRecord=new Map();
     for(const record of ordered){
       const duplicate=record.activityDiscriminator&&(counts.get(record.activityDiscriminator)||0)>1;
       const identity=!record.activityDiscriminator||duplicate?anonymousActivityIdentity(baseId,record,usedAnonymous,observedAt):record.activityDiscriminator;

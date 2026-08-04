@@ -87,6 +87,15 @@ try {
         activity({ operator: 'OP-BUNCHED', journey: 'J', vehicle: 'V', item: null, lat: 52.4027, time: now - 10000 })
       ) }], now);
 
+      // The other direction, which a blanket "never reuse a slot" guard breaks:
+      // one bus seen by two of the overlapping bounding boxes the app fetches.
+      // Same gap as the bunched pair, but split across payloads, so it must
+      // still merge onto a single vehicle carrying the newer position.
+      const overlappingBoxes = api.parseLivePayloads([
+        { text: wrap(activity({ operator: 'OP-OVERLAP', journey: 'J', vehicle: 'V', item: null, lat: 52.5000, time: now - 30000 })) },
+        { text: wrap(activity({ operator: 'OP-OVERLAP', journey: 'J', vehicle: 'V', item: null, lat: 52.5010, time: now - 10000 })) }
+      ], now);
+
       const duplicate = api.parseLivePayloads([
         { text: wrap(activity({ operator: 'OP-DUP', journey: 'J', vehicle: 'V', item: null, lat: 52.40 })) },
         { text: wrap(activity({ operator: 'OP-DUP', journey: 'J', vehicle: 'V', item: null, lat: 52.40 })) }
@@ -109,6 +118,8 @@ try {
         bunchedCount: bunched.vehicles.length,
         bunchedDistinct: new Set(bunched.vehicles.map(vehicle => vehicle.id)).size,
         bunchedNamed: bunched.vehicles.every(vehicle => vehicle.id.includes('|activity|anonymous|')),
+        overlappingCount: overlappingBoxes.vehicles.length,
+        overlappingLat: overlappingBoxes.vehicles[0]?.lat,
         duplicateCount: duplicate.vehicles.length,
         duplicatePayloads: duplicate.vehicles[0]?.payloadIndexes,
         expiredCount: expired.vehicles.length,
@@ -134,6 +145,8 @@ try {
   assert.equal(result.bunchedCount, 2);
   assert.equal(result.bunchedDistinct, 2);
   assert.equal(result.bunchedNamed, true);
+  assert.equal(result.overlappingCount, 1);
+  assert.equal(result.overlappingLat, 52.501);
   assert.equal(result.duplicateCount, 1);
   assert.deepEqual(result.duplicatePayloads, [0, 1]);
   assert.equal(result.expiredCount, 0);
