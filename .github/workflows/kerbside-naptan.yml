@@ -1,0 +1,95 @@
+name: Refresh Kerbside stop attributes
+
+# Publishes naptan/<area>.json next to bus.html on GitHub Pages. The DfT NaPTAN
+# register needs no API key but is a single 101 MB national CSV, so the browser
+# cannot read it directly; this job republishes it same-origin as small shards.
+#
+# Weekly is deliberate. NaPTAN is rebuilt daily, but stop infrastructure barely
+# moves, and the build skips writing entirely when the register is unchanged.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/build-naptan.py
+      - .github/workflows/kerbside-naptan.yml
+  schedule:
+    - cron: '40 4 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-naptan
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build stop attribute shards
+        id: build
+        run: python .github/scripts/build-naptan.py
+
+      - name: Verify the shards are well formed
+        if: steps.build.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+
+          with open('naptan/index.json', encoding='utf-8') as handle:
+              index = json.load(handle)
+          assert index['scope'] == 'kerbside-naptan-index', 'unexpected index scope'
+          assert index['version'] == 1, 'unexpected format version'
+          assert index['prefixLength'] == 3, 'unexpected shard prefix length'
+          assert index['count'] >= 200000, 'suspiciously few stops: %d' % index['count']
+
+          total = 0
+          for area, expected in index['areas'].items():
+              path = os.path.join('naptan', '%s.json' % area)
+              with open(path, encoding='utf-8') as handle:
+                  shard = json.load(handle)
+              assert shard['scope'] == 'kerbside-naptan', 'unexpected scope in %s' % path
+              assert shard['area'] == area, 'area mismatch in %s' % path
+              assert len(shard['stops']) == expected, 'stop count mismatch in %s' % path
+              for atco, record in shard['stops'].items():
+                  assert atco[:3] == area, '%s does not belong in %s' % (atco, path)
+                  assert record, 'empty record for %s' % atco
+              total += len(shard['stops'])
+
+          assert total == index['count'], 'index count does not match the shards'
+          print('stop attributes verified: %d stops across %d areas'
+                % (total, len(index['areas'])))
+          PY
+
+      - name: Commit refreshed stop attributes
+        if: steps.build.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A naptan
+          if git diff --cached --quiet; then
+            echo 'No change to commit.'
+            exit 0
+          fi
+          git commit -m "Refresh Kerbside stop attributes (${{ steps.build.outputs.count }} stops)"
+          git push
+
+      - name: Report unchanged
+        if: steps.build.outputs.changed != 'true'
+        run: echo 'The NaPTAN register is unchanged; nothing committed.'

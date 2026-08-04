@@ -143,6 +143,15 @@ button{cursor:pointer;border:0;background:none}
 .stopname{font-weight:600;font-size:15.5px;letter-spacing:-.01em;line-height:1.25}
 .stopmeta{color:var(--text-dim);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;margin-top:3px}
 .stopmeta b{color:var(--led);font-weight:600}
+.stopfacts{margin-top:5px;font-size:11.5px;line-height:1.45;color:var(--text-dim)}
+.stopfacts b{color:var(--text);font-weight:600}
+.stopfacts[hidden]{display:none}
+.stopflag{
+  display:inline-block;margin-top:4px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:var(--warn);border:1px solid rgba(255,176,0,.34);
+  background:rgba(255,176,0,.05);border-radius:3px;padding:2px 6px;
+}
+.stopflag-note{font-size:11px}
 .changestop{margin-top:9px;font-size:12px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px}
 .changestop:hover{color:var(--led)}
 .pairbtn{
@@ -661,6 +670,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
           <div style="min-width:0">
             <div class="stopname" id="stopName">Finding a stop near you…</div>
             <div class="stopmeta" id="stopMeta">Set a location to begin</div>
+            <div class="stopfacts" id="stopFacts" hidden></div>
           </div>
         </div>
         <div class="board-actions">
@@ -867,7 +877,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.70';
+const APP_VERSION = '0.6.71';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -909,6 +919,29 @@ let DISRUPTIONS_AT = 0;
 let DISRUPTIONS_PROMISE = null;
 let DISRUPTIONS_ERROR = '';
 let DISRUPTIONS_EXPANDED = new Set();
+
+/* Stop attributes from the national NaPTAN register, published beside this page
+   as one shard per ATCO administrative area. The timetable feed gives a stop a
+   name and a position; NaPTAN is what says which way the bus faces and whether
+   there is a pole to wait at. A stop name alone does not tell somebody they are
+   standing on the wrong side of the road. */
+const NAPTAN_BASE = 'naptan/';
+const NAPTAN_PREFIX_LENGTH = 3;
+const NAPTAN_RETRY_MS = 5*60*1000;
+const NAPTAN_SHARDS = new Map();          // area prefix -> { [atco]: record }
+const NAPTAN_PENDING = new Map();         // area prefix -> in-flight promise
+const NAPTAN_FAILED = new Map();          // area prefix -> last failure timestamp
+const NAPTAN_BEARINGS = {
+  N:'north', NE:'north-east', E:'east', SE:'south-east',
+  S:'south', SW:'south-west', W:'west', NW:'north-west'
+};
+// MKD, a marked stop with a pole, is the default and is not published. The
+// others change what a waiting passenger has to do.
+const NAPTAN_STOP_TYPES = {
+  H:{label:'Hail and ride', note:'no stop pole here — signal the driver from the roadside'},
+  C:{label:'Unmarked stop', note:'no pole or shelter marks this stop'},
+  F:{label:'Flexible zone', note:'buses serve this area on demand rather than a fixed pole'}
+};
 
 const S = {
   key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
@@ -1481,7 +1514,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});}};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -2677,6 +2710,10 @@ function selectStop(s,manual){
   } else if(manual===true) S.manualStop=true;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
   S.ttStop=matchTimetableStop(s); $('stopName').textContent=s.name+(s.ind?' ('+s.ind+')':''); updateStopMeta();
+  renderStopFacts();
+  // The shard is usually already cached from a nearby stop; when it is not, the
+  // line fills in on its own rather than holding up the board.
+  ensureStopAttributes(s).then(()=>{ if(S.stop&&String(S.stop.id)===String(s.id)) renderStopFacts(); }).catch(()=>{});
   drawStops(); closePicker(); renderWalk(); renderDests(); renderPair(); renderServingNote();
   if(!MAPPED[String(s.id)] && !s.region && !s.shard && !s.timetableId){ S.loadingRoutes=true; renderServingNote(); fetchRoutesFor(s).then(()=>{ S.loadingRoutes=false; if(S.stop&&S.stop.id===s.id){ renderServingNote(); render(); } }); }
   loadStopTimetable(s); savePrefs(); render();
@@ -4368,6 +4405,85 @@ async function loadDisruptions(force){
     }finally{ DISRUPTIONS_AT=Date.now(); DISRUPTIONS_PROMISE=null; }
   })();
   return DISRUPTIONS_PROMISE;
+}
+/* NaPTAN shards are keyed by the administrative area, which is the first three
+   characters of the ATCO code, so a stop tells you which shard it needs. */
+function naptanCodesFor(stop){
+  const out=[];
+  for(const value of [stop&&stop.atco,stop&&stop.id,stop&&stop.timetableId,stop&&stop.code]){
+    const code=String(value||'').trim();
+    if(code.length>NAPTAN_PREFIX_LENGTH&&looksLikeAtco(code)&&!out.includes(code)) out.push(code);
+  }
+  return out;
+}
+function validNaptanShard(data,area){
+  if(!plainDataObject(data)) return false;
+  if(Number(data.version)!==1||data.scope!=='kerbside-naptan') return false;
+  if(area&&String(data.area||'')!==String(area)) return false;
+  return plainDataObject(data.stops);
+}
+async function loadNaptanShard(area){
+  const key=String(area||'').trim();
+  if(!key) return null;
+  if(NAPTAN_SHARDS.has(key)) return NAPTAN_SHARDS.get(key);
+  if(NAPTAN_PENDING.has(key)) return NAPTAN_PENDING.get(key);
+  const failedAt=NAPTAN_FAILED.get(key)||0;
+  if(failedAt&&Date.now()-failedAt<NAPTAN_RETRY_MS) return null;
+  const pending=(async()=>{
+    try{
+      const r=await fetchTimed(NAPTAN_BASE+encodeURIComponent(key)+'.json',{headers:{Accept:'application/json'},cache:'no-cache'},12000);
+      // A missing shard is normal: areas with nothing worth publishing have no file.
+      if(!r.ok) throw new Error('Stop attributes HTTP '+r.status);
+      const data=await r.json();
+      if(!validNaptanShard(data,key)) throw new Error('Stop attribute shard failed validation');
+      NAPTAN_SHARDS.set(key,data.stops); NAPTAN_FAILED.delete(key);
+      return data.stops;
+    }catch(e){
+      NAPTAN_FAILED.set(key,Date.now());
+      return null;
+    }finally{ NAPTAN_PENDING.delete(key); }
+  })();
+  NAPTAN_PENDING.set(key,pending);
+  return pending;
+}
+function stopAttributes(stop){
+  for(const code of naptanCodesFor(stop)){
+    const shard=NAPTAN_SHARDS.get(code.slice(0,NAPTAN_PREFIX_LENGTH));
+    const record=shard&&shard[code];
+    if(record) return record;
+  }
+  return null;
+}
+async function ensureStopAttributes(stop){
+  const areas=[...new Set(naptanCodesFor(stop).map(code=>code.slice(0,NAPTAN_PREFIX_LENGTH)))];
+  if(!areas.length) return null;
+  await Promise.all(areas.map(area=>loadNaptanShard(area)));
+  return stopAttributes(stop);
+}
+function bearingWords(bearing){
+  return NAPTAN_BEARINGS[String(bearing||'').trim().toUpperCase()]||'';
+}
+/* One line of plain English under the stop name. The bearing is the direction a
+   bus faces at the stop, which is what tells you the side of the road. */
+function stopFactsHtml(stop){
+  const record=stopAttributes(stop);
+  if(!record) return '';
+  const street=String(record.s||'').trim();
+  const facing=bearingWords(record.b);
+  const parts=[];
+  if(street&&facing) parts.push('On <b>'+esc(street)+'</b>, buses face <b>'+esc(facing)+'</b>.');
+  else if(street) parts.push('On <b>'+esc(street)+'</b>.');
+  else if(facing) parts.push('Buses here face <b>'+esc(facing)+'</b>.');
+  const type=NAPTAN_STOP_TYPES[String(record.t||'').trim().toUpperCase()];
+  if(type) parts.push('<span class="stopflag">'+esc(type.label)+'</span> <span class="stopflag-note">'+esc(type.note)+'</span>');
+  return parts.join(' ');
+}
+function renderStopFacts(){
+  const el=$('stopFacts');
+  if(!el) return;
+  const html=S.stop?stopFactsHtml(S.stop):'';
+  el.innerHTML=html;
+  el.hidden=!html;
 }
 function disruptionActive(situation,now){
   const from=situation&&situation.from?Date.parse(situation.from):NaN;
