@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.71'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.72'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -187,7 +187,14 @@ assert.match(busSource, /function projectVehicleToPattern\(pattern,v\)/);
 assert.match(busSource, /rollback>80/);
 assert.doesNotMatch(busSource, /user-scalable=no/);
 assert.doesNotMatch(busSource, /maximum-scale=1/);
-assert.match(busSource, /#scrim\{touch-action:pan-x pan-y pinch-zoom/);
+// Page zoom is off across the whole app, Settings included. The map is not an
+// exception to that: Leaflet drives its pinch and double-tap from JavaScript
+// and its stylesheet asks for touch-action:none, so letting the map fall back
+// to the browser default zoomed the page instead of the map.
+assert.match(busSource, /html,body\{touch-action:pan-x pan-y\}/);
+assert.match(busSource, /#topbar,#board,#viewbar,#scrim\{touch-action:pan-x pan-y\}/);
+assert.match(busSource, /#map\{touch-action:none\}/);
+assert.doesNotMatch(busSource, /touch-action:auto/);
 assert.doesNotMatch(busSource, /gesturestart/);
 assert.doesNotMatch(busSource, /function stopUiPinch/);
 assert.match(busSource, /vendor\/leaflet\/leaflet\.css/);
@@ -484,7 +491,14 @@ try {
   assert.match(viewportContent, /width=device-width/);
   assert.doesNotMatch(viewportContent, /user-scalable|maximum-scale/);
   const scrimTouchAction=await page.evaluate(() => getComputedStyle(document.getElementById('scrim')).touchAction);
-  assert.match(scrimTouchAction, /pinch-zoom/);
+  assert.doesNotMatch(scrimTouchAction, /pinch-zoom/);
+  const mapTouchAction=await page.evaluate(() => getComputedStyle(document.getElementById('map')).touchAction);
+  assert.equal(mapTouchAction, 'none');
+  const infoPanelScrolls=await page.evaluate(() => {
+    const style=getComputedStyle(document.getElementById('boardInfoPanel'));
+    return { overflowY: style.overflowY, hasCap: style.maxHeight !== 'none' };
+  });
+  assert.deepEqual(infoPanelScrolls, { overflowY: 'auto', hasCap: true });
 
   const manifestPolicy = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__;
@@ -1285,7 +1299,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.71'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.72'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

@@ -590,7 +590,13 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 .pairbtn{margin-left:0;padding:3px 9px}
 .board-info-btn{margin-left:auto;width:24px;height:24px;border:1px solid var(--rule);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;font-size:13px;color:var(--text-dim);line-height:1}
 .board-info-btn:hover,.board-info-btn[aria-expanded="true"]{border-color:var(--led-dim);color:var(--led);background:var(--ink-3)}
-.board-info-panel{margin-top:7px;padding:9px 10px;border:1px solid var(--rule);border-radius:7px;background:var(--ink);font-size:10.5px;color:var(--text-dim);line-height:1.5}
+/* The head does not scroll, so a long explanation used to be clipped with no
+   way to reach the rest of it. The panel carries its own scroll instead. */
+.board-info-panel{
+  margin-top:7px;padding:9px 10px;border:1px solid var(--rule);border-radius:7px;
+  background:var(--ink);font-size:10.5px;color:var(--text-dim);line-height:1.5;
+  max-height:min(46vh,340px);overflow-y:auto;overscroll-behavior:contain;
+}
 .board-info-panel[hidden]{display:none}
 .confidence-guide{padding-bottom:8px;border-bottom:1px solid var(--rule)}
 .confidence-guide b{color:var(--text);font-weight:600}
@@ -610,11 +616,16 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 .gps-grid .stat-value{font-size:clamp(16px,4vw,21px);letter-spacing:-.05em}
 .gps-note{margin:0;padding:10px 11px;border-left:2px solid var(--live);background:rgba(63,217,164,.045);color:var(--text-dim);font-size:10.5px;line-height:1.55}
 .gps-note b{color:#A9EED7;font-weight:600}
-/* Keep two-finger page zoom off the controls and departure board.
-   The map remains the one surface where pinch gestures are enabled. */
-#topbar,#board,#viewbar{touch-action:pan-x pan-y}
-#scrim{touch-action:pan-x pan-y pinch-zoom;overscroll-behavior:contain}
-#map{touch-action:auto}
+/* Page zoom stays off across the whole app, including Settings. Denying the
+   browser's native zoom on the map container is not a restriction on the map:
+   Leaflet drives its own pinch and double-tap gestures from JavaScript, and
+   its stylesheet asks for none for exactly that reason. The previous rule let
+   the map fall back to the browser's default touch behaviour, which overrode
+   Leaflet and zoomed the page instead of the map. */
+html,body{touch-action:pan-x pan-y}
+#topbar,#board,#viewbar,#scrim{touch-action:pan-x pan-y}
+#scrim{overscroll-behavior:contain}
+#map{touch-action:none}
 @media (max-width:820px){
   /* Safari zooms focused controls below 16px and can leave the standalone
      visual viewport enlarged after Settings closes. */
@@ -681,7 +692,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
         <div class="walkline" id="walkLine" style="display:none"></div>
         <div class="destbar" id="destBar" role="group" aria-label="Filter by destination"></div>
         <div class="board-info-panel" id="boardInfoPanel" hidden>
-          <div class="confidence-guide"><b>LIVE GPS</b> means a real bus has reported a position within the last two minutes. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old; Kerbside keeps it briefly instead of making the bus flicker out, but marks its ETA as estimated. Later timetable departures remain <b>scheduled</b> until a matching vehicle begins service. <b>Likely</b> means route and direction evidence strongly suggest the live bus will serve the stop, while <b>Verified</b> has stronger journey/stop evidence and <b>rough</b> has limited evidence. Tap a matched live bus for its ordered stop progress; a map route is drawn only when the national GTFS feed supplies an official shape for that exact journey.</div>
+          <div class="confidence-guide"><b>LIVE GPS</b> means a real bus reported its position within the last two minutes. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old; Kerbside holds the row briefly rather than letting the bus flicker out, and marks the ETA as estimated. <b>GPS SIGNAL LOST</b> means the operator stopped reporting a bus it had already confirmed, so the row is held without a countdown until it expires. Later timetable departures stay <b>scheduled</b> until a matching vehicle begins service. Confidence runs <b>verified</b>, where journey or timetable evidence confirms this bus serves the stop, then <b>likely</b>, where route and direction evidence agree but the journey is not fully matched, then <b>rough</b>, where evidence is limited and the ETA is approximate. Tap a matched live bus for its ordered stop progress; a map route is drawn only when the national GTFS feed supplies an official shape for that exact journey. Roadworks and closures on the routes that call here appear above the board, matched by exact stop code and filtered to what is running now.</div>
           <div class="live-diagnostics" id="liveDiagnostics">Live matching diagnostics will appear after a stop and live feed are loaded.</div>
           <div class="destnote" id="destNote" style="display:none"></div>
           <div class="servenote" id="serveNote" style="display:none"></div>
@@ -836,14 +847,26 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. Version 0.6.48 also follows ordered timetable journeys upstream, checking at most three additional route-corridor areas once per minute and retaining only exact live journeys that have not passed this stop.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions older than two minutes are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. It also follows ordered timetable journeys upstream, checking at most three additional route-corridor areas once per minute and retaining only exact live journeys that have not passed this stop.</p>
+          </div>
+
+          <div class="stats-section">
+            <div class="stats-section-head"><h3>Disruptions and stop details</h3><span id="statsFeedStatus">Checking feeds</span></div>
+            <div class="stats-grid gps-grid">
+              <div class="stat-card"><span class="stat-value" id="statDisruptionsActive">—</span><span class="stat-label">Disruptions in force</span></div>
+              <div class="stat-card"><span class="stat-value" id="statDisruptionsStops">—</span><span class="stat-label">Stops flagged</span></div>
+              <div class="stat-card"><span class="stat-value" id="statStopDetails">—</span><span class="stat-label">Stops with details</span></div>
+              <div class="stat-card"><span class="stat-value" id="statStopAreas">—</span><span class="stat-label">Stop areas</span></div>
+            </div>
+            <p class="gps-note"><b>Published beside the app.</b> Roadworks and closures come from the Department for Transport SIRI-SX archive and are matched to a route by exact ATCO stop code, never by line name, because most line names are shared by several operators nationally. Only situations inside their published validity window are counted, so the figure above is smaller than the number in the raw archive. Coverage follows what each local transport authority chooses to publish: it is strongest across the large city regions, absent in many areas, and does not include London. Stop details — which way a bus faces, the street, and whether the stop is hail and ride — come from the national NaPTAN register and cover active bus stops across Great Britain.</p>
+            <div class="stats-build" id="statsFeedBuilt">Loading feed build information…</div>
           </div>
 
           <div class="stats-section">
             <div class="stats-section-head"><h3>Regional coverage</h3><span id="statsAppVersion">App —</span></div>
             <div class="region-stats" id="regionStats"><div class="region-stat"><b>Loading regions…</b></div></div>
           </div>
-          <p class="stats-foot">These figures are read directly from the live Cloudflare Pages manifest, so they update automatically after every successful national timetable build.</p>
+          <p class="stats-foot">Timetable figures are read directly from the live Cloudflare Pages manifest and update after every successful national build. The disruption and stop-detail figures are read from the feeds published beside this page, which refresh on their own schedules.</p>
         </div>
       </section>
     </div>
@@ -877,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.71';
+const APP_VERSION = '0.6.72';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -931,6 +954,8 @@ const NAPTAN_RETRY_MS = 5*60*1000;
 const NAPTAN_SHARDS = new Map();          // area prefix -> { [atco]: record }
 const NAPTAN_PENDING = new Map();         // area prefix -> in-flight promise
 const NAPTAN_FAILED = new Map();          // area prefix -> last failure timestamp
+let NAPTAN_INDEX = null;                  // area counts and build time, for Stats only
+let NAPTAN_INDEX_PROMISE = null;
 const NAPTAN_BEARINGS = {
   N:'north', NE:'north-east', E:'east', SE:'south-east',
   S:'south', SW:'south-west', W:'west', NW:'north-west'
@@ -4456,6 +4481,27 @@ async function loadNaptanShard(area){
   NAPTAN_PENDING.set(key,pending);
   return pending;
 }
+/* The index is only needed by the Stats panel, so it is fetched on demand
+   rather than on load; the board never waits on it. */
+async function loadNaptanIndex(){
+  if(NAPTAN_INDEX) return NAPTAN_INDEX;
+  if(NAPTAN_INDEX_PROMISE) return NAPTAN_INDEX_PROMISE;
+  NAPTAN_INDEX_PROMISE=(async()=>{
+    try{
+      const r=await fetchTimed(NAPTAN_BASE+'index.json',{headers:{Accept:'application/json'},cache:'no-cache'},12000);
+      if(!r.ok) throw new Error('Stop attribute index HTTP '+r.status);
+      const data=await r.json();
+      if(!plainDataObject(data)||Number(data.version)!==1||data.scope!=='kerbside-naptan-index'||!plainDataObject(data.areas)){
+        throw new Error('Stop attribute index failed validation');
+      }
+      NAPTAN_INDEX=data;
+      return data;
+    }catch(e){
+      return null;
+    }finally{ NAPTAN_INDEX_PROMISE=null; }
+  })();
+  return NAPTAN_INDEX_PROMISE;
+}
 function stopAttributes(stop){
   for(const code of naptanCodesFor(stop)){
     const shard=NAPTAN_SHARDS.get(code.slice(0,NAPTAN_PREFIX_LENGTH));
@@ -5002,6 +5048,7 @@ function renderNetworkStats(manifest,error){
   renderGpsStats();
 }
 async function refreshNetworkStats(force){
+  refreshFeedStats();
   try{
     const manifest=await loadDataManifest(!!force);
     renderNetworkStats(manifest,null);
@@ -5010,6 +5057,41 @@ async function refreshNetworkStats(force){
     renderNetworkStats(null,e);
     return null;
   }
+}
+/* The published counts describe the whole national feed. What the panel shows
+   for disruptions is the subset actually in force, which is the same test the
+   board uses, so the figure cannot claim more than the app would ever show. */
+function renderFeedStats(){
+  const now=Date.now();
+  const feed=disruptionFeedReady()?DISRUPTIONS:null;
+  const active=feed?feed.situations.filter(situation=>disruptionActive(situation,now)).length:null;
+  $('statDisruptionsActive').textContent=active===null?'—':formatStat(active);
+  $('statDisruptionsStops').textContent=feed&&DISRUPTIONS_INDEX?formatStat(DISRUPTIONS_INDEX.size):'—';
+  $('statStopDetails').textContent=NAPTAN_INDEX?formatStat(NAPTAN_INDEX.count):'—';
+  $('statStopAreas').textContent=NAPTAN_INDEX?formatStat(Object.keys((NAPTAN_INDEX&&NAPTAN_INDEX.areas)||{}).length):'—';
+
+  const states=[];
+  if(feed) states.push('disruptions live'); else if(DISRUPTIONS_ERROR) states.push('disruptions unavailable');
+  if(NAPTAN_INDEX) states.push('stop details live'); else states.push('stop details unavailable');
+  $('statsFeedStatus').textContent=states.length?states.join(' · '):'Checking feeds';
+
+  const parts=[];
+  const disruptionBuilt=feed&&feed.built?new Date(feed.built):null;
+  if(disruptionBuilt&&!Number.isNaN(disruptionBuilt.getTime())){
+    parts.push('Disruptions built '+disruptionBuilt.toLocaleString([],{dateStyle:'medium',timeStyle:'short'}));
+  }
+  const stopBuilt=NAPTAN_INDEX&&NAPTAN_INDEX.built?new Date(NAPTAN_INDEX.built):null;
+  if(stopBuilt&&!Number.isNaN(stopBuilt.getTime())){
+    parts.push('stop details built '+stopBuilt.toLocaleString([],{dateStyle:'medium',timeStyle:'short'}));
+  }
+  $('statsFeedBuilt').textContent=parts.length?parts.join(' · '):'Feed build times unavailable';
+}
+async function refreshFeedStats(){
+  await Promise.all([
+    loadDisruptions(false).catch(()=>null),
+    loadNaptanIndex().catch(()=>null)
+  ]);
+  renderFeedStats();
 }
 function setSettingsTab(name){
   const stats=name==='stats';
