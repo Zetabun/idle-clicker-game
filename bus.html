@@ -4407,12 +4407,22 @@ async function loadDisruptions(force){
   return DISRUPTIONS_PROMISE;
 }
 /* NaPTAN shards are keyed by the administrative area, which is the first three
-   characters of the ATCO code, so a stop tells you which shard it needs. */
+   characters of the ATCO code, so a stop tells you which shard it needs.
+
+   The check here is deliberately looser than looksLikeAtco(): that pattern
+   requires at least four characters after the area, which rejects the shorter
+   seven-character codes used by around thirty administrative areas — 0200339
+   and 1500604 are real stops. Nothing is risked by being permissive, because
+   the shard lookup is an exact key match against the register itself, so a
+   code that is not an ATCO code simply finds nothing. */
+function naptanCodeCandidate(value){
+  return /^\d{3}[A-Za-z0-9]{2,12}$/.test(String(value||'').trim());
+}
 function naptanCodesFor(stop){
   const out=[];
   for(const value of [stop&&stop.atco,stop&&stop.id,stop&&stop.timetableId,stop&&stop.code]){
     const code=String(value||'').trim();
-    if(code.length>NAPTAN_PREFIX_LENGTH&&looksLikeAtco(code)&&!out.includes(code)) out.push(code);
+    if(naptanCodeCandidate(code)&&!out.includes(code)) out.push(code);
   }
   return out;
 }
