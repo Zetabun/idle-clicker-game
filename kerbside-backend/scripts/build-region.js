@@ -458,7 +458,13 @@ async function main() {
     const serviceSubset = {};
     for (const id of shardServices) {
       const service = services.get(id);
-      if (!service) continue;
+      // Skipping this silently shipped a departure whose calendar was missing.
+      // The browser cannot tell an absent calendar from an all-week one, so it
+      // used to show the journey every day. Fail the build for this region
+      // instead: the other regions run independently.
+      if (!service) {
+        throw new Error(`Shard ${currentShard}: departure references service_id "${id}" with no calendar entry. Refusing to publish a shard whose service calendar is incomplete.`);
+      }
       serviceSubset[id] = {
         ...service,
         add: [...new Set(service.add)].sort(),

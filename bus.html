@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.81';
+const APP_VERSION = '0.6.82';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -983,7 +983,7 @@ const S = {
   timer:null, tick:null, motionTimer:null, busy:false, feedRefreshing:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
-  timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
+  timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableUnknownServices:0, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
   routeScanBusy:false, routeScanAbort:null, lastRouteScan:0, routeScanHistory:new Map(),
   routeScanBoxes:0, routeScanPatterns:0, routeScanVehicles:0, routeScanError:''
@@ -995,6 +995,12 @@ const DEFAULT_SPEED = 6.2;     // m/s ≈ 14 mph, typical urban bus incl. stops
 const MIN_SPEED = 1.8, MAX_SPEED = 16;
 const GPS_FRESH_MS = 2*60*1000;
 const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but never revive old ghost buses
+// How long a drawn journey line may outlive its row while the vehicle is still
+// tracked. Covers a lazy-loading gap, not a bus that has left the feed.
+const JOURNEY_ROUTE_HOLD_MS = 60*1000;
+// Walking pace and the detour allowance over crow-flies distance.
+const WALK_SPEED_MS = 1.35;
+const WALK_DETOUR_FACTOR = 1.4;
 // How close a route must come to the town anchor before the anchor's name is
 // treated as somewhere this stop's buses actually serve.
 const ANCHOR_ROUTE_RADIUS = 4000;
@@ -2192,6 +2198,13 @@ function serviceRuns(ref, serviceDate){
   // each departure. Only interpret a binary-looking value as that fallback
   // when it is not an actual service_id in the timetable service map.
   if(/^[01]{7}$/.test(String(ref))) return String(ref)[day]==='1';
+  /* A national shard ships the service calendar for every departure it carries,
+     so an unknown reference there means the build is incomplete rather than
+     legacy. Running the journey every day is the one answer that invents
+     service the operator never published, so drop the row and count it. The
+     permissive fallback stays for regional packs, which genuinely may not
+     carry a services map at all. */
+  if(S.timetableSource==='national'){ S.timetableUnknownServices++; return false; }
   return true;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
@@ -2199,7 +2212,7 @@ if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostn
 }
 function activateTimetable(data,source,region,meta){
   const info=meta||{};S.timetable=data||null;S.timetableSource=source||'';S.timetableRegion=region||'';
-  S.timetableBuilt=String(info.built||(data&&data.built)||'');S.timetableFallback=!!info.fallback;PATTERN_CACHE.clear();
+  S.timetableBuilt=String(info.built||(data&&data.built)||'');S.timetableFallback=!!info.fallback;S.timetableUnknownServices=0;PATTERN_CACHE.clear();
 }
 async function loadTimetable(){
   S.ttError=null;
@@ -2308,7 +2321,7 @@ function timetableRowsForLine(line,now){
 function timetableRouteSet(){
   const now=Date.now(), rows=timetableRows(new Date(now)), minute=Math.floor(now/60000), cache=TIMETABLE_ROUTE_CACHE;
   if(cache.rows===rows&&cache.minute===minute) return cache.set;
-  const set=new Set(rows.filter(r=>r.at>now-4*3600000&&r.at<now+20*3600000).map(r=>String(r.line)));
+  const set=new Set(rows.filter(r=>r.at>now-SERVING_NOTE_PAST_MS&&r.at<now+SERVING_NOTE_AHEAD_MS).map(r=>String(r.line)));
   TIMETABLE_ROUTE_CACHE={rows,minute,set}; return set;
 }
 function destinationSimilarity(a,b){
@@ -3730,7 +3743,7 @@ function retainFiredAlarm(alarm,now){
 }
 function alarmRowEligible(row){ return !!(row&&!row.gpsLost); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,renderServingNote};
 }
 function hasAlarm(line,dest){
   return S.stop && ALARMS.some(a=>a.k===alarmKey(S.stop.id,line,dest));
@@ -3808,7 +3821,16 @@ function checkAlarms(rows){
 const SERVE_KEY = 'kerbside.serving.v2';
 const LEGACY_SERVE_KEY = 'kerbside.serving.v1';
 const SERVE_RADIUS = 42;
-const SERVE_TTL = 60*24*3600*1000;
+// The window both the route summary and knownRoutes() treat as the current
+// service. timetableRows spans three calendar days so that after-midnight
+// departures resolve, which is far wider than "routes serving here" means.
+const SERVING_NOTE_PAST_MS = 4*3600000;
+const SERVING_NOTE_AHEAD_MS = 20*3600000;
+/* Observed stopping evidence is a local guess, not published fact: a diversion,
+   GPS drift, a relocated stop or a wrongly paired stop all produce it. Sixty
+   days meant one bad pairing outlived the cause by two months, long after the
+   national timetable could have answered properly. */
+const SERVE_TTL = 14*24*3600*1000;
 let SERVING = {}; // stopId -> line -> {last,count,vehicles,confirmed,source}
 function normaliseServingRecord(v){
   if(!v) return {last:0,count:0,vehicles:[],confirmed:false,source:''};
@@ -3999,14 +4021,20 @@ function renderServingNote(){
     return;
   }
   if(S.ttStop){
-    const rows=timetableRows(new Date());
+    /* timetableRows deliberately spans yesterday, today and tomorrow so that
+       departures past midnight resolve, so grouping all of it listed routes
+       that do not run today at all — a Sunday-only service appearing in
+       Saturday's summary. Narrow it to the same window knownRoutes() already
+       treats as current, rather than inventing a second idea of "now". */
+    const now=Date.now();
+    const rows=timetableRows(new Date(now)).filter(r=>r.at>now-SERVING_NOTE_PAST_MS&&r.at<now+SERVING_NOTE_AHEAD_MS);
     const by={};
     rows.forEach(r=>{ if(!by[r.line]) by[r.line]=new Set(); if(r.head) by[r.line].add(r.head); });
     const parts=Object.keys(by).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true})).map(ref=>{
       const heads=[...by[ref]].slice(0,2).join(' / ');
       return '<span><span class="rref">'+esc(ref)+'</span>'+(heads?'<span class="rdest">'+esc(heads)+'</span>':'')+'</span>';
     });
-    el.innerHTML=(parts.length?'<div class="rlist">'+parts.join('')+'</div>':'<b>Timetable matched, but no service is scheduled for this service day.</b>')
+    el.innerHTML=(parts.length?'<div class="rlist">'+parts.join('')+'</div>':'<b>Timetable matched, but nothing is scheduled to call here in the next 20 hours.</b>')
       +'<div class="rsrc">'+(S.timetableSource==='national'?'BODS national timetable':'BODS regional timetable')+' · '+(S.ttStop.match==='code'?'stop code match':'nearby stop match')+(S.onlyServing?' · unverified buses hidden':'')+'</div>';
     return;
   }
@@ -4279,12 +4307,18 @@ function renderDests(){
 function renderWalk(){
   const el=$('walkLine');
   if(!S.stop || !S.origin){ el.style.display='none'; return; }
-  const mins = Math.max(1, Math.round((S.stop.d*1.25/1.35)/60));   // 1.35 m/s, 25% detour
+  /* Crow-flies distance with a detour allowance, which is all this can be
+     without a pedestrian router. A railway, canal, dual carriageway, missing
+     crossing or an entrance on the far side of an interchange all break it, and
+     this figure sets when the leave-now alert fires — so the error that matters
+     is the optimistic one. 1.4 is nearer the usual urban circuity than 1.25,
+     and the label no longer states it as fact. */
+  const mins = Math.max(1, Math.round((S.stop.d*WALK_DETOUR_FACTOR/WALK_SPEED_MS)/60));
   S.walkSecs = mins*60;
   el.style.display='flex';
   el.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
     + '<circle cx="13" cy="4" r="2"/><path d="m9 21 2-6 2 2v5M7 12l2-4 4 1 3 3"/></svg>'
-    + '<span><b>'+mins+' min walk</b> to this stop</span>';
+    + '<span><b>about '+mins+' min walk</b> to this stop · estimated from straight-line distance</span>';
 }
 
 /* Expanded view under a tapped departure: everything the live
@@ -4906,9 +4940,17 @@ function renderSelectedJourney(rows){
   const row=rows.find(item=>String(item.v.id)===selectedId);
   // A held lost-signal row must not continue to present moving route progress.
   if(row&&row.gpsLost){ clearJourneyRoute(); return; }
+  /* Preserving the last route covers a temporary gap: one render where the row
+     or its lazy-loaded pattern is briefly missing. It was never meant to
+     outlive the bus. With no expiry, a vehicle that left the feed for good left
+     its yellow line drawn over a map with nothing to match it. Hold only while
+     the vehicle is still tracked and its last confirmed position is recent. */
+  if(!row){
+    const held=S.vehicles.get(selectedId);
+    const heldAge=held?Date.now()-Number(held.ts):Infinity;
+    if(!held||!isFinite(heldAge)||heldAge>JOURNEY_ROUTE_HOLD_MS){ clearJourneyRoute(); return; }
+  }
   const progress=row?journeyProgress(row.v):null;
-  // Preserve the last valid exact route for this same selection when one
-  // intermediate render temporarily lacks the row or lazy-loaded pattern.
   if(!progress||!progress.pattern||!progress.pattern.shape) return;
   routeLayer.clearLayers(); renderedJourneyContext=nextContext;
   const split=splitPatternAt(progress.pattern,progress.vehicle);
@@ -4997,7 +5039,7 @@ function renderVehicles(rows){
     m.setZIndexOffset(shown ? (S.selected===v.id?700:400) : 150);
     const r = wanted.get(v.id);
     const popup = '<b>'+esc(v.line)+'</b> to '+esc(v.dest||'?')
-      + (r ? '<br>'+(r.gpsLost?'GPS signal lost · last position held':Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name)) : '<br>Not calling at your stop')
+      + (r ? '<br>'+(r.gpsLost?'GPS signal lost · last position held':Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name)) : '<br>Not shown on this board')
       + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':'');
     if(m.getPopup()) m.setPopupContent(popup); else m.bindPopup(popup);
   }

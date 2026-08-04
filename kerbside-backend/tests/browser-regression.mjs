@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.81'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.82'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -266,6 +266,19 @@ assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedS
 // different buses, while the same bus legitimately repeats across the
 // overlapping bounding boxes the app fetches. Executable proof for both
 // directions lives in identity-regression.mjs.
+// An unknown service reference in a national shard means the build is
+// incomplete, and assuming the journey runs every day invents service. The
+// permissive answer stays for regional packs, which may carry no services map.
+assert.match(busSource, /if\(S\.timetableSource==='national'\)\{ S\.timetableUnknownServices\+\+; return false; \}/);
+// The route summary must not span the three calendar days timetableRows builds,
+// or a Sunday-only route is listed on a Saturday board.
+assert.match(busSource, /const rows=timetableRows\(new Date\(now\)\)\.filter\(r=>r\.at>now-SERVING_NOTE_PAST_MS&&r\.at<now\+SERVING_NOTE_AHEAD_MS\);/);
+// A drawn journey line is held across a lazy-loading gap, never past the bus.
+assert.match(busSource, /if\(!held\|\|!isFinite\(heldAge\)\|\|heldAge>JOURNEY_ROUTE_HOLD_MS\)\{ clearJourneyRoute\(\); return; \}/);
+// The walk figure drives the leave-now alert, so it must not read as measured.
+assert.match(busSource, /const WALK_DETOUR_FACTOR = 1\.4;/);
+assert.match(busSource, /about '\+mins\+' min walk/);
+assert.doesNotMatch(busSource, /Not calling at your stop/);
 // Route learning and the leave-now alert must key on the collision-resolved
 // record id. Some operators publish one journey or fleet code for every bus on
 // a route, so keying on the raw journey reference made them all one vehicle:
@@ -1414,7 +1427,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.81'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.82'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
