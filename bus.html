@@ -199,6 +199,33 @@ button{cursor:pointer;border:0;background:none}
 @media (max-width:520px){.live-diagnostics .diag-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .chip.schedule-source{border-color:var(--rule);color:var(--text-dim)}
 
+.disruptions{padding:12px 16px 6px;border-bottom:1px solid var(--rule)}
+.disruptions-head{
+  display:flex;align-items:center;gap:6px;margin:0 0 7px;
+  font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);
+}
+.disrupt{
+  border:1px solid rgba(255,107,90,.34);border-left-width:3px;border-radius:7px;
+  background:rgba(255,107,90,.06);padding:9px 10px;margin-bottom:6px;
+}
+.disrupt.planned{border-color:rgba(255,176,0,.34);background:rgba(255,176,0,.05)}
+.disrupt-reason{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--warn)}
+.disrupt.planned .disrupt-reason{color:var(--led)}
+.disrupt-sum{font-size:12.5px;line-height:1.35;color:var(--text);margin-top:3px}
+.disrupt-where{font-size:11px;line-height:1.4;color:var(--text-dim);margin-top:4px}
+.disrupt-where b{color:var(--text);font-weight:600}
+.disrupt-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.disrupt-detail{
+  font-size:11px;line-height:1.45;color:var(--text-dim);margin-top:6px;
+  padding-top:6px;border-top:1px solid rgba(34,48,63,.8);
+}
+.disrupt-toggle{
+  margin-top:6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-dim);text-decoration:underline;text-underline-offset:3px;
+}
+.disrupt-toggle:hover{color:var(--led)}
+.disrupt-src{font-size:9.5px;color:var(--text-dim);margin-top:2px;letter-spacing:.03em}
+
 .dep.unreachable{opacity:.6}
 .chip.tight{border-color:var(--warn);color:var(--warn)}
 
@@ -656,6 +683,7 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
           <strong>Nothing on the board yet</strong>
           Search an address or use your location, then pick the direction you're travelling.
         </div>
+        <div class="disruptions" id="disruptions" hidden></div>
         <div id="deps"></div>
       </div>
 
@@ -699,7 +727,8 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
       <section class="settings-panel" id="dataPanel" role="tabpanel" aria-labelledby="dataTab">
         <div class="pad">
           <p class="note">Live positions come from the Department for Transport's <b style="color:var(--led)">Bus Open Data Service</b>. For a public copy, use your Cloudflare Worker so the BODS key stays off the page. The national timetable verifies which routes and destinations actually call at a stop.</p>
-          <p class="source-links">Map data: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · tiles by <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a> · live vehicles via <a href="https://www.bus-data.dft.gov.uk/" target="_blank" rel="noopener noreferrer">BODS</a>.</p>
+          <p class="source-links">Map data: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · tiles by <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a> · live vehicles and disruptions via <a href="https://www.bus-data.dft.gov.uk/" target="_blank" rel="noopener noreferrer">BODS</a>, licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener noreferrer">Open Government Licence v3.0</a>.</p>
+          <p class="note">Roadworks and disruptions are published by local transport authorities. Coverage is uneven: several city regions publish in detail while many areas publish nothing, so an empty panel means nothing has been reported rather than that the road is clear.</p>
 
           <div class="field" style="margin-top:16px">
             <label for="proxy">Cloudflare Worker URL</label>
@@ -838,7 +867,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.69';
+const APP_VERSION = '0.6.70';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -864,6 +893,22 @@ const REQUIRED_DATA_REGIONS = ['east_anglia','east_midlands','london','north_eas
 let DATA_MANIFEST = null;
 let DATA_MANIFEST_PROMISE = null;
 let DATA_MANIFEST_SOURCE = '';
+
+/* Roadworks and disruptions come from the DfT Bus Open Data Service SIRI-SX
+   feed. The national archive sends no CORS header, so a GitHub Action
+   republishes a compact copy beside this page; that makes it same-origin and
+   keeps the browser off a 5.8 MB XML download. */
+const DISRUPTIONS_URL = 'disruptions.json';
+const DISRUPTIONS_REFRESH_MS = 15*60*1000;
+const DISRUPTIONS_RETRY_MS = 2*60*1000;
+const DISRUPTIONS_MAX_AGE = 24*3600*1000;   // a feed staler than this is not shown
+const DISRUPTIONS_MAX_SHOWN = 6;
+let DISRUPTIONS = null;
+let DISRUPTIONS_INDEX = null;      // lower-cased ATCO -> situation positions
+let DISRUPTIONS_AT = 0;
+let DISRUPTIONS_PROMISE = null;
+let DISRUPTIONS_ERROR = '';
+let DISRUPTIONS_EXPANDED = new Set();
 
 const S = {
   key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
@@ -1436,7 +1481,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||''};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';}};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -4285,6 +4330,184 @@ function showEmpty(html){
   $('deps').innerHTML='';
 }
 
+/* ---------------- Roadworks and disruptions (BODS SIRI-SX) ----------------
+   Matching is by exact ATCO stop code against the ordered stops of the routes
+   that call here, never by line name: most published line names are shared by
+   several operators nationally, so a name match surfaces roadworks from the
+   wrong end of the country. */
+function validDisruptionFeed(data){
+  if(!plainDataObject(data)) return false;
+  if(Number(data.version)!==1||data.scope!=='kerbside-disruptions') return false;
+  if(!Array.isArray(data.situations)||!plainDataObject(data.byStop)) return false;
+  const built=Date.parse(data.built||'');
+  return isFinite(built)&&Date.now()-built<=DISRUPTIONS_MAX_AGE;
+}
+function disruptionFeedReady(){
+  return !!(DISRUPTIONS&&DISRUPTIONS_INDEX&&Array.isArray(DISRUPTIONS.situations));
+}
+async function loadDisruptions(force){
+  const now=Date.now();
+  if(!force&&disruptionFeedReady()&&now-DISRUPTIONS_AT<DISRUPTIONS_REFRESH_MS) return DISRUPTIONS;
+  if(DISRUPTIONS_PROMISE) return DISRUPTIONS_PROMISE;
+  if(!force&&DISRUPTIONS_ERROR&&now-DISRUPTIONS_AT<DISRUPTIONS_RETRY_MS) return DISRUPTIONS;
+  DISRUPTIONS_PROMISE=(async()=>{
+    try{
+      const r=await fetchTimed(DISRUPTIONS_URL,{headers:{Accept:'application/json'},cache:'no-cache'},12000);
+      if(!r.ok) throw new Error('Disruptions HTTP '+r.status);
+      const data=await r.json();
+      if(!validDisruptionFeed(data)) throw new Error('Disruption feed failed validation');
+      const index=new Map();
+      for(const [code,positions] of Object.entries(data.byStop)){
+        if(Array.isArray(positions)) index.set(String(code).trim().toLowerCase(),positions);
+      }
+      DISRUPTIONS=data; DISRUPTIONS_INDEX=index; DISRUPTIONS_ERROR='';
+      return data;
+    }catch(e){
+      DISRUPTIONS_ERROR=String(e&&e.message||e);
+      return DISRUPTIONS;
+    }finally{ DISRUPTIONS_AT=Date.now(); DISRUPTIONS_PROMISE=null; }
+  })();
+  return DISRUPTIONS_PROMISE;
+}
+function disruptionActive(situation,now){
+  const from=situation&&situation.from?Date.parse(situation.from):NaN;
+  const to=situation&&situation.to?Date.parse(situation.to):NaN;
+  // The published archive keeps lapsed entries, and an open Progress value does
+  // not mean the works are running, so the validity window is what decides.
+  if(isFinite(to)&&to<now) return false;
+  if(isFinite(from)&&from>now) return false;
+  return true;
+}
+function boardPatternRecords(now){
+  const out=new Map();
+  if(!S.timetable) return out;
+  for(const row of timetableRows(new Date(now))){
+    if(!isFinite(row.at)||row.at<now-30*60000||row.at>now+4*3600000) continue;
+    const record=timetablePatternRecord(row.trip,row.pattern);
+    if(!record||!Array.isArray(record.stops)||!record.stops.length) continue;
+    const existing=out.get(record.id);
+    if(existing){ if(row.line) existing.lines.add(row.line); continue; }
+    out.set(record.id,{record,lines:new Set(row.line?[row.line]:[])});
+  }
+  return out;
+}
+function disruptionMatches(now){
+  if(!disruptionFeedReady()||!S.stop) return [];
+  const moment=isFinite(now)?now:Date.now();
+  const situations=DISRUPTIONS.situations, codes=nationalStopCodes(S.stop), found=new Map();
+  const note=(position,line,offset,stopName)=>{
+    const situation=situations[position];
+    if(!situation||!disruptionActive(situation,moment)) return;
+    let entry=found.get(position);
+    if(!entry){ entry={situation,lines:new Set(),offset:null,stopName:''}; found.set(position,entry); }
+    if(line) entry.lines.add(line);
+    // Keep whichever affected stop sits closest to where the reader boards.
+    if(offset!=null&&(entry.offset==null||Math.abs(offset)<Math.abs(entry.offset))){
+      entry.offset=offset; if(stopName) entry.stopName=stopName;
+    }else if(!entry.stopName&&stopName) entry.stopName=stopName;
+  };
+  for(const {record,lines} of boardPatternRecords(moment).values()){
+    const seq=record.stops;
+    let boardIndex=-1;
+    for(let i=0;i<seq.length;i++){
+      if(codes.includes(String(seq[i].id).trim().toLowerCase())){ boardIndex=i; break; }
+    }
+    for(let i=0;i<seq.length;i++){
+      const hits=DISRUPTIONS_INDEX.get(String(seq[i].id).trim().toLowerCase());
+      if(!hits) continue;
+      const offset=boardIndex>=0?i-boardIndex:null;
+      for(const position of hits){
+        if(lines.size) for(const line of lines) note(position,line,offset,seq[i].name);
+        else note(position,'',offset,seq[i].name);
+      }
+    }
+  }
+  // Stops whose routes have no pattern shard loaded yet still deserve a warning
+  // when the disruption names this stop directly.
+  for(const code of codes){
+    const hits=DISRUPTIONS_INDEX.get(code);
+    if(hits) for(const position of hits) note(position,'',0,S.stop.name);
+  }
+  return [...found.values()].sort((a,b)=>{
+    const rank=entry=>entry.offset==null?9999:Math.abs(entry.offset);
+    return rank(a)-rank(b)||String(a.situation.summary||'').localeCompare(String(b.situation.summary||''));
+  });
+}
+const DISRUPTION_REASONS={
+  roadworks:'Roadworks', roadClosed:'Road closed', routeDiversion:'Diversion',
+  constructionWork:'Construction', maintenanceWork:'Maintenance', repairWork:'Repairs',
+  emergencyEngineeringWork:'Emergency works', specialEvent:'Event', incident:'Incident',
+  accident:'Accident', congestion:'Congestion', flooding:'Flooding',
+  industrialAction:'Industrial action', vandalism:'Vandalism', breakDown:'Breakdown',
+  signalProblem:'Signal fault', liftFailure:'Lift out of service'
+};
+function disruptionReasonLabel(situation){
+  const reason=String(situation&&situation.reason||'');
+  if(DISRUPTION_REASONS[reason]) return DISRUPTION_REASONS[reason];
+  if(!reason||reason==='unknown') return 'Disruption';
+  return reason.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./,c=>c.toUpperCase());
+}
+function disruptionWhereText(entry){
+  const where=entry.stopName?esc(entry.stopName):'';
+  if(entry.offset==null) return where?'Affects <b>'+where+'</b> on this route':'';
+  if(entry.offset===0) return 'At <b>'+(where||'this stop')+'</b>';
+  if(entry.offset<0) return 'Before your stop, at <b>'+where+'</b> — buses may arrive late';
+  return '<b>'+entry.offset+' stop'+(entry.offset===1?'':'s')+'</b> after yours, at <b>'+where+'</b>';
+}
+function disruptionUntilText(situation){
+  if(!situation.to) return 'Ongoing';
+  const end=Date.parse(situation.to);
+  if(!isFinite(end)) return 'Ongoing';
+  const date=new Date(end), today=new Date();
+  const sameDay=date.toDateString()===today.toDateString();
+  return 'Until '+(sameDay
+    ?date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+    :date.toLocaleDateString([], {day:'numeric',month:'short'}));
+}
+function renderDisruptions(){
+  const host=$('disruptions');
+  if(!host) return;
+  if(!disruptionFeedReady()){
+    host.hidden=true; host.innerHTML='';
+    loadDisruptions().then(data=>{ if(data&&disruptionFeedReady()) renderDisruptions(); });
+    return;
+  }
+  if(Date.now()-DISRUPTIONS_AT>=DISRUPTIONS_REFRESH_MS) loadDisruptions();
+  const matches=disruptionMatches(Date.now());
+  if(!matches.length){ host.hidden=true; host.innerHTML=''; return; }
+  const shown=matches.slice(0,DISRUPTIONS_MAX_SHOWN), hidden=matches.length-shown.length;
+  host.hidden=false;
+  host.innerHTML='<div class="disruptions-head">'
+    +esc(matches.length===1?'1 disruption on your routes':matches.length+' disruptions on your routes')+'</div>'
+    +shown.map(entry=>{
+      const situation=entry.situation, id=String(situation.id||''), open=DISRUPTIONS_EXPANDED.has(id);
+      const routes=[...entry.lines].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+      const where=disruptionWhereText(entry);
+      return '<div class="disrupt'+(situation.planned?' planned':'')+'">'
+        +'<div class="disrupt-reason">'+esc(disruptionReasonLabel(situation))
+        +(situation.planned?' · planned':'')+'</div>'
+        +'<div class="disrupt-sum">'+esc(situation.summary||'Disruption reported')+'</div>'
+        +(where?'<div class="disrupt-where">'+where+'</div>':'')
+        +'<div class="disrupt-meta">'
+        +(routes.length?'<span class="chip in">'+esc(routes.slice(0,6).join(', '))
+          +(routes.length>6?' +'+(routes.length-6):'')+'</span>':'')
+        +'<span class="chip">'+esc(disruptionUntilText(situation))+'</span>'
+        +'</div>'
+        +(situation.detail?'<button class="disrupt-toggle" data-disrupt="'+esc(id)+'" aria-expanded="'+open+'">'
+          +(open?'Hide detail':'Show detail')+'</button>':'')
+        +(open&&situation.detail?'<div class="disrupt-detail">'+esc(situation.detail)
+          +(situation.source?'<div class="disrupt-src">Reported by '+esc(situation.source)+'</div>':'')
+          +'</div>':'')
+        +'</div>';
+    }).join('')
+    +(hidden>0?'<div class="disrupt-src">'+hidden+' further disruption'+(hidden===1?'':'s')+' on these routes not shown.</div>':'');
+  [...host.querySelectorAll('[data-disrupt]')].forEach(button=>button.addEventListener('click',()=>{
+    const id=button.dataset.disrupt;
+    if(DISRUPTIONS_EXPANDED.has(id)) DISRUPTIONS_EXPANDED.delete(id); else DISRUPTIONS_EXPANDED.add(id);
+    renderDisruptions();
+  }));
+}
+
 function render(){
   const liveRows=relevant(), scheduledRows=scheduledBoardRows(liveRows);
   const rows=[...liveRows.map(r=>({...r,kind:'live'})),...scheduledRows].sort((a,b)=>a.secs-b.secs);
@@ -4355,6 +4578,9 @@ function render(){
   // Runs for an empty board too: that is exactly when a fired alarm needs to
   // notice its bus has gone and re-arm for the next one.
   checkAlarms(liveRows);
+  // Runs even when nothing is on the board: a closure at this stop is often
+  // exactly why there is nothing to show.
+  renderDisruptions();
   renderVehicles(liveRows); renderServingNote(); renderLiveDiagnostics();
 }
 
@@ -4793,6 +5019,9 @@ $('pairBtn').addEventListener('click',()=>{
 
 setDir(S.dir);
 setStatus((S.key||S.proxy) ? 'Waiting for a location · live feed ready' : 'Waiting for a location','');
+
+// Warm the roadworks feed while the first location is still resolving.
+loadDisruptions().then(()=>{ if(S.stop) renderDisruptions(); }).catch(()=>{});
 
 if(saved && saved.origin && isFinite(saved.origin.lat)){
   S.pendingStopId = saved.stopId || null;

@@ -1,0 +1,77 @@
+name: Refresh Kerbside disruptions feed
+
+# Publishes disruptions.json next to bus.html on GitHub Pages. The DfT SIRI-SX
+# bulk archive needs no API key but sends no CORS header, so the browser cannot
+# read it directly; this job republishes it same-origin with the app.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/build-disruptions.py
+      - .github/workflows/kerbside-disruptions.yml
+  schedule:
+    # Roadworks are planned days ahead, so a quarter-hourly refresh is ample.
+    - cron: '*/15 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-disruptions
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build disruptions feed
+        id: build
+        run: python .github/scripts/build-disruptions.py
+
+      - name: Verify the feed is well formed
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          with open('disruptions.json', encoding='utf-8') as handle:
+              feed = json.load(handle)
+          assert feed['scope'] == 'kerbside-disruptions', 'unexpected scope'
+          assert feed['version'] == 1, 'unexpected format version'
+          assert isinstance(feed['situations'], list), 'situations must be a list'
+          assert isinstance(feed['byStop'], dict), 'byStop must be an object'
+          for position in (index for indices in feed['byStop'].values() for index in indices):
+              assert 0 <= position < len(feed['situations']), 'byStop points outside situations'
+          print('feed verified: %d situations, %d indexed stops'
+                % (len(feed['situations']), len(feed['byStop'])))
+          PY
+
+      - name: Commit refreshed feed
+        if: steps.build.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add disruptions.json
+          if git diff --cached --quiet; then
+            echo 'No change to commit.'
+            exit 0
+          fi
+          git commit -m "Refresh Kerbside disruptions feed (${{ steps.build.outputs.count }} situations)"
+          git push
+
+      - name: Report unchanged
+        if: steps.build.outputs.changed != 'true'
+        run: echo 'Disruption content is unchanged; nothing committed.'
