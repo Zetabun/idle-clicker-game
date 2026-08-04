@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.77';
+const APP_VERSION = '0.6.78';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3007,6 +3007,14 @@ function anonymousActivityIdentity(baseId,record,usedSlots,now=Date.now()){
   let best=null;
   for(const [slot,track] of tracks){
     if(!track||track.signature!==signature) continue;
+    // A slot already claimed in this batch belongs to another record in the
+    // same payload, so it cannot also be this one: a vehicle reports its
+    // position once per snapshot. Claiming a slot rewrites its track to the
+    // claimant's time and position, which left the next bunched bus on the
+    // same route looking exactly like that vehicle's next report — two buses
+    // 300m and 20s apart collapsed onto one identity, and the later record
+    // then replaced the earlier one.
+    if(usedSlots.has(slot)) continue;
     const elapsed=(Number(record.ts)-Number(track.ts))/1000;
     if(!(elapsed>=8&&elapsed<=90)) continue;
     const maxMove=Math.min(LIVE_ANONYMOUS_MATCH_MAX_METRES,Math.max(120,elapsed*30+80));

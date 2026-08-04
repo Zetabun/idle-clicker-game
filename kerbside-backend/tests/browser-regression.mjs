@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.77'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.78'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -260,6 +260,10 @@ assert.match(busSource, /if\(!prev && supersededByNewerRecord\(v,batch\)\) conti
 assert.match(busSource, /function parseLivePayloads\(items,now\)/);
 assert.match(busSource, /const LIVE_ID_ACTIVITIES = new Map\(\)/);
 assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedSlots,now=Date\.now\(\)\)/);
+// usedSlots was recorded and never read, so a slot claimed by one bus in a
+// payload could be handed to another. The executable proof is in
+// identity-regression.mjs; this only pins that the guard is still there.
+assert.match(busSource, /if\(usedSlots\.has\(slot\)\) continue;/);
 assert.match(busSource, /function promoteCollisionRecord\(baseId\)/);
 assert.match(busSource, /validUntilAt:validUntil/);
 assert.match(busSource, /parseLivePayloads\(successful\.map\(entry=>entry\.item\),Date\.now\(\)\)/);
@@ -1330,7 +1334,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.77'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.78'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

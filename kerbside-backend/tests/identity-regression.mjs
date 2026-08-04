@@ -76,6 +76,17 @@ try {
       api.ingest(anonymousSecond.vehicles);
       const anonymousSeparateIds = [...state.vehicles.keys()].sort();
 
+      // Two bunched buses on one route sharing a placeholder fleet code, 20s
+      // and ~300m apart. That gap is exactly the window the anonymous slot
+      // matcher uses to recognise a single vehicle's *next* report, so without
+      // a guard the second bus claims the first bus's slot, both land on one
+      // identity and the board loses a bus. The cases above all report at the
+      // same instant, so none of them could catch this.
+      const bunched = api.parseLivePayloads([{ text: wrap(
+        activity({ operator: 'OP-BUNCHED', journey: 'J', vehicle: 'V', item: null, lat: 52.4000, time: now - 30000 }) +
+        activity({ operator: 'OP-BUNCHED', journey: 'J', vehicle: 'V', item: null, lat: 52.4027, time: now - 10000 })
+      ) }], now);
+
       const duplicate = api.parseLivePayloads([
         { text: wrap(activity({ operator: 'OP-DUP', journey: 'J', vehicle: 'V', item: null, lat: 52.40 })) },
         { text: wrap(activity({ operator: 'OP-DUP', journey: 'J', vehicle: 'V', item: null, lat: 52.40 })) }
@@ -95,6 +106,9 @@ try {
         anonymousNamed: anonymous.vehicles.every(vehicle => vehicle.id.includes('|activity|anonymous|')),
         anonymousSeparateCount: anonymousSeparateIds.length,
         anonymousSeparatePromoted: anonymousSeparateIds.every(id => id.includes('|activity|anonymous|')),
+        bunchedCount: bunched.vehicles.length,
+        bunchedDistinct: new Set(bunched.vehicles.map(vehicle => vehicle.id)).size,
+        bunchedNamed: bunched.vehicles.every(vehicle => vehicle.id.includes('|activity|anonymous|')),
         duplicateCount: duplicate.vehicles.length,
         duplicatePayloads: duplicate.vehicles[0]?.payloadIndexes,
         expiredCount: expired.vehicles.length,
@@ -117,6 +131,9 @@ try {
   assert.equal(result.anonymousNamed, true);
   assert.equal(result.anonymousSeparateCount, 2);
   assert.equal(result.anonymousSeparatePromoted, true);
+  assert.equal(result.bunchedCount, 2);
+  assert.equal(result.bunchedDistinct, 2);
+  assert.equal(result.bunchedNamed, true);
   assert.equal(result.duplicateCount, 1);
   assert.deepEqual(result.duplicatePayloads, [0, 1]);
   assert.equal(result.expiredCount, 0);
