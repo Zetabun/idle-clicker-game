@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.76';
+const APP_VERSION = '0.6.77';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4592,7 +4592,11 @@ function boardPatternRecords(now){
    Unknown is not the same as no: until the ordered patterns have loaded there
    is nothing to test against, so the name stands rather than flickering. */
 function anchorServedByRoutes(){
-  if(!S.anchor||S.anchor.synthetic||!S.stop) return false;
+  if(!S.anchor||S.anchor.synthetic) return false;
+  // No stop is not the same as no route: with nothing selected there is nothing
+  // to validate against, so the answer is unknown and the anchor still stands.
+  // Returning false here disabled direction inference before a stop was chosen.
+  if(!S.stop) return null;
   const now=Date.now();
   const key=[S.stop.id,S.anchor.lat,S.anchor.lon].join('|');
   // Direction is decided per vehicle, and this scan walks every timetable row,
