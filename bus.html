@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.75';
+const APP_VERSION = '0.6.76';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -998,7 +998,8 @@ const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but n
 // How close a route must come to the town anchor before the anchor's name is
 // treated as somewhere this stop's buses actually serve.
 const ANCHOR_ROUTE_RADIUS = 4000;
-let ANCHOR_RELEVANCE = {key:'',value:null};
+const ANCHOR_RELEVANCE_TTL_MS = 1000;
+let ANCHOR_RELEVANCE = {key:'',at:0,value:null};
 const MAX_VEH_DIST = 9000;   // preserve the existing nearby route-matching and dim-marker area
 const FAR_VEH_DIST = 18000;  // farther vehicles need an exact timetable journey match for this stop
 const FAR_FETCH_INTERVAL_MS = 45*1000;
@@ -1542,7 +1543,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',value:null};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionActive,disruptionMatches,disruptionReasonLabel,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,directionAnchor,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',at:0,value:null};}};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -2364,15 +2365,19 @@ function timetableDirection(value){
 function scheduledJourneyDirection(row){
   const explicit=timetableDirection(row&&row.direction);
   if(explicit!=='unknown') return explicit;
-  if(!row||!S.anchor||S.anchor.synthetic) return 'unknown';
+  // The timetable's own direction value was tried above and needs no geography.
+  // Everything below measures against the anchor, so it is only meaningful when
+  // a route calling here actually reaches it.
+  const anchor=directionAnchor();
+  if(!row||!anchor) return 'unknown';
   const pattern=timetablePatternRecord(row.trip);
   if(!pattern) return 'unknown';
   const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops);
   if(index<0) return 'unknown';
   const before=stops[Math.max(0,index-1)], after=stops[Math.min(stops.length-1,index+1)];
   if(!before||!after||before===after) return 'unknown';
-  const beforeDistance=dist(before.lat,before.lon,S.anchor.lat,S.anchor.lon);
-  const afterDistance=dist(after.lat,after.lon,S.anchor.lat,S.anchor.lon);
+  const beforeDistance=dist(before.lat,before.lon,anchor.lat,anchor.lon);
+  const afterDistance=dist(after.lat,after.lon,anchor.lat,anchor.lon);
   if(Math.abs(beforeDistance-afterDistance)<80) return 'unknown';
   return afterDistance<beforeDistance?'in':'out';
 }
@@ -3517,11 +3522,12 @@ function movementTrend(v,target){
   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];if(dist(a.lat,a.lon,b.lat,b.lon)<12) continue;const delta=dist(a.lat,a.lon,target.lat,target.lon)-dist(b.lat,b.lon,target.lat,target.lon);if(delta>10)toward++;else if(delta<-10)away++;}
   const needed=points.length===2?1:2;return toward>=needed&&toward>away?1:away>=needed&&away>toward?-1:0;
 }
-function gpsMovementDirection(v){if(!S.anchor||S.anchor.synthetic) return 'unknown';const trend=movementTrend(v,S.anchor);return trend>0?'in':trend<0?'out':'unknown';}
+function gpsMovementDirection(v){const anchor=directionAnchor();if(!anchor) return 'unknown';const trend=movementTrend(v,anchor);return trend>0?'in':trend<0?'out':'unknown';}
 function inferDirection(v){
   const movement=gpsMovementDirection(v);if(movement!=='unknown') return movement;
   if(v.declaredDir){if(v.declaredDir.startsWith('in')) return 'in';if(v.declaredDir.startsWith('out')) return 'out';}
-  if(S.anchor&&!S.anchor.synthetic&&isFinite(v.bearing)){const toAnchor=bearingTo(v.lat,v.lon,S.anchor.lat,S.anchor.lon),diff=Math.abs(((v.bearing-toAnchor+540)%360)-180);return diff<75?'in':diff>105?'out':'unknown';}
+  const anchor=directionAnchor();
+  if(anchor&&isFinite(v.bearing)){const toAnchor=bearingTo(v.lat,v.lon,anchor.lat,anchor.lon),diff=Math.abs(((v.bearing-toAnchor+540)%360)-180);return diff<75?'in':diff>105?'out':'unknown';}
   return 'unknown';
 }
 function approachStrength(v,stop){
@@ -4587,12 +4593,14 @@ function boardPatternRecords(now){
    is nothing to test against, so the name stands rather than flickering. */
 function anchorServedByRoutes(){
   if(!S.anchor||S.anchor.synthetic||!S.stop) return false;
-  const records=boardPatternRecords(Date.now());
-  if(!records.size) return null;
-  // The record count is part of the key so the answer is recomputed as more
-  // patterns arrive, rather than settling on an early, under-informed no.
-  const key=[S.stop.id,S.anchor.lat,S.anchor.lon,records.size].join('|');
-  if(ANCHOR_RELEVANCE.key===key) return ANCHOR_RELEVANCE.value;
+  const now=Date.now();
+  const key=[S.stop.id,S.anchor.lat,S.anchor.lon].join('|');
+  // Direction is decided per vehicle, and this scan walks every timetable row,
+  // so the answer is re-evaluated at most once a second. The short life also
+  // lets an early "no patterns yet" become a real answer as they load.
+  if(ANCHOR_RELEVANCE.key===key&&now-ANCHOR_RELEVANCE.at<ANCHOR_RELEVANCE_TTL_MS) return ANCHOR_RELEVANCE.value;
+  const records=boardPatternRecords(now);
+  if(!records.size){ ANCHOR_RELEVANCE={key,at:now,value:null}; return null; }
   let served=false;
   for(const entry of records.values()){
     for(const stop of entry.record.stops){
@@ -4600,7 +4608,7 @@ function anchorServedByRoutes(){
     }
     if(served) break;
   }
-  ANCHOR_RELEVANCE={key,value:served};
+  ANCHOR_RELEVANCE={key,at:now,value:served};
   return served;
 }
 /* The anchor name, or nothing when the routes here demonstrably never reach it.
@@ -4608,6 +4616,16 @@ function anchorServedByRoutes(){
 function boardAnchorName(){
   if(!S.anchor||S.anchor.synthetic) return '';
   return anchorServedByRoutes()===false?'':S.anchor.name;
+}
+/* The anchor as a direction reference, or nothing when no route calling here
+   goes near it. "Towards the anchor" is only meaningful on a route that reaches
+   it; measuring in and out against a town the buses never visit produced a
+   verdict that then dropped vehicles at the direction gate. Where this returns
+   nothing, direction falls back to the timetable's own direction value, which
+   needs no geography. */
+function directionAnchor(){
+  if(!S.anchor||S.anchor.synthetic) return null;
+  return anchorServedByRoutes()===false?null:S.anchor;
 }
 function disruptionMatches(now){
   if(!disruptionFeedReady()||!S.stop) return [];

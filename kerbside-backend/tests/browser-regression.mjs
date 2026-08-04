@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.75'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.76'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -191,6 +191,15 @@ assert.doesNotMatch(busSource, /maximum-scale=1/);
 // exception to that: Leaflet drives its pinch and double-tap from JavaScript
 // and its stylesheet asks for touch-action:none, so letting the map fall back
 // to the browser default zoomed the page instead of the map.
+// Direction must be measured against the same validated anchor the label uses.
+// Naming an irrelevant town was fixed without fixing the verdict drawn from it,
+// so the board still dropped buses at the direction gate on a meaningless axis.
+assert.match(busSource, /function directionAnchor\(\)/);
+assert.match(busSource, /function gpsMovementDirection\(v\)\{const anchor=directionAnchor\(\);/);
+assert.doesNotMatch(busSource, /movementTrend\(v,S\.anchor\)/);
+assert.doesNotMatch(busSource, /bearingTo\(v\.lat,v\.lon,S\.anchor\.lat,S\.anchor\.lon\)/);
+// Direction is decided per vehicle, so the scan behind it is time-bounded.
+assert.match(busSource, /const ANCHOR_RELEVANCE_TTL_MS = 1000;/);
 // Naming the anchor scans every timetable row for a pattern that passes it, so
 // it is resolved once per collect pass. Inside the vehicle loop it ran per bus,
 // and collect runs twice per render, which starved the pattern loader.
@@ -205,7 +214,7 @@ assert.doesNotMatch(busSource, /async function refreshNetworkStats\(force\)\{\s*
 // pattern is seen to pass it; unknown must not be treated as no, or the label
 // flickers while the patterns are still arriving.
 assert.match(busSource, /function anchorServedByRoutes\(\)/);
-assert.match(busSource, /if\(!records\.size\) return null;/);
+assert.match(busSource, /if\(!records\.size\)\{ ANCHOR_RELEVANCE=\{key,at:now,value:null\}; return null; \}/);
 assert.match(busSource, /return anchorServedByRoutes\(\)===false\?'':S\.anchor\.name;/);
 assert.doesNotMatch(busSource, /const namedAnchor=S\.anchor&&!S\.anchor\.synthetic/);
 // A bus to Halesowen is heading towards Halesowen, not "out of Birmingham".
@@ -1321,7 +1330,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.75'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.76'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
