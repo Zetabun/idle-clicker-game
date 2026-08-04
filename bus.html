@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.79';
+const APP_VERSION = '0.6.80';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2716,9 +2716,13 @@ function scheduledMatches(line,dest,spatialSecs,journey){
     return !dest || !r.head || destinationSimilarity(dest,r.head)>=.34;
   });
   const tripMatch=journey?uniqueCompatibleTrips(rows,journey):{items:[],ambiguous:false};
-  if(tripMatch.ambiguous) return [];
-  if(tripMatch.items.length) rows=tripMatch.items;
-  return rows.sort((a,b)=>Math.abs(a.at-target)-Math.abs(b.at-target));
+  if(tripMatch.ambiguous) return {items:[],tripMatched:false};
+  const tripMatched=tripMatch.items.length>0;
+  if(tripMatched) rows=tripMatch.items;
+  /* tripMatched says the journey reference resolved to these rows, so they are
+     the same departure whatever the clock says. Without it the caller cannot
+     tell an identity match from merely the nearest row by time. */
+  return {items:rows.sort((a,b)=>Math.abs(a.at-target)-Math.abs(b.at-target)),tripMatched};
 }
 function timetableBuildLabel(){const d=new Date(S.timetableBuilt||'');return Number.isNaN(d.getTime())?'':d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}
 function timetableSourceLabel(){return S.timetableFallback?'last-known timetable':'scheduled';}
@@ -3672,7 +3676,16 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const evidence=evidenceOverride||routeEvidence(v.line,v.dest,baseJourneyRef);
   const journeyRef=evidence.matchedTrip||baseJourneyRef;
   const strength=approachStrength(v,stop);
-  const schedules=scheduledMatches(v.line,v.dest,spatial,journeyRef);
+  const scheduleLookup=scheduledMatches(v.line,v.dest,spatial,journeyRef);
+  const schedules=scheduleLookup.items;
+  /* Two separate questions. matchedSchedule: is this the same departure as that
+     timetable row? Journey identity answers that, and the answer holds however
+     far off the clock the bus is running. schedule: was the scheduled time
+     close enough to be worth blending into the ETA? A bus more than twelve
+     minutes out failed the second test, and because the first was never asked
+     the board showed it live and again as a schedule-only row — sometimes
+     labelled "possible GPS match was filtered" beside the very bus it meant. */
+  const matchedSchedule=scheduleLookup.tripMatched&&schedules.length?schedules[0]:null;
   let schedule=null;
   if(schedules.length){
     const cand=schedules[0], schedSecs=(cand.at-Date.now())/1000;
@@ -3686,7 +3699,7 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const confidence=points>=6?'high':points>=3?'medium':'low';
   const spread=confidence==='high'?90:confidence==='medium'?210:360;
   const learned=LINES[lineLearningKey(v)];
-  return {secs:spatial, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule};
+  return {secs:spatial, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule};
 }
 
 /* ============================================================
@@ -3754,7 +3767,10 @@ function checkAlarms(rows){
       a.fired=false; a.vehicleId=null; a.lastSeenAt=0; continue;
     }
     a.lastSeenAt=now;
-    const vehicleId=String(hit.v.journey||hit.v.id);
+    // Same reasoning as learnServing: a shared journey code made two physical
+    // buses look like one, so a fired alarm stayed attached to the bus that had
+    // already gone instead of re-arming for the next one.
+    const vehicleId=String(hit.v.id||hit.v.journey);
     if(a.vehicleId && a.vehicleId!==vehicleId){ a.fired=false; a.vehicleId=null; }
     const slack = hit.secs - walk;
     if(!a.fired && slack <= 60){
@@ -3823,7 +3839,11 @@ function learnServing(){
     const slow=(v.speed!=null && isFinite(v.speed)) ? v.speed<5.5 : v.hist.length>=3;
     if(strength<0 || !slow) continue;
     const r=normaliseServingRecord(bag[v.line]);
-    const vehicle=String(v.journey||v.id);
+    /* The record id is the collision-resolved identity; the raw journey code is
+       not. Some operators publish one journey or fleet code for every bus on a
+       route, so keying on it made every one of them the same "vehicle" here,
+       and a route could never reach the two-distinct-vehicle bar for confirmed. */
+    const vehicle=String(v.id||v.journey);
     if(r.vehicles.includes(vehicle) || Date.now()-r.last<90000) continue;
     r.vehicles=[vehicle,...r.vehicles].slice(0,6);
     r.count=Math.min(50,r.count+1); r.last=Date.now(); r.confirmed=r.count>=2; r.source='observed';
@@ -4172,7 +4192,7 @@ function collect(gate,diagnostics){
     const row={
       v,dir:shownDir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
       routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
-      spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match,directionLabel,directionWord
+      spread:est.spread,evidence:est.evidence,schedule:est.schedule,matchedSchedule:est.matchedSchedule,recovered,match,directionLabel,directionWord
     };
     v.lastShownStopId=String(S.stop.id); v.lastShownAt=now; v.lastShownArrivalAt=now+Math.max(0,row.secs)*1000;
     v.lastShownBoardDir=S.dir; v.lastShownDestFilter=String(S.destFilter||'');
@@ -4321,7 +4341,7 @@ function lineDetail(r){
     ['Route evidence',r.evidence?r.evidence.label:'unverified'],
     ['Estimate confidence',r.confidence==='high'?'higher':r.confidence==='medium'?'moderate':'rough']
   ];
-  const schedules=scheduledMatches(v.line,v.dest,r.secs,v.progressTrip||vehicleJourneyRef(v)).slice(0,4);
+  const schedules=scheduledMatches(v.line,v.dest,r.secs,v.progressTrip||vehicleJourneyRef(v)).items.slice(0,4);
   const times=schedules.length?'<div class="dlabel">Nearby scheduled departures</div><div class="dtimes">'+schedules.map((x,i)=>'<span class="dtime">'+esc(formatClock(x.at))+(i===0?'<i>closest</i>':'')+'</span>').join('')+'</div>':'';
   const note=r.gpsLost
     ? 'This row is held at the last confirmed GPS position. Its countdown, journey progress and leave alert are paused until a fresh position arrives.'
@@ -4357,11 +4377,15 @@ function scheduleLiveReason(schedule){
   if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
   return 'no unique journey match';
 }
-function scheduleClaimedByLive(row){ return !!(row&&row.schedule&&!row.gpsLost); }
+// Identity claims the timetable row, not timing. A live bus running well off
+// its scheduled time is still that departure and must not also be listed as a
+// separate scheduled row.
+function claimedScheduleFor(row){ return row&&!row.gpsLost?(row.schedule||row.matchedSchedule||null):null; }
+function scheduleClaimedByLive(row){ return !!claimedScheduleFor(row); }
 function scheduledBoardRows(liveRows){
   if(!S.ttStop) return [];
   const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set();
-  liveRows.forEach(r=>{ if(scheduleClaimedByLive(r)) claimed.add(scheduleKey(r.schedule)); });
+  liveRows.forEach(r=>{ const s=claimedScheduleFor(r); if(s) claimed.add(scheduleKey(s)); });
   return timetableRows(new Date(now)).filter(r=>{
     if(r.at<now-60000 || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;

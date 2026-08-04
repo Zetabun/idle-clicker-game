@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.79'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.80'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -266,6 +266,20 @@ assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedS
 // different buses, while the same bus legitimately repeats across the
 // overlapping bounding boxes the app fetches. Executable proof for both
 // directions lives in identity-regression.mjs.
+// Route learning and the leave-now alert must key on the collision-resolved
+// record id. Some operators publish one journey or fleet code for every bus on
+// a route, so keying on the raw journey reference made them all one vehicle:
+// a route could never reach the two-vehicle bar, and a fired alarm stayed
+// attached to a bus that had already gone.
+assert.match(busSource, /const vehicle=String\(v\.id\|\|v\.journey\);/);
+assert.match(busSource, /const vehicleId=String\(hit\.v\.id\|\|hit\.v\.journey\);/);
+assert.doesNotMatch(busSource, /String\(v\.journey\|\|v\.id\)/);
+assert.doesNotMatch(busSource, /String\(hit\.v\.journey\|\|hit\.v\.id\)/);
+// Journey identity claims a timetable row, not timing. A bus running more than
+// twelve minutes off its time is still that departure and must not also appear
+// as a schedule-only row beside itself.
+assert.match(busSource, /const matchedSchedule=scheduleLookup\.tripMatched&&schedules\.length\?schedules\[0\]:null;/);
+assert.match(busSource, /function claimedScheduleFor\(row\)\{ return row&&!row\.gpsLost\?\(row\.schedule\|\|row\.matchedSchedule\|\|null\):null; \}/);
 assert.match(busSource, /const claimedBy=usedSlots\.get\(slot\);/);
 assert.match(busSource, /if\(sharesPayload\) continue;/);
 assert.match(busSource, /const usedAnonymous=new Map\(\),identityByRecord=new Map\(\);/);
@@ -914,6 +928,30 @@ try {
   assert.equal(gpsSafety.freshClaims,true);
   assert.equal(gpsSafety.wrongBoardDirection,false);
 
+  // A live bus identity-matched to a departure but running far enough off its
+  // scheduled time that estimate() declines to blend the two. It used not to
+  // claim the timetable row, so the same journey appeared twice: once live and
+  // again as a schedule-only row, sometimes captioned "possible GPS match was
+  // filtered" next to the very bus it was describing.
+  const duplicateDeparture = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState;
+    const saved={ttStop:state.ttStop,dir:state.dir,destFilter:state.destFilter,timetable:state.timetable};
+    try{
+      const now=new Date(),mins=now.getHours()*60+now.getMinutes()+30;
+      state.dir='all';state.destFilter=null;
+      state.ttStop={d:[[mins,'61','Halesowen','','0','T1','P1']]};
+      state.timetable={patterns:{},tripPatterns:{}};
+      const bare=api.scheduledBoardRows([]),row=bare[0]&&bare[0].schedule;
+      const matchedOnly=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,schedule:null,gpsLost:false,secs:600}]);
+      const blended=api.scheduledBoardRows([{v:{id:'V1',line:'61'},schedule:row,gpsLost:false,secs:600}]);
+      const lost=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,gpsLost:true,secs:600}]);
+      return {bare:bare.length,matchedOnly:matchedOnly.length,blended:blended.length,lost:lost.length};
+    }finally{Object.assign(state,saved);}
+  });
+  // Identity alone suppresses the duplicate; losing GPS releases the claim so
+  // the timetable shows through again.
+  assert.deepEqual(duplicateDeparture,{bare:1,matchedOnly:0,blended:0,lost:1});
+
   const resilience = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now(),saved={anchor:state.anchor,timetable:state.timetable,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion,patternPending:new Set(state.patternPending)};
     try{
@@ -1339,7 +1377,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.79'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.80'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
