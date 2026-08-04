@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.72';
+const APP_VERSION = '0.6.73';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4126,12 +4126,21 @@ function collect(gate,diagnostics){
     if(est.schedule){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
     const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'';
     const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
-    const directionWord=shownDir==='in'?(namedAnchor?'into '+namedAnchor:'inbound'):shownDir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound'):'direction unclear';
+    /* Where a bus is going is its own destination, not the town it happens to
+       be leaving. Calling a Halesowen service "out of Birmingham" names the
+       wrong place, and the anchor is often not on the route at all. The
+       in/out wording is a fallback for a journey that does not report where it
+       terminates; the arrow on the chip still carries the in/out sense. */
+    const heading=String(v.dest||'').trim();
+    const directionWord=heading?'towards '+heading
+      :shownDir==='in'?(namedAnchor?'into '+namedAnchor:'inbound')
+      :shownDir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound')
+      :'direction unclear';
     const directionLabel=(gpsMoveDir!=='unknown'?'GPS movement: ':scheduledDir!=='unknown'?'Journey: ':dir!=='unknown'?'Live: ':'')+directionWord;
     const row={
       v,dir:shownDir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
       routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
-      spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match,directionLabel
+      spread:est.spread,evidence:est.evidence,schedule:est.schedule,recovered,match,directionLabel,directionWord
     };
     v.lastShownStopId=String(S.stop.id); v.lastShownAt=now; v.lastShownArrivalAt=now+Math.max(0,row.secs)*1000;
     v.lastShownBoardDir=S.dir; v.lastShownDestFilter=String(S.destFilter||'');
@@ -4712,8 +4721,11 @@ function render(){
       const age=Date.now()-r.v.ts, gpsLost=!!r.gpsLost, gpsFresh=!gpsLost&&age<=GPS_FRESH_MS, gpsAge=formatPositionAge(age);
       const due=!gpsLost&&gpsFresh&&r.confidence!=='low'&&mins<=1;
       const tight=!gpsLost&&S.walkSecs>90 && r.secs<S.walkSecs-30;
-      const namedAnchor=S.anchor&&!S.anchor.synthetic?S.anchor.name:'Inbound';
-      const dirChip=r.directionLabel||(S.destFilter?fmtDist(r.metres)+' away':r.dir==='in'?'→ '+namedAnchor:r.dir==='out'?'← Outbound':'Direction unclear');
+      /* The chip carries the heading; the arrow keeps the in/out sense that the
+         wording used to spell out. The evidence prefix stays on the expanded
+         row, where "GPS movement" or "Journey" is diagnostic rather than noise. */
+      const dirArrow=r.dir==='in'?'→ ':r.dir==='out'?'← ':'';
+      const dirChip=r.directionWord?dirArrow+r.directionWord:(S.destFilter?fmtDist(r.metres)+' away':'Direction unclear');
       const confLabel=r.confidence==='high'?'verified':r.confidence==='medium'?'likely':'rough';
       const confHelp=r.confidence==='high'?'Journey or timetable evidence strongly confirms this bus serves the selected stop.':r.confidence==='medium'?'Live GPS, route and direction evidence suggest this bus serves the stop, but the journey is not fully matched.':'Limited route or movement evidence; treat this ETA as approximate.';
       const gpsLabel=gpsLost?'GPS signal lost':gpsFresh?'live GPS':'GPS delayed';
