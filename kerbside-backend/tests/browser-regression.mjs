@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.80'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.81'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -952,6 +952,43 @@ try {
   // the timetable shows through again.
   assert.deepEqual(duplicateDeparture,{bare:1,matchedOnly:0,blended:0,lost:1});
 
+  // One malformed box among several used to fall through to "no buses were
+  // reported": a broken response presented as a verified empty area, counted as
+  // a successful poll, with the previous vehicles left to age out silently.
+  const malformedCoverage = await page.evaluate(async () => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState;
+    const saved={origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,stop:state.stop};
+    const originalFetch=window.fetch;
+    const ok=()=>'<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri"><ServiceDelivery><VehicleMonitoringDelivery><ResponseTimestamp>'+new Date().toISOString()+'</ResponseTimestamp></VehicleMonitoringDelivery></ServiceDelivery></Siri>';
+    const bad='<?xml version="1.0"?><Siri><ServiceDelivery><VehicleMonitoringDelivery>';
+    const run=async bodyFor=>{
+      let n=0;
+      window.fetch=async()=>{ n++; return new Response(bodyFor(n),{status:200,headers:{'Content-Type':'application/xml'}}); };
+      state.lastWideFetch=0;
+      let threw=null,result=null;
+      try{ result=await api.fetchLive(new AbortController().signal); }catch(e){ threw=e; }
+      return {boxes:n,soft:!!(threw&&threw.soft),msg:threw?threw.msg:null,emptied:Array.isArray(result)&&result.length===0,partial:state.feedPartial};
+    };
+    try{
+      state.demo=false;state.proxy='https://example.test';state.key='';
+      state.origin={lat:52.48,lon:-1.90,label:'test'};
+      state.stop={id:'S1',lat:52.48,lon:-1.90,name:'Test'};
+      return {all:await run(()=>bad),one:await run(n=>n===1?ok():bad),none:await run(()=>ok())};
+    } finally { window.fetch=originalFetch; Object.assign(state,saved); }
+  });
+  assert.equal(malformedCoverage.one.boxes>1,true,'the wide scan must fetch more than one box');
+  // A single bad box raises a feed error and flags partial coverage, so the
+  // caller keeps the last verified board instead of blanking it.
+  assert.equal(malformedCoverage.one.soft,true);
+  assert.match(malformedCoverage.one.msg,/Part of the live feed returned malformed XML/);
+  assert.equal(malformedCoverage.one.partial,true);
+  assert.equal(malformedCoverage.one.emptied,false);
+  assert.match(malformedCoverage.all.msg,/^The live feed returned malformed XML\.$/);
+  // A genuinely empty area is still reported as empty, not as a failure.
+  assert.equal(malformedCoverage.none.soft,false);
+  assert.equal(malformedCoverage.none.emptied,true);
+  assert.equal(malformedCoverage.none.partial,false);
+
   const resilience = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now(),saved={anchor:state.anchor,timetable:state.timetable,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion,patternPending:new Set(state.patternPending)};
     try{
@@ -1377,7 +1414,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.80'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.81'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

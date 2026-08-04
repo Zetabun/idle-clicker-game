@@ -900,7 +900,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.80';
+const APP_VERSION = '0.6.81';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3203,7 +3203,16 @@ async function fetchLive(signal){
   const parsed=parseLivePayloads(successful,Date.now());
   const out=parsed.vehicles;
   S.feedStale=parsed.stale;S.feedUnknownAge=parsed.unknownAge;
-  if(!out.length&&parsed.malformed===successful.length) throw {soft:true,msg:'The live feed returned malformed XML.'};
+  /* A malformed box means this poll did not see the whole area, whether or not
+     the boxes that did parse happened to contain buses. Requiring every box to
+     be malformed before saying so let one bad box among several fall through to
+     "no buses were reported": a broken response presented as a verified empty
+     area, counted as a successful poll, with the previous vehicles left to age
+     out and no error raised. */
+  if(parsed.malformed) S.feedPartial=true;
+  if(!out.length&&parsed.malformed) throw {soft:true,msg:parsed.malformed===successful.length
+    ? 'The live feed returned malformed XML.'
+    : 'Part of the live feed returned malformed XML. Kerbside is keeping the last verified board while it retries.'};
   if(!out.length&&S.feedPartial) throw {soft:true,msg:'Live feed coverage was incomplete. Kerbside is keeping the last verified board while it retries.'};
   if(!out.length&&(parsed.stale||parsed.unknownAge)){
     S.feedEmptyReason='No fresh timestamped GPS positions were reported in the latest feed.';

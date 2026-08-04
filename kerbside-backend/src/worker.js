@@ -59,7 +59,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.6.80',
+    version: '0.6.81',
     bods: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
     upstreamTimeoutMs: LIVE_TIMEOUT_MS,
@@ -146,14 +146,13 @@ async function refreshLiveCache(request, env, incoming, bbox, lineRef, cache, ca
     if (lineRef) upstream.searchParams.set('lineRef', lineRef);
 
     try {
-      const response = await fetchWithTimeout(upstream.toString(), {
+      const { response, body } = await fetchWithTimeout(upstream.toString(), {
         headers: {
           Accept: 'application/xml,text/xml;q=0.9,*/*;q=0.1',
           'User-Agent': 'Kerbside/0.6 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
         },
         cf: { cacheTtl: 0, cacheEverything: false }
       }, LIVE_TIMEOUT_MS);
-      const body = await response.arrayBuffer();
       if (response.ok && validSiriPayload(body, response.headers.get('Content-Type'))) {
         const headers = new Headers();
         headers.set('Content-Type', response.headers.get('Content-Type') || 'application/xml; charset=utf-8');
@@ -239,11 +238,19 @@ export function normaliseBoundingBox(value) {
   return [minLon, minLat, maxLon, maxLat].map(number => number.toFixed(5)).join(',');
 }
 
+/* Reads the body inside the timeout, and returns it alongside the response.
+   fetch() resolves once the response headers arrive, not once the body has
+   arrived, so returning at that point disarmed the abort controller through the
+   finally below and left the download itself untimed. An upstream that sent
+   headers and then stalled part-way through the XML held the request open until
+   the platform killed it, well past upstreamTimeoutMs. */
 async function fetchWithTimeout(url, options, timeout) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const body = await response.arrayBuffer();
+    return { response, body };
   } finally {
     clearTimeout(timer);
   }

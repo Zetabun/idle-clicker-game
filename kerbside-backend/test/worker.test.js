@@ -77,7 +77,7 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.6.80');
+  assert.equal(body.version, '0.6.81');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);
@@ -192,6 +192,36 @@ test('rejects and never caches non-SIRI HTTP 200 bodies', async () => {
     assert.equal(response.status, 502);
     assert.equal(runtime.state.fetches, 2);
     assert.equal(runtime.state.puts.length, 0);
+  } finally {
+    runtime.restore();
+    resetWorkerStateForTests();
+  }
+});
+
+// fetch() resolves on headers, so an upstream that answers and then stalls
+// part-way through the XML used to escape the timeout entirely: the abort
+// controller was disarmed before the body was read, and the request hung until
+// the platform killed it. The body must be downloaded while the timeout is
+// still armed. Without that, this test does not fail — it hangs.
+test('times out an upstream that sends headers and then stalls the body', async () => {
+  resetWorkerStateForTests();
+  const stalled = signal => new Response(new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode('<?xml version="1.0"?><Siri><ServiceDelivery>'));
+      // Never closed. Only the worker's own abort ends this response.
+      signal.addEventListener('abort', () => controller.error(new Error('aborted')));
+    }
+  }), { status: 200, headers: { 'Content-Type': 'application/xml' } });
+
+  const runtime = installRuntime(null, async (url, options) => stalled(options.signal));
+  const startedAt = Date.now();
+  try {
+    const response = await routeRequest(new Request(LIVE_URL), { BODS_KEY: 'present' });
+    assert.equal(response.status, 502);
+    assert.equal(runtime.state.fetches, 2);
+    assert.equal(runtime.state.puts.length, 0);
+    // Two attempts of a 4s timeout plus the retry pause, not an open-ended hang.
+    assert.ok(Date.now() - startedAt < 20000, `stalled body was not timed out: ${Date.now() - startedAt}ms`);
   } finally {
     runtime.restore();
     resetWorkerStateForTests();
