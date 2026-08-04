@@ -4578,10 +4578,10 @@ function render(){
   // Runs for an empty board too: that is exactly when a fired alarm needs to
   // notice its bus has gone and re-arm for the next one.
   checkAlarms(liveRows);
+  renderVehicles(liveRows); renderServingNote(); renderLiveDiagnostics();
   // Runs even when nothing is on the board: a closure at this stop is often
   // exactly why there is nothing to show.
   renderDisruptions();
-  renderVehicles(liveRows); renderServingNote(); renderLiveDiagnostics();
 }
 
 function journeyRouteContext(selectedId){

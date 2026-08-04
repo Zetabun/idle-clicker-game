@@ -66,7 +66,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.69'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.70'/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
 assert.match(busSource, /viewBox%3D%220%200%20192%20192%22/);
@@ -1278,7 +1278,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.69'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.70'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
