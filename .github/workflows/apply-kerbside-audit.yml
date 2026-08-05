@@ -41,12 +41,26 @@ jobs:
           from pathlib import Path
           path = Path('kerbside-backend/tests/browser-regression.mjs')
           text = path.read_text(encoding='utf-8')
-          old = r"assert.match(busSource, /const set=new Set\(timetableRouteSet\(\)\);/);"
-          new = r"""assert.match(busSource, /const timetableSet=timetableRouteSet\(\);/);
-          assert.match(busSource, /const set=new Set\(timetableSet\);/);"""
-          if text.count(old) != 1:
-              raise SystemExit(f'knownRoutes assertion: expected one match, found {text.count(old)}')
-          path.write_text(text.replace(old, new), encoding='utf-8')
+          replacements = [
+              (
+                  r"assert.match(busSource, /const set=new Set\(timetableRouteSet\(\)\);/);",
+                  r"""assert.match(busSource, /const timetableSet=timetableRouteSet\(\);/);
+          assert.match(busSource, /const set=new Set\(timetableSet\);/);""",
+                  'knownRoutes assertion'
+              ),
+              (
+                  r"assert.match(busSource, /const producerNode=\[\.\.\.xml\.getElementsByTagName\('\*'\)\]\.find\(node=>node\.localName==='ProducerRef'\);/);",
+                  r"""assert.match(busSource, /function producerRefForActivity\(activity\)/);
+          assert.match(busSource, /while\(delivery&&delivery\.localName!=='ServiceDelivery'\) delivery=delivery\.parentElement;/);
+          assert.match(busSource, /const producerRef=producerRefForActivity\(activity\);/);""",
+                  'ProducerRef scope assertions'
+              )
+          ]
+          for old, new, label in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'{label}: expected one match, found {text.count(old)}')
+              text = text.replace(old, new)
+          path.write_text(text, encoding='utf-8')
           PY
           python3 .github/scripts/sync-version.py
       - name: Install browsers
