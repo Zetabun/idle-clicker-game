@@ -80,7 +80,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.88'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.89'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -284,6 +284,17 @@ assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedS
 // different buses, while the same bus legitimately repeats across the
 // overlapping bounding boxes the app fetches. Executable proof for both
 // directions lives in identity-regression.mjs.
+// Locally observed evidence is proximity-based and cannot tell the far
+// carriageway, the next stand or a parallel road from this stop. Where the stop
+// has a current official timetable that omits the line, the timetable wins and
+// the sighting no longer admits the route on its own. Without one it is still
+// the only signal there is, so it keeps its former weight.
+assert.match(busSource, /const authoritative=!!\(S\.ttStop&&S\.timetableSource==='national'&&!S\.timetableFallback&&!S\.ttError\);/);
+assert.match(busSource, /if\(authoritative\) return \{score:1,label:'seen stopping, but not in the timetable for this stop'\};/);
+// Learning requires the dwell the app already detects, not merely a slow pass:
+// under 5.5 m/s is 12 mph, which a bus held in traffic meets without stopping.
+assert.match(busSource, /const dwelled=Number\.isFinite\(Number\(v\.stationaryAt\)\);/);
+assert.doesNotMatch(busSource, /const slow=\(v\.speed!=null && isFinite\(v\.speed\)\) \? v\.speed<5\.5 : v\.hist\.length>=3;/);
 // A bus past the stop is dropped on ordered geometry regardless of the toggle,
 // so what hideAway still governs is the case with no geometry, where strength
 // falls back to a straight-line trend. It must not overrule an ordered pattern
@@ -1516,7 +1527,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.88'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.89'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

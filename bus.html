@@ -1044,7 +1044,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.88';
+const APP_VERSION = '0.6.89';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3917,7 +3917,19 @@ function routeEvidence(line,dest,journey){
   }
   const bag=SERVING[String(S.stop.id)]||{};
   const rec=normaliseServingRecord(bag[l]);
-  if(rec.confirmed || rec.count>=2) return {score:3,label:rec.source==='worker'?'recorded arrivals':'seen stopping'};
+  /* Locally observed evidence is a guess drawn from proximity: the opposite
+     carriageway, the next stand in a bus station, a parallel road or a bus
+     held in traffic all look similar from 42 metres. Where this stop has a
+     current official timetable and that timetable does not list the line,
+     the timetable is the better source, so the sighting stops carrying the
+     same weight as a route mapped at the stop and no longer admits the
+     route on its own. Without an authoritative timetable it remains the
+     only signal there is, and keeps its former weight. */
+  const authoritative=!!(S.ttStop&&S.timetableSource==='national'&&!S.timetableFallback&&!S.ttError);
+  if(rec.confirmed || rec.count>=2){
+    if(authoritative) return {score:1,label:'seen stopping, but not in the timetable for this stop'};
+    return {score:3,label:rec.source==='worker'?'recorded arrivals':'seen stopping'};
+  }
   if(rec.count===1) return {score:1,label:'seen once'};
   return {score:0,label:'unverified'};
 }
@@ -4107,8 +4119,13 @@ function learnServing(){
     const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
     if(d>SERVE_RADIUS) continue;
     const strength=approachStrength(v,S.stop);
-    const slow=(v.speed!=null && isFinite(v.speed)) ? v.speed<5.5 : v.hist.length>=3;
-    if(strength<0 || !slow) continue;
+    /* Under 5.5 m/s is 12 mph, which a bus crawling past in traffic meets
+       without ever calling here, and the fallback of "has three history
+       points" tested nothing at all. Require the dwell the app already
+       detects: consecutive fixes under eight metres apart, which is a bus
+       that actually stopped rather than one that merely went by slowly. */
+    const dwelled=Number.isFinite(Number(v.stationaryAt));
+    if(strength<0 || !dwelled) continue;
     const r=normaliseServingRecord(bag[v.line]);
     /* The record id is the collision-resolved identity; the raw journey code is
        not. Some operators publish one journey or fleet code for every bus on a
