@@ -4,7 +4,21 @@ import http from 'node:http';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { webkit } from 'playwright';
+import * as playwright from 'playwright';
+
+/* WebKit alone covered mobile Safari, which is the platform most of this app's
+   layout was fought over. It cannot catch a Chromium-only layout, Cache API,
+   notification or input difference, and Chromium is what most Android users
+   run. Both engines drive the same suite at the same phone-sized viewport, so
+   an Android-sized Chromium run asserts the same behaviour rather than a
+   separate, weaker set. Selected by KERBSIDE_BROWSER; WebKit stays the default
+   so a bare `npm run test:browser` is unchanged. */
+const ENGINE_NAME = process.env.KERBSIDE_BROWSER || 'webkit';
+const engine = playwright[ENGINE_NAME];
+if (!engine || typeof engine.launch !== 'function') {
+  throw new Error(`KERBSIDE_BROWSER=${ENGINE_NAME} is not a Playwright engine (expected webkit, chromium or firefox)`);
+}
+console.log(`Browser regression engine: ${ENGINE_NAME}`);
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
@@ -66,7 +80,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.82'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.83'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -413,7 +427,7 @@ const server = http.createServer(async (request, response) => {
 
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
-const browser = await webkit.launch({ headless: true });
+const browser = await engine.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true, timezoneId: 'Europe/London' });
 const page = await context.newPage();
 
@@ -1427,7 +1441,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.82'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.83'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

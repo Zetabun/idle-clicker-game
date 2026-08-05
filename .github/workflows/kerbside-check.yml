@@ -5,9 +5,11 @@ on:
     branches:
       - main
     paths:
+      - VERSION
       - bus.html
       - build-timetable.js
       - kerbside-backend/**
+      - .github/scripts/sync-version.py
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/kerbside-check.yml
@@ -17,9 +19,11 @@ on:
     branches:
       - main
     paths:
+      - VERSION
       - bus.html
       - build-timetable.js
       - kerbside-backend/**
+      - .github/scripts/sync-version.py
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/kerbside-check.yml
@@ -36,7 +40,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
 
     steps:
       - name: Check out repository
@@ -59,7 +63,13 @@ jobs:
             git diff --exit-code -- kerbside-backend/vendor/leaflet
           fi
           cd kerbside-backend
-          npx playwright install --with-deps webkit
+          npx playwright install --with-deps webkit chromium
+
+      - name: Check the version is consistent everywhere
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync-version.py --check
 
       - name: Validate browser JavaScript
         shell: bash
@@ -93,6 +103,17 @@ jobs:
 
       - name: Run WebKit mobile regression checks
         shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+
+      # Same suite, same phone-sized viewport, different engine. WebKit alone
+      # cannot catch a Chromium-only layout, Cache API or input difference,
+      # and Chromium is what Android users run.
+      - name: Run Chromium mobile regression checks
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: chromium
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
