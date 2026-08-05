@@ -194,3 +194,51 @@ jobs:
           else
             git diff --check HEAD^ HEAD
           fi
+
+      - name: Verify merged production is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_version="$(cat VERSION)"
+          expected_hash="$(sha256sum bus.html | cut -d' ' -f1)"
+          app_file="$(mktemp)"
+          worker_file="$(mktemp)"
+          trap 'rm -f "$app_file" "$worker_file"' EXIT
+
+          for attempt in $(seq 1 36); do
+            cache_buster="verification=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
+            app_ok=false
+            worker_ok=false
+
+            if curl --fail --location --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "https://zetabun.github.io/idle-clicker-game/bus.html?$cache_buster" \
+              -o "$app_file"; then
+              deployed_hash="$(sha256sum "$app_file" | cut -d' ' -f1)"
+              [[ "$deployed_hash" == "$expected_hash" ]] && app_ok=true
+            fi
+
+            if curl --fail --location --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "https://kerbside-bus.adambullas.workers.dev/health?$cache_buster" \
+              -o "$worker_file"; then
+              if jq -e --arg version "$expected_version" \
+                '.ok == true and .version == $version and .bods == true' \
+                "$worker_file" >/dev/null; then
+                worker_ok=true
+              fi
+            fi
+
+            if [[ "$app_ok" == true && "$worker_ok" == true ]]; then
+              echo "Live Kerbside app and Worker match version $expected_version."
+              exit 0
+            fi
+
+            echo "Attempt $attempt: app=$app_ok worker=$worker_ok"
+            sleep 10
+          done
+
+          echo "::error::Live production did not converge on Kerbside $expected_version."
+          exit 1
