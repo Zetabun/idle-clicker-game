@@ -7,6 +7,12 @@ on:
     paths:
       - .github/workflows/apply-kerbside-audit.yml
       - .github/scripts/kerbside-audit-patch.gz.b64.*
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-kerbside-audit.yml
+      - .github/scripts/kerbside-audit-patch.gz.b64.*
 
 permissions:
   contents: write
@@ -25,6 +31,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: agent/kerbside-audit-fixes
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -82,7 +89,7 @@ jobs:
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
-          npm run test:identity --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backudit-backend
           npm run test:multi-vehicle --prefix kerbside-backend
           npm run test:audit --prefix kerbside-backend
 
