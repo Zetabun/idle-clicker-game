@@ -113,10 +113,13 @@ html,body{width:100%;height:100%;min-height:0}
    Match that outer canvas to the fixed mobile navigation rather than
    leaving a visually separate dark strip. */
 html,body{background:var(--ink-2)}
+/* Rubber-banding a shell that is meant to be fixed reads as the whole app
+   sliding under the browser chrome, so refuse the overscroll on both. */
+html{overflow:hidden;overscroll-behavior:none}
 body{
   margin:0;color:var(--text);
   font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
-  font-size:15px;line-height:1.45;overflow:hidden;
+  font-size:15px;line-height:1.45;overflow:hidden;overscroll-behavior:none;
   -webkit-font-smoothing:antialiased;
 }
 button,input,select{font:inherit;color:inherit}
@@ -127,6 +130,13 @@ button{cursor:pointer;border:0;background:none}
 #app{
   position:fixed;inset:0;display:flex;flex-direction:column;width:100%;
   height:auto;min-height:0;background:var(--ink);overflow:hidden;
+  /* inset:0 sizes the shell to the *layout* viewport, which on mobile Safari
+     stays at its large size while the URL bar is on screen. The bottom nav
+     then sat below the fold and the page could be dragged up to reach it,
+     which is the "it scrolls a bit" report. 100dvh tracks the viewport that
+     is actually visible; with a height set, the bottom inset is ignored, and
+     a browser too old for dvh simply keeps the inset:0 behaviour. */
+  height:100dvh;
 }
 #topbar{
   display:flex;align-items:center;gap:10px;
@@ -488,8 +498,18 @@ button{cursor:pointer;border:0;background:none}
 .veh.sel .body{background:var(--live);box-shadow:0 0 0 2px var(--ink),0 0 16px var(--live)}
 .veh.sel .cone::before{border-bottom-color:var(--live)}
 .me{width:18px;height:18px;border-radius:50%;background:var(--live);border:3px solid var(--ink);box-shadow:0 0 0 2px var(--live),0 0 18px rgb(var(--live-rgb) / .5)}
-.stopmark{width:11px;height:11px;border-radius:50%;background:var(--ink);border:2px solid var(--text-dim)}
-.stopmark.sel{background:var(--led);border-color:var(--on-accent);width:15px;height:15px;box-shadow:0 0 12px var(--led)}
+/* Stop markers echo the Kerbside logo: a location pin with a bus knocked out
+   of it. The pin points at the kerb it marks, so it is anchored on its tip
+   rather than its centre. Deliberately kept tiny — up to 80 are drawn at once
+   and they must not crowd the map. */
+.stopmark{display:block;width:13px;height:17px;filter:drop-shadow(0 1px 1.5px rgb(var(--shadow-rgb) / .55))}
+.stopmark .pin-body{fill:var(--text-dim)}
+.stopmark .pin-hole{fill:var(--ink)}
+.stopmark .pin-mark{fill:var(--text-dim)}
+.stopmark.sel{width:19px;height:25px;filter:drop-shadow(0 0 7px var(--led)) drop-shadow(0 1px 2px rgb(var(--shadow-rgb) / .6))}
+.stopmark.sel .pin-body{fill:var(--led)}
+.stopmark.sel .pin-hole{fill:var(--on-accent)}
+.stopmark.sel .pin-mark{fill:var(--led)}
 .anchormark{
   font-family:'Martian Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;
   color:var(--text);background:rgb(var(--ink-2-rgb) / .92);border:1px solid var(--rule);
@@ -619,16 +639,22 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .brand-icon{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain}
   .brand .dot,.brand small{display:none}
   .brand h1{font-size:22px;line-height:1;letter-spacing:-.055em}
+  /* Sharing one row with the direction switch and the settings button left a
+     161.8px input carrying 111px of icon padding: 50.8px of usable text, too
+     narrow to read back even a short place name. The row stays — it is the
+     compact header this app wants — but the padding is bought back instead.
+     The leading pin is decoration the placeholder already explains, and the
+     two trailing controls are tightened, which roughly doubles the text area
+     without moving a single control off the row. */
   .searchwrap{grid-area:search;order:initial;flex:none;min-width:0;width:100%;height:46px}
-  .searchwrap input{height:46px;border-radius:10px;padding:10px 72px 10px 39px;font-size:16px}
-  .searchwrap .pin{left:12px}
-  .searchwrap .pin svg{width:20px;height:20px}
-  .searchwrap .go{right:36px;padding:6px 4px;font-size:12px}
-  .searchwrap .locate{right:7px;padding:5px}
-  .searchwrap .locate svg{width:19px;height:19px}
-  .dirswitch{grid-area:directions;margin:0;align-self:stretch;min-width:0;height:46px;border-radius:10px}
-  .dirswitch button{height:38px;min-width:0;padding:0 8px;border-radius:8px;font-size:12px;gap:3px}
-  .dirswitch button .arrow{font-size:12px}
+  .searchwrap input{height:46px;border-radius:10px;padding:10px 60px 10px 13px;font-size:16px}
+  .searchwrap .pin{display:none}
+  .searchwrap .go{right:31px;padding:6px 3px;font-size:11.5px}
+  .searchwrap .locate{right:5px;padding:4px}
+  .searchwrap .locate svg{width:18px;height:18px}
+  .dirswitch{grid-area:directions;margin:0;align-self:stretch;min-width:0;height:46px;border-radius:10px;padding:3px 2px;gap:1px}
+  .dirswitch button{height:38px;min-width:0;padding:0 7px;border-radius:8px;font-size:11.5px;gap:0}
+  .dirswitch button .arrow{display:none}
   .lbl{display:none}
   .lblshort{display:inline}
   #setBtn{
@@ -647,13 +673,10 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
 
 @media (max-width:360px){
   #topbar{grid-template-columns:minmax(125px,1fr) auto 38px;column-gap:4px;padding-left:8px;padding-right:8px}
-  .searchwrap .pin{display:none}
-  .searchwrap input{padding-left:10px;padding-right:58px}
-  .searchwrap .go{right:27px;padding-left:1px;padding-right:1px;font-size:10.5px}
+  .searchwrap input{padding-left:10px;padding-right:54px}
+  .searchwrap .go{right:26px;padding-left:1px;padding-right:1px;font-size:10.5px}
   .searchwrap .locate{right:1px}
-  .dirswitch{padding-left:2px;padding-right:2px;gap:0}
   .dirswitch button{padding-left:4px;padding-right:4px;font-size:11px}
-  .dirswitch button .arrow{display:none}
   #setBtn{width:38px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -1042,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.94';
+const APP_VERSION = '0.6.95';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1676,26 +1699,74 @@ async function overpass(query,quiet){
   throw lastErr || new Error('Overpass timeout');
 }
 
-/* Stops barely change, so cache them per area for a week.
-   Saves hammering Overpass on every visit. */
+/* Stops barely change, so cache them per area for a week. Saves rebuilding the
+   whole set — national tiles plus Overpass — on every visit.
+
+   The key used to carry lat/lon at four decimal places, which is about 11
+   metres. A phone fix wanders further than that standing still, so a returning
+   visit almost always minted a fresh key, missed a cache that was sitting
+   right there, and rebuilt from scratch: the cache existed but effectively
+   never hit. Stops are quantised onto a ~550 m grid instead, and a read also
+   accepts a neighbouring cell whose centre is close enough and whose radius
+   covers what was asked for, so wandering across a cell boundary still hits.
+   Grid cells are written into the key, so the old v6 entries just age out. */
 const STOP_TTL = 7*24*3600*1000;
+const STOP_CACHE_GRID = 0.005;          // ~550 m of latitude
+const STOP_CACHE_PREFIX = 'kerbside.stops.v7.';
+const STOP_CACHE_REUSE_METRES = 400;
+function stopCacheCell(lat,lon){
+  return [Math.round(Number(lat)/STOP_CACHE_GRID),Math.round(Number(lon)/STOP_CACHE_GRID)];
+}
 function stopCacheKey(lat,lon,radius){
-  return 'kerbside.stops.v6.'+lat.toFixed(4)+','+lon.toFixed(4)+','+radius;
+  const [y,x]=stopCacheCell(lat,lon);
+  return STOP_CACHE_PREFIX+y+','+x+','+radius;
+}
+function readStopCacheEntry(key,lat,lon,radius,now){
+  try{
+    const raw=localStorage.getItem(key);
+    if(!raw) return null;
+    const o=JSON.parse(raw);
+    if(!o||!Array.isArray(o.stops)||!o.stops.length) return null;
+    if(!Number.isFinite(Number(o.ts))||now-Number(o.ts)>STOP_TTL) return null;
+    // A cell recorded for a tighter radius does not cover this search.
+    if(Number(o.radius||radius)<Number(radius)) return null;
+    // The stored centre is the real search point, not the cell, so distance is
+    // measured against where the stops were actually gathered.
+    if(isFinite(Number(o.lat))&&isFinite(Number(o.lon))
+       && dist(lat,lon,Number(o.lat),Number(o.lon))>STOP_CACHE_REUSE_METRES) return null;
+    return o;
+  }catch(e){ return null; }
 }
 function readStopCache(lat,lon,radius){
   if(!store.ok || !S.remember) return null;
-  try{
-    const raw = localStorage.getItem(stopCacheKey(lat,lon,radius));
-    if(!raw) return null;
-    const o = JSON.parse(raw);
-    if(Date.now()-o.ts > STOP_TTL) return null;
-    return o;
-  }catch(e){ return null; }
+  const now=Date.now(), [y,x]=stopCacheCell(lat,lon);
+  let best=null, bestMetres=Infinity;
+  for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+    const entry=readStopCacheEntry(STOP_CACHE_PREFIX+(y+dy)+','+(x+dx)+','+radius,lat,lon,radius,now);
+    if(!entry) continue;
+    const metres=isFinite(Number(entry.lat))&&isFinite(Number(entry.lon))
+      ? dist(lat,lon,Number(entry.lat),Number(entry.lon)) : 0;
+    if(metres<bestMetres){ best=entry; bestMetres=metres; }
+  }
+  return best;
 }
 function writeStopCache(lat,lon,radius,stops,anchor){
   if(!store.ok || !S.remember) return;
   try{ localStorage.setItem(stopCacheKey(lat,lon,radius),
-        JSON.stringify({ts:Date.now(),stops,anchor})); }catch(e){}
+        JSON.stringify({ts:Date.now(),lat,lon,radius,stops,anchor})); }catch(e){
+    // A full quota should not cost the caller its stops; drop stale stop cells
+    // and try once more before giving up.
+    try{
+      const now=Date.now();
+      for(let i=localStorage.length-1;i>=0;i--){
+        const k=localStorage.key(i);
+        if(!k||!k.startsWith(STOP_CACHE_PREFIX)) continue;
+        let rec=null; try{ rec=JSON.parse(localStorage.getItem(k)||'null'); }catch(err){ rec=null; }
+        if(!rec||!Number.isFinite(Number(rec.ts))||now-Number(rec.ts)>STOP_TTL) localStorage.removeItem(k);
+      }
+      localStorage.setItem(stopCacheKey(lat,lon,radius),JSON.stringify({ts:Date.now(),lat,lon,radius,stops,anchor}));
+    }catch(err){}
+  }
 }
 
 /* Nearest town/city/suburb centre — the reference point for "into town" */
@@ -2205,7 +2276,7 @@ function showDiscoveredStops(stops,lat,lon,cacheable){
   S.pendingStopId=null; selectStop(want||S.stops[0]); return true;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),stopCacheKey,sameDiscoveredStop,mergeDiscoveredStops};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),stopCacheKey,readStopCache,writeStopCache,sameDiscoveredStop,mergeDiscoveredStops,stopMarkerSvg};
 }
 
 async function findStops(lat,lon,run){
@@ -2283,17 +2354,32 @@ function selectStopFromMap(s){
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),selectStopFromMap};
 }
+/* One pin, two sizes. The bus is a hole in the pin head with the window band
+   and wheels punched back out in the pin colour, which is how the app icon is
+   drawn and the only treatment that still reads as a bus at 13px. */
+function stopMarkerSvg(sel){
+  return '<svg class="stopmark'+(sel?' sel':'')+'" viewBox="0 0 24 32" aria-hidden="true" focusable="false">'
+    +'<path class="pin-body" d="M12 1.1c-5.35 0-9.7 4.3-9.7 9.6 0 7.05 9.7 20.2 9.7 20.2s9.7-13.15 9.7-20.2c0-5.3-4.35-9.6-9.7-9.6Z"/>'
+    +'<rect class="pin-hole" x="7" y="5.6" width="10" height="10" rx="2.1"/>'
+    +'<rect class="pin-mark" x="8.6" y="7.3" width="6.8" height="3.3" rx=".9"/>'
+    +'<rect class="pin-mark" x="8.8" y="12.2" width="2" height="1.8" rx=".9"/>'
+    +'<rect class="pin-mark" x="13.2" y="12.2" width="2" height="1.8" rx=".9"/>'
+    +'</svg>';
+}
 function drawStops(){
   stopLayer.clearLayers();
   S.stops.slice(0,80).forEach(s=>{
     const sel = S.stop && s.id===S.stop.id;
     const m = L.marker([s.lat,s.lon],{
-      icon:L.divIcon({className:'',html:'<div class="stopmark'+(sel?' sel':'')+'"></div>',
-        iconSize:sel?[15,15]:[11,11], iconAnchor:sel?[7,7]:[5,5]}),
+      icon:L.divIcon({className:'',html:stopMarkerSvg(sel),
+        // Anchored on the tip of the pin, which is the point that marks the stop.
+        iconSize:sel?[19,25]:[13,17], iconAnchor:sel?[9.5,25]:[6.5,17]}),
       zIndexOffset: sel?500:0
     }).addTo(stopLayer);
     m.on('click',()=>selectStopFromMap(s));
-    m.bindTooltip(s.name+(s.ind?' ('+s.ind+')':''),{direction:'top',offset:[0,-8],className:'stoptip'});
+    // The pin rises from its anchor, so the label has to clear its full height
+    // rather than the 8px a centred dot needed.
+    m.bindTooltip(s.name+(s.ind?' ('+s.ind+')':''),{direction:'top',offset:[0,sel?-25:-17],className:'stoptip'});
   });
 }
 
@@ -3908,13 +3994,39 @@ function lineSpeed(v){
 function routeIdentityToken(value){
   return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
 }
+/* Two identifiers only disagree if they were minted in the same namespace, and
+   the scheduled and live sides of this app are not.
+
+   The national GTFS export labels every route with an opaque BODS agency id —
+   every published value is OP<digits> (OP539, OP10924) — while SIRI-VM
+   publishes a National Operator Code (BNSM, BNML, NATX). The two spaces never
+   intersect, so "different string" carried no information at all. Treating it
+   as proof of a different operator returned -1 for every timetable row against
+   every live bus, which emptied ttRows in routeEvidence(), dropped every
+   vehicle to score 0, filtered the buses off the map through
+   vehicleMarkerPlan(), and left every scheduled departure reporting
+   "no unique journey match".
+
+   The same applies to the route pair: a GTFS route_id is an opaque number
+   (10423673, 5250) and a SIRI LineRef is the public line name (192), so an
+   equality between two numbers drawn from those two spaces is a coincidence
+   rather than a match — it would inflate confidence on the wrong journey.
+   Only a route id that is not a bare number can be compared.
+
+   Compare only like with like. The guard stays live for any feed that does
+   publish a real NOC on both sides. */
+const OPAQUE_AGENCY_ID=/^op\d+$/;
+const OPAQUE_ROUTE_ID=/^\d+$/;
+function comparableIdentity(live,scheduled,opaque){
+  return !!live&&!!scheduled&&!opaque.test(live)&&!opaque.test(scheduled);
+}
 function routeIdentityAgreement(row,identity){
   const liveOwner=routeIdentityToken(identity&&(identity.owner||identity.operator));
   const liveRoute=routeIdentityToken(identity&&identity.lineRef);
   const scheduledOwner=routeIdentityToken(row&&row.operator);
   const scheduledRoute=routeIdentityToken(row&&row.routeId);
-  const ownerCompared=!!(liveOwner&&scheduledOwner);
-  const routeCompared=!!(liveRoute&&scheduledRoute);
+  const ownerCompared=comparableIdentity(liveOwner,scheduledOwner,OPAQUE_AGENCY_ID);
+  const routeCompared=comparableIdentity(liveRoute,scheduledRoute,OPAQUE_ROUTE_ID);
   if(ownerCompared&&liveOwner!==scheduledOwner) return -1;
   if(ownerCompared&&liveOwner===scheduledOwner) return 2;
   if(routeCompared&&liveRoute===scheduledRoute) return 1;
@@ -3924,8 +4036,10 @@ function timetableIdentityRows(rows,identity){
   const list=Array.isArray(rows)?rows:[];
   const matched=list.filter(row=>routeIdentityAgreement(row,identity)>0);
   const liveOwner=routeIdentityToken(identity&&(identity.owner||identity.operator));
-  const ownerRows=list.filter(row=>routeIdentityToken(row&&row.operator));
-  const ownerConflict=!!(liveOwner&&ownerRows.length&&!ownerRows.some(row=>routeIdentityToken(row.operator)===liveOwner));
+  // Only rows whose operator is actually comparable to the live one can
+  // establish a conflict; an opaque agency id abstains rather than objecting.
+  const ownerRows=list.filter(row=>comparableIdentity(liveOwner,routeIdentityToken(row&&row.operator),OPAQUE_AGENCY_ID));
+  const ownerConflict=!!(ownerRows.length&&!ownerRows.some(row=>routeIdentityToken(row.operator)===liveOwner));
   return {rows:matched.length?matched:(ownerConflict?[]:list),strong:matched.length>0,conflict:ownerConflict};
 }
 function routeEvidence(line,dest,journey,identity){
@@ -4660,7 +4774,7 @@ function journeyProgressHtml(v){
   }
   const next=progress.nextIndex>=0&&progress.nextIndex<progress.stops.length?progress.stops[progress.nextIndex]:null;
   const selected=progress.selectedIndex>=0?progress.stops[progress.selectedIndex]:null;
-  const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops guide progress · this operator publishes no road shape';
+  const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops guide progress · no road shape published for this journey';
   const stopList=progress.stops.length?'<div class="journey-stops">'+progress.stops.map((stop,index)=>{
     const states=[];
     // The stop the bus is standing at is the current one, not a previous one:
@@ -4685,7 +4799,9 @@ function journeyProgressHtml(v){
     +'<span><b>'+progress.remainingStops+'</b><small>Stops remaining</small></span>'
     +'<span><b>'+esc(selected?(progress.selectedIndex<progress.nextIndex?'Passed':Math.max(0,progress.selectedIndex-progress.nextIndex)+' ahead'):'Not identified')+'</b><small>Your stop</small></span>'
     +'</div>'
-    +'<button class="route-map-btn" data-route-map="'+esc(v.id)+'" '+(progress.pattern.shape?'':'disabled')+'>'+(progress.pattern.shape?'View accurate route on map':'Accurate road shape unavailable')+'</button>'
+    // Always actionable. Where no road shape exists the button says what it
+    // will actually draw instead of reporting a dead end.
+    +'<button class="route-map-btn" data-route-map="'+esc(v.id)+'">'+(progress.pattern.shape?'View accurate route on map':'View route through stops on map')+'</button>'
     +stopList+'</div>';
 }
 function lineDetail(r){
@@ -5290,11 +5406,18 @@ function renderSelectedJourney(rows){
     if(!held||!isFinite(heldAge)||heldAge>JOURNEY_ROUTE_HOLD_MS){ clearJourneyRoute(); return; }
   }
   const progress=row?journeyProgress(row.v):null;
-  if(!progress||!progress.pattern||!progress.pattern.shape) return;
+  if(!progress||!progress.pattern) return;
   routeLayer.clearLayers(); renderedJourneyContext=nextContext;
   const split=splitPatternAt(progress.pattern,progress.vehicle);
+  /* Only about 60% of national patterns carry a GTFS road shape, and some
+     regions publish almost none, so refusing to draw anything else left the
+     commonest case with a bare map and a dead button. Without a shape the
+     pattern points are the ordered stops, which is a real and useful line —
+     just not road-accurate. Draw it thinner and dashed so it never passes
+     itself off as surveyed geometry. */
+  const shaped=!!progress.pattern.shape;
   if(split.passed.length>1) L.polyline(split.passed,{color:'#526276',weight:4,opacity:.72,dashArray:'5 7',interactive:false}).addTo(routeLayer);
-  if(split.remaining.length>1) L.polyline(split.remaining,{color:'#FFB000',weight:5,opacity:.92,interactive:false}).addTo(routeLayer);
+  if(split.remaining.length>1) L.polyline(split.remaining,{color:'#FFB000',weight:shaped?5:3.5,opacity:shaped?.92:.8,dashArray:shaped?null:'7 6',interactive:false}).addTo(routeLayer);
   progress.stops.forEach((stop,index)=>{
     const selected=index===progress.selectedIndex, next=index===progress.nextIndex, passed=index<progress.nextIndex;
     const marker=L.circleMarker([stop.lat,stop.lon],{
@@ -5404,7 +5527,7 @@ function showJourneyOnMap(id){
   const v=S.vehicles.get(id); if(!v) return;
   S.selected=id; render(); setAppView('map');
   const progress=journeyProgress(v);
-  if(!progress||!progress.pattern||!progress.pattern.shape) return;
+  if(!progress||!progress.pattern) return;
   // Fitting the whole pattern zoomed out far enough that the bus being
   // tracked was an unreadable speck at one end of the line. Centre on where
   // the vehicle actually is instead; the full route stays drawn underneath,

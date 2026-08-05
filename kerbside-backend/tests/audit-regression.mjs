@@ -73,6 +73,19 @@ try {
       state.selected = null;
       api.setServingForTest({ STOP: { '2': { last: Date.now(), count: 2, vehicles: ['x', 'y'], confirmed: true, source: 'observed' } } });
 
+      /* The shipping data does not put these two identifiers in the same
+         namespace: the national GTFS export labels every route with an opaque
+         BODS agency id (OP539) while SIRI-VM publishes a National Operator
+         Code (BNSM). Reading that as a different operator rejected every
+         timetable row for every live bus in 0.6.93 and 0.6.94 — no route
+         evidence, no buses on the map, every scheduled row reporting
+         "no unique journey match". An opaque id must abstain, not object. */
+      const opaqueRow = { line: '1', trip: 'TRIP-A', head: 'Town Centre', routeId: '10423673', operator: 'OP539' };
+      const nocVehicle = { owner: 'BNSM', operator: 'BNSM', lineRef: '1' };
+      const opaqueAgreement = api.routeIdentityAgreement(opaqueRow, nocVehicle);
+      const opaqueIdentityRows = api.timetableIdentityRows([opaqueRow], nocVehicle);
+      const comparableConflict = api.routeIdentityAgreement({ operator: 'BNML', routeId: 'R1' }, nocVehicle);
+
       const wrongBranch = api.routeEvidence('1', 'Other Branch', '', { owner: 'OP-A', operator: 'OP-A', lineRef: 'ROUTE-A' });
       const correctOperator = api.routeEvidence('1', 'Other Branch', '', { owner: 'OP-B', operator: 'OP-B', lineRef: 'ROUTE-B' });
       const displayFallback = api.routeEvidence('1', 'Town Centre', '', {});
@@ -105,6 +118,10 @@ try {
       });
 
       return {
+        opaqueAgreement,
+        opaqueRowsKept: opaqueIdentityRows.rows.length,
+        opaqueConflict: opaqueIdentityRows.conflict,
+        comparableConflict,
         wrongBranchScore: wrongBranch.score,
         correctOperatorScore: correctOperator.score,
         displayFallbackScore: displayFallback.score,
@@ -120,6 +137,10 @@ try {
     }
   });
 
+  assert.equal(result.opaqueAgreement, 0, 'an opaque BODS agency id cannot disagree with a SIRI operator code');
+  assert.equal(result.opaqueRowsKept, 1, 'an opaque agency id must not discard the timetable row');
+  assert.equal(result.opaqueConflict, false, 'incomparable operator namespaces are not a conflict');
+  assert.equal(result.comparableConflict, -1, 'two real operator codes that differ still conflict');
   assert.ok(result.wrongBranchScore < 2, 'a different operator branch must not be admitted by display line');
   assert.ok(result.correctOperatorScore >= 4, 'matching operator and route should be strongly verified');
   assert.equal(result.displayFallbackScore, 3, 'display line remains a weaker fallback');
