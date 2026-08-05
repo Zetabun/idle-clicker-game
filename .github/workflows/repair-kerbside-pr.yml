@@ -47,7 +47,7 @@ jobs:
           ' > /tmp/run-kerbside-validation.sh
           bash /tmp/run-kerbside-validation.sh
 
-      - name: Package validated repair
+      - name: Prepare validated repair package
         if: steps.validation.outputs.exit_code == '0'
         shell: bash
         run: |
@@ -55,7 +55,42 @@ jobs:
           rm -f .github/failures/kerbside-loop-timeout.log .github/failures/kerbside-v3-status.json
           git add -A
           git diff --cached --check
+          git diff --cached --binary --full-index > /tmp/kerbside-0.6.86.patch
+          test -s /tmp/kerbside-0.6.86.patch
+          {
+            echo '=== status ==='
+            git status --short
+            echo
+            echo '=== changed paths ==='
+            git diff --cached --name-status
+            echo
+            echo '=== file sizes ==='
+            while IFS= read -r -d '' path; do
+              if [[ -f "$path" ]]; then
+                printf '%s\t%s bytes\n' "$path" "$(wc -c < "$path")"
+              else
+                printf '%s\tdeleted\n' "$path"
+              fi
+            done < <(git diff --cached --name-only -z)
+          } > /tmp/kerbside-changed-paths.txt
+          cat /tmp/kerbside-changed-paths.txt
 
+      - name: Upload validated repair diagnostics
+        if: steps.validation.outputs.exit_code == '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerbside-0.6.86-validated-package
+          path: |
+            /tmp/kerbside-0.6.86.patch
+            /tmp/kerbside-changed-paths.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Audit validated repair paths
+        if: steps.validation.outputs.exit_code == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
           allowed='^(VERSION|bus\.html|kerbside-backend/package\.json|kerbside-backend/src/worker\.js|kerbside-backend/test/worker\.test\.js|kerbside-backend/test/app-regression\.test\.js|kerbside-backend/tests/browser-regression\.mjs|\.github/failures/kerbside-loop-timeout\.log|\.github/failures/kerbside-v3-status\.json)$'
           unexpected=0
           while IFS= read -r -d '' path; do
@@ -65,18 +100,6 @@ jobs:
             fi
           done < <(git diff --cached --name-only -z)
           [[ "$unexpected" -eq 0 ]]
-
-          git diff --cached --binary --full-index > /tmp/kerbside-0.6.86.patch
-          test -s /tmp/kerbside-0.6.86.patch
-
-      - name: Upload validated repair patch
-        if: steps.validation.outputs.exit_code == '0'
-        uses: actions/upload-artifact@v4
-        with:
-          name: kerbside-0.6.86-validated-patch
-          path: /tmp/kerbside-0.6.86.patch
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Publish validated repair through GitHub API
         if: steps.validation.outputs.exit_code == '0'
