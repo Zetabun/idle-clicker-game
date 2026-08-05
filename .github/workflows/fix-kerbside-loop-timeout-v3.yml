@@ -1,0 +1,141 @@
+name: Validate Kerbside loop timeout fix v3
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-kerbside-loop-timeout-v3.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-loop-timeout-v3
+  cancel-in-progress: true
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+
+    steps:
+      - name: Check out triggering revision
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply and validate with labeled diagnostics
+        id: validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/run-validation.sh <<'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          git show 24f2d09522e63f80f2fc1fc96a237154e9bc5d98:.github/workflows/fix-kerbside-circular-timeout.yml > /tmp/historical-workflow.yml
+          ruby -ryaml -e '
+            workflow = YAML.load_file("/tmp/historical-workflow.yml")
+            steps = workflow.fetch("jobs").fetch("patch-test-commit").fetch("steps")
+            step = steps.find { |item| item["name"] == "Apply circular-stop and complete-body timeout fixes" }
+            abort "Historical patch step not found" unless step && step["run"]
+            print step["run"]
+          ' > /tmp/apply-fix.sh
+          bash /tmp/apply-fix.sh
+
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+          cd ..
+
+          python3 .github/scripts/sync-version.py --check
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          print(f'Validated {len(scripts)} inline browser script(s).')
+          PY
+          node --check build-timetable.js
+          npm --prefix kerbside-backend run check
+          npm --prefix kerbside-backend test
+          node kerbside-backend/tests/identity-regression.mjs
+          npm --prefix kerbside-backend run test:browser
+          KERBSIDE_BROWSER=chromium npm --prefix kerbside-backend run test:browser
+          git diff --check
+          SCRIPT
+          chmod +x /tmp/run-validation.sh
+
+          set +e
+          /tmp/run-validation.sh > /tmp/kerbside-validation.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/kerbside-validation.log
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Publish validated Kerbside 0.6.86
+        if: steps.validation.outputs.exit_code == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml .github/failures/kerbside-loop-timeout.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Kerbside 0.6.86: keep circular calls live and time complete bodies' \
+            -m 'Match a returning bus to the repeated stop visit still ahead on its ordered journey, including inference and corridor scans.' \
+            -m 'Keep browser abort timers armed until XML and JSON response bodies have fully downloaded.'
+
+          git fetch origin main
+          remote_sha="$(git rev-parse origin/main)"
+          if [[ "$remote_sha" != "$GITHUB_SHA" ]]; then
+            changed="$(git diff --name-only "$GITHUB_SHA"..origin/main)"
+            printf 'Main moved during validation:\n%s\n' "$changed"
+            if grep -Eq '^(VERSION|bus\.html|build-timetable\.js|kerbside-backend/|\.github/scripts/sync-version\.py)' <<<"$changed"; then
+              echo '::error::Main changed in a Kerbside source path during validation.'
+              exit 1
+            fi
+            git rebase origin/main
+          fi
+          git push origin HEAD:main
+
+      - name: Record labeled validation failure
+        if: steps.validation.outputs.exit_code != '0'
+        env:
+          EXIT_CODE: ${{ steps.validation.outputs.exit_code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml
+          mkdir -p .github/failures
+          {
+            echo "Workflow run: $GITHUB_RUN_ID"
+            echo "Validation exit code: $EXIT_CODE"
+            echo
+            cat /tmp/kerbside-validation.log
+          } > .github/failures/kerbside-loop-timeout.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Record labeled Kerbside loop timeout validation failure'
+          git push origin HEAD:main
