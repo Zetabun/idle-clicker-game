@@ -90,6 +90,7 @@ jobs:
           ]
           lines[start:index + 1] = replacement
           text = '\n'.join(lines) + '\n'
+
           old_runtime = '''    brandAbove:true,searchAboveControls:true,searchFullWidth:true,
               controlsAligned:true,controlsOrdered:true,withinViewport:true,'''
           new_runtime = '''    brandAbove:true,searchAboveControls:false,searchFullWidth:false,
@@ -97,6 +98,36 @@ jobs:
           if text.count(old_runtime) != 1:
               raise SystemExit(f'mobile runtime expectation: expected one match, found {text.count(old_runtime)}')
           text = text.replace(old_runtime, new_runtime, 1)
+
+          old_responsive = '''      return {overflow:document.documentElement.scrollWidth-window.innerWidth,searchWidth:search.width,aligned:Math.abs(directions.top-settings.top),searchBelowNothing:search.bottom<=Math.min(directions.top,settings.top)+2,viewbar:getComputedStyle(document.getElementById('viewbar')).display};
+              }));
+            }
+            for(const layout of mobileLayouts){
+              assert.ok(layout.overflow<=1,JSON.stringify(layout));
+              assert.ok(layout.searchWidth>=260,JSON.stringify(layout));
+              assert.ok(layout.searchBelowNothing,JSON.stringify(layout));
+              assert.ok(layout.aligned<=2,JSON.stringify(layout));
+              assert.equal(layout.viewbar,'flex');
+            }'''
+          new_responsive = '''      return {
+                overflow:document.documentElement.scrollWidth-window.innerWidth,
+                searchWidth:search.width,
+                aligned:Math.max(search.top,directions.top,settings.top)-Math.min(search.top,directions.top,settings.top),
+                ordered:search.right<=directions.left+1&&directions.right<=settings.left+1,
+                viewbar:getComputedStyle(document.getElementById('viewbar')).display
+              };
+              }));
+            }
+            for(const layout of mobileLayouts){
+              assert.ok(layout.overflow<=1,JSON.stringify(layout));
+              assert.ok(layout.searchWidth>=120,JSON.stringify(layout));
+              assert.ok(layout.aligned<=2,JSON.stringify(layout));
+              assert.ok(layout.ordered,JSON.stringify(layout));
+              assert.equal(layout.viewbar,'flex');
+            }'''
+          if text.count(old_responsive) != 1:
+              raise SystemExit(f'responsive mobile layout expectation: expected one match, found {text.count(old_responsive)}')
+          text = text.replace(old_responsive, new_responsive, 1)
           regression.write_text(text, encoding='utf-8')
 
           Path('VERSION').write_text('0.6.94\n', encoding='utf-8')
