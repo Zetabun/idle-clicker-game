@@ -1,0 +1,109 @@
+name: Diagnose Kerbside live regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/diagnose-kerbside-live.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Install browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps chromium
+      - name: Reproduce live app at Brightstone Road
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import { writeFile } from 'node:fs/promises';
+
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({
+            viewport: { width: 393, height: 852 },
+            isMobile: true,
+            hasTouch: true,
+            locale: 'en-GB',
+            timezoneId: 'Europe/London',
+            geolocation: { latitude: 52.407139, longitude: -2.008077 },
+            permissions: ['geolocation']
+          });
+          const page = await context.newPage();
+          const pageErrors = [];
+          const consoleErrors = [];
+          const failedRequests = [];
+          const badResponses = [];
+          page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+          page.on('console', message => {
+            if (message.type() === 'error' || message.type() === 'warning') {
+              consoleErrors.push(`${message.type()}: ${message.text()}`);
+            }
+          });
+          page.on('requestfailed', request => failedRequests.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText || 'unknown'}`));
+          page.on('response', response => {
+            if (response.status() >= 400) badResponses.push(`${response.status()} ${response.url()}`);
+          });
+
+          const url = `https://zetabun.github.io/idle-clicker-game/bus.html?diag=${Date.now()}`;
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+          await page.locator('#map.leaflet-container').waitFor({ state: 'visible', timeout: 30000 });
+          await page.locator('#locBtn').click();
+          await page.locator('#dAll').click();
+          await page.waitForTimeout(30000);
+
+          const snapshot = await page.evaluate(() => {
+            const rect = selector => {
+              const node = document.querySelector(selector);
+              if (!node) return null;
+              const r = node.getBoundingClientRect();
+              return { x: r.x, y: r.y, width: r.width, height: r.height, display: getComputedStyle(node).display };
+            };
+            return {
+              version: document.documentElement.innerHTML.match(/const APP_VERSION = '([^']+)'/)?.[1] || '',
+              stopName: document.querySelector('#stopName')?.textContent?.trim() || '',
+              stopMeta: document.querySelector('#stopMeta')?.textContent?.trim() || '',
+              status: document.querySelector('#statusText')?.textContent?.trim() || '',
+              empty: document.querySelector('#empty')?.textContent?.trim().replace(/\s+/g, ' ') || '',
+              departures: document.querySelectorAll('#deps .departure, #deps [data-vehicle-id], #deps .row').length,
+              depChildren: document.querySelector('#deps')?.children.length || 0,
+              mapMarkers: document.querySelectorAll('.leaflet-marker-icon').length,
+              selectedDirection: [...document.querySelectorAll('.dirswitch button')].find(button => button.getAttribute('aria-pressed') === 'true')?.id || '',
+              topbar: rect('#topbar'),
+              search: rect('.searchwrap'),
+              directions: rect('.dirswitch'),
+              settings: rect('#setBtn'),
+              bodyText: document.body.innerText.slice(0, 3000)
+            };
+          });
+
+          await page.screenshot({ path: 'kerbside-live-diagnostic.png', fullPage: true });
+          const report = { snapshot, pageErrors, consoleErrors, failedRequests, badResponses };
+          await writeFile('kerbside-live-diagnostic.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(report, null, 2));
+          await browser.close();
+          NODE
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerbside-live-diagnostic
+          path: |
+            kerbside-backend/kerbside-live-diagnostic.json
+            kerbside-backend/kerbside-live-diagnostic.png
+          if-no-files-found: error
+          retention-days: 1
