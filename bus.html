@@ -1044,7 +1044,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.90';
+const APP_VERSION = '0.6.91';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3208,7 +3208,7 @@ function liveVehicleIdentity(fields){
    working. Used to retire a superseded journey rather than leave it on
    the board as a second, stale copy of the same vehicle. */
 function physicalVehicleKey(v){
-  const owner=String(v&&v.operator||'').trim()||'unknown';
+  const owner=String(v&&(v.owner||v.operator)||'').trim()||'unknown';
   const vehicle=String(v&&v.vehicleRef||'').trim();
   return vehicle?owner+'|'+vehicle:'';
 }
@@ -3320,8 +3320,15 @@ function parseLivePayloads(items,now){
     const xml=new DOMParser().parseFromString(String(item&&item.text||''),'application/xml');
     if(xml.querySelector('parsererror')){malformed++;continue;}
     const acts=[...xml.getElementsByTagName('*')].filter(node=>node.localName==='VehicleActivity');
+    /* ProducerRef is published once per response on the ServiceDelivery, never
+       inside a VehicleActivity, and flatten() only walks the activity — so the
+       fallback from OperatorRef to ProducerRef in liveVehicleIdentity could
+       never fire. Carry the response-level value onto each record so it can. */
+    const producerNode=[...xml.getElementsByTagName('*')].find(node=>node.localName==='ProducerRef');
+    const producerRef=producerNode?String(producerNode.textContent||'').trim():'';
     for(const activity of acts){
       const f=flatten(activity);
+      if(!f.ProducerRef&&producerRef) f.ProducerRef=producerRef;
       const lat=parseFloat(f.Latitude),lon=parseFloat(f.Longitude);
       if(!isFinite(lat)||!isFinite(lon)) continue;
       const parsed=f.RecordedAtTime?Date.parse(f.RecordedAtTime):NaN;
@@ -3338,6 +3345,9 @@ function parseLivePayloads(items,now){
         line:cleanLine(f.PublishedLineName||f.LineRef||'?'),lineRef:f.LineRef||'',
         dest:cleanName(f.DestinationName||f.DirectionName||''),destRef:f.DestinationRef||'',
         origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',operator:f.OperatorRef||'',
+        // The owner baseId was built from. Identical to operator on a compliant
+        // feed; the producer only stands in when OperatorRef is absent.
+        owner:String(f.OperatorRef||f.ProducerRef||'').trim(),
         declaredDir:(f.DirectionRef||'').toLowerCase(),lat,lon,bearing:parseFloat(f.Bearing),
         feedSpeed:parseFloat(f.Velocity),aimedOriginAt:f.OriginAimedDepartureTime?Date.parse(f.OriginAimedDepartureTime):NaN,
         aimedDestinationAt:f.DestinationAimedArrivalTime?Date.parse(f.DestinationAimedArrivalTime):NaN,
@@ -3836,7 +3846,7 @@ let LINES = {};   // operator/route/line key -> {f,n,sp,sn}
 
 function lineLearningKey(value){
   const v=value&&typeof value==='object'?value:{line:value};
-  const operator=String(v.operator||'').trim().toLowerCase();
+  const operator=String(v.owner||v.operator||'').trim().toLowerCase();
   const route=String(v.lineRef||v.routeRef||v.line||'').trim().toLowerCase();
   const line=cleanLine(v.line||route||'?').toLowerCase();
   return [operator||'unknown-operator',route||line,line].join('|');

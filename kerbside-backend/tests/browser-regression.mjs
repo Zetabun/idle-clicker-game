@@ -80,7 +80,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.90'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.91'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -284,6 +284,15 @@ assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedS
 // different buses, while the same bus legitimately repeats across the
 // overlapping bounding boxes the app fetches. Executable proof for both
 // directions lives in identity-regression.mjs.
+// ProducerRef sits on the ServiceDelivery, not the VehicleActivity, so the
+// fallback from OperatorRef to it could never fire against a real response.
+// Carry it onto each record, and key retirement and learning on the owner the
+// identity was actually built from rather than collapsing both to "unknown".
+assert.match(busSource, /const producerNode=\[\.\.\.xml\.getElementsByTagName\('\*'\)\]\.find\(node=>node\.localName==='ProducerRef'\);/);
+assert.match(busSource, /if\(!f\.ProducerRef&&producerRef\) f\.ProducerRef=producerRef;/);
+assert.match(busSource, /owner:String\(f\.OperatorRef\|\|f\.ProducerRef\|\|''\)\.trim\(\),/);
+assert.match(busSource, /const owner=String\(v&&\(v\.owner\|\|v\.operator\)\|\|''\)\.trim\(\)\|\|'unknown';/);
+assert.match(busSource, /const operator=String\(v\.owner\|\|v\.operator\|\|''\)\.trim\(\)\.toLowerCase\(\);/);
 // Locally observed evidence is proximity-based and cannot tell the far
 // carriageway, the next stand or a parallel road from this stop. Where the stop
 // has a current official timetable that omits the line, the timetable wins and
@@ -1527,7 +1536,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.90'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.91'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
