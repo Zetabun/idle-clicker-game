@@ -295,7 +295,10 @@ assert.match(busSource, /const dirWord=heading\?'to '\+heading/);
 // it are provenance and belong behind the info button.
 assert.match(busSource, /board-info-panel" id="boardInfoPanel" hidden>\s*<div class="stopmeta" id="stopSource">/);
 assert.match(busSource, /\$\('stopMeta'\)\.innerHTML='<b>'\+fmtDist\(s\.d\)\+'<\/b> from your point';/);
-assert.match(busSource, /id="q"[^>]*placeholder="Search"/);
+assert.match(busSource, /id="q"[^>]*placeholder="search"/);
+assert.doesNotMatch(busSource, /\$\('q'\)\.value='My location'/);
+assert.match(busSource, /\.dirswitch\{grid-area:directions;[^}]*height:46px;[^}]*border-radius:10px/);
+assert.match(busSource, /body\.theme-crystal \.dirswitch button\{border-radius:999px\}/);
 // Crystal is a variable swap, not a second stylesheet. Every tint in the sheet
 // has to be an alpha of a themed component, or a rule keeps its dark colour on
 // a white ground — so no literal rgba() may survive anywhere in the CSS.
@@ -596,7 +599,45 @@ try {
     brandAbove:true,controlsAligned:true,controlsOrdered:true,withinViewport:true,
     searchHeight:46,settingsHeight:46
   });
-  const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('content');
+  const directionControl=await page.evaluate(()=>{
+  const q=document.getElementById('q');
+  const switcher=document.querySelector('.dirswitch');
+  const buttons=[...switcher.querySelectorAll('button')];
+  const both=document.getElementById('dAll');
+  const originalCrystal=document.body.classList.contains('theme-crystal');
+  const originalPressed=buttons.map(button=>button.getAttribute('aria-pressed'));
+  buttons.forEach(button=>button.setAttribute('aria-pressed','false'));
+  both.setAttribute('aria-pressed','true');
+  const capture=crystal=>{
+    document.body.classList.toggle('theme-crystal',crystal);
+    const outer=switcher.getBoundingClientRect();
+    const active=both.getBoundingClientRect();
+    const style=getComputedStyle(both);
+    return {
+      theme:crystal?'crystal':'dark',
+      contained:active.left>=outer.left-.5&&active.top>=outer.top-.5&&active.right<=outer.right+.5&&active.bottom<=outer.bottom+.5,
+      outerHeight:outer.height,
+      activeHeight:active.height,
+      activeRadius:parseFloat(style.borderTopRightRadius)
+    };
+  };
+  const layouts=[capture(false),capture(true)];
+  document.body.classList.toggle('theme-crystal',originalCrystal);
+  buttons.forEach((button,index)=>button.setAttribute('aria-pressed',originalPressed[index]));
+  return {placeholder:q.getAttribute('placeholder'),value:q.value,layouts};
+});
+assert.equal(directionControl.placeholder,'search');
+assert.equal(directionControl.value,'');
+for(const layout of directionControl.layouts){
+  assert.equal(layout.contained,true,`${layout.theme} Both button escaped its direction container`);
+  assert.equal(Math.round(layout.outerHeight),46,`${layout.theme} direction container height changed`);
+  assert.equal(Math.round(layout.activeHeight),38,`${layout.theme} Both button height changed`);
+}
+const darkDirection=directionControl.layouts.find(layout=>layout.theme==='dark');
+const crystalDirection=directionControl.layouts.find(layout=>layout.theme==='crystal');
+assert.ok(darkDirection.activeRadius>=7.5,'Dark-theme Both button no longer follows its rounded container');
+assert.ok(crystalDirection.activeRadius>=crystalDirection.activeHeight/2-1,'Crystal-theme Both button is not pill-shaped');
+const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('content');
   assert.match(viewportContent, /width=device-width/);
   assert.doesNotMatch(viewportContent, /user-scalable|maximum-scale/);
   const scrimTouchAction=await page.evaluate(() => getComputedStyle(document.getElementById('scrim')).touchAction);

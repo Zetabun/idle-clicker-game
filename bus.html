@@ -624,8 +624,8 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .searchwrap .go{right:36px;padding:6px 4px;font-size:12px}
   .searchwrap .locate{right:7px;padding:5px}
   .searchwrap .locate svg{width:19px;height:19px}
-  .dirswitch{grid-area:directions;margin:0;align-self:stretch;min-width:0;border-radius:10px}
-  .dirswitch button{height:38px;padding:0 8px;font-size:12px;gap:3px}
+  .dirswitch{grid-area:directions;margin:0;align-self:stretch;min-width:0;height:46px;border-radius:10px}
+  .dirswitch button{height:38px;min-width:0;padding:0 8px;border-radius:8px;font-size:12px;gap:3px}
   .dirswitch button .arrow{font-size:12px}
   .lbl{display:none}
   .lblshort{display:inline}
@@ -740,6 +740,7 @@ body.theme-crystal .dirswitch,
 body.theme-crystal .settings-tab,
 body.theme-crystal .destchip,
 body.theme-crystal .chip{border-radius:999px}
+body.theme-crystal .dirswitch button{border-radius:999px}
 body.theme-crystal .searchwrap input{background:var(--ink);border-color:transparent}
 body.theme-crystal .searchwrap input:focus{border-color:var(--led);background:var(--ink-2)}
 body.theme-crystal .dep,body.theme-crystal .depwrap,
@@ -779,7 +780,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
       <span class="pin">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       </span>
-      <input id="q" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search for a location">
+      <input id="q" type="text" placeholder="search" autocomplete="off" spellcheck="false" aria-label="Search for a location">
       <button class="go" id="goBtn">Find</button>
       <button class="locate" id="locBtn" title="Use my location" aria-label="Use my location">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
@@ -1616,7 +1617,7 @@ $('locBtn').addEventListener('click', ()=>{
   setStatus('Getting your location','');
   S.pendingStopId = null;                 // moved on purpose — take the nearest stop again
   navigator.geolocation.getCurrentPosition(
-    p=>{ $('q').value='My location'; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
+    p=>{ $('q').value=''; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
     err=>{
       const m = err.code===1 ? 'Location permission was declined. Type an address instead.'
               : err.code===3 ? 'Location timed out. Try again or type an address.'
@@ -5631,7 +5632,7 @@ if(saved && saved.origin && isFinite(saved.origin.lat)){
   // Nothing saved — the whole point is to walk up and open it.
   setStatus('Finding you','');
   navigator.geolocation.getCurrentPosition(
-    p=>{ $('q').value='My location'; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
+    p=>{ $('q').value=''; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
     ()=>{ setStatus('Search a place or use the locate button',''); },
     {enableHighAccuracy:true, timeout:9000, maximumAge:60000}
   );
