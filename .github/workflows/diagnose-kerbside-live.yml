@@ -41,7 +41,7 @@ jobs:
             hasTouch: true,
             locale: 'en-GB',
             timezoneId: 'Europe/London',
-            geolocation: { latitude: 52.407139, longitude: -2.008077 },
+            geolocation: { latitude: 52.40635309, longitude: -2.01148030 },
             permissions: ['geolocation']
           });
           const page = await context.newPage();
@@ -64,8 +64,14 @@ jobs:
             await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
             await page.locator('#topbar').waitFor({ state: 'visible', timeout: 30000 });
             await page.locator('#locBtn').click();
+            await page.waitForTimeout(12000);
+            if (!/Brightstone/i.test(await page.locator('#stopName').innerText())) {
+              await page.locator('#changeStop').click();
+              const brightstone = page.locator('#stopItems').getByText(/Brightstone Road/i).first();
+              if (await brightstone.count()) await brightstone.click();
+            }
             await page.locator('#dAll').click();
-            await page.waitForTimeout(30000);
+            await page.waitForTimeout(22000);
           } catch (error) {
             probeError = error.stack || error.message;
           }
@@ -82,6 +88,7 @@ jobs:
               stopName: document.querySelector('#stopName')?.textContent?.trim() || '',
               stopMeta: document.querySelector('#stopMeta')?.textContent?.trim() || '',
               status: document.querySelector('#statusText')?.textContent?.trim() || '',
+              emptyVisible: (() => { const n=document.querySelector('#empty'); return !!n && getComputedStyle(n).display !== 'none'; })(),
               empty: document.querySelector('#empty')?.textContent?.trim().replace(/\s+/g, ' ') || '',
               depChildren: document.querySelector('#deps')?.children.length || 0,
               mapMarkers: document.querySelectorAll('.leaflet-marker-icon').length,
