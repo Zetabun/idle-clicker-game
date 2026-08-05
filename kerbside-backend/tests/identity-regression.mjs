@@ -3,7 +3,16 @@ import http from 'node:http';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { webkit } from 'playwright';
+import * as playwright from 'playwright';
+
+/* Engine chosen by KERBSIDE_BROWSER, defaulting to WebKit, so this suite runs
+   under the same engines as the main browser regression. */
+const ENGINE_NAME = process.env.KERBSIDE_BROWSER || 'webkit';
+const engine = playwright[ENGINE_NAME];
+if (!engine || typeof engine.launch !== 'function') {
+  throw new Error(`KERBSIDE_BROWSER=${ENGINE_NAME} is not a Playwright engine (expected webkit, chromium or firefox)`);
+}
+console.log(`Regression engine: ${ENGINE_NAME}`);
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
@@ -25,7 +34,7 @@ const server = http.createServer(async (request, response) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const { port } = server.address();
 
-const browser = await webkit.launch({ headless: true });
+const browser = await engine.launch({ headless: true });
 const page = await browser.newPage({ timezoneId: 'Europe/London' });
 const pageErrors = [];
 page.on('pageerror', error => pageErrors.push(error.message));

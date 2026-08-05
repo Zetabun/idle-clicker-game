@@ -101,11 +101,17 @@ jobs:
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
+      # The identity and multi-vehicle suites live in tests/, which node --test
+      # does not discover: it looks for *.test.*, test-* or a directory named
+      # test, and tests/identity-regression.mjs matches none of those. They
+      # have to be named explicitly or they never run.
       - name: Run WebKit mobile regression checks
         shell: bash
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
 
       # Same suite, same phone-sized viewport, different engine. WebKit alone
       # cannot catch a Chromium-only layout, Cache API or input difference,
@@ -117,6 +123,8 @@ jobs:
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
 
       - name: Validate timetable cache policy
         shell: bash

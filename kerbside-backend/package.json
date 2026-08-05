@@ -1,12 +1,14 @@
 {
   "name": "kerbside-backend",
   "private": true,
-  "version": "0.6.86",
+  "version": "0.6.87",
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs",
+    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs && node --check tests/identity-regression.mjs && node --check tests/multi-vehicle-regression.mjs",
     "test": "node --test",
     "test:browser": "node tests/browser-regression.mjs",
+    "test:identity": "node tests/identity-regression.mjs",
+    "test:multi-vehicle": "node tests/multi-vehicle-regression.mjs",
     "vendor:leaflet": "node scripts/vendor-leaflet.js"
   },
   "devDependencies": {
