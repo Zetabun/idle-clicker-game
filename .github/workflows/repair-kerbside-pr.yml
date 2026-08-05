@@ -54,8 +54,9 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
-          rm -f .github/workflows/repair-kerbside-pr.yml
-          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml
+          # Do not change workflow files from GITHUB_TOKEN. GitHub intentionally
+          # rejects those updates from workflow tokens. They are cleaned up via
+          # the repository connector after this validated source commit lands.
           rm -f .github/failures/kerbside-loop-timeout.log .github/failures/kerbside-v3-status.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -76,7 +77,6 @@ jobs:
         run: |
           set -euo pipefail
           git reset --hard "origin/${HEAD_REF}"
-          rm -f .github/workflows/repair-kerbside-pr.yml
           mkdir -p .github/failures
           {
             echo "Workflow run: $GITHUB_RUN_ID"
