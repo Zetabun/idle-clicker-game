@@ -1,0 +1,75 @@
+name: Verify Kerbside 0.6.94 is live
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-kerbside-live-0-6-94.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out expected production source
+        uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Compare deployed app and Worker with main
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_version="$(cat VERSION)"
+          expected_hash="$(sha256sum bus.html | cut -d' ' -f1)"
+          grep -Fq 'grid-template-areas:"brand brand brand" "search directions settings"' bus.html
+          grep -Fq '<button id="dAll" aria-pressed="true">' bus.html
+          grep -Fq "dir:'all'" bus.html
+
+          app_file="$(mktemp)"
+          worker_file="$(mktemp)"
+          trap 'rm -f "$app_file" "$worker_file"' EXIT
+
+          for attempt in $(seq 1 48); do
+            cache_buster="verification=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
+            app_ok=false
+            worker_ok=false
+
+            if curl --fail --location --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "https://zetabun.github.io/idle-clicker-game/bus.html?$cache_buster" \
+              -o "$app_file"; then
+              deployed_hash="$(sha256sum "$app_file" | cut -d' ' -f1)"
+              [[ "$deployed_hash" == "$expected_hash" ]] && app_ok=true
+            fi
+
+            if curl --fail --location --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "https://kerbside-bus.adambullas.workers.dev/health?$cache_buster" \
+              -o "$worker_file"; then
+              if jq -e --arg version "$expected_version" \
+                '.ok == true and .version == $version and .bods == true' \
+                "$worker_file" >/dev/null; then
+                worker_ok=true
+              fi
+            fi
+
+            if [[ "$app_ok" == true && "$worker_ok" == true ]]; then
+              echo "Live Kerbside app and Worker match version $expected_version."
+              exit 0
+            fi
+
+            echo "Attempt $attempt: app=$app_ok worker=$worker_ok"
+            sleep 10
+          done
+
+          echo "::error::Live production did not converge on Kerbside $expected_version."
+          echo "Expected app hash: $expected_hash"
+          echo "Deployed app hash: $(sha256sum "$app_file" | cut -d' ' -f1)"
+          echo 'Worker response:'
+          cat "$worker_file" || true
+          exit 1
