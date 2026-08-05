@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.98'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.99'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -217,7 +217,13 @@ assert.match(busSource, /const directionSchedule=est\.schedule\|\|matchedRow/);
 assert.match(busSource, /scheduledJourneyDirection\(directionSchedule\)/);
 assert.match(busSource, /scheduledJourneyDirection\(r\)/);
 assert.match(busSource, /diagnostics\.recovered\+\+/);
-assert.match(busSource, /function scheduleLiveReason\(schedule\)/);
+/* The reason a scheduled row has no live bus must know which buses are already
+   listed against other departures, or a route running normally reports a
+   matching failure on every later row. */
+assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows\)/);
+assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows\)/);
+assert.match(busSource, /function journeyRefComparable\(ref\)/);
+assert.match(busSource, /already listed/);
 assert.match(busSource, /GPS recovered/);
 assert.doesNotMatch(busSource, /operator GPS unavailable/);
 assert.doesNotMatch(busSource, /GPS received · filtered/);
@@ -1589,7 +1595,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.98'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.99'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

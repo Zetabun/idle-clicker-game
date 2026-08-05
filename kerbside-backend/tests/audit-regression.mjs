@@ -111,6 +111,36 @@ try {
       state.onlyServing = false;
       const unfilteredIds = api.vehicleMarkerPlan([], Date.now()).draw.map(item => item.v.id).sort();
 
+      /* Why a scheduled row has no live bus. Every scheduled departure carries
+         this text as a visible chip, and it read "no unique journey match" on
+         all of them: the only journey comparison available is the SIRI reference
+         against a GTFS trip id, and across 5,356 live vehicles in eight regions
+         99.6% publish a short numeric code ("1910", "0023") while the timetable
+         keys journeys as VJ<hex>. It also counted buses already listed against
+         an earlier departure, so a route running normally reported a matching
+         failure on every later row. */
+      const savedFeed = { demo: state.demo, feedFallback: state.feedFallback, vehicles: state.vehicles };
+      state.demo = false;
+      state.feedFallback = false;
+      const reasonNow = Date.now();
+      const bus61 = {
+        id: 'GAWY|journey|0023|vehicle|YJ58PGE', line: '61', lineRef: '61',
+        owner: 'GAWY', operator: 'GAWY', dest: 'City Centre', journey: '0023',
+        lat: 52.5, lon: -1.9, ts: reasonNow - 20000
+      };
+      state.vehicles = new Map([[bus61.id, bus61]]);
+      const gtfsTrip = suffix => `VJ${suffix}161be4befc54892fcbf73ccadf7d6e3db10bf`;
+      const soonRow = { line: '61', head: 'City Centre', at: reasonNow + 4 * 60000, trip: gtfsTrip('a') };
+      const laterRow = { line: '61', head: 'City Centre', at: reasonNow + 35 * 60000, trip: gtfsTrip('b') };
+      const reasonWhenListed = api.scheduleLiveReason(laterRow, [{ v: bus61, schedule: soonRow }]);
+      const reasonWhenFree = api.scheduleLiveReason(laterRow, []);
+      const reasonOtherRoute = api.scheduleLiveReason({ line: '99', head: 'Elsewhere', at: reasonNow + 600000, trip: gtfsTrip('c') }, []);
+      // A feed that does publish a comparable reference must still be judged.
+      const comparableBus = { ...bus61, id: 'comparable', journey: 'operator:trip-AB99999999' };
+      state.vehicles = new Map([['comparable', comparableBus]]);
+      const reasonComparable = api.scheduleLiveReason({ line: '61', head: 'City Centre', at: reasonNow + 35 * 60000, trip: 'trip-AB12345678' }, []);
+      Object.assign(state, savedFeed);
+
       const calls = [
         { id: 'STOP', sequence: 10, along: 0, lat: 52.5, lon: -1.9 },
         { id: 'MID', sequence: 15, along: 1000, lat: 52.51, lon: -1.89 },
@@ -131,6 +161,13 @@ try {
         opaqueRowsKept: opaqueIdentityRows.rows.length,
         opaqueConflict: opaqueIdentityRows.conflict,
         comparableConflict,
+        reasonWhenListed,
+        reasonWhenFree,
+        reasonOtherRoute,
+        reasonComparable,
+        numericRefComparable: api.journeyRefComparable('0023'),
+        gtfsRefComparable: api.journeyRefComparable(gtfsTrip('a')),
+        aliasRefComparable: api.journeyRefComparable('operator:trip-AB12345678'),
         terminatingHereScore: terminatingHere.score,
         terminatingHereLabel: terminatingHere.label,
         unrelatedDestinationScore: unrelatedDestination.score,
@@ -158,6 +195,13 @@ try {
   assert.equal(result.opaqueRowsKept, 1, 'an opaque agency id must not discard the timetable row');
   assert.equal(result.opaqueConflict, false, 'incomparable operator namespaces are not a conflict');
   assert.equal(result.comparableConflict, -1, 'two real operator codes that differ still conflict');
+  assert.match(result.reasonWhenListed, /already listed/, 'a bus listed against another departure is not a failed match');
+  assert.equal(result.reasonWhenFree, 'operator publishes no matchable journey code');
+  assert.equal(result.reasonOtherRoute, 'no fresh GPS for this route');
+  assert.equal(result.reasonComparable, 'no unique journey match', 'a comparable reference is still judged on its merits');
+  assert.equal(result.numericRefComparable, false, 'a short numeric journey code cannot match a GTFS trip id');
+  assert.equal(result.gtfsRefComparable, true);
+  assert.equal(result.aliasRefComparable, true);
   assert.ok(result.terminatingHereScore >= 2, 'a bus terminating at the selected stop must be admitted');
   assert.match(result.terminatingHereLabel, /terminates at this stop/);
   assert.equal(result.unrelatedDestinationScore, 1, 'an unmatched destination is not a terminus here');

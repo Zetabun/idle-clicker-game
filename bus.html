@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.98';
+const APP_VERSION = '0.6.99';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2640,7 +2640,7 @@ function uniqueCompatibleTrips(items,journey,getRef){
   return {items:strongest.filter(match=>match.ref===ref).map(match=>match.item),ref,strength,ambiguous:false};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),tripRefMatchStrength,uniqueCompatibleTrips};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),tripRefMatchStrength,uniqueCompatibleTrips,meaningfulTripTokens,compactTripRef};
 }
 function timetableDirection(value){
   const direction=String(value||'').trim().toLowerCase();
@@ -4189,7 +4189,7 @@ function retainFiredAlarm(alarm,now){
 }
 function alarmRowEligible(row){ return !!(row&&!row.gpsLost); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,renderServingNote,updateStopMeta,stopDestinationNames};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,scheduleLiveReason,journeyRefComparable,renderServingNote,updateStopMeta,stopDestinationNames};
 }
 function hasAlarm(line,dest){
   return S.stop && ALARMS.some(a=>a.k===alarmKey(S.stop.id,line,dest));
@@ -4883,19 +4883,47 @@ function scheduleKey(r){
   const trip=String((r&&r.trip)||'').trim();
   return trip ? 'trip|'+trip+'|'+r.at : [r&&r.at,r&&r.line,normName(r&&r.head)].join('|');
 }
-function scheduleLiveReason(schedule){
+/* Could this reference match a GTFS trip id at all? tripRefMatchStrength needs
+   equality, a shared prefix or suffix of twelve compact characters, or a shared
+   alphanumeric token of eight. Measured across 5,356 live vehicles in eight
+   regions, 99.6% publish a short numeric journey or block code — usually the
+   origin departure as HHMM, "1910" or "0643" — while the national timetable
+   keys journeys as VJ<hex>. Those two namespaces cannot meet, so failing to
+   match says nothing about the bus, and reporting it as a failed match was
+   misleading. Kept as a capability test rather than a format guess, so a feed
+   that does publish a comparable reference is still matched and still judged. */
+function journeyRefComparable(ref){
+  const value=String(ref||'').trim();
+  if(!value) return false;
+  if(meaningfulTripTokens(value).length) return true;
+  return compactTripRef(value).length>=12;
+}
+function scheduleLiveReason(schedule,liveRows){
   if(S.demo) return 'simulator only';
   if(S.feedFallback) return 'live feed delayed';
   const now=Date.now();
-  const active=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
-  if(!active.length) return 'no fresh GPS found nearby';
-  const sameLine=active.filter(v=>String(v.line)===String(schedule.line));
-  if(!sameLine.length) return 'no fresh GPS for this route';
+  const fresh=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
+  if(!fresh.length) return 'no fresh GPS found nearby';
+  const sameLineAll=fresh.filter(v=>String(v.line)===String(schedule.line));
+  if(!sameLineAll.length) return 'no fresh GPS for this route';
+  /* A bus already listed against another departure is not a candidate for this
+     one. Counting it made every later departure on a busy route report a
+     matching failure when the truth was simply that its own bus has not started
+     yet — the commonest reason a scheduled row has no live bus, and the one this
+     never said. */
+  const listed=new Set((Array.isArray(liveRows)?liveRows:[])
+    .map(row=>String(row&&row.v&&row.v.id||'')).filter(Boolean));
+  const sameLine=sameLineAll.filter(v=>!listed.has(String(v.id)));
+  if(!sameLine.length) return sameLineAll.length>1
+    ? 'the live buses on this route are already listed'
+    : 'the live bus on this route is already listed';
   const sameBranch=sameLine.filter(v=>!schedule.head || !v.dest || destinationSimilarity(v.dest,schedule.head)>=.34);
   if(!sameBranch.length) return 'destination match uncertain';
   const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
   if(liveTrip.items.length) return 'possible GPS match was filtered';
   if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
+  if(!journeyRefComparable(schedule.trip)||!sameBranch.some(v=>journeyRefComparable(v.journey)))
+    return 'operator publishes no matchable journey code';
   return 'no unique journey match';
 }
 // Identity claims the timetable row, not timing. A live bus running well off
@@ -4916,7 +4944,7 @@ function scheduledBoardRows(liveRows){
     if(claimed.has(key) || seen.has(key)) return false;
     seen.add(key); return true;
   }).sort((a,b)=>a.at-b.at).slice(0,36)
-    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule)}));
+    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule,liveRows)}));
 }
 function liveTimingLabel(r){
   if(r.gpsLost||!r.schedule) return '';
