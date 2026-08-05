@@ -1,0 +1,50 @@
+name: Watch Kerbside loop timeout fix
+
+on:
+  workflow_run:
+    workflows:
+      - Fix Kerbside loop tracking and body timeouts
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record outcome and remove watcher
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/watch-kerbside-loop-timeout.yml
+          if [[ "$CONCLUSION" != success ]]; then
+            mkdir -p .github/failures
+            {
+              echo "Workflow conclusion: $CONCLUSION"
+              echo "Workflow run: $RUN_ID"
+              echo
+              gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed || true
+            } > .github/failures/kerbside-loop-timeout.log
+            git add .github/failures/kerbside-loop-timeout.log .github/workflows/watch-kerbside-loop-timeout.yml
+            git commit -m 'Record Kerbside loop timeout validation failure'
+          else
+            git add .github/workflows/watch-kerbside-loop-timeout.yml
+            git commit -m 'Remove temporary Kerbside validation watcher'
+          fi
+          git pull --rebase origin main
+          git push origin HEAD:main
