@@ -54,14 +54,14 @@ jobs:
           )
           replace_exact(
               bus,
-              '<button id="dIn" aria-pressed="true"><span class="arrow">→</span><span class="lbl">Inbound</span><span class="lblshort">In</span></button>',
-              '<button id="dIn" aria-pressed="false"><span class="arrow">→</span><span class="lbl">Inbound</span><span class="lblshort">In</span></button>',
+              '<button id="dIn" aria-pressed="true"><span class="arrow">&#8594;</span><span class="lbl">Into town</span><span class="lblshort">In</span></button>',
+              '<button id="dIn" aria-pressed="false"><span class="arrow">&#8594;</span><span class="lbl">Into town</span><span class="lblshort">In</span></button>',
               'inbound initial button state'
           )
           replace_exact(
               bus,
-              '<button id="dAll" aria-pressed="false"><span class="lbl">Both directions</span><span class="lblshort">Both</span></button>',
-              '<button id="dAll" aria-pressed="true"><span class="lbl">Both directions</span><span class="lblshort">Both</span></button>',
+              '<button id="dAll" aria-pressed="false"><span class="lbl">Both</span><span class="lblshort">Both</span></button>',
+              '<button id="dAll" aria-pressed="true"><span class="lbl">Both</span><span class="lblshort">Both</span></button>',
               'both initial button state'
           )
           replace_exact(
@@ -84,8 +84,8 @@ jobs:
           replacement = [
               '// The compact mobile header keeps location, direction and settings on one row.',
               'assert.match(busSource, /grid-template-areas:"brand brand brand" "search directions settings"/);',
-              'assert.match(busSource, /<button id="dIn" aria-pressed="false">/);',
-              'assert.match(busSource, /<button id="dAll" aria-pressed="true">/);',
+              'assert.ok(busSource.includes(\'<button id="dIn" aria-pressed="false">\'));',
+              'assert.ok(busSource.includes(\'<button id="dAll" aria-pressed="true">\'));',
               "assert.match(busSource, /dir:'all'/);"
           ]
           lines[start:index + 1] = replacement
