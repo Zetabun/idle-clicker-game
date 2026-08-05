@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.95'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.96'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -139,8 +139,21 @@ assert.match(busSource, /const VISUAL_SHAPE_MAX_OFFSET = 500/);
 assert.match(busSource, /const VISUAL_CORRIDOR_MAX_OFFSET = 200/);
 assert.match(busSource, /if\(projection\.metres>\(pattern\.shape\?VISUAL_SHAPE_MAX_OFFSET:VISUAL_CORRIDOR_MAX_OFFSET\)\) return null;/);
 assert.doesNotMatch(busSource, /if\(!v\|\|!pattern\|\|!pattern\.shape\|\|!isFinite\(metres\)/);
-// Guiding motion must never become drawing a road Kerbside cannot verify.
-assert.match(busSource, /if\(!progress\|\|!progress\.pattern\|\|!progress\.pattern\.shape\) return;/);
+/* Kerbside must never claim a road it cannot verify — but refusing to draw
+   anything was the wrong way to honour that. Only 59.8% of national patterns
+   carry a GTFS shape, London 2.1%, and all 400 journeys calling at Piccadilly
+   Gardens carry none, so the commonest case was a disabled button over an empty
+   map. The corridor is now drawn from the ordered stops, and the honesty moves
+   into how it is presented: thinner, dashed, and labelled as stops rather than
+   as a route. These assertions pin that presentation, not the refusal. */
+assert.match(busSource, /const progress=row\?journeyProgress\(row\.v\):null;\n  if\(!progress\|\|!progress\.pattern\) return;/);
+assert.match(busSource, /const shaped=!!progress\.pattern\.shape;/);
+assert.match(busSource, /weight:shaped\?5:3\.5,opacity:shaped\?\.92:\.8,dashArray:shaped\?null:'7 6'/);
+assert.match(busSource, /progress\.pattern\.shape\?'View accurate route on map':'View route through stops on map'/);
+assert.match(busSource, /'Official GTFS route shape':'Ordered stops guide progress · no road shape published for this journey'/);
+// The dead end it replaced must not come back.
+assert.doesNotMatch(busSource, /Accurate road shape unavailable/);
+assert.doesNotMatch(busSource, /data-route-map="'\+esc\(v\.id\)\+'" '\+\(progress\.pattern\.shape\?'':'disabled'\)/);
 // The glide must span the vehicle's own reporting gap. Capping the lead below
 // that interval made the marker cover part of the distance, stall, then leap
 // the rest when the next fix landed.
@@ -1551,7 +1564,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.95'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.96'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
