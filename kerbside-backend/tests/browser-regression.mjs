@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.96'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.97'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -421,13 +421,25 @@ assert.match(busSource, /departureDayOffset=Math\.floor\(mins\/1440\)/);
 assert.match(busSource, /targetOffset-departureDayOffset/);
 assert.match(busSource, /indexTimetableRows,timetableRows/);
 assert.doesNotMatch(busSource, /for\(const offset of \[-1,0,1\]\)\{\n    const serviceDate/);
-assert.match(busSource, /kerbside\.stops\.v6/);
-assert.match(busSource, /lat\.toFixed\(4\)/);
+/* The stop cache is keyed on a coarse grid cell, not on the raw fix. Four
+   decimal places is about 11 metres, which ordinary GPS drift exceeds while the
+   phone sits still, so every return visit minted a new key and rebuilt the whole
+   stop set from a cache that was sitting right there unused. The cell is ~550m,
+   the true centre is stored alongside so proximity can still be checked, and a
+   read sweeps the eight neighbouring cells. */
+assert.match(busSource, /kerbside\.stops\.v7/);
+assert.match(busSource, /const STOP_CACHE_GRID = 0\.005;/);
+assert.match(busSource, /Math\.round\(Number\(lat\)\/STOP_CACHE_GRID\)/);
+assert.match(busSource, /const STOP_CACHE_REUSE_METRES = 400;/);
+assert.match(busSource, /const STOP_TTL = 7\*24\*3600\*1000;/);
+assert.match(busSource, /for\(let dy=-1;dy<=1;dy\+\+\) for\(let dx=-1;dx<=1;dx\+\+\)\{/);
+assert.doesNotMatch(busSource, /lat\.toFixed\(4\)/);
 assert.match(busSource, /complete:failed===0/);
 assert.match(busSource, /function mergeDiscoveredStops\(primary,secondary,lat,lon\)/);
 assert.match(busSource, /if\(official\.length&&officialResult\.complete\)/);
 assert.match(busSource, /showDiscoveredStops\(official,lat,lon,false\)/);
 assert.doesNotMatch(busSource, /kerbside\.stops\.v5/);
+assert.doesNotMatch(busSource, /kerbside\.stops\.v6/);
 assert.match(busSource, /stop\.source==='official'\|\|looksLikeAtco\(stop\.code\)/);
 assert.match(busSource, /if\(idA&&idA===idB\) return true/);
 assert.doesNotMatch(busSource, /stop&&stop\.code\]\n    \.map/);
@@ -1364,6 +1376,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     return {
       cacheA:api.stopCacheKey(52.50004,-2.10004,1200),
       cacheB:api.stopCacheKey(52.50006,-2.10006,1200),
+      cacheFarAway:api.stopCacheKey(52.53,-2.10004,1200),
       sameCode:api.sameDiscoveredStop(official,duplicate),
       otherSideSame:api.sameDiscoveredStop(official,otherSide),
       repeatedLocalRefSame:api.sameDiscoveredStop(localRefA,localRefElsewhere),
@@ -1375,10 +1388,14 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       officialIndicator:merged.find(stop=>String(stop.id)==='490G00012345')?.ind
     };
   });
-  assert.notEqual(stopDiscoveryPolicy.cacheA,stopDiscoveryPolicy.cacheB);
-  assert.match(stopDiscoveryPolicy.cacheA,/kerbside\.stops\.v6/);
-  assert.deepEqual({...stopDiscoveryPolicy,cacheA:undefined,cacheB:undefined},{
-    cacheA:undefined,cacheB:undefined,sameCode:true,otherSideSame:false,
+  /* These two fixes are 2.6 metres apart — the same phone standing still. They
+     must now share a key: separating them is exactly what stopped the cache
+     from ever being read. A genuinely different area still gets its own key. */
+  assert.equal(stopDiscoveryPolicy.cacheA,stopDiscoveryPolicy.cacheB);
+  assert.notEqual(stopDiscoveryPolicy.cacheA,stopDiscoveryPolicy.cacheFarAway);
+  assert.match(stopDiscoveryPolicy.cacheA,/kerbside\.stops\.v7/);
+  assert.deepEqual({...stopDiscoveryPolicy,cacheA:undefined,cacheB:undefined,cacheFarAway:undefined},{
+    cacheA:undefined,cacheB:undefined,cacheFarAway:undefined,sameCode:true,otherSideSame:false,
     repeatedLocalRefSame:false,closeLocalDuplicate:true,stableIdSame:true,count:2,
     ids:['123457','490G00012345'],officialSource:'official',officialIndicator:'Stop A'
   });
@@ -1564,7 +1581,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.96'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.97'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
