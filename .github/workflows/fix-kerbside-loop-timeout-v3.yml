@@ -1,4 +1,4 @@
-name: Validate Kerbside loop timeout fix v3
+name: Repair Kerbside tracking correctness
 
 on:
   push:
@@ -11,13 +11,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: kerbside-loop-timeout-v3
-  cancel-in-progress: true
+  group: repair-kerbside-tracking-correctness
+  cancel-in-progress: false
 
 jobs:
   validate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 65
+    timeout-minutes: 70
 
     steps:
       - name: Check out triggering revision
@@ -30,25 +30,263 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Apply and validate with labeled diagnostics
+      - name: Apply fixes and run validation
         id: validation
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/run-validation.sh <<'SCRIPT'
+          cat > /tmp/validate-kerbside.sh <<'SCRIPT'
           #!/usr/bin/env bash
           set -euo pipefail
 
-          git show 24f2d09522e63f80f2fc1fc96a237154e9bc5d98:.github/workflows/fix-kerbside-circular-timeout.yml > /tmp/historical-workflow.yml
-          ruby -ryaml -e '
-            workflow = YAML.load_file("/tmp/historical-workflow.yml")
-            steps = workflow.fetch("jobs").fetch("patch-test-commit").fetch("steps")
-            step = steps.find { |item| item["name"] == "Apply circular-stop and complete-body timeout fixes" }
-            abort "Historical patch step not found" unless step && step["run"]
-            print step["run"]
-          ' > /tmp/apply-fix.sh
-          bash /tmp/apply-fix.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
+          def replace_exact(text, old, new, label, expected=1):
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{label}: expected {expected} exact match(es), found {count}')
+              return text.replace(old, new, expected)
+
+          def replace_between(text, start_marker, end_marker, replacement, label):
+              start = text.find(start_marker)
+              if start < 0:
+                  raise SystemExit(f'{label}: start marker not found')
+              second = text.find(start_marker, start + 1)
+              if second >= 0:
+                  raise SystemExit(f'{label}: start marker is ambiguous')
+              end = text.find(end_marker, start + len(start_marker))
+              if end < 0:
+                  raise SystemExit(f'{label}: end marker not found')
+              return text[:start] + replacement + text[end:]
+
+          def replace_in_function(text, signature, old, new, label):
+              start = text.find(signature)
+              if start < 0:
+                  raise SystemExit(f'{label}: function signature not found')
+              next_function = re.search(r'\n(?:async\s+)?function\s+[A-Za-z_$][A-Za-z0-9_$]*\s*\(', text[start + len(signature):])
+              if not next_function:
+                  raise SystemExit(f'{label}: next function boundary not found')
+              end = start + len(signature) + next_function.start()
+              block = text[start:end]
+              count = block.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one target in function, found {count}')
+              block = block.replace(old, new, 1)
+              return text[:start] + block + text[end:]
+
+          bus_path = Path('bus.html')
+          bus = bus_path.read_text(encoding='utf-8')
+
+          fetch_start = 'async function fetchTimed(url, options, timeoutMs){'
+          fetch_end = '\nfunction nameTokens(s){'
+          fetch_replacement = '''async function fetchTimed(url, options, timeoutMs){
+            const ctl = new AbortController();
+            const external = options && options.signal;
+            const abort = ()=>ctl.abort();
+            if(external){ if(external.aborted) ctl.abort(); else external.addEventListener('abort',abort,{once:true}); }
+            const timer=setTimeout(()=>ctl.abort(),timeoutMs||FETCH_TIMEOUT_MS);
+            try{
+              const response=await fetch(url,{...(options||{}),signal:ctl.signal});
+              // fetch() resolves once headers arrive. Buffer the complete body before
+              // disarming the timer so a stalled XML or JSON body cannot leave polling
+              // permanently busy.
+              const body=await response.arrayBuffer();
+              const nullBody=response.status===204||response.status===205||response.status===304;
+              return new Response(nullBody?null:body,{
+                status:response.status,
+                statusText:response.statusText,
+                headers:new Headers(response.headers)
+              });
+            }finally{
+              clearTimeout(timer);
+              if(external) external.removeEventListener('abort',abort);
+            }
+          }'''
+          bus = replace_between(bus, fetch_start, fetch_end, fetch_replacement, 'complete response-body timeout')
+
+          selector_start = 'function selectedPatternStopIndex(stops,selectedStop){'
+          selector_end = '\nfunction routePatternMovementFit(pattern,v,stop){'
+          selector_replacement = '''function selectedPatternStopIndex(stops,selectedStop,minimumAlong){
+            const chosen=selectedStop||S.stop;
+            if(!stops.length||!chosen) return -1;
+            const ids=[chosen===S.stop&&S.ttStop&&S.ttStop.id,chosen.timetableId,chosen.atco,chosen.code,chosen.id].map(v=>String(v||'')).filter(Boolean);
+            const exact=[];
+            stops.forEach((stop,index)=>{ if(ids.includes(String(stop.id))) exact.push(index); });
+            if(exact.length){
+              if(isFinite(minimumAlong)){
+                const threshold=Number(minimumAlong)-120;
+                const ahead=exact.find(index=>Number(stops[index].along)>=threshold);
+                if(ahead!==undefined) return ahead;
+                return exact[exact.length-1];
+              }
+              return exact[0];
+            }
+            const threshold=isFinite(minimumAlong)?Number(minimumAlong)-120:-Infinity;
+            let best=-1,bestDistance=Infinity;
+            stops.forEach((stop,i)=>{
+              if(Number(stop.along)<threshold) return;
+              const metres=dist(stop.lat,stop.lon,chosen.lat,chosen.lon);
+              if(metres<bestDistance){bestDistance=metres;best=i;}
+            });
+            return bestDistance<=180?best:-1;
+          }'''
+          bus = replace_between(bus, selector_start, selector_end, selector_replacement, 'repeated-stop selector')
+
+          bus = replace_in_function(
+              bus,
+              'function journeyGeometry(v,stop){',
+              'const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop);',
+              'const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop,vehicle&&vehicle.along);',
+              'journey geometry repeated-stop selection'
+          )
+          bus = replace_in_function(
+              bus,
+              'function journeyGeometry(v,stop){',
+              ': projectToPattern(pattern.points,stop.lat,stop.lon);',
+              ': projectToPattern(pattern.points,stop.lat,stop.lon,Math.max(0,Number(vehicle&&vehicle.segment)||0));',
+              'journey geometry forward projection'
+          )
+          bus = replace_in_function(
+              bus,
+              'function routePatternMovementFit(pattern,v,stop){',
+              'const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop);',
+              'const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop,last.along);',
+              'movement inference repeated-stop selection'
+          )
+          bus = replace_in_function(
+              bus,
+              'function routePatternMovementFit(pattern,v,stop){',
+              'const projectedTarget=selected?null:projectToPattern(pattern.points,stop.lat,stop.lon);',
+              'const projectedTarget=selected?null:projectToPattern(pattern.points,stop.lat,stop.lon,Math.max(0,Number(last.segment)||0));',
+              'movement inference forward projection'
+          )
+          bus = replace_exact(
+              bus,
+              'const selectedIndex=selectedPatternStopIndex(stops);',
+              'const selectedIndex=selectedPatternStopIndex(stops,undefined,confirmedVehicle.along);',
+              'journey progress repeated-stop selection'
+          )
+          bus = replace_exact(
+              bus,
+              "origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',operator:f.OperatorRef||'',",
+              "origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',operator:f.OperatorRef||f.ProducerRef||'',",
+              'producer owner fallback'
+          )
+          bus_path.write_text(bus, encoding='utf-8')
+
+          package_path = Path('kerbside-backend/package.json')
+          package = package_path.read_text(encoding='utf-8')
+          package = replace_exact(
+              package,
+              '    "test": "node --test",',
+              '    "test": "node --test && node tests/identity-regression.mjs",',
+              'identity regression CI wiring'
+          )
+          package_path.write_text(package, encoding='utf-8')
+
+          regression = r'''import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import vm from 'node:vm';
+          import { readFileSync } from 'node:fs';
+
+          const source = readFileSync(new URL('../../bus.html', import.meta.url), 'utf8');
+
+          function between(startMarker, endMarker) {
+            const start = source.indexOf(startMarker);
+            assert.notEqual(start, -1, `Missing ${startMarker}`);
+            const end = source.indexOf(endMarker, start + startMarker.length);
+            assert.notEqual(end, -1, `Missing boundary after ${startMarker}`);
+            return source.slice(start, end);
+          }
+
+          test('repeated stop selection keeps the next loop occurrence ahead', () => {
+            const selectorSource = between(
+              'function selectedPatternStopIndex(stops,selectedStop,minimumAlong){',
+              '\nfunction routePatternMovementFit(pattern,v,stop){'
+            );
+            const context = vm.createContext({
+              S: { stop: { id: 'A', lat: 0, lon: 0 }, ttStop: { id: 'A' } },
+              dist: (a, b, c, d) => Math.hypot(a - c, b - d)
+            });
+            vm.runInContext(`${selectorSource}\nthis.selectStop = selectedPatternStopIndex;`, context);
+            const stops = [
+              { id: 'A', along: 0, lat: 0, lon: 0 },
+              { id: 'B', along: 1000, lat: 1, lon: 1 },
+              { id: 'A', along: 2000, lat: 0, lon: 0 }
+            ];
+            assert.equal(context.selectStop(stops, context.S.stop), 0);
+            assert.equal(context.selectStop(stops, context.S.stop, 50), 0);
+            assert.equal(context.selectStop(stops, context.S.stop, 1500), 2);
+            assert.equal(context.selectStop(stops, context.S.stop, 2200), 2);
+          });
+
+          test('route geometry and movement inference pass vehicle progress to the selector', () => {
+            assert.match(source, /selectedPatternStopIndex\(ordered,stop,vehicle&&vehicle\.along\)/);
+            assert.match(source, /selectedPatternStopIndex\(stops,stop,last\.along\)/);
+            assert.match(source, /selectedPatternStopIndex\(stops,undefined,confirmedVehicle\.along\)/);
+            assert.match(source, /projectToPattern\(pattern\.points,stop\.lat,stop\.lon,Math\.max\(0,Number\(vehicle&&vehicle\.segment\)\|\|0\)\)/);
+            assert.match(source, /operator:f\.OperatorRef\|\|f\.ProducerRef\|\|''/);
+          });
+
+          test('fetch timeout remains active until the complete response body arrives', async () => {
+            const fetchSource = between(
+              'async function fetchTimed(url, options, timeoutMs){',
+              '\nfunction nameTokens(s){'
+            );
+            const hangingFetch = async (_url, options) => ({
+              status: 200,
+              statusText: 'OK',
+              headers: new Headers({ 'content-type': 'text/plain' }),
+              arrayBuffer: () => new Promise((_resolve, reject) => {
+                options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+              })
+            });
+            const context = vm.createContext({
+              AbortController,
+              DOMException,
+              Headers,
+              Response,
+              setTimeout,
+              clearTimeout,
+              FETCH_TIMEOUT_MS: 50,
+              fetch: hangingFetch
+            });
+            vm.runInContext(`${fetchSource}\nthis.fetchTimed = fetchTimed;`, context);
+
+            let guardTimer;
+            let failure = null;
+            try {
+              await Promise.race([
+                context.fetchTimed('https://example.invalid/live', {}, 50),
+                new Promise((_resolve, reject) => {
+                  guardTimer = setTimeout(() => reject(new Error('fetchTimed body timeout guard expired')), 1000);
+                })
+              ]);
+            } catch (error) {
+              failure = error;
+            } finally {
+              clearTimeout(guardTimer);
+            }
+            assert.equal(failure?.name, 'AbortError');
+
+            context.fetch = async () => new Response('complete', {
+              status: 200,
+              headers: { 'content-type': 'text/plain' }
+            });
+            const response = await context.fetchTimed('https://example.invalid/complete', {}, 500);
+            assert.equal(await response.text(), 'complete');
+          });
+          '''
+          regression = '\n'.join(line[10:] if line.startswith('          ') else line for line in regression.splitlines()) + '\n'
+          test_path = Path('kerbside-backend/test/app-regression.test.js')
+          test_path.write_text(regression, encoding='utf-8')
+
+          Path('VERSION').write_text('0.6.86\n', encoding='utf-8')
+          PY
+
+          python3 .github/scripts/sync-version.py
           npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
           npm run vendor:leaflet --prefix kerbside-backend
           cd kerbside-backend
@@ -76,15 +314,14 @@ jobs:
           node --check build-timetable.js
           npm --prefix kerbside-backend run check
           npm --prefix kerbside-backend test
-          node kerbside-backend/tests/identity-regression.mjs
           npm --prefix kerbside-backend run test:browser
           KERBSIDE_BROWSER=chromium npm --prefix kerbside-backend run test:browser
           git diff --check
           SCRIPT
-          chmod +x /tmp/run-validation.sh
+          chmod +x /tmp/validate-kerbside.sh
 
           set +e
-          /tmp/run-validation.sh > /tmp/kerbside-validation.log 2>&1
+          /tmp/validate-kerbside.sh > /tmp/kerbside-validation.log 2>&1
           code=$?
           set -e
           cat /tmp/kerbside-validation.log
@@ -95,29 +332,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml .github/failures/kerbside-loop-timeout.log
+          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml
+          rm -f .github/failures/kerbside-loop-timeout.log .github/failures/kerbside-v3-status.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --cached --check
-          git commit -m 'Kerbside 0.6.86: keep circular calls live and time complete bodies' \
-            -m 'Match a returning bus to the repeated stop visit still ahead on its ordered journey, including inference and corridor scans.' \
-            -m 'Keep browser abort timers armed until XML and JSON response bodies have fully downloaded.'
+          git commit -m 'Kerbside 0.6.86: repair tracking correctness' \
+            -m 'Keep circular-route vehicles attached to the repeated stop occurrence still ahead.' \
+            -m 'Keep browser timeouts active through complete response bodies and run identity regressions in CI.' \
+            -m 'Preserve ProducerRef as the vehicle owner fallback and add focused regression tests.'
 
           git fetch origin main
           remote_sha="$(git rev-parse origin/main)"
           if [[ "$remote_sha" != "$GITHUB_SHA" ]]; then
-            changed="$(git diff --name-only "$GITHUB_SHA"..origin/main)"
-            printf 'Main moved during validation:\n%s\n' "$changed"
-            if grep -Eq '^(VERSION|bus\.html|build-timetable\.js|kerbside-backend/|\.github/scripts/sync-version\.py)' <<<"$changed"; then
-              echo '::error::Main changed in a Kerbside source path during validation.'
-              exit 1
-            fi
-            git rebase origin/main
+            echo "::error::main moved from $GITHUB_SHA to $remote_sha during validation"
+            exit 1
           fi
           git push origin HEAD:main
 
-      - name: Record labeled validation failure
+      - name: Record validation failure
         if: steps.validation.outputs.exit_code != '0'
         env:
           EXIT_CODE: ${{ steps.validation.outputs.exit_code }}
@@ -126,7 +360,7 @@ jobs:
           set -euo pipefail
           git fetch origin main
           git reset --hard origin/main
-          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml
+          rm -f .github/workflows/fix-kerbside-loop-timeout-v3.yml .github/failures/kerbside-v3-status.json
           mkdir -p .github/failures
           {
             echo "Workflow run: $GITHUB_RUN_ID"
@@ -137,5 +371,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Record labeled Kerbside loop timeout validation failure'
+          git commit -m 'Record Kerbside tracking repair validation failure'
           git push origin HEAD:main
