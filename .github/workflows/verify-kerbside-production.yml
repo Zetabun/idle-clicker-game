@@ -227,9 +227,28 @@ jobs:
 
           try {
             await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            await page.locator('#map.leaflet-container').waitFor({ state: 'visible', timeout: 30000 });
+
+            /* This smoke test has never passed. It waits for #map to be visible on a
+               393px viewport, but the phone layout opens on the departures board and
+               hides the map with `body.view-times #map{visibility:hidden}` — which
+               shipped two days before this assertion was written, so it timed out on
+               every run from 0.6.60 onward and reported nothing about the release.
+               Wait for the map to exist, assert the board really is the default, then
+               switch views the way a user does before requiring the map to be shown.
+               That also exercises the mobile map path and its invalidateSize. */
+            await page.locator('#map.leaflet-container').waitFor({ state: 'attached', timeout: 30000 });
             await page.locator('#setBtn').waitFor({ state: 'visible', timeout: 10000 });
+            await page.locator('#viewbar').waitFor({ state: 'visible', timeout: 10000 });
+            assert.equal(await page.locator('#vTimes').getAttribute('aria-selected'), 'true',
+              'the phone layout must open on the departures board');
+            await page.locator('#vMap').click();
+            await page.locator('#map.leaflet-container').waitFor({ state: 'visible', timeout: 30000 });
             await page.waitForTimeout(2500);
+            const mapBox = await page.locator('#map.leaflet-container').boundingBox();
+            assert.ok(mapBox && mapBox.width > 0 && mapBox.height > 0, 'the live map has no area on a phone');
+            assert.ok(await page.locator('#map .leaflet-tile-loaded').count() > 0, 'no live map tiles loaded');
+            await page.locator('#vTimes').click();
+            await page.locator('#board').waitFor({ state: 'visible', timeout: 10000 });
 
             assert.match(await page.content(), new RegExp(`const APP_VERSION = '${expectedVersion.replaceAll('.', '\\.')}'`));
             const liveState = await page.evaluate(() => {
