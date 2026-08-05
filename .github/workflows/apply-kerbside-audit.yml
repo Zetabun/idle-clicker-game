@@ -37,6 +37,17 @@ jobs:
           set -euo pipefail
           cat .github/scripts/kerbside-audit-patch.gz.b64.* | base64 --decode | gzip --decompress > /tmp/apply.py
           python3 /tmp/apply.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('kerbside-backend/tests/browser-regression.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = r"assert.match(busSource, /const set=new Set\(timetableRouteSet\(\)\);/);"
+          new = r"""assert.match(busSource, /const timetableSet=timetableRouteSet\(\);/);
+          assert.match(busSource, /const set=new Set\(timetableSet\);/);"""
+          if text.count(old) != 1:
+              raise SystemExit(f'knownRoutes assertion: expected one match, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
           python3 .github/scripts/sync-version.py
       - name: Install browsers
         shell: bash
