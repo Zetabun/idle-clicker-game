@@ -89,7 +89,15 @@ jobs:
               "assert.match(busSource, /dir:'all'/);"
           ]
           lines[start:index + 1] = replacement
-          regression.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          text = '\n'.join(lines) + '\n'
+          old_runtime = '''    brandAbove:true,searchAboveControls:true,searchFullWidth:true,
+              controlsAligned:true,controlsOrdered:true,withinViewport:true,'''
+          new_runtime = '''    brandAbove:true,searchAboveControls:false,searchFullWidth:false,
+              controlsAligned:true,controlsOrdered:true,withinViewport:true,'''
+          if text.count(old_runtime) != 1:
+              raise SystemExit(f'mobile runtime expectation: expected one match, found {text.count(old_runtime)}')
+          text = text.replace(old_runtime, new_runtime, 1)
+          regression.write_text(text, encoding='utf-8')
 
           Path('VERSION').write_text('0.6.94\n', encoding='utf-8')
           PY
