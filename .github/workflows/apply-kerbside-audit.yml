@@ -6,18 +6,13 @@ on:
     paths:
       - .github/workflows/apply-kerbside-audit.yml
       - .github/scripts/kerbside-audit-patch.gz.b64.*
-  pull_request:
-    branches: [main]
-    paths:
-      - .github/workflows/apply-kerbside-audit.yml
-      - .github/scripts/kerbside-audit-patch.gz.b64.*
 
 permissions:
   contents: write
 
 concurrency:
   group: apply-kerbside-audit-fixes
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   apply-validate-publish:
@@ -102,18 +97,36 @@ jobs:
             npm run test:multi-vehicle --prefix kerbside-backend
             npm run test:audit --prefix kerbside-backend
           done
-      - name: Commit validated changes
+      - name: Capture restricted workflow changes
         shell: bash
         run: |
           set -euo pipefail
-          rm -f .github/workflows/apply-kerbside-audit.yml
-          rm -f .github/scripts/kerbside-audit-patch.gz.b64.*
+          git diff --binary -- .github/workflows > /tmp/kerbside-workflows.patch
+          git status --short > /tmp/kerbside-status.txt
+      - name: Upload restricted workflow changes
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerbside-workflow-patch
+          path: |
+            /tmp/kerbside-workflows.patch
+            /tmp/kerbside-status.txt
+          if-no-files-found: error
+          retention-days: 1
+      - name: Commit validated application changes
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          git reset -- .github/workflows .github/scripts/kerbside-audit-patch.gz.b64.*
           git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No unrestricted application changes were staged.' >&2
+            exit 1
+          fi
           git commit -m 'Kerbside 0.6.93: finish tracking accuracy audit' \
             -m 'Prefer stable vehicle identity and preserve operator, route and repeated-stop occurrence through timetable matching.' \
             -m 'Use unblended GPS timing for status labels, align map filtering with authoritative evidence and settings, and harden release checks.' \
-            -m 'Remove the obsolete self-writing repair workflow and add functional browser regressions.'
+            -m 'Remove obsolete repair artifacts and add functional browser regressions.'
           git push origin HEAD:agent/kerbside-audit-fixes
