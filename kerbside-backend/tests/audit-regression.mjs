@@ -86,6 +86,15 @@ try {
       const opaqueIdentityRows = api.timetableIdentityRows([opaqueRow], nocVehicle);
       const comparableConflict = api.routeIdentityAgreement({ operator: 'BNML', routeId: 'R1' }, nocVehicle);
 
+      /* A bus terminating at the selected stop serves it by definition, but the
+         departure rows at a stand are its onward journeys, so every headsign
+         there is an outbound terminus and none can match. Two buses inbound to
+         Piccadilly Gardens itself were scored 1 and dropped from the board and
+         the map. The admission is narrow: only a destination that resolves to
+         this stop's own name, never merely an unmatched one. */
+      const terminatingHere = api.routeEvidence('1', 'Audit Stop', '', { owner: 'OP-A', operator: 'OP-A', lineRef: 'ROUTE-A' });
+      const unrelatedDestination = api.routeEvidence('1', 'Southport', '', { owner: 'OP-A', operator: 'OP-A', lineRef: 'ROUTE-A' });
+
       const wrongBranch = api.routeEvidence('1', 'Other Branch', '', { owner: 'OP-A', operator: 'OP-A', lineRef: 'ROUTE-A' });
       const correctOperator = api.routeEvidence('1', 'Other Branch', '', { owner: 'OP-B', operator: 'OP-B', lineRef: 'ROUTE-B' });
       const displayFallback = api.routeEvidence('1', 'Town Centre', '', {});
@@ -122,6 +131,14 @@ try {
         opaqueRowsKept: opaqueIdentityRows.rows.length,
         opaqueConflict: opaqueIdentityRows.conflict,
         comparableConflict,
+        terminatingHereScore: terminatingHere.score,
+        terminatingHereLabel: terminatingHere.label,
+        unrelatedDestinationScore: unrelatedDestination.score,
+        // 0.6.93 moved the ordinary timetable-verified case from 4 to 3 but left
+        // two consumers testing score>=4, so schedule blending fell from .32 to
+        // .18 and scheduleBacked became unreachable. They read the flag now.
+        displayFallbackTrusted: api.timetableTrusted(displayFallback),
+        wrongBranchTrusted: api.timetableTrusted(wrongBranch),
         wrongBranchScore: wrongBranch.score,
         correctOperatorScore: correctOperator.score,
         displayFallbackScore: displayFallback.score,
@@ -141,6 +158,11 @@ try {
   assert.equal(result.opaqueRowsKept, 1, 'an opaque agency id must not discard the timetable row');
   assert.equal(result.opaqueConflict, false, 'incomparable operator namespaces are not a conflict');
   assert.equal(result.comparableConflict, -1, 'two real operator codes that differ still conflict');
+  assert.ok(result.terminatingHereScore >= 2, 'a bus terminating at the selected stop must be admitted');
+  assert.match(result.terminatingHereLabel, /terminates at this stop/);
+  assert.equal(result.unrelatedDestinationScore, 1, 'an unmatched destination is not a terminus here');
+  assert.equal(result.displayFallbackTrusted, true, 'a timetable-verified route must count as timetable-backed');
+  assert.equal(result.wrongBranchTrusted, false, 'a rejected branch must not count as timetable-backed');
   assert.ok(result.wrongBranchScore < 2, 'a different operator branch must not be admitted by display line');
   assert.ok(result.correctOperatorScore >= 4, 'matching operator and route should be strongly verified');
   assert.equal(result.displayFallbackScore, 3, 'display line remains a weaker fallback');

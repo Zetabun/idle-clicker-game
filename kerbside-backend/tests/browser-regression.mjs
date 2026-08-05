@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.97'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.98'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -127,6 +127,14 @@ assert.match(busSource, /selectStop\(s,true\);\n  setAppView\('times'\);/);
 assert.match(busSource, /m\.on\('click',\(\)=>selectStopFromMap\(s\)\)/);
 assert.doesNotMatch(busSource, /m\.on\('click',\(\)=>selectStop\(s,true\)\)/);
 assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
+/* The producer is a property of the ServiceDelivery, so it must be resolved once
+   per delivery rather than per vehicle. Spreading every descendant of the
+   delivery inside the activity loop cost 5.3 million element visits and 667ms of
+   a 670ms parse on a real 417-vehicle response, repeated per bounding box per
+   poll; memoised it is 0.3ms for the same answer. */
+assert.match(busSource, /const PRODUCER_REF_CACHE=new WeakMap\(\);/);
+assert.match(busSource, /const cached=PRODUCER_REF_CACHE\.get\(delivery\);/);
+assert.doesNotMatch(busSource, /const producerNode=\[\.\.\.delivery\.getElementsByTagName\('\*'\)\]/);
 assert.match(busSource, /function routePatternMovementFit\(pattern,v,stop\)/);
 assert.match(busSource, /function inferVehicleJourneyPattern\(v,stop,now=Date\.now\(\)\)/);
 assert.match(busSource, /function visualRoutePosition\(v,pattern,metres\)/);
@@ -1581,7 +1589,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.97'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.98'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

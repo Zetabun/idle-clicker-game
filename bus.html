@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.97';
+const APP_VERSION = '0.6.98';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3400,12 +3400,27 @@ function promoteCollisionRecord(baseId){
   legacy.id=promotedId;
   if(!current||Number(legacy.ts)>=Number(current.ts)) S.vehicles.set(promotedId,legacy);
 }
+/* The producer belongs to the ServiceDelivery, so it is resolved once per
+   delivery and remembered. Re-deriving it inside the activity loop spread every
+   descendant of the delivery into a fresh array for every vehicle: 12,698
+   elements x 417 vehicles is 5.3 million element visits, measured at 667ms of a
+   670ms parse, repeated for each bounding box on every poll. Memoised it is
+   0.3ms for the same answer. The early break also avoids materialising the
+   whole collection when ProducerRef is, as in practice, near the front. */
+const PRODUCER_REF_CACHE=new WeakMap();
 function producerRefForActivity(activity){
   let delivery=activity;
   while(delivery&&delivery.localName!=='ServiceDelivery') delivery=delivery.parentElement;
   if(!delivery) return '';
-  const producerNode=[...delivery.getElementsByTagName('*')].find(node=>node.localName==='ProducerRef');
-  return producerNode?String(producerNode.textContent||'').trim():'';
+  const cached=PRODUCER_REF_CACHE.get(delivery);
+  if(cached!==undefined) return cached;
+  let value='';
+  const nodes=delivery.getElementsByTagName('*');
+  for(let i=0;i<nodes.length;i++){
+    if(nodes[i].localName==='ProducerRef'){ value=String(nodes[i].textContent||'').trim(); break; }
+  }
+  PRODUCER_REF_CACHE.set(delivery,value);
+  return value;
 }
 function parseLivePayloads(items,now){
   const observedAt=isFinite(now)?Number(now):Date.now(), candidates=[];
@@ -4042,6 +4057,29 @@ function timetableIdentityRows(rows,identity){
   const ownerConflict=!!(ownerRows.length&&!ownerRows.some(row=>routeIdentityToken(row.operator)===liveOwner));
   return {rows:matched.length?matched:(ownerConflict?[]:list),strong:matched.length>0,conflict:ownerConflict};
 }
+/* A bus whose destination is this stop terminates here, so it serves the stop by
+   definition. The departure rows at a stand are its onward journeys, so every
+   headsign there is an outbound terminus and none can ever match an arriving
+   bus's destination. Measured at Piccadilly Gardens: two buses inbound to the
+   very stop selected — 979m and 4.3km out, on lines 42 and 111 that do call
+   there — scored 1 on "this branch does not serve the stop" and were dropped
+   from both the board and the map. Kept strict, so an unrelated destination
+   still fails. */
+function destinationTerminatesHere(dest){
+  if(!dest||!S.stop) return false;
+  return [S.stop.name,S.ttStop&&S.ttStop.n]
+    .filter(Boolean)
+    .some(name=>destinationSimilarity(dest,name)>=.6);
+}
+/* The stop's own timetable confirms this route. 0.6.93 moved that case from 4 to
+   3 to leave room for an operator-confirmed 4, but left two consumers testing
+   score>=4 — so schedule blending quietly fell from .32 to .18 and
+   scheduleBacked became unreachable for the commonest verified bus, because an
+   operator match cannot be established from the published data at all. Read the
+   flag rather than the rank. */
+function timetableTrusted(evidence){
+  return !!evidence&&(evidence.score>=4||!!evidence.timetableVerified);
+}
 function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
@@ -4062,11 +4100,15 @@ function routeEvidence(line,dest,journey,identity){
   if(tt.has(l)){
     if(identityInfo.conflict) return {score:0,label:'route number belongs to another operator at this stop',routeIdentityConflict:true};
     const heads=ttRows.map(r=>r.head).filter(Boolean);
-    const branchOk=!dest || !heads.length || heads.some(h=>destinationSimilarity(dest,h)>=.34);
+    const headMatch=!dest || !heads.length || heads.some(h=>destinationSimilarity(dest,h)>=.34);
+    const terminates=!headMatch&&destinationTerminatesHere(dest);
+    const branchOk=headMatch||terminates;
     const label=tripMatch.ambiguous
       ? (branchOk?'route verified; journey alias ambiguous':'route number matched, but branch and journey did not')
+      : terminates?'timetable route verified; terminates at this stop'
       : branchOk?(identityInfo.strong?'operator and route verified':'timetable route verified'):'route number matched, but this branch does not serve the stop';
-    return {score:branchOk?(identityInfo.strong?4:3):1,label,journeyAmbiguous:tripMatch.ambiguous,routeIdentityMatch:identityInfo.strong};
+    return {score:branchOk?(identityInfo.strong?4:3):1,label,journeyAmbiguous:tripMatch.ambiguous,
+      routeIdentityMatch:identityInfo.strong,timetableVerified:branchOk};
   }
   const m=MAPPED[String(S.stop.id)];
   if(m && m.routes.some(r=>String(r.ref)===l)){
@@ -4117,7 +4159,7 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
     const cand=schedules[0], schedSecs=(cand.at-Date.now())/1000;
     if(Math.abs(schedSecs-spatial)<=12*60){
       schedule=cand;
-      const weight=evidence.inferredJourney ? .34 : evidence.journeyMatch ? .42 : evidence.score>=4 ? .32 : .18;
+      const weight=evidence.inferredJourney ? .34 : evidence.journeyMatch ? .42 : timetableTrusted(evidence) ? .32 : .18;
       spatial=spatial*(1-weight)+Math.max(0,schedSecs)*weight;
     }
   }
@@ -4352,7 +4394,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -4590,7 +4632,7 @@ function collect(gate,diagnostics){
     // gates. Exact journey geometry and a plausible scheduled call are more
     // reliable than a straight-line town-centre or compass inference.
     const est=estimate(v,S.stop,evidence,geometry);
-    const scheduleBacked=!!(est.schedule && evidence.score>=4);
+    const scheduleBacked=!!(est.schedule && timetableTrusted(evidence));
     const trustedJourney=!!(evidence.journeyMatch || geometry);
     const directionSchedule=est.schedule||matchedRow;
     const scheduledDir=scheduledJourneyDirection(directionSchedule);
