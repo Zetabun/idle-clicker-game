@@ -67,6 +67,14 @@ jobs:
             exit 1
           fi
 
+          # A version string cannot tell two builds apart when both carry it, and
+          # three different bus.html contents shipped as 0.6.85. GitHub Pages serves
+          # this file byte for byte, so compare the deployed bytes against the ones
+          # this commit contains: that is the only check proving the fixes under test
+          # are the ones actually live.
+          expected_app_hash="$(sha256sum bus.html | cut -d' ' -f1)"
+          echo "Expecting Kerbside $expected_version, bus.html sha256 $expected_app_hash"
+
           app_file="$(mktemp)"
           worker_file="$(mktemp)"
           feed_file="$(mktemp)"
@@ -84,7 +92,8 @@ jobs:
               --connect-timeout 10 --max-time 25 \
               -H 'Cache-Control: no-cache' \
               "$APP_URL?$cache_buster" -o "$app_file"; then
-              if grep -Fq "const APP_VERSION = '$expected_version';" "$app_file"; then
+              deployed_app_hash="$(sha256sum "$app_file" | cut -d' ' -f1)"
+              if [[ "$deployed_app_hash" == "$expected_app_hash" ]]; then
                 app_ok=true
               fi
             fi
@@ -114,6 +123,9 @@ jobs:
             echo "::error::Production did not converge on Kerbside $expected_version within the smoke-test window."
             echo "App version line:"
             grep -F 'const APP_VERSION' "$app_file" || true
+            echo "Expected bus.html sha256: $expected_app_hash"
+            echo "Deployed bus.html sha256: $(sha256sum "$app_file" | cut -d' ' -f1)"
+            echo "A matching version with a differing hash means Pages is still serving an older build of the same version."
             echo "Worker response:"
             cat "$worker_file" || true
             exit 1

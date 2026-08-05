@@ -71,6 +71,29 @@ jobs:
           set -euo pipefail
           python3 .github/scripts/sync-version.py --check
 
+      # Consistency across files is not the same as advancing. Three different
+      # bus.html contents shipped as 0.6.85 because commits changed the app
+      # without touching VERSION, and the production smoke test could not tell
+      # them apart. Changing the served app must change its version.
+      - name: Require a version bump when the app changes
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git rev-parse HEAD^ >/dev/null 2>&1; then
+            echo 'No parent commit to compare against; skipping.'
+            exit 0
+          fi
+          if git diff --quiet HEAD^ HEAD -- bus.html; then
+            echo 'bus.html unchanged; no bump required.'
+            exit 0
+          fi
+          if git diff --quiet HEAD^ HEAD -- VERSION; then
+            echo "::error::bus.html changed but VERSION did not. Two builds would ship as $(cat VERSION), and production verification compares against that file."
+            exit 1
+          fi
+          echo "bus.html changed and VERSION advanced to $(cat VERSION)."
+
       - name: Validate browser JavaScript
         shell: bash
         run: |
