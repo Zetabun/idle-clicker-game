@@ -80,7 +80,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.83'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.84'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -249,7 +249,8 @@ assert.match(busSource, /Map unavailable/);
 assert.doesNotMatch(busSource, /cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet/);
 assert.match(busSource, /const TILE_ERROR_THRESHOLD=4/);
 assert.match(busSource, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
-assert.match(busSource, /function useTileProvider\(index,reason\)/);
+// force lets a theme change rebuild the same provider, whose tile URL has changed.
+assert.match(busSource, /function useTileProvider\(index,reason,force\)/);
 assert.match(busSource, /currentTileProvider/);
 assert.match(busSource, /function liveVehicleIdentity\(fields\)/);
 // Two buses working one journey/block code must stay two records. Keying on
@@ -280,6 +281,18 @@ assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedS
 // different buses, while the same bus legitimately repeats across the
 // overlapping bounding boxes the app fetches. Executable proof for both
 // directions lives in identity-regression.mjs.
+// Crystal is a variable swap, not a second stylesheet. Every tint in the sheet
+// has to be an alpha of a themed component, or a rule keeps its dark colour on
+// a white ground — so no literal rgba() may survive anywhere in the CSS.
+assert.doesNotMatch(busSource.slice(0, busSource.indexOf('</style>')), /rgba\(/);
+assert.match(busSource, /body\.theme-crystal\{/);
+assert.match(busSource, /--led-rgb:255 176 0;/);
+assert.match(busSource, /--led-rgb:0 100 210;/);
+// The basemap has to follow the theme; a light UI over dark tiles reads as a bug.
+assert.match(busSource, /cartoStyle:'dark_all'/);
+assert.match(busSource, /cartoStyle:'light_all'/);
+assert.match(busSource, /function tileUrlFor\(provider\)/);
+assert.match(busSource, /document\.body\.classList\.toggle\('theme-crystal',name==='crystal'\);/);
 // An unknown service reference in a national shard means the build is
 // incomplete, and assuming the journey runs every day invents service. The
 // permissive answer stays for regional packs, which may carry no services map.
@@ -1441,7 +1454,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.83'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.84'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
