@@ -2,14 +2,12 @@ name: Apply Kerbside audit fixes
 
 on:
   push:
-    branches:
-      - agent/kerbside-audit-fixes
+    branches: [agent/kerbside-audit-fixes]
     paths:
       - .github/workflows/apply-kerbside-audit.yml
       - .github/scripts/kerbside-audit-patch.gz.b64.*
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
       - .github/workflows/apply-kerbside-audit.yml
       - .github/scripts/kerbside-audit-patch.gz.b64.*
@@ -25,28 +23,22 @@ jobs:
   apply-validate-publish:
     runs-on: ubuntu-latest
     timeout-minutes: 70
-
     steps:
-      - name: Check out staged branch
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: agent/kerbside-audit-fixes
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'
-
-      - name: Reconstruct and apply patch
+      - name: Apply patch
         shell: bash
         run: |
           set -euo pipefail
-          cat .github/scripts/kerbside-audit-patch.gz.b64.* | base64 --decode | gzip --decompress > /tmp/apply-kerbside-audit.py
-          python3 /tmp/apply-kerbside-audit.py
+          cat .github/scripts/kerbside-audit-patch.gz.b64.* | base64 --decode | gzip --decompress > /tmp/apply.py
+          python3 /tmp/apply.py
           python3 .github/scripts/sync-version.py
-
-      - name: Install validation dependencies
+      - name: Install browsers
         shell: bash
         run: |
           set -euo pipefail
@@ -57,53 +49,34 @@ jobs:
           fi
           cd kerbside-backend
           npx playwright install --with-deps webkit chromium
-
-      - name: Validate source and unit tests
+      - name: Validate source and tests
         shell: bash
         run: |
           set -euo pipefail
           python3 .github/scripts/sync-version.py --check
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          import subprocess
-          import tempfile
-
+          import re, subprocess, tempfile
           source = Path('bus.html').read_text(encoding='utf-8')
           scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
           if not scripts:
               raise SystemExit('No inline browser scripts found')
           with tempfile.TemporaryDirectory() as directory:
-              for index, script in enumerate(scripts, start=1):
+              for index, script in enumerate(scripts, 1):
                   filename = Path(directory) / f'inline-{index}.js'
                   filename.write_text(script, encoding='utf-8')
                   subprocess.run(['node', '--check', str(filename)], check=True)
-          print(f'Validated {len(scripts)} inline browser script(s).')
           PY
           node --check build-timetable.js
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
-
-      - name: Run WebKit browser regressions
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser --prefix kerbside-backend
-          npm run test:identity --prefix kerbside-backudit-backend
-          npm run test:multi-vehicle --prefix kerbside-backend
-          npm run test:audit --prefix kerbside-backend
-
-      - name: Run Chromium browser regressions
-        shell: bash
-        env:
-          KERBSIDE_BROWSER: chromium
-        run: |
-          set -euo pipefail
-          npm run test:browser --prefix kerbside-backend
-          npm run test:identity --prefix kerbside-backend
-          npm run test:multi-vehicle --prefix kerbside-backend
-          npm run test:audit --prefix kerbside-backend
-
+          for engine in webkit chromium; do
+            export KERBSIDE_BROWSER="$engine"
+            npm run test:browser --prefix kerbside-backend
+            npm run test:identity --prefix kerbside-backend
+            npm run test:multi-vehicle --prefix kerbside-backend
+            npm run test:audit --prefix kerbside-backend
+          done
       - name: Commit validated changes
         shell: bash
         run: |
