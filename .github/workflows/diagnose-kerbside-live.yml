@@ -1,4 +1,4 @@
-name: Diagnose Kerbside live regression
+name: Apply Kerbside mobile hotfix
 
 on:
   pull_request:
@@ -7,113 +7,150 @@ on:
       - .github/workflows/diagnose-kerbside-live.yml
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: kerbside-mobile-hotfix
+  cancel-in-progress: true
 
 jobs:
-  diagnose:
+  apply-validate-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: agent/fix-kerbside-live-regression
       - uses: actions/setup-node@v5
         with:
           node-version: '24'
-      - name: Install browser
+      - name: Apply focused UI and direction hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path, old, new, label):
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          bus = Path('bus.html')
+          replace_exact(
+              bus,
+              '''    /* Search had to share a row with the direction switch and the settings
+                 button, which left the input 162px wide carrying 111px of icon and
+                 button padding: 49px of usable text, too narrow for "Halesowen", let
+                 alone a restored "My location". It gets its own row. */
+              grid-template-areas:"brand brand brand" "search search search" "directions directions settings";''',
+              '''    /* Keep location, direction and settings together in the established
+                 compact Kerbside mobile header. */
+              grid-template-areas:"brand brand brand" "search directions settings";''',
+              'mobile header layout'
+          )
+          replace_exact(
+              bus,
+              '<button id="dIn" aria-pressed="true"><span class="arrow">→</span><span class="lbl">Inbound</span><span class="lblshort">In</span></button>',
+              '<button id="dIn" aria-pressed="false"><span class="arrow">→</span><span class="lbl">Inbound</span><span class="lblshort">In</span></button>',
+              'inbound initial button state'
+          )
+          replace_exact(
+              bus,
+              '<button id="dAll" aria-pressed="false"><span class="lbl">Both directions</span><span class="lblshort">Both</span></button>',
+              '<button id="dAll" aria-pressed="true"><span class="lbl">Both directions</span><span class="lblshort">Both</span></button>',
+              'both initial button state'
+          )
+          replace_exact(
+              bus,
+              "  dir:'in',                 // 'in' | 'out' | 'all'",
+              "  dir:'all',                // 'in' | 'out' | 'all'",
+              'default direction'
+          )
+
+          regression = Path('kerbside-backend/tests/browser-regression.mjs')
+          text = regression.read_text(encoding='utf-8')
+          target = 'assert.match(busSource, /grid-template-areas:"brand brand brand" "search search search" "directions directions settings"/);'
+          if text.count(target) != 1:
+              raise SystemExit(f'layout regression assertion: expected one match, found {text.count(target)}')
+          lines = text.splitlines()
+          index = lines.index(target)
+          start = index
+          while start > 0 and lines[start - 1].lstrip().startswith('//'):
+              start -= 1
+          replacement = [
+              '// The compact mobile header keeps location, direction and settings on one row.',
+              'assert.match(busSource, /grid-template-areas:"brand brand brand" "search directions settings"/);',
+              'assert.match(busSource, /<button id="dIn" aria-pressed="false">/);',
+              'assert.match(busSource, /<button id="dAll" aria-pressed="true">/);',
+              "assert.match(busSource, /dir:'all'/);"
+          ]
+          lines[start:index + 1] = replacement
+          regression.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+          Path('VERSION').write_text('0.6.94\n', encoding='utf-8')
+          PY
+          python3 .github/scripts/sync-version.py
+      - name: Install test dependencies
         shell: bash
         run: |
           set -euo pipefail
           npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          if git ls-files --error-unmatch kerbside-backend/vendor/leaflet/leaflet.js >/dev/null 2>&1; then
+            git diff --exit-code -- kerbside-backend/vendor/leaflet
+          fi
           cd kerbside-backend
-          npx playwright install --with-deps chromium
-      - name: Reproduce live app at Brightstone Road
+          npx playwright install --with-deps webkit chromium
+      - name: Validate source and complete regression suite
         shell: bash
         run: |
           set -euo pipefail
-          cd kerbside-backend
-          node --input-type=module <<'NODE'
-          import { chromium } from 'playwright';
-          import { writeFile } from 'node:fs/promises';
-
-          const browser = await chromium.launch({ headless: true });
-          const context = await browser.newContext({
-            viewport: { width: 393, height: 852 },
-            isMobile: true,
-            hasTouch: true,
-            locale: 'en-GB',
-            timezoneId: 'Europe/London',
-            geolocation: { latitude: 52.40635309, longitude: -2.01148030 },
-            permissions: ['geolocation']
-          });
-          const page = await context.newPage();
-          const pageErrors = [];
-          const consoleErrors = [];
-          const failedRequests = [];
-          const badResponses = [];
-          page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-          page.on('console', message => {
-            if (message.type() === 'error' || message.type() === 'warning') consoleErrors.push(`${message.type()}: ${message.text()}`);
-          });
-          page.on('requestfailed', request => failedRequests.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText || 'unknown'}`));
-          page.on('response', response => {
-            if (response.status() >= 400) badResponses.push(`${response.status()} ${response.url()}`);
-          });
-
-          const url = `https://zetabun.github.io/idle-clicker-game/bus.html?diag=${Date.now()}`;
-          let probeError = '';
-          try {
-            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-            await page.locator('#topbar').waitFor({ state: 'visible', timeout: 30000 });
-            await page.locator('#locBtn').click();
-            await page.waitForTimeout(12000);
-            if (!/Brightstone/i.test(await page.locator('#stopName').innerText())) {
-              await page.locator('#changeStop').click();
-              const brightstone = page.locator('#stopItems').getByText(/Brightstone Road/i).first();
-              if (await brightstone.count()) await brightstone.click();
-            }
-            await page.locator('#dAll').click();
-            await page.waitForTimeout(22000);
-          } catch (error) {
-            probeError = error.stack || error.message;
-          }
-
-          const snapshot = await page.evaluate(() => {
-            const rect = selector => {
-              const node = document.querySelector(selector);
-              if (!node) return null;
-              const r = node.getBoundingClientRect();
-              return { x: r.x, y: r.y, width: r.width, height: r.height, display: getComputedStyle(node).display };
-            };
-            return {
-              version: document.documentElement.innerHTML.match(/const APP_VERSION = '([^']+)'/)?.[1] || '',
-              stopName: document.querySelector('#stopName')?.textContent?.trim() || '',
-              stopMeta: document.querySelector('#stopMeta')?.textContent?.trim() || '',
-              status: document.querySelector('#statusText')?.textContent?.trim() || '',
-              emptyVisible: (() => { const n=document.querySelector('#empty'); return !!n && getComputedStyle(n).display !== 'none'; })(),
-              empty: document.querySelector('#empty')?.textContent?.trim().replace(/\s+/g, ' ') || '',
-              depChildren: document.querySelector('#deps')?.children.length || 0,
-              mapMarkers: document.querySelectorAll('.leaflet-marker-icon').length,
-              selectedDirection: [...document.querySelectorAll('.dirswitch button')].find(button => button.getAttribute('aria-pressed') === 'true')?.id || '',
-              topbar: rect('#topbar'),
-              search: rect('.searchwrap'),
-              directions: rect('.dirswitch'),
-              settings: rect('#setBtn'),
-              bodyText: document.body.innerText.slice(0, 4000)
-            };
-          });
-
-          await page.screenshot({ path: 'kerbside-live-diagnostic.png', fullPage: true });
-          const report = { probeError, snapshot, pageErrors, consoleErrors, failedRequests, badResponses };
-          await writeFile('kerbside-live-diagnostic.json', JSON.stringify(report, null, 2));
-          console.log(JSON.stringify(report, null, 2));
-          await browser.close();
-          NODE
-      - name: Upload diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kerbside-live-diagnostic
-          path: |
-            kerbside-backend/kerbside-live-diagnostic.json
-            kerbside-backend/kerbside-live-diagnostic.png
-          if-no-files-found: warn
-          retention-days: 1
+          python3 .github/scripts/sync-version.py --check
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, 1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          PY
+          node --check build-timetable.js
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+          for engine in webkit chromium; do
+            export KERBSIDE_BROWSER="$engine"
+            npm run test:browser --prefix kerbside-backend
+            npm run test:identity --prefix kerbside-backend
+            npm run test:multi-vehicle --prefix kerbside-backend
+            npm run test:audit --prefix kerbside-backend
+          done
+      - name: Commit validated hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            VERSION \
+            bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No hotfix changes were staged.' >&2
+            exit 1
+          fi
+          git commit -m 'Kerbside 0.6.94: restore compact mobile controls' \
+            -m 'Put location, direction and settings back on the same mobile row and default new sessions to Both so a one-way filter cannot make a working stop appear empty.'
+          git push origin HEAD:agent/fix-kerbside-live-regression
