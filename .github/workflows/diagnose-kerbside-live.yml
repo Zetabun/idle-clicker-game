@@ -51,9 +51,7 @@ jobs:
           const badResponses = [];
           page.on('pageerror', error => pageErrors.push(error.stack || error.message));
           page.on('console', message => {
-            if (message.type() === 'error' || message.type() === 'warning') {
-              consoleErrors.push(`${message.type()}: ${message.text()}`);
-            }
+            if (message.type() === 'error' || message.type() === 'warning') consoleErrors.push(`${message.type()}: ${message.text()}`);
           });
           page.on('requestfailed', request => failedRequests.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText || 'unknown'}`));
           page.on('response', response => {
@@ -61,11 +59,16 @@ jobs:
           });
 
           const url = `https://zetabun.github.io/idle-clicker-game/bus.html?diag=${Date.now()}`;
-          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-          await page.locator('#map.leaflet-container').waitFor({ state: 'visible', timeout: 30000 });
-          await page.locator('#locBtn').click();
-          await page.locator('#dAll').click();
-          await page.waitForTimeout(30000);
+          let probeError = '';
+          try {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.locator('#topbar').waitFor({ state: 'visible', timeout: 30000 });
+            await page.locator('#locBtn').click();
+            await page.locator('#dAll').click();
+            await page.waitForTimeout(30000);
+          } catch (error) {
+            probeError = error.stack || error.message;
+          }
 
           const snapshot = await page.evaluate(() => {
             const rect = selector => {
@@ -80,7 +83,6 @@ jobs:
               stopMeta: document.querySelector('#stopMeta')?.textContent?.trim() || '',
               status: document.querySelector('#statusText')?.textContent?.trim() || '',
               empty: document.querySelector('#empty')?.textContent?.trim().replace(/\s+/g, ' ') || '',
-              departures: document.querySelectorAll('#deps .departure, #deps [data-vehicle-id], #deps .row').length,
               depChildren: document.querySelector('#deps')?.children.length || 0,
               mapMarkers: document.querySelectorAll('.leaflet-marker-icon').length,
               selectedDirection: [...document.querySelectorAll('.dirswitch button')].find(button => button.getAttribute('aria-pressed') === 'true')?.id || '',
@@ -88,22 +90,23 @@ jobs:
               search: rect('.searchwrap'),
               directions: rect('.dirswitch'),
               settings: rect('#setBtn'),
-              bodyText: document.body.innerText.slice(0, 3000)
+              bodyText: document.body.innerText.slice(0, 4000)
             };
           });
 
           await page.screenshot({ path: 'kerbside-live-diagnostic.png', fullPage: true });
-          const report = { snapshot, pageErrors, consoleErrors, failedRequests, badResponses };
+          const report = { probeError, snapshot, pageErrors, consoleErrors, failedRequests, badResponses };
           await writeFile('kerbside-live-diagnostic.json', JSON.stringify(report, null, 2));
           console.log(JSON.stringify(report, null, 2));
           await browser.close();
           NODE
       - name: Upload diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kerbside-live-diagnostic
           path: |
             kerbside-backend/kerbside-live-diagnostic.json
             kerbside-backend/kerbside-live-diagnostic.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 1
