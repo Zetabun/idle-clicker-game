@@ -606,7 +606,11 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .destnote{display:none}
   #topbar{
     display:grid;grid-template-columns:minmax(0,1fr) auto 44px;
-    grid-template-areas:"brand brand brand" "search directions settings";
+    /* Search had to share a row with the direction switch and the settings
+       button, which left the input 162px wide carrying 111px of icon and
+       button padding: 49px of usable text, too narrow for "Halesowen", let
+       alone a restored "My location". It gets its own row. */
+    grid-template-areas:"brand brand brand" "search search search" "directions directions settings";
     align-items:stretch;column-gap:7px;row-gap:8px;
     padding:calc(10px + env(safe-area-inset-top)) 10px 9px;
   }
@@ -1040,7 +1044,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.85';
+const APP_VERSION = '0.6.86';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1369,7 +1373,19 @@ async function fetchTimed(url, options, timeoutMs){
   const abort = ()=>ctl.abort();
   if(external){ if(external.aborted) ctl.abort(); else external.addEventListener('abort',abort,{once:true}); }
   const timer=setTimeout(()=>ctl.abort(),timeoutMs||FETCH_TIMEOUT_MS);
-  try{ return await fetch(url,{...(options||{}),signal:ctl.signal}); }
+  try{
+    const response=await fetch(url,{...(options||{}),signal:ctl.signal});
+    /* fetch settles when the response headers arrive, not when its body has, so
+       returning here disarmed the timer before the download had happened. A
+       server that answered and then stalled mid-body was never timed out: the
+       poll's await never settled, its finally never ran, S.busy stayed true and
+       every later poll returned early, leaving the board frozen on old data
+       with no error. Read the body while the timer is still armed, then hand
+       back a response the caller can read exactly as before. */
+    const body=await response.arrayBuffer();
+    const empty=response.status===204||response.status===205||response.status===304;
+    return new Response(empty?null:body,{status:response.status,statusText:response.statusText,headers:response.headers});
+  }
   finally{ clearTimeout(timer); if(external) external.removeEventListener('abort',abort); }
 }
 function nameTokens(s){
@@ -2716,7 +2732,7 @@ function journeyGeometry(v,stop){
   const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
-  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop);
+  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop,vehicle&&vehicle.along);
   const selected=selectedIndex>=0?ordered[selectedIndex]:null;
   // Only project the stop onto the whole pattern when the ordered stop list
   // could not place it. That scan walks every point of the route and its
@@ -2729,7 +2745,7 @@ function journeyGeometry(v,stop){
   const remaining=target.along-vehicle.along;
   return {
     remaining,
-    passed:remaining < -120,
+    passed:remaining < -PATTERN_STOP_PASSED_TOLERANCE,
     vehicleOffset:vehicle.metres,
     stopOffset:target.metres,
     total:vehicle.total,
@@ -2751,15 +2767,45 @@ function orderedPatternStops(pattern){
   pattern.stopProgress=projected;
   return projected;
 }
-function selectedPatternStopIndex(stops,selectedStop){
+/* Which call at this stop a bus is working towards.
+
+   A journey may call at the same stop more than once: a circular service, one
+   that returns to where it started, or a loop back through a bus station. The
+   builder keeps those repeats, so taking the first match meant a bus already
+   round the loop was measured against a call it had left behind. That produced a
+   large negative remaining distance, journeyGeometry read it as passed, and a
+   genuinely approaching bus was dropped from the board — showing instead as a
+   scheduled departure with no GPS match.
+
+   Given where the bus is along the route, choose the first call still ahead of
+   it, within the same tolerance journeyGeometry uses before calling a stop
+   passed. A bus past every call keeps the last one, so it is still reported as
+   passed rather than silently matched to the start of the route. */
+const PATTERN_STOP_PASSED_TOLERANCE = 120;
+function selectedPatternStopIndex(stops,selectedStop,fromAlong){
   const chosen=selectedStop||S.stop;
   if(!stops.length||!chosen) return -1;
   const ids=[chosen===S.stop&&S.ttStop&&S.ttStop.id,chosen.timetableId,chosen.atco,chosen.code,chosen.id].map(v=>String(v||'')).filter(Boolean);
-  let index=stops.findIndex(stop=>ids.includes(String(stop.id)));
-  if(index>=0) return index;
-  let best=-1,bestDistance=Infinity;
-  stops.forEach((stop,i)=>{ const metres=dist(stop.lat,stop.lon,chosen.lat,chosen.lon); if(metres<bestDistance){bestDistance=metres;best=i;} });
-  return bestDistance<=180?best:-1;
+  const pick=matches=>{
+    if(!matches.length) return -1;
+    if(!isFinite(fromAlong)) return matches[0];
+    const threshold=Number(fromAlong)-PATTERN_STOP_PASSED_TOLERANCE;
+    const ahead=matches.find(i=>Number(stops[i].along)>=threshold);
+    return ahead===undefined?matches[matches.length-1]:ahead;
+  };
+  const byId=[];
+  stops.forEach((stop,i)=>{ if(ids.includes(String(stop.id))) byId.push(i); });
+  if(byId.length) return pick(byId);
+  /* Positional fallback. The nearest stop still decides, as before; the only
+     change is that repeats of that same stop are gathered so the call ahead can
+     be chosen. Every occurrence of one physical stop shares its coordinates, so
+     they sit within a few metres of the nearest distance. */
+  const metres=stops.map(stop=>dist(stop.lat,stop.lon,chosen.lat,chosen.lon));
+  const nearest=Math.min(...metres);
+  if(!isFinite(nearest)||nearest>180) return -1;
+  const same=[];
+  metres.forEach((m,i)=>{ if(m<=nearest+25) same.push(i); });
+  return pick(same);
 }
 function routePatternMovementFit(pattern,v,stop){
   const history=recentMovementPoints(v);
@@ -2782,7 +2828,7 @@ function routePatternMovementFit(pattern,v,stop){
   if(used<2||moved<ROUTE_INFERENCE_MIN_MOVEMENT||!first||!last) return null;
   const forward=last.along-first.along;
   if(forward<Math.max(ROUTE_INFERENCE_MIN_FORWARD,moved*.2)) return null;
-  const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop);
+  const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop,last&&last.along);
   const selected=selectedIndex>=0?stops[selectedIndex]:null;
   const projectedTarget=selected?null:projectToPattern(pattern.points,stop.lat,stop.lon);
   const target=selected?{along:selected.along,metres:dist(selected.lat,selected.lon,stop.lat,stop.lon)}:projectedTarget;
@@ -2864,7 +2910,7 @@ function journeyProgress(v){
   if(stops.length<2) return null;
   let nextIndex=stops.findIndex(stop=>stop.along>=vehicle.along-25);
   if(nextIndex<0) nextIndex=stops.length;
-  const selectedIndex=selectedPatternStopIndex(stops);
+  const selectedIndex=selectedPatternStopIndex(stops,null,vehicle&&vehicle.along);
   let atIndex=-1,atDistance=Infinity;
   stops.forEach((stop,index)=>{
     const direct=dist(v.lat,v.lon,stop.lat,stop.lon),along=Math.abs(stop.along-confirmedVehicle.along);
@@ -3331,7 +3377,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
 }
 
 async function fetchLiveResponse(url,signal){
