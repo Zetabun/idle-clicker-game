@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.93'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.94'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -107,10 +107,11 @@ assert.match(busSource, /kerbside-amber/);
 assert.doesNotMatch(busSource, /kerbside-header\.svg/);
 assert.doesNotMatch(busSource, /%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22192%22%20height%3D%22192%22/);
 assert.match(busSource, /\.brand-icon\{display:none\}/);
-// Search owns its row on a phone. Sharing one with the direction switch and
-// the settings button left 49px of usable text inside the input, which no
-// place name fits, restored or typed.
-assert.match(busSource, /grid-template-areas:"brand brand brand" "search search search" "directions directions settings"/);
+// The compact mobile header keeps location, direction and settings on one row.
+assert.match(busSource, /grid-template-areas:"brand brand brand" "search directions settings"/);
+assert.ok(busSource.includes('<button id="dIn" aria-pressed="false">'));
+assert.ok(busSource.includes('<button id="dAll" aria-pressed="true">'));
+assert.match(busSource, /dir:'all'/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px/);
 assert.doesNotMatch(busSource, /\.searchwrap\{order:3;flex-basis:100%\}/);
 assert.match(busSource, /age<=4\*60\*1000/);
@@ -635,7 +636,7 @@ try {
   assert.deepEqual(mobileHeader,{
     topDisplay:'grid',iconDisplay:'block',iconEmbedded:true,
     iconLoaded:true,iconFit:'contain',
-    brandAbove:true,searchAboveControls:true,searchFullWidth:true,
+    brandAbove:true,searchAboveControls:false,searchFullWidth:false,
     controlsAligned:true,controlsOrdered:true,withinViewport:true,
     searchHeight:46,settingsHeight:46
   });
@@ -1550,7 +1551,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.93'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.94'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
@@ -1595,14 +1596,20 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       const search=document.querySelector('.searchwrap').getBoundingClientRect();
       const directions=document.querySelector('.dirswitch').getBoundingClientRect();
       const settings=document.getElementById('setBtn').getBoundingClientRect();
-      return {overflow:document.documentElement.scrollWidth-window.innerWidth,searchWidth:search.width,aligned:Math.abs(directions.top-settings.top),searchBelowNothing:search.bottom<=Math.min(directions.top,settings.top)+2,viewbar:getComputedStyle(document.getElementById('viewbar')).display};
+      return {
+      overflow:document.documentElement.scrollWidth-window.innerWidth,
+      searchWidth:search.width,
+      aligned:Math.max(search.top,directions.top,settings.top)-Math.min(search.top,directions.top,settings.top),
+      ordered:search.right<=directions.left+1&&directions.right<=settings.left+1,
+      viewbar:getComputedStyle(document.getElementById('viewbar')).display
+    };
     }));
   }
   for(const layout of mobileLayouts){
     assert.ok(layout.overflow<=1,JSON.stringify(layout));
-    assert.ok(layout.searchWidth>=260,JSON.stringify(layout));
-    assert.ok(layout.searchBelowNothing,JSON.stringify(layout));
+    assert.ok(layout.searchWidth>=120,JSON.stringify(layout));
     assert.ok(layout.aligned<=2,JSON.stringify(layout));
+    assert.ok(layout.ordered,JSON.stringify(layout));
     assert.equal(layout.viewbar,'flex');
   }
   await page.setViewportSize({width:1440,height:900});

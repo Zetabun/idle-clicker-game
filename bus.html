@@ -606,11 +606,9 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   .destnote{display:none}
   #topbar{
     display:grid;grid-template-columns:minmax(0,1fr) auto 44px;
-    /* Search had to share a row with the direction switch and the settings
-       button, which left the input 162px wide carrying 111px of icon and
-       button padding: 49px of usable text, too narrow for "Halesowen", let
-       alone a restored "My location". It gets its own row. */
-    grid-template-areas:"brand brand brand" "search search search" "directions directions settings";
+    /* Keep location, direction and settings together in the established
+       compact Kerbside mobile header. */
+    grid-template-areas:"brand brand brand" "search directions settings";
     align-items:stretch;column-gap:7px;row-gap:8px;
     padding:calc(10px + env(safe-area-inset-top)) 10px 9px;
   }
@@ -794,9 +792,9 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
     </div>
 
     <div class="dirswitch" role="group" aria-label="Travel direction">
-      <button id="dIn" aria-pressed="true"><span class="arrow">&#8594;</span><span class="lbl">Into town</span><span class="lblshort">In</span></button>
+      <button id="dIn" aria-pressed="false"><span class="arrow">&#8594;</span><span class="lbl">Into town</span><span class="lblshort">In</span></button>
       <button id="dOut" aria-pressed="false"><span class="arrow">&#8592;</span><span class="lbl">Out of town</span><span class="lblshort">Out</span></button>
-      <button id="dAll" aria-pressed="false"><span class="lbl">Both</span><span class="lblshort">Both</span></button>
+      <button id="dAll" aria-pressed="true"><span class="lbl">Both</span><span class="lblshort">Both</span></button>
     </div>
 
     <button class="iconbtn" id="setBtn" title="Data source and settings" aria-label="Settings">
@@ -1044,7 +1042,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.93';
+const APP_VERSION = '0.6.94';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1115,7 +1113,7 @@ const NAPTAN_STOP_TYPES = {
 const S = {
   key:MY_KEY, proxy:MY_PROXY, radius:1500, interval:15,
   demo:!(MY_KEY || MY_PROXY), hideAway:true, remember:true, onlyServing:true,
-  dir:'in',                 // 'in' | 'out' | 'all'
+  dir:'all',                // 'in' | 'out' | 'all'
   theme:'dark',             // 'dark' | 'crystal'
   origin:null,              // {lat,lon,label}
   anchor:null,              // town centre {lat,lon,name}
