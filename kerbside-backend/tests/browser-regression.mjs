@@ -80,7 +80,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.84'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.85'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -281,6 +281,21 @@ assert.match(busSource, /function anonymousActivityIdentity\(baseId,record,usedS
 // different buses, while the same bus legitimately repeats across the
 // overlapping bounding boxes the app fetches. Executable proof for both
 // directions lives in identity-regression.mjs.
+// A bus past the stop is dropped on ordered geometry regardless of the toggle,
+// so what hideAway still governs is the case with no geometry, where strength
+// falls back to a straight-line trend. It must not overrule an ordered pattern
+// that places the bus short of the stop with route still to run.
+assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead\)\{/);
+assert.doesNotMatch(busSource, /Drops anything already past your stop/);
+// Name where the buses go, not a compass point or a town no route here visits.
+assert.match(busSource, /function stopDestinationNames\(\)/);
+assert.match(busSource, /buses here head for '\+heading/);
+assert.match(busSource, /const dirWord=heading\?'to '\+heading/);
+// Distance stays in the heading; the stop reference and which timetable matched
+// it are provenance and belong behind the info button.
+assert.match(busSource, /board-info-panel" id="boardInfoPanel" hidden>\s*<div class="stopmeta" id="stopSource">/);
+assert.match(busSource, /\$\('stopMeta'\)\.innerHTML='<b>'\+fmtDist\(s\.d\)\+'<\/b> from your point';/);
+assert.match(busSource, /id="q"[^>]*placeholder="Search"/);
 // Crystal is a variable swap, not a second stylesheet. Every tint in the sheet
 // has to be an alpha of a themed component, or a rule keeps its dark colour on
 // a white ground — so no literal rgba() may survive anywhere in the CSS.
@@ -1454,7 +1469,7 @@ try {
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.84'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.85'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

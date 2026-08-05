@@ -216,6 +216,7 @@ button{cursor:pointer;border:0;background:none}
 .stopname{font-weight:600;font-size:15.5px;letter-spacing:-.01em;line-height:1.25}
 .stopmeta{color:var(--text-dim);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;margin-top:3px}
 .stopmeta b{color:var(--led);font-weight:600}
+.board-info-panel .stopmeta{margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
 .stopfacts{margin-top:5px;font-size:11.5px;line-height:1.45;color:var(--text-dim)}
 .stopfacts b{color:var(--text);font-weight:600}
 .stopfacts[hidden]{display:none}
@@ -778,7 +779,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
       <span class="pin">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       </span>
-      <input id="q" type="text" placeholder="Postcode, street or place" autocomplete="off" spellcheck="false" aria-label="Search for a location">
+      <input id="q" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search for a location">
       <button class="go" id="goBtn">Find</button>
       <button class="locate" id="locBtn" title="Use my location" aria-label="Use my location">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
@@ -819,6 +820,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
         <div class="walkline" id="walkLine" style="display:none"></div>
         <div class="destbar" id="destBar" role="group" aria-label="Filter by destination"></div>
         <div class="board-info-panel" id="boardInfoPanel" hidden>
+          <div class="stopmeta" id="stopSource">Stop reference appears once a stop is selected.</div>
           <div class="confidence-guide"><b>LIVE GPS</b> means a real bus reported its position within the last two minutes. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old; Kerbside holds the row briefly rather than letting the bus flicker out, and marks the ETA as estimated. <b>GPS SIGNAL LOST</b> means the operator stopped reporting a bus it had already confirmed, so the row is held without a countdown until it expires. Later timetable departures stay <b>scheduled</b> until a matching vehicle begins service. Confidence runs <b>verified</b>, where journey or timetable evidence confirms this bus serves the stop, then <b>likely</b>, where route and direction evidence agree but the journey is not fully matched, then <b>rough</b>, where evidence is limited and the ETA is approximate. Tap a matched live bus for its ordered stop progress; a map route is drawn only when the national GTFS feed supplies an official shape for that exact journey. Roadworks and closures on the routes that call here appear above the board, matched by exact stop code and filtered to what is running now.</div>
           <div class="live-diagnostics" id="liveDiagnostics">Live matching diagnostics will appear after a stop and live feed are loaded.</div>
           <div class="destnote" id="destNote" style="display:none"></div>
@@ -931,8 +933,8 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 
           <div class="toggle">
             <div>
-              <div class="t">Hide buses heading away</div>
-              <div class="h">Drops anything already past your stop, even if the route matches.</div>
+              <div class="t">Hide buses moving away</div>
+              <div class="h">Only applies when the route cannot be checked. A bus confirmed past your stop is always hidden, and one whose route still reaches you is always kept.</div>
             </div>
             <button class="sw" id="awaySw" aria-pressed="true" aria-label="Toggle hiding buses heading away"></button>
           </div>
@@ -1036,7 +1038,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.84';
+const APP_VERSION = '0.6.85';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2907,11 +2909,15 @@ function timetableSourceLabel(){return S.timetableFallback?'last-known timetable
 function updateStopMeta(){
   if(!S.stop) return;
   const s=S.stop, displayCode=s.atco||s.naptan||s.code||'';
-  const code=displayCode?' · '+esc(displayCode):'';
   let tt=' · checking timetable';
   if(S.ttStop) tt=S.timetableSource==='national'?(S.timetableFallback?' · last-known timetable'+(timetableBuildLabel()?' · built '+timetableBuildLabel():''):' · official timetable stop'):S.ttStop.match==='code'?' · regional timetable stop':' · nearby timetable match';
   else if(S.ttError) tt=' · timetable unavailable'; else if(S.timetable) tt=' · live only';
-  $('stopMeta').innerHTML='<b>'+fmtDist(s.d)+'</b> from your point'+code+tt;
+  /* How far away the stop is belongs in the heading; the stop's reference code
+     and which timetable matched it are provenance, and were crowding the one
+     line that has to be readable at a glance. Those live in the info panel. */
+  $('stopMeta').innerHTML='<b>'+fmtDist(s.d)+'</b> from your point';
+  const source=$('stopSource');
+  if(source) source.innerHTML=(displayCode?'Stop reference <b>'+esc(displayCode)+'</b>':'No stop reference published')+tt;
 }
 function selectStop(s,manual){
   if(!s) return;
@@ -3908,7 +3914,7 @@ function retainFiredAlarm(alarm,now){
 }
 function alarmRowEligible(row){ return !!(row&&!row.gpsLost); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,renderServingNote};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,renderServingNote,updateStopMeta,stopDestinationNames};
 }
 function hasAlarm(line,dest){
   return S.stop && ALARMS.some(a=>a.k===alarmKey(S.stop.id,line,dest));
@@ -4362,7 +4368,17 @@ function collect(gate,diagnostics){
     if(S.dir!=='all'&&gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir&&!routeAhead){ dropLive(out,v,diagnostics,'direction',now); continue; }
     if(diagnostics) diagnostics.direction++;
 
-    if(S.hideAway && strength<0 && d>100){
+    /* A bus genuinely past this stop was already dropped on ordered route
+       geometry above, whatever this toggle says. What is left here is the case
+       with no usable geometry, where approachStrength falls back to a
+       straight-line trend or a compass bearing. That is the crudest signal in
+       the pipeline, so it must not overrule the strongest: routeAhead means an
+       ordered pattern places this bus short of the stop with route still to
+       run, which happens on loops, one-way systems and dual carriageways where
+       the bus recedes before it arrives. The direction gate above already makes
+       that exception; without it here, a matched journey was dropped anyway and
+       the recovered branch below never got the chance to save it. */
+    if(S.hideAway && strength<0 && d>100 && !routeAhead){
       dropLive(out,v,diagnostics,'away',now); continue;
     }
     if(diagnostics) diagnostics.approaching++;
@@ -4441,9 +4457,13 @@ function renderLiveDiagnostics(){
     +'</div>';
 }
 
-function renderDests(){
-  const bar=$('destBar'), note=$('destNote');
-  if(!S.stop){ bar.innerHTML=''; note.style.display='none'; return; }
+/* The destinations this stop actually serves, most relevant first: seen live
+   before merely scheduled, then most recently seen. The chips, the stop
+   description and the empty-state message all name the same places, so a
+   passenger is told where these buses go rather than a compass point or a town
+   that may not be on any route from here. */
+function stopDestinationNames(){
+  if(!S.stop) return [];
   const bag={...(S.destsByStop[String(S.stop.id)]||{})};
   const now=Date.now();
   timetableRows(new Date()).filter(r=>r.at>now-2*3600000 && r.at<now+20*3600000 && r.head).forEach(r=>{ if(!bag[r.head]) bag[r.head]=now-1; });
@@ -4455,6 +4475,12 @@ function renderDests(){
     if(!!live[b]!==!!live[a]) return live[b]?1:-1;
     return (bag[b]||0)-(bag[a]||0);
   });
+  return {names,live};
+}
+function renderDests(){
+  const bar=$('destBar'), note=$('destNote');
+  if(!S.stop){ bar.innerHTML=''; note.style.display='none'; return; }
+  const {names,live}=stopDestinationNames();
   if(S.destFilter && !names.some(n=>destinationSimilarity(n,S.destFilter)>=.75)) S.destFilter=null;
   if(!names.length){ bar.innerHTML=''; note.style.display='none'; return; }
   const chip=(label,val,extra)=>'<button class="destchip" data-dest="'+esc(val==null?'':val)+'" aria-pressed="'+(S.destFilter===val)+'">'+esc(label)+(extra||'')+'</button>';
@@ -4798,9 +4824,17 @@ function stopFactsHtml(stop){
   const record=stopAttributes(stop);
   if(!record) return '';
   const street=String(record.s||'').trim();
+  /* A compass bearing is the raw NaPTAN fact, not the useful one: "south-west"
+     asks somebody to know which way south-west is. Where the timetable says
+     where these buses go, name that instead and keep the bearing only as the
+     fallback for a stop with no known destinations. */
+  const {names}=stopDestinationNames();
+  const heading=names.slice(0,2).map(n=>'<b>'+esc(n)+'</b>').join(' or ');
   const facing=bearingWords(record.b);
   const parts=[];
-  if(street&&facing) parts.push('On <b>'+esc(street)+'</b>, buses face <b>'+esc(facing)+'</b>.');
+  if(street&&heading) parts.push('On <b>'+esc(street)+'</b>, buses here head for '+heading+'.');
+  else if(heading) parts.push('Buses here head for '+heading+'.');
+  else if(street&&facing) parts.push('On <b>'+esc(street)+'</b>, buses face <b>'+esc(facing)+'</b>.');
   else if(street) parts.push('On <b>'+esc(street)+'</b>.');
   else if(facing) parts.push('Buses here face <b>'+esc(facing)+'</b>.');
   const type=NAPTAN_STOP_TYPES[String(record.t||'').trim().toUpperCase()];
@@ -5013,8 +5047,18 @@ function render(){
       showEmpty('<strong>Nothing verified to '+esc(S.destFilter)+'</strong>No fresh matching vehicle is confidently approaching this stop. <button id="clearDest">Show all destinations</button>');
       const cd=$('clearDest'); if(cd) cd.addEventListener('click',()=>{ S.destFilter=null; renderDests(); render(); });
     }else{
+      /* Name where these buses actually go. The anchor is the nearest town
+         centre within 22 km and can easily be somewhere no route from this stop
+         visits, so "heading into Birmingham" was told to people waiting for a
+         bus to Bromsgrove. The stop's own destinations come from its timetable
+         and are what the board would have shown. */
+      const {names}=stopDestinationNames();
+      const heading=names.slice(0,2).join(' or ');
       const namedAnchor=boardAnchorName();
-      const dirWord=S.dir==='in'?(namedAnchor?'into '+namedAnchor:'inbound'):S.dir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound'):'either way';
+      const dirWord=heading?'to '+heading
+        :S.dir==='in'?(namedAnchor?'into '+namedAnchor:'inbound')
+        :S.dir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound')
+        :'either way';
       showEmpty('<strong>Nothing verified heading '+esc(dirWord)+'</strong>'
         +(S.vehicles.size?S.vehicles.size+' tracked buses are broadcasting nearby, but none currently have enough route and movement evidence for this stop. Try <button id="flipDir">the other direction</button> or Both.'
         :'No recent vehicle positions have come through yet. Refresh, or check the Worker in settings.'));
