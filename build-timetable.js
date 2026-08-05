@@ -125,15 +125,18 @@ function numericSequence(value, fallback) {
   console.log('Reading routes and trips...');
   const routes = new Map();
   await eachRow('routes.txt', row => {
-    routes.set(String(row.route_id), row.route_short_name || row.route_long_name || String(row.route_id));
+    routes.set(String(row.route_id), { line: row.route_short_name || row.route_long_name || String(row.route_id), routeId: String(row.route_id || ''), operator: String(row.agency_id || '') });
   });
 
   const trips = new Map();
   await eachRow('trips.txt', row => {
     const tripId = String(row.trip_id || '');
     if (!tripId) return;
+    const route = routes.get(String(row.route_id)) || {};
     trips.set(tripId, {
-      line: routes.get(String(row.route_id)) || row.route_short_name || '',
+      line: route.line || row.route_short_name || '',
+      routeId: route.routeId || String(row.route_id || ''),
+      operator: route.operator || '',
       head: row.trip_headsign || '',
       service: String(row.service_id || ''),
       direction: row.direction_id == null ? '' : String(row.direction_id)
@@ -181,7 +184,7 @@ function numericSequence(value, fallback) {
     const minutes = parseGtfsMinutes(row.departure_time || row.arrival_time);
     if (!isFinite(minutes)) { invalidTimes++; return; }
     const list = byStop.get(stopId) || [];
-    list.push([minutes, trip.line, trip.head, trip.service, trip.direction, tripId]);
+    list.push([minutes, trip.line, trip.head, trip.service, trip.direction, tripId, '', trip.routeId, trip.operator, numericSequence(row.stop_sequence, list.length)]);
     byStop.set(stopId, list);
     usedTrips.add(tripId);
     if (trip.service) usedServices.add(trip.service);
@@ -204,7 +207,7 @@ function numericSequence(value, fallback) {
   });
 
   const output = {
-    version: 3,
+    version: 4,
     built: new Date().toISOString(),
     centre: [LAT, LON],
     radius: RADIUS,
@@ -247,20 +250,24 @@ function numericSequence(value, fallback) {
   const patternBySignature = new Map();
   for (const tripId of usedTrips) {
     const rows = (tripStops.get(tripId) || []).sort((a, b) => a[0] - b[0]);
-    const stopIds = [];
-    for (const [, stopId] of rows) {
-      if (stopIds[stopIds.length - 1] !== stopId) stopIds.push(stopId);
-    }
-    if (stopIds.length < 2) continue;
-    const signature = stopIds.join('\u001f');
+    const stopCalls = rows.map(([sequence, stopId]) => ({ sequence, stopId }));
+    if (stopCalls.length < 2) continue;
+    const signature = stopCalls.map(call => `${call.sequence}\u001d${call.stopId}`).join('\u001f');
     let patternId = patternBySignature.get(signature);
     if (!patternId) {
       patternId = `p${patternBySignature.size.toString(36)}`;
       patternBySignature.set(signature, patternId);
-      output.patterns[patternId] = stopIds.map(id => {
-        const s = trackStops.get(id);
-        return [Number(s.lat.toFixed(6)), Number(s.lon.toFixed(6))];
-      });
+      output.patterns[patternId] = {
+        p: stopCalls.map(call => {
+          const s = trackStops.get(call.stopId);
+          return [Number(s.lat.toFixed(6)), Number(s.lon.toFixed(6))];
+        }),
+        s: stopCalls.map(call => {
+          const s = trackStops.get(call.stopId);
+          return [call.stopId, s.name, Number(s.lat.toFixed(6)), Number(s.lon.toFixed(6)), call.sequence];
+        }),
+        g: 0
+      };
     }
     output.tripPatterns[tripId] = patternId;
   }

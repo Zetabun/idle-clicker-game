@@ -197,14 +197,17 @@ async function main() {
   console.log(`[${region}] Reading routes, trips and service calendars...`);
   await eachRow('routes.txt', row => {
     const id = String(row.route_id || '').trim();
-    if (id) routes.set(id, row.route_short_name || row.route_long_name || id);
+    if (id) routes.set(id, { line: row.route_short_name || row.route_long_name || id, routeId: id, operator: String(row.agency_id || '') });
   });
 
   await eachRow('trips.txt', row => {
     const id = String(row.trip_id || '').trim();
     if (!id) return;
+    const route = routes.get(String(row.route_id || '')) || {};
     trips.set(id, {
-      line: routes.get(String(row.route_id || '')) || row.route_short_name || '',
+      line: route.line || row.route_short_name || '',
+      routeId: route.routeId || String(row.route_id || ''),
+      operator: route.operator || '',
       head: row.trip_headsign || '',
       service: String(row.service_id || ''),
       direction: row.direction_id == null ? '' : String(row.direction_id),
@@ -333,7 +336,7 @@ async function main() {
     }
     const trip = trips.get(currentTrip);
     const shapeId = String(trip && trip.shape || '');
-    const signature = sequenceStops.join('\u001f') + '\u001e' + shapeId;
+    const signature = sequenceStops.map(call => `${call.seq}\u001d${call.id}`).join('\u001f') + '\u001e' + shapeId;
     const patternId = shortHash(signature);
     tripPattern.set(currentTrip, patternId);
     if (builtPatterns.has(patternId)) {
@@ -341,7 +344,7 @@ async function main() {
       return;
     }
     const orderedStops = sequenceStops
-      .map(id => [id, stops.get(id)])
+      .map(call => [call, stops.get(call.id)])
       .filter(([, stop]) => Boolean(stop));
     let routePoints = [];
     if (shapeId && shapePointRows) {
@@ -353,7 +356,7 @@ async function main() {
     if (routePoints.length >= 2 && orderedStops.length >= 2) {
       putPattern.run(patternId, JSON.stringify({
         p: routePoints.map(point => [Number(point.lat.toFixed(6)), Number(point.lon.toFixed(6))]),
-        s: orderedStops.map(([id, stop]) => [id, stop.name, stop.lat, stop.lon]),
+        s: orderedStops.map(([call, stop]) => [call.id, stop.name, stop.lat, stop.lon, call.seq]),
         g: hasShape ? 1 : 0
       }));
       builtPatterns.add(patternId);
@@ -362,12 +365,12 @@ async function main() {
     sequenceStops = [];
   }
 
-  for (const row of db.prepare('SELECT trip_id, stop_id FROM stop_times ORDER BY trip_id, seq').iterate()) {
+  for (const row of db.prepare('SELECT trip_id, stop_id, seq FROM stop_times ORDER BY trip_id, seq').iterate()) {
     if (row.trip_id !== currentTrip) {
       flushPattern();
       currentTrip = row.trip_id;
     }
-    if (sequenceStops[sequenceStops.length - 1] !== row.stop_id) sequenceStops.push(row.stop_id);
+    sequenceStops.push({ id: row.stop_id, seq: Number(row.seq) });
   }
   flushPattern();
 
@@ -381,7 +384,7 @@ async function main() {
     if (!shardPrefix) return;
     const filename = path.join(patternRoot, `${shardPrefix}.json`);
     writeJson(filename, {
-      version: 3,
+      version: 4,
       built: nowIso,
       scope: 'pattern-shard',
       region,
@@ -474,7 +477,7 @@ async function main() {
 
     const filename = path.join(departureRoot, `${currentShard}.json`);
     writeJson(filename, {
-      version: 8,
+      version: 9,
       built: nowIso,
       scope: 'departure-shard',
       region,
@@ -491,7 +494,7 @@ async function main() {
     shardTripPatterns = {};
   }
 
-  for (const row of db.prepare('SELECT shard, stop_id, trip_id, mins FROM stop_times ORDER BY shard, stop_id, mins, trip_id').iterate()) {
+  for (const row of db.prepare('SELECT shard, stop_id, trip_id, mins, seq FROM stop_times ORDER BY shard, stop_id, mins, trip_id, seq').iterate()) {
     if (row.shard !== currentShard) {
       flushDepartureShard();
       currentShard = row.shard;
@@ -504,7 +507,7 @@ async function main() {
     const trip = trips.get(row.trip_id);
     if (!trip) continue;
     const patternId = tripPattern.get(row.trip_id) || '';
-    departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId]);
+    departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId, trip.routeId, trip.operator, Number(row.seq)]);
     if (trip.service) shardServices.add(trip.service);
     if (patternId) shardTripPatterns[row.trip_id] = patternId;
   }
