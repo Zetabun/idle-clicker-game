@@ -1044,7 +1044,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.87';
+const APP_VERSION = '0.6.88';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1185,6 +1185,10 @@ const LIVE_ID_COLLISIONS = new Map();
 const LIVE_ID_ACTIVITIES = new Map();
 const LIVE_ANONYMOUS_TRACKS = new Map();
 const LIVE_ANONYMOUS_MATCH_MAX_METRES = 3000;
+// Ninety seconds assumed a brisk feed. An operator reporting every two
+// minutes fell outside it and had every report treated as a new bus, so the
+// window now covers a slow reporter; the distance cap above still bounds it.
+const LIVE_ANONYMOUS_MATCH_MAX_SECONDS = 180;
 let LIVE_ANONYMOUS_SLOT = 0;
 const SHARED_PHYSICAL_KEYS = new Map();
 
@@ -3211,6 +3215,15 @@ function physicalVehicleKey(v){
 function liveActivityDiscriminator(fields){
   const item=String(fields&&fields.ItemIdentifier||'').trim();
   if(item) return 'item|'+item;
+  /* Operators publish a fleet number in Extensions that the parser already
+     flattens but nothing read. It is the one identifier here that is stable
+     between polls: across 455 vehicles seen in two consecutive responses,
+     ItemIdentifier changed for 42% of them and VehicleUniqueId for none. It
+     also identifies the bus rather than the journey, so it separates two
+     vehicles sharing a journey code, which is exactly the collision case.
+     Records carrying it no longer fall through to an anonymous slot. */
+  const unique=String(fields&&fields.VehicleUniqueId||'').trim();
+  if(unique) return 'vehicle-unique|'+unique;
   const originTime=String(fields&&fields.OriginAimedDepartureTime||'').trim();
   if(originTime) return 'origin-time|'+originTime;
   const destinationTime=String(fields&&fields.DestinationAimedArrivalTime||'').trim();
@@ -3262,7 +3275,15 @@ function anonymousActivityIdentity(baseId,record,usedSlots,now=Date.now()){
       if(sharesPayload) continue;
     }
     const elapsed=(Number(record.ts)-Number(track.ts))/1000;
-    if(!(elapsed>=8&&elapsed<=90)) continue;
+    /* An identical timestamp at an identical position is the same
+       observation arriving again — a replayed cached response, or the same
+       vehicle in two overlapping boxes. Two distinct buses cannot occupy one
+       point at one instant, and a genuine pair in the same payload is already
+       excluded above, so this must merge rather than mint a second identity.
+       The lower bound otherwise stands: it is what keeps two bunched buses
+       reporting seconds apart from collapsing onto one slot. */
+    const repeat=elapsed===0&&Number(record.lat)===Number(track.lat)&&Number(record.lon)===Number(track.lon);
+    if(!repeat&&!(elapsed>=8&&elapsed<=LIVE_ANONYMOUS_MATCH_MAX_SECONDS)) continue;
     const maxMove=Math.min(LIVE_ANONYMOUS_MATCH_MAX_METRES,Math.max(120,elapsed*30+80));
     const metres=dist(Number(track.lat),Number(track.lon),Number(record.lat),Number(record.lon));
     if(!isFinite(metres)||metres>maxMove) continue;

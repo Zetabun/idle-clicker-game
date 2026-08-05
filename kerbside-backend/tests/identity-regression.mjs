@@ -48,7 +48,7 @@ try {
     const now = Date.now();
     const savedVehicles = state.vehicles;
     const wrap = content => `<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri"><ServiceDelivery><VehicleMonitoringDelivery>${content}</VehicleMonitoringDelivery></ServiceDelivery></Siri>`;
-    const activity = ({ operator, journey, vehicle, item, lat, time = now - 1000, validUntil, originTime, destinationTime }) => `<VehicleActivity>
+    const activity = ({ operator, journey, vehicle, item, lat, time = now - 1000, validUntil, originTime, destinationTime, uniqueId }) => `<VehicleActivity>
       ${item == null ? '' : `<ItemIdentifier>${item}</ItemIdentifier>`}
       <RecordedAtTime>${new Date(time).toISOString()}</RecordedAtTime>
       ${validUntil == null ? '' : `<ValidUntilTime>${new Date(validUntil).toISOString()}</ValidUntilTime>`}
@@ -58,7 +58,9 @@ try {
       ${originTime == null ? '' : `<OriginAimedDepartureTime>${new Date(originTime).toISOString()}</OriginAimedDepartureTime>`}
       ${destinationTime == null ? '' : `<DestinationAimedArrivalTime>${new Date(destinationTime).toISOString()}</DestinationAimedArrivalTime>`}
       <VehicleLocation><Longitude>-2.1000</Longitude><Latitude>${lat}</Latitude></VehicleLocation>
-      <Bearing>0</Bearing><Velocity>6</Velocity></MonitoredVehicleJourney></VehicleActivity>`;
+      <Bearing>0</Bearing><Velocity>6</Velocity></MonitoredVehicleJourney>
+      ${uniqueId == null ? '' : `<Extensions><VehicleJourney><VehicleUniqueId>${uniqueId}</VehicleUniqueId></VehicleJourney></Extensions>`}
+      </VehicleActivity>`;
 
     try {
       const together = api.parseLivePayloads([
@@ -110,6 +112,31 @@ try {
         { text: wrap(activity({ operator: 'OP-DUP', journey: 'J', vehicle: 'V', item: null, lat: 52.40 })) }
       ], now);
 
+      /* A replayed cached response: identical timestamp, identical position.
+         The elapsed gap is zero, which the 8-second floor rejected, so the same
+         observation minted a second identity and one bus became a stale row
+         beside a live one. */
+      state.vehicles = new Map();
+      const cachedAt = now - 30000;
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-CACHE', journey: 'J', vehicle: 'V', item: null, lat: 52.40, time: cachedAt })) }], now).vehicles);
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-CACHE', journey: 'J', vehicle: 'V', item: null, lat: 52.40, time: cachedAt })) }], now + 5000).vehicles);
+      const repeatedCachedIdentities = state.vehicles.size;
+
+      /* An operator reporting every two minutes. The old ceiling was 90
+         seconds, so every report from such a feed looked like a new bus. */
+      state.vehicles = new Map();
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-SLOW', journey: 'J', vehicle: 'V', item: null, lat: 52.4000, time: now - 150000 })) }], now - 150000).vehicles);
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-SLOW', journey: 'J', vehicle: 'V', item: null, lat: 52.4090, time: now - 30000 })) }], now - 30000).vehicles);
+      const slowReporterIdentities = state.vehicles.size;
+
+      /* The fleet number operators publish in Extensions. It is stable between
+         polls where ItemIdentifier is not, so a record carrying it should get a
+         real identity rather than an anonymous slot. */
+      const uniqueIds = api.parseLivePayloads([{ text: wrap(
+        activity({ operator: 'OP-UID', journey: 'J', vehicle: 'V', item: null, lat: 52.40, uniqueId: '740' }) +
+        activity({ operator: 'OP-UID', journey: 'J', vehicle: 'V', item: null, lat: 52.42, uniqueId: '741' })
+      ) }], now);
+
       const expired = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-EXP', journey: 'J', vehicle: 'V', item: 'expired', lat: 52.40, validUntil: now - 1 })) }], now);
       const valid = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-VALID', journey: 'J', vehicle: 'V', item: 'valid', lat: 52.40, validUntil: now + 60000 })) }], now);
 
@@ -134,7 +161,12 @@ try {
         expiredCount: expired.vehicles.length,
         expiredStale: expired.stale,
         validCount: valid.vehicles.length,
-        validUntilStored: Number.isFinite(valid.vehicles[0]?.validUntilAt)
+        validUntilStored: Number.isFinite(valid.vehicles[0]?.validUntilAt),
+        repeatedCachedIdentities,
+        slowReporterIdentities,
+        uniqueIdCount: uniqueIds.vehicles.length,
+        uniqueIdDistinct: new Set(uniqueIds.vehicles.map(vehicle => vehicle.id)).size,
+        uniqueIdNamed: uniqueIds.vehicles.every(vehicle => vehicle.id.includes('|activity|vehicle-unique|'))
       };
     } finally {
       state.vehicles = savedVehicles;
@@ -162,6 +194,12 @@ try {
   assert.equal(result.expiredStale, 1);
   assert.equal(result.validCount, 1);
   assert.equal(result.validUntilStored, true);
+  // One sequential observation of one bus must not become two identities.
+  assert.equal(result.repeatedCachedIdentities, 1);
+  assert.equal(result.slowReporterIdentities, 1);
+  assert.equal(result.uniqueIdCount, 2);
+  assert.equal(result.uniqueIdDistinct, 2);
+  assert.equal(result.uniqueIdNamed, true);
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside cross-poll identity and producer-expiry regression passed.');
 } finally {
