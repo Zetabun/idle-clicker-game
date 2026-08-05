@@ -1044,7 +1044,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.92';
+const APP_VERSION = '0.6.93';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1250,7 +1250,7 @@ function learnDests(){
   const bag = S.destsByStop[sid] || (S.destsByStop[sid]={});
   let added=false;
   for(const v of S.vehicles.values()){
-    if(!v.dest || !servesHere(v.line,v.dest)) continue;
+    if(!v.dest || !servesHere(v.line,v.dest,v)) continue;
     const d = dist(v.lat,v.lon,S.stop.lat,S.stop.lon);
     if(d > 1800 || approachStrength(v,S.stop) < 0) continue;
     if(!bag[v.dest]) added=true;
@@ -2496,7 +2496,7 @@ function timetableRows(now){
       serviceDate.setDate(serviceDate.getDate()+targetOffset-departureDayOffset);
       if(!serviceRuns(service,serviceDate)) continue;
       const at=serviceDepartureTime(serviceDate,mins);
-      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||''});
+      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||'', routeId:String(e[7]||''), operator:String(e[8]||''), stopSequence:Number.isFinite(Number(e[9]))?Number(e[9]):null});
     }
   }
   TIMETABLE_ROWS_CACHE={stop,timetable:S.timetable,run:S.timetableRun,day,rows:out,byLine:indexTimetableRows(out)};
@@ -2574,7 +2574,7 @@ function scheduledJourneyDirection(row){
   if(!row||!anchor) return 'unknown';
   const pattern=timetablePatternRecord(row.trip);
   if(!pattern) return 'unknown';
-  const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops);
+  const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops,undefined,undefined,row&&row.stopSequence);
   if(index<0) return 'unknown';
   const before=stops[Math.max(0,index-1)], after=stops[Math.min(stops.length-1,index+1)];
   if(!before||!after||before===after) return 'unknown';
@@ -2630,7 +2630,8 @@ function timetablePatternRecord(journey,preferredPatternId){
   const points=pointRows.map(p=>({lat:Number(p&&p[0]),lon:Number(p&&p[1])})).filter(p=>isFinite(p.lat)&&isFinite(p.lon));
   const stops=stopRows.map(s=>({
     id:String(s&&s[0]||''), name:cleanName(s&&s[1]||'Unnamed stop'),
-    lat:Number(s&&s[2]), lon:Number(s&&s[3])
+    lat:Number(s&&s[2]), lon:Number(s&&s[3]),
+    sequence:Number.isFinite(Number(s&&s[4]))?Number(s[4]):null
   })).filter(s=>s.id&&isFinite(s.lat)&&isFinite(s.lon));
   const value=points.length>=2?{id,points,stops,shape:!Array.isArray(raw)&&raw.g===1,stopProgress:null}:null;
   PATTERN_CACHE.set(id,value); return value;
@@ -2786,13 +2787,21 @@ function orderedPatternStops(pattern){
    passed. A bus past every call keeps the last one, so it is still reported as
    passed rather than silently matched to the start of the route. */
 const PATTERN_STOP_PASSED_TOLERANCE = 120;
-function selectedPatternStopIndex(stops,selectedStop,fromAlong){
+function selectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence){
   const chosen=selectedStop||S.stop;
   if(!stops.length||!chosen) return -1;
   const ids=[chosen===S.stop&&S.ttStop&&S.ttStop.id,chosen.timetableId,chosen.atco,chosen.code,chosen.id].map(v=>String(v||'')).filter(Boolean);
+  const hasProgress=fromAlong!==null&&fromAlong!==''&&Number.isFinite(Number(fromAlong));
+  const hasSequence=stopSequence!==null&&stopSequence!==''&&Number.isFinite(Number(stopSequence));
   const pick=matches=>{
     if(!matches.length) return -1;
-    if(!isFinite(fromAlong)) return matches[0];
+    if(hasSequence){
+      const exact=matches.find(i=>Number(stops[i].sequence)===Number(stopSequence));
+      if(exact!==undefined) return exact;
+      const sequenced=matches.filter(i=>Number.isFinite(Number(stops[i].sequence)));
+      if(sequenced.length) return sequenced.sort((a,b)=>Math.abs(Number(stops[a].sequence)-Number(stopSequence))-Math.abs(Number(stops[b].sequence)-Number(stopSequence)))[0];
+    }
+    if(!hasProgress) return matches[0];
     const threshold=Number(fromAlong)-PATTERN_STOP_PASSED_TOLERANCE;
     const ahead=matches.find(i=>Number(stops[i].along)>=threshold);
     return ahead===undefined?matches[matches.length-1]:ahead;
@@ -2800,10 +2809,6 @@ function selectedPatternStopIndex(stops,selectedStop,fromAlong){
   const byId=[];
   stops.forEach((stop,i)=>{ if(ids.includes(String(stop.id))) byId.push(i); });
   if(byId.length) return pick(byId);
-  /* Positional fallback. The nearest stop still decides, as before; the only
-     change is that repeats of that same stop are gathered so the call ahead can
-     be chosen. Every occurrence of one physical stop shares its coordinates, so
-     they sit within a few metres of the nearest distance. */
   const metres=stops.map(stop=>dist(stop.lat,stop.lon,chosen.lat,chosen.lon));
   const nearest=Math.min(...metres);
   if(!isFinite(nearest)||nearest>180) return -1;
@@ -3068,9 +3073,15 @@ function feedUrlsForBoxes(boxes){
        + encodeURIComponent(S.key) + '&boundingBox=' + box);
 }
 function feedUrls(wide){ return feedUrlsForBoxes(bboxes(wide)); }
+function routeScanMatchKey(item){
+  return String(item&&item.trip||'')+'|'+String(item&&item.stopSequence==null?'':item.stopSequence);
+}
 function mergeRouteScanMatches(target,items){
-  const seen=new Set(target.map(item=>String(item.trip)));
-  for(const item of items) if(item&&item.trip&&!seen.has(String(item.trip))){target.push(item);seen.add(String(item.trip));}
+  const seen=new Set(target.map(routeScanMatchKey));
+  for(const item of items){
+    const key=routeScanMatchKey(item);
+    if(item&&item.trip&&!seen.has(key)){target.push(item);seen.add(key);}
+  }
 }
 function routeScanPlans(now=Date.now()){
   if(!S.stop||!S.ttStop||!S.timetable) return [];
@@ -3080,14 +3091,14 @@ function routeScanPlans(now=Date.now()){
   const groups=new Map();
   for(const row of rows){
     const pattern=timetablePatternRecord(row.trip); if(!pattern) continue;
-    const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
+    const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,undefined,undefined,row.stopSequence);
     const selected=selectedIndex>=0?ordered[selectedIndex]:null;
     const projected=selected?null:projectToPattern(pattern.points,S.stop.lat,S.stop.lon);
     const targetAlong=selected?selected.along:projected&&projected.along;
     const targetOffset=selected?dist(selected.lat,selected.lon,S.stop.lat,S.stop.lon):projected&&projected.metres;
     if(!isFinite(targetAlong)||!isFinite(targetOffset)||targetOffset>250) continue;
     const key=pattern.id+'|'+Math.round(targetAlong/50), existing=groups.get(key);
-    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0};
+    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0,routeId:row.routeId||'',operator:row.operator||'',stopSequence:row.stopSequence};
     if(existing){existing.due=Math.min(existing.due,row.at);mergeRouteScanMatches(existing.matches,[match]);}
     else groups.set(key,{pattern,targetAlong,due:row.at,matches:[match]});
   }
@@ -3131,7 +3142,7 @@ function rememberRouteScanVehicle(v,now=Date.now()){
 function inferredRouteScanMatch(plan,v,now=Date.now()){
   const byPattern=new Map();
   for(const match of plan.matches||[]){
-    if(String(v.line)!==String(match.line)) continue;
+    if(String(v.line)!==String(match.line)||routeIdentityAgreement(match,v)<0) continue;
     const similarity=v.dest&&match.head?destinationSimilarity(v.dest,match.head):1;
     if(v.dest&&match.head&&similarity<.34) continue;
     const fit=routePatternMovementFit(match.pattern,v,S.stop);
@@ -3162,7 +3173,7 @@ function matchRouteScanVehicle(plan,v){
     match=inferredRouteScanMatch(plan,v); inferred=!!match;
     if(!match) return null;
   }
-  if(String(v.line)!==String(match.line)) return null;
+  if(String(v.line)!==String(match.line)||routeIdentityAgreement(match,v)<0) return null;
   if(v.dest&&match.head&&destinationSimilarity(v.dest,match.head)<.34) return null;
   const position=projectVehicleToPattern(match.pattern,v);
   if(!position||position.metres>800) return null;
@@ -3188,19 +3199,20 @@ function liveVehicleIdentity(fields){
   const producer=String(fields&&fields.ProducerRef||'').trim();
   const vehicle=String(fields&&fields.VehicleRef||'').trim();
   const journey=String(fields&&(fields.DatedVehicleJourneyRef||fields.VehicleJourneyRef)||'').trim();
+  const unique=String(fields&&fields.VehicleUniqueId||'').trim();
   const item=String(fields&&fields.ItemIdentifier||'').trim();
   const owner=operator||producer||'unknown';
   // Neither reference is reliably unique on its own in real BODS data:
   // some feeds reuse a placeholder or fleet value in VehicleRef across
   // simultaneous journeys, and others publish one journey/block code for
   // every bus working it. Keying on journey alone silently discarded all
-  // but the last bus on a shared code — the survivor then looked like a
-  // single vehicle teleporting between them, which reset its track every
-  // poll and left it with no movement direction or learned speed. Combine
-  // both when both exist so neither collision can merge two vehicles.
+  // but the last bus on a shared code. Combine both when both exist. Where
+  // neither exists, prefer the stable physical VehicleUniqueId over the
+  // activity-scoped ItemIdentifier.
   if(journey&&vehicle) return owner+'|journey|'+journey+'|vehicle|'+vehicle;
   if(journey) return owner+'|journey|'+journey;
   if(vehicle) return owner+'|vehicle|'+vehicle;
+  if(unique) return owner+'|vehicle-unique|'+unique;
   if(item) return owner+'|item|'+item;
   return '';
 }
@@ -3213,17 +3225,13 @@ function physicalVehicleKey(v){
   return vehicle?owner+'|'+vehicle:'';
 }
 function liveActivityDiscriminator(fields){
-  const item=String(fields&&fields.ItemIdentifier||'').trim();
-  if(item) return 'item|'+item;
-  /* Operators publish a fleet number in Extensions that the parser already
-     flattens but nothing read. It is the one identifier here that is stable
-     between polls: across 455 vehicles seen in two consecutive responses,
-     ItemIdentifier changed for 42% of them and VehicleUniqueId for none. It
-     also identifies the bus rather than the journey, so it separates two
-     vehicles sharing a journey code, which is exactly the collision case.
-     Records carrying it no longer fall through to an anonymous slot. */
+  /* VehicleUniqueId identifies the physical bus and remained stable in the
+     sampled consecutive responses, while ItemIdentifier changed for 42% of
+     vehicles. Prefer the stable value whenever both are present. */
   const unique=String(fields&&fields.VehicleUniqueId||'').trim();
   if(unique) return 'vehicle-unique|'+unique;
+  const item=String(fields&&fields.ItemIdentifier||'').trim();
+  if(item) return 'item|'+item;
   const originTime=String(fields&&fields.OriginAimedDepartureTime||'').trim();
   if(originTime) return 'origin-time|'+originTime;
   const destinationTime=String(fields&&fields.DestinationAimedArrivalTime||'').trim();
@@ -3275,17 +3283,14 @@ function anonymousActivityIdentity(baseId,record,usedSlots,now=Date.now()){
       if(sharesPayload) continue;
     }
     const elapsed=(Number(record.ts)-Number(track.ts))/1000;
-    /* An identical timestamp at an identical position is the same
-       observation arriving again — a replayed cached response, or the same
-       vehicle in two overlapping boxes. Two distinct buses cannot occupy one
-       point at one instant, and a genuine pair in the same payload is already
-       excluded above, so this must merge rather than mint a second identity.
-       The lower bound otherwise stands: it is what keeps two bunched buses
-       reporting seconds apart from collapsing onto one slot. */
-    const repeat=elapsed===0&&Number(record.lat)===Number(track.lat)&&Number(record.lon)===Number(track.lon);
+    const metres=dist(Number(track.lat),Number(track.lon),Number(record.lat),Number(record.lon));
+    /* Cached feeds sometimes reformat coordinates without changing the
+       observation timestamp. Treat a sub-eight-metre change at the same instant
+       as the same fix; records in the same payload were already excluded above,
+       so this cannot collapse two simultaneously reported buses. */
+    const repeat=elapsed===0&&isFinite(metres)&&metres<=8;
     if(!repeat&&!(elapsed>=8&&elapsed<=LIVE_ANONYMOUS_MATCH_MAX_SECONDS)) continue;
     const maxMove=Math.min(LIVE_ANONYMOUS_MATCH_MAX_METRES,Math.max(120,elapsed*30+80));
-    const metres=dist(Number(track.lat),Number(track.lon),Number(record.lat),Number(record.lon));
     if(!isFinite(metres)||metres>maxMove) continue;
     if(!best||metres<best.metres) best={slot,metres};
   }
@@ -3311,6 +3316,13 @@ function promoteCollisionRecord(baseId){
   legacy.id=promotedId;
   if(!current||Number(legacy.ts)>=Number(current.ts)) S.vehicles.set(promotedId,legacy);
 }
+function producerRefForActivity(activity){
+  let delivery=activity;
+  while(delivery&&delivery.localName!=='ServiceDelivery') delivery=delivery.parentElement;
+  if(!delivery) return '';
+  const producerNode=[...delivery.getElementsByTagName('*')].find(node=>node.localName==='ProducerRef');
+  return producerNode?String(producerNode.textContent||'').trim():'';
+}
 function parseLivePayloads(items,now){
   const observedAt=isFinite(now)?Number(now):Date.now(), candidates=[];
   let stale=0,unknownAge=0,malformed=0;
@@ -3320,14 +3332,12 @@ function parseLivePayloads(items,now){
     const xml=new DOMParser().parseFromString(String(item&&item.text||''),'application/xml');
     if(xml.querySelector('parsererror')){malformed++;continue;}
     const acts=[...xml.getElementsByTagName('*')].filter(node=>node.localName==='VehicleActivity');
-    /* ProducerRef is published once per response on the ServiceDelivery, never
-       inside a VehicleActivity, and flatten() only walks the activity — so the
-       fallback from OperatorRef to ProducerRef in liveVehicleIdentity could
-       never fire. Carry the response-level value onto each record so it can. */
-    const producerNode=[...xml.getElementsByTagName('*')].find(node=>node.localName==='ProducerRef');
-    const producerRef=producerNode?String(producerNode.textContent||'').trim():'';
     for(const activity of acts){
       const f=flatten(activity);
+      /* Resolve the producer from this activity's enclosing ServiceDelivery.
+         A SIRI document may contain several deliveries from different producers;
+         taking the first ProducerRef in the document assigns the wrong owner. */
+      const producerRef=producerRefForActivity(activity);
       if(!f.ProducerRef&&producerRef) f.ProducerRef=producerRef;
       const lat=parseFloat(f.Latitude),lon=parseFloat(f.Longitude);
       if(!isFinite(lat)||!isFinite(lon)) continue;
@@ -3897,27 +3907,54 @@ function lineSpeed(v){
   return (r && r.sn >= 3) ? r.sp : DEFAULT_SPEED;
 }
 
-function routeEvidence(line,dest,journey){
+function routeIdentityToken(value){
+  return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
+}
+function routeIdentityAgreement(row,identity){
+  const liveOwner=routeIdentityToken(identity&&(identity.owner||identity.operator));
+  const liveRoute=routeIdentityToken(identity&&identity.lineRef);
+  const scheduledOwner=routeIdentityToken(row&&row.operator);
+  const scheduledRoute=routeIdentityToken(row&&row.routeId);
+  const ownerCompared=!!(liveOwner&&scheduledOwner);
+  const routeCompared=!!(liveRoute&&scheduledRoute);
+  if(ownerCompared&&liveOwner!==scheduledOwner) return -1;
+  if(ownerCompared&&liveOwner===scheduledOwner) return 2;
+  if(routeCompared&&liveRoute===scheduledRoute) return 1;
+  return 0;
+}
+function timetableIdentityRows(rows,identity){
+  const list=Array.isArray(rows)?rows:[];
+  const matched=list.filter(row=>routeIdentityAgreement(row,identity)>0);
+  const liveOwner=routeIdentityToken(identity&&(identity.owner||identity.operator));
+  const ownerRows=list.filter(row=>routeIdentityToken(row&&row.operator));
+  const ownerConflict=!!(liveOwner&&ownerRows.length&&!ownerRows.some(row=>routeIdentityToken(row.operator)===liveOwner));
+  return {rows:matched.length?matched:(ownerConflict?[]:list),strong:matched.length>0,conflict:ownerConflict};
+}
+function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
-  const ttRows=timetableRowsForLine(l,new Date());
+  const allRows=timetableRowsForLine(l,new Date());
+  const identityInfo=timetableIdentityRows(allRows,identity);
+  const ttRows=identityInfo.rows;
   const tripMatch=journey?uniqueCompatibleTrips(ttRows,journey):{items:[],ref:'',strength:0,ambiguous:false};
   if(tripMatch.items.length){
     const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
     return {
       score:path?6:5,
       label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
-      journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref
+      journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,
+      routeIdentityMatch:identityInfo.strong
     };
   }
   const tt=timetableRouteSet();
   if(tt.has(l)){
+    if(identityInfo.conflict) return {score:0,label:'route number belongs to another operator at this stop',routeIdentityConflict:true};
     const heads=ttRows.map(r=>r.head).filter(Boolean);
     const branchOk=!dest || !heads.length || heads.some(h=>destinationSimilarity(dest,h)>=.34);
     const label=tripMatch.ambiguous
-      ? (branchOk?'route verified; journey alias ambiguous':'route verified; branch and journey uncertain')
-      : (branchOk?'timetable verified':'route verified; branch uncertain');
-    return {score:branchOk?4:2,label,journeyAmbiguous:tripMatch.ambiguous};
+      ? (branchOk?'route verified; journey alias ambiguous':'route number matched, but branch and journey did not')
+      : branchOk?(identityInfo.strong?'operator and route verified':'timetable route verified'):'route number matched, but this branch does not serve the stop';
+    return {score:branchOk?(identityInfo.strong?4:3):1,label,journeyAmbiguous:tripMatch.ambiguous,routeIdentityMatch:identityInfo.strong};
   }
   const m=MAPPED[String(S.stop.id)];
   if(m && m.routes.some(r=>String(r.ref)===l)){
@@ -3927,14 +3964,6 @@ function routeEvidence(line,dest,journey){
   }
   const bag=SERVING[String(S.stop.id)]||{};
   const rec=normaliseServingRecord(bag[l]);
-  /* Locally observed evidence is a guess drawn from proximity: the opposite
-     carriageway, the next stand in a bus station, a parallel road or a bus
-     held in traffic all look similar from 42 metres. Where this stop has a
-     current official timetable and that timetable does not list the line,
-     the timetable is the better source, so the sighting stops carrying the
-     same weight as a route mapped at the stop and no longer admits the
-     route on its own. Without an authoritative timetable it remains the
-     only signal there is, and keeps its former weight. */
   const authoritative=!!(S.ttStop&&S.timetableSource==='national'&&!S.timetableFallback&&!S.ttError);
   if(rec.confirmed || rec.count>=2){
     if(authoritative) return {score:1,label:'seen stopping, but not in the timetable for this stop'};
@@ -3956,8 +3985,9 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const dwell = (road/1000) * 24;
   const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 75);
   let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - age*0.35);
+  const liveSecs=spatial;
   const baseJourneyRef=vehicleJourneyRef(v);
-  const evidence=evidenceOverride||routeEvidence(v.line,v.dest,baseJourneyRef);
+  const evidence=evidenceOverride||routeEvidence(v.line,v.dest,baseJourneyRef,v);
   const journeyRef=evidence.matchedTrip||baseJourneyRef;
   const strength=approachStrength(v,stop);
   const scheduleLookup=scheduledMatches(v.line,v.dest,spatial,journeyRef);
@@ -3983,7 +4013,7 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const confidence=points>=6?'high':points>=3?'medium':'low';
   const spread=confidence==='high'?90:confidence==='medium'?210:360;
   const learned=LINES[lineLearningKey(v)];
-  return {secs:spatial, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule};
+  return {secs:spatial, liveSecs, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule};
 }
 
 /* ============================================================
@@ -4045,7 +4075,7 @@ function checkAlarms(rows){
   const walk = S.walkSecs || 0, now=Date.now();
   for(const a of ALARMS){
     if(a.stopId !== S.stop.id) continue;
-    const hit = rows.find(r=>alarmRowEligible(r) && String(r.v.line)===String(a.line) && (!a.dest || r.v.dest===a.dest));
+    const hit = rows.find(r=>alarmRowEligible(r) && String(r.v.line)===String(a.line) && (!a.dest || destinationSimilarity(r.v.dest,a.dest)>=.75));
     if(!hit){
       if(retainFiredAlarm(a,now)) continue;
       a.fired=false; a.vehicleId=null; a.lastSeenAt=0; continue;
@@ -4210,7 +4240,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,physicalVehicleKey,estimate,journeyGeometry};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -4257,19 +4287,23 @@ function mappedRefs(trustedOnly){
   if(trustedOnly && m.source==='along') return null;
   return new Set(m.routes.map(r=>String(r.ref)));
 }
-function servesHere(line,dest){
+function servesHere(line,dest,identity){
   if(!S.stop) return true;
-  return routeEvidence(line,dest).score>=2;
+  return routeEvidence(line,dest,vehicleJourneyRef(identity),identity).score>=2;
 }
 function knownRoutes(){
-  // timetableRouteSet() hands back the live cached Set. Adding mapped and
-  // observed lines to it directly poisoned that cache, so routeEvidence()
-  // then reported an OpenStreetMap or seen-once route as score 4
-  // "timetable verified" until the minute rolled over. Work on a copy.
-  const set=new Set(timetableRouteSet());
+  // Work on a copy so mapped or observed evidence cannot poison the cached
+  // timetable set. A current national timetable also outranks a local sighting:
+  // an observed line omitted by that timetable must not re-enter the map filter.
+  const timetableSet=timetableRouteSet();
+  const set=new Set(timetableSet);
   const mapped=mappedRefs(true); if(mapped) mapped.forEach(r=>set.add(r));
+  const authoritative=!!(S.ttStop&&S.timetableSource==='national'&&!S.timetableFallback&&!S.ttError);
   const bag=S.stop && SERVING[String(S.stop.id)];
-  if(bag) Object.entries(bag).forEach(([line,val])=>{ const r=normaliseServingRecord(val); if(r.confirmed||r.count>=2) set.add(line); });
+  if(bag) Object.entries(bag).forEach(([line,val])=>{
+    const r=normaliseServingRecord(val);
+    if((r.confirmed||r.count>=2)&&(!authoritative||timetableSet.has(String(line)))) set.add(line);
+  });
   return [...set].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
 }
 function knownRouteCount(){ return knownRoutes().length; }
@@ -4417,10 +4451,11 @@ function collect(gate,diagnostics){
     if(diagnostics) diagnostics.recent++;
     const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon), far=d>MAX_VEH_DIST;
     const journeyRef=vehicleJourneyRef(v);
-    let evidence=routeEvidence(v.line,v.dest,journeyRef);
+    let evidence=routeEvidence(v.line,v.dest,journeyRef,v);
     const inference=!evidence.journeyMatch?inferVehicleJourneyPattern(v,S.stop,now):null;
     evidence=inferredRouteEvidence(evidence,inference);
-    const matchedRow=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).find(row=>String(row.trip)===String(evidence.matchedTrip)):null;
+    const matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
+    const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
     v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';
     v.progressPattern=String(inference&&inference.patternId||matchedRow&&matchedRow.pattern||'');
     const geometry=journeyGeometry(v,S.stop);
@@ -4504,7 +4539,7 @@ function collect(gate,diagnostics){
       :'direction unclear';
     const directionLabel=(gpsMoveDir!=='unknown'?'GPS movement: ':scheduledDir!=='unknown'?'Journey: ':dir!=='unknown'?'Live: ':'')+directionWord;
     const row={
-      v,dir:shownDir,app:strength>=0,strength,secs:est.secs,metres:est.metres,
+      v,dir:shownDir,app:strength>=0,strength,secs:est.secs,liveSecs:est.liveSecs,metres:est.metres,
       routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
       spread:est.spread,evidence:est.evidence,schedule:est.schedule,matchedSchedule:est.matchedSchedule,recovered,match,directionLabel,directionWord
     };
@@ -4565,7 +4600,7 @@ function stopDestinationNames(){
   timetableRows(new Date()).filter(r=>r.at>now-2*3600000 && r.at<now+20*3600000 && r.head).forEach(r=>{ if(!bag[r.head]) bag[r.head]=now-1; });
   const live={};
   for(const v of S.vehicles.values()){
-    if(v.dest && servesHere(v.line,v.dest) && (dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<MAX_VEH_DIST||v.corridorTracked)) live[v.dest]=true;
+    if(v.dest && servesHere(v.line,v.dest,v) && (dist(v.lat,v.lon,S.stop.lat,S.stop.lon)<MAX_VEH_DIST||v.corridorTracked)) live[v.dest]=true;
   }
   const names=Object.keys(bag).sort((a,b)=>{
     if(!!live[b]!==!!live[a]) return live[b]?1:-1;
@@ -4729,7 +4764,8 @@ function scheduledBoardRows(liveRows){
 }
 function liveTimingLabel(r){
   if(r.gpsLost||!r.schedule) return '';
-  const diff=Math.round(((Date.now()+r.secs*1000)-r.schedule.at)/60000);
+  const comparisonSecs=Number.isFinite(Number(r.liveSecs))?Number(r.liveSecs):Number(r.secs);
+  const diff=Math.round(((Date.now()+comparisonSecs*1000)-r.schedule.at)/60000);
   if(Math.abs(diff)<=1) return 'on schedule';
   return diff>0?diff+' min late':Math.abs(diff)+' min early';
 }
@@ -5302,14 +5338,13 @@ function vehicleMarkerPlan(rows,now=Date.now()){
      for this stop are always drawn whatever their line and wherever they are.
      And when nothing is known about which routes serve here, the filter does
      not apply at all rather than emptying the map. */
-  const servingLines=S.stop?new Set(knownRoutes()):null;
-  const canFilter=!!(servingLines&&servingLines.size);
+  const canFilter=!!(S.onlyServing&&S.stop&&servingReady());
   for(const v of S.vehicles.values()){
     const shown=wanted.has(v.id);
     const metres=S.stop?dist(v.lat,v.lon,S.stop.lat,S.stop.lon):0;
     const nearby=!S.stop||metres<=MAX_VEH_DIST;
     const keep=shown||S.selected===v.id||!!v.corridorTracked;
-    const serves=!canFilter||servingLines.has(String(v.line));
+    const serves=!canFilter||routeEvidence(v.line,v.dest,vehicleJourneyRef(v),v).score>=2;
     if(!mapVehicleVisible(v,shown,now)) continue;
     if(!keep&&(!nearby||!serves)) continue;
     // A listed, selected or followed bus is never given up for a background marker.

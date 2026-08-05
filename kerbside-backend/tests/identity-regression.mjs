@@ -53,7 +53,7 @@ try {
       <RecordedAtTime>${new Date(time).toISOString()}</RecordedAtTime>
       ${validUntil == null ? '' : `<ValidUntilTime>${new Date(validUntil).toISOString()}</ValidUntilTime>`}
       <MonitoredVehicleJourney><LineRef>61</LineRef><PublishedLineName>61</PublishedLineName>
-      <OperatorRef>${operator}</OperatorRef><VehicleRef>${vehicle}</VehicleRef><DatedVehicleJourneyRef>${journey}</DatedVehicleJourneyRef>
+      ${operator == null ? '' : `<OperatorRef>${operator}</OperatorRef>`}<VehicleRef>${vehicle}</VehicleRef><DatedVehicleJourneyRef>${journey}</DatedVehicleJourneyRef>
       <DestinationName>Town Centre</DestinationName>
       ${originTime == null ? '' : `<OriginAimedDepartureTime>${new Date(originTime).toISOString()}</OriginAimedDepartureTime>`}
       ${destinationTime == null ? '' : `<DestinationAimedArrivalTime>${new Date(destinationTime).toISOString()}</DestinationAimedArrivalTime>`}
@@ -137,6 +137,22 @@ try {
         activity({ operator: 'OP-UID', journey: 'J', vehicle: 'V', item: null, lat: 52.42, uniqueId: '741' })
       ) }], now);
 
+      state.vehicles = new Map();
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-UID-CHANGING', journey: 'J', vehicle: 'V', item: 'A', lat: 52.7000, time: now - 2000, uniqueId: '900' })) }], now).vehicles);
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-UID-CHANGING', journey: 'J', vehicle: 'V', item: 'B', lat: 52.7005, time: now - 1000, uniqueId: '900' })) }], now).vehicles);
+      const changingItemStableUniqueIdentities = state.vehicles.size;
+
+      state.vehicles = new Map();
+      const reformattedAt = now - 45000;
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-REFORMAT', journey: 'J', vehicle: 'V', item: null, lat: 52.60000000, time: reformattedAt })) }], now).vehicles);
+      api.ingest(api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-REFORMAT', journey: 'J', vehicle: 'V', item: null, lat: 52.60000004, time: reformattedAt })) }], now + 5000).vehicles);
+      const reformattedCachedIdentities = state.vehicles.size;
+
+      const delivery = (producer, content) => `<ServiceDelivery><ProducerRef>${producer}</ProducerRef><VehicleMonitoringDelivery>${content}</VehicleMonitoringDelivery></ServiceDelivery>`;
+      const multiProducer = `<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri">${delivery('PROD-A', activity({ operator: null, journey: 'J', vehicle: 'V', item: 'A', lat: 52.80 }))}${delivery('PROD-B', activity({ operator: null, journey: 'J', vehicle: 'V', item: 'B', lat: 52.82 }))}</Siri>`;
+      const producerScoped = api.parseLivePayloads([{ text: multiProducer }], now);
+      const producerOwners = producerScoped.vehicles.map(vehicle => vehicle.owner).sort();
+
       const expired = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-EXP', journey: 'J', vehicle: 'V', item: 'expired', lat: 52.40, validUntil: now - 1 })) }], now);
       const valid = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-VALID', journey: 'J', vehicle: 'V', item: 'valid', lat: 52.40, validUntil: now + 60000 })) }], now);
 
@@ -166,7 +182,10 @@ try {
         slowReporterIdentities,
         uniqueIdCount: uniqueIds.vehicles.length,
         uniqueIdDistinct: new Set(uniqueIds.vehicles.map(vehicle => vehicle.id)).size,
-        uniqueIdNamed: uniqueIds.vehicles.every(vehicle => vehicle.id.includes('|activity|vehicle-unique|'))
+        uniqueIdNamed: uniqueIds.vehicles.every(vehicle => vehicle.id.includes('|activity|vehicle-unique|')),
+        changingItemStableUniqueIdentities,
+        reformattedCachedIdentities,
+        producerOwners
       };
     } finally {
       state.vehicles = savedVehicles;
@@ -200,6 +219,9 @@ try {
   assert.equal(result.uniqueIdCount, 2);
   assert.equal(result.uniqueIdDistinct, 2);
   assert.equal(result.uniqueIdNamed, true);
+  assert.equal(result.changingItemStableUniqueIdentities, 1);
+  assert.equal(result.reformattedCachedIdentities, 1);
+  assert.deepEqual(result.producerOwners, ['PROD-A', 'PROD-B']);
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside cross-poll identity and producer-expiry regression passed.');
 } finally {
