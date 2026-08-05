@@ -1,0 +1,588 @@
+name: Fix Kerbside loop tracking and body timeouts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-kerbside-loop-timeout.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-loop-timeout-fix
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+
+    steps:
+      - name: Check out triggering revision
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply loop tracking and body timeout fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(filename, old, new):
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{filename}: expected one replacement target, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once('bus.html', '''async function fetchTimed(url, options, timeoutMs){
+            const ctl = new AbortController();
+            const external = options && options.signal;
+            const abort = ()=>ctl.abort();
+            if(external){ if(external.aborted) ctl.abort(); else external.addEventListener('abort',abort,{once:true}); }
+            const timer=setTimeout(()=>ctl.abort(),timeoutMs||FETCH_TIMEOUT_MS);
+            try{ return await fetch(url,{...(options||{}),signal:ctl.signal}); }
+            finally{ clearTimeout(timer); if(external) external.removeEventListener('abort',abort); }
+          }
+          ''', '''async function fetchTimed(url, options, timeoutMs){
+            const ctl = new AbortController();
+            const external = options && options.signal;
+            const abort = ()=>ctl.abort();
+            if(external){ if(external.aborted) ctl.abort(); else external.addEventListener('abort',abort,{once:true}); }
+            const timer=setTimeout(()=>ctl.abort(),timeoutMs||FETCH_TIMEOUT_MS);
+            try{
+              const response=await fetch(url,{...(options||{}),signal:ctl.signal});
+              // fetch() resolves when response headers arrive. Buffer the body while
+              // the abort timer is still armed so a mid-download stall cannot freeze
+              // live polling or a timetable request indefinitely.
+              const body=await response.arrayBuffer();
+              const emptyBody=[204,205,304].includes(response.status);
+              return new Response(emptyBody?null:body,{
+                status:response.status||200,
+                statusText:response.statusText,
+                headers:new Headers(response.headers)
+              });
+            }finally{ clearTimeout(timer); if(external) external.removeEventListener('abort',abort); }
+          }
+          ''')
+
+          replace_once('bus.html', '''function validDataDeparture(data,region,shard,expectedBuild){
+            if(!data||Number(data.version)<8||data.scope!=='departure-shard') return false;
+          ''', '''function validDataDeparture(data,region,shard,expectedBuild){
+            const version=Number(data&&data.version);
+            if(!data||version<8||data.scope!=='departure-shard') return false;
+          ''')
+          replace_once('bus.html', '''      if(!Array.isArray(row)||row.length<6||!Number.isFinite(Number(row[0]))) return false;
+                departures++;
+          ''', '''      if(!Array.isArray(row)||row.length<6||!Number.isFinite(Number(row[0]))) return false;
+                if(version>=9&&(row.length<8||!Number.isInteger(Number(row[7]))||Number(row[7])<0)) return false;
+                departures++;
+          ''')
+
+          replace_once('bus.html', '''      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||''});
+          ''', '''      const occurrence=Number(e[7]);
+                out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||'', occurrence:Number.isInteger(occurrence)&&occurrence>=0?occurrence:null});
+          ''')
+
+          replace_once('bus.html', '''  const pattern=timetablePatternRecord(row.trip);
+            if(!pattern) return 'unknown';
+            const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops);
+          ''', '''  const pattern=timetablePatternRecord(row.trip,row.pattern);
+            if(!pattern) return 'unknown';
+            const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops,null,row.occurrence,null,true);
+          ''')
+
+          replace_once('bus.html', '''  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),patternProjectionCandidates,choosePatternProjection};
+          ''', '''  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),patternProjectionCandidates,choosePatternProjection,selectedPatternStopIndex,fetchTimed};
+          ''')
+
+          replace_once('bus.html', '''  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop);
+          ''', '''  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop,null,vehicle&&vehicle.along);
+          ''')
+          replace_once('bus.html', '''    total:vehicle.total,
+            pattern
+          ''', '''    total:vehicle.total,
+            pattern,
+            selectedIndex
+          ''')
+
+          replace_once('bus.html', '''function selectedPatternStopIndex(stops,selectedStop){
+            const chosen=selectedStop||S.stop;
+            if(!stops.length||!chosen) return -1;
+            const ids=[chosen===S.stop&&S.ttStop&&S.ttStop.id,chosen.timetableId,chosen.atco,chosen.code,chosen.id].map(v=>String(v||'')).filter(Boolean);
+            let index=stops.findIndex(stop=>ids.includes(String(stop.id)));
+            if(index>=0) return index;
+            let best=-1,bestDistance=Infinity;
+            stops.forEach((stop,i)=>{ const metres=dist(stop.lat,stop.lon,chosen.lat,chosen.lon); if(metres<bestDistance){bestDistance=metres;best=i;} });
+            return bestDistance<=180?best:-1;
+          }
+          ''', '''function patternStopMatchIndexes(stops,selectedStop){
+            const chosen=selectedStop||S.stop;
+            if(!stops.length||!chosen) return [];
+            const ids=[chosen===S.stop&&S.ttStop&&S.ttStop.id,chosen.timetableId,chosen.atco,chosen.code,chosen.id].map(v=>String(v||'')).filter(Boolean);
+            const exact=[];
+            stops.forEach((stop,index)=>{ if(ids.includes(String(stop.id))) exact.push(index); });
+            if(exact.length) return exact;
+            let bestDistance=Infinity, nearby=[];
+            stops.forEach((stop,index)=>{
+              const metres=dist(stop.lat,stop.lon,chosen.lat,chosen.lon);
+              if(metres<bestDistance-1){bestDistance=metres;nearby=[index];}
+              else if(Math.abs(metres-bestDistance)<=1) nearby.push(index);
+            });
+            return bestDistance<=180?nearby:[];
+          }
+          function selectedPatternStopIndex(stops,selectedStop,occurrence,afterAlong,strictOccurrence){
+            const matches=patternStopMatchIndexes(stops,selectedStop);
+            if(!matches.length) return -1;
+            const visit=Number(occurrence), hasVisit=Number.isInteger(visit)&&visit>=0&&visit<matches.length;
+            if(strictOccurrence&&hasVisit) return matches[visit];
+            if(afterAlong!=null&&Number.isFinite(Number(afterAlong))){
+              const threshold=Number(afterAlong)-120;
+              const next=matches.find(index=>Number(stops[index].along)>=threshold);
+              if(next!==undefined) return next;
+              return matches[matches.length-1];
+            }
+            if(hasVisit) return matches[visit];
+            return matches[0];
+          }
+          ''')
+
+          replace_once('bus.html', '''function routePatternMovementFit(pattern,v,stop){
+          ''', '''function routePatternMovementFit(pattern,v,stop,occurrence,strictOccurrence){
+          ''')
+          replace_once('bus.html', '''  const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop);
+          ''', '''  const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop,occurrence,last.along,strictOccurrence);
+          ''')
+
+          replace_once('bus.html', '''    let fit=fits.get(pattern.id);
+                if(fit===undefined){fit=routePatternMovementFit(pattern,v,stop);fits.set(pattern.id,fit||null);}
+          ''', '''    const fitKey=pattern.id+'|'+(row.occurrence==null?'':row.occurrence);
+                let fit=fits.get(fitKey);
+                if(fit===undefined){fit=routePatternMovementFit(pattern,v,stop,row.occurrence,true);fits.set(fitKey,fit||null);}
+          ''')
+          replace_once('bus.html', '''    const fit=pattern&&routePatternMovementFit(pattern,v,stop);
+          ''', '''    const fit=pattern&&routePatternMovementFit(pattern,v,stop,held.row&&held.row.occurrence,true);
+          ''')
+          replace_once('bus.html', '''  const selectedIndex=selectedPatternStopIndex(stops);
+          ''', '''  const selectedIndex=selectedPatternStopIndex(stops,null,null,confirmedVehicle.along);
+          ''')
+
+          replace_once('bus.html', '''function mergeRouteScanMatches(target,items){
+            const seen=new Set(target.map(item=>String(item.trip)));
+            for(const item of items) if(item&&item.trip&&!seen.has(String(item.trip))){target.push(item);seen.add(String(item.trip));}
+          }
+          ''', '''function routeScanMatchKey(item){
+            const occurrence=item&&item.occurrence;
+            return [String(item&&item.trip||''),occurrence==null?'':String(occurrence),Math.round(Number(item&&item.targetAlong)||0)].join('|');
+          }
+          function mergeRouteScanMatches(target,items){
+            const seen=new Set(target.map(routeScanMatchKey));
+            for(const item of items){
+              const key=routeScanMatchKey(item);
+              if(item&&item.trip&&!seen.has(key)){target.push(item);seen.add(key);}
+            }
+          }
+          ''')
+          replace_once('bus.html', '''    const pattern=timetablePatternRecord(row.trip); if(!pattern) continue;
+                const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered);
+          ''', '''    const pattern=timetablePatternRecord(row.trip,row.pattern); if(!pattern) continue;
+                const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,null,row.occurrence,null,true);
+          ''')
+          replace_once('bus.html', '''    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0};
+          ''', '''    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0,occurrence:row.occurrence};
+          ''')
+          replace_once('bus.html', '''    const fit=routePatternMovementFit(match.pattern,v,S.stop);
+          ''', '''    const fit=routePatternMovementFit(match.pattern,v,S.stop,match.occurrence,true);
+          ''')
+
+          replace_once('bus.html', '''function matchRouteScanVehicle(plan,v){
+            if(!plan||!v) return null;
+            let match=null,inferred=false;
+            if(v.journey){
+              const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
+              if(tripMatch.items.length&&!tripMatch.ambiguous) match=tripMatch.items[0];
+            }
+          ''', '''function routeScanMatchAhead(items,v){
+            let best=null;
+            for(const match of items||[]){
+              const position=projectVehicleToPattern(match.pattern,v);
+              if(!position||position.metres>800) continue;
+              const remaining=match.targetAlong-position.along;
+              if(remaining < -120 || remaining > ROUTE_SCAN_MAX_ROUTE_METRES) continue;
+              if(!best||remaining<best.remaining) best={match,remaining};
+            }
+            return best&&best.match;
+          }
+          function matchRouteScanVehicle(plan,v){
+            if(!plan||!v) return null;
+            let match=null,inferred=false;
+            if(v.journey){
+              const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
+              if(tripMatch.items.length&&!tripMatch.ambiguous) match=routeScanMatchAhead(tripMatch.items,v);
+            }
+          ''')
+
+          replace_once('kerbside-backend/scripts/build-region.js', '''      version: 8,
+          ''', '''      version: 9,
+          ''')
+          replace_once('kerbside-backend/scripts/build-region.js', '''  for (const row of db.prepare('SELECT shard, stop_id, trip_id, mins FROM stop_times ORDER BY shard, stop_id, mins, trip_id').iterate()) {
+          ''', '''  const departureRows = db.prepare(`
+              SELECT shard, stop_id, trip_id, mins,
+                ROW_NUMBER() OVER (
+                  PARTITION BY trip_id, stop_id
+                  ORDER BY seq, mins, rowid
+                ) - 1 AS occurrence
+              FROM stop_times
+              ORDER BY shard, stop_id, mins, trip_id, occurrence
+            `);
+            for (const row of departureRows.iterate()) {
+          ''')
+          replace_once('kerbside-backend/scripts/build-region.js', '''    departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId]);
+          ''', '''    departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId, Number(row.occurrence)]);
+          ''')
+
+          replace_once('kerbside-backend/package.json', '''    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs",
+          ''', '''    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs && node --check tests/tracking-correctness-regression.mjs",
+          ''')
+          replace_once('kerbside-backend/package.json', '''    "test:browser": "node tests/browser-regression.mjs",
+          ''', '''    "test:browser": "node tests/browser-regression.mjs && node tests/tracking-correctness-regression.mjs",
+          ''')
+
+          Path('kerbside-backend/test/repeated-stop-builder.test.js').write_text(r'''import assert from 'node:assert/strict';
+          import test from 'node:test';
+          import { execFile } from 'node:child_process';
+          import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+          import os from 'node:os';
+          import path from 'node:path';
+          import { promisify } from 'node:util';
+
+          const run = promisify(execFile);
+          const script = path.resolve('scripts/build-region.js');
+
+          async function csv(filename, text) {
+            await writeFile(filename, text.trim() + '\n', 'utf8');
+          }
+
+          test('regional builder labels repeated visits to the same stop', async () => {
+            const root = await mkdtemp(path.join(os.tmpdir(), 'kerbside-repeat-stop-'));
+            const gtfs = path.join(root, 'gtfs');
+            const out = path.join(root, 'out');
+            await mkdir(gtfs);
+            try {
+              await csv(path.join(gtfs, 'stops.txt'), `
+          stop_id,stop_code,stop_name,stop_lat,stop_lon,platform_code
+          A,A,Alpha Stop,52.500000,-1.900000,A
+          B,B,Beta Stop,52.500000,-1.890000,B
+          C,C,Gamma Stop,52.510000,-1.890000,C`);
+              await csv(path.join(gtfs, 'routes.txt'), `
+          route_id,route_short_name,route_long_name
+          R,10,Loop Route`);
+              await csv(path.join(gtfs, 'trips.txt'), `
+          route_id,service_id,trip_id,trip_headsign,direction_id,shape_id
+          R,S,T,Loop,0,`);
+              await csv(path.join(gtfs, 'stop_times.txt'), `
+          trip_id,arrival_time,departure_time,stop_id,stop_sequence
+          T,08:00:00,08:00:00,A,1
+          T,08:05:00,08:05:00,B,2
+          T,08:10:00,08:10:00,C,3
+          T,08:15:00,08:15:00,A,4`);
+              await csv(path.join(gtfs, 'calendar.txt'), `
+          service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date
+          S,1,1,1,1,1,1,1,20260101,20261231`);
+
+              await run(process.execPath, [script, gtfs, 'test_region', out], { cwd: path.resolve('.') });
+              const departureFiles = await readdir(path.join(out, 'regions', 'test_region', 'departures'));
+              const visits = [];
+              let patternId = '';
+              for (const name of departureFiles) {
+                const data = JSON.parse(await readFile(path.join(out, 'regions', 'test_region', 'departures', name), 'utf8'));
+                if (data.stops && data.stops.A) {
+                  assert.equal(data.version, 9);
+                  for (const row of data.stops.A.d) {
+                    if (row[5] === 'T') visits.push({ mins: row[0], occurrence: row[7] });
+                  }
+                }
+                if (data.tripPatterns && data.tripPatterns.T) patternId = data.tripPatterns.T;
+              }
+              visits.sort((a, b) => a.mins - b.mins);
+              assert.deepEqual(visits, [
+                { mins: 480, occurrence: 0 },
+                { mins: 495, occurrence: 1 }
+              ]);
+              assert.ok(patternId);
+              const shard = JSON.parse(await readFile(path.join(out, 'regions', 'test_region', 'patterns', patternId.slice(0, 2) + '.json'), 'utf8'));
+              assert.deepEqual(shard.patterns[patternId].s.map(stop => stop[0]), ['A', 'B', 'C', 'A']);
+            } finally {
+              await rm(root, { recursive: true, force: true });
+            }
+          });
+          ''', encoding='utf-8')
+
+          Path('kerbside-backend/tests/tracking-correctness-regression.mjs').write_text(r'''import assert from 'node:assert/strict';
+          import http from 'node:http';
+          import path from 'node:path';
+          import { readFile } from 'node:fs/promises';
+          import { fileURLToPath } from 'node:url';
+          import * as playwright from 'playwright';
+
+          const engineName = process.env.KERBSIDE_BROWSER || 'webkit';
+          const engine = playwright[engineName];
+          if (!engine || typeof engine.launch !== 'function') throw new Error(`Unknown Playwright engine: ${engineName}`);
+
+          const testsDir = path.dirname(fileURLToPath(import.meta.url));
+          const root = path.resolve(testsDir, '..', '..');
+          const server = http.createServer(async (request, response) => {
+            try {
+              const pathname = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
+              const relative = pathname === '/' ? 'bus.html' : pathname.replace(/^\/+/, '');
+              const target = path.resolve(root, relative);
+              if (!target.startsWith(root + path.sep) && target !== path.join(root, 'bus.html')) throw new Error('outside root');
+              const body = await readFile(target);
+              const ext = path.extname(target);
+              const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8';
+              response.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+              response.end(body);
+            } catch {
+              response.writeHead(404, { 'Content-Type': 'text/plain' });
+              response.end('Not found');
+            }
+          });
+          await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+          const { port } = server.address();
+
+          const browser = await engine.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true, timezoneId: 'Europe/London' });
+          const page = await context.newPage();
+          const pageErrors = [];
+          page.on('pageerror', error => pageErrors.push(error.message));
+
+          try {
+            await page.goto(`http://127.0.0.1:${port}/bus.html`, { waitUntil: 'domcontentloaded' });
+            await page.waitForFunction(() => Boolean(window.__KERBSIDE_TEST__), null, { timeout: 20000 });
+
+            const loop = await page.evaluate(() => {
+              const api = window.__KERBSIDE_TEST__;
+              const state = api.liveState;
+              const stop = { id: 'A', timetableId: 'A', atco: 'A', code: 'A', name: 'Alpha Stop', lat: 52, lon: -2 };
+              const ordered = [
+                { id: 'A', lat: 52, lon: -2, along: 0 },
+                { id: 'B', lat: 52, lon: -1.99, along: 700 },
+                { id: 'C', lat: 52.01, lon: -1.99, along: 1800 },
+                { id: 'A', lat: 52, lon: -2, along: 3200 }
+              ];
+              const indexes = {
+                firstVisit: api.selectedPatternStopIndex(ordered, stop, 0, null, true),
+                secondVisit: api.selectedPatternStopIndex(ordered, stop, 1, null, true),
+                nextAfterFirst: api.selectedPatternStopIndex(ordered, stop, null, 1900),
+                afterRoute: api.selectedPatternStopIndex(ordered, stop, null, 3400)
+              };
+              const saved = {
+                stop: state.stop,
+                ttStop: state.ttStop,
+                timetable: state.timetable,
+                timetableSource: state.timetableSource,
+                timetableRegion: state.timetableRegion,
+                timetableRun: state.timetableRun
+              };
+              try {
+                state.stop = stop;
+                state.ttStop = { id: 'A', d: [] };
+                state.timetableSource = 'regional';
+                state.timetableRegion = 'test';
+                state.timetableRun += 1;
+                state.timetable = {
+                  services: {},
+                  stops: {},
+                  tripPatterns: { LOOP_REPEAT: 'loop-repeat-pattern' },
+                  patterns: {
+                    'loop-repeat-pattern': {
+                      p: [[52, -2], [52, -1.99], [52.01, -1.99], [52, -2]],
+                      s: [
+                        ['A', 'Alpha Stop', 52, -2],
+                        ['B', 'Beta Stop', 52, -1.99],
+                        ['C', 'Gamma Stop', 52.01, -1.99],
+                        ['A', 'Alpha Stop', 52, -2]
+                      ],
+                      g: 1
+                    }
+                  }
+                };
+                const vehicle = {
+                  id: 'loop-bus',
+                  journey: 'LOOP_REPEAT',
+                  progressTrip: 'LOOP_REPEAT',
+                  progressPattern: 'loop-repeat-pattern',
+                  lat: 52.005,
+                  lon: -1.995,
+                  bearing: 220,
+                  ts: Date.now(),
+                  hist: []
+                };
+                const geometry = api.journeyGeometry(vehicle, stop);
+                return {
+                  indexes,
+                  selectedIndex: geometry && geometry.selectedIndex,
+                  remaining: geometry && geometry.remaining,
+                  passed: geometry && geometry.passed
+                };
+              } finally {
+                Object.assign(state, saved);
+              }
+            });
+
+            assert.deepEqual(loop.indexes, { firstVisit: 0, secondVisit: 3, nextAfterFirst: 3, afterRoute: 3 });
+            assert.equal(loop.selectedIndex, 3);
+            assert.equal(loop.passed, false);
+            assert.ok(loop.remaining > 100, `expected second loop visit ahead, got ${loop.remaining}`);
+
+            const timeout = await page.evaluate(async () => {
+              const api = window.__KERBSIDE_TEST__;
+              const originalFetch = window.fetch;
+              try {
+                window.fetch = async (url, options = {}) => {
+                  if (String(url).includes('stall.test')) {
+                    const signal = options.signal;
+                    return new Response(new ReadableStream({
+                      start(controller) {
+                        controller.enqueue(new TextEncoder().encode('partial'));
+                        signal.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')), { once: true });
+                      }
+                    }), { status: 200, headers: { 'Content-Type': 'text/plain', 'X-Test': 'stall' } });
+                  }
+                  if (String(url).includes('success.test')) {
+                    return new Response('complete', { status: 201, headers: { 'Content-Type': 'text/plain', 'X-Test': 'buffered' } });
+                  }
+                  return originalFetch(url, options);
+                };
+
+                const started = performance.now();
+                const stalled = await Promise.race([
+                  api.fetchTimed('https://stall.test/body', {}, 80)
+                    .then(response => response.text())
+                    .then(() => ({ settled: true, resolved: true }), error => ({ settled: true, resolved: false, name: error && error.name })),
+                  new Promise(resolve => setTimeout(() => resolve({ settled: false, resolved: false }), 650))
+                ]);
+                stalled.elapsed = performance.now() - started;
+
+                const response = await api.fetchTimed('https://success.test/body', {}, 500);
+                return {
+                  stalled,
+                  success: {
+                    status: response.status,
+                    header: response.headers.get('X-Test'),
+                    body: await response.text()
+                  }
+                };
+              } finally {
+                window.fetch = originalFetch;
+              }
+            });
+
+            assert.equal(timeout.stalled.settled, true, 'body read must settle when its timeout expires');
+            assert.equal(timeout.stalled.resolved, false, 'stalled body must reject');
+            assert.ok(timeout.stalled.elapsed < 620, `stalled body escaped timeout: ${timeout.stalled.elapsed}ms`);
+            assert.deepEqual(timeout.success, { status: 201, header: 'buffered', body: 'complete' });
+            assert.deepEqual(pageErrors, []);
+            console.log(`Kerbside repeated-stop and body-timeout regression passed in ${engineName}.`);
+          } finally {
+            await browser.close();
+            await new Promise(resolve => server.close(resolve));
+          }
+          ''', encoding='utf-8')
+
+          Path('VERSION').write_text('0.6.86\n', encoding='utf-8')
+          PY
+
+          python3 .github/scripts/sync-version.py
+          git diff --check
+
+      - name: Install test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+
+      - name: Validate source and versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync-version.py --check
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          print(f'Validated {len(scripts)} inline browser script(s).')
+          PY
+          node --check build-timetable.js
+          npm run check --prefix kerbside-backend
+          git diff --check
+
+      - name: Run backend and builder tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test --prefix kerbside-backend
+
+      - name: Run WebKit mobile regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+
+      - name: Run Chromium mobile regressions
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: chromium
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+
+      - name: Publish validated build to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git rm .github/workflows/fix-kerbside-loop-timeout.yml
+          git add VERSION bus.html kerbside-backend
+          git diff --cached --check
+          git commit -m 'Kerbside 0.6.86: fix loop tracking and timed body downloads'
+
+          git fetch origin main
+          remote_sha="$(git rev-parse origin/main)"
+          if [[ "$remote_sha" != "$GITHUB_SHA" ]]; then
+            changed="$(git diff --name-only "$GITHUB_SHA"..origin/main)"
+            printf 'Main moved during validation:\n%s\n' "$changed"
+            if grep -Eq '^(VERSION|bus\.html|build-timetable\.js|kerbside-backend/|\.github/scripts/sync-version\.py|\.github/workflows/(kerbside|build-kerbside|deploy-kerbside|verify-kerbside))' <<<"$changed"; then
+              echo '::error::Main changed in a Kerbside source path during validation.'
+              exit 1
+            fi
+            git rebase origin/main
+          fi
+
+          git push origin HEAD:main
