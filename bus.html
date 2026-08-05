@@ -1044,7 +1044,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.91';
+const APP_VERSION = '0.6.92';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -5290,13 +5290,30 @@ function mapVehicleVisible(v,shown,now=Date.now()){if(shown) return true;const t
 const MAX_VEHICLE_MARKERS = 120;
 function vehicleMarkerPlan(rows,now=Date.now()){
   const wanted=new Map((rows||[]).map(r=>[r.v.id,r])), eligible=[];
+  /* The board only lists buses that serve this stop; the map used to draw every
+     fresh vehicle within nine kilometres, which in a city is a screen of buses
+     on routes the user cannot catch from here. Background markers are now
+     limited to routes this stop actually has — the same set the board and the
+     route summary use, drawn from the timetable, OpenStreetMap and locally
+     observed arrivals.
+
+     Three deliberate escapes, so nothing that ought to be visible is lost: a
+     bus already on the board, the selected bus, and one being followed upstream
+     for this stop are always drawn whatever their line and wherever they are.
+     And when nothing is known about which routes serve here, the filter does
+     not apply at all rather than emptying the map. */
+  const servingLines=S.stop?new Set(knownRoutes()):null;
+  const canFilter=!!(servingLines&&servingLines.size);
   for(const v of S.vehicles.values()){
     const shown=wanted.has(v.id);
     const metres=S.stop?dist(v.lat,v.lon,S.stop.lat,S.stop.lon):0;
     const nearby=!S.stop||metres<=MAX_VEH_DIST;
-    if(!mapVehicleVisible(v,shown,now)||(!shown&&!nearby)) continue;
-    // A listed or selected bus is never given up for a background marker.
-    eligible.push({v,shown,rank:(shown||S.selected===v.id)?-1:metres});
+    const keep=shown||S.selected===v.id||!!v.corridorTracked;
+    const serves=!canFilter||servingLines.has(String(v.line));
+    if(!mapVehicleVisible(v,shown,now)) continue;
+    if(!keep&&(!nearby||!serves)) continue;
+    // A listed, selected or followed bus is never given up for a background marker.
+    eligible.push({v,shown,rank:keep?-1:metres});
   }
   eligible.sort((a,b)=>a.rank-b.rank);
   const draw=eligible.slice(0,MAX_VEHICLE_MARKERS);

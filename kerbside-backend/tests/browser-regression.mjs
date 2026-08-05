@@ -69,7 +69,19 @@ assert.match(busSource, /function mapVehicleVisible/);
 // markers without capping the vehicles that matching and ETAs run over.
 assert.match(busSource, /const MAX_VEHICLE_MARKERS = 120/);
 assert.match(busSource, /function vehicleMarkerPlan\(rows,now=Date\.now\(\)\)/);
-assert.match(busSource, /eligible\.push\(\{v,shown,rank:\(shown\|\|S\.selected===v\.id\)\?-1:metres\}\)/);
+// Listed, selected and followed buses outrank background markers for the cap.
+assert.match(busSource, /eligible\.push\(\{v,shown,rank:keep\?-1:metres\}\)/);
+// The board lists only routes that serve this stop; the map drew every fresh
+// bus within nine kilometres, which in a city is a screen of buses the user
+// cannot catch from here. Background markers are limited to the same serving
+// routes, with three escapes so nothing relevant is lost — a bus on the board,
+// the selected bus, and one followed upstream for this stop are always drawn —
+// and the filter disables itself when no route is known for the stop.
+assert.match(busSource, /const servingLines=S\.stop\?new Set\(knownRoutes\(\)\):null;/);
+assert.match(busSource, /const canFilter=!!\(servingLines&&servingLines\.size\);/);
+assert.match(busSource, /const keep=shown\|\|S\.selected===v\.id\|\|!!v\.corridorTracked;/);
+assert.match(busSource, /const serves=!canFilter\|\|servingLines\.has\(String\(v\.line\)\);/);
+assert.match(busSource, /if\(!keep&&\(!nearby\|\|!serves\)\) continue;/);
 assert.match(busSource, /const draw=eligible\.slice\(0,MAX_VEHICLE_MARKERS\)/);
 assert.match(busSource, /if\(!plan\.drawIds\.has\(id\)\)\{ vehLayer\.removeLayer\(m\); S\.markers\.delete\(id\); \}/);
 // The live feed is fetched around the origin, so it must not queue behind stop
@@ -80,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.91'/);
+assert.match(busSource, /const APP_VERSION = '0\.6\.92'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -1536,7 +1548,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.91'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.92'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
