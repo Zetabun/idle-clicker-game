@@ -1,0 +1,220 @@
+name: Apply validated Kerbside accuracy release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-kerbside-accuracy-main.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-accuracy-main-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out exact main revision
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Record guarded base
+        shell: bash
+        run: echo "GUARDED_BASE=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Fetch and apply the immutable reviewed patch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEWED_PATCH_COMMIT: 1ab80710b4eb32b98f90a1a8d7e08faf2c2c4aca
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/contents/.github/workflows/apply-kerbside-accuracy.yml?ref=$REVIEWED_PATCH_COMMIT" \
+            --jq '.content' | tr -d '\n' | base64 -d > /tmp/reviewed-accuracy.yml
+
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import re
+          import subprocess
+          import sys
+          import tempfile
+          import textwrap
+          from pathlib import Path
+
+          source = Path('/tmp/reviewed-accuracy.yml').read_text(encoding='utf-8')
+          start = "          python3 - <<'PY'\n"
+          end = "\n          PY\n\n          python3 .github/scripts/sync-version.py"
+          if source.count(start) != 1 or source.count(end) != 1:
+              raise SystemExit('Reviewed accuracy patch markers are missing or ambiguous')
+
+          patch = textwrap.dedent(source.split(start, 1)[1].split(end, 1)[0])
+          compile(patch, 'reviewed-kerbside-accuracy-patch', 'exec')
+          namespace = {'__name__': '__kerbside_accuracy_release__'}
+          exec(patch, namespace, namespace)
+
+          subprocess.run(
+              [sys.executable, '.github/scripts/sync-version.py'],
+              check=True,
+          )
+
+          expected = {
+              'VERSION',
+              'bus.html',
+              'kerbside-backend/package.json',
+              'kerbside-backend/src/worker.js',
+              'kerbside-backend/test/worker.test.js',
+              'kerbside-backend/tests/browser-regression.mjs',
+              'kerbside-backend/tests/audit-regression.mjs',
+          }
+          changed = set(
+              subprocess.check_output(
+                  ['git', 'diff', '--name-only', '--'], text=True
+              ).splitlines()
+          )
+          if changed != expected:
+              raise SystemExit(
+                  'Reviewed patch changed the wrong files; '
+                  f'missing={sorted(expected - changed)}, '
+                  f'unexpected={sorted(changed - expected)}'
+              )
+
+          version = Path('VERSION').read_text(encoding='utf-8').strip()
+          if version != '0.7.3':
+              raise SystemExit(f'Expected VERSION 0.7.3, found {version!r}')
+
+          bus = Path('bus.html').read_text(encoding='utf-8')
+          required = [
+              "const APP_VERSION = '0.7.3';",
+              'const MAX_SCHEDULED_ROWS = 72;',
+              'function requestBestLocation(',
+              'function scheduleCandidateReason(',
+              'matching GPS is delayed',
+              'vehicleRejections:new Map()',
+              'journeyBearingOverride',
+          ]
+          missing = [token for token in required if token not in bus]
+          if missing:
+              raise SystemExit(f'Missing required accuracy changes: {missing}')
+          if 'possible GPS match was filtered' in bus:
+              raise SystemExit('Generic GPS-filter wording remains in bus.html')
+
+          scripts = re.findall(
+              r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',
+              bus,
+              flags=re.I | re.S,
+          )
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  target = Path(directory) / f'inline-{index}.js'
+                  target.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(target)], check=True)
+
+          subprocess.run(['git', 'diff', '--check'], check=True)
+          print('Applied and statically validated the reviewed Kerbside 0.7.3 patch.')
+          PY
+
+      - name: Install browser validation dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          if git ls-files --error-unmatch kerbside-backend/vendor/leaflet/leaflet.js >/dev/null 2>&1; then
+            git diff --exit-code -- kerbside-backend/vendor/leaflet
+          fi
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+
+      - name: Run complete WebKit and Chromium validation twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2; do
+            echo "Complete validation pass $pass"
+            python3 .github/scripts/sync-version.py --check
+            node --check build-timetable.js
+            npm run check --prefix kerbside-backend
+            npm test --prefix kerbside-backend
+            npm run test:browser --prefix kerbside-backend
+            npm run test:identity --prefix kerbside-backend
+            npm run test:multi-vehicle --prefix kerbside-backend
+            npm run test:audit --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:identity --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:multi-vehicle --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:audit --prefix kerbside-backend
+          done
+
+      - name: Publish the validated application commit to main
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+          remote_main="$(git rev-parse origin/main)"
+          if [[ "$remote_main" != "$GUARDED_BASE" ]]; then
+            echo "::error::main moved during validation: guarded $GUARDED_BASE, now $remote_main"
+            exit 1
+          fi
+
+          git config user.name "OpenAI Agent"
+          git config user.email "noreply@openai.com"
+          git add \
+            VERSION \
+            bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/tests/audit-regression.mjs
+
+          git diff --cached --check
+          mapfile -t changed < <(git diff --cached --name-only | sort)
+          expected=(
+            VERSION
+            bus.html
+            kerbside-backend/package.json
+            kerbside-backend/src/worker.js
+            kerbside-backend/test/worker.test.js
+            kerbside-backend/tests/audit-regression.mjs
+            kerbside-backend/tests/browser-regression.mjs
+          )
+          mapfile -t expected < <(printf '%s\n' "${expected[@]}" | sort)
+          if [[ "$(printf '%s\n' "${changed[@]}")" != "$(printf '%s\n' "${expected[@]}")" ]]; then
+            echo '::error::Staged paths differ from the seven reviewed application files.'
+            printf 'Changed:\n%s\nExpected:\n%s\n' \
+              "$(printf '%s\n' "${changed[@]}")" \
+              "$(printf '%s\n' "${expected[@]}")"
+            exit 1
+          fi
+
+          git commit -m "Kerbside 0.7.3: improve timetable and live tracking accuracy"
+          git push origin HEAD:main
+
+      - name: Summarize validated release
+        shell: bash
+        run: |
+          {
+            echo '## Kerbside 0.7.3 validated and published'
+            echo '- Actual GPS rejection reasons replace the generic filtered message.'
+            echo '- Delayed positions are distinguished from fresh GPS.'
+            echo '- Exact due journeys survive bearing-only contradictions while geometry loads.'
+            echo '- Phone geolocation selects the best available accuracy fix.'
+            echo '- Scheduled capacity is 72 and overflow is disclosed.'
+            echo '- All relevant WebKit and Chromium suites passed twice.'
+          } >> "$GITHUB_STEP_SUMMARY"
