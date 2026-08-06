@@ -171,6 +171,26 @@ try {
       const reasonComparable = api.scheduleLiveReason({ line: '61', head: 'City Centre', at: reasonNow + 35 * 60000, trip: 'trip-AB12345678' }, []);
       Object.assign(state, savedFeed);
 
+      /* Road geometry from OpenStreetMap, for drawing only. Synthetic relations
+         here so the suite never depends on Overpass: a road that follows the
+         stops must be accepted and its direction chosen by fit, a road 400m away
+         must be refused so a wrong road can never be drawn quietly, and a way
+         stored back-to-front must still stitch. */
+      const roadStops = Array.from({ length: 6 }, (_, i) => ({ id: `RS${i}`, name: `Road Stop ${i}`, lat: 52.5 + i * 0.002, lon: -1.9 }));
+      const wayBetween = (a, b) => ({
+        type: 'way',
+        geometry: [{ lat: a.lat, lon: a.lon }, { lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 }, { lat: b.lat, lon: b.lon }]
+      });
+      const alongStops = roadStops.slice(0, -1).map((s, i) => wayBetween(s, roadStops[i + 1]));
+      const straightRelation = { type: 'relation', id: 1, members: alongStops };
+      const reversedMembers = alongStops.map((w, i) => i % 2 ? { ...w, geometry: [...w.geometry].reverse() } : w);
+      const reversedRelation = { type: 'relation', id: 2, members: reversedMembers };
+      const roadAccepted = api.chooseRoadShape([straightRelation], roadStops);
+      const roadReversedAccepted = api.chooseRoadShape([reversedRelation], roadStops);
+      const roadRefused = api.chooseRoadShape([straightRelation], roadStops.map(s => ({ ...s, lat: s.lat + 0.0036 })));
+      const roadStitchOrder = api.stitchRoadWays(reversedMembers.map(w => w.geometry.map(p => ({ lat: p.lat, lon: p.lon }))), roadStops);
+      const roadQuery = api.roadShapeQuery('42', roadStops);
+
       const calls = [
         { id: 'STOP', sequence: 10, along: 0, lat: 52.5, lon: -1.9 },
         { id: 'MID', sequence: 15, along: 1000, lat: 52.51, lon: -1.89 },
@@ -191,6 +211,16 @@ try {
         opaqueRowsKept: opaqueIdentityRows.rows.length,
         opaqueConflict: opaqueIdentityRows.conflict,
         comparableConflict,
+        roadAcceptedMean: roadAccepted && Number(roadAccepted.fit.mean.toFixed(1)),
+        roadAcceptedCover: roadAccepted && roadAccepted.fit.cover,
+        roadAcceptedPoints: roadAccepted && roadAccepted.points.length,
+        roadReversedAccepted: !!roadReversedAccepted,
+        roadRefused: roadRefused === null,
+        roadStitchPoints: roadStitchOrder.length,
+        roadStitchRunsWithStops: roadStitchOrder.length > 1
+          && roadStitchOrder[0].lat < roadStitchOrder[roadStitchOrder.length - 1].lat,
+        roadQueryIsBusRelation: /\[type=route\]\[route=bus\]\["ref"="42"\]/.test(roadQuery),
+        roadQueryHasGeom: /out geom;$/.test(roadQuery),
         originEvidenceScore: originEvidence.score,
         originEvidenceTrip: originEvidence.matchedTrip,
         originEvidenceJourneyMatch: originEvidence.journeyMatch,
@@ -237,6 +267,16 @@ try {
   assert.equal(result.opaqueRowsKept, 1, 'an opaque agency id must not discard the timetable row');
   assert.equal(result.opaqueConflict, false, 'incomparable operator namespaces are not a conflict');
   assert.equal(result.comparableConflict, -1, 'two real operator codes that differ still conflict');
+  // Road geometry is drawn only when it demonstrably fits the journey's stops.
+  assert.ok(result.roadAcceptedMean !== null && result.roadAcceptedMean <= 40, 'a road following the stops must be accepted');
+  assert.equal(result.roadAcceptedCover, 1, 'every stop should be covered by a road that follows them');
+  assert.ok(result.roadAcceptedPoints >= 2);
+  assert.equal(result.roadReversedAccepted, true, 'individually reversed ways must still stitch into a usable path');
+  assert.equal(result.roadRefused, true, 'a road 400m from the stops must be refused, never drawn');
+  assert.ok(result.roadStitchPoints >= 6, 'stitching should join every way');
+  assert.equal(result.roadStitchRunsWithStops, true, 'the stitched path must run in the journey direction');
+  assert.equal(result.roadQueryIsBusRelation, true);
+  assert.equal(result.roadQueryHasGeom, true);
   // Journey identity by origin departure, which is the only reference that crosses.
   assert.ok(result.originEvidenceScore >= 5, 'an origin-time match is journey-level evidence');
   assert.equal(result.originEvidenceTrip, 'TRIP-A');

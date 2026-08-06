@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.0';
+const APP_VERSION = '0.7.1';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3526,7 +3526,9 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
+    journeyRouteLinesForTest:()=>routeLayer.getLayers().filter(l=>typeof l.getLatLngs==='function')
+      .map(l=>({points:l.getLatLngs().length,weight:l.options.weight,dash:l.options.dashArray||null,colour:l.options.color}))};
 }
 
 async function fetchLiveResponse(url,signal){
@@ -4868,7 +4870,12 @@ function journeyProgressHtml(v){
   }
   const next=progress.nextIndex>=0&&progress.nextIndex<progress.stops.length?progress.stops[progress.nextIndex]:null;
   const selected=progress.selectedIndex>=0?progress.stops[progress.selectedIndex]:null;
-  const shapeNote=progress.pattern.shape?'Official GTFS route shape':'Ordered stops guide progress · no road shape published for this journey';
+  /* Always say which geometry is on the map. Progress is measured from the
+     ordered stops in every case, including when an OpenStreetMap road is drawn. */
+  const roadDrawn=!progress.pattern.shape&&!!roadShapeFor(progress.pattern);
+  const shapeNote=progress.pattern.shape?'Official GTFS route shape'
+    :roadDrawn?'OpenStreetMap road shape · ordered stops guide progress'
+    :'Ordered stops guide progress · no road shape published for this journey';
   const stopList=progress.stops.length?'<div class="journey-stops">'+progress.stops.map((stop,index)=>{
     const states=[];
     // The stop the bus is standing at is the current one, not a previous one:
@@ -4895,7 +4902,7 @@ function journeyProgressHtml(v){
     +'</div>'
     // Always actionable. Where no road shape exists the button says what it
     // will actually draw instead of reporting a dead end.
-    +'<button class="route-map-btn" data-route-map="'+esc(v.id)+'">'+(progress.pattern.shape?'View accurate route on map':'View route through stops on map')+'</button>'
+    +'<button class="route-map-btn" data-route-map="'+esc(v.id)+'">'+(progress.pattern.shape?'View accurate route on map':roadDrawn?'View road route on map':'View route through stops on map')+'</button>'
     +stopList+'</div>';
 }
 function lineDetail(r){
@@ -5516,6 +5523,185 @@ function shouldClearJourneyRoute(nextContext,currentContext){
 function clearJourneyRoute(){ routeLayer.clearLayers(); renderedJourneyContext=''; }
 function clearVehicleMarkers(){ vehLayer.clearLayers(); clearJourneyRoute(); S.markers.clear(); }
 
+/* ------------------------------------------------------------
+   Road shape from OpenStreetMap, for drawing only.
+
+   Only 59.8% of national patterns carry a GTFS road shape and London carries
+   2.1%, so the commonest journey is drawn as a straight line through its stops.
+   OpenStreetMap publishes bus route relations holding the real road geometry:
+   measured against the 36-stop line 42 pattern calling at Piccadilly Gardens,
+   the relation for the matching direction sits a mean of 14.1 metres from those
+   stops with one beyond 60, which is the kerb.
+
+   Three rules keep this away from anything that decides a number.
+
+   It is used for the drawn line only. Journey matching, ETAs, progress along the
+   route and the stop list all keep reading the ordered stops, so nothing
+   computed depends on a source this app cannot verify.
+
+   The geometry must prove it fits this journey's stops before it is drawn, which
+   is also how the direction is chosen — a relation that does not fit is
+   discarded and the stop line stands. So a wrong road cannot be drawn quietly.
+
+   It is fetched once per pattern, only when a journey is actually shown on the
+   map, then cached for a fortnight; 19 KB on the wire against the live feed's
+   86 KB every fifteen seconds. Overpass already fronts four mirrors here with
+   429 fallback, and failure is silent.
+   ------------------------------------------------------------ */
+const ROAD_SHAPE_TTL = 14*24*3600*1000;
+const ROAD_SHAPE_MISS_TTL = 3*24*3600*1000;  // a route may yet be mapped
+const ROAD_SHAPE_PREFIX = 'kerbside.road.v1.';
+const ROAD_SHAPE_STITCH_GAP = 80;   // metres; relation ways meet at shared nodes
+const ROAD_SHAPE_MEAN_LIMIT = 40;   // metres; mean stop-to-road distance allowed
+const ROAD_SHAPE_STOP_LIMIT = 60;   // metres; a stop counts as covered within this
+const ROAD_SHAPE_COVER_MIN = 0.9;   // proportion of stops that must be covered
+const ROAD_SHAPE_MIN_STEP = 5;      // metres; drop points closer than this
+const ROAD_SHAPES = new Map();
+const ROAD_SHAPE_PENDING = new Set();
+
+function roadShapeStorageKey(patternId){ return ROAD_SHAPE_PREFIX+String(patternId||''); }
+function thinRoadPoints(points){
+  const out=[];
+  for(const p of points){
+    if(!out.length){ out.push(p); continue; }
+    const last=out[out.length-1];
+    if(dist(last.lat,last.lon,p.lat,p.lon)>=ROAD_SHAPE_MIN_STEP) out.push(p);
+  }
+  if(points.length>1&&out[out.length-1]!==points[points.length-1]) out.push(points[points.length-1]);
+  return out;
+}
+function readRoadShape(patternId){
+  if(!store.ok||!S.remember) return undefined;
+  try{
+    const raw=localStorage.getItem(roadShapeStorageKey(patternId));
+    if(!raw) return undefined;
+    const rec=JSON.parse(raw);
+    const ts=Number(rec&&rec.ts);
+    if(!Number.isFinite(ts)) return undefined;
+    const hit=Array.isArray(rec.points)&&rec.points.length>=2;
+    if(Date.now()-ts>(hit?ROAD_SHAPE_TTL:ROAD_SHAPE_MISS_TTL)) return undefined;
+    return hit?rec.points.map(p=>({lat:Number(p[0]),lon:Number(p[1])})):null;
+  }catch(e){ return undefined; }
+}
+function writeRoadShape(patternId,points){
+  if(!store.ok||!S.remember) return;
+  try{
+    localStorage.setItem(roadShapeStorageKey(patternId),JSON.stringify({
+      ts:Date.now(),
+      points:points?points.map(p=>[Number(p.lat.toFixed(5)),Number(p.lon.toFixed(5))]):null
+    }));
+  }catch(e){
+    // A full quota must not cost the caller its map. Shed road shapes only.
+    try{
+      for(let i=localStorage.length-1;i>=0;i--){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith(ROAD_SHAPE_PREFIX)) localStorage.removeItem(k);
+      }
+    }catch(err){}
+  }
+}
+/* Relation ways are roughly ordered but individually oriented either way, so the
+   chain starts from the way nearest the journey's first call and then repeatedly
+   takes the nearest remaining endpoint, flipping a way when its far end is the
+   closer one. A gap wider than a shared node ends the chain rather than leaping
+   across open ground; the fit check then decides whether what was assembled is
+   good enough to draw. */
+function stitchRoadWays(ways,stops){
+  const pool=(Array.isArray(ways)?ways:[]).filter(w=>Array.isArray(w)&&w.length>=2);
+  if(!pool.length||!stops.length) return [];
+  const first=stops[0];
+  let seedIndex=0, seedMetres=Infinity;
+  pool.forEach((w,i)=>{
+    for(const end of [w[0],w[w.length-1]]){
+      const metres=dist(first.lat,first.lon,end.lat,end.lon);
+      if(metres<seedMetres){ seedMetres=metres; seedIndex=i; }
+    }
+  });
+  let seed=pool.splice(seedIndex,1)[0];
+  if(dist(first.lat,first.lon,seed[seed.length-1].lat,seed[seed.length-1].lon)
+     <dist(first.lat,first.lon,seed[0].lat,seed[0].lon)) seed=seed.slice().reverse();
+  const path=seed.slice();
+  let guard=pool.length+2;
+  while(pool.length&&guard-->0){
+    const tail=path[path.length-1];
+    let pick=-1, reverse=false, metres=Infinity;
+    pool.forEach((w,i)=>{
+      const head=dist(tail.lat,tail.lon,w[0].lat,w[0].lon);
+      const foot=dist(tail.lat,tail.lon,w[w.length-1].lat,w[w.length-1].lon);
+      if(head<metres){ metres=head; pick=i; reverse=false; }
+      if(foot<metres){ metres=foot; pick=i; reverse=true; }
+    });
+    if(pick<0||metres>ROAD_SHAPE_STITCH_GAP) break;
+    const seg=pool.splice(pick,1)[0], add=reverse?seg.slice().reverse():seg;
+    for(let i=1;i<add.length;i++) path.push(add[i]);
+  }
+  return path;
+}
+function roadShapeFit(points,stops){
+  if(!Array.isArray(points)||points.length<2||!stops.length) return null;
+  let total=0, worst=0, covered=0;
+  for(const stop of stops){
+    const projection=projectToPattern(points,stop.lat,stop.lon);
+    const metres=projection?Number(projection.metres):NaN;
+    if(!isFinite(metres)) return null;
+    total+=metres; worst=Math.max(worst,metres);
+    if(metres<=ROAD_SHAPE_STOP_LIMIT) covered++;
+  }
+  return {mean:total/stops.length, worst, cover:covered/stops.length};
+}
+function chooseRoadShape(elements,stops){
+  let best=null;
+  for(const el of (Array.isArray(elements)?elements:[])){
+    if(!el||el.type!=='relation'||!Array.isArray(el.members)) continue;
+    const ways=el.members
+      .filter(m=>m&&m.type==='way'&&Array.isArray(m.geometry)&&m.geometry.length>=2)
+      .map(m=>m.geometry.map(p=>({lat:Number(p.lat),lon:Number(p.lon)})));
+    const points=stitchRoadWays(ways,stops);
+    const fit=roadShapeFit(points,stops);
+    if(!fit||fit.mean>ROAD_SHAPE_MEAN_LIMIT||fit.cover<ROAD_SHAPE_COVER_MIN) continue;
+    if(!best||fit.mean<best.fit.mean) best={points:thinRoadPoints(points),fit};
+  }
+  return best;
+}
+function roadShapeQuery(line,stops){
+  const mid=stops[Math.floor(stops.length/2)];
+  const ref=String(line||'').replace(/[\\"]/g,'');
+  return '[out:json][timeout:40];'
+    +'rel(around:2500,'+Number(mid.lat).toFixed(5)+','+Number(mid.lon).toFixed(5)+')'
+    +'[type=route][route=bus]["ref"="'+ref+'"];out geom;';
+}
+async function requestRoadShape(pattern,line){
+  const id=String(pattern&&pattern.id||'');
+  if(!id||!line||ROAD_SHAPES.has(id)||ROAD_SHAPE_PENDING.has(id)) return;
+  const stops=orderedPatternStops(pattern);
+  if(stops.length<2) return;
+  const stored=readRoadShape(id);
+  if(stored!==undefined){ ROAD_SHAPES.set(id,stored); if(stored) render(); return; }
+  ROAD_SHAPE_PENDING.add(id);
+  try{
+    const json=await overpass(roadShapeQuery(line,stops),true);
+    const best=chooseRoadShape(json&&json.elements,stops);
+    ROAD_SHAPES.set(id,best?best.points:null);
+    writeRoadShape(id,best?best.points:null);
+    if(best) render();
+  }catch(e){
+    /* Overpass busy, or this route is not mapped as a relation. Remembered for
+       the session only, so a reload can try again, and never written to storage
+       as a miss because nothing was actually learned about the route. */
+    ROAD_SHAPES.set(id,null);
+  }finally{ ROAD_SHAPE_PENDING.delete(id); }
+}
+function roadShapeFor(pattern){
+  const id=String(pattern&&pattern.id||'');
+  if(!id) return null;
+  const points=ROAD_SHAPES.get(id);
+  return Array.isArray(points)&&points.length>=2?points:null;
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),stitchRoadWays,roadShapeFit,chooseRoadShape,roadShapeQuery,thinRoadPoints,roadShapeFor,requestRoadShape,readRoadShape,writeRoadShape,
+    resetRoadShapesForTest:()=>{ROAD_SHAPES.clear();ROAD_SHAPE_PENDING.clear();try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith(ROAD_SHAPE_PREFIX))localStorage.removeItem(k);}}catch(e){}},
+    setRoadShapeForTest:(id,points)=>{ROAD_SHAPES.set(String(id),points||null);}};
+}
 function renderSelectedJourney(rows){
   const selectedId=S.selected==null?'':String(S.selected), nextContext=journeyRouteContext(selectedId);
   // Nothing selected — drop whatever is drawn.
@@ -5542,16 +5728,28 @@ function renderSelectedJourney(rows){
   const progress=row?journeyProgress(row.v):null;
   if(!progress||!progress.pattern) return;
   routeLayer.clearLayers(); renderedJourneyContext=nextContext;
-  const split=splitPatternAt(progress.pattern,progress.vehicle);
   /* Only about 60% of national patterns carry a GTFS road shape, and some
      regions publish almost none, so refusing to draw anything else left the
      commonest case with a bare map and a dead button. Without a shape the
      pattern points are the ordered stops, which is a real and useful line —
-     just not road-accurate. Draw it thinner and dashed so it never passes
-     itself off as surveyed geometry. */
+     just not road-accurate. Where OpenStreetMap can supply road geometry that
+     demonstrably fits this journey's stops, that is drawn instead; otherwise the
+     stop line stands, thinner and dashed so it never passes itself off as
+     surveyed geometry. Either way the progress and stop states above come from
+     the ordered stops, not from the line being drawn. */
   const shaped=!!progress.pattern.shape;
+  let split=splitPatternAt(progress.pattern,progress.vehicle), road=false;
+  if(!shaped&&row){
+    requestRoadShape(progress.pattern,row.v.line);
+    const points=roadShapeFor(progress.pattern);
+    if(points){
+      const visual=visualVehiclePosition(row.v);
+      const projection=visual?projectToPattern(points,visual.lat,visual.lon):null;
+      if(projection){ split=splitPatternAt({points},projection); road=true; }
+    }
+  }
   if(split.passed.length>1) L.polyline(split.passed,{color:'#526276',weight:4,opacity:.72,dashArray:'5 7',interactive:false}).addTo(routeLayer);
-  if(split.remaining.length>1) L.polyline(split.remaining,{color:'#FFB000',weight:shaped?5:3.5,opacity:shaped?.92:.8,dashArray:shaped?null:'7 6',interactive:false}).addTo(routeLayer);
+  if(split.remaining.length>1) L.polyline(split.remaining,{color:'#FFB000',weight:shaped?5:road?4.5:3.5,opacity:shaped?.92:road?.88:.8,dashArray:(shaped||road)?null:'7 6',interactive:false}).addTo(routeLayer);
   progress.stops.forEach((stop,index)=>{
     const selected=index===progress.selectedIndex, next=index===progress.nextIndex, passed=index<progress.nextIndex;
     const marker=L.circleMarker([stop.lat,stop.lon],{

@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.0'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.1'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -152,13 +152,15 @@ assert.doesNotMatch(busSource, /if\(!v\|\|!pattern\|\|!pattern\.shape\|\|!isFini
    carry a GTFS shape, London 2.1%, and all 400 journeys calling at Piccadilly
    Gardens carry none, so the commonest case was a disabled button over an empty
    map. The corridor is now drawn from the ordered stops, and the honesty moves
-   into how it is presented: thinner, dashed, and labelled as stops rather than
-   as a route. These assertions pin that presentation, not the refusal. */
+   into how it is presented, and the three cases must stay visually and verbally
+   distinct: an official GTFS shape, a validated OpenStreetMap road, and a plain
+   line through the ordered stops. Only the last is dashed and thinnest, and only
+   the first is called accurate. These assertions pin that presentation. */
 assert.match(busSource, /const progress=row\?journeyProgress\(row\.v\):null;\n  if\(!progress\|\|!progress\.pattern\) return;/);
-assert.match(busSource, /const shaped=!!progress\.pattern\.shape;/);
-assert.match(busSource, /weight:shaped\?5:3\.5,opacity:shaped\?\.92:\.8,dashArray:shaped\?null:'7 6'/);
-assert.match(busSource, /progress\.pattern\.shape\?'View accurate route on map':'View route through stops on map'/);
-assert.match(busSource, /'Official GTFS route shape':'Ordered stops guide progress · no road shape published for this journey'/);
+assert.match(busSource, /let split=splitPatternAt\(progress\.pattern,progress\.vehicle\), road=false;/);
+assert.match(busSource, /weight:shaped\?5:road\?4\.5:3\.5,opacity:shaped\?\.92:road\?\.88:\.8,dashArray:\(shaped\|\|road\)\?null:'7 6'/);
+assert.match(busSource, /progress\.pattern\.shape\?'View accurate route on map':roadDrawn\?'View road route on map':'View route through stops on map'/);
+assert.match(busSource, /'Official GTFS route shape'\n?\s*:roadDrawn\?'OpenStreetMap road shape · ordered stops guide progress'/);
 // The dead end it replaced must not come back.
 assert.doesNotMatch(busSource, /Accurate road shape unavailable/);
 assert.doesNotMatch(busSource, /data-route-map="'\+esc\(v\.id\)\+'" '\+\(progress\.pattern\.shape\?'':'disabled'\)/);
@@ -217,6 +219,23 @@ assert.match(busSource, /const directionSchedule=est\.schedule\|\|matchedRow/);
 assert.match(busSource, /scheduledJourneyDirection\(directionSchedule\)/);
 assert.match(busSource, /scheduledJourneyDirection\(r\)/);
 assert.match(busSource, /diagnostics\.recovered\+\+/);
+/* OpenStreetMap road geometry, for the drawn line only. Journey matching, ETAs
+   and progress must keep reading the ordered stops, so nothing that produces a
+   number depends on geometry this app cannot verify — that separation is the
+   whole safety argument and these assertions hold it in place. The geometry has
+   to fit the journey's stops before it is drawn, and it is fetched on demand and
+   cached rather than pulled for every pattern. */
+assert.match(busSource, /const ROAD_SHAPE_MEAN_LIMIT = 40;/);
+assert.match(busSource, /const ROAD_SHAPE_COVER_MIN = 0\.9;/);
+assert.match(busSource, /function stitchRoadWays\(ways,stops\)/);
+assert.match(busSource, /function roadShapeFit\(points,stops\)/);
+assert.match(busSource, /if\(!fit\|\|fit\.mean>ROAD_SHAPE_MEAN_LIMIT\|\|fit\.cover<ROAD_SHAPE_COVER_MIN\) continue;/);
+assert.match(busSource, /\[type=route\]\[route=bus\]/);
+assert.match(busSource, /await overpass\(roadShapeQuery\(line,stops\),true\)/);
+assert.match(busSource, /OpenStreetMap road shape · ordered stops guide progress/);
+// Progress and the journey geometry used for ETAs must not read the road shape.
+assert.doesNotMatch(busSource, /function journeyGeometry[\s\S]{0,900}roadShapeFor/);
+assert.doesNotMatch(busSource, /function journeyProgress\(v\)[\s\S]{0,900}roadShapeFor/);
 /* Journey identity comes from the origin departure time, the only reference that
    crosses between the timetable and the live feed. The SIRI journey reference
    cannot be compared to a GTFS trip id, so without this scores 5 and 6 are
@@ -1608,7 +1627,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.0'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.1'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
