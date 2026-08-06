@@ -191,6 +191,28 @@ try {
       const roadStitchOrder = api.stitchRoadWays(reversedMembers.map(w => w.geometry.map(p => ({ lat: p.lat, lon: p.lon }))), roadStops);
       const roadQuery = api.roadShapeQuery('42', roadStops);
 
+      /* An open popup follows its marker, and Leaflet answers each
+         Marker.setLatLng by panning the map to keep that popup in view. Vehicle
+         positions move on every glide tick, so panning away from a selected bus
+         to read further along its route was undone within a fraction of a
+         second. Selecting a bus still moves the view deliberately. */
+      state.onlyServing = false;
+      api.renderVehiclesForTest([]);
+      const vehiclePopup = api.vehiclePopupOptionsForTest('right');
+      const mapHeldStill = (() => {
+        const map = api.mapForTest();
+        const marker = state.markers.get('right');
+        if (!map || !marker) return null;
+        marker.openPopup();
+        map.panTo([52.4, -1.8], { animate: false });
+        const before = `${map.getCenter().lat.toFixed(5)},${map.getCenter().lng.toFixed(5)}`;
+        marker.setLatLng([52.6, -2.0]);
+        const after = `${map.getCenter().lat.toFixed(5)},${map.getCenter().lng.toFixed(5)}`;
+        marker.closePopup();
+        return before === after;
+      })();
+      state.onlyServing = true;
+
       const calls = [
         { id: 'STOP', sequence: 10, along: 0, lat: 52.5, lon: -1.9 },
         { id: 'MID', sequence: 15, along: 1000, lat: 52.51, lon: -1.89 },
@@ -211,6 +233,8 @@ try {
         opaqueRowsKept: opaqueIdentityRows.rows.length,
         opaqueConflict: opaqueIdentityRows.conflict,
         comparableConflict,
+        vehiclePopupAutoPan: vehiclePopup && vehiclePopup.autoPan,
+        mapHeldStill,
         roadAcceptedMean: roadAccepted && Number(roadAccepted.fit.mean.toFixed(1)),
         roadAcceptedCover: roadAccepted && roadAccepted.fit.cover,
         roadAcceptedPoints: roadAccepted && roadAccepted.points.length,
@@ -267,6 +291,9 @@ try {
   assert.equal(result.opaqueRowsKept, 1, 'an opaque agency id must not discard the timetable row');
   assert.equal(result.opaqueConflict, false, 'incomparable operator namespaces are not a conflict');
   assert.equal(result.comparableConflict, -1, 'two real operator codes that differ still conflict');
+  // Reading a route must not be a fight with the map.
+  assert.equal(result.vehiclePopupAutoPan, false, 'a vehicle popup must not pan the map on every position update');
+  assert.equal(result.mapHeldStill, true, 'the map must hold still when a selected bus moves');
   // Road geometry is drawn only when it demonstrably fits the journey's stops.
   assert.ok(result.roadAcceptedMean !== null && result.roadAcceptedMean <= 40, 'a road following the stops must be accepted');
   assert.equal(result.roadAcceptedCover, 1, 'every stop should be covered by a road that follows them');

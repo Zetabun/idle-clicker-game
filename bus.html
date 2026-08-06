@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.1';
+const APP_VERSION = '0.7.2';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -5808,7 +5808,10 @@ function vehicleMarkerPlan(rows,now=Date.now()){
   return {wanted,draw,drawIds:new Set(draw.map(item=>item.v.id)),eligible:eligible.length};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),vehicleMarkerPlan,MAX_VEHICLE_MARKERS};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),vehicleMarkerPlan,MAX_VEHICLE_MARKERS,
+    mapForTest:()=>map,
+    vehiclePopupOptionsForTest:id=>{const m=S.markers.get(String(id)),p=m&&m.getPopup();return p?{...p.options}:null;},
+    renderVehiclesForTest:rows=>renderVehicles(rows)};
 }
 function renderVehicles(rows){
   const now=Date.now(), plan=vehicleMarkerPlan(rows,now), wanted=plan.wanted;
@@ -5851,7 +5854,14 @@ function renderVehicles(rows){
     const popup = '<b>'+esc(v.line)+'</b> to '+esc(v.dest||'?')
       + (r ? '<br>'+(r.gpsLost?'GPS signal lost · last position held':Math.max(1,Math.round(r.secs/60))+' min to '+esc(S.stop.name)) : '<br>Not shown on this board')
       + (v.operator&&v.operator!=='SIM' ? '<br><span style="color:#7D8FA3;font-size:11px">'+esc(v.operator)+'</span>':'');
-    if(m.getPopup()) m.setPopupContent(popup); else m.bindPopup(popup);
+    /* autoPan off, or reading the route becomes a fight with the map. An open
+       popup follows its marker, and Leaflet answers each Marker.setLatLng by
+       panning the map to keep that popup in view. Positions move on every glide
+       tick, so panning away from a selected bus to look further along its route
+       was undone within a fraction of a second, over and over. Selecting a bus
+       still brings the map to it — focusVehicle and showJourneyOnMap both move
+       the view deliberately — so nothing is lost by refusing the automatic one. */
+    if(m.getPopup()) m.setPopupContent(popup); else m.bindPopup(popup,{autoPan:false});
   }
   renderSelectedJourney(rows);
 }

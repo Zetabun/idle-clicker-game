@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.1'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.2'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -219,6 +219,9 @@ assert.match(busSource, /const directionSchedule=est\.schedule\|\|matchedRow/);
 assert.match(busSource, /scheduledJourneyDirection\(directionSchedule\)/);
 assert.match(busSource, /scheduledJourneyDirection\(r\)/);
 assert.match(busSource, /diagnostics\.recovered\+\+/);
+// Leaflet pans the map to keep an open popup in view whenever its marker moves,
+// which fought anyone reading a route while their bus was selected.
+assert.match(busSource, /m\.bindPopup\(popup,\{autoPan:false\}\)/);
 /* OpenStreetMap road geometry, for the drawn line only. Journey matching, ETAs
    and progress must keep reading the ordered stops, so nothing that produces a
    number depends on geometry this app cannot verify — that separation is the
@@ -1627,7 +1630,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.1'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.2'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
