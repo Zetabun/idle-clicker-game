@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.6.99';
+const APP_VERSION = '0.7.0';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2580,7 +2580,16 @@ function timetableRows(now){
       serviceDate.setDate(serviceDate.getDate()+targetOffset-departureDayOffset);
       if(!serviceRuns(service,serviceDate)) continue;
       const at=serviceDepartureTime(serviceDate,mins);
-      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||'', routeId:String(e[7]||''), operator:String(e[8]||''), stopSequence:Number.isFinite(Number(e[9]))?Number(e[9]):null});
+      /* The journey's scheduled first departure, on this same service date, so a
+         live bus can be matched by the origin time it broadcasts. Minutes past
+         service start, exactly like mins, so the shared serviceDate resolves
+         both — including a journey that began before midnight and calls here
+         after it. Absent from shards built before version 10, in which case it
+         is null and matching falls back to time proximity. */
+      const originRaw=parseDepMinutes(e[10]), hasOrigin=isFinite(originRaw);
+      const originMins=hasOrigin?originRaw:null;
+      const originAt=hasOrigin?serviceDepartureTime(serviceDate,originRaw).getTime():null;
+      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||'', routeId:String(e[7]||''), operator:String(e[8]||''), stopSequence:Number.isFinite(Number(e[9]))?Number(e[9]):null, originMins, originAt});
     }
   }
   TIMETABLE_ROWS_CACHE={stop,timetable:S.timetable,run:S.timetableRun,day,rows:out,byLine:indexTimetableRows(out)};
@@ -4080,6 +4089,34 @@ function destinationTerminatesHere(dest){
 function timetableTrusted(evidence){
   return !!evidence&&(evidence.score>=4||!!evidence.timetableVerified);
 }
+/* Journey identity by origin departure time.
+
+   The reference the operator publishes cannot be compared to a GTFS trip id —
+   99.62% of buses send a short numeric code against the timetable's VJ<hex> —
+   so the strongest tiers of evidence were unreachable everywhere. The aimed
+   origin departure is the identifier that does cross: measured over 4,010 live
+   vehicles in three regions it is present on 98.9%, unchanged between polls for
+   99.88% (the five that moved had genuinely started their next journey), and
+   unique within an operator and line for 97.6%.
+
+   Uniqueness is required rather than assumed. Where two journeys of a route
+   share an origin minute — 2.4% of vehicles, a frequent service or a relief
+   working — this reports ambiguity and the caller keeps the previous
+   time-proximity behaviour instead of guessing. */
+const ORIGIN_MATCH_TOLERANCE_MS = 90*1000;
+function originTimeMatches(row,identity){
+  const aimed=Number(identity&&identity.aimedOriginAt), originAt=Number(row&&row.originAt);
+  if(!Number.isFinite(aimed)||!Number.isFinite(originAt)) return false;
+  return Math.abs(aimed-originAt)<=ORIGIN_MATCH_TOLERANCE_MS;
+}
+function uniqueOriginTrips(rows,identity){
+  if(!Number.isFinite(Number(identity&&identity.aimedOriginAt))) return {items:[],ref:'',ambiguous:false};
+  const matches=(Array.isArray(rows)?rows:[]).filter(row=>row&&row.trip&&originTimeMatches(row,identity));
+  if(!matches.length) return {items:[],ref:'',ambiguous:false};
+  const refs=[...new Set(matches.map(row=>String(row.trip)))];
+  if(refs.length!==1) return {items:[],ref:'',ambiguous:true};
+  return {items:matches,ref:refs[0],ambiguous:false};
+}
 function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
@@ -4094,6 +4131,21 @@ function routeEvidence(line,dest,journey,identity){
       label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
       journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,
       routeIdentityMatch:identityInfo.strong
+    };
+  }
+  /* The reference could not be compared, so identify the journey by the origin
+     departure the operator broadcasts. Resolving matchedTrip here is enough for
+     the rest of the app: estimate() passes it back through scheduledMatches as
+     the journey reference, where it matches the timetable trip id exactly, and
+     collect() hands it to journey progress as progressTrip. */
+  const originMatch=uniqueOriginTrips(ttRows,identity);
+  if(originMatch.items.length){
+    const path=!!timetablePattern(originMatch.ref);
+    return {
+      score:path?6:5,
+      label:path?'origin departure and stop sequence matched':'origin departure matched to timetable',
+      journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:originMatch.ref,
+      originMatch:true,routeIdentityMatch:identityInfo.strong
     };
   }
   const tt=timetableRouteSet();
@@ -4394,7 +4446,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -4922,6 +4974,18 @@ function scheduleLiveReason(schedule,liveRows){
   const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
   if(liveTrip.items.length) return 'possible GPS match was filtered';
   if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
+  /* Origin departure time is the identifier that actually crosses between the
+     two feeds, so it decides this once the shard carries one. */
+  if(Number.isFinite(Number(schedule.originAt))){
+    const originLive=sameBranch.filter(v=>originTimeMatches(schedule,v));
+    if(originLive.length===1) return 'possible GPS match was filtered';
+    if(originLive.length>1) return 'origin departure shared by more than one bus';
+    if(!sameBranch.some(v=>Number.isFinite(Number(v.aimedOriginAt))))
+      return 'operator publishes no origin departure time';
+    // Origin times on both sides and none of them is this departure: its bus
+    // has not started yet, which is the ordinary reason and was never said.
+    return 'no bus is working this departure yet';
+  }
   if(!journeyRefComparable(schedule.trip)||!sameBranch.some(v=>journeyRefComparable(v.journey)))
     return 'operator publishes no matchable journey code';
   return 'no unique journey match';

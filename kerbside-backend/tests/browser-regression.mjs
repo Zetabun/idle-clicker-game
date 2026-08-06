@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.6\.99'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.0'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -217,6 +217,19 @@ assert.match(busSource, /const directionSchedule=est\.schedule\|\|matchedRow/);
 assert.match(busSource, /scheduledJourneyDirection\(directionSchedule\)/);
 assert.match(busSource, /scheduledJourneyDirection\(r\)/);
 assert.match(busSource, /diagnostics\.recovered\+\+/);
+/* Journey identity comes from the origin departure time, the only reference that
+   crosses between the timetable and the live feed. The SIRI journey reference
+   cannot be compared to a GTFS trip id, so without this scores 5 and 6 are
+   unreachable nationally. Uniqueness is required, and a shard built before
+   version 10 carries no origin time, which must fall back rather than break. */
+assert.match(busSource, /const ORIGIN_MATCH_TOLERANCE_MS = 90\*1000;/);
+assert.match(busSource, /function originTimeMatches\(row,identity\)/);
+assert.match(busSource, /function uniqueOriginTrips\(rows,identity\)/);
+assert.match(busSource, /if\(refs\.length!==1\) return \{items:\[\],ref:'',ambiguous:true\};/);
+assert.match(busSource, /const originMatch=uniqueOriginTrips\(ttRows,identity\);/);
+assert.match(busSource, /originMatch:true,routeIdentityMatch:identityInfo\.strong/);
+assert.match(busSource, /originAt:originMins===null\?null:|const originAt=hasOrigin\?serviceDepartureTime\(serviceDate,originRaw\)\.getTime\(\):null;/);
+assert.match(busSource, /no bus is working this departure yet/);
 /* The reason a scheduled row has no live bus must know which buses are already
    listed against other departures, or a route running normally reports a
    matching failure on every later row. */
@@ -1595,7 +1608,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.6.99'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.0'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

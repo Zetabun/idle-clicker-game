@@ -2,9 +2,11 @@
 /**
  * Build Kerbside's compact local timetable from a BODS regional GTFS folder.
  *
- * Output version 3 adds deduplicated ordered-stop patterns. When a live
- * VehicleJourneyRef matches a GTFS trip_id, Kerbside can tell whether the bus
- * is before or after the selected stop and estimate distance along the route.
+ * Output version 3 adds deduplicated ordered-stop patterns, so Kerbside can tell
+ * whether a bus is before or after the selected stop and estimate distance along
+ * the route. Version 5 adds each departure's journey origin time, because the
+ * VehicleJourneyRef a live bus broadcasts is a short numeric code that cannot be
+ * compared to a GTFS trip_id — the origin departure is the reference that can.
  *
  * Usage:
  *   node build-timetable.js <gtfs-folder> <latitude> <longitude> [radius-metres]
@@ -176,19 +178,42 @@ function numericSequence(value, fallback) {
   await eachRow('stop_times.txt', (row, number) => {
     scanned = number;
     if (number % 2000000 === 0) console.log(`  ${(number / 1e6).toFixed(0)}M rows...`);
-    const stopId = String(row.stop_id || '');
-    if (!localStops.has(stopId)) return;
     const tripId = String(row.trip_id || '');
     const trip = trips.get(tripId);
+    /* Each journey's true first call, so the app can match a live bus by the
+       origin departure time it broadcasts. Tracked before the local-stop filter
+       because a journey can begin outside the radius, and the live
+       OriginAimedDepartureTime always names its real origin — the lowest
+       sequence among the stops we happen to keep would be the wrong call. */
+    if (trip) {
+      const originSeq = numericSequence(row.stop_sequence, number);
+      const originMins = parseGtfsMinutes(row.departure_time || row.arrival_time);
+      if (isFinite(originMins) && (trip.originSeq === undefined || originSeq < trip.originSeq)) {
+        trip.originSeq = originSeq;
+        trip.originMins = originMins;
+      }
+    }
+    const stopId = String(row.stop_id || '');
+    if (!localStops.has(stopId)) return;
     if (!trip) return;
     const minutes = parseGtfsMinutes(row.departure_time || row.arrival_time);
     if (!isFinite(minutes)) { invalidTimes++; return; }
     const list = byStop.get(stopId) || [];
-    list.push([minutes, trip.line, trip.head, trip.service, trip.direction, tripId, '', trip.routeId, trip.operator, numericSequence(row.stop_sequence, list.length)]);
+    list.push([minutes, trip.line, trip.head, trip.service, trip.direction, tripId, '', trip.routeId, trip.operator, numericSequence(row.stop_sequence, list.length), '']);
     byStop.set(stopId, list);
     usedTrips.add(tripId);
     if (trip.service) usedServices.add(trip.service);
   });
+
+  /* Filled in after the scan rather than inside it: stop_times.txt is not
+     required to be sorted, so a journey's origin can be read after a later call
+     of the same journey has already been recorded. */
+  for (const list of byStop.values()) {
+    for (const entry of list) {
+      const trip = trips.get(String(entry[5] || ''));
+      entry[10] = trip && isFinite(Number(trip.originMins)) ? Number(trip.originMins) : '';
+    }
+  }
   console.log(`Scanned ${scanned.toLocaleString()} rows`);
   if (invalidTimes) console.log(`Ignored ${invalidTimes.toLocaleString()} rows with invalid GTFS times`);
 
@@ -207,7 +232,7 @@ function numericSequence(value, fallback) {
   });
 
   const output = {
-    version: 4,
+    version: 5,
     built: new Date().toISOString(),
     centre: [LAT, LON],
     radius: RADIUS,

@@ -266,8 +266,24 @@ async function main() {
   await eachRow('stop_times.txt', (row, number) => {
     const stopId = String(row.stop_id || '').trim();
     const tripId = String(row.trip_id || '').trim();
+    const trip = trips.get(tripId);
+    /* The journey's own first call, published so the app can match a live bus by
+       the origin departure time it broadcasts. This has to be tracked from every
+       row rather than from the rows kept below: a journey can begin outside this
+       region's bounds, and OriginAimedDepartureTime always refers to its true
+       first stop, so taking the lowest retained sequence would compare the live
+       time against the wrong call. Recorded by lowest stop_sequence rather than
+       file order, because stop_times.txt is not required to be sorted. */
+    if (trip) {
+      const originSeq = sequence(row.stop_sequence, number);
+      const originMins = parseGtfsMinutes(row.departure_time || row.arrival_time);
+      if (Number.isFinite(originMins) && (trip.originSeq === undefined || originSeq < trip.originSeq)) {
+        trip.originSeq = originSeq;
+        trip.originMins = originMins;
+      }
+    }
     const stop = stops.get(stopId);
-    if (!stop || !trips.has(tripId)) return;
+    if (!stop || !trip) return;
     const mins = parseGtfsMinutes(row.departure_time || row.arrival_time);
     if (!Number.isFinite(mins)) {
       invalidTimes++;
@@ -477,7 +493,7 @@ async function main() {
 
     const filename = path.join(departureRoot, `${currentShard}.json`);
     writeJson(filename, {
-      version: 9,
+      version: 10,
       built: nowIso,
       scope: 'departure-shard',
       region,
@@ -507,7 +523,8 @@ async function main() {
     const trip = trips.get(row.trip_id);
     if (!trip) continue;
     const patternId = tripPattern.get(row.trip_id) || '';
-    departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId, trip.routeId, trip.operator, Number(row.seq)]);
+    const originMins = Number.isFinite(Number(trip.originMins)) ? Number(trip.originMins) : '';
+    departures.push([row.mins, trip.line, trip.head, trip.service, trip.direction, row.trip_id, patternId, trip.routeId, trip.operator, Number(row.seq), originMins]);
     if (trip.service) shardServices.add(trip.service);
     if (patternId) shardTripPatterns[row.trip_id] = patternId;
   }
