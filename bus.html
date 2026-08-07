@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.6';
+const APP_VERSION = '0.7.7';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3043,7 +3043,7 @@ function pointAlongPattern(points,along){
 }
 function vehicleJourneyRef(v){ return String(v&&((v.corridorTracked&&v.corridorTrip)||v.journey)||''); }
 function journeyGeometry(v,stop){
-  if(!v || !stop) return null;
+  if(!v || !stop || v.progressIdentityBlocked) return null;
   const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
@@ -3238,6 +3238,7 @@ function inferredRouteEvidence(base,inference){
 }
 
 function journeyProgress(v){
+  if(v&&v.progressIdentityBlocked) return null;
   const pattern=timetablePatternRecord(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern);
   if(!pattern) return null;
   const confirmedVehicle=projectVehicleToPattern(pattern,v);
@@ -3316,7 +3317,7 @@ function selectStop(s,manual){
     if(S.routeScanAbort) S.routeScanAbort.abort();
     S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
     S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError=''; S.routeScanHistory.clear();
-    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; delete vehicle.inferredJourney; delete vehicle.inferredTrip; delete vehicle.inferredPattern; delete vehicle.inferredAt; delete vehicle.inferenceStopId; delete vehicle.inferenceGpsTs; vehicle.corridorTracked=false; }
+    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; delete vehicle.inferredJourney; delete vehicle.inferredTrip; delete vehicle.inferredPattern; delete vehicle.inferredAt; delete vehicle.inferenceStopId; delete vehicle.inferenceGpsTs; delete vehicle.progressIdentityBlocked; vehicle.corridorTracked=false; }
     S.destFilter=null; S.selected=null; S.manualStop=manual===true;
   } else if(manual===true) S.manualStop=true;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
@@ -4158,7 +4159,7 @@ function visualVehiclePosition(v,now=Date.now()){
   const lead=Math.min(age,expectedGap);
   const metres=Math.min(speed*lead,VISUAL_MAX_LEAD_METRES);
   if(metres<1) return confirmed;
-  const pattern=timetablePatternRecord(v.progressTrip||v.inferredTrip||vehicleJourneyRef(v),v.progressPattern||v.inferredPattern);
+  const pattern=v.progressIdentityBlocked?null:timetablePatternRecord(v.progressTrip||v.inferredTrip||vehicleJourneyRef(v),v.progressPattern||v.inferredPattern);
   // Ordered-stop corridors are useful for progress, but near a stand they do not
   // prove which carriageway the bus occupies. Keep the last confirmed GPS fix
   // instead of projecting a visually precise marker onto the wrong kerb.
@@ -4374,6 +4375,13 @@ function uniqueOriginTrips(rows,identity){
   if(refs.length!==1) return {items:[],ref:'',ambiguous:true};
   return {items:matches,ref:refs[0],ambiguous:false};
 }
+function journeyDestinationAgreement(rows,dest){
+  const live=String(dest||'').trim();
+  const heads=[...new Set((Array.isArray(rows)?rows:[]).map(row=>String(row&&row.head||'').trim()).filter(Boolean))];
+  if(!live||!heads.length) return {comparable:false,compatible:true,conflict:false,best:1,heads};
+  const best=heads.reduce((score,head)=>Math.max(score,destinationSimilarity(live,head)),0);
+  return {comparable:true,compatible:best>=.34,conflict:best<.34,best,heads};
+}
 function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
@@ -4381,59 +4389,71 @@ function routeEvidence(line,dest,journey,identity){
   const identityInfo=timetableIdentityRows(allRows,identity);
   const ttRows=identityInfo.rows;
   const tripMatch=journey?uniqueCompatibleTrips(ttRows,journey):{items:[],ref:'',strength:0,ambiguous:false};
+  let journeyDestinationConflict=false, conflictingTrip='';
   if(tripMatch.items.length){
-    const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
-    return {
-      score:path?6:5,
-      label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
-      journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,
-      routeIdentityMatch:identityInfo.strong
-    };
+    const destination=journeyDestinationAgreement(tripMatch.items,dest);
+    if(!destination.conflict){
+      const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
+      return {
+        score:path?6:5,
+        label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
+        journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,
+        routeIdentityMatch:identityInfo.strong
+      };
+    }
+    journeyDestinationConflict=true; conflictingTrip=String(tripMatch.ref||'');
   }
-  /* The reference could not be compared, so identify the journey by the origin
-     departure the operator broadcasts. Resolving matchedTrip here is enough for
-     the rest of the app: estimate() passes it back through scheduledMatches as
-     the journey reference, where it matches the timetable trip id exactly, and
-     collect() hands it to journey progress as progressTrip. */
+  /* The origin departure is strong identity evidence only while the live
+     destination agrees with the timetable journey it selects. Around a terminus
+     operators can roll the aimed origin / journey fields to the next working
+     before the destination and GPS have caught up. Treat that disagreement as a
+     handover state, not permission to draw the opposite journey with confidence. */
   const originMatch=uniqueOriginTrips(ttRows,identity);
   if(originMatch.items.length){
-    const path=!!timetablePattern(originMatch.ref);
-    return {
-      score:path?6:5,
-      label:path?'origin departure and stop sequence matched':'origin departure matched to timetable',
-      journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:originMatch.ref,
-      originMatch:true,routeIdentityMatch:identityInfo.strong
-    };
+    const destination=journeyDestinationAgreement(originMatch.items,dest);
+    if(!destination.conflict){
+      const path=!!timetablePattern(originMatch.ref);
+      return {
+        score:path?6:5,
+        label:path?'origin departure and stop sequence matched':'origin departure matched to timetable',
+        journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:originMatch.ref,
+        originMatch:true,routeIdentityMatch:identityInfo.strong
+      };
+    }
+    journeyDestinationConflict=true; conflictingTrip=String(originMatch.ref||conflictingTrip||'');
   }
   const tt=timetableRouteSet();
   if(tt.has(l)){
-    if(identityInfo.conflict) return {score:0,label:'route number belongs to another operator at this stop',routeIdentityConflict:true};
+    if(identityInfo.conflict) return {score:0,label:'route number belongs to another operator at this stop',routeIdentityConflict:true,journeyDestinationConflict,conflictingTrip};
     const heads=ttRows.map(r=>r.head).filter(Boolean);
     const headMatch=!dest || !heads.length || heads.some(h=>destinationSimilarity(dest,h)>=.34);
     const terminates=!headMatch&&destinationTerminatesHere(dest);
     const branchOk=headMatch||terminates;
-    const label=tripMatch.ambiguous
-      ? (branchOk?'route verified; journey alias ambiguous':'route number matched, but branch and journey did not')
-      : terminates?'timetable route verified; terminates at this stop'
-      : branchOk?(identityInfo.strong?'operator and route verified':'timetable route verified'):'route number matched, but this branch does not serve the stop';
+    const label=journeyDestinationConflict
+      ? (branchOk?'route verified; matched journey destination disagrees':'route number matched, but live destination disagrees with matched journey')
+      : tripMatch.ambiguous
+        ? (branchOk?'route verified; journey alias ambiguous':'route number matched, but branch and journey did not')
+        : terminates?'timetable route verified; terminates at this stop'
+        : branchOk?(identityInfo.strong?'operator and route verified':'timetable route verified'):'route number matched, but this branch does not serve the stop';
     return {score:branchOk?(identityInfo.strong?4:3):1,label,journeyAmbiguous:tripMatch.ambiguous,
+      journeyDestinationConflict,conflictingTrip,
       routeIdentityMatch:identityInfo.strong,timetableVerified:branchOk};
   }
   const m=MAPPED[String(S.stop.id)];
   if(m && m.routes.some(r=>String(r.ref)===l)){
-    if(m.source==='stop') return {score:3,label:'mapped at this stop'};
-    if(m.source==='nearby') return {score:2,label:'mapped nearby'};
-    return {score:1,label:'runs past stop'};
+    if(m.source==='stop') return {score:3,label:'mapped at this stop',journeyDestinationConflict,conflictingTrip};
+    if(m.source==='nearby') return {score:2,label:'mapped nearby',journeyDestinationConflict,conflictingTrip};
+    return {score:1,label:'runs past stop',journeyDestinationConflict,conflictingTrip};
   }
   const bag=SERVING[String(S.stop.id)]||{};
   const rec=normaliseServingRecord(bag[l]);
   const authoritative=!!(S.ttStop&&S.timetableSource==='national'&&!S.timetableFallback&&!S.ttError);
   if(rec.confirmed || rec.count>=2){
-    if(authoritative) return {score:1,label:'seen stopping, but not in the timetable for this stop'};
-    return {score:3,label:rec.source==='worker'?'recorded arrivals':'seen stopping'};
+    if(authoritative) return {score:1,label:'seen stopping, but not in the timetable for this stop',journeyDestinationConflict,conflictingTrip};
+    return {score:3,label:rec.source==='worker'?'recorded arrivals':'seen stopping',journeyDestinationConflict,conflictingTrip};
   }
-  if(rec.count===1) return {score:1,label:'seen once'};
-  return {score:0,label:'unverified'};
+  if(rec.count===1) return {score:1,label:'seen once',journeyDestinationConflict,conflictingTrip};
+  return {score:0,label:'unverified',journeyDestinationConflict,conflictingTrip};
 }
 const ETA_MIN_FRESH_SECONDS = 30;
 const ETA_MAX_FRESH_SECONDS = 75;
@@ -4461,6 +4481,7 @@ function scheduleEtaBlendWeight(evidence,quality){
 }
 const ETA_DWELL_SECONDS_PER_STOP = 18;
 function remainingStopsToTarget(v,stop){
+  if(v&&v.progressIdentityBlocked) return 0;
   const pattern=timetablePatternRecord(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern||v&&v.inferredPattern);
   if(!pattern) return 0;
   const vehicle=projectVehicleToPattern(pattern,v);
@@ -4504,7 +4525,7 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const liveSecs=spatial;
   const baseJourneyRef=vehicleJourneyRef(v);
   const evidence=evidenceOverride||routeEvidence(v.line,v.dest,baseJourneyRef,v);
-  const journeyRef=evidence.matchedTrip||baseJourneyRef;
+  const journeyRef=evidence&&evidence.journeyDestinationConflict?'':(evidence.matchedTrip||baseJourneyRef);
   const strength=approachStrength(v,stop);
   const scheduleLookup=scheduledMatches(v.line,v.dest,spatial,journeyRef);
   const schedules=scheduleLookup.items;
@@ -4758,7 +4779,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -4957,6 +4978,19 @@ function relevant(){
   S.liveDiag=diagnostics;
   return out;
 }
+function setVehicleProgressIdentity(v,evidence,inference,matchedRow){
+  if(!v) return;
+  const inferredPattern=String(inference&&inference.patternId||'');
+  const conflict=!!(evidence&&evidence.journeyDestinationConflict);
+  v.progressIdentityBlocked=conflict&&!inferredPattern;
+  if(inferredPattern){
+    v.progressTrip='';
+    v.progressPattern=inferredPattern;
+    return;
+  }
+  v.progressTrip=v.progressIdentityBlocked?'':String(evidence&&evidence.matchedTrip||v.corridorTrip||v.journey||'');
+  v.progressPattern=String(matchedRow&&matchedRow.pattern||'');
+}
 function collect(gate,diagnostics){
   const out=[], now=Date.now();
   // Resolved once per pass, not per vehicle: naming the anchor walks every
@@ -4987,8 +5021,7 @@ function collect(gate,diagnostics){
     // retreat from the stop still wins, so a bus that has genuinely
     // turned away is not kept.
     const journeyBearingOverride=!!(evidence.journeyMatch&&matchedCallPlausible&&d<=MAX_VEH_DIST&&movementTrend(v,S.stop)>=0);
-    v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';
-    v.progressPattern=String(inference&&inference.patternId||matchedRow&&matchedRow.pattern||'');
+    setVehicleProgressIdentity(v,evidence,inference,matchedRow);
     const geometry=journeyGeometry(v,S.stop);
     if(geometry && geometry.passed){ rejectLive(diagnostics,'passed',v); continue; }
     const corridorFar=!!(v.corridorTracked&&geometry&&geometry.remaining>80&&geometry.remaining<=ROUTE_SCAN_MAX_ROUTE_METRES&&evidence.journeyMatch&&evidence.pathMatch);
@@ -5056,7 +5089,7 @@ function collect(gate,diagnostics){
     const recovered=!!((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low'));
     if(recovered && diagnostics) diagnostics.recovered++;
     const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
-    if(est.schedule){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
+    if(est.schedule&&!v.progressIdentityBlocked){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
     const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
     /* Where a bus is going is its own destination, not the town it happens to
        be leaving. Calling a Halesowen service "out of Birmingham" names the
@@ -5098,7 +5131,7 @@ function renderLiveDiagnostics(){
   const stages=[
     ['received',d.received],['recent',d.recent],['within range',d.nearby],
     ['route evidence',d.route],['direction',d.direction],['approaching',d.approaching],
-    ['confidence',d.confidence],['recovered',d.recovered],['shown',d.shown]
+    ['confidence',d.confidence],['retained',d.recovered],['shown',d.shown]
   ];
   const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
   const rejected=Object.entries(d.rejected||{}).filter(([,value])=>value>0)
@@ -5190,6 +5223,7 @@ function formatPositionAge(ms){
 function journeyProgressHtml(v){
   const progress=journeyProgress(v);
   if(!progress){
+    if(v&&v.progressIdentityBlocked) return '<div class="journey-progress journey-progress-unavailable"><b>Journey identity is updating.</b> The live destination and timetable journey disagree, so Kerbside is withholding route progress until they line up again.</div>';
     const state=timetablePatternLoadState(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern);
     if(state==='loading') return '<div class="journey-progress journey-progress-unavailable"><b>Loading journey progress…</b> Kerbside is fetching the ordered route for this exact journey.</div>';
     if(state==='failed') return '<div class="journey-progress journey-progress-unavailable"><b>Journey progress could not be loaded.</b> Kerbside will retry the route data shortly.</div>';
@@ -5836,7 +5870,7 @@ function render(){
         +'<span class="chip gps-age">'+esc(gpsAge)+'</span>'
         +(r.v.corridorTracked?'<span class="chip route-scan" title="Found farther upstream through this exact timetable journey">route scan</span>':'')
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
-+(r.recovered?'<span class="chip timing" title="Kept live because stronger timetable or journey evidence overruled weak direction or bearing evidence.">GPS recovered</span>':'')
++(r.evidence&&r.evidence.journeyDestinationConflict?'<span class="chip timing" title="Live destination and matched timetable journey disagree; route progress is withheld until they line up.">journey updating</span>':r.recovered?'<span class="chip timing" title="Kept on the board because route or timetable evidence supports the match despite weak GPS or direction confidence.">match retained</span>':'')
 +(!gpsLost&&r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
 +(tight?'<span class="chip tight">Tight</span>':'')
         +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?'last seen':due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'

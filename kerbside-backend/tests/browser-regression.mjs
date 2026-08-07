@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.6'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.7'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -259,7 +259,9 @@ assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows,evidence
 assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
 assert.match(busSource, /function journeyRefComparable\(ref\)/);
 assert.match(busSource, /already listed/);
-assert.match(busSource, /GPS recovered/);
+assert.match(busSource, /match retained/);
+assert.match(busSource, /journey updating/);
+assert.doesNotMatch(busSource, /GPS recovered/);
 assert.doesNotMatch(busSource, /operator GPS unavailable/);
 assert.doesNotMatch(busSource, /GPS received · filtered/);
 assert.match(busSource, /no recent GPS found nearby/);
@@ -376,7 +378,9 @@ assert.match(busSource, /const operator=String\(v\.owner\|\|v\.operator\|\|''\)\
 // the sighting no longer admits the route on its own. Without one it is still
 // the only signal there is, so it keeps its former weight.
 assert.match(busSource, /const authoritative=!!\(S\.ttStop&&S\.timetableSource==='national'&&!S\.timetableFallback&&!S\.ttError\);/);
-assert.match(busSource, /if\(authoritative\) return \{score:1,label:'seen stopping, but not in the timetable for this stop'\};/);
+assert.match(busSource, /if\(authoritative\) return \{score:1,label:'seen stopping, but not in the timetable for this stop',journeyDestinationConflict,conflictingTrip\};/);
+assert.match(busSource, /function journeyDestinationAgreement\(rows,dest\)/);
+assert.match(busSource, /v\.progressIdentityBlocked=conflict&&!inferredPattern/);
 // Learning requires the dwell the app already detects, not merely a slow pass:
 // under 5.5 m/s is 12 mph, which a bus held in traffic meets without stopping.
 assert.match(busSource, /const dwelled=Number\.isFinite\(Number\(v\.stationaryAt\)\);/);
@@ -1635,7 +1639,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.6'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.7'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
