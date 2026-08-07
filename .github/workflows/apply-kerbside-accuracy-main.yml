@@ -162,6 +162,14 @@ jobs:
               browser_test = browser_test.replace(old_assertion, new_assertion, 1)
           browser_test_path.write_text(browser_test, encoding='utf-8')
 
+          audit_test_path = Path('kerbside-backend/tests/audit-regression.mjs')
+          audit_test = audit_test_path.read_text(encoding='utf-8')
+          audit_old = "assert.equal(result.reasonOtherRoute, 'no fresh GPS for this route');"
+          audit_new = "assert.equal(result.reasonOtherRoute, 'no recent GPS for this route');"
+          if audit_test.count(audit_old) != 1:
+              raise SystemExit('Audit regression route GPS wording assertion is missing or ambiguous')
+          audit_test_path.write_text(audit_test.replace(audit_old, audit_new, 1), encoding='utf-8')
+
           subprocess.run(
               [sys.executable, '.github/scripts/sync-version.py'],
               check=True,
