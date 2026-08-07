@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.3';
+const APP_VERSION = '0.7.4';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4238,6 +4238,30 @@ function routeEvidence(line,dest,journey,identity){
   if(rec.count===1) return {score:1,label:'seen once'};
   return {score:0,label:'unverified'};
 }
+const ETA_MIN_FRESH_SECONDS = 30;
+const ETA_MAX_FRESH_SECONDS = 75;
+const ETA_CADENCE_MULTIPLIER = 1.75;
+function etaFreshWindowSeconds(cadence){
+  const seconds=Number(cadence);
+  if(!Number.isFinite(seconds)||seconds<=0) return 45;
+  return Math.max(ETA_MIN_FRESH_SECONDS,Math.min(ETA_MAX_FRESH_SECONDS,seconds*ETA_CADENCE_MULTIPLIER));
+}
+function etaGpsQuality(v,now=Date.now()){
+  const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+  const cadence=Number(v&&v.cadence);
+  const freshWindow=etaFreshWindowSeconds(cadence);
+  return {age,cadence:Number.isFinite(cadence)&&cadence>0?cadence:null,freshWindow,fresh:age<=freshWindow};
+}
+function scheduleEtaBlendWeight(evidence,quality){
+  // Journey identity establishes *which* departure this is; it must not drag a
+  // fresh GPS prediction back towards the static timetable. Fresh live data gets
+  // only a small stabilising correction. Delayed positions may lean slightly
+  // more on schedule, but never at the old 32-42% weights.
+  if(!quality||!quality.fresh) return .12;
+  if(evidence&&evidence.inferredJourney) return .08;
+  if(evidence&&evidence.journeyMatch) return .06;
+  return timetableTrusted(evidence) ? .08 : .10;
+}
 function estimate(v, stop, evidenceOverride, geometryOverride){
   const straight = dist(v.lat,v.lon,stop.lat,stop.lon);
   // collect() has already resolved this vehicle's journey geometry; recomputing
@@ -4249,8 +4273,13 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   let sp = v.speed;
   if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = lineSpeed(v);
   const dwell = (road/1000) * 24;
-  const age = Math.min(Math.max(0,(Date.now()-v.ts)/1000), 75);
-  let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - age*0.35);
+  const quality=etaGpsQuality(v);
+  // Credit elapsed time while the position remains prediction-fresh. Cap the
+  // extrapolation using the bus's own reporting cadence so a delayed feed does
+  // not keep counting down as if the vehicle were still moving normally.
+  const cadenceForAge=quality.cadence||Math.max(10,Number(S.interval)||15);
+  const ageCredit=Math.min(quality.age,Math.max(20,cadenceForAge*1.25),60);
+  let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - ageCredit);
   const liveSecs=spatial;
   const baseJourneyRef=vehicleJourneyRef(v);
   const evidence=evidenceOverride||routeEvidence(v.line,v.dest,baseJourneyRef,v);
@@ -4271,15 +4300,17 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
     const cand=schedules[0], schedSecs=(cand.at-Date.now())/1000;
     if(Math.abs(schedSecs-spatial)<=12*60){
       schedule=cand;
-      const weight=evidence.inferredJourney ? .34 : evidence.journeyMatch ? .42 : timetableTrusted(evidence) ? .32 : .18;
+      const weight=scheduleEtaBlendWeight(evidence,quality);
       spatial=spatial*(1-weight)+Math.max(0,schedSecs)*weight;
     }
   }
   let points=evidence.score + (strength>=2?2:strength===1?1:strength<0?-2:0) + (straight<250?1:0) + (schedule?1:0);
-  const confidence=points>=6?'high':points>=3?'medium':'low';
-  const spread=confidence==='high'?90:confidence==='medium'?210:360;
+  const baseConfidence=points>=6?'high':points>=3?'medium':'low';
+  const confidence=quality.fresh?baseConfidence:'low';
+  const baseSpread=confidence==='high'?90:confidence==='medium'?210:360;
+  const spread=quality.fresh?baseSpread:Math.max(420,baseSpread);
   const learned=LINES[lineLearningKey(v)];
-  return {secs:spatial, liveSecs, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule};
+  return {secs:spatial, liveSecs, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule, predictionDelayed:!quality.fresh, gpsAge:quality.age, gpsFreshWindow:quality.freshWindow};
 }
 
 /* ============================================================
@@ -4506,7 +4537,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
