@@ -1,0 +1,140 @@
+name: Deploy Kerbside ETA accuracy build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Kerbside semantic version for this build
+        required: true
+        default: '0.7.4'
+        type: string
+      mode:
+        description: Validate only, or commit the tested build to main
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-eta-accuracy-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Validate requested version
+        shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be semantic version X.Y.Z"
+            exit 1
+          fi
+          if [[ "$VERSION_INPUT" == "$(cat VERSION)" ]]; then
+            echo "::error::Choose a new version; current VERSION is $(cat VERSION)."
+            exit 1
+          fi
+
+      - name: Apply ETA and GPS freshness build
+        run: node kerbside-backend/scripts/apply-accuracy-build.mjs "${{ inputs.version }}"
+
+      - name: Synchronise version references
+        run: python3 .github/scripts/sync-version.py
+
+      - name: Verify patch invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'function etaFreshWindowSeconds' bus.html
+          grep -Fq 'function scheduleEtaBlendWeight' bus.html
+          grep -Fq 'predictionDelayed:!quality.fresh' bus.html
+          if grep -Fq "evidence.inferredJourney ? .34 : evidence.journeyMatch ? .42" bus.html; then
+            echo '::error::Old heavy schedule blend is still present.'
+            exit 1
+          fi
+          python3 .github/scripts/sync-version.py --check
+
+      - name: Install test dependencies
+        run: npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+
+      - name: Validate JavaScript and unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          print(f'Validated {len(scripts)} inline browser script(s).')
+          PY
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+
+      - name: Install browser engines
+        working-directory: kerbside-backend
+        run: npx playwright install --with-deps webkit chromium
+
+      - name: Run WebKit regression suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+
+      - name: Run Chromium regression suites
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: chromium
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+
+      - name: Show proposed build diff
+        run: git diff --check && git diff --stat && git diff -- bus.html VERSION kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs
+
+      - name: Commit tested build to main
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bus.html VERSION kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs
+          git commit -m "Kerbside ${VERSION_INPUT}: improve ETA GPS freshness"
+          git push origin HEAD:main
