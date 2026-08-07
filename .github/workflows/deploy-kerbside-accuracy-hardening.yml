@@ -63,6 +63,9 @@ jobs:
       - name: Apply location and prediction hardening build
         run: node kerbside-backend/scripts/apply-accuracy-hardening-build.mjs "${{ inputs.version }}"
 
+      - name: Align legacy regressions with hardening semantics
+        run: node kerbside-backend/scripts/apply-accuracy-hardening-test-migrations.mjs
+
       - name: Synchronise version references
         run: python3 .github/scripts/sync-version.py
 
@@ -110,6 +113,7 @@ jobs:
           print(f'Validated {len(scripts)} inline browser script(s).')
           PY
           node --check build-timetable.js
+          node --check kerbside-backend/scripts/apply-accuracy-hardening-test-migrations.mjs
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
@@ -166,6 +170,7 @@ jobs:
             kerbside-backend/package.json \
             kerbside-backend/test/worker.test.js \
             kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/tests/multi-vehicle-regression.mjs \
             .github/workflows/kerbside-check.yml
 
       - name: Commit tested build to main
@@ -188,6 +193,7 @@ jobs:
             kerbside-backend/package.json \
             kerbside-backend/test/worker.test.js \
             kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/tests/multi-vehicle-regression.mjs \
             .github/workflows/kerbside-check.yml
           git diff --cached --check
           git commit -m "Kerbside ${VERSION_INPUT}: harden location and prediction accuracy"
