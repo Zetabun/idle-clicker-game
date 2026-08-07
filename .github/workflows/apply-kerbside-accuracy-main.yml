@@ -1,6 +1,7 @@
 name: Apply validated Kerbside accuracy release
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
