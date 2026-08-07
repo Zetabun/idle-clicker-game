@@ -150,6 +150,11 @@ jobs:
                   r"assert.match(busSource, /function scheduleCandidateReason\(v,now\)/);",
                   'candidate rejection reason helper',
               ),
+              (
+                  r"assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead\)\{/);",
+                  r"assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride\)\{/);",
+                  'journey bearing override guard',
+              ),
           ]
           for old_assertion, new_assertion, label in browser_assertion_replacements:
               if browser_test.count(old_assertion) != 1:
