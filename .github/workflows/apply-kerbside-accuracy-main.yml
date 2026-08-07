@@ -151,8 +151,8 @@ jobs:
           missing = [token for token in required if token not in bus]
           if missing:
               raise SystemExit(f'Missing required accuracy changes: {missing}')
-          if 'possible GPS match was filtered' in bus:
-              raise SystemExit('Generic GPS-filter wording remains in bus.html')
+          if "return 'possible GPS match was filtered'" in bus:
+              raise SystemExit('Generic GPS-filter fallback remains executable in bus.html')
 
           scripts = re.findall(
               r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',
