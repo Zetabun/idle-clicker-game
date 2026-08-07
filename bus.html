@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.2';
+const APP_VERSION = '0.7.3';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1148,7 +1148,7 @@ const S = {
   selected:null,
   timer:null, tick:null, motionTimer:null, busy:false, feedRefreshing:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
-  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
+  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null, scheduledHidden:0,
   timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableUnknownServices:0, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
   routeScanBusy:false, routeScanAbort:null, lastRouteScan:0, routeScanHistory:new Map(),
@@ -1161,6 +1161,10 @@ const DEFAULT_SPEED = 6.2;     // m/s ≈ 14 mph, typical urban bus incl. stops
 const MIN_SPEED = 1.8, MAX_SPEED = 16;
 const GPS_FRESH_MS = 2*60*1000;
 const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but never revive old ghost buses
+const LOCATION_TARGET_ACCURACY_METRES = 60;
+const LOCATION_WARNING_ACCURACY_METRES = 150;
+const LOCATION_FIX_TIMEOUT_MS = 10000;
+const MAX_SCHEDULED_ROWS = 72;
 // How long a drawn journey line may outlive its row while the vehicle is still
 // tracked. Covers a lazy-loading gap, not a bus that has left the feed.
 const JOURNEY_ROUTE_HOLD_MS = 60*1000;
@@ -1630,10 +1634,11 @@ function pickPlace(f){
 /* ============================================================
    Origin, town anchor, stops
    ============================================================ */
-async function setOrigin(lat,lon,label){
+async function setOrigin(lat,lon,label,accuracy){
   const run=++S.locationRun;
   if(S.pollAbort) S.pollAbort.abort();
-  S.origin={lat,lon,label:label||'Chosen point'};
+  const metres=Number(accuracy);
+  S.origin={lat,lon,label:label||'Chosen point',accuracy:Number.isFinite(metres)&&metres>=0?Math.round(metres):null};
   // Never let the previous town centre influence a new search while the
   // replacement anchor lookup is still running.
   S.anchor=null; drawAnchor(); updateDirLabels();
@@ -1654,20 +1659,73 @@ async function setOrigin(lat,lon,label){
   await anchorPromise;
 }
 
+function locationFixFromPosition(position){
+  const coords=position&&position.coords||{};
+  const lat=Number(coords.latitude), lon=Number(coords.longitude), rawAccuracy=Number(coords.accuracy);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)) return null;
+  return {
+    lat,lon,
+    accuracy:Number.isFinite(rawAccuracy)&&rawAccuracy>=0?rawAccuracy:Infinity,
+    timestamp:Number(position&&position.timestamp)||Date.now()
+  };
+}
+function betterLocationFix(current,candidate){
+  if(!candidate) return current||null;
+  if(!current) return candidate;
+  if(candidate.accuracy+5<current.accuracy) return candidate;
+  if(Math.abs(candidate.accuracy-current.accuracy)<=5&&candidate.timestamp>current.timestamp) return candidate;
+  return current;
+}
+let cancelLocationLookup=null;
+function requestBestLocation(onSuccess,onError,maximumAge){
+  if(cancelLocationLookup){ cancelLocationLookup(); cancelLocationLookup=null; }
+  let best=null,done=false,watchId=null,timer=null;
+  const cleanup=()=>{
+    if(timer) clearTimeout(timer);
+    if(watchId!=null&&navigator.geolocation&&navigator.geolocation.clearWatch) navigator.geolocation.clearWatch(watchId);
+  };
+  const finish=error=>{
+    if(done) return;
+    done=true; cleanup(); cancelLocationLookup=null;
+    if(best) onSuccess(best); else onError(error||{code:3});
+  };
+  const accept=position=>{
+    best=betterLocationFix(best,locationFixFromPosition(position));
+    if(best&&best.accuracy<=LOCATION_TARGET_ACCURACY_METRES) finish();
+  };
+  const fail=error=>{
+    if(error&&error.code===1) finish(error);
+    else if(error&&error.code===3&&!best) finish(error);
+  };
+  const options={enableHighAccuracy:true,timeout:LOCATION_FIX_TIMEOUT_MS,maximumAge:Math.max(0,Number(maximumAge)||0)};
+  if(typeof navigator.geolocation.watchPosition==='function'){
+    watchId=navigator.geolocation.watchPosition(accept,fail,options);
+    timer=setTimeout(()=>finish(),LOCATION_FIX_TIMEOUT_MS+250);
+  }else{
+    navigator.geolocation.getCurrentPosition(position=>{accept(position);finish();},finish,options);
+  }
+  cancelLocationLookup=()=>{ if(done) return; done=true; cleanup(); };
+}
+function locationErrorMessage(err){
+  return err&&err.code===1 ? 'Location permission was declined. Type an address instead.'
+    : err&&err.code===3 ? 'Location timed out. Try again or type an address.'
+    : 'Could not get your location.';
+}
+function useDeviceLocation(fix){
+  $('q').value='';
+  setOrigin(fix.lat,fix.lon,'My location',fix.accuracy);
+  if(Number.isFinite(fix.accuracy)&&fix.accuracy>LOCATION_WARNING_ACCURACY_METRES){
+    toast('Your location is only accurate to about '+Math.round(fix.accuracy)+' m. Check that the selected stop is the correct stand.',true);
+  }
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),locationFixFromPosition,betterLocationFix};
+}
 $('locBtn').addEventListener('click', ()=>{
   if(!navigator.geolocation){ toast('This browser has no location support. Type an address instead.',true); return; }
   setStatus('Getting your location','');
-  S.pendingStopId = null;                 // moved on purpose — take the nearest stop again
-  navigator.geolocation.getCurrentPosition(
-    p=>{ $('q').value=''; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
-    err=>{
-      const m = err.code===1 ? 'Location permission was declined. Type an address instead.'
-              : err.code===3 ? 'Location timed out. Try again or type an address.'
-              : 'Could not get your location.';
-      toast(m,true); setStatus('Idle','');
-    },
-    {enableHighAccuracy:true, timeout:9000, maximumAge:30000}
-  );
+  S.pendingStopId = null;
+  requestBestLocation(useDeviceLocation,err=>{ toast(locationErrorMessage(err),true); setStatus('Idle',''); },0);
 });
 $('goBtn').addEventListener('click', ()=>{ const v=$('q').value.trim(); if(v) geocode(v,false); });
 
@@ -4448,7 +4506,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -4573,11 +4631,18 @@ function newLiveDiagnostics(gate){
   return {
     gate:!!gate,received:S.vehicles.size,recent:0,nearby:0,route:0,direction:0,
     approaching:0,confidence:0,recovered:0,shown:0,
-    rejected:{stale:0,range:0,passed:0,route:0,destination:0,direction:0,away:0,confidence:0}
+    rejected:{stale:0,range:0,passed:0,route:0,destination:0,direction:0,away:0,confidence:0,limit:0},
+    vehicleRejections:new Map()
   };
 }
-function rejectLive(diagnostics,reason){
+function noteLiveRejection(diagnostics,v,reason){
+  if(diagnostics&&diagnostics.vehicleRejections&&v&&v.id!=null){
+    diagnostics.vehicleRejections.set(String(v.id),String(reason||''));
+  }
+}
+function rejectLive(diagnostics,reason,v){
   if(diagnostics&&diagnostics.rejected&&reason in diagnostics.rejected) diagnostics.rejected[reason]++;
+  noteLiveRejection(diagnostics,v,reason);
 }
 function retainedSnapshotRow(v,now=Date.now(),gpsLost=true){
   if(!v||!v.lastShownSnapshot||!S.stop) return null;
@@ -4621,7 +4686,7 @@ function holdLive(out,v,diagnostics,reason,now){
 }
 function dropLive(out,v,diagnostics,reason,now){
   if(holdLive(out,v,diagnostics,reason,now)) return;
-  rejectLive(diagnostics,reason);
+  rejectLive(diagnostics,reason,v);
 }
 function relevant(){
   if(!S.stop){ S.liveDiag=null; return []; }
@@ -4649,11 +4714,11 @@ function collect(gate,diagnostics){
   for(const v of S.vehicles.values()){
     const age=now-v.ts;
     const producerExpired=isFinite(Number(v.validUntilAt))&&now>Number(v.validUntilAt);
-    if(producerExpired){ rejectLive(diagnostics,'stale'); continue; }
+    if(producerExpired){ rejectLive(diagnostics,'stale',v); continue; }
     if(age>MAX_AGE_MS){
       const held=retainedSnapshotRow(v,now);
-      if(held) out.push(held);
-      else rejectLive(diagnostics,'stale');
+      if(held){ noteLiveRejection(diagnostics,v,'stale'); out.push(held); }
+      else rejectLive(diagnostics,'stale',v);
       continue;
     }
     if(diagnostics) diagnostics.recent++;
@@ -4664,10 +4729,16 @@ function collect(gate,diagnostics){
     evidence=inferredRouteEvidence(evidence,inference);
     const matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
     const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
+    const matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
+    // An exact timetable journey that is due to call here outranks a
+    // single compass bearing or town-centre movement inference. Measured
+    // retreat from the stop still wins, so a bus that has genuinely
+    // turned away is not kept.
+    const journeyBearingOverride=!!(evidence.journeyMatch&&matchedCallPlausible&&d<=MAX_VEH_DIST&&movementTrend(v,S.stop)>=0);
     v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';
     v.progressPattern=String(inference&&inference.patternId||matchedRow&&matchedRow.pattern||'');
     const geometry=journeyGeometry(v,S.stop);
-    if(geometry && geometry.passed){ rejectLive(diagnostics,'passed'); continue; }
+    if(geometry && geometry.passed){ rejectLive(diagnostics,'passed',v); continue; }
     const corridorFar=!!(v.corridorTracked&&geometry&&geometry.remaining>80&&geometry.remaining<=ROUTE_SCAN_MAX_ROUTE_METRES&&evidence.journeyMatch&&evidence.pathMatch);
     const range=corridorFar?ROUTE_SCAN_MAX_ROUTE_METRES:(gate?FAR_VEH_DIST:1300);
     if(d>range){ dropLive(out,v,diagnostics,'range',now); continue; }
@@ -4693,7 +4764,7 @@ function collect(gate,diagnostics){
     const candidateDest=v.dest || (directionSchedule&&directionSchedule.head) || '';
 
     if(S.destFilter && destinationSimilarity(candidateDest,S.destFilter)<.75){
-      rejectLive(diagnostics,'destination'); continue;
+      rejectLive(diagnostics,'destination',v); continue;
     }
 
     const dir=inferDirection(v), gpsMoveDir=gpsMovementDirection(v);
@@ -4702,7 +4773,7 @@ function collect(gate,diagnostics){
     if(S.dir!=='all'){
       const timetableContradicts=scheduledDir!=='unknown' && scheduledDir!==S.dir;
       const gpsContradicts=gpsMoveDir!=='unknown' && gpsMoveDir!==S.dir;
-      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead)){ dropLive(out,v,diagnostics,'direction',now); continue; }
+      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead&&!journeyBearingOverride)){ dropLive(out,v,diagnostics,'direction',now); continue; }
     }
     if(S.dir!=='all'&&gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir&&!routeAhead){ dropLive(out,v,diagnostics,'direction',now); continue; }
     if(diagnostics) diagnostics.direction++;
@@ -4717,7 +4788,7 @@ function collect(gate,diagnostics){
        the bus recedes before it arrives. The direction gate above already makes
        that exception; without it here, a matched journey was dropped anyway and
        the recovered branch below never got the chance to save it. */
-    if(S.hideAway && strength<0 && d>100 && !routeAhead){
+    if(S.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride){
       dropLive(out,v,diagnostics,'away',now); continue;
     }
     if(diagnostics) diagnostics.approaching++;
@@ -4758,6 +4829,7 @@ function collect(gate,diagnostics){
   }
   out.sort((a,b)=>a.secs-b.secs);
   const limited=out.slice(0,25);
+  for(const row of out.slice(25)) rejectLive(diagnostics,'limit',row.v);
   if(diagnostics) diagnostics.shown=limited.length;
   return limited;
 }
@@ -4776,7 +4848,7 @@ function renderLiveDiagnostics(){
     ['route evidence',d.route],['direction',d.direction],['approaching',d.approaching],
     ['confidence',d.confidence],['recovered',d.recovered],['shown',d.shown]
   ];
-  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence'};
+  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
   const rejected=Object.entries(d.rejected||{}).filter(([,value])=>value>0)
     .map(([reason,value])=>value+' '+rejectionLabels[reason]).join(' · ');
   const upstreamHidden=(Number(S.feedStale)||0)+(Number(S.feedUnknownAge)||0);
@@ -4785,6 +4857,9 @@ function renderLiveDiagnostics(){
     : S.routeScanBoxes
       ? '<br><b>Upstream route scan:</b> '+S.routeScanBoxes+' area'+(S.routeScanBoxes===1?'':'s')+' across '+S.routeScanPatterns+' route pattern'+(S.routeScanPatterns===1?'':'s')+' · '+S.routeScanVehicles+' matching bus'+(S.routeScanVehicles===1?'':'es')+'.'
       : '<br><b>Upstream route scan:</b> waiting for eligible ordered journey patterns.';
+  const scheduledNote=S.scheduledHidden
+    ? '<br><b>Scheduled board:</b> '+S.scheduledHidden+' later departure'+(S.scheduledHidden===1?' is':'s are')+' beyond the first '+MAX_SCHEDULED_ROWS+'.'
+    : '';
   el.innerHTML='<div class="diag-title">Live matching for this stop</div><div class="diag-grid">'
     +stages.map(([label,value])=>'<span><b>'+value+'</b><small>'+esc(label)+'</small></span>').join('')
     +'</div><div class="diag-note">Counts narrow from fresh BODS positions to the buses shown for this stop. '
@@ -4792,7 +4867,7 @@ function renderLiveDiagnostics(){
     +(d.recovered?'Recovered buses were kept because an exact journey, route path or matching scheduled call outweighed weaker bearing or town-centre direction evidence. ':'')
     +(rejected?'<br><b>Filtered:</b> '+esc(rejected)+'. ':'')
     +(upstreamHidden?'<br><b>Hidden before matching:</b> '+upstreamHidden+' stale or timestamp-invalid BODS positions.':'')
-    +routeScanNote+(S.routeScanError?'<br><b>Route scan note:</b> '+esc(S.routeScanError)+'.':'')
+    +routeScanNote+scheduledNote+(S.routeScanError?'<br><b>Route scan note:</b> '+esc(S.routeScanError)+'.':'')
     +'</div>';
 }
 
@@ -4957,40 +5032,64 @@ function journeyRefComparable(ref){
   if(meaningfulTripTokens(value).length) return true;
   return compactTripRef(value).length>=12;
 }
-function scheduleLiveReason(schedule,liveRows){
+function scheduleIdentityEvidence(schedule,v,evidenceCache){
+  if(!schedule||!v||String(v.line)!==String(schedule.line)) return null;
+  if(routeIdentityAgreement(schedule,v)<0) return null;
+  if(schedule.head&&v.dest&&destinationSimilarity(v.dest,schedule.head)<.34) return null;
+  const key=String(v.id||'');
+  let evidence=key&&evidenceCache&&evidenceCache.get(key);
+  if(!evidence){
+    evidence=routeEvidence(v.line,v.dest,vehicleJourneyRef(v),v);
+    if(key&&evidenceCache) evidenceCache.set(key,evidence);
+  }
+  return schedule.trip&&evidence&&String(evidence.matchedTrip||'')===String(schedule.trip)?evidence:null;
+}
+function scheduleCandidateReason(v,now){
+  const rejection=S.liveDiag&&S.liveDiag.vehicleRejections&&S.liveDiag.vehicleRejections.get(String(v.id));
+  const decisive=new Set(['passed','direction','destination']);
+  if(now-Number(v.ts)>GPS_FRESH_MS&&!decisive.has(rejection)) return 'matching GPS is delayed';
+  const labels={
+    stale:'matching GPS signal is lost',
+    range:'matching GPS is outside tracking range',
+    passed:'matching bus has already passed this stop',
+    route:'matching GPS route could not be verified',
+    destination:'matching GPS destination was filtered',
+    direction:'matching GPS is for the other direction',
+    away:'matching GPS is moving away',
+    confidence:'matching GPS confidence is too low',
+    limit:'matching live bus is lower on the board'
+  };
+  return labels[rejection]||'matching GPS is awaiting route verification';
+}
+function scheduleLiveReason(schedule,liveRows,evidenceCache){
   if(S.demo) return 'simulator only';
   if(S.feedFallback) return 'live feed delayed';
   const now=Date.now();
-  const fresh=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
-  if(!fresh.length) return 'no fresh GPS found nearby';
-  const sameLineAll=fresh.filter(v=>String(v.line)===String(schedule.line));
-  if(!sameLineAll.length) return 'no fresh GPS for this route';
-  /* A bus already listed against another departure is not a candidate for this
-     one. Counting it made every later departure on a busy route report a
-     matching failure when the truth was simply that its own bus has not started
-     yet — the commonest reason a scheduled row has no live bus, and the one this
-     never said. */
+  const recent=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
+  if(!recent.length) return 'no recent GPS found nearby';
+  const sameLineAll=recent.filter(v=>String(v.line)===String(schedule.line));
+  if(!sameLineAll.length) return 'no recent GPS for this route';
   const listed=new Set((Array.isArray(liveRows)?liveRows:[])
     .map(row=>String(row&&row.v&&row.v.id||'')).filter(Boolean));
   const sameLine=sameLineAll.filter(v=>!listed.has(String(v.id)));
   if(!sameLine.length) return sameLineAll.length>1
     ? 'the live buses on this route are already listed'
     : 'the live bus on this route is already listed';
-  const sameBranch=sameLine.filter(v=>!schedule.head || !v.dest || destinationSimilarity(v.dest,schedule.head)>=.34);
-  if(!sameBranch.length) return 'destination match uncertain';
+  const sameBranch=sameLine.filter(v=>routeIdentityAgreement(schedule,v)>=0
+    &&(!schedule.head||!v.dest||destinationSimilarity(v.dest,schedule.head)>=.34));
+  if(!sameBranch.length) return 'destination or operator match uncertain';
+  const identityMatches=sameBranch.filter(v=>scheduleIdentityEvidence(schedule,v,evidenceCache));
+  if(identityMatches.length===1) return scheduleCandidateReason(identityMatches[0],now);
+  if(identityMatches.length>1) return 'journey identity is shared by more than one bus';
   const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
-  if(liveTrip.items.length) return 'possible GPS match was filtered';
-  if(liveTrip.ambiguous) return 'possible GPS match ambiguous';
-  /* Origin departure time is the identifier that actually crosses between the
-     two feeds, so it decides this once the shard carries one. */
+  if(liveTrip.ambiguous) return 'possible GPS journey match is ambiguous';
+  if(liveTrip.items.length) return 'journey code match could not be verified';
   if(Number.isFinite(Number(schedule.originAt))){
     const originLive=sameBranch.filter(v=>originTimeMatches(schedule,v));
-    if(originLive.length===1) return 'possible GPS match was filtered';
-    if(originLive.length>1) return 'origin departure shared by more than one bus';
+    if(originLive.length>1) return 'origin departure is shared by more than one bus';
+    if(originLive.length===1) return 'origin departure is not unique in the timetable';
     if(!sameBranch.some(v=>Number.isFinite(Number(v.aimedOriginAt))))
       return 'operator publishes no origin departure time';
-    // Origin times on both sides and none of them is this departure: its bus
-    // has not started yet, which is the ordinary reason and was never said.
     return 'no bus is working this departure yet';
   }
   if(!journeyRefComparable(schedule.trip)||!sameBranch.some(v=>journeyRefComparable(v.journey)))
@@ -5003,10 +5102,10 @@ function scheduleLiveReason(schedule,liveRows){
 function claimedScheduleFor(row){ return row&&!row.gpsLost?(row.schedule||row.matchedSchedule||null):null; }
 function scheduleClaimedByLive(row){ return !!claimedScheduleFor(row); }
 function scheduledBoardRows(liveRows){
-  if(!S.ttStop) return [];
-  const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set();
+  if(!S.ttStop){ S.scheduledHidden=0; return []; }
+  const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set(), evidenceCache=new Map();
   liveRows.forEach(r=>{ const s=claimedScheduleFor(r); if(s) claimed.add(scheduleKey(s)); });
-  return timetableRows(new Date(now)).filter(r=>{
+  const eligible=timetableRows(new Date(now)).filter(r=>{
     if(r.at<now-60000 || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
     const rowDir=scheduledJourneyDirection(r);
@@ -5014,8 +5113,10 @@ function scheduledBoardRows(liveRows){
     const key=scheduleKey(r);
     if(claimed.has(key) || seen.has(key)) return false;
     seen.add(key); return true;
-  }).sort((a,b)=>a.at-b.at).slice(0,36)
-    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule,liveRows)}));
+  }).sort((a,b)=>a.at-b.at);
+  S.scheduledHidden=Math.max(0,eligible.length-MAX_SCHEDULED_ROWS);
+  return eligible.slice(0,MAX_SCHEDULED_ROWS)
+    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule,liveRows,evidenceCache)}));
 }
 function liveTimingLabel(r){
   if(r.gpsLost||!r.schedule) return '';
@@ -6239,13 +6340,10 @@ if(saved && saved.origin && isFinite(saved.origin.lat)){
   $('q').value = saved.origin.label || '';
   setOrigin(saved.origin.lat, saved.origin.lon, saved.origin.label);
 } else if(navigator.geolocation){
-  // Nothing saved — the whole point is to walk up and open it.
+  // Nothing saved — refine the first phone fix briefly so a cached or
+  // wide-accuracy position does not silently select the opposite stand.
   setStatus('Finding you','');
-  navigator.geolocation.getCurrentPosition(
-    p=>{ $('q').value=''; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
-    ()=>{ setStatus('Search a place or use the locate button',''); },
-    {enableHighAccuracy:true, timeout:9000, maximumAge:60000}
-  );
+  requestBestLocation(useDeviceLocation,()=>{ setStatus('Search a place or use the locate button',''); },15000);
 }
 
 // Browser page zoom remains available for accessibility. Mobile form

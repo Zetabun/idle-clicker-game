@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.2'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.3'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -210,7 +210,7 @@ assert.doesNotMatch(busSource, /function renderSelectedJourney\(rows\)\{\n  rout
 assert.match(busSource, /function meaningfulTripTokens\(value\)/);
 assert.match(busSource, /function tripRefMatchStrength\(a,b\)/);
 assert.match(busSource, /function uniqueCompatibleTrips\(items,journey,getRef\)/);
-assert.match(busSource, /possible GPS match ambiguous/);
+assert.match(busSource, /possible GPS journey match is ambiguous/);
 assert.match(busSource, /function timetableDirection\(value\)/);
 assert.match(busSource, /function scheduledJourneyDirection\(row\)/);
 assert.match(busSource, /direction==='inbound'/);
@@ -255,17 +255,17 @@ assert.match(busSource, /no bus is working this departure yet/);
 /* The reason a scheduled row has no live bus must know which buses are already
    listed against other departures, or a route running normally reports a
    matching failure on every later row. */
-assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows\)/);
-assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows\)/);
+assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
+assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
 assert.match(busSource, /function journeyRefComparable\(ref\)/);
 assert.match(busSource, /already listed/);
 assert.match(busSource, /GPS recovered/);
 assert.doesNotMatch(busSource, /operator GPS unavailable/);
 assert.doesNotMatch(busSource, /GPS received · filtered/);
-assert.match(busSource, /no fresh GPS found nearby/);
-assert.match(busSource, /no fresh GPS for this route/);
-assert.match(busSource, /destination match uncertain/);
-assert.match(busSource, /possible GPS match was filtered/);
+assert.match(busSource, /no recent GPS found nearby/);
+assert.match(busSource, /no recent GPS for this route/);
+assert.match(busSource, /destination or operator match uncertain/);
+assert.match(busSource, /function scheduleCandidateReason\(v,now\)/);
 assert.match(busSource, /no unique journey match/);
 assert.match(busSource, /function versionedDataUrl\(path,built\)/);
 assert.match(busSource, /DATA_TILE_CACHE\.clear\(\); DATA_TILE_NEGATIVE\.clear\(\); DATA_DEPARTURE_CACHE\.clear\(\); DATA_PATTERN_SHARD_CACHE\.clear\(\); DATA_PATTERN_RETRY\.clear\(\); PATTERN_CACHE\.clear\(\);/);
@@ -385,7 +385,7 @@ assert.doesNotMatch(busSource, /const slow=\(v\.speed!=null && isFinite\(v\.spee
 // so what hideAway still governs is the case with no geometry, where strength
 // falls back to a straight-line trend. It must not overrule an ordered pattern
 // that places the bus short of the stop with route still to run.
-assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead\)\{/);
+assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride\)\{/);
 assert.doesNotMatch(busSource, /Drops anything already past your stop/);
 // Name where the buses go, not a compass point or a town no route here visits.
 assert.match(busSource, /function stopDestinationNames\(\)/);
@@ -1630,7 +1630,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.2'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.3'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

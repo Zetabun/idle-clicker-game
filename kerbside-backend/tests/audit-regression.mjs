@@ -52,7 +52,12 @@ try {
       timetableRun: state.timetableRun,
       onlyServing: state.onlyServing,
       selected: state.selected,
-      vehicles: state.vehicles
+      vehicles: state.vehicles,
+      hideAway: state.hideAway,
+      dir: state.dir,
+      liveDiag: state.liveDiag,
+      scheduledHidden: state.scheduledHidden,
+      timetableRegion: state.timetableRegion
     };
     try {
       const now = new Date();
@@ -66,7 +71,8 @@ try {
           [minutes + 1, '1', 'Other Branch', '', '', 'TRIP-B', '', 'ROUTE-B', 'OP-B', 20, minutes - 20]
         ]
       };
-      state.timetable = { services: {}, tripPatterns: {}, patterns: {} };
+      state.timetable = { services: {}, tripPatterns: { 'TRIP-A': 'aa-pattern', 'TRIP-B': 'bb-pattern' }, patterns: {} };
+      state.timetableRegion = '';
       state.timetableSource = 'national';
       state.timetableFallback = false;
       state.ttError = null;
@@ -115,7 +121,24 @@ try {
       });
       // Two journeys sharing an origin minute must abstain rather than guess.
       const sharedOrigin = api.uniqueOriginTrips(
-        [{ trip: 'TRIP-A', originAt: 1000 }, { trip: 'TRIP-B', originAt: 1000 }], { aimedOriginAt: 1000 });
+      [{ trip: 'TRIP-A', originAt: 1000 }, { trip: 'TRIP-B', originAt: 1000 }], { aimedOriginAt: 1000 });
+
+      /* A uniquely identified journey due to call here must not be lost
+         solely because one bearing points away while its ordered pattern
+         shard is still loading. Measured movement away remains a hard
+         rejection; this fixture has only a bearing and no retreat trend. */
+      const bearingOnlyBus = {
+        id: 'bearing-only', line: '1', lineRef: 'ROUTE-A', owner: 'OP-A', operator: 'OP-A',
+        dest: 'Town Centre', journey: '', aimedOriginAt: tripARow.originAt,
+        lat: 52.501, lon: -1.9, bearing: 0, ts: Date.now(), hist: [], corridorTracked: false
+      };
+      state.vehicles = new Map([[bearingOnlyBus.id, bearingOnlyBus]]);
+      state.hideAway = true;
+      state.dir = 'all';
+      state.onlyServing = true;
+      const bearingOverrideRows = api.relevant();
+      const bearingOverrideKept = bearingOverrideRows.some(row => row.v.id === bearingOnlyBus.id);
+      const bearingOverrideRecovered = bearingOverrideRows.some(row => row.v.id === bearingOnlyBus.id && row.recovered);
 
       const wrongBranch = api.routeEvidence('1', 'Other Branch', '', { owner: 'OP-A', operator: 'OP-A', lineRef: 'ROUTE-A' });
       const correctOperator = api.routeEvidence('1', 'Other Branch', '', { owner: 'OP-B', operator: 'OP-B', lineRef: 'ROUTE-B' });
@@ -141,7 +164,7 @@ try {
          keys journeys as VJ<hex>. It also counted buses already listed against
          an earlier departure, so a route running normally reported a matching
          failure on every later row. */
-      const savedFeed = { demo: state.demo, feedFallback: state.feedFallback, vehicles: state.vehicles };
+      const savedFeed = { demo: state.demo, feedFallback: state.feedFallback, vehicles: state.vehicles, liveDiag: state.liveDiag };
       state.demo = false;
       state.feedFallback = false;
       const reasonNow = Date.now();
@@ -160,12 +183,29 @@ try {
       /* Once the shard carries an origin time the reason stops talking about
          journey codes: either a live bus is working this departure or none is. */
       const reasonOriginNoBus = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow + 30 * 60000 }, []);
-      const reasonOriginMatched = api.scheduleLiveReason({ ...laterRow, originAt: bus61Origin }, []);
+      const matchedSchedule = { ...tripARow };
+      const matchedBus = {
+        id: 'matched-origin', line: '1', lineRef: 'ROUTE-A', owner: 'OP-A', operator: 'OP-A',
+        dest: 'Town Centre', journey: '', aimedOriginAt: tripARow.originAt,
+        lat: 52.501, lon: -1.9, bearing: 180, ts: reasonNow - 20000, hist: []
+      };
+      state.vehicles = new Map([[matchedBus.id, matchedBus]]);
+      state.liveDiag = api.newLiveDiagnostics(true);
+      api.noteLiveRejection(state.liveDiag, matchedBus, 'direction');
+      const reasonOriginFiltered = api.scheduleLiveReason(matchedSchedule, []);
+      state.liveDiag = api.newLiveDiagnostics(true);
+      api.noteLiveRejection(state.liveDiag, matchedBus, 'limit');
+      const reasonOriginBoardLimit = api.scheduleLiveReason(matchedSchedule, []);
+      const delayedMatchedBus = { ...matchedBus, id: 'matched-delayed', ts: reasonNow - 3 * 60000 };
+      state.vehicles = new Map([[delayedMatchedBus.id, delayedMatchedBus]]);
+      state.liveDiag = api.newLiveDiagnostics(true);
+      api.noteLiveRejection(state.liveDiag, delayedMatchedBus, 'route');
+      const reasonOriginDelayed = api.scheduleLiveReason(matchedSchedule, []);
       state.vehicles = new Map([['noOrigin', { ...bus61, id: 'noOrigin', aimedOriginAt: NaN }]]);
+      state.liveDiag = null;
       const reasonNoOriginPublished = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow + 30 * 60000 }, []);
       state.vehicles = new Map([[bus61.id, bus61]]);
       const reasonOtherRoute = api.scheduleLiveReason({ line: '99', head: 'Elsewhere', at: reasonNow + 600000, trip: gtfsTrip('c') }, []);
-      // A feed that does publish a comparable reference must still be judged.
       const comparableBus = { ...bus61, id: 'comparable', journey: 'operator:trip-AB99999999' };
       state.vehicles = new Map([['comparable', comparableBus]]);
       const reasonComparable = api.scheduleLiveReason({ line: '61', head: 'City Centre', at: reasonNow + 35 * 60000, trip: 'trip-AB12345678' }, []);
@@ -222,11 +262,32 @@ try {
 
       const timingNow = Date.now();
       const timingLabel = api.liveTimingLabel({
-        gpsLost: false,
-        schedule: { at: timingNow + 10 * 60000 },
-        secs: 15.8 * 60,
-        liveSecs: 20 * 60
-      });
+      gpsLost: false,
+      schedule: { at: timingNow + 10 * 60000 },
+      secs: 15.8 * 60,
+      liveSecs: 20 * 60
+    });
+
+      const capBase = new Date();
+      const capMinute = capBase.getHours() * 60 + capBase.getMinutes() + 5;
+      state.ttStop = {
+        id: 'STOP',
+        d: Array.from({ length: 90 }, (_, index) => [capMinute + index, 'C', 'Cap Test', '', '', `CAP-${index}`, '', `ROUTE-${index}`, 'OP-A', index, capMinute])
+      };
+      state.timetable = { services: {}, tripPatterns: {}, patterns: {} };
+      state.timetableRun = Number(state.timetableRun || 0) + 1;
+      state.vehicles = new Map();
+      state.demo = false;
+      state.feedFallback = false;
+      state.dir = 'all';
+      state.destFilter = null;
+      const cappedScheduledRows = api.scheduledBoardRows([]);
+
+      const accurateFix = { id: 'accurate', accuracy: 35, timestamp: 1000 };
+      const wideFix = { id: 'wide', accuracy: 140, timestamp: 2000 };
+      const newerFix = { id: 'newer', accuracy: 38, timestamp: 3000 };
+      const betterAccuracyChosen = api.betterLocationFix(wideFix, accurateFix).id;
+      const newerEquivalentChosen = api.betterLocationFix(accurateFix, newerFix).id;
 
       return {
         opaqueAgreement,
@@ -253,12 +314,16 @@ try {
         originMissScore: originMiss.score,
         originMissFlag: !!originMiss.originMatch,
         sharedOriginAmbiguous: sharedOrigin.ambiguous,
-        sharedOriginItems: sharedOrigin.items.length,
+      sharedOriginItems: sharedOrigin.items.length,
+      bearingOverrideKept,
+      bearingOverrideRecovered,
         reasonWhenListed,
         reasonWhenFree,
         reasonOriginNoBus,
-        reasonOriginMatched,
-        reasonNoOriginPublished,
+      reasonOriginFiltered,
+      reasonOriginBoardLimit,
+      reasonOriginDelayed,
+      reasonNoOriginPublished,
         reasonOtherRoute,
         reasonComparable,
         numericRefComparable: api.journeyRefComparable('0023'),
@@ -279,7 +344,11 @@ try {
         filteredIds,
         unfilteredIds,
         repeatedStopIndex,
-        timingLabel
+      timingLabel,
+      cappedScheduledRows: cappedScheduledRows.length,
+      scheduledHidden: state.scheduledHidden,
+      betterAccuracyChosen,
+      newerEquivalentChosen
       };
     } finally {
       Object.assign(state, saved);
@@ -314,12 +383,16 @@ try {
   assert.equal(result.originMissFlag, false);
   assert.equal(result.sharedOriginAmbiguous, true, 'two journeys sharing an origin minute must abstain');
   assert.equal(result.sharedOriginItems, 0);
+  assert.equal(result.bearingOverrideKept, true, 'an exact journey must survive a bearing-only away reading while route geometry loads');
+  assert.equal(result.bearingOverrideRecovered, true, 'the kept row should disclose that stronger journey evidence recovered it');
   assert.equal(result.reasonOriginNoBus, 'no bus is working this departure yet');
-  assert.equal(result.reasonOriginMatched, 'possible GPS match was filtered');
+  assert.equal(result.reasonOriginFiltered, 'matching GPS is for the other direction');
+  assert.equal(result.reasonOriginBoardLimit, 'matching live bus is lower on the board');
+  assert.equal(result.reasonOriginDelayed, 'matching GPS is delayed');
   assert.equal(result.reasonNoOriginPublished, 'operator publishes no origin departure time');
   assert.match(result.reasonWhenListed, /already listed/, 'a bus listed against another departure is not a failed match');
   assert.equal(result.reasonWhenFree, 'operator publishes no matchable journey code');
-  assert.equal(result.reasonOtherRoute, 'no fresh GPS for this route');
+  assert.equal(result.reasonOtherRoute, 'no recent GPS for this route');
   assert.equal(result.reasonComparable, 'no unique journey match', 'a comparable reference is still judged on its merits');
   assert.equal(result.numericRefComparable, false, 'a short numeric journey code cannot match a GTFS trip id');
   assert.equal(result.gtfsRefComparable, true);
@@ -337,6 +410,10 @@ try {
   assert.deepEqual(result.unfilteredIds, ['observed', 'right', 'wrong']);
   assert.equal(result.repeatedStopIndex, 2);
   assert.equal(result.timingLabel, '10 min late');
+  assert.equal(result.cappedScheduledRows, 72, 'the board should retain twice the former scheduled-row capacity');
+  assert.equal(result.scheduledHidden, 18, 'later rows beyond the explicit cap must be counted, not silently forgotten');
+  assert.equal(result.betterAccuracyChosen, 'accurate', 'a materially more accurate phone fix must beat a newer wide fix');
+  assert.equal(result.newerEquivalentChosen, 'newer', 'equally accurate fixes should prefer the newer observation');
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside audit regressions passed.');
 } finally {
