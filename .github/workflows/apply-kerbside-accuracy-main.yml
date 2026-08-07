@@ -108,6 +108,20 @@ jobs:
           namespace = {'__name__': '__kerbside_accuracy_release__'}
           exec(patch, namespace, namespace)
 
+          # The reviewed 0.7.3 application wording changed the ambiguity message,
+          # but the static browser regression still pinned the pre-0.7.3 text.
+          # Update only that one stale assertion and fail closed if it drifts.
+          browser_test_path = Path('kerbside-backend/tests/browser-regression.mjs')
+          browser_test = browser_test_path.read_text(encoding='utf-8')
+          old_assertion = "assert.match(busSource, /possible GPS match ambiguous/);"
+          new_assertion = "assert.match(busSource, /possible GPS journey match is ambiguous/);"
+          if browser_test.count(old_assertion) != 1:
+              raise SystemExit('Browser ambiguity regression assertion is missing or ambiguous')
+          browser_test_path.write_text(
+              browser_test.replace(old_assertion, new_assertion, 1),
+              encoding='utf-8',
+          )
+
           subprocess.run(
               [sys.executable, '.github/scripts/sync-version.py'],
               check=True,
