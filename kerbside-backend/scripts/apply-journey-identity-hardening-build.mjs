@@ -218,12 +218,20 @@ fs.writeFileSync(packagePath,JSON.stringify(pkg,null,2)+'\n','utf8');
 
 const browserRegressionPath='kerbside-backend/tests/browser-regression.mjs';
 let browserRegression=fs.readFileSync(browserRegressionPath,'utf8');
-const legacyRecoveredAssertion='assert.match(busSource, /GPS recovered/);';
-const recoveredAssertionCount=browserRegression.split(legacyRecoveredAssertion).length-1;
-if(recoveredAssertionCount!==1) throw new Error(`browser wording migration: expected exactly one legacy GPS recovered assertion, found ${recoveredAssertionCount}`);
-browserRegression=browserRegression.replace(
-  legacyRecoveredAssertion,
+function replaceBrowserAssertion(label,oldText,newText){
+  const count=browserRegression.split(oldText).length-1;
+  if(count!==1) throw new Error(`${label}: expected exactly one legacy assertion, found ${count}`);
+  browserRegression=browserRegression.replace(oldText,newText);
+}
+replaceBrowserAssertion(
+  'browser wording migration',
+  'assert.match(busSource, /GPS recovered/);',
   "assert.match(busSource, /match retained/);\nassert.match(busSource, /journey updating/);\nassert.doesNotMatch(busSource, /GPS recovered/);"
+);
+replaceBrowserAssertion(
+  'authoritative route evidence migration',
+  "assert.match(busSource, /if\\(authoritative\\) return \\{score:1,label:'seen stopping, but not in the timetable for this stop'\\};/);",
+  "assert.match(busSource, /if\\(authoritative\\) return \\{score:1,label:'seen stopping, but not in the timetable for this stop',journeyDestinationConflict,conflictingTrip\\};/);\nassert.match(busSource, /function journeyDestinationAgreement\\(rows,dest\\)/);\nassert.match(busSource, /v\\.progressIdentityBlocked=conflict&&!inferredPattern/);"
 );
 fs.writeFileSync(browserRegressionPath,browserRegression,'utf8');
 
