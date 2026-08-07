@@ -1,16 +1,17 @@
 {
   "name": "kerbside-backend",
   "private": true,
-  "version": "0.7.4",
+  "version": "0.7.5",
   "type": "module",
   "scripts": {
-    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs && node --check tests/identity-regression.mjs && node --check tests/multi-vehicle-regression.mjs && node --check tests/audit-regression.mjs",
+    "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs && node --check tests/identity-regression.mjs && node --check tests/multi-vehicle-regression.mjs && node --check tests/audit-regression.mjs && node --check tests/accuracy-hardening-regression.mjs",
     "test": "node --test",
     "test:browser": "node tests/browser-regression.mjs",
     "test:identity": "node tests/identity-regression.mjs",
     "test:multi-vehicle": "node tests/multi-vehicle-regression.mjs",
     "test:audit": "node tests/audit-regression.mjs",
-    "vendor:leaflet": "node scripts/vendor-leaflet.js"
+    "vendor:leaflet": "node scripts/vendor-leaflet.js",
+    "test:accuracy-hardening": "node tests/accuracy-hardening-regression.mjs"
   },
   "devDependencies": {
     "leaflet": "1.9.4",

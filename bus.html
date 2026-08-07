@@ -1065,7 +1065,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.4';
+const APP_VERSION = '0.7.5';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1138,7 +1138,7 @@ const S = {
   demo:!(MY_KEY || MY_PROXY), hideAway:true, remember:true, onlyServing:true,
   dir:'all',                // 'in' | 'out' | 'all'
   theme:'dark',             // 'dark' | 'crystal'
-  origin:null,              // {lat,lon,label}
+  origin:null,              // {lat,lon,label,accuracy,source:'manual'|'device'}
   anchor:null,              // town centre {lat,lon,name}
   stops:[], stop:null, pendingStopId:null, loadingRoutes:false, filterFellBack:false, manualStop:false,
   destFilter:null,          // reset per stop; never leaks between stops
@@ -1560,6 +1560,9 @@ function cancelGeocode(){
   if(geocodeAbort){ geocodeAbort.abort(); geocodeAbort=null; }
 }
 $('q').addEventListener('input', e=>{
+  // Typing is an explicit location choice. Invalidate any outstanding device
+  // lookup immediately so a late GPS callback cannot overwrite the search.
+  cancelPendingDeviceLocation();
   const v=e.target.value.trim();
   clearTimeout(sugTimer);
   if(v.length<3){ cancelGeocode(); hideSuggest(); return; }
@@ -1634,11 +1637,26 @@ function pickPlace(f){
 /* ============================================================
    Origin, town anchor, stops
    ============================================================ */
-async function setOrigin(lat,lon,label,accuracy){
+let cancelLocationLookup=null;
+let locationLookupGeneration=0;
+function savedOriginSource(origin){
+  const explicit=String(origin&&origin.source||'').toLowerCase();
+  if(explicit==='device'||explicit==='manual') return explicit;
+  // Releases before 0.7.5 did not persist a source flag. "My location" was
+  // exclusively produced by geolocation, so it is the safe legacy migration.
+  return String(origin&&origin.label||'')==='My location'?'device':'manual';
+}
+function cancelPendingDeviceLocation(){
+  locationLookupGeneration++;
+  if(cancelLocationLookup){ cancelLocationLookup(); cancelLocationLookup=null; }
+}
+async function setOrigin(lat,lon,label,accuracy,sourceKind){
+  const originSource=sourceKind==='device'?'device':'manual';
+  if(originSource!=='device') cancelPendingDeviceLocation();
   const run=++S.locationRun;
   if(S.pollAbort) S.pollAbort.abort();
   const metres=Number(accuracy);
-  S.origin={lat,lon,label:label||'Chosen point',accuracy:Number.isFinite(metres)&&metres>=0?Math.round(metres):null};
+  S.origin={lat,lon,label:label||'Chosen point',accuracy:Number.isFinite(metres)&&metres>=0?Math.round(metres):null,source:originSource};
   // Never let the previous town centre influence a new search while the
   // replacement anchor lookup is still running.
   S.anchor=null; drawAnchor(); updateDirLabels();
@@ -1676,24 +1694,26 @@ function betterLocationFix(current,candidate){
   if(Math.abs(candidate.accuracy-current.accuracy)<=5&&candidate.timestamp>current.timestamp) return candidate;
   return current;
 }
-let cancelLocationLookup=null;
 function requestBestLocation(onSuccess,onError,maximumAge){
-  if(cancelLocationLookup){ cancelLocationLookup(); cancelLocationLookup=null; }
+  cancelPendingDeviceLocation();
+  const generation=locationLookupGeneration;
   let best=null,done=false,watchId=null,timer=null;
   const cleanup=()=>{
     if(timer) clearTimeout(timer);
     if(watchId!=null&&navigator.geolocation&&navigator.geolocation.clearWatch) navigator.geolocation.clearWatch(watchId);
   };
   const finish=error=>{
-    if(done) return;
+    if(done||generation!==locationLookupGeneration) return;
     done=true; cleanup(); cancelLocationLookup=null;
     if(best) onSuccess(best); else onError(error||{code:3});
   };
   const accept=position=>{
+    if(done||generation!==locationLookupGeneration) return;
     best=betterLocationFix(best,locationFixFromPosition(position));
     if(best&&best.accuracy<=LOCATION_TARGET_ACCURACY_METRES) finish();
   };
   const fail=error=>{
+    if(done||generation!==locationLookupGeneration) return;
     if(error&&error.code===1) finish(error);
     else if(error&&error.code===3&&!best) finish(error);
   };
@@ -1713,7 +1733,7 @@ function locationErrorMessage(err){
 }
 function useDeviceLocation(fix){
   $('q').value='';
-  setOrigin(fix.lat,fix.lon,'My location',fix.accuracy);
+  setOrigin(fix.lat,fix.lon,'My location',fix.accuracy,'device');
   if(Number.isFinite(fix.accuracy)&&fix.accuracy>LOCATION_WARNING_ACCURACY_METRES){
     toast('Your location is only accurate to about '+Math.round(fix.accuracy)+' m. Check that the selected stop is the correct stand.',true);
   }
@@ -2325,13 +2345,35 @@ function mergeDiscoveredStops(primary,secondary,lat,lon){
   }
   return out.sort((a,b)=>a.d-b.d).slice(0,120);
 }
+function stopSelectionCandidates(stops,origin){
+  if(savedOriginSource(origin)!=='device') return [];
+  const accuracy=Number(origin&&origin.accuracy);
+  if(!Number.isFinite(accuracy)||accuracy<=0) return [];
+  return (Array.isArray(stops)?stops:[])
+    .filter(stop=>stop&&Number.isFinite(Number(stop.d))&&Number(stop.d)<=accuracy)
+    .sort((a,b)=>Number(a.d)-Number(b.d));
+}
+function stopSelectionNeedsChoice(stops,origin){
+  return stopSelectionCandidates(stops,origin).length>=2;
+}
+function chooseDiscoveredStop(wanted){
+  if(wanted){ selectStop(wanted); return true; }
+  if(stopSelectionNeedsChoice(S.stops,S.origin)){
+    $('stopName').textContent='Choose the correct stop';
+    $('stopMeta').textContent='GPS ACCURACY COVERS MORE THAN ONE STAND';
+    openStopPicker('Your GPS position covers more than one nearby stand. Choose the stop you are waiting at.');
+    return false;
+  }
+  selectStop(S.stops[0]);
+  return true;
+}
 function showDiscoveredStops(stops,lat,lon,cacheable){
   S.stops=mergeDiscoveredStops([],stops,lat,lon);
   drawStops();
   if(cacheable&&S.stops.length) writeStopCache(lat,lon,S.radius,S.stops,S.anchor);
   if(!S.stops.length) return false;
   const want=S.pendingStopId?S.stops.find(stop=>String(stop.id)===String(S.pendingStopId)):null;
-  S.pendingStopId=null; selectStop(want||S.stops[0]); return true;
+  S.pendingStopId=null; chooseDiscoveredStop(want); return true;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),stopCacheKey,readStopCache,writeStopCache,sameDiscoveredStop,mergeDiscoveredStops,stopMarkerSvg};
@@ -2351,7 +2393,7 @@ async function findStops(lat,lon,run){
     // instead of the saved one.
     const want = S.pendingStopId ? S.stops.find(s=>String(s.id)===String(S.pendingStopId)) : null;
     S.pendingStopId = null;
-    selectStop(want || S.stops[0]);
+    chooseDiscoveredStop(want);
     return;
   }
   const officialResult=await fetchOfficialStops(lat,lon,S.radius);
@@ -2497,49 +2539,87 @@ function parseDepMinutes(value){
   const m=String(value||'').match(/^(\d{1,3}):(\d{2})/);
   return m ? Number(m[1])*60+Number(m[2]) : NaN;
 }
-function localMidnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
 const PATTERN_CACHE = new Map();
-function ymd(d){
-  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-  return ''+y+m+day;
+const UK_TIME_ZONE = 'Europe/London';
+const UK_CLOCK = new Intl.DateTimeFormat('en-GB-u-ca-gregory',{
+  timeZone:UK_TIME_ZONE,year:'numeric',month:'2-digit',day:'2-digit',
+  hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+});
+function ukDateTimeParts(value){
+  const date=value instanceof Date?value:new Date(value);
+  const parts={};
+  for(const part of UK_CLOCK.formatToParts(date)){
+    if(part.type!=='literal') parts[part.type]=Number(part.value);
+  }
+  return {year:parts.year,month:parts.month,day:parts.day,hour:parts.hour,minute:parts.minute,second:parts.second};
+}
+function serviceDateKey(serviceDate){
+  const y=serviceDate.getUTCFullYear(),m=String(serviceDate.getUTCMonth()+1).padStart(2,'0'),d=String(serviceDate.getUTCDate()).padStart(2,'0');
+  return ''+y+m+d;
+}
+function ymd(value){
+  return serviceDateKey(ukServiceDate(value));
+}
+function ukServiceDate(value){
+  const p=ukDateTimeParts(value||new Date());
+  return new Date(Date.UTC(p.year,p.month-1,p.day));
+}
+function shiftServiceDate(serviceDate,days){
+  return new Date(Date.UTC(serviceDate.getUTCFullYear(),serviceDate.getUTCMonth(),serviceDate.getUTCDate()+Number(days||0)));
+}
+function ukOffsetMinutes(epochMs){
+  const p=ukDateTimeParts(new Date(epochMs));
+  const represented=Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,p.second);
+  return Math.round((represented-epochMs)/60000);
+}
+function ukWallClockEpoch(year,month,day,hour,minute){
+  const wall=Date.UTC(year,month-1,day,hour,minute,0,0);
+  const offsets=[...new Set([
+    ukOffsetMinutes(wall-12*3600000),ukOffsetMinutes(wall),ukOffsetMinutes(wall+12*3600000)
+  ])];
+  const candidates=offsets.map(offset=>{
+    const epoch=wall-offset*60000,p=ukDateTimeParts(new Date(wall-offset*60000));
+    const represented=Date.UTC(p.year,p.month-1,p.day,p.hour,p.minute,0,0);
+    return {epoch,represented};
+  });
+  const exact=candidates.filter(candidate=>candidate.represented===wall).sort((a,b)=>a.epoch-b.epoch);
+  if(exact.length) return exact[0].epoch;
+  // The spring clock change creates a wall-clock gap. Match the browser's
+  // normal local-Date behaviour by advancing to the first representable time
+  // after that gap rather than silently shifting the service to the prior hour.
+  const after=candidates.filter(candidate=>candidate.represented>wall)
+    .sort((a,b)=>(a.represented-wall)-(b.represented-wall)||a.epoch-b.epoch);
+  return after.length?after[0].epoch:candidates.sort((a,b)=>b.represented-a.represented)[0].epoch;
 }
 function serviceDepartureTime(serviceDate,mins){
   const numeric=Number(mins);
   if(!isFinite(numeric)) return new Date(NaN);
   const total=Math.max(0,Math.floor(numeric));
   const dayOffset=Math.floor(total/1440), minuteOfDay=total%1440;
-  const at=new Date(serviceDate);
-  at.setDate(at.getDate()+dayOffset);
-  at.setHours(Math.floor(minuteOfDay/60),minuteOfDay%60,0,0);
-  return at;
+  const target=shiftServiceDate(serviceDate,dayOffset);
+  return new Date(ukWallClockEpoch(
+    target.getUTCFullYear(),target.getUTCMonth()+1,target.getUTCDate(),
+    Math.floor(minuteOfDay/60),minuteOfDay%60
+  ));
 }
 function serviceRuns(ref, serviceDate){
   if(!ref) return true;
-  const day=(serviceDate.getDay()+6)%7;
+  const day=(serviceDate.getUTCDay()+6)%7;
   const svc=S.timetable && S.timetable.services && S.timetable.services[ref];
   if(svc){
-    const key=ymd(serviceDate);
+    const key=serviceDateKey(serviceDate);
     if((svc.remove||[]).includes(key)) return false;
     if((svc.add||[]).includes(key)) return true;
     if(svc.start && key<svc.start) return false;
     if(svc.end && key>svc.end) return false;
     return !svc.days || String(svc.days)[day]==='1';
   }
-  // Regional legacy packs may store the seven weekday flags directly in
-  // each departure. Only interpret a binary-looking value as that fallback
-  // when it is not an actual service_id in the timetable service map.
   if(/^[01]{7}$/.test(String(ref))) return String(ref)[day]==='1';
-  /* A national shard ships the service calendar for every departure it carries,
-     so an unknown reference there means the build is incomplete rather than
-     legacy. Running the journey every day is the one answer that invents
-     service the operator never published, so drop the row and count it. The
-     permissive fallback stays for regional packs, which genuinely may not
-     carry a services map at all. */
   if(S.timetableSource==='national'){ S.timetableUnknownServices++; return false; }
   return true;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),parseDepMinutes,serviceDepartureTime,serviceRuns};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),parseDepMinutes,serviceDepartureTime,serviceRuns,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch};
 }
 function activateTimetable(data,source,region,meta){
   const info=meta||{};S.timetable=data||null;S.timetableSource=source||'';S.timetableRegion=region||'';
@@ -2622,10 +2702,9 @@ if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostn
 function timetableRows(now){
   const stop=S.ttStop;
   if(!stop || !Array.isArray(stop.d)) return [];
-  const moment=now||new Date(), day=ymd(moment), cache=TIMETABLE_ROWS_CACHE;
+  const moment=now||new Date(), today=ukServiceDate(moment), day=serviceDateKey(today), cache=TIMETABLE_ROWS_CACHE;
   if(cache.stop===stop&&cache.timetable===S.timetable&&cache.run===S.timetableRun&&cache.day===day) return cache.rows;
   const out=[];
-  const today=localMidnight(moment);
   for(const e of stop.d){
     if(!Array.isArray(e) || e.length<3) continue;
     const mins=parseDepMinutes(e[0]); if(!isFinite(mins)) continue;
@@ -2634,8 +2713,7 @@ function timetableRows(now){
     // times above 24:00 belong to an earlier service day, so derive that
     // origin date before applying weekday and calendar exception rules.
     for(const targetOffset of [-1,0,1]){
-      const serviceDate=new Date(today);
-      serviceDate.setDate(serviceDate.getDate()+targetOffset-departureDayOffset);
+      const serviceDate=shiftServiceDate(today,targetOffset-departureDayOffset);
       if(!serviceRuns(service,serviceDate)) continue;
       const at=serviceDepartureTime(serviceDate,mins);
       /* The journey's scheduled first departure, on this same service date, so a
@@ -3008,7 +3086,7 @@ function chooseInferredJourneyCandidate(candidates){
 }
 function inferenceCandidate(row,pattern,fit,v,now){
   const rawSpeed=Number(v.speed),speed=isFinite(rawSpeed)&&rawSpeed>=MIN_SPEED&&rawSpeed<=MAX_SPEED?rawSpeed:DEFAULT_SPEED;
-  const routeSecs=Math.max(0,fit.remaining)/speed+(Math.max(0,fit.remaining)/1000)*24;
+  const routeSecs=Math.max(0,fit.remaining)/speed;
   const scheduleSecs=(Number(row.at)-now)/1000;
   const scheduleGap=Math.abs(scheduleSecs-routeSecs);
   const similarity=v.dest&&row.head?destinationSimilarity(v.dest,row.head):1;
@@ -3032,12 +3110,16 @@ function inferVehicleJourneyPattern(v,stop,now=Date.now()){
     if(fit===undefined){fit=routePatternMovementFit(pattern,v,stop);fits.set(pattern.id,fit||null);}
     if(!fit) continue;
     const candidate=inferenceCandidate(row,pattern,fit,v,now); if(!candidate) continue;
-    const current=byPattern.get(pattern.id);
-    if(!current||candidate.score<current.score) byPattern.set(pattern.id,candidate);
+    const group=byPattern.get(pattern.id)||[]; group.push(candidate); byPattern.set(pattern.id,group);
   }
-  let best=chooseInferredJourneyCandidate([...byPattern.values()]);
+  const representatives=[...byPattern.values()].map(group=>{
+    const ranked=[...group].sort((a,b)=>a.score-b.score||a.fit.current.metres-b.fit.current.metres);
+    const candidate=ranked[0];
+    return {...candidate,tripCandidates:[...new Set(group.map(item=>String(item.trip||'')).filter(Boolean))]};
+  });
+  let best=chooseInferredJourneyCandidate(representatives);
   if(!best&&v.inferredJourney&&v.inferenceStopId===stopId&&now-Number(v.inferredAt||0)<=ROUTE_INFERENCE_GRACE_MS){
-    const held=v.inferredJourney,pattern=timetablePatternRecord(held.trip,held.pattern&&held.pattern.id||v.inferredPattern);
+    const held=v.inferredJourney,pattern=timetablePatternRecord('',held.patternId||v.inferredPattern);
     const fit=pattern&&routePatternMovementFit(pattern,v,stop);
     if(fit) best={...held,pattern,fit};
   }
@@ -3045,14 +3127,19 @@ function inferVehicleJourneyPattern(v,stop,now=Date.now()){
     if(now-Number(v.inferredAt||0)>ROUTE_INFERENCE_GRACE_MS){delete v.inferredJourney;delete v.inferredTrip;delete v.inferredPattern;}
     return null;
   }
-  const result={...best,trip:String(best.trip||best.row&&best.row.trip||''),patternId:String(best.pattern.id),inferred:true};
-  v.inferredJourney=result;v.inferredTrip=result.trip;v.inferredPattern=result.patternId;v.inferredAt=now;
+  // GPS geometry proves which ordered route pattern the vehicle is following.
+  // Successive timetable trips often share that exact pattern, so geometry alone
+  // must never choose one of those departures or manufacture journey identity.
+  const result={...best,trip:'',matchedTrip:'',patternId:String(best.pattern.id),patternOnly:true,inferred:true};
+  v.inferredJourney=result; delete v.inferredTrip; v.inferredPattern=result.patternId; v.inferredAt=now;
   v.inferenceStopId=stopId;v.inferenceGpsTs=Number(v.ts);
   return result;
 }
 function inferredRouteEvidence(base,inference){
   if(!inference) return base;
-  return {...base,score:Math.max(Number(base&&base.score)||0,5),label:'GPS movement matched to ordered route',journeyMatch:true,pathMatch:true,matchStrength:0,matchedTrip:inference.trip,inferredJourney:true};
+  return {...base,score:Math.max(Number(base&&base.score)||0,4),label:'GPS movement matched to ordered route pattern',
+    journeyMatch:!!(base&&base.journeyMatch),pathMatch:true,matchStrength:Number(base&&base.matchStrength)||0,
+    matchedTrip:String(base&&base.matchedTrip||''),inferredJourney:true,inferredPattern:true,patternId:inference.patternId};
 }
 
 function journeyProgress(v){
@@ -3150,7 +3237,7 @@ function selectStop(s,manual){
 }
 
 /* stop picker */
-$('changeStop').addEventListener('click', ()=>{
+function openStopPicker(message){
   if(!S.stops.length){ toast('No stops loaded yet.'); return; }
   const box=$('stopItems');
   box.innerHTML = S.stops.slice(0,60).map((s,i)=>{
@@ -3164,7 +3251,9 @@ $('changeStop').addEventListener('click', ()=>{
   }).join('');
   [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i],true)));
   $('stopPicker').classList.add('show');
-});
+  if(message) toast(message);
+}
+$('changeStop').addEventListener('click', ()=>openStopPicker());
 $('closePicker').addEventListener('click', closePicker);
 function closePicker(){ $('stopPicker').classList.remove('show'); }
 
@@ -3249,7 +3338,7 @@ function routeScanPlans(now=Date.now()){
     const targetOffset=selected?dist(selected.lat,selected.lon,S.stop.lat,S.stop.lon):projected&&projected.metres;
     if(!isFinite(targetAlong)||!isFinite(targetOffset)||targetOffset>250) continue;
     const key=pattern.id+'|'+Math.round(targetAlong/50), existing=groups.get(key);
-    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0,routeId:row.routeId||'',operator:row.operator||'',stopSequence:row.stopSequence};
+    const match={trip:String(row.trip),line:String(row.line),head:row.head||'',pattern,targetAlong,at:Number(row.at)||0,originAt:Number.isFinite(Number(row.originAt))?Number(row.originAt):null,routeId:row.routeId||'',operator:row.operator||'',stopSequence:row.stopSequence};
     if(existing){existing.due=Math.min(existing.due,row.at);mergeRouteScanMatches(existing.matches,[match]);}
     else groups.set(key,{pattern,targetAlong,due:row.at,matches:[match]});
   }
@@ -3300,38 +3389,47 @@ function inferredRouteScanMatch(plan,v,now=Date.now()){
     if(!fit) continue;
     const rawSpeed=Number(v.speed),feedSpeed=Number(v.feedSpeed);
     const speed=isFinite(rawSpeed)&&rawSpeed>=MIN_SPEED&&rawSpeed<=MAX_SPEED?rawSpeed:isFinite(feedSpeed)&&feedSpeed>=MIN_SPEED&&feedSpeed<=MAX_SPEED?feedSpeed:DEFAULT_SPEED;
-    const routeSecs=Math.max(0,fit.remaining)/speed+(Math.max(0,fit.remaining)/1000)*24;
+    const routeSecs=Math.max(0,fit.remaining)/speed;
     const scheduleSecs=(Number(match.at)-now)/1000;
     const scheduleGap=isFinite(scheduleSecs)?Math.abs(scheduleSecs-routeSecs):0;
     const score=fit.meanOffset*.55+fit.current.metres*.45+(1-similarity)*90+Math.min(900,scheduleGap*.45);
     const candidate={trip:String(match.trip),pattern:match.pattern,fit,score,scheduleGap,row:match};
-    const current=byPattern.get(match.pattern.id);
-    if(!current||candidate.score<current.score) byPattern.set(match.pattern.id,candidate);
+    const group=byPattern.get(match.pattern.id)||[];group.push(candidate);byPattern.set(match.pattern.id,group);
   }
-  const best=chooseInferredJourneyCandidate([...byPattern.values()]);
-  return best&&best.row||null;
+  const representatives=[...byPattern.values()].map(group=>{
+    const ranked=[...group].sort((a,b)=>a.score-b.score||a.fit.current.metres-b.fit.current.metres);
+    return {...ranked[0],tripCandidates:[...new Set(group.map(item=>String(item.trip||'')).filter(Boolean))]};
+  });
+  const best=chooseInferredJourneyCandidate(representatives);
+  return best?{...best,trip:'',patternOnly:true,patternId:String(best.pattern.id)}:null;
 }
 function matchRouteScanVehicle(plan,v){
   if(!plan||!v) return null;
-  let match=null,inferred=false;
+  const compatible=(plan.matches||[]).filter(match=>String(v.line)===String(match.line)
+    &&routeIdentityAgreement(match,v)>=0
+    &&(!v.dest||!match.head||destinationSimilarity(v.dest,match.head)>=.34));
+  let match=null;
   if(v.journey){
-    const tripMatch=uniqueCompatibleTrips(plan.matches,v.journey,item=>item.trip);
+    const tripMatch=uniqueCompatibleTrips(compatible,v.journey,item=>item.trip);
     if(tripMatch.items.length&&!tripMatch.ambiguous) match=tripMatch.items[0];
   }
-  // Private operator journey aliases often do not equal the public timetable trip.
-  // Fall back to ordered route movement and schedule timing rather than hiding the bus.
   if(!match){
-    match=inferredRouteScanMatch(plan,v); inferred=!!match;
-    if(!match) return null;
+    const originMatch=uniqueOriginTrips(compatible,v);
+    if(originMatch.items.length&&!originMatch.ambiguous) match=originMatch.items[0];
   }
-  if(String(v.line)!==String(match.line)||routeIdentityAgreement(match,v)<0) return null;
-  if(v.dest&&match.head&&destinationSimilarity(v.dest,match.head)<.34) return null;
+  if(!match){
+    // A distant route scan may establish the corridor shape, but without a
+    // unique journey reference or origin departure that is not enough evidence
+    // to admit the vehicle as one specific timetable trip.
+    const patternOnly=inferredRouteScanMatch(plan,v);
+    if(patternOnly){delete v.inferredTrip;v.inferredPattern=patternOnly.patternId;v.inferredAt=Date.now();}
+    return null;
+  }
   const position=projectVehicleToPattern(match.pattern,v);
   if(!position||position.metres>800) return null;
   const remaining=match.targetAlong-position.along;
   if(remaining < -120 || remaining > ROUTE_SCAN_MAX_ROUTE_METRES) return null;
   v.corridorTrip=match.trip; v.corridorTracked=true; v.corridorRemaining=remaining; v.corridorConfirmedAt=Date.now();
-  if(inferred){v.inferredTrip=match.trip;v.inferredPattern=match.pattern.id;v.inferredAt=Date.now();}
   return v;
 }
 
@@ -4262,6 +4360,31 @@ function scheduleEtaBlendWeight(evidence,quality){
   if(evidence&&evidence.journeyMatch) return .06;
   return timetableTrusted(evidence) ? .08 : .10;
 }
+const ETA_DWELL_SECONDS_PER_STOP = 18;
+function remainingStopsToTarget(v,stop){
+  const pattern=timetablePatternRecord(v&&v.progressTrip||vehicleJourneyRef(v),v&&v.progressPattern||v&&v.inferredPattern);
+  if(!pattern) return 0;
+  const vehicle=projectVehicleToPattern(pattern,v);
+  if(!vehicle||vehicle.metres>800) return 0;
+  const stops=orderedPatternStops(pattern),targetIndex=selectedPatternStopIndex(stops,stop,vehicle.along);
+  if(targetIndex<=0) return 0;
+  return stops.slice(0,targetIndex).filter(call=>Number(call.along)>Number(vehicle.along)+25).length;
+}
+function etaMotionModel(v,stop){
+  const rawValue=v&&v.speed;
+  const hasSpeed=rawValue!==null&&rawValue!==undefined&&String(rawValue).trim()!=='';
+  const raw=hasSpeed?Number(rawValue):NaN;
+  const moving=Number.isFinite(raw)&&raw>=MIN_SPEED&&raw<=MAX_SPEED;
+  if(moving){
+    const remainingStops=remainingStopsToTarget(v,stop);
+    return {speed:raw,dwell:remainingStops*ETA_DWELL_SECONDS_PER_STOP,remainingStops,mode:'moving',stationary:false};
+  }
+  // lineSpeed()/DEFAULT_SPEED are learned end-to-end averages and therefore
+  // already include time spent stopped. Adding dwell again double-counts it.
+  const average=lineSpeed(v);
+  const stationary=(hasSpeed&&raw===0)||Number(v&&v.stationaryAt)===Number(v&&v.ts);
+  return {speed:average,dwell:0,remainingStops:0,mode:'average',stationary};
+}
 function estimate(v, stop, evidenceOverride, geometryOverride){
   const straight = dist(v.lat,v.lon,stop.lat,stop.lon);
   // collect() has already resolved this vehicle's journey geometry; recomputing
@@ -4270,15 +4393,14 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const road = geometry && geometry.remaining>0
     ? Math.max(straight,geometry.remaining)
     : straight * lineFactor(v);
-  let sp = v.speed;
-  if(!isFinite(sp) || sp < MIN_SPEED || sp > MAX_SPEED) sp = lineSpeed(v);
-  const dwell = (road/1000) * 24;
+  const motion=etaMotionModel(v,stop);
+  const sp=motion.speed, dwell=motion.dwell;
   const quality=etaGpsQuality(v);
   // Credit elapsed time while the position remains prediction-fresh. Cap the
   // extrapolation using the bus's own reporting cadence so a delayed feed does
   // not keep counting down as if the vehicle were still moving normally.
   const cadenceForAge=quality.cadence||Math.max(10,Number(S.interval)||15);
-  const ageCredit=Math.min(quality.age,Math.max(20,cadenceForAge*1.25),60);
+  const ageCredit=motion.stationary?0:Math.min(quality.age,Math.max(20,cadenceForAge*1.25),60);
   let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - ageCredit);
   const liveSecs=spatial;
   const baseJourneyRef=vehicleJourneyRef(v);
@@ -4310,7 +4432,7 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const baseSpread=confidence==='high'?90:confidence==='medium'?210:360;
   const spread=quality.fresh?baseSpread:Math.max(420,baseSpread);
   const learned=LINES[lineLearningKey(v)];
-  return {secs:spatial, liveSecs, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule, predictionDelayed:!quality.fresh, gpsAge:quality.age, gpsFreshWindow:quality.freshWindow};
+  return {secs:spatial, liveSecs, metres:straight, routeMetres:geometry&&geometry.remaining>0?geometry.remaining:null, geometry, learned:!!(learned&&learned.n>=3), confidence, spread, evidence, schedule, matchedSchedule, predictionDelayed:!quality.fresh, gpsAge:quality.age, gpsFreshWindow:quality.freshWindow, speedMode:motion.mode, dwellSeconds:dwell, remainingStops:motion.remainingStops, stationary:motion.stationary};
 }
 
 /* ============================================================
@@ -4537,7 +4659,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,stopSelectionCandidates,stopSelectionNeedsChoice,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -4959,7 +5081,7 @@ function renderWalk(){
 
 /* Expanded view under a tapped departure: everything the live
    feed and the app's own learning know about this vehicle. */
-function formatClock(ts){ return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function formatClock(ts){ return new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:UK_TIME_ZONE}); }
 function formatPositionAge(ms){
   const seconds=Math.max(0,Math.round(Number(ms||0)/1000));
   if(seconds<5) return 'now';
@@ -6366,15 +6488,25 @@ setStatus((S.key||S.proxy) ? 'Waiting for a location · live feed ready' : 'Wait
 // Warm the roadworks feed while the first location is still resolving.
 loadDisruptions().then(()=>{ if(S.stop) renderDisruptions(); }).catch(()=>{});
 
-if(saved && saved.origin && isFinite(saved.origin.lat)){
+const savedOriginKind=saved&&saved.origin?savedOriginSource(saved.origin):'';
+if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='manual'){
+  // A searched/chosen place is intentional and may be reused. Preserve its
+  // selected stop too, because both belong to the same explicit place choice.
   S.pendingStopId = saved.stopId || null;
   $('q').value = saved.origin.label || '';
-  setOrigin(saved.origin.lat, saved.origin.lon, saved.origin.label);
+  setOrigin(saved.origin.lat, saved.origin.lon, saved.origin.label, saved.origin.accuracy, 'manual');
 } else if(navigator.geolocation){
-  // Nothing saved — refine the first phone fix briefly so a cached or
-  // wide-accuracy position does not silently select the opposite stand.
+  // A saved device coordinate is only a previous observation, not a preference.
+  // Reacquire on every session so travelling since the last visit cannot reopen
+  // the old street or silently pick yesterday's stand.
+  S.pendingStopId = null;
+  $('q').value = '';
   setStatus('Finding you','');
   requestBestLocation(useDeviceLocation,()=>{ setStatus('Search a place or use the locate button',''); },15000);
+} else if(saved && saved.origin && savedOriginKind==='device'){
+  S.pendingStopId = null;
+  $('q').value = '';
+  setStatus('Search a place to choose your current location','');
 }
 
 // Browser page zoom remains available for accessibility. Mobile form

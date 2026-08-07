@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.4'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.5'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -463,7 +463,10 @@ assert.doesNotMatch(busSource, /const MAPPED_TTL = 30\*24\*3600\*1000/);
 assert.match(busSource, /function serviceDepartureTime\(serviceDate,mins\)/);
 assert.match(busSource, /const svc=S\.timetable && S\.timetable\.services && S\.timetable\.services\[ref\]/);
 assert.match(busSource, /if\(svc\)\{/);
-assert.match(busSource, /at\.setHours\(Math\.floor\(minuteOfDay\/60\),minuteOfDay%60,0,0\)/);
+assert.match(busSource, /const UK_TIME_ZONE = 'Europe\/London'/);
+assert.match(busSource, /function ukWallClockEpoch\(year,month,day,hour,minute\)/);
+assert.match(busSource, /return new Date\(ukWallClockEpoch\(/);
+assert.doesNotMatch(busSource, /at\.setHours\(Math\.floor\(minuteOfDay\/60\),minuteOfDay%60,0,0\)/);
 assert.match(busSource, /serviceDepartureTime\(serviceDate,mins\)/);
 assert.doesNotMatch(busSource, /new Date\(serviceDate\.getTime\(\)\+mins\*60000\)/);
 assert.match(busSource, /departureDayOffset=Math\.floor\(mins\/1440\)/);
@@ -525,7 +528,9 @@ assert.match(busSource, /const ROUTE_SCAN_MAX_BOXES = 3/);
 assert.match(busSource, /const ROUTE_SCAN_MAX_ROUTE_METRES = 55000/);
 assert.match(busSource, /function routeScanPlans\(now=Date\.now\(\)\)/);
 assert.match(busSource, /function matchRouteScanVehicle\(plan,v\)/);
-assert.match(busSource, /uniqueCompatibleTrips\(plan\.matches,v\.journey,item=>item\.trip\)/);
+assert.match(busSource, /const compatible=\(plan\.matches\|\|\[\]\)\.filter/);
+assert.match(busSource, /uniqueCompatibleTrips\(compatible,v\.journey,item=>item\.trip\)/);
+assert.match(busSource, /const patternOnly=inferredRouteScanMatch\(plan,v\)/);
 assert.match(busSource, /d>FAR_VEH_DIST&&!corridorFar/);
 assert.match(busSource, /dist\(centre\.lat,centre\.lon,S\.stop\.lat,S\.stop\.lon\)\+ROUTE_SCAN_BOX_RADIUS<=FAR_VEH_DIST/);
 assert.match(busSource, /void pollRouteCorridor\(\)/);
@@ -1362,14 +1367,14 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       '1111100':{days:'1111100',start:'20260101',end:'20261231',add:['20260801'],remove:['20260803']}
     }};
     try{
-      const spring=api.serviceDepartureTime(new Date(2026,2,29),180);
-      const autumn=api.serviceDepartureTime(new Date(2026,9,25),180);
-      const overnight=api.serviceDepartureTime(new Date(2026,7,2),1530);
+      const spring=api.serviceDepartureTime(new Date(Date.UTC(2026,2,29)),180);
+      const autumn=api.serviceDepartureTime(new Date(Date.UTC(2026,9,25)),180);
+      const overnight=api.serviceDepartureTime(new Date(Date.UTC(2026,7,2)),1530);
       return {
-        removedBinaryId:api.serviceRuns('1111100',new Date(2026,7,3)),
-        addedBinaryId:api.serviceRuns('1111100',new Date(2026,7,1)),
-        legacyMonday:api.serviceRuns('1000000',new Date(2026,7,3)),
-        legacySaturday:api.serviceRuns('1000000',new Date(2026,7,1)),
+        removedBinaryId:api.serviceRuns('1111100',new Date(Date.UTC(2026,7,3))),
+        addedBinaryId:api.serviceRuns('1111100',new Date(Date.UTC(2026,7,1))),
+        legacyMonday:api.serviceRuns('1000000',new Date(Date.UTC(2026,7,3))),
+        legacySaturday:api.serviceRuns('1000000',new Date(Date.UTC(2026,7,1))),
         spring:[spring.getFullYear(),spring.getMonth()+1,spring.getDate(),spring.getHours(),spring.getMinutes()],
         autumn:[autumn.getFullYear(),autumn.getMonth()+1,autumn.getDate(),autumn.getHours(),autumn.getMinutes()],
         overnight:[overnight.getFullYear(),overnight.getMonth()+1,overnight.getDate(),overnight.getHours(),overnight.getMinutes()],
@@ -1620,17 +1625,17 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
         stationaryHeld:!stationaryVisual.estimated&&stationaryVisual.lat===stationary.lat&&stationaryVisual.lon===stationary.lon,
         historyReset:resetVehicle.hist.length===1,
         bothShown,inShown,
-        remoteInferred:!!(remoteMatched&&remoteMatched.corridorTracked&&remoteMatched.inferredTrip==='remote-trip')
+        remotePatternOnly:!remoteMatched&&remote.inferredPattern==='remote-pattern'&&!remote.inferredTrip&&!remote.corridorTracked
       };
     }finally{Object.assign(state,saved);}
   });
-  assert.deepEqual(reliability,{stationaryHeld:true,historyReset:true,bothShown:true,inShown:true,remoteInferred:true});
+  assert.deepEqual(reliability,{stationaryHeld:true,historyReset:true,bothShown:true,inShown:true,remotePatternOnly:true});
 
   await page.locator('#setBtn').click();
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.4'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.5'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

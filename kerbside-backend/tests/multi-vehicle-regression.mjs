@@ -110,7 +110,7 @@ try {
       state.timetableSource = 'national'; state.timetableRegion = 'west_midlands'; state.timetableRun++;
       const plans = api.routeScanPlans(now);
       const positions = [52.30, 52.36, 52.42, 52.47, 52.51];
-      const accepted = positions.map((lat, index) => {
+      const scanned = positions.map((lat, index) => {
         const vehicle = {
           id: `CORRIDOR|activity|${index}`, journey: 'operator-private-block', vehicleRef: 'shared',
           line: '9', lineRef: '9', dest: 'Town Centre', operator: 'CORRIDOR', declaredDir: '',
@@ -118,8 +118,10 @@ try {
           timestampKnown: true, corridorTracked: false,
           hist: [{ lat: lat - 0.004, lon: -2.1, ts: now - 60000 }, { lat, lon: -2.1, ts: now }]
         };
-        return plans.map(plan => api.matchRouteScanVehicle(plan, vehicle)).find(Boolean) || null;
-      }).filter(Boolean);
+        const matched = plans.map(plan => api.matchRouteScanVehicle(plan, vehicle)).find(Boolean) || null;
+        return { matched, vehicle };
+      });
+      const accepted = scanned.map(item => item.matched).filter(Boolean);
 
       return {
         parsed: parsed.vehicles.length,
@@ -131,7 +133,7 @@ try {
         shownLines: [...new Set(rows.map(row => row.v.line))],
         accepted: accepted.length,
         distinctTrips: new Set(accepted.map(vehicle => vehicle.corridorTrip)).size,
-        inferred: accepted.every(vehicle => vehicle.inferredTrip && vehicle.corridorTracked)
+        patternOnly: scanned.filter(item => !item.matched && item.vehicle.inferredPattern === patternId && !item.vehicle.inferredTrip && !item.vehicle.corridorTracked).length
       };
     } finally {
       Object.assign(state, saved);
@@ -146,9 +148,9 @@ try {
   assert.equal(result.storedAfterPartial, 5);
   assert.equal(result.shown, 5);
   assert.deepEqual(result.shownLines, ['61']);
-  assert.equal(result.accepted, 5);
-  assert.equal(result.distinctTrips, 5);
-  assert.equal(result.inferred, true);
+  assert.equal(result.accepted, 0);
+  assert.equal(result.distinctTrips, 0);
+  assert.equal(result.patternOnly, 5);
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside multi-vehicle regression passed.');
 } finally {
