@@ -13,6 +13,7 @@ on:
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/deploy-kerbside-accuracy-hardening.yml
+      - .github/workflows/deploy-kerbside-stop-side-hardening.yml
       - .github/workflows/kerbside-check.yml
       - .github/workflows/kerbside-release.yml
       - .github/workflows/verify-kerbside-production.yml
@@ -28,6 +29,7 @@ on:
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/deploy-kerbside-accuracy-hardening.yml
+      - .github/workflows/deploy-kerbside-stop-side-hardening.yml
       - .github/workflows/kerbside-check.yml
       - .github/workflows/kerbside-release.yml
       - .github/workflows/verify-kerbside-production.yml
@@ -128,6 +130,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check build-timetable.js
+          node --check kerbside-backend/scripts/apply-stop-side-hardening-build.mjs
+          node --check kerbside-backend/tests/stop-side-regression.mjs
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
@@ -144,6 +148,7 @@ jobs:
           npm run test:multi-vehicle --prefix kerbside-backend
           npm run test:audit --prefix kerbside-backend
           npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+          npm run test:stop-side --prefix kerbside-backend --if-present
 
       # Same suite, same phone-sized viewport, different engine. WebKit alone
       # cannot catch a Chromium-only layout, Cache API or input difference,
@@ -159,6 +164,7 @@ jobs:
           npm run test:multi-vehicle --prefix kerbside-backend
           npm run test:audit --prefix kerbside-backend
           npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+          npm run test:stop-side --prefix kerbside-backend --if-present
 
       - name: Validate timetable cache policy
         shell: bash
@@ -186,6 +192,7 @@ jobs:
             .github/workflows/build-kerbside-national.yml \
             .github/workflows/deploy-kerbside-worker.yml \
             .github/workflows/deploy-kerbside-accuracy-hardening.yml \
+            .github/workflows/deploy-kerbside-stop-side-hardening.yml \
             .github/workflows/kerbside-check.yml \
             .github/workflows/kerbside-release.yml \
             .github/workflows/verify-kerbside-production.yml
