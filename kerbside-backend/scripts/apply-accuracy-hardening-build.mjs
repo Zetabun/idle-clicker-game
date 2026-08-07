@@ -464,7 +464,9 @@ function remainingStopsToTarget(v,stop){
   return stops.slice(0,targetIndex).filter(call=>Number(call.along)>Number(vehicle.along)+25).length;
 }
 function etaMotionModel(v,stop){
-  const raw=Number(v&&v.speed);
+  const rawValue=v&&v.speed;
+  const hasSpeed=rawValue!==null&&rawValue!==undefined&&String(rawValue).trim()!=='';
+  const raw=hasSpeed?Number(rawValue):NaN;
   const moving=Number.isFinite(raw)&&raw>=MIN_SPEED&&raw<=MAX_SPEED;
   if(moving){
     const remainingStops=remainingStopsToTarget(v,stop);
@@ -473,7 +475,7 @@ function etaMotionModel(v,stop){
   // lineSpeed()/DEFAULT_SPEED are learned end-to-end averages and therefore
   // already include time spent stopped. Adding dwell again double-counts it.
   const average=lineSpeed(v);
-  const stationary=raw===0||Number(v&&v.stationaryAt)===Number(v&&v.ts);
+  const stationary=(hasSpeed&&raw===0)||Number(v&&v.stationaryAt)===Number(v&&v.ts);
   return {speed:average,dwell:0,remainingStops:0,mode:'average',stationary};
 }
 function estimate(v, stop, evidenceOverride, geometryOverride){
