@@ -204,9 +204,9 @@ replaceSection(
     const m = MAPPED[String(s.id)];
     const badge = m && m.routes.length
       ? '<span class="hasroutes">'+m.routes.length+' routes</span>' : '';
-    return '<button class="stopitem" data-i="'+i+'"><span class="flagicon" style="width:12px;height:14px"></span>'+ 
-      '<span style="min-width:0"><span class="nm">'+esc(s.name)+'</span>'+ 
-      (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+ 
+    return '<button class="stopitem" data-i="'+i+'"><span class="flagicon" style="width:12px;height:14px"></span>'+
+      '<span style="min-width:0"><span class="nm">'+esc(s.name)+'</span>'+
+      (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+
       badge+'<span class="dist">'+fmtDist(s.d)+'</span></button>';
   }).join('');
   [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i],true)));
