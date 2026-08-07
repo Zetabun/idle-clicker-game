@@ -60,8 +60,36 @@ jobs:
             exit 1
           fi
 
+      - name: Prepare one-shot CI patch target
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/workflows/kerbside-check.yml "$RUNNER_TEMP/kerbside-check.yml"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/kerbside-check.yml')
+          source = path.read_text(encoding='utf-8')
+          accuracy = '          npm run test:accuracy-hardening --prefix kerbside-backend --if-present\n'
+          if source.count(accuracy) != 2:
+              raise SystemExit('Expected two permanent accuracy-hardening CI hooks before one-shot patch preparation')
+          source = source.replace(accuracy, '')
+          parse_entry = '            .github/workflows/deploy-kerbside-accuracy-hardening.yml \\\n'
+          if source.count(parse_entry) != 1:
+              raise SystemExit('Expected accuracy-hardening workflow in permanent YAML parse list')
+          source = source.replace(parse_entry, '')
+          path.write_text(source, encoding='utf-8')
+          PY
+
       - name: Apply location and prediction hardening build
         run: node kerbside-backend/scripts/apply-accuracy-hardening-build.mjs "${{ inputs.version }}"
+
+      - name: Restore permanent CI workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/kerbside-check.yml" .github/workflows/kerbside-check.yml
+          git diff --exit-code -- .github/workflows/kerbside-check.yml
 
       - name: Align legacy regressions with hardening semantics
         run: node kerbside-backend/scripts/apply-accuracy-hardening-test-migrations.mjs
@@ -170,8 +198,7 @@ jobs:
             kerbside-backend/package.json \
             kerbside-backend/test/worker.test.js \
             kerbside-backend/tests/browser-regression.mjs \
-            kerbside-backend/tests/multi-vehicle-regression.mjs \
-            .github/workflows/kerbside-check.yml
+            kerbside-backend/tests/multi-vehicle-regression.mjs
 
       - name: Commit tested build to main
         if: ${{ inputs.mode == 'deploy' }}
@@ -185,6 +212,7 @@ jobs:
             echo "::error::main changed while this build was testing. Run the workflow again on the new main instead of pushing a stale build."
             exit 1
           fi
+          git diff --exit-code -- .github/workflows/kerbside-check.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
@@ -193,8 +221,7 @@ jobs:
             kerbside-backend/package.json \
             kerbside-backend/test/worker.test.js \
             kerbside-backend/tests/browser-regression.mjs \
-            kerbside-backend/tests/multi-vehicle-regression.mjs \
-            .github/workflows/kerbside-check.yml
+            kerbside-backend/tests/multi-vehicle-regression.mjs
           git diff --cached --check
           git commit -m "Kerbside ${VERSION_INPUT}: harden location and prediction accuracy"
           git push origin HEAD:main
