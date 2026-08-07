@@ -1,0 +1,204 @@
+name: Deploy Kerbside journey identity hardening build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Kerbside semantic version for this build
+        required: true
+        default: '0.7.7'
+        type: string
+      mode:
+        description: Validate only, or commit the tested build to main
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-journey-identity-hardening-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record guarded base
+        shell: bash
+        run: echo "KERBSIDE_BASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Validate requested version
+        shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be semantic version X.Y.Z"
+            exit 1
+          fi
+          if [[ "$VERSION_INPUT" == "$(cat VERSION)" ]]; then
+            echo "::error::Choose a new version; current VERSION is $(cat VERSION)."
+            exit 1
+          fi
+
+      - name: Apply journey identity hardening build
+        run: node kerbside-backend/scripts/apply-journey-identity-hardening-build.mjs "${{ inputs.version }}"
+
+      - name: Synchronise version references
+        run: python3 .github/scripts/sync-version.py
+
+      - name: Verify journey identity hardening invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "function journeyDestinationAgreement(rows,dest)" bus.html
+          grep -Fq "journeyDestinationConflict" bus.html
+          grep -Fq "function setVehicleProgressIdentity(v,evidence,inference,matchedRow)" bus.html
+          grep -Fq "v.progressIdentityBlocked=conflict&&!inferredPattern" bus.html
+          grep -Fq "if(!v || !stop || v.progressIdentityBlocked) return null" bus.html
+          grep -Fq "Journey identity is updating." bus.html
+          grep -Fq ">journey updating</span>" bus.html
+          grep -Fq ">match retained</span>" bus.html
+          if grep -Fq ">GPS recovered</span>" bus.html; then
+            echo "::error::Misleading GPS recovered chip still exists"
+            exit 1
+          fi
+          grep -Fq '"test:journey-identity": "node tests/journey-identity-regression.mjs"' kerbside-backend/package.json
+          python3 .github/scripts/sync-version.py --check
+
+      - name: Install test dependencies
+        run: npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+
+      - name: Validate JavaScript and unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          print(f'Validated {len(scripts)} inline browser script(s).')
+          PY
+          node --check build-timetable.js
+          node --check kerbside-backend/scripts/apply-journey-identity-hardening-build.mjs
+          node --check kerbside-backend/tests/journey-identity-regression.mjs
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+
+      - name: Parse workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e "require 'yaml'; ARGV.each { |file| YAML.parse_file(file) or abort(file) }" \
+            .github/workflows/deploy-kerbside-journey-identity-hardening.yml \
+            .github/workflows/deploy-kerbside-stop-side-hardening.yml \
+            .github/workflows/deploy-kerbside-accuracy-hardening.yml \
+            .github/workflows/kerbside-check.yml \
+            .github/workflows/deploy-kerbside-worker.yml \
+            .github/workflows/verify-kerbside-production.yml
+
+      - name: Install browser engines
+        working-directory: kerbside-backend
+        run: npx playwright install --with-deps webkit chromium
+
+      - name: Run WebKit regression suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend
+          npm run test:stop-side --prefix kerbside-backend
+          npm run test:journey-identity --prefix kerbside-backend
+
+      - name: Run Chromium regression suites
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: chromium
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend
+          npm run test:stop-side --prefix kerbside-backend
+          npm run test:journey-identity --prefix kerbside-backend
+
+      - name: Second-pass journey identity verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:journey-identity --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:journey-identity --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:accuracy-hardening --prefix kerbside-backend
+          npm run test:stop-side --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:stop-side --prefix kerbside-backend
+          git diff --check
+
+      - name: Show proposed build diff
+        run: |
+          git diff --stat
+          git diff -- \
+            bus.html VERSION \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/package.json \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs
+
+      - name: Commit tested build to main
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if [[ "$(git rev-parse origin/main)" != "$KERBSIDE_BASE_SHA" ]]; then
+            echo "::error::main changed while this build was testing. Run the workflow again on the new main instead of pushing a stale build."
+            exit 1
+          fi
+          git diff --exit-code -- \
+            .github/workflows/kerbside-check.yml \
+            .github/workflows/deploy-kerbside-journey-identity-hardening.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bus.html VERSION \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/package.json \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs
+          git diff --cached --check
+          git commit -m "Kerbside ${VERSION_INPUT}: harden journey identity"
+          git push origin HEAD:main
