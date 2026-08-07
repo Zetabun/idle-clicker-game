@@ -56,7 +56,7 @@ jobs:
           from pathlib import Path
 
           source = Path('/tmp/reviewed-accuracy.yml').read_text(encoding='utf-8')
-          start = "          python3 - <<'PY'\n"
+          start = "\n          python3 - <<'PY'\n"
           end = "\n          PY\n\n          python3 .github/scripts/sync-version.py"
           if source.count(start) != 1 or source.count(end) != 1:
               raise SystemExit('Reviewed accuracy patch markers are missing or ambiguous')
