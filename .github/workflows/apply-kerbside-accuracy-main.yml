@@ -108,19 +108,54 @@ jobs:
           namespace = {'__name__': '__kerbside_accuracy_release__'}
           exec(patch, namespace, namespace)
 
-          # The reviewed 0.7.3 application wording changed the ambiguity message,
-          # but the static browser regression still pinned the pre-0.7.3 text.
-          # Update only that one stale assertion and fail closed if it drifts.
+          # The reviewed 0.7.3 application changed several schedule diagnostics,
+          # while the static browser regression still pinned the pre-0.7.3 API
+          # signature and wording. Update only those exact stale assertions and
+          # fail closed if any target has drifted or become ambiguous.
           browser_test_path = Path('kerbside-backend/tests/browser-regression.mjs')
           browser_test = browser_test_path.read_text(encoding='utf-8')
-          old_assertion = "assert.match(busSource, /possible GPS match ambiguous/);"
-          new_assertion = "assert.match(busSource, /possible GPS journey match is ambiguous/);"
-          if browser_test.count(old_assertion) != 1:
-              raise SystemExit('Browser ambiguity regression assertion is missing or ambiguous')
-          browser_test_path.write_text(
-              browser_test.replace(old_assertion, new_assertion, 1),
-              encoding='utf-8',
-          )
+          browser_assertion_replacements = [
+              (
+                  "assert.match(busSource, /possible GPS match ambiguous/);",
+                  "assert.match(busSource, /possible GPS journey match is ambiguous/);",
+                  'ambiguity wording',
+              ),
+              (
+                  r"assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows\)/);",
+                  r"assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);",
+                  'scheduleLiveReason signature',
+              ),
+              (
+                  r"assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows\)/);",
+                  r"assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);",
+                  'scheduled row reason call',
+              ),
+              (
+                  "assert.match(busSource, /no fresh GPS found nearby/);",
+                  "assert.match(busSource, /no recent GPS found nearby/);",
+                  'nearby GPS wording',
+              ),
+              (
+                  "assert.match(busSource, /no fresh GPS for this route/);",
+                  "assert.match(busSource, /no recent GPS for this route/);",
+                  'route GPS wording',
+              ),
+              (
+                  "assert.match(busSource, /destination match uncertain/);",
+                  "assert.match(busSource, /destination or operator match uncertain/);",
+                  'destination/operator wording',
+              ),
+              (
+                  "assert.match(busSource, /possible GPS match was filtered/);",
+                  r"assert.match(busSource, /function scheduleCandidateReason\(v,now\)/);",
+                  'candidate rejection reason helper',
+              ),
+          ]
+          for old_assertion, new_assertion, label in browser_assertion_replacements:
+              if browser_test.count(old_assertion) != 1:
+                  raise SystemExit(f'Browser regression {label} assertion is missing or ambiguous')
+              browser_test = browser_test.replace(old_assertion, new_assertion, 1)
+          browser_test_path.write_text(browser_test, encoding='utf-8')
 
           subprocess.run(
               [sys.executable, '.github/scripts/sync-version.py'],
