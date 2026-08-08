@@ -52,7 +52,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
 
     steps:
       - name: Check out repository
@@ -186,6 +186,35 @@ jobs:
           npm run test:journey-identity --prefix kerbside-backend --if-present
           npm run test:disruptions --prefix kerbside-backend --if-present
           npm run test:listing-reliability --prefix kerbside-backend --if-present
+
+      # Prep PRs intentionally leave the served app unchanged. Still execute the
+      # generated release once inside CI so exact source migrations and the new
+      # behavioural regressions are proven before the prep tooling can merge.
+      - name: Validate generated 0.7.8 reliability build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            git restore -- \
+              bus.html VERSION \
+              kerbside-backend/src/worker.js \
+              kerbside-backend/package.json \
+              kerbside-backend/test/worker.test.js \
+              kerbside-backend/tests/browser-regression.mjs
+          }
+          trap cleanup EXIT
+          node kerbside-backend/scripts/apply-reliability-hardening-build.mjs 0.7.8
+          python3 .github/scripts/sync-version.py
+          python3 .github/scripts/sync-version.py --check
+          npm run check --prefix kerbside-backend
+          npm run test:browser --prefix kerbside-backend
+          npm run test:disruptions --prefix kerbside-backend
+          npm run test:listing-reliability --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:disruptions --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:listing-reliability --prefix kerbside-backend
+          python3 kerbside-backend/tests/disruption-build-regression.py
+          git diff --check
 
       - name: Validate timetable cache policy
         shell: bash
