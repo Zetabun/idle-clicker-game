@@ -140,7 +140,7 @@ jobs:
 
           for path in "${CHANGED[@]}"; do
             case "$path" in
-              bus.html|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
+              VERSION|bus.html|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
                 ;;
               *)
                 echo "::error::Unexpected release path: $path"
