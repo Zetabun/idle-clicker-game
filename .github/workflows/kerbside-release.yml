@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: kerbside-release-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   release:
@@ -41,15 +41,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t SCRIPTS < <(find .github/scripts -maxdepth 1 -type f -name 'release-kerbside-*.py' | sort)
+          mapfile -t SCRIPTS < <(find .github/scripts -maxdepth 1 -type f -name 'release-kerbside-*.py' ! -name '*.test.py' | sort)
+          if [[ "${#SCRIPTS[@]}" -eq 0 ]]; then
+            echo "NO_RELEASE=true" >> "$GITHUB_ENV"
+            echo "No Kerbside release patch remains; the validated release has already been published."
+            exit 0
+          fi
           if [[ "${#SCRIPTS[@]}" -ne 1 ]]; then
             echo "::error::Expected exactly one Kerbside release patch, found ${#SCRIPTS[@]}."
-            printf '%s\n' "${SCRIPTS[@]:-}"
+            printf '%s\n' "${SCRIPTS[@]}"
             exit 1
           fi
           echo "RELEASE_SCRIPT=${SCRIPTS[0]}" >> "$GITHUB_ENV"
 
       - name: Apply browser release
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -62,6 +68,7 @@ jobs:
           git diff --check
 
       - name: Install browser test dependencies
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -71,6 +78,7 @@ jobs:
           npx playwright install --with-deps webkit
 
       - name: Validate backend and existing builders
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -79,12 +87,14 @@ jobs:
           npm test --prefix kerbside-backend
 
       - name: Run WebKit browser regression checks
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
 
       - name: Prepare repository-safe release commit
+        if: env.NO_RELEASE != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -95,75 +105,77 @@ jobs:
 
           trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
           trigger_path="${trigger_path%.py}.txt"
-          rm -f "$RELEASE_SCRIPT" "$trigger_path" .github/scripts/kerbside-release-post.py
+          test_path="${RELEASE_SCRIPT%.py}.test.py"
+          rm -f "$RELEASE_SCRIPT" "$trigger_path" "$test_path" .github/scripts/kerbside-release-post.py
 
-          # The GITHUB_TOKEN cannot update protected workflow files. A release
-          # patch must not smuggle workflow changes into the generated commit;
-          # connected GitHub tooling applies reviewed workflow edits separately.
+          # A release patch must not smuggle workflow changes into its generated
+          # commit. Reviewed workflow edits already present in the branch remain.
           git restore --source=HEAD --worktree -- .github/workflows
           git diff --check
 
+      - name: Export validated release files
+        if: env.NO_RELEASE != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerbside-0.6.61-validated
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            bus.html
+            kerbside-backend/README.md
+            kerbside-backend/package.json
+            kerbside-backend/src/worker.js
+            kerbside-backend/test/worker.test.js
+            kerbside-backend/tests/browser-regression.mjs
+
       - name: Publish validated release atomically
+        if: env.NO_RELEASE != 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
 
-          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
-          BASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq '.object.sha')"
-          if [[ "$BASE_SHA" != "$CHECKED_OUT_SHA" ]]; then
-            echo "::error::Release branch moved during validation: checked out $CHECKED_OUT_SHA but remote is $BASE_SHA."
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [[ "$checked_out_sha" != "$EXPECTED_SOURCE_SHA" ]]; then
+            echo "::error::Checked out ${checked_out_sha}, expected validated PR head ${EXPECTED_SOURCE_SHA}."
             exit 1
           fi
 
-          BASE_TREE="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$BASE_SHA" --jq '.tree.sha')"
-          TREE='[]'
-          trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
-          trigger_path="${trigger_path%.py}.txt"
+          git fetch origin "$RELEASE_BRANCH"
+          remote_sha="$(git rev-parse "origin/${RELEASE_BRANCH}")"
+          if [[ "$remote_sha" != "$EXPECTED_SOURCE_SHA" ]]; then
+            echo "::error::Release branch moved during validation: expected ${EXPECTED_SOURCE_SHA}, found ${remote_sha}."
+            exit 1
+          fi
 
-          mapfile -d '' -t CHANGED < <(
-            {
-              git diff --name-only -z HEAD --
-              git ls-files --others --exclude-standard -z
-            } | sort -zu
-          )
-          if [[ "${#CHANGED[@]}" -eq 0 ]]; then
+          mapfile -d '' changed_paths < <({ git diff --name-only -z HEAD --; git ls-files --others --exclude-standard -z; } | sort -zu)
+          if [[ "${#changed_paths[@]}" -eq 0 ]]; then
             echo "::error::Validated release produced no repository changes."
             exit 1
           fi
 
-          for path in "${CHANGED[@]}"; do
+          trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
+          trigger_path="${trigger_path%.py}.txt"
+          test_path="${RELEASE_SCRIPT%.py}.test.py"
+          for path in "${changed_paths[@]}"; do
             case "$path" in
-              bus.html|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
+              bus.html|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|"$test_path"|.github/scripts/kerbside-release-post.py)
                 ;;
               *)
                 echo "::error::Unexpected release path: $path"
                 exit 1
                 ;;
             esac
-
-            mode="$(git ls-files -s -- "$path" | awk 'NR==1 {print $1}')"
-            mode="${mode:-100644}"
-            if [[ -f "$path" ]]; then
-              blob_sha="$(base64 -w 0 -- "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
-                gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
-              TREE="$(jq --arg path "$path" --arg mode "$mode" --arg sha "$blob_sha" \
-                '. + [{path: $path, mode: $mode, type: "blob", sha: $sha}]' <<<"$TREE")"
-            else
-              TREE="$(jq --arg path "$path" --arg mode "$mode" \
-                '. + [{path: $path, mode: $mode, type: "blob", sha: null}]' <<<"$TREE")"
-            fi
           done
 
-          TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
-            '{base_tree: $base_tree, tree: $tree}' | \
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq '.sha')"
-          COMMIT_SHA="$(jq -n --arg message 'Release Kerbside browser update' --arg tree "$TREE_SHA" --arg parent "$BASE_SHA" \
-            '{message: $message, tree: $tree, parents: [$parent]}' | \
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq '.sha')"
-          jq -n --arg sha "$COMMIT_SHA" '{sha: $sha, force: false}' | \
-            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$RELEASE_BRANCH" --input - >/dev/null
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- bus.html build-timetable.js timetable.json kerbside-backend .github/scripts .github/triggers
+          git diff --cached --check
+          git commit -m "Release Kerbside browser update"
 
-          echo "Published validated release commit $COMMIT_SHA to $RELEASE_BRANCH"
+          # The exact lease prevents overwriting any branch movement after the
+          # validated source SHA was captured.
+          git push --force-with-lease="refs/heads/${RELEASE_BRANCH}:${EXPECTED_SOURCE_SHA}" origin "HEAD:refs/heads/${RELEASE_BRANCH}"
