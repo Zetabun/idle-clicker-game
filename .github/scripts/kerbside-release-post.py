@@ -12,6 +12,18 @@ new = """      window.fetch=async input=>{
       };"""
 if text.count(old) != 1:
     raise SystemExit(f'Expected exactly one malformed-coverage fetch mock, found {text.count(old)}')
+text = text.replace(old, new, 1)
+
+old = "    window.fetch=async () => {calls++;if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});throw new TypeError('offline');};"
+new = """    window.fetch=async input => {
+      const url=String(input&&input.url||input||'');
+      if(url.includes('/gtfsrt')) return new Response(JSON.stringify({version:1,vehicles:[]}),{status:200,headers:{'Content-Type':'application/json'}});
+      calls++;
+      if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});
+      throw new TypeError('offline');
+    };"""
+if text.count(old) != 1:
+    raise SystemExit(f'Expected exactly one partial-feed fetch mock, found {text.count(old)}')
 path.write_text(text.replace(old, new, 1), encoding='utf-8')
 
 path = Path('kerbside-backend/tests/audit-regression.mjs')
