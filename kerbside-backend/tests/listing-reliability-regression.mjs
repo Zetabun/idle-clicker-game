@@ -69,8 +69,10 @@ try {
       state.timetableSource = 'national'; state.timetableRegion = 'west_midlands'; state.timetableRun++;
       state.dir = 'all'; state.destFilter = null; state.interval = 15;
 
-      const schedule = api.timetableRows(new Date(now)).find(row => row.trip === trip);
-      if (!schedule) throw new Error('ETA regression timetable row did not resolve');
+      const schedule = api.timetableRows(new Date(now))
+        .filter(row => row.trip === trip)
+        .reduce((best, row) => !best || Math.abs(row.at - departure.getTime()) < Math.abs(best.at - departure.getTime()) ? row : best, null);
+      if (!schedule || Math.abs(schedule.at - departure.getTime()) > 60000) throw new Error('ETA regression timetable row did not resolve to the intended departure');
       const snapshot = {
         v: null, dir: 'in', app: true, strength: 1, secs: 900, liveSecs: 900,
         metres: 1000, routeMetres: 1500, geometry: null, confidence: 'high', spread: 90,
@@ -91,7 +93,8 @@ try {
       const keptHealthy = api.retainedSnapshotRow(vehicle(320000), now);
       const droppedHealthy = api.retainedSnapshotRow(vehicle(340000), now);
       const scheduleClaimed = api.scheduleClaimedByLive(keptHealthy);
-      const duplicateScheduledRows = api.scheduledBoardRows([keptHealthy]).length;
+      const duplicateScheduledRows = api.scheduledBoardRows([keptHealthy])
+        .filter(row => row && row.schedule && row.schedule.trip === schedule.trip && row.schedule.at === schedule.at).length;
       const plainLostClaims = api.scheduleClaimedByLive({ gpsLost: true, schedule });
 
       state.lastFeedAt = now - 5 * 60000; state.feedFallback = true;
