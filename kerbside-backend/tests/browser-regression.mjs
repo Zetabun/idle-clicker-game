@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.9'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.10'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -124,7 +124,12 @@ assert.match(busSource, /mode:'feed-speed'/);
 assert.match(busSource, /mode:'gps-average'/);
 assert.doesNotMatch(busSource, /GPS_FRESH_MS/);
 assert.match(busSource, /gpsQuality=etaGpsQuality\(r\.v,now\)/);
-assert.match(busSource, /tracked\.filter\(v=>etaGpsQuality\(v,now\)\.fresh\)/);
+assert.match(busSource, /const GPS_LIVE_DISPLAY_SECONDS = 120/);
+assert.match(busSource, /function gpsLiveDisplayFresh\(v,now=Date\.now\(\)\)/);
+assert.match(busSource, /tracked\.filter\(v=>gpsLiveDisplayFresh\(v,now\)\)/);
+assert.ok(busSource.includes("const due=!gpsLost&&etaFresh&&r.confidence!=='low'&&dueWithin(r.secs,LIVE_DUE_SECONDS);"));
+assert.ok(busSource.includes("return 'no matching live bus yet';"));
+assert.doesNotMatch(busSource, /no bus is working this departure yet/);
 assert.match(busSource, /const LIVE_DUE_SECONDS = 45/);
 assert.match(busSource, /const SCHEDULE_DUE_SECONDS = 45/);
 assert.match(busSource, /if\(r\.at<now \|\| r\.at>end\) return false;/);
@@ -264,7 +269,7 @@ assert.match(busSource, /if\(refs\.length!==1\) return \{items:\[\],ref:'',ambig
 assert.match(busSource, /const originMatch=uniqueOriginTrips\(ttRows,identity\);/);
 assert.match(busSource, /originMatch:true,routeIdentityMatch:identityInfo\.strong/);
 assert.match(busSource, /originAt:originMins===null\?null:|const originAt=hasOrigin\?serviceDepartureTime\(serviceDate,originRaw\)\.getTime\(\):null;/);
-assert.match(busSource, /no bus is working this departure yet/);
+assert.match(busSource, /no matching live bus yet/);
 /* The reason a scheduled row has no live bus must know which buses are already
    listed against other departures, or a route running normally reports a
    matching failure on every later row. */
@@ -1659,7 +1664,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.9'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.10'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

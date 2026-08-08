@@ -850,7 +850,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
         <div class="destbar" id="destBar" role="group" aria-label="Filter by destination"></div>
         <div class="board-info-panel" id="boardInfoPanel" hidden>
           <div class="stopmeta" id="stopSource">Stop reference appears once a stop is selected.</div>
-          <div class="confidence-guide"><b>LIVE GPS</b> means the latest bus position is still inside Kerbside's cadence-aware freshness window (30 to 75 seconds, depending on how often that vehicle reports). <b>GPS DELAYED</b> means the last confirmed report is still recent enough to retain, but old enough that ETA confidence has been reduced; Kerbside holds the row briefly rather than letting the bus flicker out. <b>GPS SIGNAL LOST</b> means the operator stopped reporting a bus it had already confirmed, so the row is held without a countdown until it expires. Later timetable departures stay <b>scheduled</b> until a matching vehicle begins service. Confidence runs <b>verified</b>, where journey or timetable evidence confirms this bus serves the stop, then <b>likely</b>, where route and direction evidence agree but the journey is not fully matched, then <b>rough</b>, where evidence is limited and the ETA is approximate. Tap a matched live bus for its ordered stop progress; a map route is drawn only when the national GTFS feed supplies an official shape for that exact journey. Roadworks and closures on the routes that call here appear above the board, matched by exact stop code and filtered to what is running now.</div>
+          <div class="confidence-guide"><b>LIVE GPS</b> means the latest bus position was reported within the last two minutes. ETA confidence is stricter and still uses the vehicle's normal 30 to 75 second reporting cadence. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old; Kerbside holds the row briefly rather than letting the bus flicker out. <b>GPS SIGNAL LOST</b> means the operator stopped reporting a bus it had already confirmed, so the row is held without a countdown until it expires. Later timetable departures stay <b>scheduled</b> until a matching vehicle begins service. Confidence runs <b>verified</b>, where journey or timetable evidence confirms this bus serves the stop, then <b>likely</b>, where route and direction evidence agree but the journey is not fully matched, then <b>rough</b>, where evidence is limited and the ETA is approximate. Tap a matched live bus for its ordered stop progress; a map route is drawn only when the national GTFS feed supplies an official shape for that exact journey. Roadworks and closures on the routes that call here appear above the board, matched by exact stop code and filtered to what is running now.</div>
           <div class="live-diagnostics" id="liveDiagnostics">Live matching diagnostics will appear after a stop and live feed are loaded.</div>
           <div class="destnote" id="destNote" style="display:none"></div>
           <div class="servenote" id="serveNote" style="display:none"></div>
@@ -1014,7 +1014,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
               <div class="stat-card"><span class="stat-value" id="statGpsRefresh">—</span><span class="stat-label">Browser refresh interval</span></div>
               <div class="stat-card"><span class="stat-value" id="statGpsUpdated">—</span><span class="stat-label">Last live update</span></div>
             </div>
-            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions outside each vehicle's cadence-aware 30 to 75 second freshness window are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. It also follows ordered timetable journeys upstream, checking at most three additional route-corridor areas once per minute and retaining only exact live journeys that have not passed this stop.</p>
+            <p class="gps-note"><b>GPS supported.</b> The map uses operator vehicle-position snapshots from the BODS live feed. Between reports, Kerbside shows a short estimated glide based on recent confirmed movement; stop matching and ETAs continue to use confirmed GPS records. Positions over two minutes old are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. ETA confidence still follows each vehicle's normal 30 to 75 second reporting cadence. Kerbside periodically scans up to 18 km around the selected stop, but buses beyond the normal nearby area appear only when their exact live journey is scheduled to call there. It also follows ordered timetable journeys upstream, checking at most three additional route-corridor areas once per minute and retaining only exact live journeys that have not passed this stop.</p>
           </div>
 
           <div class="stats-section">
@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.9';
+const APP_VERSION = '0.7.10';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4479,6 +4479,7 @@ function routeEvidence(line,dest,journey,identity){
 const ETA_MIN_FRESH_SECONDS = 30;
 const ETA_MAX_FRESH_SECONDS = 75;
 const ETA_CADENCE_MULTIPLIER = 1.75;
+const GPS_LIVE_DISPLAY_SECONDS = 120;
 function etaFreshWindowSeconds(cadence){
   const seconds=Number(cadence);
   if(!Number.isFinite(seconds)||seconds<=0) return 45;
@@ -4489,6 +4490,10 @@ function etaGpsQuality(v,now=Date.now()){
   const cadence=Number(v&&v.cadence);
   const freshWindow=etaFreshWindowSeconds(cadence);
   return {age,cadence:Number.isFinite(cadence)&&cadence>0?cadence:null,freshWindow,fresh:age<=freshWindow};
+}
+function gpsLiveDisplayFresh(v,now=Date.now()){
+  const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+  return Number.isFinite(age)&&age<=GPS_LIVE_DISPLAY_SECONDS;
 }
 function scheduleEtaBlendWeight(evidence,quality){
   // Journey identity establishes *which* departure this is; it must not drag a
@@ -4819,7 +4824,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5391,7 +5396,7 @@ function scheduleIdentityEvidence(schedule,v,evidenceCache){
 function scheduleCandidateReason(v,now){
   const rejection=S.liveDiag&&S.liveDiag.vehicleRejections&&S.liveDiag.vehicleRejections.get(String(v.id));
   const decisive=new Set(['passed','direction','destination']);
-  if(!etaGpsQuality(v,now).fresh&&!decisive.has(rejection)) return 'matching GPS is delayed';
+  if(!gpsLiveDisplayFresh(v,now)&&!decisive.has(rejection)) return 'matching GPS is delayed';
   const labels={
     stale:'matching GPS signal is lost',
     range:'matching GPS is outside tracking range',
@@ -5434,7 +5439,7 @@ function scheduleLiveReason(schedule,liveRows,evidenceCache){
     if(originLive.length===1) return 'origin departure is not unique in the timetable';
     if(!sameBranch.some(v=>Number.isFinite(Number(v.aimedOriginAt))))
       return 'operator publishes no origin departure time';
-    return 'no bus is working this departure yet';
+    return 'no matching live bus yet';
   }
   if(!journeyRefComparable(schedule.trip)||!sameBranch.some(v=>journeyRefComparable(v.journey)))
     return 'operator publishes no matchable journey code';
@@ -5980,8 +5985,8 @@ function render(){
     deps.innerHTML=rows.map(r=>{
       if(r.kind==='scheduled') return renderScheduledRow(r);
       const mins=Math.max(0,Math.round(r.secs/60));
-      const now=Date.now(), age=now-r.v.ts, gpsLost=!!r.gpsLost, gpsQuality=etaGpsQuality(r.v,now), gpsFresh=!gpsLost&&gpsQuality.fresh, gpsAge=formatPositionAge(age);
-      const due=!gpsLost&&gpsFresh&&r.confidence!=='low'&&dueWithin(r.secs,LIVE_DUE_SECONDS);
+      const now=Date.now(), age=now-r.v.ts, gpsLost=!!r.gpsLost, gpsQuality=etaGpsQuality(r.v,now), gpsLive=!gpsLost&&gpsLiveDisplayFresh(r.v,now), etaFresh=!gpsLost&&gpsQuality.fresh, gpsAge=formatPositionAge(age);
+      const due=!gpsLost&&etaFresh&&r.confidence!=='low'&&dueWithin(r.secs,LIVE_DUE_SECONDS);
       const scheduleDue=dueWithin(r.secs,SCHEDULE_DUE_SECONDS);
       const tight=!gpsLost&&S.walkSecs>90 && r.secs<S.walkSecs-30;
       /* The chip carries the heading; the arrow keeps the in/out sense that the
@@ -5991,23 +5996,23 @@ function render(){
       const dirChip=r.directionWord?dirArrow+r.directionWord:(S.destFilter?fmtDist(r.metres)+' away':'Direction unclear');
       const confLabel=r.confidence==='high'?'verified':r.confidence==='medium'?'likely':'rough';
       const confHelp=r.confidence==='high'?'Journey or timetable evidence strongly confirms this bus serves the selected stop.':r.confidence==='medium'?'Live GPS, route and direction evidence suggest this bus serves the stop, but the journey is not fully matched.':'Limited route or movement evidence; treat this ETA as approximate.';
-      const gpsLabel=gpsLost?(r.scheduleFallback?'GPS lost · schedule':'GPS signal lost'):gpsFresh?'live GPS':'GPS delayed';
-      const gpsHelp=gpsLost?(r.scheduleFallback?'Fresh GPS stopped for this matched departure; its row is temporarily using the timetable instead of creating a duplicate scheduled bus.':'The operator feed stopped reporting this previously verified bus. Kerbside is holding the row briefly without a live countdown.'):gpsFresh?'Fresh vehicle position from BODS; current for this bus\'s reporting cadence.':'Last confirmed BODS position was '+gpsAge+'; ETA confidence is reduced until a fresh report arrives.';
-      const etaText=gpsLost?(r.scheduleFallback?(scheduleDue?'due':'~'+mins):'—'):due?'due':((!gpsFresh||r.confidence==='low')?'~':'')+mins;
+      const gpsLabel=gpsLost?(r.scheduleFallback?'GPS lost · schedule':'GPS signal lost'):gpsLive?'live GPS':'GPS delayed';
+      const gpsHelp=gpsLost?(r.scheduleFallback?'Fresh GPS stopped for this matched departure; its row is temporarily using the timetable instead of creating a duplicate scheduled bus.':'The operator feed stopped reporting this previously verified bus. Kerbside is holding the row briefly without a live countdown.'):gpsLive?(etaFresh?'Live vehicle position from BODS; current for this bus\'s reporting cadence.':'Live vehicle position from BODS; still under two minutes old, but older than this bus\'s normal reporting cadence so its ETA is estimated.'):'Last confirmed BODS position was '+gpsAge+'; the position is over two minutes old and ETA confidence is reduced.';
+      const etaText=gpsLost?(r.scheduleFallback?(scheduleDue?'due':'~'+mins):'—'):due?'due':((!etaFresh||r.confidence==='low')?'~':'')+mins;
       return '<div class="depwrap"><div class="depmain">'
         +'<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'" aria-expanded="'+(S.selected===r.v.id)+'">'
-        +'<span class="route'+(age>75000?' stale':'')+'">'+esc(r.v.line)+'</span>'
+        +'<span class="route'+(!gpsLive?' stale':'')+'">'+esc(r.v.line)+'</span>'
         +'<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span><span class="deprow2">'
         +'<span class="chip direction-gps'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
         +(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
-        +'<span class="chip '+(gpsLost?'gps-lost':gpsFresh?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>'
+        +'<span class="chip '+(gpsLost?'gps-lost':gpsLive?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>'
         +'<span class="chip gps-age">'+esc(gpsAge)+'</span>'
         +(r.v.corridorTracked?'<span class="chip route-scan" title="Found farther upstream through this exact timetable journey">route scan</span>':'')
         +'<span class="chip conf-'+r.confidence+'" title="'+esc(confHelp)+'" aria-label="'+esc(confLabel+': '+confHelp)+'">'+confLabel+'</span>'
 +(r.evidence&&r.evidence.journeyDestinationConflict?'<span class="chip timing" title="Live destination and matched timetable journey disagree; route progress is withheld until they line up.">journey updating</span>':r.recovered?'<span class="chip timing" title="Kept on the board because route or timetable evidence supports the match despite weak GPS or direction confidence.">match retained</span>':'')
 +(!gpsLost&&r.schedule?'<span class="chip timing">'+esc(liveTimingLabel(r))+'</span>':'')
 +(tight?'<span class="chip tight">Tight</span>':'')
-        +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(scheduleDue?'scheduled':'min'):'last seen'):due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'
+        +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(scheduleDue?'scheduled':'min'):'last seen'):due?'arriving':(!etaFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'
         +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
         +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button></div>'
         +(S.selected===r.v.id?lineDetail(r):'')+'</div>';
@@ -6452,7 +6457,7 @@ async function poll(force){
     const list=S.demo?fetchSim(dt):await fetchLive(ctl.signal);
     ingest(list); learnDests(); learnServing(); S.lastOk=Date.now(); S.lastFeedAt=Date.now();
     const now=Date.now(), tracked=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
-    const fresh=tracked.filter(v=>etaGpsQuality(v,now).fresh).length, delayed=tracked.length-fresh;
+    const fresh=tracked.filter(v=>gpsLiveDisplayFresh(v,now)).length, delayed=tracked.length-fresh;
     const hidden=!S.demo&&S.feedStale?' · '+S.feedStale+' stale hidden':'';
     const delayedText=!S.demo&&delayed?' · '+delayed+' delayed':'';
     const tt=S.ttStop?' · timetable checked':'';
@@ -6522,7 +6527,7 @@ function prettyRegionName(name){
 }
 function renderGpsStats(){
   const now=Date.now(), tracked=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
-  const fresh=tracked.filter(v=>etaGpsQuality(v,now).fresh).length, delayed=tracked.length-fresh;
+  const fresh=tracked.filter(v=>gpsLiveDisplayFresh(v,now)).length, delayed=tracked.length-fresh;
   const hidden=(Number(S.feedStale)||0)+(Number(S.feedUnknownAge)||0);
   $('statGpsVehicles').textContent=formatStat(fresh);
   $('statGpsHidden').textContent=formatStat(hidden);
