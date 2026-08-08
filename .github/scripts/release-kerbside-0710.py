@@ -158,6 +158,11 @@ assert.ok(busSource.includes("const due=!gpsLost&&etaFresh&&r.confidence!=='low'
 assert.ok(busSource.includes("return 'no matching live bus yet';"));
 assert.doesNotMatch(busSource, /no bus is working this departure yet/);''',
 )
+replace_once(
+    'kerbside-backend/tests/browser-regression.mjs',
+    r'''assert.match(busSource, /no bus is working this departure yet/);''',
+    r'''assert.match(busSource, /no matching live bus yet/);''',
+)
 
 subprocess.run([sys.executable, '.github/scripts/sync-version.py'], check=True)
 subprocess.run([sys.executable, '.github/scripts/sync-version.py', '--check'], check=True)
