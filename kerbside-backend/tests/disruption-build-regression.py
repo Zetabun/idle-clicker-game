@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Regression coverage for the generated Kerbside disruption feed heartbeat."""
+from datetime import datetime, timedelta, timezone
+import importlib.util
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / '.github' / 'scripts' / 'build-disruptions.py'
+SPEC = importlib.util.spec_from_file_location('kerbside_build_disruptions', SCRIPT)
+MODULE = importlib.util.module_from_spec(SPEC)
+assert SPEC and SPEC.loader
+SPEC.loader.exec_module(MODULE)
+
+NOW = datetime(2026, 8, 8, 0, 0, tzinfo=timezone.utc)
+
+
+def document(*, built, count=1, summary='Roadworks'):
+    return {
+        'version': 1,
+        'scope': 'kerbside-disruptions',
+        'built': built,
+        'source': 'Department for Transport Bus Open Data Service (SIRI-SX)',
+        'licence': 'Open Government Licence v3.0',
+        'published': count,
+        'count': count,
+        'situations': [{'id': 'one', 'summary': summary, 'stops': ['1800TEST']}],
+        'byStop': {'1800TEST': [0]},
+    }
+
+
+fresh = document(built=(NOW - timedelta(hours=1)).isoformat())
+current = document(built=NOW.isoformat())
+changed, reason = MODULE.publish_decision(fresh, current, NOW)
+assert changed is False and reason == 'unchanged', (changed, reason)
+
+old = document(built=(NOW - timedelta(hours=7)).isoformat())
+changed, reason = MODULE.publish_decision(old, current, NOW)
+assert changed is True and reason == 'heartbeat', (changed, reason)
+
+changed_content = document(built=NOW.isoformat(), summary='Diversion')
+changed, reason = MODULE.publish_decision(fresh, changed_content, NOW)
+assert changed is True and reason == 'content', (changed, reason)
+
+missing_timestamp = document(built='')
+changed, reason = MODULE.publish_decision(missing_timestamp, current, NOW)
+assert changed is True and reason == 'heartbeat', (changed, reason)
+
+changed, reason = MODULE.publish_decision(None, current, NOW)
+assert changed is True and reason == 'initial', (changed, reason)
+
+assert MODULE.comparable_document(fresh) == MODULE.comparable_document(current)
+assert MODULE.heartbeat_due(old, NOW) is True
+assert MODULE.heartbeat_due(fresh, NOW) is False
+
+print('Kerbside disruption build heartbeat regression checks passed.')

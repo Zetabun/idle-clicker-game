@@ -31,6 +31,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,12 +49,16 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json
+          from datetime import datetime, timezone
           with open('disruptions.json', encoding='utf-8') as handle:
               feed = json.load(handle)
           assert feed['scope'] == 'kerbside-disruptions', 'unexpected scope'
           assert feed['version'] == 1, 'unexpected format version'
           assert isinstance(feed['situations'], list), 'situations must be a list'
           assert isinstance(feed['byStop'], dict), 'byStop must be an object'
+          built = datetime.fromisoformat(feed['built'].replace('Z', '+00:00'))
+          assert built.tzinfo is not None, 'built timestamp must carry a timezone'
+          assert (datetime.now(timezone.utc) - built).total_seconds() < 900, 'build timestamp is unexpectedly old'
           for position in (index for indices in feed['byStop'].values() for index in indices):
               assert 0 <= position < len(feed['situations']), 'byStop points outside situations'
           print('feed verified: %d situations, %d indexed stops'
@@ -60,6 +67,8 @@ jobs:
 
       - name: Commit refreshed feed
         if: steps.build.outputs.changed == 'true'
+        env:
+          PUBLISH_REASON: ${{ steps.build.outputs.reason }}
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -69,9 +78,21 @@ jobs:
             echo 'No change to commit.'
             exit 0
           fi
-          git commit -m "Refresh Kerbside disruptions feed (${{ steps.build.outputs.count }} situations)"
-          git push
+          git commit -m "Refresh Kerbside disruptions feed (${{ steps.build.outputs.count }} situations; ${PUBLISH_REASON})"
+
+          # An app release may have landed while this feed was downloading.
+          # Rebase this data-only commit on the newest main instead of rejecting
+          # either change. If another write wins the tiny push race, refresh and
+          # retry once; disruptions.json is the only file this job commits.
+          git fetch origin main
+          git rebase origin/main
+          if ! git push origin HEAD:main; then
+            echo 'Push raced another main update; rebasing once more.'
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
 
       - name: Report unchanged
         if: steps.build.outputs.changed != 'true'
-        run: echo 'Disruption content is unchanged; nothing committed.'
+        run: echo 'Disruption content is unchanged and the heartbeat is still fresh; nothing committed.'

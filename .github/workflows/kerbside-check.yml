@@ -10,11 +10,14 @@ on:
       - build-timetable.js
       - kerbside-backend/**
       - .github/scripts/sync-version.py
+      - .github/scripts/build-disruptions.py
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/deploy-kerbside-accuracy-hardening.yml
       - .github/workflows/deploy-kerbside-stop-side-hardening.yml
       - .github/workflows/deploy-kerbside-journey-identity-hardening.yml
+      - .github/workflows/deploy-kerbside-reliability-hardening.yml
+      - .github/workflows/kerbside-disruptions.yml
       - .github/workflows/kerbside-check.yml
       - .github/workflows/kerbside-release.yml
       - .github/workflows/verify-kerbside-production.yml
@@ -27,11 +30,14 @@ on:
       - build-timetable.js
       - kerbside-backend/**
       - .github/scripts/sync-version.py
+      - .github/scripts/build-disruptions.py
       - .github/workflows/build-kerbside-national.yml
       - .github/workflows/deploy-kerbside-worker.yml
       - .github/workflows/deploy-kerbside-accuracy-hardening.yml
       - .github/workflows/deploy-kerbside-stop-side-hardening.yml
       - .github/workflows/deploy-kerbside-journey-identity-hardening.yml
+      - .github/workflows/deploy-kerbside-reliability-hardening.yml
+      - .github/workflows/kerbside-disruptions.yml
       - .github/workflows/kerbside-check.yml
       - .github/workflows/kerbside-release.yml
       - .github/workflows/verify-kerbside-production.yml
@@ -46,7 +52,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
 
     steps:
       - name: Check out repository
@@ -127,15 +133,20 @@ jobs:
           print(f'Validated {len(scripts)} inline browser script(s).')
           PY
 
-      - name: Validate timetable builders and Worker
+      - name: Validate timetable builders, reliability tooling and Worker
         shell: bash
         run: |
           set -euo pipefail
           node --check build-timetable.js
           node --check kerbside-backend/scripts/apply-stop-side-hardening-build.mjs
           node --check kerbside-backend/scripts/apply-journey-identity-hardening-build.mjs
+          node --check kerbside-backend/scripts/apply-reliability-hardening-build.mjs
           node --check kerbside-backend/tests/stop-side-regression.mjs
           node --check kerbside-backend/tests/journey-identity-regression.mjs
+          node --check kerbside-backend/tests/disruption-regression.mjs
+          node --check kerbside-backend/tests/listing-reliability-regression.mjs
+          python3 -m py_compile .github/scripts/build-disruptions.py kerbside-backend/tests/disruption-build-regression.py
+          python3 kerbside-backend/tests/disruption-build-regression.py
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
@@ -154,10 +165,12 @@ jobs:
           npm run test:accuracy-hardening --prefix kerbside-backend --if-present
           npm run test:stop-side --prefix kerbside-backend --if-present
           npm run test:journey-identity --prefix kerbside-backend --if-present
+          npm run test:disruptions --prefix kerbside-backend --if-present
+          npm run test:listing-reliability --prefix kerbside-backend --if-present
 
       # Same suite, same phone-sized viewport, different engine. WebKit alone
       # cannot catch a Chromium-only layout, Cache API or input difference,
-      # and Chromium is what Android users run.
+      # and Chromium is what most Android users run.
       - name: Run Chromium mobile regression checks
         shell: bash
         env:
@@ -171,6 +184,37 @@ jobs:
           npm run test:accuracy-hardening --prefix kerbside-backend --if-present
           npm run test:stop-side --prefix kerbside-backend --if-present
           npm run test:journey-identity --prefix kerbside-backend --if-present
+          npm run test:disruptions --prefix kerbside-backend --if-present
+          npm run test:listing-reliability --prefix kerbside-backend --if-present
+
+      # Prep PRs intentionally leave the served app unchanged. Still execute the
+      # generated release once inside CI so exact source migrations and the new
+      # behavioural regressions are proven before the prep tooling can merge.
+      - name: Validate generated 0.7.8 reliability build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            git restore -- \
+              bus.html VERSION \
+              kerbside-backend/src/worker.js \
+              kerbside-backend/package.json \
+              kerbside-backend/test/worker.test.js \
+              kerbside-backend/tests/browser-regression.mjs
+          }
+          trap cleanup EXIT
+          node kerbside-backend/scripts/apply-reliability-hardening-build.mjs 0.7.8
+          python3 .github/scripts/sync-version.py
+          python3 .github/scripts/sync-version.py --check
+          npm run check --prefix kerbside-backend
+          npm run test:browser --prefix kerbside-backend
+          npm run test:disruptions --prefix kerbside-backend
+          npm run test:listing-reliability --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:disruptions --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:listing-reliability --prefix kerbside-backend
+          python3 kerbside-backend/tests/disruption-build-regression.py
+          git diff --check
 
       - name: Validate timetable cache policy
         shell: bash
@@ -200,6 +244,8 @@ jobs:
             .github/workflows/deploy-kerbside-accuracy-hardening.yml \
             .github/workflows/deploy-kerbside-stop-side-hardening.yml \
             .github/workflows/deploy-kerbside-journey-identity-hardening.yml \
+            .github/workflows/deploy-kerbside-reliability-hardening.yml \
+            .github/workflows/kerbside-disruptions.yml \
             .github/workflows/kerbside-check.yml \
             .github/workflows/kerbside-release.yml \
             .github/workflows/verify-kerbside-production.yml
