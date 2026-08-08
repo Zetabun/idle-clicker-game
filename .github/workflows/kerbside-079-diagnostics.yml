@@ -1,0 +1,65 @@
+name: Diagnose Kerbside 0.7.9 validation
+
+on:
+  push:
+    branches:
+      - agent/kerbside-079-diagnostics
+    paths:
+      - .github/kerbside-079-diagnostics.trigger
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Capture main release run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: 695562ef84311aa05f2eaf794af81631c68cf587
+        run: |
+          set -euo pipefail
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          endpoint="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$TARGET_SHA&per_page=20"
+          run=''
+          for attempt in $(seq 1 80); do
+            payload="$(curl -fsSL "${auth[@]}" "$endpoint")"
+            run="$(printf '%s' "$payload" | jq -c '[.workflow_runs[] | select(.name == "Apply Kerbside 0.7.9 time accuracy fixes")][0] // empty')"
+            if [[ -n "$run" ]]; then
+              status="$(printf '%s' "$run" | jq -r '.status')"
+              if [[ "$status" == "completed" ]]; then
+                break
+              fi
+            fi
+            sleep 15
+          done
+
+          if [[ -z "$run" ]]; then
+            run='{"status":"not_found","conclusion":null,"id":null,"html_url":null}'
+            jobs='[]'
+          else
+            run_id="$(printf '%s' "$run" | jq -r '.id')"
+            jobs_payload="$(curl -fsSL "${auth[@]}" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100")"
+            jobs="$(printf '%s' "$jobs_payload" | jq '[.jobs[] | {id,name,status,conclusion,html_url,started_at,completed_at}]')"
+          fi
+
+          jq -n \
+            --arg target_sha "$TARGET_SHA" \
+            --argjson run "$run" \
+            --argjson jobs "$jobs" \
+            '{target_sha:$target_sha, captured_at:(now|todate), run:$run, jobs:$jobs}' \
+            > .github/kerbside-079-run-status.json
+
+          git config user.name "OpenAI Agent"
+          git config user.email "noreply@openai.com"
+          git add .github/kerbside-079-run-status.json
+          git commit -m "Record Kerbside 0.7.9 validation status" || exit 0
+          git push origin HEAD:agent/kerbside-079-diagnostics
