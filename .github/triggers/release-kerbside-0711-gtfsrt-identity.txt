@@ -9,3 +9,5 @@ Release goals:
 - do not let a stale SIRI destination override an exact matched GTFS trip during a terminus handover
 - proxy and decode GTFS-RT server-side so the BODS API key stays in the Worker
 - bump Kerbside to 0.7.11
+
+Rerun note: update the browser regression source assertion for the expanded matched-identity test API.
