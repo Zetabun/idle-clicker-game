@@ -1,0 +1,176 @@
+name: Prepare Kerbside 0.7.10 GPS freshness hotfix
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0710-gps-freshness
+    paths:
+      - .github/workflows/kerbside-0710-hotfix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply 0.7.10 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement, found {count}: {old[:120]!r}')
+              target.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          version = Path('VERSION').read_text(encoding='utf-8').strip()
+          if version != '0.7.9':
+              raise SystemExit(f'Expected Kerbside 0.7.9 base, found {version!r}')
+          Path('VERSION').write_text('0.7.10\n', encoding='utf-8')
+
+          replace_once('bus.html', '''const ETA_MIN_FRESH_SECONDS = 30;
+          const ETA_MAX_FRESH_SECONDS = 75;
+          const ETA_CADENCE_MULTIPLIER = 1.75;''', '''const ETA_MIN_FRESH_SECONDS = 30;
+          const ETA_MAX_FRESH_SECONDS = 75;
+          const ETA_CADENCE_MULTIPLIER = 1.75;
+          const GPS_LIVE_DISPLAY_SECONDS = 120;''')
+
+          replace_once('bus.html', '''function etaGpsQuality(v,now=Date.now()){
+            const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+            const cadence=Number(v&&v.cadence);
+            const freshWindow=etaFreshWindowSeconds(cadence);
+            return {age,cadence:Number.isFinite(cadence)&&cadence>0?cadence:null,freshWindow,fresh:age<=freshWindow};
+          }''', '''function etaGpsQuality(v,now=Date.now()){
+            const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+            const cadence=Number(v&&v.cadence);
+            const freshWindow=etaFreshWindowSeconds(cadence);
+            return {age,cadence:Number.isFinite(cadence)&&cadence>0?cadence:null,freshWindow,fresh:age<=freshWindow};
+          }
+          function gpsLiveDisplayFresh(v,now=Date.now()){
+            const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+            return Number.isFinite(age)&&age<=GPS_LIVE_DISPLAY_SECONDS;
+          }''')
+
+          replace_once('bus.html', "if(!etaGpsQuality(v,now).fresh&&!decisive.has(rejection)) return 'matching GPS is delayed';", "if(!gpsLiveDisplayFresh(v,now)&&!decisive.has(rejection)) return 'matching GPS is delayed';")
+
+          replace_once('bus.html', '''const now=Date.now(), age=now-r.v.ts, gpsLost=!!r.gpsLost, gpsQuality=etaGpsQuality(r.v,now), gpsFresh=!gpsLost&&gpsQuality.fresh, gpsAge=formatPositionAge(age);
+                const due=!gpsLost&&gpsFresh&&r.confidence!=='low'&&dueWithin(r.secs,LIVE_DUE_SECONDS);''', '''const now=Date.now(), age=now-r.v.ts, gpsLost=!!r.gpsLost, gpsQuality=etaGpsQuality(r.v,now), gpsLive=!gpsLost&&gpsLiveDisplayFresh(r.v,now), etaFresh=!gpsLost&&gpsQuality.fresh, gpsAge=formatPositionAge(age);
+                const due=!gpsLost&&etaFresh&&r.confidence!=='low'&&dueWithin(r.secs,LIVE_DUE_SECONDS);''')
+
+          replace_once('bus.html', '''const gpsLabel=gpsLost?(r.scheduleFallback?'GPS lost · schedule':'GPS signal lost'):gpsFresh?'live GPS':'GPS delayed';
+                const gpsHelp=gpsLost?(r.scheduleFallback?'Fresh GPS stopped for this matched departure; its row is temporarily using the timetable instead of creating a duplicate scheduled bus.':'The operator feed stopped reporting this previously verified bus. Kerbside is holding the row briefly without a live countdown.'):gpsFresh?'Fresh vehicle position from BODS; current for this bus\\'s reporting cadence.':'Last confirmed BODS position was '+gpsAge+'; ETA confidence is reduced until a fresh report arrives.';
+                const etaText=gpsLost?(r.scheduleFallback?(scheduleDue?'due':'~'+mins):'—'):due?'due':((!gpsFresh||r.confidence==='low')?'~':'')+mins;''', '''const gpsLabel=gpsLost?(r.scheduleFallback?'GPS lost · schedule':'GPS signal lost'):gpsLive?'live GPS':'GPS delayed';
+                const gpsHelp=gpsLost?(r.scheduleFallback?'Fresh GPS stopped for this matched departure; its row is temporarily using the timetable instead of creating a duplicate scheduled bus.':'The operator feed stopped reporting this previously verified bus. Kerbside is holding the row briefly without a live countdown.'):gpsLive?(etaFresh?'Live vehicle position from BODS; current for this bus\\'s reporting cadence.':'Live vehicle position from BODS; still under two minutes old, but older than this bus\\'s normal reporting cadence so its ETA is estimated.'):'Last confirmed BODS position was '+gpsAge+'; the position is over two minutes old and ETA confidence is reduced.';
+                const etaText=gpsLost?(r.scheduleFallback?(scheduleDue?'due':'~'+mins):'—'):due?'due':((!etaFresh||r.confidence==='low')?'~':'')+mins;''')
+
+          replace_once('bus.html', '''+'<span class="route'+(age>75000?' stale':'')+'">'+esc(r.v.line)+'</span>' ''', '''+'<span class="route'+(!gpsLive?' stale':'')+'">'+esc(r.v.line)+'</span>' ''')
+          replace_once('bus.html', '''+(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
+                +'<span class="chip '+(gpsLost?'gps-lost':gpsFresh?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>''', '''+(S.destFilter?'':'<span class="chip'+(r.app?'':' away')+'">'+fmtDist(r.metres)+'</span>')
+                +'<span class="chip '+(gpsLost?'gps-lost':gpsLive?'live-gps':'gps-delayed')+'" title="'+esc(gpsHelp)+'">'+gpsLabel+'</span>''')
+          replace_once('bus.html', '''+'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(scheduleDue?'scheduled':'min'):'last seen'):due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>' ''', '''+'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(scheduleDue?'scheduled':'min'):'last seen'):due?'arriving':(!etaFresh||r.confidence==='low')?'est':'min')+'</small></span></button>' ''')
+
+          text = Path('bus.html').read_text(encoding='utf-8')
+          old_stats = 'tracked.filter(v=>etaGpsQuality(v,now).fresh).length'
+          if text.count(old_stats) != 2:
+              raise SystemExit(f'bus.html: expected two footer/stat freshness uses, found {text.count(old_stats)}')
+          text = text.replace(old_stats, 'tracked.filter(v=>gpsLiveDisplayFresh(v,now)).length')
+          Path('bus.html').write_text(text, encoding='utf-8')
+
+          replace_once('bus.html', "<b>LIVE GPS</b> means the latest bus position is still inside Kerbside's cadence-aware freshness window (30 to 75 seconds, depending on how often that vehicle reports). <b>GPS DELAYED</b> means the last confirmed report is still recent enough to retain, but old enough that ETA confidence has been reduced;", "<b>LIVE GPS</b> means the latest bus position was reported within the last two minutes. ETA confidence is stricter and still uses the vehicle's normal 30 to 75 second reporting cadence. <b>GPS DELAYED</b> means the last confirmed report is two to four minutes old;")
+          replace_once('bus.html', "Positions outside each vehicle's cadence-aware 30 to 75 second freshness window are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately.", "Positions over two minutes old are labelled GPS delayed and retained only until four minutes old so irregular operator updates do not make an approaching bus vanish immediately. ETA confidence still follows each vehicle's normal 30 to 75 second reporting cadence.")
+          replace_once('bus.html', "return 'no bus is working this departure yet';", "return 'no matching live bus yet';")
+          replace_once('bus.html', 'etaFreshWindowSeconds,etaGpsQuality,scheduleEtaBlendWeight', 'etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight')
+
+          replace_once('kerbside-backend/tests/browser-regression.mjs', '''assert.match(busSource, /tracked\\.filter\\(v=>etaGpsQuality\\(v,now\\)\\.fresh\\)/);''', '''assert.match(busSource, /const GPS_LIVE_DISPLAY_SECONDS = 120/);
+          assert.match(busSource, /function gpsLiveDisplayFresh\\(v,now=Date\\.now\\(\\)\\)/);
+          assert.match(busSource, /tracked\\.filter\\(v=>gpsLiveDisplayFresh\\(v,now\\)\\)/);
+          assert.ok(busSource.includes("const due=!gpsLost&&etaFresh&&r.confidence!=='low'&&dueWithin(r.secs,LIVE_DUE_SECONDS);"));
+          assert.ok(busSource.includes("return 'no matching live bus yet';"));
+          assert.doesNotMatch(busSource, /no bus is working this departure yet/);''')
+
+          # Let the existing single source of truth update the app, Worker,
+          # package and regression version references together.
+          PY
+          python3 .github/scripts/sync-version.py
+
+      - name: Install backend dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+
+      - name: Verify 0.7.10 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync-version.py --check
+          node --check kerbside-backend/tests/browser-regression.mjs
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+          npm run test:listing-reliability --prefix kerbside-backend --if-present
+          node - <<'JS'
+          const assert = require('node:assert/strict');
+          const ETA_MIN_FRESH_SECONDS = 30;
+          const ETA_MAX_FRESH_SECONDS = 75;
+          const ETA_CADENCE_MULTIPLIER = 1.75;
+          const GPS_LIVE_DISPLAY_SECONDS = 120;
+          function etaFreshWindowSeconds(cadence){
+            const seconds=Number(cadence);
+            if(!Number.isFinite(seconds)||seconds<=0) return 45;
+            return Math.max(ETA_MIN_FRESH_SECONDS,Math.min(ETA_MAX_FRESH_SECONDS,seconds*ETA_CADENCE_MULTIPLIER));
+          }
+          function etaGpsQuality(v,now=Date.now()){
+            const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+            const cadence=Number(v&&v.cadence);
+            const freshWindow=etaFreshWindowSeconds(cadence);
+            return {age,freshWindow,fresh:age<=freshWindow};
+          }
+          function gpsLiveDisplayFresh(v,now=Date.now()){
+            const age=Math.max(0,(Number(now)-Number(v&&v.ts))/1000);
+            return Number.isFinite(age)&&age<=GPS_LIVE_DISPLAY_SECONDS;
+          }
+          const now=1_000_000;
+          const ninetySecondsOld={ts:now-90_000,cadence:20};
+          assert.equal(etaGpsQuality(ninetySecondsOld,now).fresh,false);
+          assert.equal(gpsLiveDisplayFresh(ninetySecondsOld,now),true);
+          assert.equal(gpsLiveDisplayFresh({ts:now-120_000},now),true);
+          assert.equal(gpsLiveDisplayFresh({ts:now-121_000},now),false);
+          console.log('0.7.10 live-display/ETA-confidence split verified.');
+          JS
+          git diff --check
+
+      - name: Commit verified patch to branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "OpenAI Agent"
+          git config user.email "noreply@openai.com"
+          git add -- \
+            VERSION \
+            bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs
+          git diff --cached --check
+          git commit -m "Kerbside 0.7.10: restore live GPS display window"
+          git push origin HEAD:agent/kerbside-0710-gps-freshness
