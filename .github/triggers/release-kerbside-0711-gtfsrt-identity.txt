@@ -10,4 +10,4 @@ Release goals:
 - proxy and decode GTFS-RT server-side so the BODS API key stays in the Worker
 - bump Kerbside to 0.7.11
 
-Rerun note: isolate the auxiliary /matched fetch in existing SIRI malformed-coverage browser mocks.
+Rerun note: isolate auxiliary /matched requests from all SIRI malformed/partial coverage call-count regressions.
