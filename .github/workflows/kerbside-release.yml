@@ -83,6 +83,7 @@ jobs:
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
+          npm run test:disruptions --prefix kerbside-backend
 
       - name: Prepare repository-safe release commit
         shell: bash
