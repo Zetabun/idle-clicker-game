@@ -300,6 +300,14 @@ replace_once(
     "liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,fetchItmIdentities,applyItmIdentities,itmMatchedTrip,ingest,relevant,liveState:S,",
 )
 
+# Browser source-shape regression: the ITM helpers are now exported between
+# fetchLive and ingest so browser tests can exercise exact-trip matching.
+replace_once(
+    'kerbside-backend/tests/browser-regression.mjs',
+    "assert.match(busSource, /fetchLive,ingest,relevant,liveState:S/);",
+    "assert.match(busSource, /fetchLive,fetchItmIdentities,applyItmIdentities,itmMatchedTrip,ingest,relevant,liveState:S/);",
+)
+
 # Journey-identity regression: prove ITM exact identity wins over a stale/wrong SIRI journey.
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
