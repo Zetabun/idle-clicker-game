@@ -169,8 +169,8 @@ replaceExact(
 
 replaceExact(
   'lost GPS ETA suffix',
-  "+'<span class=\"eta'+(due?' due':'')+'\">'+etaText+'<small>'+(gpsLost?'last seen':due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'",
-  "+'<span class=\"eta'+(due?' due':'')+'\">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(mins<=1?'scheduled':'min'):'last seen'):due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'"
+  "+'</span></span><span class=\"eta'+(due?' due':'')+'\">'+etaText+'<small>'+(gpsLost?'last seen':due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'",
+  "+'</span></span><span class=\"eta'+(due?' due':'')+'\">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(mins<=1?'scheduled':'min'):'last seen'):due?'arriving':(!gpsFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'"
 );
 
 replaceSection(
