@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.11'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.12'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -125,6 +125,9 @@ assert.match(busSource, /mode:'gps-average'/);
 assert.doesNotMatch(busSource, /GPS_FRESH_MS/);
 assert.match(busSource, /gpsQuality=etaGpsQuality\(r\.v,now\)/);
 assert.match(busSource, /const MATCHED_IDENTITY_GRACE_MS = 3\*60\*1000/);
+assert.match(busSource, /const MATCHED_IDENTITY_WAIT_MS = 1200/);
+assert.match(busSource, /const MATCHED_HANDOVER_MAX_LAG_MS = 45\*1000/);
+assert.match(busSource, /function matchedIdentityWithinBudget\(promise,waitMs=MATCHED_IDENTITY_WAIT_MS\)/);
 assert.match(busSource, /function applyMatchedIdentities\(vehicles,matches,now=Date\.now\(\)\)/);
 assert.match(busSource, /function retainMatchedIdentity\(prev,v,now=Date\.now\(\)\)/);
 assert.match(busSource, /evidence\.matchedRealtime\?'BODS matched journey'/);
@@ -533,7 +536,7 @@ assert.match(busSource, /cache:force\?'reload':'no-cache'/);
 assert.doesNotMatch(busSource, /cache:force\?'reload':'force-cache'/);
 assert.match(busSource, /if\(journey\) return owner\+'\|journey\|'\+journey/);
 assert.match(busSource, /if\(vehicle\) return owner\+'\|vehicle\|'\+vehicle/);
-assert.match(busSource, /fetchLive,fetchMatchedBatch,applyMatchedIdentities,retainMatchedIdentity,ingest,relevant,liveState:S/);
+assert.match(busSource, /fetchLive,fetchMatchedBatch,matchedIdentityWithinBudget,applyMatchedIdentities,retainMatchedIdentity,ingest,relevant,liveState:S/);
 assert.doesNotMatch(busSource, /if\(vehicle\) return \(operator\?operator\+'\|':''\)\+'vehicle\|'\+vehicle;\n  if\(journey\)/);
 assert.match(busSource, /const DATA_SNAPSHOT_CACHE = 'kerbside-timetable-snapshots-v1'/);
 assert.match(busSource, /function validDataDeparture\(data,region,shard,expectedBuild\)/);
@@ -1674,7 +1677,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.11'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.12'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

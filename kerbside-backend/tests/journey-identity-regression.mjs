@@ -52,7 +52,7 @@ try{
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>Boolean(window.__KERBSIDE_TEST__),null,{timeout:20000});
 
-  const result=await page.evaluate(()=>{
+  const result=await page.evaluate(async()=>{
     const api=window.__KERBSIDE_TEST__;
     const state=api.liveState;
     const saved={
@@ -71,14 +71,15 @@ try{
     const parts=api.ukDateTimeParts(new Date(now));
     const minuteNow=Number(parts.hour)*60+Number(parts.minute);
     const minuteAt=delta=>((minuteNow+delta)%1440+1440)%1440;
-    const rawRow=(delta,line,head,trip,originDelta)=>[
-      minuteAt(delta),line,head,'','',trip,'','','',10,minuteAt(originDelta)
+    const rawRow=(delta,line,head,trip,originDelta,routeId='')=>[
+      minuteAt(delta),line,head,'','',trip,'',routeId,'',10,minuteAt(originDelta)
     ];
     try{
       state.stop=stop;
       state.ttStop={id:'BRIGHTSTONE',d:[
-        rawRow(20,'61','Digbeth Moor Street Queensway','INBOUND',-25),
-        rawRow(40,'61','Frankley Arden Road Terminus','OUTBOUND',10)
+        rawRow(20,'61','Digbeth Moor Street Queensway','INBOUND',-25,'R61'),
+        rawRow(40,'61','Frankley Arden Road Terminus','OUTBOUND',10,'R61'),
+        rawRow(30,'62','Other Terminus','FOREIGN',-5,'R62')
       ]};
       state.timetable={services:{},tripPatterns:{},patterns:{}};
       state.timetableSource='national';
@@ -107,13 +108,26 @@ try{
       const agreementCompatible=api.journeyDestinationAgreement([{head:'Digbeth Moor Street Queensway'}],'Moor Street Queensway');
 
       const matchedInput={...baseVehicle,vehicleRef:'BUS-740',vehicleUniqueId:'',journey:'OPAQUE-SIRI-JOURNEY',sourceTs:now-1000,ts:now-1000};
-      const matchedCount=api.applyMatchedIdentities([matchedInput],[{vehicleId:'BUS-740',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-1000}],now);
+      const matchedCount=api.applyMatchedIdentities([matchedInput],[{entityId:'entity-740',vehicleId:'BUS-740',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-1000}],now);
       const matchedRealtime=api.routeEvidence('61',matchedInput.dest,api.vehicleJourneyRef(matchedInput),matchedInput);
-      const stickyIncoming={...baseVehicle,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
-      const stickyPrev={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-30000,matchSource:'gtfs-rt'};
+
+      const duplicateNear={...baseVehicle,id:'duplicate-near',vehicleRef:'BUS-DUPE',vehicleUniqueId:'',journey:'',dest:'Frankley Arden Road Terminus',lat:52.4600,lon:-1.9500,sourceTs:now,ts:now};
+      const duplicateFar={...duplicateNear,id:'duplicate-far',lat:52.4610};
+      const duplicateCount=api.applyMatchedIdentities([duplicateFar,duplicateNear],[{entityId:'entity-dupe',vehicleId:'BUS-DUPE',tripId:'OUTBOUND',routeId:'R61',lat:52.4600,lon:-1.9500,timestamp:now}],now);
+
+      const routeMismatch=api.routeEvidence('61','Other Terminus','FOREIGN',{...baseVehicle,journey:'OPAQUE',matchedTrip:'FOREIGN',matchedRouteId:'R62',matchedLagMs:0});
+      const routeIdMismatch=api.routeEvidence('61','Frankley Arden Road Terminus','OUTBOUND',{...baseVehicle,journey:'OPAQUE',matchedTrip:'OUTBOUND',matchedRouteId:'WRONG-ROUTE',matchedLagMs:0});
+      const handover=api.routeEvidence('61','Digbeth Moor Street Queensway','OUTBOUND',{...baseVehicle,journey:'INBOUND',matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedLagMs:60000});
+
+      const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
+      const stickyPrev={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-30000,matchedObservationAt:now-30000,matchedLagMs:0,matchSource:'gtfs-rt'};
       const stickyRetained=api.retainMatchedIdentity(stickyPrev,stickyIncoming,now);
       const expiredIncoming={...baseVehicle};
       const stickyExpired=api.retainMatchedIdentity({...stickyPrev,matchedTripAt:now-4*60*1000},expiredIncoming,now);
+      const uniquePhysicalKey=api.physicalVehicleKey({owner:'OPTEST',vehicleRef:'',vehicleUniqueId:'UNIQUE-9'});
+      const budgetStarted=performance.now();
+      const budgetResult=await api.matchedIdentityWithinBudget(new Promise(()=>{}),20);
+      const budgetElapsed=performance.now()-budgetStarted;
 
       const blockedVehicle={journey:'OUTBOUND',corridorTrip:''};
       api.setVehicleProgressIdentity(blockedVehicle,{journeyDestinationConflict:true,matchedTrip:''},null,null);
@@ -135,7 +149,12 @@ try{
         agreementConflict,
         agreementCompatible,
         matchedIdentity:{count:matchedCount,trip:matchedInput.matchedTrip,source:matchedInput.matchSource,realtime:!!matchedRealtime.matchedRealtime,journeyMatch:!!matchedRealtime.journeyMatch,matchedTrip:String(matchedRealtime.matchedTrip||''),conflict:!!matchedRealtime.journeyDestinationConflict},
-        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
+        oneToOne:{count:duplicateCount,near:duplicateNear.matchedTrip||'',far:duplicateFar.matchedTrip||''},
+        routeGuard:{lineRealtime:!!routeMismatch.matchedRealtime,lineTrip:String(routeMismatch.matchedTrip||''),routeRealtime:!!routeIdMismatch.matchedRealtime,routeTrip:String(routeIdMismatch.matchedTrip||'')},
+        handover:{realtime:!!handover.matchedRealtime,trip:String(handover.matchedTrip||''),conflict:!!handover.journeyDestinationConflict},
+        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
+        uniquePhysicalKey,
+        budget:{empty:Array.isArray(budgetResult)&&budgetResult.length===0,elapsed:budgetElapsed},
         blockedProgress,
         inferredProgress,
         matchedProgress
@@ -160,8 +179,14 @@ try{
   assert.equal(result.destinationMissing.matchedTrip,'OUTBOUND');
   assert.equal(result.agreementConflict.conflict,true);
   assert.equal(result.agreementCompatible.conflict,false,'minor stop-name wording differences should remain compatible');
-  assert.deepEqual(result.matchedIdentity,{count:1,trip:'OUTBOUND',source:'gtfs-rt',realtime:true,journeyMatch:true,matchedTrip:'OUTBOUND',conflict:true},'BODS matched GTFS trip must outrank an opaque/stale SIRI journey and destination handover');
-  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap but expire rather than stick indefinitely');
+  assert.deepEqual(result.matchedIdentity,{count:1,trip:'OUTBOUND',source:'gtfs-rt',realtime:true,journeyMatch:true,matchedTrip:'OUTBOUND',conflict:true},'a fresh BODS matched trip may outrank stale destination text when route and trip identity agree');
+  assert.deepEqual(result.oneToOne,{count:1,near:'OUTBOUND',far:''},'one GTFS-RT entity must be allocated to at most one SIRI vehicle');
+  assert.deepEqual(result.routeGuard,{lineRealtime:false,lineTrip:'',routeRealtime:false,routeTrip:''},'a matched trip from the wrong public line or GTFS route must fall back instead of becoming authoritative');
+  assert.deepEqual(result.handover,{realtime:false,trip:'INBOUND',conflict:false},'an older conflicting matched identity must yield to newer SIRI journey evidence during a terminus handover');
+  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');
+  assert.equal(result.uniquePhysicalKey,'OPTEST|vehicle-unique|UNIQUE-9','VehicleUniqueId must identify a physical bus when VehicleRef is absent');
+  assert.equal(result.budget.empty,true,'a slow matched feed should degrade to no auxiliary identities');
+  assert.ok(result.budget.elapsed<500,'the matched-feed wait helper should respect its bounded deadline');
 
   assert.deepEqual(result.blockedProgress,{blocked:true,trip:'',pattern:''},'conflicting identity with no safe geometry must withhold journey progress');
   assert.deepEqual(result.inferredProgress,{blocked:false,trip:'',pattern:'SAFE-INBOUND-PATTERN'},'movement-inferred pattern may restore progress without manufacturing a trip identity');

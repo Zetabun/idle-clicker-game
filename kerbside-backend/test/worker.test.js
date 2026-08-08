@@ -98,10 +98,11 @@ test('matched endpoint exposes compact GTFS trip identity without replacing SIRI
     const body = await response.json();
     assert.equal(body.vehicles.length, 1);
     assert.deepEqual({
+      entityId: body.vehicles[0].entityId,
       vehicleId: body.vehicles[0].vehicleId,
       tripId: body.vehicles[0].tripId,
       routeId: body.vehicles[0].routeId
-    }, { vehicleId: 'BUS-740', tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61' });
+    }, { entityId: 'entity-1', vehicleId: 'BUS-740', tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61' });
     assert.equal(runtime.state.fetches, 1);
   } finally {
     runtime.restore();
@@ -132,7 +133,7 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.7.11');
+  assert.equal(body.version, '0.7.12');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);

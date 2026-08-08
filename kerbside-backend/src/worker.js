@@ -68,7 +68,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.7.11',
+    version: '0.7.12',
     bods: Boolean(env.BODS_KEY),
     matchedGtfsRt: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
@@ -225,6 +225,7 @@ export function compactGtfsRtFeed(feed, bbox, now = Date.now()) {
     // identity at all around a terminus, so keep the auxiliary feed bounded.
     if (Math.abs(now - timestamp) > 5 * 60 * 1000) continue;
     out.push({
+      entityId: String(entity && entity.id || ''),
       vehicleId,
       tripId,
       routeId,
