@@ -208,9 +208,11 @@ jobs:
           python3 .github/scripts/sync-version.py --check
           npm run check --prefix kerbside-backend
           npm run test:browser --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend
           npm run test:disruptions --prefix kerbside-backend
           npm run test:listing-reliability --prefix kerbside-backend
           KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:accuracy-hardening --prefix kerbside-backend
           KERBSIDE_BROWSER=chromium npm run test:disruptions --prefix kerbside-backend
           KERBSIDE_BROWSER=chromium npm run test:listing-reliability --prefix kerbside-backend
           python3 kerbside-backend/tests/disruption-build-regression.py
