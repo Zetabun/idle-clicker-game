@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.10';
+const APP_VERSION = '0.7.11';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3417,6 +3417,95 @@ function feedUrlsForBoxes(boxes){
        + encodeURIComponent(S.key) + '&boundingBox=' + box);
 }
 function feedUrls(wide){ return feedUrlsForBoxes(bboxes(wide)); }
+function itmFeedUrls(wide){
+  if(!S.proxy) return [];
+  return bboxes(wide).map(box=>{
+    const u=new URL(S.proxy,location.href);
+    u.pathname='/gtfsrt';
+    u.search=''; u.searchParams.set('bbox',box);
+    return u.toString();
+  });
+}
+async function fetchItmIdentities(wide,signal){
+  const urls=itmFeedUrls(wide);
+  if(!urls.length) return [];
+  const settled=await Promise.allSettled(urls.map(async url=>{
+    const r=await fetchTimed(url,{headers:{Accept:'application/json'},cache:'no-store',signal},FETCH_TIMEOUT_MS);
+    if(!r.ok) throw new Error('matched feed returned '+r.status);
+    const body=await r.json();
+    return Array.isArray(body&&body.vehicles)?body.vehicles:[];
+  }));
+  const byKey=new Map();
+  for(const result of settled){
+    if(result.status!=='fulfilled') continue;
+    for(const item of result.value){
+      if(!item||!item.tripId) continue;
+      const key=String(item.entityId||item.vehicleId||'')+'|'+String(item.tripId);
+      const previous=byKey.get(key);
+      if(!previous||Number(item.timestamp||0)>=Number(previous.timestamp||0)) byKey.set(key,item);
+    }
+  }
+  return [...byKey.values()];
+}
+function itmIdentityToken(value){ return String(value||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function itmTripAvailableForLine(trip,line,rows){
+  const id=String(trip||''); if(!id) return false;
+  const list=Array.isArray(rows)?rows:timetableRowsForLine(String(line),new Date());
+  return list.some(row=>String(row&&row.trip||'')===id);
+}
+function attachItmIdentity(v,item,now,kind){
+  v.itmTripId=String(item.tripId||''); v.itmRouteId=String(item.routeId||'');
+  v.itmVehicleId=String(item.vehicleId||''); v.itmStartTime=String(item.startTime||'');
+  v.itmStartDate=String(item.startDate||''); v.itmPositionAt=Number(item.timestamp||0)*1000||now;
+  v.itmMatchedAt=now; v.itmMatch=String(kind||'matched');
+  return v;
+}
+function applyItmIdentities(vehicles,identities,now=Date.now()){
+  const live=Array.isArray(vehicles)?vehicles:[], matched=Array.isArray(identities)?identities:[];
+  if(!live.length||!matched.length||!S.ttStop) return live;
+  const rowsByLine=new Map(), used=new Set();
+  const rows=line=>{
+    const key=String(line); if(!rowsByLine.has(key)) rowsByLine.set(key,timetableRowsForLine(key,new Date(now)));
+    return rowsByLine.get(key);
+  };
+  const valid=item=>{
+    const at=Number(item&&item.timestamp||0)*1000;
+    return item&&item.tripId&&Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lon))
+      &&(!at||Math.abs(now-at)<=ITM_POSITION_MAX_AGE_MS);
+  };
+  const compatible=(v,item)=>valid(item)&&itmTripAvailableForLine(item.tripId,v.line,rows(v.line));
+  const keyFor=item=>String(item&&item.entityId||item&&item.vehicleId||'')+'|'+String(item&&item.tripId||'');
+
+  // Prefer a unique physical vehicle identity. This is the safest bridge from
+  // raw SIRI to BODS' timetable-matched ITM feed.
+  for(const v of live){
+    const token=itmIdentityToken(v.vehicleRef);
+    if(!token) continue;
+    const candidates=matched.filter(item=>!used.has(keyFor(item))&&compatible(v,item)&&itmIdentityToken(item.vehicleId)===token);
+    if(candidates.length===1){ const item=candidates[0]; attachItmIdentity(v,item,now,'vehicle'); used.add(keyFor(item)); }
+  }
+
+  // Some operators omit or rewrite vehicle IDs. Fall back only when one
+  // timetable-compatible ITM vehicle is unambiguously closest in space/time.
+  for(const v of live){
+    if(v.itmTripId) continue;
+    const ranked=matched.filter(item=>!used.has(keyFor(item))&&compatible(v,item)).map(item=>{
+      const at=Number(item.timestamp||0)*1000||now, dt=Math.abs(Number(v.ts||now)-at)/1000;
+      const metres=dist(Number(v.lat),Number(v.lon),Number(item.lat),Number(item.lon));
+      const limit=Math.min(900,ITM_POSITION_BASE_METRES+dt*ITM_POSITION_SPEED_METRES_PER_SECOND);
+      return {item,metres,limit,dt};
+    }).filter(entry=>entry.dt<=120&&entry.metres<=entry.limit).sort((a,b)=>a.metres-b.metres);
+    if(ranked.length&&(!ranked[1]||ranked[1].metres-ranked[0].metres>=120)){
+      attachItmIdentity(v,ranked[0].item,now,'position'); used.add(keyFor(ranked[0].item));
+    }
+  }
+  return live;
+}
+function itmMatchedTrip(v,rows,now=Date.now()){
+  const trip=String(v&&v.itmTripId||''), at=Number(v&&v.itmMatchedAt)||0;
+  if(!trip||!at||now-at>ITM_IDENTITY_TTL_MS) return '';
+  return itmTripAvailableForLine(trip,v&&v.line,rows)?trip:'';
+}
 function routeScanMatchKey(item){
   return String(item&&item.trip||'')+'|'+String(item&&item.stopSequence==null?'':item.stopSequence);
 }
@@ -3791,7 +3880,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,fetchItmIdentities,applyItmIdentities,itmMatchedTrip,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
     journeyRouteLinesForTest:()=>routeLayer.getLayers().filter(l=>typeof l.getLatLngs==='function')
       .map(l=>({points:l.getLatLngs().length,weight:l.options.weight,dash:l.options.dashArray||null,colour:l.options.color}))};
 }
@@ -3831,6 +3920,7 @@ async function fetchLive(signal){
   S.feedFallback=false; S.feedEmptyReason=''; S.feedPartial=false;
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
   if(wide) S.lastWideFetch=Date.now();
+  const itmPromise=fetchItmIdentities(wide,signal).catch(()=>[]);
   let batch=await fetchLiveBatch(wide,signal);
   // Expanded scans are optional discovery work. Any missing split box is
   // supplemented with the ordinary nearby box, retaining successful distant
@@ -3870,6 +3960,7 @@ async function fetchLive(signal){
     S.feedEmptyReason='No buses were reported in the latest feed for this area.';
     return [];
   }
+  applyItmIdentities(out,await itmPromise,Date.now());
   return out;
 }
 
@@ -4102,7 +4193,7 @@ function ingest(list){
     const keepCorridor=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&now-Number(prev.corridorConfirmedAt||0)<=CORRIDOR_TAG_GRACE_MS);
     const corridorExpired=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&!keepCorridor);
     const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
-    if(journeyChanged){delete rec.routeProjection;delete rec.corridorTrip;delete rec.corridorRemaining;delete rec.corridorConfirmedAt;delete rec.lastShownSnapshot;delete rec.lastShownAt;delete rec.lastShownArrivalAt;}
+    if(journeyChanged){delete rec.routeProjection;delete rec.corridorTrip;delete rec.corridorRemaining;delete rec.corridorConfirmedAt;delete rec.lastShownSnapshot;delete rec.lastShownAt;delete rec.lastShownArrivalAt;delete rec.itmTripId;delete rec.itmRouteId;delete rec.itmVehicleId;delete rec.itmStartTime;delete rec.itmStartDate;delete rec.itmPositionAt;delete rec.itmMatchedAt;delete rec.itmMatch;}
     Object.assign(rec, v);
     if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }
     else if(corridorExpired){ delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; rec.corridorTracked=false; }
@@ -4407,6 +4498,11 @@ function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
   const allRows=timetableRowsForLine(l,new Date());
+  const itmTrip=itmMatchedTrip(identity,allRows);
+  if(itmTrip){
+    const path=!!timetablePattern(itmTrip);
+    return {score:path?7:6,label:path?'BODS matched GTFS-RT journey and stop sequence':'BODS matched GTFS-RT journey',journeyMatch:true,pathMatch:path,matchStrength:5,matchedTrip:itmTrip,itmMatch:true,routeIdentityMatch:true};
+  }
   const identityInfo=timetableIdentityRows(allRows,identity);
   const ttRows=identityInfo.rows;
   const tripMatch=journey?uniqueCompatibleTrips(ttRows,journey):{items:[],ref:'',strength:0,ambiguous:false};
@@ -4480,6 +4576,10 @@ const ETA_MIN_FRESH_SECONDS = 30;
 const ETA_MAX_FRESH_SECONDS = 75;
 const ETA_CADENCE_MULTIPLIER = 1.75;
 const GPS_LIVE_DISPLAY_SECONDS = 120;
+const ITM_IDENTITY_TTL_MS = 10*60*1000;
+const ITM_POSITION_MAX_AGE_MS = 4*60*1000;
+const ITM_POSITION_BASE_METRES = 160;
+const ITM_POSITION_SPEED_METRES_PER_SECOND = 20;
 function etaFreshWindowSeconds(cadence){
   const seconds=Number(cadence);
   if(!Number.isFinite(seconds)||seconds<=0) return 45;
