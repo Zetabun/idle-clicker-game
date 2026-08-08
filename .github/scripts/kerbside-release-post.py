@@ -18,6 +18,14 @@ replacements = [
         "      };",
         'malformed SIRI coverage mock boundary',
     ),
+    (
+        "    window.fetch=async () => {calls++;if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});throw new TypeError('offline');};",
+        "    window.fetch=async url => {\n"
+        "      if(String(url).includes('/matched')) return new Response('{\"vehicles\":[]}',{status:200,headers:{'Content-Type':'application/json'}});\n"
+        "      calls++;if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});throw new TypeError('offline');\n"
+        "    };",
+        'partial SIRI coverage mock boundary',
+    ),
 ]
 
 for old, new, label in replacements:
