@@ -96,6 +96,12 @@ try {
       const duplicateScheduledRows = api.scheduledBoardRows([keptHealthy])
         .filter(row => row && row.schedule && row.schedule.trip === schedule.trip && row.schedule.at === schedule.at).length;
       const plainLostClaims = api.scheduleClaimedByLive({ gpsLost: true, schedule });
+      const pastSchedule = { ...schedule, at: now - 1000 };
+      const pastVehicle = vehicle(320000);
+      pastVehicle.lastShownSnapshot = { ...snapshot, schedule: pastSchedule, matchedSchedule: pastSchedule };
+      const heldPastSchedule = api.retainedSnapshotRow(pastVehicle, now);
+      const pastScheduleFallback = !!(heldPastSchedule && heldPastSchedule.scheduleFallback);
+      const pastScheduleClaimed = api.scheduleClaimedByLive(heldPastSchedule);
 
       state.lastFeedAt = now - 5 * 60000; state.feedFallback = true;
       const unhealthy = api.liveFeedHealthyForRetention(now);
@@ -118,6 +124,7 @@ try {
         fallbackSecs: keptHealthy && keptHealthy.secs,
         scheduledSecs: Math.max(0, (schedule.at - now) / 1000),
         scheduleClaimed, duplicateScheduledRows, plainLostClaims,
+        pastScheduleFallback, pastScheduleClaimed,
         keptOutage: !!keptOutage,
         feedModel, sampledModel, averageModel
       };
@@ -137,6 +144,8 @@ try {
   assert.equal(result.scheduleClaimed, true);
   assert.equal(result.duplicateScheduledRows, 0);
   assert.equal(result.plainLostClaims, false);
+  assert.equal(result.pastScheduleFallback, false);
+  assert.equal(result.pastScheduleClaimed, false);
   assert.equal(result.keptOutage, true);
 
   assert.equal(result.feedModel.mode, 'feed-speed');

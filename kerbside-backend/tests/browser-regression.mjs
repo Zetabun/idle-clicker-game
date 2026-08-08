@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.8'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.9'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -122,6 +122,14 @@ assert.match(busSource, /function disruptionAppliesToService\(situation,line,ope
 assert.match(busSource, /Affects this service · location not supplied by publisher/);
 assert.match(busSource, /mode:'feed-speed'/);
 assert.match(busSource, /mode:'gps-average'/);
+assert.doesNotMatch(busSource, /GPS_FRESH_MS/);
+assert.match(busSource, /gpsQuality=etaGpsQuality\(r\.v,now\)/);
+assert.match(busSource, /tracked\.filter\(v=>etaGpsQuality\(v,now\)\.fresh\)/);
+assert.match(busSource, /const LIVE_DUE_SECONDS = 45/);
+assert.match(busSource, /const SCHEDULE_DUE_SECONDS = 45/);
+assert.match(busSource, /if\(r\.at<now \|\| r\.at>end\) return false;/);
+assert.match(busSource, /sourceTs,ts,timestampKnown:true/);
+assert.match(busSource, /const ts=Math\.min\(sourceTs,observedAt\)/);
 assert.match(busSource, /feedRefreshing:false/);
 assert.match(busSource, /function clearJourneyRoute/);
 assert.match(busSource, /function journeyRouteContext/);
@@ -474,7 +482,11 @@ assert.match(busSource, /const svc=S\.timetable && S\.timetable\.services && S\.
 assert.match(busSource, /if\(svc\)\{/);
 assert.match(busSource, /const UK_TIME_ZONE = 'Europe\/London'/);
 assert.match(busSource, /function ukWallClockEpoch\(year,month,day,hour,minute\)/);
-assert.match(busSource, /return new Date\(ukWallClockEpoch\(/);
+assert.match(busSource, /function serviceDayStartEpoch\(serviceDate\)/);
+assert.match(busSource, /const noon=ukWallClockEpoch\(/);
+assert.match(busSource, /return noon-12\*3600000;/);
+assert.match(busSource, /return new Date\(serviceDayStartEpoch\(serviceDate\)\+total\*60000\);/);
+assert.doesNotMatch(busSource, /return new Date\(ukWallClockEpoch\(/);
 assert.doesNotMatch(busSource, /at\.setHours\(Math\.floor\(minuteOfDay\/60\),minuteOfDay%60,0,0\)/);
 assert.match(busSource, /serviceDepartureTime\(serviceDate,mins\)/);
 assert.doesNotMatch(busSource, /new Date\(serviceDate\.getTime\(\)\+mins\*60000\)/);
@@ -1647,7 +1659,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.8'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.9'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

@@ -156,6 +156,17 @@ try {
       const expired = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-EXP', journey: 'J', vehicle: 'V', item: 'expired', lat: 52.40, validUntil: now - 1 })) }], now);
       const valid = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-VALID', journey: 'J', vehicle: 'V', item: 'valid', lat: 52.40, validUntil: now + 60000 })) }], now);
 
+      state.vehicles = new Map();
+      const futureSource = now + 110000;
+      const future = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-FUTURE', journey: 'J', vehicle: 'V', item: 'future', lat: 52.40, time: futureSource })) }], now);
+      api.ingest(future.vehicles);
+      const futureCappedTs = future.vehicles[0]?.ts;
+      const futureSourceTs = future.vehicles[0]?.sourceTs;
+      const correctedSource = now + 14000;
+      const corrected = api.parseLivePayloads([{ text: wrap(activity({ operator: 'OP-FUTURE', journey: 'J', vehicle: 'V', item: 'future', lat: 52.401, time: correctedSource })) }], now + 15000);
+      api.ingest(corrected.vehicles);
+      const futureCorrectedTs = [...state.vehicles.values()][0]?.ts;
+
       return {
         togetherCount: together.vehicles.length,
         togetherSplit: together.vehicles.every(vehicle => vehicle.id.includes('|activity|item|')),
@@ -185,7 +196,12 @@ try {
         uniqueIdNamed: uniqueIds.vehicles.every(vehicle => vehicle.id.includes('|activity|vehicle-unique|')),
         changingItemStableUniqueIdentities,
         reformattedCachedIdentities,
-        producerOwners
+        producerOwners,
+        futureCappedTs,
+        futureSourceTs,
+        futureCorrectedTs,
+        futureSource,
+        correctedSource
       };
     } finally {
       state.vehicles = savedVehicles;
@@ -222,6 +238,9 @@ try {
   assert.equal(result.changingItemStableUniqueIdentities, 1);
   assert.equal(result.reformattedCachedIdentities, 1);
   assert.deepEqual(result.producerOwners, ['PROD-A', 'PROD-B']);
+  assert.equal(result.futureCappedTs, result.futureSource - 110000, 'future producer timestamp must be capped to receipt time');
+  assert.equal(result.futureSourceTs, result.futureSource, 'raw producer timestamp must remain available as provenance');
+  assert.equal(result.futureCorrectedTs, result.correctedSource, 'a corrected next report must advance instead of freezing behind the future timestamp');
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside cross-poll identity and producer-expiry regression passed.');
 } finally {

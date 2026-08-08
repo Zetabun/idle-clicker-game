@@ -273,8 +273,8 @@ try {
     springAfter: '2026-03-29T11:00:00.000Z',
     autumnBefore: '2026-10-24T11:00:00.000Z',
     autumnAfter: '2026-10-25T12:00:00.000Z',
-    springGap0130: '2026-03-29T01:30:00.000Z',
-    autumnRepeated0130: '2026-10-25T00:30:00.000Z',
+    springGap0130: '2026-03-29T00:30:00.000Z',
+    autumnRepeated0130: '2026-10-25T01:30:00.000Z',
     displayedSpringNoon: '12:00'
   };
   for (const timezoneId of ['Europe/London', 'America/New_York', 'UTC']) {
@@ -293,6 +293,17 @@ try {
       };
     });
     assert.deepEqual(clock, expectedClock, `UK timetable clock changed in browser timezone ${timezoneId}`);
+    const dueEdges = await pair.page.evaluate(() => {
+      const api = window.__KERBSIDE_TEST__;
+      return {
+        live45: api.dueWithin(45, api.LIVE_DUE_SECONDS),
+        live46: api.dueWithin(46, api.LIVE_DUE_SECONDS),
+        schedule45: api.dueWithin(45, api.SCHEDULE_DUE_SECONDS),
+        schedule46: api.dueWithin(46, api.SCHEDULE_DUE_SECONDS),
+        past: api.dueWithin(-1, api.SCHEDULE_DUE_SECONDS)
+      };
+    });
+    assert.deepEqual(dueEdges, { live45: true, live46: false, schedule45: true, schedule46: false, past: false });
     await pair.context.close();
   }
 
