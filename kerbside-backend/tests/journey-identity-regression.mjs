@@ -106,6 +106,15 @@ try{
       const agreementConflict=api.journeyDestinationAgreement([{head:'Frankley Arden Road Terminus'}],'Digbeth Moor Street Queensway');
       const agreementCompatible=api.journeyDestinationAgreement([{head:'Digbeth Moor Street Queensway'}],'Moor Street Queensway');
 
+      const matchedInput={...baseVehicle,vehicleRef:'BUS-740',vehicleUniqueId:'',journey:'OPAQUE-SIRI-JOURNEY',sourceTs:now-1000,ts:now-1000};
+      const matchedCount=api.applyMatchedIdentities([matchedInput],[{vehicleId:'BUS-740',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-1000}],now);
+      const matchedRealtime=api.routeEvidence('61',matchedInput.dest,api.vehicleJourneyRef(matchedInput),matchedInput);
+      const stickyIncoming={...baseVehicle,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
+      const stickyPrev={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-30000,matchSource:'gtfs-rt'};
+      const stickyRetained=api.retainMatchedIdentity(stickyPrev,stickyIncoming,now);
+      const expiredIncoming={...baseVehicle};
+      const stickyExpired=api.retainMatchedIdentity({...stickyPrev,matchedTripAt:now-4*60*1000},expiredIncoming,now);
+
       const blockedVehicle={journey:'OUTBOUND',corridorTrip:''};
       api.setVehicleProgressIdentity(blockedVehicle,{journeyDestinationConflict:true,matchedTrip:''},null,null);
       const blockedProgress={blocked:blockedVehicle.progressIdentityBlocked,trip:blockedVehicle.progressTrip,pattern:blockedVehicle.progressPattern};
@@ -125,6 +134,8 @@ try{
         destinationMissing:{journeyMatch:!!destinationMissing.journeyMatch,matchedTrip:String(destinationMissing.matchedTrip||''),conflict:!!destinationMissing.journeyDestinationConflict},
         agreementConflict,
         agreementCompatible,
+        matchedIdentity:{count:matchedCount,trip:matchedInput.matchedTrip,source:matchedInput.matchSource,realtime:!!matchedRealtime.matchedRealtime,journeyMatch:!!matchedRealtime.journeyMatch,matchedTrip:String(matchedRealtime.matchedTrip||''),conflict:!!matchedRealtime.journeyDestinationConflict},
+        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
         blockedProgress,
         inferredProgress,
         matchedProgress
@@ -149,6 +160,8 @@ try{
   assert.equal(result.destinationMissing.matchedTrip,'OUTBOUND');
   assert.equal(result.agreementConflict.conflict,true);
   assert.equal(result.agreementCompatible.conflict,false,'minor stop-name wording differences should remain compatible');
+  assert.deepEqual(result.matchedIdentity,{count:1,trip:'OUTBOUND',source:'gtfs-rt',realtime:true,journeyMatch:true,matchedTrip:'OUTBOUND',conflict:true},'BODS matched GTFS trip must outrank an opaque/stale SIRI journey and destination handover');
+  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap but expire rather than stick indefinitely');
 
   assert.deepEqual(result.blockedProgress,{blocked:true,trip:'',pattern:''},'conflicting identity with no safe geometry must withhold journey progress');
   assert.deepEqual(result.inferredProgress,{blocked:false,trip:'',pattern:'SAFE-INBOUND-PATTERN'},'movement-inferred pattern may restore progress without manufacturing a trip identity');

@@ -385,7 +385,7 @@ try {
   assert.equal(result.sharedOriginItems, 0);
   assert.equal(result.bearingOverrideKept, true, 'an exact journey must survive a bearing-only away reading while route geometry loads');
   assert.equal(result.bearingOverrideRecovered, true, 'the kept row should disclose that stronger journey evidence recovered it');
-  assert.equal(result.reasonOriginNoBus, 'no bus is working this departure yet');
+  assert.equal(result.reasonOriginNoBus, 'no matching live bus yet');
   assert.equal(result.reasonOriginFiltered, 'matching GPS is for the other direction');
   assert.equal(result.reasonOriginBoardLimit, 'matching live bus is lower on the board');
   assert.equal(result.reasonOriginDelayed, 'matching GPS is delayed');

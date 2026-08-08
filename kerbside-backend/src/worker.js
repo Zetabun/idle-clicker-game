@@ -1,3 +1,5 @@
+import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
+
 const LIVE_ENDPOINTS = [
   'https://data.bus-data.dft.gov.uk/api/v1/datafeed/',
   'https://data.bus-data.dft.gov.uk/api/v1/datafeed'
@@ -8,6 +10,10 @@ const LIVE_RETRY_DELAY_MS = 150;
 const LIVE_CACHE_SECONDS = 150;
 const LIVE_FRESH_CACHE_MS = 5000;
 const LIVE_CACHE_WAIT_MS = 1800;
+const MATCHED_ENDPOINT = 'https://data.bus-data.dft.gov.uk/api/v1/gtfsrtdatafeed/';
+const MATCHED_CACHE_SECONDS = 60;
+const MATCHED_FRESH_CACHE_MS = 5000;
+const MATCHED_STALE_CACHE_MS = 90 * 1000;
 const MAX_BBOX_SPAN = 0.35;
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_DEFAULT = 60;
@@ -36,7 +42,7 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
   const path = url.pathname.replace(/\/+$/, '') || '/';
 
   if (path === '/health') return health(request, env);
-  if (path === '/' || path === '/feed') {
+  if (path === '/' || path === '/feed' || path === '/matched') {
     if (!requestOriginAllowed(request, env)) {
       return json({ error: 'Origin is not allowed' }, 403, request, env, { 'Cache-Control': 'no-store' });
     }
@@ -48,7 +54,10 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
         'Cache-Control': 'no-store'
       });
     }
-    return withRateLimitHeaders(await liveFeed(request, env, ctx), rate);
+    const response = path === '/matched'
+      ? await matchedFeed(request, env, ctx)
+      : await liveFeed(request, env, ctx);
+    return withRateLimitHeaders(response, rate);
   }
 
   return json({ error: 'Not found' }, 404, request, env);
@@ -59,8 +68,9 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.7.10',
+    version: '0.7.11',
     bods: Boolean(env.BODS_KEY),
+    matchedGtfsRt: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
     upstreamTimeoutMs: LIVE_TIMEOUT_MS,
     upstreamAttempts: LIVE_ATTEMPTS,
@@ -171,6 +181,158 @@ async function refreshLiveCache(request, env, incoming, bbox, lineRef, cache, ca
     if (attempt + 1 < LIVE_ATTEMPTS) await sleep(LIVE_RETRY_DELAY_MS * (attempt + 1));
   }
   return { response: null, failures };
+}
+
+
+function protobufNumber(value) {
+  if (value == null) return NaN;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value.toNumber === 'function') return value.toNumber();
+  return Number(value);
+}
+
+export function gtfsRtBoundingBox(value) {
+  const bbox = normaliseBoundingBox(value);
+  if (!bbox) return '';
+  const [minLon, minLat, maxLon, maxLat] = bbox.split(',');
+  // BODS GTFS-RT uses minLat,maxLat,minLon,maxLon. Kerbside's public Worker
+  // API deliberately keeps the same minLon,minLat,maxLon,maxLat convention as
+  // its SIRI endpoint and translates here at the upstream boundary.
+  return [minLat, maxLat, minLon, maxLon].join(',');
+}
+
+export function compactGtfsRtFeed(feed, bbox, now = Date.now()) {
+  const normalised = normaliseBoundingBox(bbox);
+  if (!normalised) return [];
+  const [minLon, minLat, maxLon, maxLat] = normalised.split(',').map(Number);
+  const out = [];
+  for (const entity of Array.isArray(feed && feed.entity) ? feed.entity : []) {
+    const vehicle = entity && entity.vehicle;
+    const trip = vehicle && vehicle.trip;
+    const descriptor = vehicle && vehicle.vehicle;
+    const position = vehicle && vehicle.position;
+    const tripId = String(trip && trip.tripId || '').trim();
+    const vehicleId = String(descriptor && descriptor.id || '').trim();
+    const routeId = String(trip && trip.routeId || '').trim();
+    const lat = Number(position && position.latitude);
+    const lon = Number(position && position.longitude);
+    const timestampSeconds = protobufNumber(vehicle && vehicle.timestamp);
+    const timestamp = Number.isFinite(timestampSeconds) ? timestampSeconds * 1000 : NaN;
+    if (!tripId || !vehicleId || !Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(timestamp)) continue;
+    if (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) continue;
+    // Identity from an old vehicle position is more dangerous than no matched
+    // identity at all around a terminus, so keep the auxiliary feed bounded.
+    if (Math.abs(now - timestamp) > 5 * 60 * 1000) continue;
+    out.push({
+      vehicleId,
+      tripId,
+      routeId,
+      lat,
+      lon,
+      timestamp,
+      startDate: String(trip && trip.startDate || ''),
+      startTime: String(trip && trip.startTime || ''),
+      directionId: trip && trip.directionId != null ? String(trip.directionId) : ''
+    });
+  }
+  return out;
+}
+
+async function matchedFeed(request, env, ctx) {
+  if (!env.BODS_KEY) return json({ error: 'BODS_KEY is not configured' }, 503, request, env);
+
+  const incoming = new URL(request.url);
+  const rawBox = incoming.searchParams.get('bbox') || incoming.searchParams.get('boundingBox');
+  const bbox = normaliseBoundingBox(rawBox);
+  if (!bbox) {
+    return json({
+      error: `A valid bbox=minLon,minLat,maxLon,maxLat query is required; each span must be at or below ${MAX_BBOX_SPAN} degrees`,
+      maxSpan: MAX_BBOX_SPAN
+    }, 400, request, env);
+  }
+
+  const cache = caches.default;
+  const cacheUrl = new URL(request.url);
+  cacheUrl.pathname = '/__matched-cache';
+  cacheUrl.search = `?bbox=${encodeURIComponent(bbox)}`;
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+  const cached = await cache.match(cacheKey);
+  const cacheAge = cachedAgeMs(cached);
+  if (cached && cacheAge <= MATCHED_FRESH_CACHE_MS) {
+    return cachedMatchedResponse(cached, request, env, false, cacheAge);
+  }
+
+  const refreshPromise = sharedRefreshMatchedCache(request, env, bbox, cache, cacheKey);
+  if (cached) {
+    const refreshed = await Promise.race([
+      refreshPromise,
+      sleep(configuredCacheWaitMs(env)).then(() => null)
+    ]);
+    if (refreshed && refreshed.response) return refreshed.response;
+    if (!refreshed) ctx.waitUntil(refreshPromise.catch(() => {}));
+    if (cacheAge <= MATCHED_STALE_CACHE_MS) return cachedMatchedResponse(cached, request, env, true, cacheAge);
+  } else {
+    const refreshed = await refreshPromise;
+    if (refreshed.response) return refreshed.response;
+  }
+
+  return json({ error: 'Matched BODS GTFS-RT feed is temporarily unavailable', retryable: true }, 502, request, env, {
+    'Retry-After': '15',
+    'Cache-Control': 'no-store'
+  });
+}
+
+async function sharedRefreshMatchedCache(request, env, bbox, cache, cacheKey) {
+  const key = cacheKey.url;
+  let pending = INFLIGHT_REFRESHES.get(key);
+  if (!pending) {
+    pending = refreshMatchedCache(request, env, bbox, cache, cacheKey)
+      .finally(() => INFLIGHT_REFRESHES.delete(key));
+    INFLIGHT_REFRESHES.set(key, pending);
+  }
+  const result = await pending;
+  return { response: result.response ? result.response.clone() : null };
+}
+
+async function refreshMatchedCache(request, env, bbox, cache, cacheKey) {
+  const upstream = new URL(MATCHED_ENDPOINT);
+  upstream.searchParams.set('api_key', env.BODS_KEY);
+  upstream.searchParams.set('boundingBox', gtfsRtBoundingBox(bbox));
+  try {
+    const { response, body } = await fetchWithTimeout(upstream.toString(), {
+      headers: {
+        Accept: 'application/x-protobuf,application/octet-stream;q=0.9,*/*;q=0.1',
+        'User-Agent': 'Kerbside (+https://zetabun.github.io/idle-clicker-game/bus.html)'
+      },
+      cf: { cacheTtl: 0, cacheEverything: false }
+    }, LIVE_TIMEOUT_MS);
+    if (!response.ok || !body || !body.byteLength) return { response: null };
+    const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(body));
+    const vehicles = compactGtfsRtFeed(feed, bbox);
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json; charset=utf-8');
+    headers.set('Cache-Control', `public, max-age=5, s-maxage=${MATCHED_CACHE_SECONDS}`);
+    headers.set('X-Kerbside-Upstream', String(response.status));
+    headers.set('X-Kerbside-Cached-At', String(Date.now()));
+    applyCors(headers, request, env);
+    const successful = new Response(JSON.stringify({ vehicles }), { status: 200, headers });
+    try { await cache.put(cacheKey, successful.clone()); } catch {}
+    return { response: successful };
+  } catch {
+    return { response: null };
+  }
+}
+
+function cachedMatchedResponse(cached, request, env, stale, ageMs) {
+  const headers = new Headers(cached.headers);
+  headers.set('Cache-Control', 'no-store');
+  headers.set('X-Kerbside-Cache', stale ? 'stale' : 'fresh');
+  if (Number.isFinite(ageMs)) headers.set('X-Kerbside-Cache-Age', String(Math.max(0, Math.round(ageMs / 1000))));
+  if (stale) headers.set('X-Kerbside-Stale', '1');
+  else headers.delete('X-Kerbside-Stale');
+  applyCors(headers, request, env);
+  return new Response(cached.body, { status: 200, headers });
 }
 
 export function validSiriPayload(buffer, contentType = '') {
