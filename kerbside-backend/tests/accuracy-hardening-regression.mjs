@@ -140,7 +140,12 @@ try {
         }
       };
       state.timetableRun += 1;
-      const movingModel = api.etaMotionModel(vehicle({ lat: 52.5, lon: -1.909, progressPattern: patternId }), stop);
+      const movingModel = api.etaMotionModel(vehicle({
+        lat: 52.5, lon: -1.909, progressPattern: patternId, feedSpeed: 6
+      }), stop);
+      const sampledModel = api.etaMotionModel(vehicle({
+        lat: 52.5, lon: -1.909, progressPattern: patternId, feedSpeed: null, motionSpeed: 6
+      }), stop);
 
       state.ttStop = { id: 'STOP', d: [row(5 * 60000, 'PATTERN-A', '9', 'Centre', patternId), row(15 * 60000, 'PATTERN-B', '9', 'Centre', patternId)] };
       state.timetable.tripPatterns = { 'PATTERN-A': patternId, 'PATTERN-B': patternId };
@@ -192,6 +197,7 @@ try {
         stationary: { mode: stationary.speedMode, dwell: stationary.dwellSeconds, stationary: stationary.stationary, secs: stationary.secs },
         missingSpeed: { mode: missingSpeed.speedMode, dwell: missingSpeed.dwellSeconds, secs: missingSpeed.secs },
         movingModel,
+        sampledModel,
         inference: inference && { trip: inference.trip, patternOnly: inference.patternOnly, candidates: inference.tripCandidates, patternId: inference.patternId },
         inferredEvidence: { journeyMatch: inferredEvidence.journeyMatch, matchedTrip: inferredEvidence.matchedTrip, pathMatch: inferredEvidence.pathMatch },
         scan: scan && { trip: scan.trip, patternOnly: scan.patternOnly, candidates: scan.tripCandidates },
@@ -223,9 +229,12 @@ try {
   assert.equal(matrix.missingSpeed.dwell, 0, 'missing-speed fallback must not add dwell to an average that already includes stops');
   assert.ok(Number.isFinite(matrix.missingSpeed.secs));
   assert.ok(matrix.stationary.secs > matrix.missingSpeed.secs, 'known stationary GPS must not receive moving age extrapolation');
-  assert.ok(matrix.movingModel.remainingStops >= 1, 'moving-speed model should see the intermediate stop');
-  assert.ok(matrix.movingModel.dwell >= 18, 'moving-speed model should add stop-based dwell');
-  assert.equal(matrix.movingModel.mode, 'moving');
+  assert.ok(matrix.movingModel.remainingStops >= 1, 'instantaneous moving-speed model should see the intermediate stop');
+  assert.ok(matrix.movingModel.dwell >= 18, 'instantaneous feed speed should add stop-based dwell');
+  assert.equal(matrix.movingModel.mode, 'feed-speed');
+  assert.ok(matrix.sampledModel.remainingStops >= 1, 'GPS-average model should see the intermediate stop');
+  assert.equal(matrix.sampledModel.dwell, 0, 'GPS interval-average speed must not add dwell a second time');
+  assert.equal(matrix.sampledModel.mode, 'gps-average');
   assert.equal(matrix.inference?.patternOnly, true);
   assert.equal(matrix.inference?.trip, '', 'same-pattern geometry must not choose one successive timetable trip');
   assert.deepEqual(matrix.inference?.candidates?.sort(), ['PATTERN-A', 'PATTERN-B']);
