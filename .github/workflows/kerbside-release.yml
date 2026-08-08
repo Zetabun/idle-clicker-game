@@ -97,6 +97,10 @@ jobs:
           trigger_path="${trigger_path%.py}.txt"
           rm -f "$RELEASE_SCRIPT" "$trigger_path" .github/scripts/kerbside-release-post.py
 
+          # Dependencies are validation-only. Remove npm's generated tree before
+          # release-file discovery so it can never be included in a publish.
+          rm -rf kerbside-backend/node_modules
+
           # The GITHUB_TOKEN cannot update protected workflow files. A release
           # patch must not smuggle workflow changes into the generated commit;
           # connected GitHub tooling applies reviewed workflow edits separately.
