@@ -13,4 +13,13 @@ new = """      window.fetch=async input=>{
 if text.count(old) != 1:
     raise SystemExit(f'Expected exactly one malformed-coverage fetch mock, found {text.count(old)}')
 path.write_text(text.replace(old, new, 1), encoding='utf-8')
-print('Kept the malformed SIRI coverage regression isolated from the parallel GTFS-RT identity request.')
+
+path = Path('kerbside-backend/tests/audit-regression.mjs')
+text = path.read_text(encoding='utf-8')
+old = "  assert.equal(result.reasonOriginNoBus, 'no bus is working this departure yet');"
+new = "  assert.equal(result.reasonOriginNoBus, 'no matching live bus yet');"
+if text.count(old) != 1:
+    raise SystemExit(f'Expected exactly one stale 0.7.10 audit wording assertion, found {text.count(old)}')
+path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+print('Updated GTFS-RT browser mock isolation and the stale 0.7.10 audit wording assertion.')
