@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-path = Path('kerbside-backend/tests/browser-regression.mjs')
-text = path.read_text(encoding='utf-8')
+browser = Path('kerbside-backend/tests/browser-regression.mjs')
+text = browser.read_text(encoding='utf-8')
 
-replacements = [
+browser_replacements = [
     (
         "assert.match(busSource, /fetchLive,ingest,relevant,liveState:S/);",
         "assert.match(busSource, /fetchLive,fetchMatchedBatch,applyMatchedIdentities,retainMatchedIdentity,ingest,relevant,liveState:S/);",
@@ -28,11 +28,21 @@ replacements = [
     ),
 ]
 
-for old, new, label in replacements:
+for old, new, label in browser_replacements:
     count = text.count(old)
     if count != 1:
-        raise SystemExit(f'{path}: {label}: expected exactly one target, found {count}')
+        raise SystemExit(f'{browser}: {label}: expected exactly one target, found {count}')
     text = text.replace(old, new, 1)
 
-path.write_text(text, encoding='utf-8')
-print('Updated browser regressions for the auxiliary matched-feed request path.')
+browser.write_text(text, encoding='utf-8')
+
+audit = Path('kerbside-backend/tests/audit-regression.mjs')
+audit_text = audit.read_text(encoding='utf-8')
+old = "  assert.equal(result.reasonOriginNoBus, 'no bus is working this departure yet');"
+new = "  assert.equal(result.reasonOriginNoBus, 'no matching live bus yet');"
+count = audit_text.count(old)
+if count != 1:
+    raise SystemExit(f'{audit}: current schedule wording assertion: expected exactly one target, found {count}')
+audit.write_text(audit_text.replace(old, new, 1), encoding='utf-8')
+
+print('Updated browser mocks and audit wording for the matched-identity release.')
