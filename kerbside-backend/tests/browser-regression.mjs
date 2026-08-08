@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.7'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.8'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -117,6 +117,11 @@ assert.doesNotMatch(busSource, /\.searchwrap\{order:3;flex-basis:100%\}/);
 assert.match(busSource, /age<=4\*60\*1000/);
 assert.match(busSource, /points\.length===2\?1:2/);
 assert.match(busSource, /function boardRefreshCanRender/);
+assert.match(busSource, /function disruptionState\(situation,now\)/);
+assert.match(busSource, /function disruptionAppliesToService\(situation,line,operator,requireOperator=false\)/);
+assert.match(busSource, /Affects this service · location not supplied by publisher/);
+assert.match(busSource, /mode:'feed-speed'/);
+assert.match(busSource, /mode:'gps-average'/);
 assert.match(busSource, /feedRefreshing:false/);
 assert.match(busSource, /function clearJourneyRoute/);
 assert.match(busSource, /function journeyRouteContext/);
@@ -441,7 +446,7 @@ assert.doesNotMatch(busSource, /String\(hit\.v\.journey\|\|hit\.v\.id\)/);
 // twelve minutes off its time is still that departure and must not also appear
 // as a schedule-only row beside itself.
 assert.match(busSource, /const matchedSchedule=scheduleLookup\.tripMatched&&schedules\.length\?schedules\[0\]:null;/);
-assert.match(busSource, /function claimedScheduleFor\(row\)\{ return row&&!row\.gpsLost\?\(row\.schedule\|\|row\.matchedSchedule\|\|null\):null; \}/);
+assert.match(busSource, /function claimedScheduleFor\(row\)\{[\s\S]{0,180}if\(row\.gpsLost&&!row\.scheduleFallback\) return null;[\s\S]{0,120}return row\.schedule\|\|row\.matchedSchedule\|\|null;/);
 assert.match(busSource, /const claimedBy=usedSlots\.get\(slot\);/);
 assert.match(busSource, /if\(sharesPayload\) continue;/);
 assert.match(busSource, /const usedAnonymous=new Map\(\),identityByRecord=new Map\(\);/);
@@ -540,6 +545,9 @@ assert.match(busSource, /dist\(centre\.lat,centre\.lon,S\.stop\.lat,S\.stop\.lon
 assert.match(busSource, /void pollRouteCorridor\(\)/);
 assert.match(busSource, /route scan<\/span>/);
 assert.match(busSource, /const GPS_RESULT_GRACE_MS = 6\*60\*1000/);
+assert.match(busSource, /const GPS_RESULT_HEALTHY_GRACE_MS = 90\*1000/);
+assert.match(busSource, /function liveFeedHealthyForRetention\(now=Date\.now\(\)\)/);
+assert.match(busSource, /row\.scheduleFallback=true/);
 assert.match(busSource, /function gpsMovementDirection\(v\)/);
 assert.match(busSource, /GPS signal lost/);
 assert.match(busSource, /v\.progressPattern/);
@@ -1639,7 +1647,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.7'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.8'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
