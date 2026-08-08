@@ -102,6 +102,7 @@ jobs:
 
           git config user.name "OpenAI Agent"
           git config user.email "noreply@openai.com"
+          rm -rf kerbside-backend/node_modules
           git add -A
           git diff --cached --check
 
