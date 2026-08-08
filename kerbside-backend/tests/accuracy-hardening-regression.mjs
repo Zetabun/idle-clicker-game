@@ -12,6 +12,18 @@ console.log(`Accuracy hardening regression engine: ${ENGINE_NAME}`);
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
+const appVersion = String(await readFile(path.join(root, 'VERSION'), 'utf8')).trim();
+function versionAtLeast(value, minimum) {
+  const left = String(value).split('.').map(Number);
+  const right = String(minimum).split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const a = Number.isFinite(left[i]) ? left[i] : 0;
+    const b = Number.isFinite(right[i]) ? right[i] : 0;
+    if (a !== b) return a > b;
+  }
+  return true;
+}
+const expectsSpeedProvenance = versionAtLeast(appVersion, '0.7.8');
 const server = http.createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
@@ -140,7 +152,12 @@ try {
         }
       };
       state.timetableRun += 1;
-      const movingModel = api.etaMotionModel(vehicle({ lat: 52.5, lon: -1.909, progressPattern: patternId }), stop);
+      const movingModel = api.etaMotionModel(vehicle({
+        lat: 52.5, lon: -1.909, progressPattern: patternId, feedSpeed: 6
+      }), stop);
+      const sampledModel = api.etaMotionModel(vehicle({
+        lat: 52.5, lon: -1.909, progressPattern: patternId, feedSpeed: null, motionSpeed: 6
+      }), stop);
 
       state.ttStop = { id: 'STOP', d: [row(5 * 60000, 'PATTERN-A', '9', 'Centre', patternId), row(15 * 60000, 'PATTERN-B', '9', 'Centre', patternId)] };
       state.timetable.tripPatterns = { 'PATTERN-A': patternId, 'PATTERN-B': patternId };
@@ -192,6 +209,7 @@ try {
         stationary: { mode: stationary.speedMode, dwell: stationary.dwellSeconds, stationary: stationary.stationary, secs: stationary.secs },
         missingSpeed: { mode: missingSpeed.speedMode, dwell: missingSpeed.dwellSeconds, secs: missingSpeed.secs },
         movingModel,
+        sampledModel,
         inference: inference && { trip: inference.trip, patternOnly: inference.patternOnly, candidates: inference.tripCandidates, patternId: inference.patternId },
         inferredEvidence: { journeyMatch: inferredEvidence.journeyMatch, matchedTrip: inferredEvidence.matchedTrip, pathMatch: inferredEvidence.pathMatch },
         scan: scan && { trip: scan.trip, patternOnly: scan.patternOnly, candidates: scan.tripCandidates },
@@ -224,8 +242,16 @@ try {
   assert.ok(Number.isFinite(matrix.missingSpeed.secs));
   assert.ok(matrix.stationary.secs > matrix.missingSpeed.secs, 'known stationary GPS must not receive moving age extrapolation');
   assert.ok(matrix.movingModel.remainingStops >= 1, 'moving-speed model should see the intermediate stop');
-  assert.ok(matrix.movingModel.dwell >= 18, 'moving-speed model should add stop-based dwell');
-  assert.equal(matrix.movingModel.mode, 'moving');
+  if (expectsSpeedProvenance) {
+    assert.ok(matrix.movingModel.dwell >= 18, 'instantaneous feed speed should add stop-based dwell');
+    assert.equal(matrix.movingModel.mode, 'feed-speed');
+    assert.ok(matrix.sampledModel.remainingStops >= 1, 'GPS-average model should see the intermediate stop');
+    assert.equal(matrix.sampledModel.dwell, 0, 'GPS interval-average speed must not add dwell a second time');
+    assert.equal(matrix.sampledModel.mode, 'gps-average');
+  } else {
+    assert.ok(matrix.movingModel.dwell >= 18, 'legacy moving-speed model should add stop-based dwell');
+    assert.equal(matrix.movingModel.mode, 'moving');
+  }
   assert.equal(matrix.inference?.patternOnly, true);
   assert.equal(matrix.inference?.trip, '', 'same-pattern geometry must not choose one successive timetable trip');
   assert.deepEqual(matrix.inference?.candidates?.sort(), ['PATTERN-A', 'PATTERN-B']);
