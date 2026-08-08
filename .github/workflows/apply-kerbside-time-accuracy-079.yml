@@ -39,6 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/apply-kerbside-time-accuracy-079.py
+          python3 .github/scripts/fix-kerbside-079-browser-assertion.py
           git diff --check
 
       - name: Install validation dependencies
@@ -95,6 +96,7 @@ jobs:
           fi
 
           rm -f .github/scripts/apply-kerbside-time-accuracy-079.py
+          rm -f .github/scripts/fix-kerbside-079-browser-assertion.py
           rm -f .github/workflows/apply-kerbside-time-accuracy-079.yml
           rm -f .github/kerbside-time-accuracy-079.trigger
 
@@ -107,6 +109,7 @@ jobs:
           expected=(
             .github/kerbside-time-accuracy-079.trigger
             .github/scripts/apply-kerbside-time-accuracy-079.py
+            .github/scripts/fix-kerbside-079-browser-assertion.py
             .github/workflows/apply-kerbside-time-accuracy-079.yml
             VERSION
             bus.html
