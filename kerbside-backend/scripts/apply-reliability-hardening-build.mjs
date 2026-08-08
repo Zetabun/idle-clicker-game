@@ -54,10 +54,12 @@ replaceSection(
       }
       delete rec.stationaryAt;
     }
-    const feedSpeed=Number(v.feedSpeed);
+    const feedValue=v.feedSpeed;
+    const hasFeedSpeed=feedValue!==null&&feedValue!==undefined&&String(feedValue).trim()!=='';
+    const feedSpeed=hasFeedSpeed?Number(feedValue):NaN;
     if(stationaryFix){
       rec.motionSpeed=0;rec.speed=0;rec.stationaryAt=v.ts;
-    }else if(isFinite(feedSpeed) && feedSpeed>=0 && feedSpeed<=35){
+    }else if(Number.isFinite(feedSpeed) && feedSpeed>=0 && feedSpeed<=35){
       // Keep display/glide speed responsive to the producer's velocity, but do
       // not mix it into motionSpeed: ETA dwell logic needs to know whether the
       // speed came from an instantaneous feed value or from distance over time.
@@ -72,13 +74,17 @@ replaceSection(
   "function estimate(v, stop, evidenceOverride, geometryOverride){",
   `function etaMotionModel(v,stop){
   const remainingStops=remainingStopsToTarget(v,stop);
-  const feed=Number(v&&v.feedSpeed);
+  const feedValue=v&&v.feedSpeed;
+  const hasFeed=feedValue!==null&&feedValue!==undefined&&String(feedValue).trim()!=='';
+  const feed=hasFeed?Number(feedValue):NaN;
   const feedMoving=Number.isFinite(feed)&&feed>=MIN_SPEED&&feed<=MAX_SPEED;
   if(feedMoving){
     // SIRI Velocity is a point-in-time speed, so future stop dwell is not in it.
     return {speed:feed,dwell:remainingStops*ETA_DWELL_SECONDS_PER_STOP,remainingStops,mode:'feed-speed',stationary:false};
   }
-  const sampled=Number(v&&v.motionSpeed);
+  const sampledValue=v&&v.motionSpeed;
+  const hasSampled=sampledValue!==null&&sampledValue!==undefined&&String(sampledValue).trim()!=='';
+  const sampled=hasSampled?Number(sampledValue):NaN;
   const sampledMoving=Number.isFinite(sampled)&&sampled>=MIN_SPEED&&sampled<=MAX_SPEED;
   if(sampledMoving){
     // Distance divided by the reporting interval can already contain time spent
@@ -86,8 +92,12 @@ replaceSection(
     // second time.
     return {speed:sampled,dwell:0,remainingStops,mode:'gps-average',stationary:false};
   }
-  const raw=Number(v&&v.speed);
-  const stationary=(Number.isFinite(feed)&&feed===0)||(Number.isFinite(sampled)&&sampled===0)||raw===0||Number(v&&v.stationaryAt)===Number(v&&v.ts);
+  const rawValue=v&&v.speed;
+  const hasRaw=rawValue!==null&&rawValue!==undefined&&String(rawValue).trim()!=='';
+  const raw=hasRaw?Number(rawValue):NaN;
+  const stationaryAt=Number(v&&v.stationaryAt),timestamp=Number(v&&v.ts);
+  const stationaryStamp=Number.isFinite(stationaryAt)&&Number.isFinite(timestamp)&&stationaryAt===timestamp;
+  const stationary=(hasFeed&&feed===0)||(hasSampled&&sampled===0)||(hasRaw&&raw===0)||stationaryStamp;
   if(!stationary&&Number.isFinite(raw)&&raw>=MIN_SPEED&&raw<=MAX_SPEED){
     return {speed:raw,dwell:0,remainingStops,mode:'smoothed-average',stationary:false};
   }
