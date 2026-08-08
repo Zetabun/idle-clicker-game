@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_BBOX_SPAN, normaliseBoundingBox, resetWorkerStateForTests, routeRequest, validSiriPayload } from '../src/worker.js';
+import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
+import { MAX_BBOX_SPAN, compactGtfsRtFeed, gtfsRtBoundingBox, normaliseBoundingBox, resetWorkerStateForTests, routeRequest, validSiriPayload } from '../src/worker.js';
 
 const BBOX = '-2.20,52.40,-2.00,52.60';
 const LIVE_URL = `https://example.test/feed?bbox=${encodeURIComponent(BBOX)}&lineRef=9`;
@@ -64,6 +65,60 @@ test('rejects BODS boxes wider than the upstream 0.35 degree limit', () => {
   assert.equal(normaliseBoundingBox('-2.20,52.40,-1.85,52.75'), '-2.20000,52.40000,-1.85000,52.75000');
 });
 
+
+
+test('translates Kerbside bbox order for the BODS matched GTFS-RT endpoint', () => {
+  assert.equal(gtfsRtBoundingBox(BBOX), '52.40000,52.60000,-2.20000,-2.00000');
+});
+
+test('matched endpoint exposes compact GTFS trip identity without replacing SIRI', async () => {
+  resetWorkerStateForTests();
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const FeedMessage = GtfsRealtimeBindings.transit_realtime.FeedMessage;
+  const encoded = FeedMessage.encode(FeedMessage.create({
+    header: { gtfsRealtimeVersion: '2.0' },
+    entity: [{
+      id: 'entity-1',
+      vehicle: {
+        trip: { tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61' },
+        position: { latitude: 52.5, longitude: -2.1, bearing: 90 },
+        timestamp: nowSeconds,
+        vehicle: { id: 'BUS-740' }
+      }
+    }]
+  })).finish();
+  const runtime = installRuntime(null, async url => {
+    assert.match(String(url), /\/api\/v1\/gtfsrtdatafeed\//);
+    assert.match(decodeURIComponent(String(url)), /boundingBox=52\.40000,52\.60000,-2\.20000,-2\.00000/);
+    return new Response(encoded, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } });
+  });
+  try {
+    const response = await routeRequest(new Request(`https://example.test/matched?bbox=${encodeURIComponent(BBOX)}`), { BODS_KEY: 'present' });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.vehicles.length, 1);
+    assert.deepEqual({
+      vehicleId: body.vehicles[0].vehicleId,
+      tripId: body.vehicles[0].tripId,
+      routeId: body.vehicles[0].routeId
+    }, { vehicleId: 'BUS-740', tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61' });
+    assert.equal(runtime.state.fetches, 1);
+  } finally {
+    runtime.restore();
+    resetWorkerStateForTests();
+  }
+});
+
+test('compact matched feed refuses stale identities', () => {
+  const staleSeconds = Math.floor((Date.now() - 6 * 60 * 1000) / 1000);
+  const feed = { entity: [{ vehicle: {
+    trip: { tripId: 'OLD', routeId: 'R' },
+    position: { latitude: 52.5, longitude: -2.1 },
+    timestamp: staleSeconds,
+    vehicle: { id: 'BUS-OLD' }
+  } }] };
+  assert.deepEqual(compactGtfsRtFeed(feed, BBOX), []);
+});
 test('accepts only SIRI vehicle-monitoring payloads', () => {
   assert.equal(validSiriPayload(bytes(EMPTY_SIRI), 'application/xml'), true);
   assert.equal(validSiriPayload(bytes('<s:Siri xmlns:s="urn:siri"><s:ServiceDelivery><s:VehicleMonitoringDelivery/></s:ServiceDelivery></s:Siri>'), 'text/xml'), true);
@@ -77,7 +132,7 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.7.10');
+  assert.equal(body.version, '0.7.11');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);

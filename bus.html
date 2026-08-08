@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.10';
+const APP_VERSION = '0.7.11';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1197,6 +1197,9 @@ const VISUAL_MAX_LEAD_METRES = 420;
 const ROUTE_INFERENCE_MAX_OFFSET = 650;
 const ROUTE_INFERENCE_MIN_MOVEMENT = 30;
 const ROUTE_INFERENCE_MIN_FORWARD = 12;
+const MATCHED_IDENTITY_GRACE_MS = 3*60*1000;
+const MATCHED_IDENTITY_MAX_SKEW_MS = 3*60*1000;
+const MATCHED_IDENTITY_MAX_METRES = 2500;
 const ROUTE_INFERENCE_MIN_MARGIN = 90;
 const ROUTE_INFERENCE_GRACE_MS = 3*60*1000;
 const ROUTE_SCAN_INTERVAL_MS = 60*1000;
@@ -3049,7 +3052,7 @@ function pointAlongPattern(points,along){
   const last=points[points.length-1];
   return {lat:last.lat,lon:last.lon,along:metrics.total};
 }
-function vehicleJourneyRef(v){ return String(v&&((v.corridorTracked&&v.corridorTrip)||v.journey)||''); }
+function vehicleJourneyRef(v){ return String(v&&(v.matchedTrip||(v.corridorTracked&&v.corridorTrip)||v.journey)||''); }
 function journeyGeometry(v,stop){
   if(!v || !stop || v.progressIdentityBlocked) return null;
   const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
@@ -3290,9 +3293,10 @@ function splitPatternAt(pattern,projection){
 }
 function scheduledMatches(line,dest,spatialSecs,journey){
   const now=Date.now(), target=now+Math.max(0,Number(spatialSecs)||0)*1000;
-  let rows=timetableRowsForLine(line,new Date(now)).filter(r=>{
+  const exactRows=journey?timetableRows(new Date(now)).filter(r=>String(r.trip)===String(journey)):[];
+  let rows=(exactRows.length?exactRows:timetableRowsForLine(line,new Date(now))).filter(r=>{
     if(r.at<now-3*60000 || r.at>now+3*3600000) return false;
-    return !dest || !r.head || destinationSimilarity(dest,r.head)>=.34;
+    return exactRows.length || !dest || !r.head || destinationSimilarity(dest,r.head)>=.34;
   });
   const tripMatch=journey?uniqueCompatibleTrips(rows,journey):{items:[],ambiguous:false};
   if(tripMatch.ambiguous) return {items:[],tripMatched:false};
@@ -3417,6 +3421,80 @@ function feedUrlsForBoxes(boxes){
        + encodeURIComponent(S.key) + '&boundingBox=' + box);
 }
 function feedUrls(wide){ return feedUrlsForBoxes(bboxes(wide)); }
+
+function matchedUrlsForBoxes(boxes){
+  if(!S.proxy) return [];
+  return (Array.isArray(boxes)?boxes:[]).filter(Boolean).map(box=>workerUrl('/matched',{bbox:box}));
+}
+function matchedVehicleToken(value){
+  const raw=String(value||'').trim();
+  if(!raw) return '';
+  return /^0+\d+$/.test(raw)?raw.replace(/^0+/,''):raw.toLowerCase();
+}
+async function fetchMatchedResponse(url,signal){
+  const r=await fetchTimed(url,{headers:{Accept:'application/json'},cache:'no-store',signal},FETCH_TIMEOUT_MS);
+  if(!r.ok) throw new Error('Matched feed returned '+r.status);
+  const data=await r.json();
+  return Array.isArray(data&&data.vehicles)?data.vehicles:[];
+}
+async function fetchMatchedBatch(signal){
+  // The matched feed is an identity aid, not a coverage source. Fetch the
+  // ordinary local box only; distant corridor scans continue to use the
+  // existing SIRI/timetable inference if a vehicle is outside this window.
+  const urls=matchedUrlsForBoxes(bboxes(false));
+  if(!urls.length) return [];
+  const settled=await Promise.allSettled(urls.map(url=>fetchMatchedResponse(url,signal)));
+  const unique=new Map();
+  for(const result of settled){
+    if(result.status!=='fulfilled') continue;
+    for(const record of result.value){
+      const key=[record&&record.vehicleId,record&&record.tripId,record&&record.timestamp].join('|');
+      if(record&&record.vehicleId&&record.tripId&&!unique.has(key)) unique.set(key,record);
+    }
+  }
+  return [...unique.values()];
+}
+function applyMatchedIdentities(vehicles,matches,now=Date.now()){
+  const index=new Map();
+  for(const match of Array.isArray(matches)?matches:[]){
+    const token=matchedVehicleToken(match&&match.vehicleId);
+    if(!token||!match.tripId) continue;
+    const list=index.get(token)||[];list.push(match);index.set(token,list);
+  }
+  let applied=0;
+  for(const v of Array.isArray(vehicles)?vehicles:[]){
+    const tokens=[matchedVehicleToken(v&&v.vehicleRef),matchedVehicleToken(v&&v.vehicleUniqueId)].filter(Boolean);
+    const candidates=[];
+    const seen=new Set();
+    for(const token of tokens){
+      for(const match of index.get(token)||[]){
+        const key=[match.vehicleId,match.tripId,match.timestamp].join('|');
+        if(seen.has(key)) continue;seen.add(key);
+        const timestamp=Number(match.timestamp),referenceTs=Number.isFinite(Number(v.sourceTs))?Number(v.sourceTs):Number(v.ts);
+        const skew=Math.abs(referenceTs-timestamp);
+        if(!Number.isFinite(timestamp)||!Number.isFinite(referenceTs)||skew>MATCHED_IDENTITY_MAX_SKEW_MS) continue;
+        const metres=dist(Number(v.lat),Number(v.lon),Number(match.lat),Number(match.lon));
+        const allowed=Math.min(MATCHED_IDENTITY_MAX_METRES,250+skew/1000*22);
+        if(!Number.isFinite(metres)||metres>allowed) continue;
+        candidates.push({match,metres,skew});
+      }
+    }
+    candidates.sort((a,b)=>a.metres-b.metres||a.skew-b.skew);
+    const best=candidates[0],second=candidates[1];
+    if(!best) continue;
+    // A reused fleet/placeholder id can refer to two simultaneous buses. Do not
+    // turn that into false certainty unless the nearest matched position is
+    // clearly separated from the runner-up.
+    if(second&&String(second.match.tripId)!==String(best.match.tripId)&&second.metres-best.metres<120) continue;
+    v.matchedTrip=String(best.match.tripId);
+    v.matchedRouteId=String(best.match.routeId||'');
+    v.matchedTripAt=now;
+    v.matchSource='gtfs-rt';
+    v.matchedSticky=false;
+    applied++;
+  }
+  return applied;
+}
 function routeScanMatchKey(item){
   return String(item&&item.trip||'')+'|'+String(item&&item.stopSequence==null?'':item.stopSequence);
 }
@@ -3724,7 +3802,7 @@ function parseLivePayloads(items,now){
       if(!baseId) continue;
       candidates.push({
         id:baseId,baseId,activityDiscriminator:liveActivityDiscriminator(f),activityIdentity:'',payloadIndexes:[payloadIndex],itemIdentifier:f.ItemIdentifier||'',
-        journey,vehicleRef:f.VehicleRef||'',corridorTracked:false,
+        journey,vehicleRef:f.VehicleRef||'',vehicleUniqueId:f.VehicleUniqueId||'',corridorTracked:false,
         line:cleanLine(f.PublishedLineName||f.LineRef||'?'),lineRef:f.LineRef||'',
         dest:cleanName(f.DestinationName||f.DirectionName||''),destRef:f.DestinationRef||'',
         origin:cleanName(f.OriginName||''),originRef:f.OriginRef||'',operator:f.OperatorRef||'',
@@ -3791,7 +3869,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,parseLivePayloads,fetchTimed,fetchLive,fetchMatchedBatch,applyMatchedIdentities,retainMatchedIdentity,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
     journeyRouteLinesForTest:()=>routeLayer.getLayers().filter(l=>typeof l.getLatLngs==='function')
       .map(l=>({points:l.getLatLngs().length,weight:l.options.weight,dash:l.options.dashArray||null,colour:l.options.color}))};
 }
@@ -3831,6 +3909,7 @@ async function fetchLive(signal){
   S.feedFallback=false; S.feedEmptyReason=''; S.feedPartial=false;
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
   if(wide) S.lastWideFetch=Date.now();
+  const matchedPromise=fetchMatchedBatch(signal).catch(()=>[]);
   let batch=await fetchLiveBatch(wide,signal);
   // Expanded scans are optional discovery work. Any missing split box is
   // supplemented with the ordinary nearby box, retaining successful distant
@@ -3870,6 +3949,8 @@ async function fetchLive(signal){
     S.feedEmptyReason='No buses were reported in the latest feed for this area.';
     return [];
   }
+  const matched=await matchedPromise;
+  applyMatchedIdentities(out,matched,Date.now());
   return out;
 }
 
@@ -4051,6 +4132,20 @@ function mergeOlderVehicleEvidence(rec,v,now){
     rec.corridorTracked=true;
   }
 }
+
+function retainMatchedIdentity(prev,v,now=Date.now()){
+  if(!prev||!v||v.matchedTrip) return false;
+  const sameService=String(prev.line||'')===String(v.line||'')
+    &&String(prev.owner||prev.operator||'')===String(v.owner||v.operator||'');
+  const matchedAt=Number(prev.matchedTripAt);
+  if(!sameService||!prev.matchedTrip||!Number.isFinite(matchedAt)||now-matchedAt>MATCHED_IDENTITY_GRACE_MS) return false;
+  v.matchedTrip=String(prev.matchedTrip);
+  v.matchedRouteId=String(prev.matchedRouteId||'');
+  v.matchedTripAt=matchedAt;
+  v.matchSource=String(prev.matchSource||'gtfs-rt');
+  v.matchedSticky=true;
+  return true;
+}
 function ingest(list){
   const now=Date.now(), batch=ingestBatchIndex(list,now);
   for(const v of list){
@@ -4061,7 +4156,11 @@ function ingest(list){
     // A straggling report for an identity this bus has already moved on from
     // must not reappear beside the newer record as a second, older departure.
     if(!prev && supersededByNewerRecord(v,batch)) continue;
-    const journeyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
+    retainMatchedIdentity(prev,v,now);
+    const matchedJourneyChanged=!!(prev&&prev.matchedTrip&&v.matchedTrip&&String(prev.matchedTrip)!==String(v.matchedTrip));
+    const matchedIdentityStable=!!(prev&&prev.matchedTrip&&v.matchedTrip&&String(prev.matchedTrip)===String(v.matchedTrip));
+    const rawJourneyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
+    const journeyChanged=matchedJourneyChanged||(rawJourneyChanged&&!matchedIdentityStable);
     const routeIdentityChanged=!!(prev&&(String(prev.line)!==String(v.line)||String(prev.operator||'')!==String(v.operator||'')));
     const reportGap=prev&&v.ts>prev.ts?(v.ts-prev.ts)/1000:0;
     const reportMove=prev&&v.ts>prev.ts?dist(prev.lat,prev.lon,v.lat,v.lon):0;
@@ -4103,6 +4202,7 @@ function ingest(list){
     const corridorExpired=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&!keepCorridor);
     const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
     if(journeyChanged){delete rec.routeProjection;delete rec.corridorTrip;delete rec.corridorRemaining;delete rec.corridorConfirmedAt;delete rec.lastShownSnapshot;delete rec.lastShownAt;delete rec.lastShownArrivalAt;}
+    if(prev&&prev.matchedTrip&&!v.matchedTrip){delete rec.matchedTrip;delete rec.matchedRouteId;delete rec.matchedTripAt;delete rec.matchSource;delete rec.matchedSticky;}
     Object.assign(rec, v);
     if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }
     else if(corridorExpired){ delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; rec.corridorTracked=false; }
@@ -4407,18 +4507,22 @@ function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
   const allRows=timetableRowsForLine(l,new Date());
-  const identityInfo=timetableIdentityRows(allRows,identity);
+  const realtimeTrip=String(identity&&identity.matchedTrip||'');
+  const exactRealtimeRows=realtimeTrip?timetableRows(new Date()).filter(row=>String(row.trip)===realtimeTrip):[];
+  const identityInfo=timetableIdentityRows(exactRealtimeRows.length?exactRealtimeRows:allRows,identity);
   const ttRows=identityInfo.rows;
   const tripMatch=journey?uniqueCompatibleTrips(ttRows,journey):{items:[],ref:'',strength:0,ambiguous:false};
+  const realtimeMatch=!!(realtimeTrip&&tripMatch.items.length&&!tripMatch.ambiguous&&String(tripMatch.ref)===realtimeTrip);
   let journeyDestinationConflict=false, conflictingTrip='';
   if(tripMatch.items.length){
     const destination=journeyDestinationAgreement(tripMatch.items,dest);
-    if(!destination.conflict){
+    if(!destination.conflict||realtimeMatch){
       const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
       return {
         score:path?6:5,
-        label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
-        journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,
+        label:realtimeMatch?(path?'BODS matched journey and stop sequence':'BODS matched journey'):(path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable')),
+        journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,matchedRealtime:realtimeMatch,
+        journeyDestinationConflict:!!(realtimeMatch&&destination.conflict),
         routeIdentityMatch:identityInfo.strong
       };
     }
@@ -5044,7 +5148,7 @@ function relevant(){
 function setVehicleProgressIdentity(v,evidence,inference,matchedRow){
   if(!v) return;
   const inferredPattern=String(inference&&inference.patternId||'');
-  const conflict=!!(evidence&&evidence.journeyDestinationConflict);
+  const conflict=!!(evidence&&evidence.journeyDestinationConflict&&!evidence.matchedRealtime);
   v.progressIdentityBlocked=conflict&&!inferredPattern;
   if(inferredPattern){
     v.progressTrip='';
@@ -5109,7 +5213,9 @@ function collect(gate,diagnostics){
     const trustedJourney=!!(evidence.journeyMatch || geometry);
     const directionSchedule=est.schedule||matchedRow;
     const scheduledDir=scheduledJourneyDirection(directionSchedule);
-    const candidateDest=v.dest || (directionSchedule&&directionSchedule.head) || '';
+    const candidateDest=evidence.matchedRealtime&&directionSchedule&&directionSchedule.head
+      ? directionSchedule.head
+      : v.dest || (directionSchedule&&directionSchedule.head) || '';
 
     if(S.destFilter && destinationSimilarity(candidateDest,S.destFilter)<.75){
       rejectLive(diagnostics,'destination',v); continue;
@@ -5151,7 +5257,7 @@ function collect(gate,diagnostics){
     const directionDisagreed=S.dir!=='all' && dir!==S.dir && dir!=='unknown';
     const recovered=!!((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low'));
     if(recovered && diagnostics) diagnostics.recovered++;
-    const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
+    const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.matchedRealtime?'BODS matched journey':evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
     if(est.schedule&&!v.progressIdentityBlocked){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
     const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
     /* Where a bus is going is its own destination, not the town it happens to
@@ -5159,7 +5265,7 @@ function collect(gate,diagnostics){
        wrong place, and the anchor is often not on the route at all. The
        in/out wording is a fallback for a journey that does not report where it
        terminates; the arrow on the chip still carries the in/out sense. */
-    const heading=String(v.dest||'').trim();
+    const heading=String((evidence.matchedRealtime&&directionSchedule&&directionSchedule.head)||v.dest||'').trim();
     const directionWord=heading?'towards '+heading
       :shownDir==='in'?(namedAnchor?'into '+namedAnchor:'inbound')
       :shownDir==='out'?(namedAnchor?'out of '+namedAnchor:'outbound')
