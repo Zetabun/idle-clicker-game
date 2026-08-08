@@ -3,14 +3,18 @@
 
 Reads the Department for Transport Bus Open Data Service SIRI-SX bulk archive and
 writes `disruptions.json` for `bus.html`. The archive needs no API key, but it is a
-single national 5.8 MB XML that sends no CORS header, so it cannot be fetched from
-the browser. This script runs in GitHub Actions and publishes a small same-origin
-copy alongside the app on GitHub Pages.
+single national XML download that sends no CORS header, so it cannot be fetched
+from the browser. This script runs in GitHub Actions and publishes a small
+same-origin copy alongside the app on GitHub Pages.
 
 The output carries an ATCO stop index so the browser can match a disruption to a
 route by exact stop code rather than by line name. Line names are not unique: most
-are shared by several operators nationally, so name matching produces disruptions
-from the wrong end of the country.
+are shared by several operators nationally, so name matching alone produces
+alerts from the wrong end of the country.
+
+Even when the disruption content is unchanged, the feed is republished at least
+once per HEARTBEAT_HOURS. The browser deliberately rejects an old build, so a
+fresh build timestamp is part of the feed's health rather than meaningless churn.
 """
 import gzip
 import json
@@ -26,21 +30,24 @@ SOURCE = 'https://data.bus-data.dft.gov.uk/disruptions/download/bulk_archive'
 OUTPUT = 'disruptions.json'
 FORMAT_VERSION = 1
 
-# Situations that ended before now are dropped. Roughly 40% of the archive is
-# already expired, and `<Progress>open</Progress>` does not mean currently active.
-# Future ones are kept only briefly so the app can show upcoming closures.
+# Situations that ended before now are dropped. The archive contains a sizeable
+# expired tail, and `<Progress>open</Progress>` does not mean currently active.
+# Future ones are kept briefly so the app can show upcoming planned closures.
 FUTURE_HORIZON_DAYS = 7
+# The browser currently accepts a disruption build for 24 hours. Publish a much
+# shorter heartbeat so an unchanged archive cannot age out silently.
+HEARTBEAT_HOURS = 6
 SUMMARY_MAX = 180
 DETAIL_MAX = 400
 MAX_STOPS_PER_SITUATION = 400
 
-UA = 'Kerbside-disruptions-build/1.0 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
+UA = 'Kerbside-disruptions-build/1.1 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
 
 
 def fetch(url, attempts=5):
     last = None
     request = urllib.request.Request(url, headers={'User-Agent': UA})
-    for attempt in range(attempts):
+    for _attempt in range(attempts):
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
                 payload = response.read()
@@ -70,7 +77,8 @@ def parse_time(value):
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace('Z', '+00:00'))
+        parsed = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
     except ValueError:
         return None
 
@@ -133,6 +141,47 @@ def build_index(situations):
     return index
 
 
+def comparable_document(document):
+    """Return stable JSON for semantic comparison, excluding build heartbeat."""
+    if not isinstance(document, dict):
+        return ''
+    copy = dict(document)
+    copy.pop('built', None)
+    return json.dumps(copy, separators=(',', ':'), ensure_ascii=False, sort_keys=True)
+
+
+def heartbeat_due(previous, now):
+    """True when an unchanged checked-in feed needs a fresh build timestamp."""
+    if not isinstance(previous, dict):
+        return True
+    built = parse_time(previous.get('built'))
+    if not built:
+        return True
+    return now - built >= timedelta(hours=HEARTBEAT_HOURS)
+
+
+def publish_decision(previous, current, now):
+    """Return (should_commit, reason) for the generated feed."""
+    if not isinstance(previous, dict) or not previous:
+        return True, 'initial'
+    if comparable_document(previous) != comparable_document(current):
+        return True, 'content'
+    if heartbeat_due(previous, now):
+        return True, 'heartbeat'
+    return False, 'unchanged'
+
+
+def load_previous(path=OUTPUT):
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else None
+    except Exception:  # noqa: BLE001 - a corrupt previous file is replaced
+        return None
+
+
 def main():
     now = datetime.now(timezone.utc)
     archive = fetch(SOURCE)
@@ -160,26 +209,9 @@ def main():
         'byStop': index,
     }
 
+    previous = load_previous()
+    changed, reason = publish_decision(previous, document, now)
     payload = json.dumps(document, separators=(',', ':'), ensure_ascii=False)
-    previous = ''
-    if os.path.exists(OUTPUT):
-        try:
-            with open(OUTPUT, encoding='utf-8') as handle:
-                previous = json.dumps(json.load(handle), separators=(',', ':'), ensure_ascii=False)
-        except Exception:  # noqa: BLE001 - a corrupt previous file is simply replaced
-            previous = ''
-
-    def comparable(value):
-        if not value:
-            return ''
-        try:
-            data = json.loads(value)
-        except ValueError:
-            return ''
-        data.pop('built', None)
-        return json.dumps(data, separators=(',', ':'), ensure_ascii=False)
-
-    unchanged = bool(previous) and comparable(previous) == comparable(payload)
 
     with open(OUTPUT, 'w', encoding='utf-8', newline='\n') as handle:
         handle.write(payload + '\n')
@@ -193,12 +225,13 @@ def main():
              sum(1 for s in situations if s['lines'])))
     print('output                          : %.0f KB (%.0f KB gzipped)'
           % (raw / 1024, len(gzip.compress(payload.encode('utf-8'), 9)) / 1024))
-    print('content changed                 : %s' % ('no' if unchanged else 'yes'))
+    print('publish required                : %s (%s)' % ('yes' if changed else 'no', reason))
 
     marker = os.environ.get('GITHUB_OUTPUT')
     if marker:
         with open(marker, 'a', encoding='utf-8') as handle:
-            handle.write('changed=%s\n' % ('false' if unchanged else 'true'))
+            handle.write('changed=%s\n' % ('true' if changed else 'false'))
+            handle.write('reason=%s\n' % reason)
             handle.write('count=%d\n' % len(situations))
     return 0
 
