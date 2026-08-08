@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.10'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.11'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -529,7 +529,7 @@ assert.match(busSource, /cache:force\?'reload':'no-cache'/);
 assert.doesNotMatch(busSource, /cache:force\?'reload':'force-cache'/);
 assert.match(busSource, /if\(journey\) return owner\+'\|journey\|'\+journey/);
 assert.match(busSource, /if\(vehicle\) return owner\+'\|vehicle\|'\+vehicle/);
-assert.match(busSource, /fetchLive,ingest,relevant,liveState:S/);
+assert.match(busSource, /fetchLive,fetchItmIdentities,applyItmIdentities,itmMatchedTrip,ingest,relevant,liveState:S/);
 assert.doesNotMatch(busSource, /if\(vehicle\) return \(operator\?operator\+'\|':''\)\+'vehicle\|'\+vehicle;\n  if\(journey\)/);
 assert.match(busSource, /const DATA_SNAPSHOT_CACHE = 'kerbside-timetable-snapshots-v1'/);
 assert.match(busSource, /function validDataDeparture\(data,region,shard,expectedBuild\)/);
@@ -1208,7 +1208,12 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     const bad='<?xml version="1.0"?><Siri><ServiceDelivery><VehicleMonitoringDelivery>';
     const run=async bodyFor=>{
       let n=0;
-      window.fetch=async()=>{ n++; return new Response(bodyFor(n),{status:200,headers:{'Content-Type':'application/xml'}}); };
+      window.fetch=async input=>{
+        const url=String(input&&input.url||input||'');
+        if(url.includes('/gtfsrt')) return new Response(JSON.stringify({version:1,vehicles:[]}),{status:200,headers:{'Content-Type':'application/json'}});
+        n++;
+        return new Response(bodyFor(n),{status:200,headers:{'Content-Type':'application/xml'}});
+      };
       state.lastWideFetch=0;
       let threw=null,result=null;
       try{ result=await api.fetchLive(new AbortController().signal); }catch(e){ threw=e; }
@@ -1326,7 +1331,13 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     const saved={stop:state.stop,origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,feedFallback:state.feedFallback,feedStale:state.feedStale,feedUnknownAge:state.feedUnknownAge,feedEmptyReason:state.feedEmptyReason,feedPartial:state.feedPartial};
     state.stop={id:'partial-feed-stop',lat:52.5,lon:-2.1,name:'Partial feed stop'};state.origin={lat:52.5,lon:-2.1,label:'Partial feed'};state.proxy='https://partial-feed.test';state.key='';state.demo=false;state.lastWideFetch=0;
     const empty='<?xml version="1.0"?><Siri><ServiceDelivery><VehicleMonitoringDelivery></VehicleMonitoringDelivery></ServiceDelivery></Siri>';let calls=0;
-    window.fetch=async () => {calls++;if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});throw new TypeError('offline');};
+    window.fetch=async input => {
+      const url=String(input&&input.url||input||'');
+      if(url.includes('/gtfsrt')) return new Response(JSON.stringify({version:1,vehicles:[]}),{status:200,headers:{'Content-Type':'application/json'}});
+      calls++;
+      if(calls===1)return new Response(empty,{status:200,headers:{'Content-Type':'application/xml'}});
+      throw new TypeError('offline');
+    };
     try{
       try{await api.fetchLive();return {resolved:true,calls,partial:state.feedPartial,msg:''};}
       catch(e){return {resolved:false,calls,partial:state.feedPartial,msg:String(e&&e.msg||e)};}
@@ -1664,7 +1675,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.10'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.11'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

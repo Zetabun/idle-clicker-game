@@ -17,6 +17,8 @@ const busSource=await readFile(path.join(root,'bus.html'),'utf8');
 assert.match(busSource,/function journeyDestinationAgreement\(rows,dest\)/);
 assert.match(busSource,/journeyDestinationConflict/);
 assert.match(busSource,/function setVehicleProgressIdentity\(v,evidence,inference,matchedRow\)/);
+assert.match(busSource,/function applyItmIdentities\(vehicles,identities,now=Date\.now\(\)\)/);
+assert.match(busSource,/BODS matched GTFS-RT journey/);
 assert.match(busSource,/progressIdentityBlocked/);
 assert.match(busSource,/Journey identity is updating\./);
 assert.match(busSource,/>journey updating<\/span>/);
@@ -102,6 +104,9 @@ try{
       const originConflict=api.routeEvidence('61',baseVehicle.dest,'',{...baseVehicle,journey:'',aimedOriginAt:outbound.originAt});
       const compatibleExact=api.routeEvidence('61','Frankley Arden Road Terminus','OUTBOUND',{...baseVehicle,dest:'Frankley Arden Road Terminus'});
       const destinationMissing=api.routeEvidence('61','','OUTBOUND',{...baseVehicle,dest:''});
+      const itmVehicle={...baseVehicle,id:'itm-61',vehicleRef:'BUS-123',journey:'WRONG-SIRI-JOURNEY',dest:'Digbeth Moor Street Queensway',ts:now-15000};
+      api.applyItmIdentities([itmVehicle],[{entityId:'itm-entity',vehicleId:'BUS-123',tripId:'OUTBOUND',routeId:'61',lat:itmVehicle.lat,lon:itmVehicle.lon,timestamp:Math.floor(now/1000)}],now);
+      const itmExact=api.routeEvidence('61',itmVehicle.dest,itmVehicle.journey,itmVehicle);
 
       const agreementConflict=api.journeyDestinationAgreement([{head:'Frankley Arden Road Terminus'}],'Digbeth Moor Street Queensway');
       const agreementCompatible=api.journeyDestinationAgreement([{head:'Digbeth Moor Street Queensway'}],'Moor Street Queensway');
@@ -123,6 +128,7 @@ try{
         originConflict:{score:originConflict.score,journeyMatch:!!originConflict.journeyMatch,matchedTrip:String(originConflict.matchedTrip||''),conflict:!!originConflict.journeyDestinationConflict,timetableVerified:!!originConflict.timetableVerified,label:originConflict.label},
         compatibleExact:{journeyMatch:!!compatibleExact.journeyMatch,matchedTrip:String(compatibleExact.matchedTrip||''),conflict:!!compatibleExact.journeyDestinationConflict},
         destinationMissing:{journeyMatch:!!destinationMissing.journeyMatch,matchedTrip:String(destinationMissing.matchedTrip||''),conflict:!!destinationMissing.journeyDestinationConflict},
+        itmExact:{journeyMatch:!!itmExact.journeyMatch,matchedTrip:String(itmExact.matchedTrip||''),itmMatch:!!itmExact.itmMatch,label:itmExact.label,score:itmExact.score},
         agreementConflict,
         agreementCompatible,
         blockedProgress,
@@ -147,6 +153,7 @@ try{
   assert.equal(result.compatibleExact.conflict,false);
   assert.equal(result.destinationMissing.journeyMatch,true,'feeds without a destination must not lose exact journey matching');
   assert.equal(result.destinationMissing.matchedTrip,'OUTBOUND');
+  assert.deepEqual(result.itmExact,{journeyMatch:true,matchedTrip:'OUTBOUND',itmMatch:true,label:'BODS matched GTFS-RT journey',score:6},'BODS ITM exact trip identity must outrank a conflicting raw SIRI journey/destination heuristic');
   assert.equal(result.agreementConflict.conflict,true);
   assert.equal(result.agreementCompatible.conflict,false,'minor stop-name wording differences should remain compatible');
 

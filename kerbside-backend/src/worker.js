@@ -1,3 +1,5 @@
+import { gtfsRealtimeBoundingBox, parseGtfsRealtimeVehicleFeed } from './gtfs-realtime.js';
+
 const LIVE_ENDPOINTS = [
   'https://data.bus-data.dft.gov.uk/api/v1/datafeed/',
   'https://data.bus-data.dft.gov.uk/api/v1/datafeed'
@@ -8,6 +10,9 @@ const LIVE_RETRY_DELAY_MS = 150;
 const LIVE_CACHE_SECONDS = 150;
 const LIVE_FRESH_CACHE_MS = 5000;
 const LIVE_CACHE_WAIT_MS = 1800;
+const GTFS_RT_ENDPOINT = 'https://data.bus-data.dft.gov.uk/api/v1/gtfsrtdatafeed/';
+const GTFS_RT_CACHE_SECONDS = 30;
+const GTFS_RT_FRESH_CACHE_MS = 10000;
 const MAX_BBOX_SPAN = 0.35;
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_DEFAULT = 60;
@@ -36,7 +41,7 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
   const path = url.pathname.replace(/\/+$/, '') || '/';
 
   if (path === '/health') return health(request, env);
-  if (path === '/' || path === '/feed') {
+  if (path === '/' || path === '/feed' || path === '/gtfsrt') {
     if (!requestOriginAllowed(request, env)) {
       return json({ error: 'Origin is not allowed' }, 403, request, env, { 'Cache-Control': 'no-store' });
     }
@@ -48,7 +53,10 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
         'Cache-Control': 'no-store'
       });
     }
-    return withRateLimitHeaders(await liveFeed(request, env, ctx), rate);
+    const response = path === '/gtfsrt'
+      ? await gtfsRealtimeFeed(request, env, ctx)
+      : await liveFeed(request, env, ctx);
+    return withRateLimitHeaders(response, rate);
   }
 
   return json({ error: 'Not found' }, 404, request, env);
@@ -59,8 +67,9 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.7.10',
+    version: '0.7.11',
     bods: Boolean(env.BODS_KEY),
+    gtfsRealtime: true,
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
     upstreamTimeoutMs: LIVE_TIMEOUT_MS,
     upstreamAttempts: LIVE_ATTEMPTS,
@@ -171,6 +180,113 @@ async function refreshLiveCache(request, env, incoming, bbox, lineRef, cache, ca
     if (attempt + 1 < LIVE_ATTEMPTS) await sleep(LIVE_RETRY_DELAY_MS * (attempt + 1));
   }
   return { response: null, failures };
+}
+
+async function gtfsRealtimeFeed(request, env, ctx) {
+  if (!env.BODS_KEY) return json({ error: 'BODS_KEY is not configured' }, 503, request, env);
+
+  const incoming = new URL(request.url);
+  const rawBox = incoming.searchParams.get('bbox') || incoming.searchParams.get('boundingBox');
+  const bbox = normaliseBoundingBox(rawBox);
+  if (!bbox) {
+    return json({
+      error: `A valid bbox=minLon,minLat,maxLon,maxLat query is required; each span must be at or below ${MAX_BBOX_SPAN} degrees`,
+      maxSpan: MAX_BBOX_SPAN
+    }, 400, request, env);
+  }
+
+  const cache = caches.default;
+  const cacheUrl = new URL(request.url);
+  cacheUrl.pathname = '/__gtfsrt-cache';
+  cacheUrl.search = `?bbox=${encodeURIComponent(bbox)}`;
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+  let cached = await cache.match(cacheKey);
+  const cacheAge = cachedAgeMs(cached);
+
+  if (cached && cacheAge <= GTFS_RT_FRESH_CACHE_MS) {
+    return cachedGtfsRealtimeResponse(cached, request, env, false, cacheAge);
+  }
+
+  if (cached) {
+    const refreshPromise = sharedRefreshGtfsRealtime(request, env, bbox, cache, cacheKey);
+    const waitMs = configuredCacheWaitMs(env);
+    const refreshed = await Promise.race([
+      refreshPromise,
+      sleep(waitMs).then(() => null)
+    ]);
+    if (refreshed && refreshed.response) return refreshed.response;
+    if (!refreshed) ctx.waitUntil(refreshPromise.catch(() => {}));
+    return cachedGtfsRealtimeResponse(cached, request, env, true, cacheAge);
+  }
+
+  const refreshed = await sharedRefreshGtfsRealtime(request, env, bbox, cache, cacheKey);
+  if (refreshed.response) return refreshed.response;
+  return json({
+    error: 'Matched BODS GTFS-Realtime feed is temporarily unavailable',
+    detail: refreshed.failure || '',
+    retryable: true
+  }, 502, request, env, { 'Retry-After': '15', 'Cache-Control': 'no-store' });
+}
+
+async function sharedRefreshGtfsRealtime(request, env, bbox, cache, cacheKey) {
+  const key = cacheKey.url;
+  let pending = INFLIGHT_REFRESHES.get(key);
+  if (!pending) {
+    pending = refreshGtfsRealtime(request, env, bbox, cache, cacheKey)
+      .finally(() => INFLIGHT_REFRESHES.delete(key));
+    INFLIGHT_REFRESHES.set(key, pending);
+  }
+  const result = await pending;
+  return {
+    failure: result.failure,
+    response: result.response ? result.response.clone() : null
+  };
+}
+
+async function refreshGtfsRealtime(request, env, bbox, cache, cacheKey) {
+  const upstream = new URL(GTFS_RT_ENDPOINT);
+  upstream.searchParams.set('api_key', env.BODS_KEY);
+  upstream.searchParams.set('boundingBox', gtfsRealtimeBoundingBox(bbox));
+  try {
+    const { response, body } = await fetchWithTimeout(upstream.toString(), {
+      headers: {
+        Accept: 'application/x-protobuf,application/octet-stream;q=0.9,*/*;q=0.1',
+        'User-Agent': 'Kerbside/0.7 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
+      },
+      cf: { cacheTtl: 0, cacheEverything: false }
+    }, LIVE_TIMEOUT_MS);
+    if (!response.ok) return { response: null, failure: `BODS GTFS-RT returned ${response.status}` };
+    const parsed = parseGtfsRealtimeVehicleFeed(body);
+    const payload = JSON.stringify({
+      version: 1,
+      source: 'bods-itm-gtfsrt',
+      feedVersion: parsed.header.version || '',
+      feedTimestamp: Number(parsed.header.timestamp) || 0,
+      vehicles: parsed.vehicles
+    });
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json; charset=utf-8');
+    headers.set('Cache-Control', `public, max-age=10, s-maxage=${GTFS_RT_CACHE_SECONDS}`);
+    headers.set('X-Kerbside-Upstream', String(response.status));
+    headers.set('X-Kerbside-Cached-At', String(Date.now()));
+    applyCors(headers, request, env);
+    const successful = new Response(payload, { status: 200, headers });
+    try { await cache.put(cacheKey, successful.clone()); } catch {}
+    return { response: successful, failure: '' };
+  } catch (error) {
+    return { response: null, failure: safeMessage(error) };
+  }
+}
+
+function cachedGtfsRealtimeResponse(cached, request, env, stale, ageMs) {
+  const headers = new Headers(cached.headers);
+  headers.set('Cache-Control', 'no-store');
+  headers.set('X-Kerbside-Cache', stale ? 'stale' : 'fresh');
+  if (Number.isFinite(ageMs)) headers.set('X-Kerbside-Cache-Age', String(Math.max(0, Math.round(ageMs / 1000))));
+  if (stale) headers.set('X-Kerbside-Stale', '1');
+  else headers.delete('X-Kerbside-Stale');
+  applyCors(headers, request, env);
+  return new Response(cached.body, { status: 200, headers });
 }
 
 export function validSiriPayload(buffer, contentType = '') {
