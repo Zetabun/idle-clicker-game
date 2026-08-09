@@ -133,7 +133,7 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.7.17');
+  assert.equal(body.version, '0.7.18');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);
