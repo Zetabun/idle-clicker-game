@@ -1,3 +1,0 @@
-Kerbside 0.7.23 release trigger.
-
-Purpose: consolidate live-bus matching around authoritative exact stop identity. A loaded national trip pattern that omits the selected ATCO stop is a hard wrong-side rejection; cached GTFS-RT identity must be fresh; destination wording and compass movement are secondary clues; exact live trip identity claims its timetable row; confirmed passed-stop locks remain dominant. Includes opposite-kerb, stale-identity and duplicate-live/scheduled regression coverage.
