@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.20';
+const APP_VERSION = '0.7.21';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4639,6 +4639,10 @@ function journeyDestinationAlternative(rows,matchedRows,dest){
     return destinationSimilarity(live,row.head)>=.34;
   });
 }
+function journeyDestinationWordingOnly(rows,matchedRows,dest){
+  const destination=journeyDestinationAgreement(matchedRows,dest);
+  return !!(destination.conflict&&!journeyDestinationAlternative(rows,matchedRows,dest));
+}
 function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
@@ -4657,16 +4661,17 @@ function routeEvidence(line,dest,journey,identity){
     const realtimeMatch=!!(realtimeMatchRows.items.length&&!realtimeMatchRows.ambiguous&&String(realtimeMatchRows.ref)===realtimeTrip);
     if(realtimeMatch){
       const destination=journeyDestinationAgreement(realtimeMatchRows.items,dest);
+      const wordingOnlyConflict=journeyDestinationWordingOnly(allRows,realtimeMatchRows.items,dest);
       const lag=Number(identity&&identity.matchedLagMs);
       const newerSiriIdentity=!!(identity&&(String(identity.journey||'').trim()||Number.isFinite(Number(identity.aimedOriginAt))));
-      const handoverRisk=!!(destination.conflict&&Number.isFinite(lag)&&lag>MATCHED_HANDOVER_MAX_LAG_MS&&newerSiriIdentity);
+      const handoverRisk=!!(destination.conflict&&!wordingOnlyConflict&&Number.isFinite(lag)&&lag>MATCHED_HANDOVER_MAX_LAG_MS&&newerSiriIdentity);
       if(!handoverRisk){
         const path=!!timetablePattern(realtimeMatchRows.ref);
         return {
           score:path?6:5,
-          label:path?'BODS matched journey and stop sequence':'BODS matched journey',
+          label:(path?'BODS matched journey and stop sequence':'BODS matched journey')+(wordingOnlyConflict?'; destination wording differs':''),
           journeyMatch:true,pathMatch:path,matchStrength:realtimeMatchRows.strength,matchedTrip:realtimeMatchRows.ref,matchedRealtime:true,
-          journeyDestinationConflict:!!destination.conflict,
+          journeyDestinationConflict:!!(destination.conflict&&!wordingOnlyConflict),journeyDestinationWordingMismatch:wordingOnlyConflict,
           routeIdentityMatch:realtimeInfo.strong
         };
       }
@@ -4702,13 +4707,14 @@ function routeEvidence(line,dest,journey,identity){
   const originMatch=uniqueOriginTrips(ttRows,identity);
   if(originMatch.items.length){
     const destination=journeyDestinationAgreement(originMatch.items,dest);
-    if(!destination.conflict){
+    const wordingOnlyConflict=journeyDestinationWordingOnly(ttRows,originMatch.items,dest);
+    if(!destination.conflict||wordingOnlyConflict){
       const path=!!timetablePattern(originMatch.ref);
       return {
         score:path?6:5,
-        label:path?'origin departure and stop sequence matched':'origin departure matched to timetable',
+        label:(path?'origin departure and stop sequence matched':'origin departure matched to timetable')+(wordingOnlyConflict?'; destination wording differs':''),
         journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:originMatch.ref,
-        originMatch:true,routeIdentityMatch:identityInfo.strong
+        originMatch:true,journeyDestinationWordingMismatch:wordingOnlyConflict,routeIdentityMatch:identityInfo.strong
       };
     }
     journeyDestinationConflict=true; conflictingTrip=String(originMatch.ref||conflictingTrip||'');
@@ -5094,7 +5100,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5373,7 +5379,12 @@ function rememberRouteContinuity(v,evidence,now=Date.now()){
 }
 function routeEvidenceWithContinuity(v,evidence,now=Date.now()){
   if(!v||!evidence||Number(evidence.score)>=2||!S.stop) return evidence;
-  if(evidence.journeyDestinationConflict||evidence.conflictingTrip) return evidence;
+  if(evidence.journeyDestinationConflict){
+    const conflictingTrip=String(evidence.conflictingTrip||'');
+    const rows=timetableRowsForLine(v.line,new Date(now));
+    const matchedRows=conflictingTrip?rows.filter(row=>String(row&&row.trip||'')===conflictingTrip):[];
+    if(!matchedRows.length||!journeyDestinationWordingOnly(rows,matchedRows,v.dest)) return evidence;
+  }
   if(!routeContinuityContextMatches(v)) return evidence;
   const gpsTs=Number(v.ts)||0, previousTs=Number(v.routeVerifiedGpsTs)||0;
   const verifiedAt=Number(v.routeVerifiedAt)||0;

@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.20'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.21'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -274,7 +274,7 @@ assert.match(busSource, /function originTimeMatches\(row,identity\)/);
 assert.match(busSource, /function uniqueOriginTrips\(rows,identity\)/);
 assert.match(busSource, /if\(refs\.length!==1\) return \{items:\[\],ref:'',ambiguous:true\};/);
 assert.match(busSource, /const originMatch=uniqueOriginTrips\(ttRows,identity\);/);
-assert.match(busSource, /originMatch:true,routeIdentityMatch:identityInfo\.strong/);
+assert.match(busSource, /originMatch:true,journeyDestinationWordingMismatch:wordingOnlyConflict,routeIdentityMatch:identityInfo\.strong/);
 assert.match(busSource, /originAt:originMins===null\?null:|const originAt=hasOrigin\?serviceDepartureTime\(serviceDate,originRaw\)\.getTime\(\):null;/);
 assert.match(busSource, /no matching live bus yet/);
 /* The reason a scheduled row has no live bus must know which buses are already
@@ -1355,6 +1355,19 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   });
   assert.deepEqual(freshRouteContinuity,{seeded:true,continuedScore:2,continued:true,sameFixExpired:1,branch:1,away:2,jump:1});
 
+  const destinationWordingOnly = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__;
+    const matched=[{trip:'A',head:'Moor St Queensway'}];
+    return {
+      localityOnly:api.journeyDestinationWordingOnly([...matched,{trip:'B',head:'Frankley'}],matched,'Digbeth'),
+      realAlternative:api.journeyDestinationWordingOnly([...matched,{trip:'B',head:'Digbeth'}],matched,'Digbeth'),
+      exact:api.journeyDestinationWordingOnly(matched,matched,'Moor St Queensway')
+    };
+  });
+  assert.deepEqual(destinationWordingOnly,{localityOnly:true,realAlternative:false,exact:false});
+  assert.ok(busSource.includes("const wordingOnlyConflict=journeyDestinationWordingOnly(ttRows,originMatch.items,dest);"));
+  assert.ok(busSource.includes("if(!matchedRows.length||!journeyDestinationWordingOnly(rows,matchedRows,v.dest)) return evidence;"));
+
   const adaptiveRouteContinuity = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__;
     return {
@@ -1775,7 +1788,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.20'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.21'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
