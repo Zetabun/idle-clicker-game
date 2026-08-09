@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.21'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.22'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -1378,6 +1378,14 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   });
   assert.deepEqual(adaptiveRouteContinuity,{fast:90000,slow:120000,unknown:90000});
   assert.ok(busSource.includes("const continuityBacked=!!evidence.routeContinuity;"));
+  assert.ok(busSource.includes("const PASSED_STOP_LOCK_MS = 30*60*1000;"));
+  assert.ok(busSource.includes("function passedStopLockApplies(v,geometry,now=Date.now())"));
+  assert.ok(busSource.includes("if(passedStopLockApplies(v,geometry,now)){"));
+  assert.ok(busSource.includes("rememberPassedStopLock(v,geometry,now);"));
+  assert.ok(busSource.includes("clearRouteContinuity(rec);clearPassedStopLock(rec);"));
+  assert.ok(busSource.indexOf("if(passedStopLockApplies(v,geometry,now)){") < busSource.indexOf("if(d>range){"));
+  assert.ok(busSource.includes("targetAlong:target.along"));
+  assert.ok(busSource.includes("selectedIndex,"));
   assert.ok(busSource.includes("const recoverable=trustedJourney || continuityBacked || (scheduleBacked && d<=MAX_VEH_DIST);"));
   assert.ok(busSource.includes("const recovered=!!(continuityBacked || ((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low')));"));
 
@@ -1788,7 +1796,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.21'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.22'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

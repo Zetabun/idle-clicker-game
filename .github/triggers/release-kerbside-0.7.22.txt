@@ -1,3 +1,0 @@
-Kerbside 0.7.22 release trigger.
-
-Purpose: once ordered journey progress confirms the selected stop has been passed, keep that stop/journey hard-excluded so destination-wording, continuity, confidence or retained-snapshot recovery cannot resurrect the bus. Clear the lock for a genuine new journey/route and allow a later repeated call on a circular route when ordered geometry proves it.

@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.21';
+const APP_VERSION = '0.7.22';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3078,7 +3078,10 @@ function journeyGeometry(v,stop){
     vehicleOffset:vehicle.metres,
     stopOffset:target.metres,
     total:vehicle.total,
-    pattern
+    pattern,
+    selectedIndex,
+    targetAlong:target.along,
+    vehicleAlong:vehicle.along
   };
 }
 function orderedPatternStops(pattern){
@@ -4285,7 +4288,7 @@ function ingest(list){
     const trackDiscontinuity=!!(prev&&!journeyChanged&&(reportGap>180||reportMove>3000));
     if(journeyChanged||routeIdentityChanged||trackDiscontinuity){
       rec.hist=[];rec.speed=null;rec.motionSpeed=null;rec.cadence=null;delete rec.routeProjection;delete rec.stationaryAt;
-      delete rec.inferredJourney;delete rec.inferredTrip;delete rec.inferredPattern;delete rec.inferredAt;delete rec.inferenceStopId;delete rec.inferenceGpsTs;clearRouteContinuity(rec);
+      delete rec.inferredJourney;delete rec.inferredTrip;delete rec.inferredPattern;delete rec.inferredAt;delete rec.inferenceStopId;delete rec.inferenceGpsTs;clearRouteContinuity(rec);clearPassedStopLock(rec);
     }
     if(prev && !journeyChanged && !routeIdentityChanged && !trackDiscontinuity && v.ts>prev.ts){
       if(reportGap>=2 && reportGap<=180) rec.cadence=rec.cadence==null?reportGap:rec.cadence*.65+reportGap*.35;
@@ -5297,6 +5300,71 @@ function clearPassedState(v){
   delete v.passedSuspectGpsTs;
   delete v.passedSuspectRemaining;
 }
+/* Once ordered journey geometry has confirmed that this vehicle has actually
+   gone beyond the selected call, weak evidence on a later refresh must never
+   resurrect it through MATCH RETAINED, destination-wording recovery or the
+   confidence fallback. This lock belongs to one selected stop and one ongoing
+   vehicle journey. It is deliberately temporary and is cleared by ingest when
+   the vehicle starts a genuinely new journey/route. A circular route may also
+   clear it when ordered geometry proves that a *later* call at this same stop
+   is now the target. */
+const PASSED_STOP_LOCK_MS = 30*60*1000;
+const PASSED_STOP_LOCK_FIELDS = [
+  'passedStopLockStopId','passedStopLockAt','passedStopLockGpsTs',
+  'passedStopLockLine','passedStopLockOwner','passedStopLockPattern',
+  'passedStopLockTargetAlong','passedStopLockSelectedIndex'
+];
+function clearPassedStopLock(v){
+  if(!v) return;
+  for(const field of PASSED_STOP_LOCK_FIELDS) delete v[field];
+}
+function rememberPassedStopLock(v,geometry,now=Date.now()){
+  if(!v||!S.stop||!geometry) return false;
+  const targetAlong=Number(geometry.targetAlong);
+  v.passedStopLockStopId=String(S.stop.id);
+  v.passedStopLockAt=now;
+  v.passedStopLockGpsTs=Number(v.ts)||0;
+  v.passedStopLockLine=String(v.line||'');
+  v.passedStopLockOwner=String(v.owner||v.operator||'');
+  v.passedStopLockPattern=String(geometry.pattern&&geometry.pattern.id||'');
+  v.passedStopLockTargetAlong=Number.isFinite(targetAlong)?targetAlong:null;
+  v.passedStopLockSelectedIndex=Number.isFinite(Number(geometry.selectedIndex))?Number(geometry.selectedIndex):-1;
+  return true;
+}
+function passedStopLockApplies(v,geometry,now=Date.now()){
+  if(!v||!S.stop||!v.passedStopLockStopId) return false;
+  if(v.passedStopLockStopId!==String(S.stop.id)){
+    clearPassedStopLock(v);
+    return false;
+  }
+  const lockedAt=Number(v.passedStopLockAt)||0;
+  if(!lockedAt||now-lockedAt>PASSED_STOP_LOCK_MS){
+    clearPassedStopLock(v);
+    return false;
+  }
+  if(String(v.passedStopLockLine||'')!==String(v.line||'')
+      ||String(v.passedStopLockOwner||'')!==String(v.owner||v.operator||'')){
+    clearPassedStopLock(v);
+    return false;
+  }
+  /* A repeated call at the same stop on a loop is a real new target even when
+     the trip id is unchanged. Only ordered geometry can release this case: the
+     same pattern must now point to a later stop occurrence/along-distance. */
+  if(geometry&&!geometry.passed){
+    const lockedPattern=String(v.passedStopLockPattern||'');
+    const currentPattern=String(geometry.pattern&&geometry.pattern.id||'');
+    const lockedAlong=Number(v.passedStopLockTargetAlong), currentAlong=Number(geometry.targetAlong);
+    const lockedIndex=Number(v.passedStopLockSelectedIndex), currentIndex=Number(geometry.selectedIndex);
+    const laterIndex=Number.isFinite(lockedIndex)&&Number.isFinite(currentIndex)&&currentIndex>lockedIndex;
+    const laterAlong=Number.isFinite(lockedAlong)&&Number.isFinite(currentAlong)
+      &&currentAlong>lockedAlong+PATTERN_STOP_PASSED_TOLERANCE;
+    if(lockedPattern&&currentPattern===lockedPattern&&(laterIndex||laterAlong)){
+      clearPassedStopLock(v);
+      return false;
+    }
+  }
+  return true;
+}
 function confirmPassedState(v,geometry,now=Date.now()){
   if(!v||!geometry) return true;
   const gpsTs=Number(v.ts), remaining=Number(geometry.remaining);
@@ -5468,9 +5536,14 @@ function collect(gate,diagnostics){
     const journeyBearingOverride=!!(evidence.journeyMatch&&matchedCallPlausible&&d<=MAX_VEH_DIST&&movementTrend(v,S.stop)>=0);
     setVehicleProgressIdentity(v,evidence,inference,matchedRow);
     const geometry=journeyGeometry(v,S.stop);
+    if(passedStopLockApplies(v,geometry,now)){
+      clearPassedState(v);
+      rejectLive(diagnostics,'passed',v); continue;
+    }
     if(geometry && geometry.passed){
       const confirmed=confirmPassedState(v,geometry,now);
       if(!confirmed && holdLive(out,v,diagnostics,'passed',now)) continue;
+      rememberPassedStopLock(v,geometry,now);
       clearPassedState(v);
       rejectLive(diagnostics,'passed',v); continue;
     }
