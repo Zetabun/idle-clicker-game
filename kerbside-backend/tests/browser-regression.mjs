@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.16'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.17'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -1137,6 +1137,51 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   });
   assert.equal(gpsFixes.corridor,true);assert.equal(gpsFixes.live,1);assert.equal(gpsFixes.progress,true);assert.equal(gpsFixes.held,true);assert.equal(gpsFixes.away,false);
 
+
+  // A producer can change the journey/activity key while the physical bus,
+  // route and GPS track are continuous. The replacement identity must inherit
+  // only display/movement continuity so a transient route gate cannot blink a
+  // previously verified row off the board. A different live destination must
+  // not inherit that snapshot across a genuine branch/journey handover.
+  const identityContinuity = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
+    const saved={stop:state.stop,vehicles:state.vehicles,dir:state.dir,destFilter:state.destFilter};
+    try{
+      state.stop={id:'continuity-stop',timetableId:'continuity-stop',lat:52.5,lon:-2.1,name:'Continuity stop',d:0};
+      state.dir='all';state.destFilter=null;state.vehicles=new Map();
+      const base={line:'61',lineRef:'61',dest:'Moor St Queensway',owner:'CONTINUITY',operator:'CONTINUITY',vehicleRef:'BUS-17',vehicleUniqueId:'UNIQUE-17',lat:52.49,lon:-2.1,bearing:0,feedSpeed:8,timestampKnown:true,corridorTracked:false};
+      const oldId='CONTINUITY|journey|old-trip|vehicle|BUS-17',nextId='CONTINUITY|journey|new-trip|vehicle|BUS-17';
+      api.ingest([{...base,id:oldId,journey:'old-trip',ts:now-15000}]);
+      const old=state.vehicles.get(oldId);
+      old.hist=[{lat:52.488,lon:-2.1,ts:now-30000},{lat:52.49,lon:-2.1,ts:now-15000}];
+      old.lastShownStopId='continuity-stop';old.lastShownAt=now-5000;old.lastShownArrivalAt=now+20*60000;old.lastShownBoardDir='all';old.lastShownDestFilter='';
+      old.lastShownSnapshot={secs:1200,confidence:'low',schedule:null,matchedSchedule:null,v:null};
+      api.ingest([{...base,id:nextId,journey:'new-trip',lat:52.491,ts:now}]);
+      const next=state.vehicles.get(nextId),held=api.retainedSnapshotRow(next,now,false);
+      const transferred=!!(next&&held&&next.lastShownSnapshot&&next.hist.length>=3&&!state.vehicles.has(oldId));
+
+      state.vehicles=new Map();
+      const oldBranchId='CONTINUITY|journey|old-branch|vehicle|BUS-18',newBranchId='CONTINUITY|journey|new-branch|vehicle|BUS-18';
+      const branchBase={...base,vehicleRef:'BUS-18',vehicleUniqueId:'UNIQUE-18'};
+      api.ingest([{...branchBase,id:oldBranchId,journey:'old-branch',dest:'Frankley Arden Road Terminus',ts:now-15000}]);
+      const oldBranch=state.vehicles.get(oldBranchId);
+      oldBranch.lastShownStopId='continuity-stop';oldBranch.lastShownAt=now-5000;oldBranch.lastShownArrivalAt=now+20*60000;oldBranch.lastShownBoardDir='all';oldBranch.lastShownDestFilter='';
+      oldBranch.lastShownSnapshot={secs:1200,confidence:'low',schedule:null,matchedSchedule:null,v:null};
+      api.ingest([{...branchBase,id:newBranchId,journey:'new-branch',dest:'Moor St Queensway',lat:52.491,ts:now}]);
+      const newBranch=state.vehicles.get(newBranchId);
+      return {
+        transferred,
+        heldVehicle:held&&held.v&&held.v.id,
+        history:next&&next.hist.length,
+        wrongBranchInherited:!!(newBranch&&newBranch.lastShownSnapshot)
+      };
+    }finally{Object.assign(state,saved);}
+  });
+  assert.equal(identityContinuity.transferred,true,JSON.stringify(identityContinuity));
+  assert.equal(identityContinuity.heldVehicle,'CONTINUITY|journey|new-trip|vehicle|BUS-17',JSON.stringify(identityContinuity));
+  assert.ok(identityContinuity.history>=3,JSON.stringify(identityContinuity));
+  assert.equal(identityContinuity.wrongBranchInherited,false,JSON.stringify(identityContinuity));
+
   const gpsSafety = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={stop:state.stop,origin:state.origin,anchor:state.anchor,dir:state.dir,onlyServing:state.onlyServing,hideAway:state.hideAway,destFilter:state.destFilter,demo:state.demo,vehicles:state.vehicles,ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion};
@@ -1677,7 +1722,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.16'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.17'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

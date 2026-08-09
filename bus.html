@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.16';
+const APP_VERSION = '0.7.17';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4175,6 +4175,54 @@ function retirableVehicleKey(v,batch){
   const physical=physicalVehicleKey(v);
   return physical&&!batch.shared.has(physical)?physical:'';
 }
+/* A SIRI producer can re-key the same physical bus when its journey/activity
+   reference changes between otherwise consecutive GPS reports. The previous
+   row was then deleted as superseded, but the replacement identity started with
+   no last-known-good board snapshot or movement history. Any momentary route
+   weakness on that replacement therefore made a verified bus blink off the
+   board until a later poll rebuilt confidence.
+
+   Carry continuity only when the physical vehicle key is unambiguous, the
+   operator/line and live destination still describe the same working, the GPS
+   jump is plausible for the elapsed time, and the predecessor was actually
+   shown at this exact stop recently. This deliberately does not copy journey,
+   matched-trip, corridor or route-projection identity across a re-key. */
+const VEHICLE_CONTINUITY_MAX_GAP_MS = 90*1000;
+const VEHICLE_CONTINUITY_MAX_METRES = 2500;
+function vehicleContinuityPredecessor(v,batch,now=Date.now()){
+  if(!v||!batch||!v.id||!S.stop) return null;
+  const physical=retirableVehicleKey(v,batch);
+  if(!physical) return null;
+  const nextTs=Number(v.ts),nextOwner=String(v.owner||v.operator||'');
+  if(!Number.isFinite(nextTs)) return null;
+  let best=null;
+  for(const [otherId,other] of S.vehicles){
+    if(otherId===v.id||batch.ids.has(otherId)) continue;
+    if(physicalVehicleKey(other)!==physical) continue;
+    if(String(other.line||'')!==String(v.line||'')) continue;
+    if(String(other.owner||other.operator||'')!==nextOwner) continue;
+    if(other.dest&&v.dest&&destinationSimilarity(other.dest,v.dest)<.6) continue;
+    if(other.lastShownStopId!==String(S.stop.id)||!other.lastShownSnapshot) continue;
+    if(now-Number(other.lastShownAt||0)>GPS_RESULT_HEALTHY_GRACE_MS) continue;
+    const previousTs=Number(other.ts),gap=nextTs-previousTs;
+    if(!Number.isFinite(previousTs)||gap<0||gap>VEHICLE_CONTINUITY_MAX_GAP_MS) continue;
+    const metres=dist(Number(other.lat),Number(other.lon),Number(v.lat),Number(v.lon));
+    const allowed=Math.min(VEHICLE_CONTINUITY_MAX_METRES,Math.max(120,gap/1000*35+100));
+    if(!Number.isFinite(metres)||metres>allowed) continue;
+    if(!best||previousTs>Number(best.ts)) best=other;
+  }
+  return best;
+}
+function vehicleContinuitySeed(previous){
+  const seed={hist:[],speed:null,motionSpeed:null,cadence:null};
+  if(!previous) return seed;
+  seed.hist=(Array.isArray(previous.hist)?previous.hist:[]).slice(-7).map(point=>({...point}));
+  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter']){
+    if(previous[field]!==undefined) seed[field]=previous[field];
+  }
+  if(previous.lastShownSnapshot) seed.lastShownSnapshot={...previous.lastShownSnapshot,v:null};
+  return seed;
+}
 /* True when this physical bus is already tracked under a different identity
    holding a more recent position — so the incoming record is a straggler for
    a journey it has already finished. */
@@ -4220,7 +4268,8 @@ function ingest(list){
   for(const v of list){
     if(v&&v.baseId&&v.id!==v.baseId) promoteCollisionRecord(v.baseId);
     const prev = S.vehicles.get(v.id);
-    const rec = prev || {hist:[], speed:null, motionSpeed:null, cadence:null};
+    const continuity=prev?null:vehicleContinuityPredecessor(v,batch,now);
+    const rec = prev || vehicleContinuitySeed(continuity);
     if(prev && Number(v.ts)<Number(prev.ts)){mergeOlderVehicleEvidence(prev,v,now);continue;}
     // A straggling report for an identity this bus has already moved on from
     // must not reappear beside the newer record as a second, older departure.
