@@ -1,3 +1,0 @@
-Kerbside 0.7.21 release trigger.
-
-Purpose: stop refresh flicker when strong journey identity and the live destination disagree only by locality-vs-terminus wording. A mismatch is retained only when no alternative timetable trip at this stop matches the live destination; genuine alternative branches, route/operator changes, stale GPS, implausible jumps and confirmed passed-stop evidence still fail closed.
