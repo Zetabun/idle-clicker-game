@@ -200,6 +200,51 @@ try{
       const flickerAfter=api.relevant().some(row=>row.v&&row.v.id===flickerVehicle.id);
       const flickerPassed=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.passed||0);
 
+      // Exact national stop identity outranks a stale/incorrect realtime trip.
+      // The candidate pattern contains only the opposite Brightstone kerb and
+      // must therefore be a hard rejection rather than a retained live row.
+      const wrongSideTrip='WRONG-SIDE-TRIP', wrongSidePattern='wrong-side-pattern';
+      state.ttStop={id:'BRIGHTSTONE',match:'code',d:[[
+        minuteAt(5),'61','Moor St Queensway','','in',wrongSideTrip,wrongSidePattern,'R61','',3,minuteAt(-20)
+      ]]};
+      state.timetable={services:{},tripPatterns:{[wrongSideTrip]:wrongSidePattern},patterns:{
+        [wrongSidePattern]:{
+          p:[[52.4600,-1.9600],[52.4520,-1.9600],[52.4480,-1.9600]],
+          s:[
+            ['UPSTREAM','Upstream',52.4600,-1.9600,1],
+            ['BRIGHTSTONE-OTHER-SIDE','Brightstone Road',52.45025,-1.9600,3]
+          ],g:1
+        }
+      }};
+      state.timetableRun=Number(state.timetableRun||0)+1;
+      const wrongSideVehicle={
+        id:'wrong-side-live',line:'61',lineRef:'61',owner:'',operator:'',dest:'Digbeth',journey:'OPAQUE',
+        matchedTrip:wrongSideTrip,matchedRouteId:'R61',matchedLagMs:0,matchedTripAt:now,matchedObservationAt:now,
+        lat:52.4520,lon:-1.9600,bearing:180,ts:now,sourceTs:now,hist:[{lat:52.4540,lon:-1.9600,ts:now-20000},{lat:52.4520,lon:-1.9600,ts:now}],speed:6,cadence:20
+      };
+      wrongSideVehicle.lastShownStopId='BRIGHTSTONE';wrongSideVehicle.lastShownAt=now;wrongSideVehicle.lastShownArrivalAt=now+5*60000;wrongSideVehicle.lastShownBoardDir='all';wrongSideVehicle.lastShownDestFilter='';
+      wrongSideVehicle.lastShownSnapshot={v:null,secs:300,metres:200,evidence:{matchedTrip:wrongSideTrip},confidence:'low'};
+      state.vehicles=new Map([[wrongSideVehicle.id,wrongSideVehicle]]);
+      const wrongSideRows=api.relevant();
+      const wrongSide={
+        shown:wrongSideRows.some(row=>row.v&&row.v.id===wrongSideVehicle.id),
+        exactStopRejected:Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.exactStop||0),
+        retained:Number(state.liveDiag&&state.liveDiag.recovered||0)
+      };
+      const exactStopCheck=api.exactTripSelectedStopEvidence(wrongSideTrip,wrongSidePattern,stop,3);
+
+      // A GTFS-RT identity old enough to plausibly belong to the previous
+      // turnaround must not assign a trip to an otherwise fresh SIRI vehicle.
+      const staleMatchedInput={...baseVehicle,id:'stale-rt',vehicleRef:'BUS-STALE',vehicleUniqueId:'',journey:'OPAQUE',matchedTrip:'',sourceTs:now,ts:now,cadence:20};
+      const staleMatchedCount=api.applyMatchedIdentities([staleMatchedInput],[{entityId:'entity-stale',vehicleId:'BUS-STALE',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-120000}],now);
+
+      // Sticky identity must also age the *underlying observation*. A fresh
+      // assignment timestamp is not enough if the GTFS-RT position itself is
+      // two minutes behind the current SIRI vehicle.
+      const staleStickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',cadence:20};
+      const staleStickyPrevious={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-10000,matchedObservationAt:now-120000,matchedLagMs:0,matchSource:'gtfs-rt'};
+      const staleStickyRetained=api.retainMatchedIdentity(staleStickyPrevious,staleStickyIncoming,now);
+
       const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
       const stickyPrev={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-30000,matchedObservationAt:now-30000,matchedLagMs:0,matchSource:'gtfs-rt'};
       const stickyRetained=api.retainMatchedIdentity(stickyPrev,stickyIncoming,now);
@@ -254,6 +299,10 @@ try{
           corridorTrip:String(aliasScanVehicle&&aliasScanVehicle.corridorTrip||'')
         },
         patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},
+        wrongSide,
+        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},
+        staleMatchedIdentity:{count:staleMatchedCount,trip:String(staleMatchedInput.matchedTrip||'')},
+        staleStickyIdentity:{retained:staleStickyRetained,trip:String(staleStickyIncoming.matchedTrip||'')},
         sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
         uniquePhysicalKey,
         budget:{empty:Array.isArray(budgetResult)&&budgetResult.length===0,elapsed:budgetElapsed},
@@ -293,7 +342,11 @@ try{
     inferred:true,patternOnly:true,patternId:'brightstone-61-inbound',score:4,journeyMatch:false,matchedTrip:''
   },'GPS movement on the ordered 61 pattern must recover a Digbeth versus Moor St Queensway naming mismatch without inventing a scheduled trip identity');
   assert.deepEqual(result.routeScanAlias,{inferred:true,patternOnly:true,corridorTrip:'BRIGHTSTONE-INBOUND'},'the upstream route scan must apply the same destination-alias rule when the exact selected stop is present in the ordered pattern');
-  assert.deepEqual(result.patternLoadFlicker,{before:true,after:true,passed:0},'loading a route pattern with only a nearby opposite-kerb stop must not make a previously visible exact realtime bus disappear as already passed');
+  assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');
+  assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');
+  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');
+  assert.deepEqual(result.staleMatchedIdentity,{count:0,trip:''},'a two-minute-old matched identity must not assign the previous journey to a fresh SIRI vehicle');
+  assert.deepEqual(result.staleStickyIdentity,{retained:false,trip:''},'sticky matched identity must expire from the observation age rather than the local assignment time');
   assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');
   assert.equal(result.uniquePhysicalKey,'OPTEST|vehicle-unique|UNIQUE-9','VehicleUniqueId must identify a physical bus when VehicleRef is absent');
   assert.equal(result.budget.empty,true,'a slow matched feed should degrade to no auxiliary identities');

@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.22';
+const APP_VERSION = '0.7.23';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3173,6 +3173,25 @@ function exactSelectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence
   if(!ids.length||!stops.some(stop=>ids.includes(String(stop&&stop.id||'')))) return -1;
   return selectedPatternStopIndex(stops,chosen,fromAlong,stopSequence);
 }
+function exactTripSelectedStopEvidence(trip,patternId,stop=S.stop,stopSequence){
+  const authoritative=authoritativePatternStopRequired();
+  if(!authoritative) return {authoritative:false,known:false,serves:true,index:-1,pattern:null};
+  const ref=String(trip||''), pattern=timetablePatternRecord(ref,patternId);
+  if(!pattern) return {authoritative:true,known:false,serves:false,index:-1,pattern:null};
+  const stops=orderedPatternStops(pattern);
+  const index=exactSelectedPatternStopIndex(stops,stop,undefined,stopSequence);
+  return {authoritative:true,known:true,serves:index>=0,index,pattern};
+}
+function exactStopContradiction(v,evidence,matchedRow){
+  if(!authoritativePatternStopRequired()) return null;
+  /* Only the current evidence result can hard-reject a kerb. progressTrip and
+     the raw cached matchedTrip may legitimately lag during a journey handover. */
+  const trip=String(evidence&&evidence.matchedTrip||'');
+  if(!trip) return null;
+  const patternId=String(matchedRow&&matchedRow.pattern||((v&&String(v.progressTrip||'')===trip)?v.progressPattern:'')||'');
+  const check=exactTripSelectedStopEvidence(trip,patternId,S.stop,matchedRow&&matchedRow.stopSequence);
+  return check.known&&!check.serves?check:null;
+}
 function selectedPatternStopIndexForEvidence(stops,selectedStop,fromAlong,stopSequence){
   return authoritativePatternStopRequired()
     ? exactSelectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence)
@@ -3500,6 +3519,13 @@ function matchedIdentityWithinBudget(promise,waitMs=MATCHED_IDENTITY_WAIT_MS){
     new Promise(resolve=>setTimeout(()=>resolve([]),delay))
   ]);
 }
+const MATCHED_IDENTITY_MIN_FRESH_MS = 45*1000;
+const MATCHED_IDENTITY_MAX_FRESH_MS = 90*1000;
+function matchedIdentityFreshnessMs(v){
+  const cadence=Number(v&&v.cadence);
+  if(!Number.isFinite(cadence)||cadence<=0) return MATCHED_IDENTITY_MIN_FRESH_MS;
+  return Math.max(MATCHED_IDENTITY_MIN_FRESH_MS,Math.min(MATCHED_IDENTITY_MAX_FRESH_MS,(cadence*1.75+15)*1000));
+}
 function applyMatchedIdentities(vehicles,matches,now=Date.now()){
   const index=new Map();
   for(const match of Array.isArray(matches)?matches:[]){
@@ -3519,6 +3545,8 @@ function applyMatchedIdentities(vehicles,matches,now=Date.now()){
         const timestamp=Number(match.timestamp),referenceTs=Number.isFinite(Number(v.sourceTs))?Number(v.sourceTs):Number(v.ts);
         const skew=Math.abs(referenceTs-timestamp);
         if(!Number.isFinite(timestamp)||!Number.isFinite(referenceTs)||skew>MATCHED_IDENTITY_MAX_SKEW_MS) continue;
+        const identityAge=Math.max(0,now-timestamp);
+        if(identityAge>matchedIdentityFreshnessMs(v)) continue;
         const metres=dist(Number(v.lat),Number(v.lon),Number(match.lat),Number(match.lon));
         const allowed=Math.min(MATCHED_IDENTITY_MAX_METRES,250+skew/1000*22);
         if(!Number.isFinite(metres)||metres>allowed) continue;
@@ -4254,6 +4282,10 @@ function retainMatchedIdentity(prev,v,now=Date.now()){
     &&String(prev.owner||prev.operator||'')===String(v.owner||v.operator||'');
   const matchedAt=Number(prev.matchedTripAt);
   if(!sameService||!prev.matchedTrip||!Number.isFinite(matchedAt)||now-matchedAt>MATCHED_IDENTITY_GRACE_MS) return false;
+  const nextReferenceTs=Number.isFinite(Number(v.sourceTs))?Number(v.sourceTs):Number(v.ts);
+  const previousObservation=Number(prev.matchedObservationAt);
+  const observationAge=Number.isFinite(nextReferenceTs)&&Number.isFinite(previousObservation)?Math.max(0,nextReferenceTs-previousObservation):Infinity;
+  if(observationAge>matchedIdentityFreshnessMs(v)) return false;
   v.matchedTrip=String(prev.matchedTrip);
   v.matchedRouteId=String(prev.matchedRouteId||'');
   v.matchedTripAt=matchedAt;
@@ -5103,7 +5135,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,exactTripSelectedStopEvidence,exactStopContradiction,matchedIdentityFreshnessMs,exactIdentityScheduleClaim,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5228,7 +5260,7 @@ function newLiveDiagnostics(gate){
   return {
     gate:!!gate,received:S.vehicles.size,recent:0,nearby:0,route:0,direction:0,
     approaching:0,confidence:0,recovered:0,shown:0,
-    rejected:{stale:0,range:0,passed:0,route:0,destination:0,direction:0,away:0,confidence:0,limit:0},
+    rejected:{stale:0,range:0,passed:0,route:0,exactStop:0,destination:0,direction:0,away:0,confidence:0,limit:0},
     vehicleRejections:new Map()
   };
 }
@@ -5529,6 +5561,12 @@ function collect(gate,diagnostics){
     const matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
     const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
     const matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
+    const stopContradiction=exactStopContradiction(v,evidence,matchedRow);
+    if(stopContradiction){
+      clearRouteContinuity(v);
+      delete v.lastShownSnapshot; delete v.lastShownAt; delete v.lastShownArrivalAt;
+      rejectLive(diagnostics,'exactStop',v); continue;
+    }
     // An exact timetable journey that is due to call here outranks a
     // single compass bearing or town-centre movement inference. Measured
     // retreat from the stop still wins, so a bus that has genuinely
@@ -5848,6 +5886,8 @@ function journeyRefComparable(ref){
 }
 function scheduleIdentityEvidence(schedule,v,evidenceCache){
   if(!schedule||!v||String(v.line)!==String(schedule.line)) return null;
+  const exact=exactTripSelectedStopEvidence(schedule.trip,schedule.pattern,S.stop,schedule.stopSequence);
+  if(exact.authoritative&&exact.known&&!exact.serves) return null;
   if(routeIdentityAgreement(schedule,v)<0) return null;
   if(schedule.head&&v.dest&&destinationSimilarity(v.dest,schedule.head)<.34) return null;
   const key=String(v.id||'');
@@ -5867,6 +5907,7 @@ function scheduleCandidateReason(v,now){
     range:'matching GPS is outside tracking range',
     passed:'matching bus has already passed this stop',
     route:'matching GPS route could not be verified',
+    exactStop:'matching live journey serves the other stop side',
     destination:'matching GPS destination was filtered',
     direction:'matching GPS is for the other direction',
     away:'matching GPS is moving away',
@@ -5910,13 +5951,26 @@ function scheduleLiveReason(schedule,liveRows,evidenceCache){
     return 'operator publishes no matchable journey code';
   return 'no unique journey match';
 }
+function exactIdentityScheduleClaim(row){
+  if(!row||!row.v||!S.ttStop) return null;
+  const evidence=row.evidence||{}, trip=String(evidence.matchedTrip||row.v.progressTrip||'');
+  if(!trip) return null;
+  const rows=timetableRowsForLine(row.v.line,new Date()).filter(schedule=>String(schedule.trip||'')===trip);
+  const valid=rows.filter(schedule=>{
+    const check=exactTripSelectedStopEvidence(schedule.trip,schedule.pattern,S.stop,schedule.stopSequence);
+    return !check.authoritative||!check.known||check.serves;
+  });
+  if(!valid.length) return null;
+  const target=Date.now()+Math.max(0,Number(row.secs)||0)*1000;
+  return [...valid].sort((a,b)=>Math.abs(Number(a.at)-target)-Math.abs(Number(b.at)-target))[0]||null;
+}
 // Identity claims the timetable row, not timing. A live bus running well off
 // its scheduled time is still that departure and must not also be listed as a
 // separate scheduled row.
 function claimedScheduleFor(row){
   if(!row) return null;
   if(row.gpsLost&&!row.scheduleFallback) return null;
-  return row.schedule||row.matchedSchedule||null;
+  return row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;
 }
 function scheduleClaimedByLive(row){ return !!claimedScheduleFor(row); }
 function scheduledBoardRows(liveRows){
