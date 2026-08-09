@@ -1,0 +1,3 @@
+Kerbside 0.7.16 release trigger
+
+Fix the remaining inbound live-bus route/journey rejection where strong journey identity calls at the selected stop but live destination wording uses a locality while the timetable names the terminus stop.
