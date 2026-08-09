@@ -1,0 +1,3 @@
+Kerbside 0.7.20 release trigger.
+
+Purpose: keep an already-verified live bus stable through temporary low-confidence refreshes while fresh GPS continuity remains valid. The continuity window follows the vehicle's observed reporting cadence, capped by Kerbside's 120-second live-GPS definition. Initial admission stays strict and genuine branch conflicts, confirmed passed-stop evidence, stale GPS, route/operator changes and implausible GPS jumps still fail closed.
