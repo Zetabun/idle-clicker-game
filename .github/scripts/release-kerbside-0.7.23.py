@@ -45,9 +45,12 @@ exact_stop_helper = r'''function exactTripSelectedStopEvidence(trip,patternId,st
 }
 function exactStopContradiction(v,evidence,matchedRow){
   if(!authoritativePatternStopRequired()) return null;
-  const trip=String(evidence&&evidence.matchedTrip||v&&v.progressTrip||v&&v.matchedTrip||'');
-  const patternId=String(matchedRow&&matchedRow.pattern||v&&v.progressPattern||'');
-  if(!trip&&!patternId) return null;
+  /* Only a current strong trip identity can hard-reject a kerb. progressTrip is
+     render state and may legitimately lag during a journey handover, so it is
+     deliberately not an authority here. */
+  const trip=String(evidence&&evidence.matchedTrip||v&&v.matchedTrip||'');
+  if(!trip) return null;
+  const patternId=String(matchedRow&&matchedRow.pattern||((v&&String(v.progressTrip||'')===trip)?v.progressPattern:'')||'');
   const check=exactTripSelectedStopEvidence(trip,patternId,S.stop,matchedRow&&matchedRow.stopSequence);
   return check.known&&!check.serves?check:null;
 }
@@ -165,10 +168,6 @@ replace_once(
 # ---------------------------------------------------------------------------
 # Regression contract
 # ---------------------------------------------------------------------------
-# Pin the hierarchy at source level and extend the journey regression with the
-# exact opposite-kerb case. The release workflow runs these browser tests after
-# applying this script, so an anchor drift or behavioural regression fails the
-# PR instead of reaching main.
 regression_anchor = "  assert.ok(busSource.includes(\"const PASSED_STOP_LOCK_MS = 30*60*1000;\"));\n"
 regression_checks = """  assert.ok(busSource.includes(\"const PASSED_STOP_LOCK_MS = 30*60*1000;\"));\n  assert.ok(busSource.includes(\"function exactTripSelectedStopEvidence(trip,patternId,stop=S.stop,stopSequence)\"));\n  assert.ok(busSource.includes(\"const stopContradiction=exactStopContradiction(v,evidence,matchedRow);\"));\n  assert.ok(busSource.includes(\"rejectLive(diagnostics,'exactStop',v); continue;\"));\n  assert.ok(busSource.includes(\"identityAge>matchedIdentityFreshnessMs(v)\"));\n  assert.ok(busSource.includes(\"return row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;\"));\n  assert.ok(busSource.indexOf(\"const stopContradiction=exactStopContradiction(v,evidence,matchedRow);\") < busSource.indexOf(\"setVehicleProgressIdentity(v,evidence,inference,matchedRow);\"));\n"""
 replace_once(
@@ -176,6 +175,22 @@ replace_once(
     regression_anchor,
     regression_checks,
     'matching engine hierarchy regression guards',
+)
+
+# Extend the existing duplicate-departure browser test: exact live trip identity
+# alone must claim its schedule card, even when ETA blending did not attach the
+# schedule object to the live row.
+replace_once(
+    'kerbside-backend/tests/browser-regression.mjs',
+    """      const matchedOnly=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,schedule:null,gpsLost:false,secs:600}]);\n      const blended=api.scheduledBoardRows([{v:{id:'V1',line:'61'},schedule:row,gpsLost:false,secs:600}]);\n      const lost=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,gpsLost:true,secs:600}]);\n      return {bare:bare.length,matchedOnly:matchedOnly.length,blended:blended.length,lost:lost.length};\n""",
+    """      const matchedOnly=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,schedule:null,gpsLost:false,secs:600}]);\n      const identityOnly=api.scheduledBoardRows([{v:{id:'V1',line:'61',progressTrip:'T1'},evidence:{matchedTrip:'T1'},matchedSchedule:null,schedule:null,gpsLost:false,secs:600}]);\n      const blended=api.scheduledBoardRows([{v:{id:'V1',line:'61'},schedule:row,gpsLost:false,secs:600}]);\n      const lost=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,gpsLost:true,secs:600}]);\n      return {bare:bare.length,matchedOnly:matchedOnly.length,identityOnly:identityOnly.length,blended:blended.length,lost:lost.length};\n""",
+    'identity-only timetable claim regression fixture',
+)
+replace_once(
+    'kerbside-backend/tests/browser-regression.mjs',
+    "assert.deepEqual(duplicateDeparture,{bare:1,matchedOnly:0,blended:0,lost:1});",
+    "assert.deepEqual(duplicateDeparture,{bare:1,matchedOnly:0,identityOnly:0,blended:0,lost:1});",
+    'identity-only timetable claim regression expectation',
 )
 
 journey_anchor = """      const flickerPassed=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.passed||0);\n\n      const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};\n"""
@@ -214,25 +229,30 @@ journey_case = r'''      const flickerPassed=Number(state.liveDiag&&state.liveDi
       };
       const exactStopCheck=api.exactTripSelectedStopEvidence(wrongSideTrip,wrongSidePattern,stop,3);
 
+      // A GTFS-RT identity old enough to plausibly belong to the previous
+      // turnaround must not assign a trip to an otherwise fresh SIRI vehicle.
+      const staleMatchedInput={...baseVehicle,id:'stale-rt',vehicleRef:'BUS-STALE',vehicleUniqueId:'',journey:'OPAQUE',matchedTrip:'',sourceTs:now,ts:now,cadence:20};
+      const staleMatchedCount=api.applyMatchedIdentities([staleMatchedInput],[{entityId:'entity-stale',vehicleId:'BUS-STALE',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-120000}],now);
+
       const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
 '''
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
     journey_anchor,
     journey_case,
-    'opposite kerb exact-stop journey regression fixture',
+    'opposite kerb and stale identity journey regression fixtures',
 )
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
     """        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
-    """        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},\n        wrongSide,\n        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
-    'return opposite kerb regression result',
+    """        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},\n        wrongSide,\n        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},\n        staleMatchedIdentity:{count:staleMatchedCount,trip:String(staleMatchedInput.matchedTrip||'')},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
+    'return matching-hardening regression results',
 )
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
     """  assert.deepEqual(result.patternLoadFlicker,{before:true,after:true,passed:0},'loading a route pattern with only a nearby opposite-kerb stop must not make a previously visible exact realtime bus disappear as already passed');\n  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');\n""",
-    """  assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');\n  assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');\n  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');\n  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');\n""",
-    'update opposite kerb regression expectations',
+    """  assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');\n  assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');\n  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');\n  assert.deepEqual(result.staleMatchedIdentity,{count:0,trip:''},'a two-minute-old matched identity must not assign the previous journey to a fresh SIRI vehicle');\n  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');\n""",
+    'update matching hardening regression expectations',
 )
 
 subprocess.run([sys.executable, '.github/scripts/sync-version.py'], check=True)
