@@ -1,0 +1,163 @@
+name: One-shot Kerbside disruption refresh diagnostic
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/diagnose-kerbside-disruptions-main.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Inspect disruption source and workflow history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import time
+          import urllib.request
+          from datetime import datetime, timezone
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          source = 'https://data.bus-data.dft.gov.uk/disruptions/download/bulk_archive'
+          ua = 'Kerbside-disruptions-build/1.1 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
+
+          def github_json(path):
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}{path}',
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f'Bearer {token}',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'Kerbside-disruption-diagnostic/1.0',
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  return json.load(response)
+
+          def slim_run(run):
+              keys = (
+                  'id', 'event', 'status', 'conclusion', 'head_sha', 'created_at',
+                  'updated_at', 'run_started_at', 'html_url', 'run_number', 'run_attempt',
+                  'display_title'
+              )
+              return {key: run.get(key) for key in keys}
+
+          try:
+              checked = json.loads(pathlib.Path('disruptions.json').read_text(encoding='utf-8'))
+              checked_in = {
+                  'built': checked.get('built'),
+                  'count': checked.get('count'),
+                  'published': checked.get('published'),
+              }
+          except Exception as exc:
+              checked_in = {'error': f'{type(exc).__name__}: {exc}'}
+
+          try:
+              workflow_raw = github_json('/actions/workflows/kerbside-disruptions.yml')
+              workflow = {key: workflow_raw.get(key) for key in ('id', 'name', 'path', 'state', 'created_at', 'updated_at', 'html_url')}
+          except Exception as exc:
+              workflow = {'error': f'{type(exc).__name__}: {exc}'}
+
+          runs = []
+          runs_error = None
+          for page in (1, 2):
+              try:
+                  page_raw = github_json(f'/actions/workflows/kerbside-disruptions.yml/runs?per_page=100&page={page}')
+                  page_runs = page_raw.get('workflow_runs', [])
+                  runs.extend(slim_run(run) for run in page_runs)
+                  if len(page_runs) < 100:
+                      break
+              except Exception as exc:
+                  runs_error = f'{type(exc).__name__}: {exc}'
+                  break
+
+          source_probe = {}
+          started = time.monotonic()
+          try:
+              req = urllib.request.Request(source, headers={'User-Agent': ua})
+              with urllib.request.urlopen(req, timeout=45) as response:
+                  prefix = response.read(8)
+                  source_probe = {
+                      'ok': prefix.startswith((b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08')),
+                      'status': getattr(response, 'status', None),
+                      'content_type': response.headers.get('Content-Type'),
+                      'content_length': response.headers.get('Content-Length'),
+                      'prefix_hex': prefix.hex(),
+                      'final_url': response.geturl(),
+                  }
+          except Exception as exc:
+              source_probe = {'ok': False, 'error': f'{type(exc).__name__}: {exc}'}
+          source_probe['elapsed_seconds'] = round(time.monotonic() - started, 3)
+
+          report = {
+              'diagnosed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'checked_in_feed': checked_in,
+              'workflow': workflow,
+              'recent_runs': runs,
+              'recent_runs_error': runs_error,
+              'source_probe': source_probe,
+          }
+          pathlib.Path('/tmp/kerbside-disruption-diagnostic.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps({
+              'checked_in_feed': checked_in,
+              'workflow': workflow,
+              'run_count': len(runs),
+              'runs_error': runs_error,
+              'source_probe': source_probe,
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Publish report on diagnostic branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin agent/diagnose-kerbside-disruptions-20260810
+          git switch agent/diagnose-kerbside-disruptions-20260810
+          mkdir -p diagnostics
+          cp /tmp/kerbside-disruption-diagnostic.json diagnostics/kerbside-disruptions.json
+          git add diagnostics/kerbside-disruptions.json
+          git commit -m 'Record Kerbside disruption diagnostics'
+          git push origin HEAD:agent/diagnose-kerbside-disruptions-20260810
+
+      - name: Remove one-shot workflow from main
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git switch -C main origin/main
+          git rm .github/workflows/diagnose-kerbside-disruptions-main.yml
+          git commit -m 'Remove one-shot Kerbside disruption diagnostic'
+          git push origin HEAD:main
