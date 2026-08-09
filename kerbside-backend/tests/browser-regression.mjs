@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.17'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.18'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -1315,6 +1315,40 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.equal(refreshGate.busy,false);
   assert.equal(refreshGate.idle,true);
 
+  // Once a route has genuinely passed the gate, a new plausible GPS fix may
+  // carry that verification across a temporary route/journey evidence dropout.
+  // Re-rendering the same fix cannot extend it indefinitely, and a destination
+  // branch change, measured retreat, or implausible jump must still fail closed.
+  const freshRouteContinuity = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
+    const saved={stop:state.stop,dir:state.dir,destFilter:state.destFilter};
+    try{
+      state.stop={id:'route-continuity-stop',lat:52.5,lon:-2.1,name:'Route continuity stop'};
+      state.dir='all';state.destFilter=null;
+      const v={
+        id:'ROUTE-CONT|journey|one|vehicle|42',line:'61',operator:'ROUTE-CONT',owner:'ROUTE-CONT',
+        dest:'Moor St Queensway',lat:52.48,lon:-2.1,ts:now,timestampKnown:true,
+        hist:[{lat:52.475,lon:-2.1,ts:now-30000},{lat:52.48,lon:-2.1,ts:now}]
+      };
+      const seeded=api.rememberRouteContinuity(v,{score:3,label:'verified'},now);
+      const weak={score:1,label:'route/journey temporarily weak'};
+      v.lat=52.485;v.ts=now+30000;v.hist.push({lat:v.lat,lon:v.lon,ts:v.ts});
+      const continued=api.routeEvidenceWithContinuity(v,weak,now+30000);
+      const sameFixExpired=api.routeEvidenceWithContinuity(v,weak,now+121000);
+      const branch={...v,dest:'Other Branch',lat:52.487,ts:now+45000,hist:[...v.hist,{lat:52.487,lon:-2.1,ts:now+45000}]};
+      const branchResult=api.routeEvidenceWithContinuity(branch,weak,now+45000);
+      const away={...v,lat:52.477,ts:now+45000,hist:[{lat:52.485,lon:-2.1,ts:now+30000},{lat:52.477,lon:-2.1,ts:now+45000}]};
+      const awayResult=api.routeEvidenceWithContinuity(away,weak,now+45000);
+      const jump={...v,lat:52.56,ts:now+45000,hist:[{lat:52.485,lon:-2.1,ts:now+30000},{lat:52.56,lon:-2.1,ts:now+45000}]};
+      const jumpResult=api.routeEvidenceWithContinuity(jump,weak,now+45000);
+      return {
+        seeded,continuedScore:continued.score,continued:continued.routeContinuity===true,
+        sameFixExpired:sameFixExpired.score,branch:branchResult.score,away:awayResult.score,jump:jumpResult.score
+      };
+    }finally{Object.assign(state,saved);}
+  });
+  assert.deepEqual(freshRouteContinuity,{seeded:true,continuedScore:2,continued:true,sameFixExpired:1,branch:1,away:1,jump:1});
+
   const routeOverlayRetention = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={
@@ -1722,7 +1756,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.17'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.18'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.17';
+const APP_VERSION = '0.7.18';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3360,7 +3360,7 @@ function selectStop(s,manual){
     if(S.routeScanAbort) S.routeScanAbort.abort();
     S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
     S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError=''; S.routeScanHistory.clear();
-    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; delete vehicle.inferredJourney; delete vehicle.inferredTrip; delete vehicle.inferredPattern; delete vehicle.inferredAt; delete vehicle.inferenceStopId; delete vehicle.inferenceGpsTs; delete vehicle.progressIdentityBlocked; vehicle.corridorTracked=false; }
+    for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; delete vehicle.inferredJourney; delete vehicle.inferredTrip; delete vehicle.inferredPattern; delete vehicle.inferredAt; delete vehicle.inferenceStopId; delete vehicle.inferenceGpsTs; delete vehicle.progressIdentityBlocked; clearRouteContinuity(vehicle); vehicle.corridorTracked=false; }
     S.destFilter=null; S.selected=null; S.manualStop=manual===true;
   } else if(manual===true) S.manualStop=true;
   activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
@@ -4217,7 +4217,7 @@ function vehicleContinuitySeed(previous){
   const seed={hist:[],speed:null,motionSpeed:null,cadence:null};
   if(!previous) return seed;
   seed.hist=(Array.isArray(previous.hist)?previous.hist:[]).slice(-7).map(point=>({...point}));
-  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter']){
+  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter','routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon','routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest','routeVerifiedBoardDir','routeVerifiedDestFilter']){
     if(previous[field]!==undefined) seed[field]=previous[field];
   }
   if(previous.lastShownSnapshot) seed.lastShownSnapshot={...previous.lastShownSnapshot,v:null};
@@ -4285,7 +4285,7 @@ function ingest(list){
     const trackDiscontinuity=!!(prev&&!journeyChanged&&(reportGap>180||reportMove>3000));
     if(journeyChanged||routeIdentityChanged||trackDiscontinuity){
       rec.hist=[];rec.speed=null;rec.motionSpeed=null;rec.cadence=null;delete rec.routeProjection;delete rec.stationaryAt;
-      delete rec.inferredJourney;delete rec.inferredTrip;delete rec.inferredPattern;delete rec.inferredAt;delete rec.inferenceStopId;delete rec.inferenceGpsTs;
+      delete rec.inferredJourney;delete rec.inferredTrip;delete rec.inferredPattern;delete rec.inferredAt;delete rec.inferenceStopId;delete rec.inferenceGpsTs;clearRouteContinuity(rec);
     }
     if(prev && !journeyChanged && !routeIdentityChanged && !trackDiscontinuity && v.ts>prev.ts){
       if(reportGap>=2 && reportGap<=180) rec.cadence=rec.cadence==null?reportGap:rec.cadence*.65+reportGap*.35;
@@ -5094,7 +5094,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5325,6 +5325,69 @@ function dropLive(out,v,diagnostics,reason,now){
   if(holdLive(out,v,diagnostics,reason,now)) return;
   rejectLive(diagnostics,reason,v);
 }
+/* A bus that has already passed the route gate can briefly lose timetable or
+   identity evidence even while its GPS keeps updating normally. Keep that
+   established route context alive from one fresh fix to the next instead of
+   letting an arbitrary retention timer make the row blink off and on. This is
+   never an admission path for a new bus: a score >=2 must seed it first. */
+const ROUTE_CONTINUITY_MAX_GAP_MS = 90*1000;
+const ROUTE_CONTINUITY_MAX_METRES = 2500;
+const ROUTE_CONTINUITY_MAX_STOP_RETREAT = 250;
+const ROUTE_CONTINUITY_FIELDS = [
+  'routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon',
+  'routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest',
+  'routeVerifiedBoardDir','routeVerifiedDestFilter'
+];
+function clearRouteContinuity(v){
+  if(!v) return;
+  for(const field of ROUTE_CONTINUITY_FIELDS) delete v[field];
+}
+function routeContinuityContextMatches(v){
+  if(!v||!S.stop) return false;
+  if(v.routeVerifiedStopId!==String(S.stop.id)) return false;
+  if(v.routeVerifiedBoardDir!==S.dir) return false;
+  if(String(v.routeVerifiedDestFilter||'')!==String(S.destFilter||'')) return false;
+  if(String(v.routeVerifiedLine||'')!==String(v.line||'')) return false;
+  if(String(v.routeVerifiedOwner||'')!==String(v.owner||v.operator||'')) return false;
+  const previousDest=String(v.routeVerifiedDest||''), liveDest=String(v.dest||'');
+  if(previousDest&&liveDest&&destinationSimilarity(previousDest,liveDest)<.6) return false;
+  return true;
+}
+function rememberRouteContinuity(v,evidence,now=Date.now()){
+  if(!v||!S.stop||!evidence||Number(evidence.score)<2) return false;
+  const gpsTs=Number(v.ts)||0, lat=Number(v.lat), lon=Number(v.lon);
+  if(!gpsTs||!Number.isFinite(lat)||!Number.isFinite(lon)||!gpsLiveDisplayFresh(v,now)) return false;
+  v.routeVerifiedStopId=String(S.stop.id); v.routeVerifiedAt=now; v.routeVerifiedGpsTs=gpsTs;
+  v.routeVerifiedLat=lat; v.routeVerifiedLon=lon;
+  v.routeVerifiedStopDistance=dist(lat,lon,S.stop.lat,S.stop.lon);
+  v.routeVerifiedLine=String(v.line||''); v.routeVerifiedOwner=String(v.owner||v.operator||'');
+  v.routeVerifiedDest=String(v.dest||''); v.routeVerifiedBoardDir=S.dir;
+  v.routeVerifiedDestFilter=String(S.destFilter||'');
+  return true;
+}
+function routeEvidenceWithContinuity(v,evidence,now=Date.now()){
+  if(!v||!evidence||Number(evidence.score)>=2||!S.stop) return evidence;
+  if(evidence.journeyDestinationConflict||evidence.conflictingTrip) return evidence;
+  if(!routeContinuityContextMatches(v)) return evidence;
+  const gpsTs=Number(v.ts)||0, previousTs=Number(v.routeVerifiedGpsTs)||0;
+  const verifiedAt=Number(v.routeVerifiedAt)||0;
+  if(!gpsTs||!previousTs||gpsTs<previousTs||!verifiedAt) return evidence;
+  if(now-verifiedAt>ROUTE_CONTINUITY_MAX_GAP_MS||!gpsLiveDisplayFresh(v,now)) return evidence;
+  if(movementTrend(v,S.stop)<0) return evidence;
+  if(gpsTs>previousTs){
+    const gap=gpsTs-previousTs;
+    if(gap>ROUTE_CONTINUITY_MAX_GAP_MS) return evidence;
+    const lat=Number(v.lat), lon=Number(v.lon);
+    const metres=dist(Number(v.routeVerifiedLat),Number(v.routeVerifiedLon),lat,lon);
+    const allowed=Math.min(ROUTE_CONTINUITY_MAX_METRES,Math.max(120,gap/1000*35+100));
+    if(!Number.isFinite(metres)||metres>allowed) return evidence;
+    const stopDistance=dist(lat,lon,S.stop.lat,S.stop.lon), previousStopDistance=Number(v.routeVerifiedStopDistance);
+    if(Number.isFinite(previousStopDistance)&&stopDistance>previousStopDistance+ROUTE_CONTINUITY_MAX_STOP_RETREAT) return evidence;
+    v.routeVerifiedAt=now; v.routeVerifiedGpsTs=gpsTs; v.routeVerifiedLat=lat; v.routeVerifiedLon=lon;
+    v.routeVerifiedStopDistance=stopDistance;
+  }
+  return {...evidence,score:2,label:'recent verified route retained by fresh GPS continuity',routeContinuity:true,timetableVerified:true};
+}
 function relevant(){
   if(!S.stop){ S.liveDiag=null; return []; }
   S.filterFellBack=false;
@@ -5377,6 +5440,8 @@ function collect(gate,diagnostics){
     let evidence=routeEvidence(v.line,v.dest,journeyRef,v);
     const inference=!evidence.journeyMatch?inferVehicleJourneyPattern(v,S.stop,now):null;
     evidence=inferredRouteEvidence(evidence,inference);
+    if(evidence.score>=2) rememberRouteContinuity(v,evidence,now);
+    else evidence=routeEvidenceWithContinuity(v,evidence,now);
     const matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
     const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
     const matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
