@@ -232,6 +232,22 @@ try{
         retained:Number(state.liveDiag&&state.liveDiag.recovered||0)
       };
       const exactStopCheck=api.exactTripSelectedStopEvidence(wrongSideTrip,wrongSidePattern,stop,3);
+      const wrongSideProof=api.currentExactStopProof(wrongSideVehicle,{score:6,matchedTrip:wrongSideTrip},null,{trip:wrongSideTrip,pattern:wrongSidePattern,stopSequence:3},now);
+      const wrongSideRetentionSeed=api.rememberRouteContinuity(wrongSideVehicle,{score:6,matchedTrip:wrongSideTrip},now,wrongSideProof);
+
+      const rightSideTrip='RIGHT-SIDE-TRIP',rightSidePattern='right-side-pattern';
+      state.timetable.tripPatterns[rightSideTrip]=rightSidePattern;
+      state.timetable.patterns[rightSidePattern]={
+        p:[[52.4600,-1.9600],[52.4520,-1.9600],[52.4500,-1.9600]],
+        s:[['UPSTREAM','Upstream',52.4600,-1.9600,1],['BRIGHTSTONE','Brightstone Road',52.4500,-1.9600,3]],g:1
+      };
+      const rightSideVehicle={...wrongSideVehicle,id:'right-side-live',matchedTrip:rightSideTrip,progressTrip:rightSideTrip,progressPattern:rightSidePattern};
+      const rightSideProof=api.currentExactStopProof(rightSideVehicle,{score:6,matchedTrip:rightSideTrip},null,{trip:rightSideTrip,pattern:rightSidePattern,stopSequence:3},now);
+      const rightSideRetentionSeed=api.rememberRouteContinuity(rightSideVehicle,{score:6,matchedTrip:rightSideTrip},now,rightSideProof);
+      const retentionProof={
+        wrongSideServes:wrongSideProof.serves,wrongSideSeed:wrongSideRetentionSeed,wrongSideHas:api.hasExactStopRetentionProof(wrongSideVehicle),
+        rightSideServes:rightSideProof.serves,rightSideSeed:rightSideRetentionSeed,rightSideHas:api.hasExactStopRetentionProof(rightSideVehicle)
+      };
 
       // A GTFS-RT identity old enough to plausibly belong to the previous
       // turnaround must not assign a trip to an otherwise fresh SIRI vehicle.
@@ -301,6 +317,7 @@ try{
         patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},
         wrongSide,
         exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},
+        retentionProof,
         staleMatchedIdentity:{count:staleMatchedCount,trip:String(staleMatchedInput.matchedTrip||'')},
         staleStickyIdentity:{retained:staleStickyRetained,trip:String(staleStickyIncoming.matchedTrip||'')},
         sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
@@ -345,6 +362,7 @@ try{
   assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');
   assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');
   assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');
+  assert.deepEqual(result.retentionProof,{wrongSideServes:false,wrongSideSeed:false,wrongSideHas:false,rightSideServes:true,rightSideSeed:true,rightSideHas:true},'retention may be seeded only by proof that the exact selected stop occurs in the ordered journey pattern');
   assert.deepEqual(result.staleMatchedIdentity,{count:0,trip:''},'a two-minute-old matched identity must not assign the previous journey to a fresh SIRI vehicle');
   assert.deepEqual(result.staleStickyIdentity,{retained:false,trip:''},'sticky matched identity must expire from the observation age rather than the local assignment time');
   assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');

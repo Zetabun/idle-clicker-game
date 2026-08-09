@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.23';
+const APP_VERSION = '0.7.24';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3192,6 +3192,46 @@ function exactStopContradiction(v,evidence,matchedRow){
   const check=exactTripSelectedStopEvidence(trip,patternId,S.stop,matchedRow&&matchedRow.stopSequence);
   return check.known&&!check.serves?check:null;
 }
+const EXACT_STOP_PROOF_FIELDS = [
+  'routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern',
+  'routeVerifiedExactStopIndex','routeVerifiedExactAt'
+];
+function currentExactStopProof(v,evidence,inference,matchedRow,now=Date.now()){
+  if(!authoritativePatternStopRequired()) return {required:false,known:true,serves:true,stopId:String(S.stop&&S.stop.id||''),trip:'',pattern:'',index:-1,at:now};
+  if(!S.stop) return {required:true,known:false,serves:false,stopId:'',trip:'',pattern:'',index:-1,at:now};
+  const candidates=[];
+  if(matchedRow){
+    candidates.push({trip:String(matchedRow.trip||evidence&&evidence.matchedTrip||''),pattern:String(matchedRow.pattern||''),stopSequence:matchedRow.stopSequence});
+  }
+  const evidenceTrip=String(evidence&&evidence.matchedTrip||'');
+  const evidencePattern=String(evidence&&evidence.patternId||'');
+  if(evidenceTrip||evidencePattern) candidates.push({trip:evidenceTrip,pattern:evidencePattern,stopSequence:undefined});
+  const inferredPattern=String(inference&&inference.patternId||inference&&inference.pattern&&inference.pattern.id||'');
+  if(inferredPattern) candidates.push({trip:'',pattern:inferredPattern,stopSequence:undefined});
+  let sawKnown=false;
+  for(const candidate of candidates){
+    const check=exactTripSelectedStopEvidence(candidate.trip,candidate.pattern,S.stop,candidate.stopSequence);
+    if(!check.known) continue;
+    sawKnown=true;
+    if(!check.serves) return {required:true,known:true,serves:false,stopId:String(S.stop.id),trip:candidate.trip,pattern:String(check.pattern&&check.pattern.id||candidate.pattern||''),index:check.index,at:now};
+    return {required:true,known:true,serves:true,stopId:String(S.stop.id),trip:candidate.trip,pattern:String(check.pattern&&check.pattern.id||candidate.pattern||''),index:check.index,at:now};
+  }
+  return {required:true,known:sawKnown,serves:false,stopId:String(S.stop.id),trip:'',pattern:'',index:-1,at:now};
+}
+function rememberExactStopProof(v,proof,now=Date.now()){
+  if(!v||!proof||!proof.serves||!S.stop) return false;
+  v.routeVerifiedExactStopId=String(S.stop.id);
+  v.routeVerifiedExactTrip=String(proof.trip||'');
+  v.routeVerifiedExactPattern=String(proof.pattern||'');
+  v.routeVerifiedExactStopIndex=Number.isFinite(Number(proof.index))?Number(proof.index):-1;
+  v.routeVerifiedExactAt=now;
+  return true;
+}
+function hasExactStopRetentionProof(v){
+  if(!authoritativePatternStopRequired()) return true;
+  if(!v||!S.stop) return false;
+  return v.routeVerifiedExactStopId===String(S.stop.id)&&Number(v.routeVerifiedExactAt)>0;
+}
 function selectedPatternStopIndexForEvidence(stops,selectedStop,fromAlong,stopSequence){
   return authoritativePatternStopRequired()
     ? exactSelectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence)
@@ -4248,7 +4288,7 @@ function vehicleContinuitySeed(previous){
   const seed={hist:[],speed:null,motionSpeed:null,cadence:null};
   if(!previous) return seed;
   seed.hist=(Array.isArray(previous.hist)?previous.hist:[]).slice(-7).map(point=>({...point}));
-  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter','routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon','routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest','routeVerifiedBoardDir','routeVerifiedDestFilter']){
+  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter','routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon','routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest','routeVerifiedBoardDir','routeVerifiedDestFilter','routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern','routeVerifiedExactStopIndex','routeVerifiedExactAt']){
     if(previous[field]!==undefined) seed[field]=previous[field];
   }
   if(previous.lastShownSnapshot) seed.lastShownSnapshot={...previous.lastShownSnapshot,v:null};
@@ -5135,7 +5175,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,exactTripSelectedStopEvidence,exactStopContradiction,matchedIdentityFreshnessMs,exactIdentityScheduleClaim,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,exactTripSelectedStopEvidence,exactStopContradiction,currentExactStopProof,hasExactStopRetentionProof,matchedIdentityFreshnessMs,exactIdentityScheduleClaim,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5284,6 +5324,7 @@ function retainedGpsGraceMs(now=Date.now()){
 function retainedSnapshotRow(v,now=Date.now(),gpsLost=true){
   if(!v||!v.lastShownSnapshot||!S.stop) return null;
   if(v.lastShownStopId!==String(S.stop.id)) return null;
+  if(!hasExactStopRetentionProof(v)) return null;
   if(v.lastShownBoardDir!==S.dir) return null;
   if(String(v.lastShownDestFilter||'')!==String(S.destFilter||'')) return null;
   const gpsAt=Number(v.ts)||0;
@@ -5448,7 +5489,9 @@ function routeContinuityGapMs(v){
 const ROUTE_CONTINUITY_FIELDS = [
   'routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon',
   'routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest',
-  'routeVerifiedBoardDir','routeVerifiedDestFilter'
+  'routeVerifiedBoardDir','routeVerifiedDestFilter',
+  'routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern',
+  'routeVerifiedExactStopIndex','routeVerifiedExactAt'
 ];
 function clearRouteContinuity(v){
   if(!v) return;
@@ -5457,6 +5500,7 @@ function clearRouteContinuity(v){
 function routeContinuityContextMatches(v){
   if(!v||!S.stop) return false;
   if(v.routeVerifiedStopId!==String(S.stop.id)) return false;
+  if(!hasExactStopRetentionProof(v)) return false;
   if(v.routeVerifiedBoardDir!==S.dir) return false;
   if(String(v.routeVerifiedDestFilter||'')!==String(S.destFilter||'')) return false;
   if(String(v.routeVerifiedLine||'')!==String(v.line||'')) return false;
@@ -5465,8 +5509,9 @@ function routeContinuityContextMatches(v){
   if(previousDest&&liveDest&&destinationSimilarity(previousDest,liveDest)<.6) return false;
   return true;
 }
-function rememberRouteContinuity(v,evidence,now=Date.now()){
+function rememberRouteContinuity(v,evidence,now=Date.now(),proof=null){
   if(!v||!S.stop||!evidence||Number(evidence.score)<2) return false;
+  if(authoritativePatternStopRequired()&&(!proof||!proof.serves)) return false;
   const gpsTs=Number(v.ts)||0, lat=Number(v.lat), lon=Number(v.lon);
   if(!gpsTs||!Number.isFinite(lat)||!Number.isFinite(lon)||!gpsLiveDisplayFresh(v,now)) return false;
   v.routeVerifiedStopId=String(S.stop.id); v.routeVerifiedAt=now; v.routeVerifiedGpsTs=gpsTs;
@@ -5475,6 +5520,7 @@ function rememberRouteContinuity(v,evidence,now=Date.now()){
   v.routeVerifiedLine=String(v.line||''); v.routeVerifiedOwner=String(v.owner||v.operator||'');
   v.routeVerifiedDest=String(v.dest||''); v.routeVerifiedBoardDir=S.dir;
   v.routeVerifiedDestFilter=String(S.destFilter||'');
+  if(proof&&proof.serves) rememberExactStopProof(v,proof,now);
   return true;
 }
 function routeEvidenceWithContinuity(v,evidence,now=Date.now()){
@@ -5556,15 +5602,20 @@ function collect(gate,diagnostics){
     let evidence=routeEvidence(v.line,v.dest,journeyRef,v);
     const inference=!evidence.journeyMatch?inferVehicleJourneyPattern(v,S.stop,now):null;
     evidence=inferredRouteEvidence(evidence,inference);
-    if(evidence.score>=2) rememberRouteContinuity(v,evidence,now);
-    else evidence=routeEvidenceWithContinuity(v,evidence,now);
-    const matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
-    const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
-    const matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
+    let matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
+    let matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
+    let matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
     const stopContradiction=exactStopContradiction(v,evidence,matchedRow);
     if(stopContradiction){
       clearRouteContinuity(v);
       delete v.lastShownSnapshot; delete v.lastShownAt; delete v.lastShownArrivalAt;
+      rejectLive(diagnostics,'exactStop',v); continue;
+    }
+    const exactProof=currentExactStopProof(v,evidence,inference,matchedRow,now);
+    if(evidence.score>=2) rememberRouteContinuity(v,evidence,now,exactProof);
+    else evidence=routeEvidenceWithContinuity(v,evidence,now);
+    if(evidence.routeContinuity&&!hasExactStopRetentionProof(v)){
+      clearRouteContinuity(v);
       rejectLive(diagnostics,'exactStop',v); continue;
     }
     // An exact timetable journey that is due to call here outranks a
@@ -5673,6 +5724,7 @@ function collect(gate,diagnostics){
       routeMetres:est.routeMetres,geometry:est.geometry,confidence:est.confidence,
       spread:est.spread,evidence:est.evidence,schedule:est.schedule,matchedSchedule:est.matchedSchedule,recovered,match,directionLabel,directionWord
     };
+    if(exactProof&&exactProof.serves) rememberExactStopProof(v,exactProof,now);
     v.lastShownStopId=String(S.stop.id); v.lastShownAt=now; v.lastShownArrivalAt=now+Math.max(0,row.secs)*1000;
     v.lastShownBoardDir=S.dir; v.lastShownDestFilter=String(S.destFilter||'');
     v.lastShownSnapshot={...row,v:null};
