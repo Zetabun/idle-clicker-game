@@ -94,6 +94,9 @@ try{
       const midpoint={id:'osm-mid',source:'osm',name:'High Street',ind:'',lat,lon:(lon+oppositeLon)/2};
       const ambiguousTimetable=api.matchTimetableStop(midpoint);
       const exactTimetable=api.matchTimetableStop(officialA);
+      state.stop={...officialA,ind:'A'};
+      state.ttStop={id:A,ind:'A'};
+      const exactStopFacts=api.stopFactsHtml(state.stop);
 
       const patternStops=[
         {id:'LOCAL-A',name:'High Street',lat,lon,along:100,sequence:10},
@@ -106,7 +109,7 @@ try{
         distinctOfficialMerged,officialOsmMerged,pairDetected,deviceCandidates,deviceChoice,manualChoice,manualUnrelated,
         ambiguousTimetable:ambiguousTimetable&&ambiguousTimetable.id,
         exactTimetable:exactTimetable&&exactTimetable.id,
-        ambiguousPattern,sequencedPattern
+        ambiguousPattern,sequencedPattern,exactStopFacts
       };
     } finally {
       Object.assign(state,saved);
@@ -124,6 +127,8 @@ try{
   assert.equal(result.exactTimetable,'490012345','an exact authoritative timetable stop code must still win immediately');
   assert.equal(result.ambiguousPattern,-1,'pattern fallback must not choose between two comparable opposite calls by metres alone');
   assert.equal(result.sequencedPattern,1,'an explicit stop sequence remains authoritative enough to choose the call');
+  assert.match(result.exactStopFacts,/Stop A/,'the selected stand indicator must remain visible beside the board');
+  assert.match(result.exactStopFacts,/ATCO 490012345/,'the exact national stop code must be visible for side-of-road verification');
   assert.deepEqual(pageErrors,[],'stop-side regression page should not raise browser errors');
   await context.close();
 } finally {

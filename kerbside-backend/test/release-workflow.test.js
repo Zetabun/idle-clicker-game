@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 
-const releaseWorkflow = await readFile(new URL('../../.github/workflows/kerbside-release.yml', import.meta.url), 'utf8');
-const productionWorkflow = await readFile(new URL('../../.github/workflows/verify-kerbside-production.yml', import.meta.url), 'utf8');
+const readWorkflow = async relative => (await readFile(new URL(relative, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+const releaseWorkflow = await readWorkflow('../../.github/workflows/kerbside-release.yml');
+const productionWorkflow = await readWorkflow('../../.github/workflows/verify-kerbside-production.yml');
 
 test('Kerbside release and production workflows guard deployment completeness', () => {
   assert.match(releaseWorkflow, /git diff --name-only -z HEAD/);

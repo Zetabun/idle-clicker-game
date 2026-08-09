@@ -51,5 +51,8 @@ assert changed is True and reason == 'initial', (changed, reason)
 assert MODULE.comparable_document(fresh) == MODULE.comparable_document(current)
 assert MODULE.heartbeat_due(old, NOW) is True
 assert MODULE.heartbeat_due(fresh, NOW) is False
+assert MODULE.is_zip_payload(b'PK\x03\x04archive') is True
+assert MODULE.is_zip_payload(b'PK\x05\x06') is True
+assert MODULE.is_zip_payload(b'<!DOCTYPE html><title>Problem with the service</title>') is False
 
 print('Kerbside disruption build heartbeat regression checks passed.')

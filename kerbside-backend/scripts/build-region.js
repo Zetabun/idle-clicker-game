@@ -44,7 +44,8 @@ db.exec(`
     stop_id TEXT NOT NULL,
     trip_id TEXT NOT NULL,
     mins INTEGER NOT NULL,
-    seq REAL NOT NULL
+    seq REAL NOT NULL,
+    boardable INTEGER NOT NULL
   );
   CREATE TABLE patterns (
     pattern_id TEXT PRIMARY KEY,
@@ -64,6 +65,7 @@ const trips = new Map();
 const services = new Map();
 const tripPattern = new Map();
 let stopTimeRows = 0;
+let boardableStopTimeRows = 0;
 let shapePointRows = 0;
 let invalidTimes = 0;
 
@@ -259,7 +261,7 @@ async function main() {
   if (shapePointRows) db.exec('CREATE INDEX idx_shape_sequence ON shape_points(shape_id, seq);');
 
   console.log(`[${region}] Importing stop_times into temporary SQLite...`);
-  const insert = db.prepare('INSERT INTO stop_times(tile, shard, stop_id, trip_id, mins, seq) VALUES (?, ?, ?, ?, ?, ?)');
+  const insert = db.prepare('INSERT INTO stop_times(tile, shard, stop_id, trip_id, mins, seq, boardable) VALUES (?, ?, ?, ?, ?, ?, ?)');
   db.exec('BEGIN');
   let batch = 0;
 
@@ -289,8 +291,10 @@ async function main() {
       invalidTimes++;
       return;
     }
-    insert.run(stop.tile, departureShardKey(stopId), stopId, tripId, mins, sequence(row.stop_sequence, number));
+    const boardable = String(row.pickup_type || '0').trim() !== '1' ? 1 : 0;
+    insert.run(stop.tile, departureShardKey(stopId), stopId, tripId, mins, sequence(row.stop_sequence, number), boardable);
     stopTimeRows++;
+    if (boardable) boardableStopTimeRows++;
     batch++;
     if (batch >= 50000) {
       db.exec('COMMIT; BEGIN');
@@ -301,6 +305,7 @@ async function main() {
   db.exec('COMMIT');
 
   if (!stopTimeRows) throw new Error('No usable stop times found.');
+  if (!boardableStopTimeRows) throw new Error('No boardable stop times found.');
   db.exec('CREATE INDEX idx_trip_sequence ON stop_times(trip_id, seq);');
   db.exec('CREATE INDEX idx_shard_stop_time ON stop_times(shard, stop_id, mins, trip_id);');
 
@@ -493,7 +498,7 @@ async function main() {
 
     const filename = path.join(departureRoot, `${currentShard}.json`);
     writeJson(filename, {
-      version: 10,
+      version: 11,
       built: nowIso,
       scope: 'departure-shard',
       region,
@@ -510,7 +515,7 @@ async function main() {
     shardTripPatterns = {};
   }
 
-  for (const row of db.prepare('SELECT shard, stop_id, trip_id, mins, seq FROM stop_times ORDER BY shard, stop_id, mins, trip_id, seq').iterate()) {
+  for (const row of db.prepare('SELECT shard, stop_id, trip_id, mins, seq FROM stop_times WHERE boardable = 1 ORDER BY shard, stop_id, mins, trip_id, seq').iterate()) {
     if (row.shard !== currentShard) {
       flushDepartureShard();
       currentShard = row.shard;

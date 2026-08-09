@@ -83,6 +83,8 @@ try {
       });
 
       const matches = api.disruptionMatches(now);
+      const delayedFeed = { version: 1, scope: 'kerbside-disruptions', built: new Date(now - 48 * 3600000).toISOString(), situations: [], byStop: {} };
+      const expiredFeed = { ...delayedFeed, built: new Date(now - 73 * 3600000).toISOString() };
       return {
         states: {
           active: api.disruptionState(situations[0], now),
@@ -98,7 +100,10 @@ try {
         operatorMatch: api.disruptionAppliesToService({ lines: ['61'], operators: ['BNSM'] }, '61', 'BNSM', true),
         operatorMismatch: api.disruptionAppliesToService({ lines: ['61'], operators: ['BNSM'] }, '61', 'OTHER', true),
         opaqueAbstains: api.disruptionAppliesToService({ lines: ['61'], operators: ['BNSM'] }, '61', 'OP539', false),
-        opaqueCannotStrictMatch: api.disruptionAppliesToService({ lines: ['61'], operators: ['BNSM'] }, '61', 'OP539', true)
+        opaqueCannotStrictMatch: api.disruptionAppliesToService({ lines: ['61'], operators: ['BNSM'] }, '61', 'OP539', true),
+        delayedFeedValid: api.validDisruptionFeed(delayedFeed),
+        delayedFeedWarns: api.disruptionFeedDelayed(delayedFeed, now),
+        expiredFeedValid: api.validDisruptionFeed(expiredFeed)
       };
     } finally {
       Object.assign(state, saved);
@@ -122,6 +127,9 @@ try {
   assert.equal(result.operatorMismatch, false);
   assert.equal(result.opaqueAbstains, true);
   assert.equal(result.opaqueCannotStrictMatch, false);
+  assert.equal(result.delayedFeedValid, true, 'a bounded last-good disruption feed should survive a short upstream outage');
+  assert.equal(result.delayedFeedWarns, true, 'passengers must be told when disruption updates are delayed');
+  assert.equal(result.expiredFeedValid, false, 'disruptions older than the bounded outage window must be rejected');
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside disruption matching regression checks passed.');
 } finally {

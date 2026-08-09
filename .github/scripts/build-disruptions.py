@@ -21,6 +21,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 import zipfile
 from datetime import datetime, timedelta, timezone
@@ -44,17 +45,27 @@ MAX_STOPS_PER_SITUATION = 400
 UA = 'Kerbside-disruptions-build/1.1 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
 
 
+def is_zip_payload(payload):
+    return isinstance(payload, (bytes, bytearray)) and payload.startswith(
+        (b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08'))
+
+
 def fetch(url, attempts=5):
     last = None
     request = urllib.request.Request(url, headers={'User-Agent': UA})
-    for _attempt in range(attempts):
+    for attempt in range(attempts):
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
                 payload = response.read()
-            if payload:
+                content_type = str(response.headers.get('Content-Type') or '')
+            if is_zip_payload(payload):
                 return payload
+            preview = re.sub(rb'\s+', b' ', payload[:160]).decode('utf-8', 'replace')
+            last = RuntimeError('expected ZIP, received %s (%s)' % (content_type or 'unknown content type', preview))
         except Exception as error:  # noqa: BLE001 - retried below
             last = error
+        if attempt + 1 < attempts:
+            time.sleep(min(8, 2 ** attempt))
     raise SystemExit('Could not download %s: %s' % (url, last))
 
 
