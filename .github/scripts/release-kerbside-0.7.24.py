@@ -175,7 +175,7 @@ replace_once(
 # Add a small behaviour-level proof test to the journey identity suite. It
 # verifies that the exact selected kerb can seed retention, while an opposite
 # kerb pattern cannot.
-journey_anchor = """      const exactStopCheck=api.exactTripSelectedStopEvidence(wrongSideTrip,wrongSidePattern,stop,3);\n\n      const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};\n"""
+journey_anchor = "      const exactStopCheck=api.exactTripSelectedStopEvidence(wrongSideTrip,wrongSidePattern,stop,3);\n"
 journey_case = r'''      const exactStopCheck=api.exactTripSelectedStopEvidence(wrongSideTrip,wrongSidePattern,stop,3);
       const wrongSideProof=api.currentExactStopProof(wrongSideVehicle,{score:6,matchedTrip:wrongSideTrip},null,{trip:wrongSideTrip,pattern:wrongSidePattern,stopSequence:3},now);
       const wrongSideRetentionSeed=api.rememberRouteContinuity(wrongSideVehicle,{score:6,matchedTrip:wrongSideTrip},now,wrongSideProof);
@@ -193,8 +193,6 @@ journey_case = r'''      const exactStopCheck=api.exactTripSelectedStopEvidence(
         wrongSideServes:wrongSideProof.serves,wrongSideSeed:wrongSideRetentionSeed,wrongSideHas:api.hasExactStopRetentionProof(wrongSideVehicle),
         rightSideServes:rightSideProof.serves,rightSideSeed:rightSideRetentionSeed,rightSideHas:api.hasExactStopRetentionProof(rightSideVehicle)
       };
-
-      const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
 '''
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
@@ -204,14 +202,14 @@ replace_once(
 )
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
-    """        exactStopAuthority:{known:exactStopCheck.known,serves:exactStopCheck.serves,index:exactStopCheck.index},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
-    """        exactStopAuthority:{known:exactStopCheck.known,serves:exactStopCheck.serves,index:exactStopCheck.index},\n        retentionProof,\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
+    "        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},\n",
+    "        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},\n        retentionProof,\n",
     'return retention proof regression result',
 )
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
-    """  assert.deepEqual(result.exactStopAuthority,{known:true,serves:false,index:-1},'an authoritative pattern containing only the opposite kerb must be a known exact-stop contradiction');\n""",
-    """  assert.deepEqual(result.exactStopAuthority,{known:true,serves:false,index:-1},'an authoritative pattern containing only the opposite kerb must be a known exact-stop contradiction');\n  assert.deepEqual(result.retentionProof,{wrongSideServes:false,wrongSideSeed:false,wrongSideHas:false,rightSideServes:true,rightSideSeed:true,rightSideHas:true},'retention may be seeded only by proof that the exact selected stop occurs in the ordered journey pattern');\n""",
+    "  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');\n",
+    "  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');\n  assert.deepEqual(result.retentionProof,{wrongSideServes:false,wrongSideSeed:false,wrongSideHas:false,rightSideServes:true,rightSideSeed:true,rightSideHas:true},'retention may be seeded only by proof that the exact selected stop occurs in the ordered journey pattern');\n",
     'assert exact stop retention proof',
 )
 
