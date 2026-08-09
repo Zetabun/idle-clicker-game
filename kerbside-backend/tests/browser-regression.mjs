@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.23'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.24'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -1381,6 +1381,12 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.ok(busSource.includes("const continuityBacked=!!evidence.routeContinuity;"));
   assert.ok(busSource.includes("const PASSED_STOP_LOCK_MS = 30*60*1000;"));
   assert.ok(busSource.includes("function exactTripSelectedStopEvidence(trip,patternId,stop=S.stop,stopSequence)"));
+  assert.ok(busSource.includes("function currentExactStopProof(v,evidence,inference,matchedRow,now=Date.now())"));
+  assert.ok(busSource.includes("if(!hasExactStopRetentionProof(v)) return null;"));
+  assert.ok(busSource.includes("if(authoritativePatternStopRequired()&&(!proof||!proof.serves)) return false;"));
+  assert.ok(busSource.includes("rememberRouteContinuity(v,evidence,now,exactProof)"));
+  assert.ok(busSource.indexOf("const stopContradiction=exactStopContradiction(v,evidence,matchedRow);") < busSource.indexOf("rememberRouteContinuity(v,evidence,now,exactProof)"));
+  assert.ok(busSource.indexOf("const exactProof=currentExactStopProof(v,evidence,inference,matchedRow,now);") < busSource.indexOf("rememberRouteContinuity(v,evidence,now,exactProof)"));
   assert.ok(busSource.includes("const stopContradiction=exactStopContradiction(v,evidence,matchedRow);"));
   assert.ok(busSource.includes("rejectLive(diagnostics,'exactStop',v); continue;"));
   assert.ok(busSource.includes("identityAge>matchedIdentityFreshnessMs(v)"));
@@ -1804,7 +1810,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.23'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.24'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
