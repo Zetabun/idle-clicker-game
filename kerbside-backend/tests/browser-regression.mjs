@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.18'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.19'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -414,7 +414,7 @@ assert.doesNotMatch(busSource, /const slow=\(v\.speed!=null && isFinite\(v\.spee
 // so what hideAway still governs is the case with no geometry, where strength
 // falls back to a straight-line trend. It must not overrule an ordered pattern
 // that places the bus short of the stop with route still to run.
-assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride\)\{/);
+assert.match(busSource, /if\(S\.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride && !routeDirectionTrusted\)\{/);
 assert.doesNotMatch(busSource, /Drops anything already past your stop/);
 // Name where the buses go, not a compass point or a town no route here visits.
 assert.match(busSource, /function stopDestinationNames\(\)/);
@@ -1315,10 +1315,16 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.equal(refreshGate.busy,false);
   assert.equal(refreshGate.idle,true);
 
+  assert.doesNotMatch(busSource,/ROUTE_CONTINUITY_MAX_STOP_RETREAT/);
+  assert.doesNotMatch(busSource,/if\(movementTrend\(v,S\.stop\)<0\) return evidence;/);
+  assert.ok(busSource.includes("const routeDirectionTrusted=!!(evidence.routeContinuity||evidence.journeyMatch||evidence.pathMatch||evidence.matchedRealtime);"));
+  assert.ok(busSource.includes("if(S.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride && !routeDirectionTrusted){"));
+
   // Once a route has genuinely passed the gate, a new plausible GPS fix may
   // carry that verification across a temporary route/journey evidence dropout.
-  // Re-rendering the same fix cannot extend it indefinitely, and a destination
-  // branch change, measured retreat, or implausible jump must still fail closed.
+  // Re-rendering the same fix cannot extend it indefinitely. A destination
+  // branch change or implausible jump still fails closed, while straight-line
+  // retreat alone is allowed because real road routes can temporarily bend away.
   const freshRouteContinuity = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={stop:state.stop,dir:state.dir,destFilter:state.destFilter};
@@ -1337,7 +1343,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       const sameFixExpired=api.routeEvidenceWithContinuity(v,weak,now+121000);
       const branch={...v,dest:'Other Branch',lat:52.487,ts:now+45000,hist:[...v.hist,{lat:52.487,lon:-2.1,ts:now+45000}]};
       const branchResult=api.routeEvidenceWithContinuity(branch,weak,now+45000);
-      const away={...v,lat:52.477,ts:now+45000,hist:[{lat:52.485,lon:-2.1,ts:now+30000},{lat:52.477,lon:-2.1,ts:now+45000}]};
+      const away={...v,lat:52.482,ts:now+45000,hist:[{lat:52.485,lon:-2.1,ts:now+30000},{lat:52.482,lon:-2.1,ts:now+45000}]};
       const awayResult=api.routeEvidenceWithContinuity(away,weak,now+45000);
       const jump={...v,lat:52.56,ts:now+45000,hist:[{lat:52.485,lon:-2.1,ts:now+30000},{lat:52.56,lon:-2.1,ts:now+45000}]};
       const jumpResult=api.routeEvidenceWithContinuity(jump,weak,now+45000);
@@ -1347,7 +1353,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       };
     }finally{Object.assign(state,saved);}
   });
-  assert.deepEqual(freshRouteContinuity,{seeded:true,continuedScore:2,continued:true,sameFixExpired:1,branch:1,away:1,jump:1});
+  assert.deepEqual(freshRouteContinuity,{seeded:true,continuedScore:2,continued:true,sameFixExpired:1,branch:1,away:2,jump:1});
 
   const routeOverlayRetention = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
@@ -1756,7 +1762,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.18'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.19'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
