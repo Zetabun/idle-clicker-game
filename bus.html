@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.19';
+const APP_VERSION = '0.7.20';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -5094,7 +5094,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,journeyDestinationAgreement,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5330,8 +5330,15 @@ function dropLive(out,v,diagnostics,reason,now){
    established route context alive from one fresh fix to the next instead of
    letting an arbitrary retention timer make the row blink off and on. This is
    never an admission path for a new bus: a score >=2 must seed it first. */
-const ROUTE_CONTINUITY_MAX_GAP_MS = 90*1000;
+const ROUTE_CONTINUITY_MIN_GAP_MS = 90*1000;
+const ROUTE_CONTINUITY_MAX_GAP_MS = GPS_LIVE_DISPLAY_SECONDS*1000;
 const ROUTE_CONTINUITY_MAX_METRES = 2500;
+function routeContinuityGapMs(v){
+  const cadence=Number(v&&v.cadence);
+  if(!Number.isFinite(cadence)||cadence<=0) return ROUTE_CONTINUITY_MIN_GAP_MS;
+  const adaptive=(cadence*ETA_CADENCE_MULTIPLIER+15)*1000;
+  return Math.max(ROUTE_CONTINUITY_MIN_GAP_MS,Math.min(ROUTE_CONTINUITY_MAX_GAP_MS,adaptive));
+}
 const ROUTE_CONTINUITY_FIELDS = [
   'routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon',
   'routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest',
@@ -5370,11 +5377,12 @@ function routeEvidenceWithContinuity(v,evidence,now=Date.now()){
   if(!routeContinuityContextMatches(v)) return evidence;
   const gpsTs=Number(v.ts)||0, previousTs=Number(v.routeVerifiedGpsTs)||0;
   const verifiedAt=Number(v.routeVerifiedAt)||0;
+  const continuityGap=routeContinuityGapMs(v);
   if(!gpsTs||!previousTs||gpsTs<previousTs||!verifiedAt) return evidence;
-  if(now-verifiedAt>ROUTE_CONTINUITY_MAX_GAP_MS||!gpsLiveDisplayFresh(v,now)) return evidence;
+  if(now-verifiedAt>continuityGap||!gpsLiveDisplayFresh(v,now)) return evidence;
   if(gpsTs>previousTs){
     const gap=gpsTs-previousTs;
-    if(gap>ROUTE_CONTINUITY_MAX_GAP_MS) return evidence;
+    if(gap>continuityGap) return evidence;
     const lat=Number(v.lat), lon=Number(v.lon);
     const metres=dist(Number(v.routeVerifiedLat),Number(v.routeVerifiedLon),lat,lon);
     const allowed=Math.min(ROUTE_CONTINUITY_MAX_METRES,Math.max(120,gap/1000*35+100));
@@ -5476,6 +5484,7 @@ function collect(gate,diagnostics){
     const est=estimate(v,S.stop,evidence,geometry);
     const scheduleBacked=!!(est.schedule && timetableTrusted(evidence));
     const trustedJourney=!!(evidence.journeyMatch || geometry);
+    const continuityBacked=!!evidence.routeContinuity;
     const directionSchedule=est.schedule||matchedRow;
     const scheduledDir=scheduledJourneyDirection(directionSchedule);
     const candidateDest=evidence.matchedRealtime&&directionSchedule&&directionSchedule.head
@@ -5514,14 +5523,14 @@ function collect(gate,diagnostics){
     if(diagnostics) diagnostics.approaching++;
 
     if(est.confidence==='low'){
-      const recoverable=trustedJourney || (scheduleBacked && d<=MAX_VEH_DIST);
+      const recoverable=trustedJourney || continuityBacked || (scheduleBacked && d<=MAX_VEH_DIST);
       if(!recoverable && (!gate || d>500)){ dropLive(out,v,diagnostics,'confidence',now); continue; }
     }
     if(far && !est.evidence.journeyMatch){ dropLive(out,v,diagnostics,'route',now); continue; }
     if(diagnostics) diagnostics.confidence++;
 
     const directionDisagreed=S.dir!=='all' && dir!==S.dir && dir!=='unknown';
-    const recovered=!!((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low'));
+    const recovered=!!(continuityBacked || ((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low')));
     if(recovered && diagnostics) diagnostics.recovered++;
     const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.matchedRealtime?'BODS matched journey':evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
     if(est.schedule&&!v.progressIdentityBlocked){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }

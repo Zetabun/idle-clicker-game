@@ -92,7 +92,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.19'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.20'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -1355,6 +1355,19 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   });
   assert.deepEqual(freshRouteContinuity,{seeded:true,continuedScore:2,continued:true,sameFixExpired:1,branch:1,away:2,jump:1});
 
+  const adaptiveRouteContinuity = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__;
+    return {
+      fast:api.routeContinuityGapMs({cadence:15}),
+      slow:api.routeContinuityGapMs({cadence:70}),
+      unknown:api.routeContinuityGapMs({cadence:null})
+    };
+  });
+  assert.deepEqual(adaptiveRouteContinuity,{fast:90000,slow:120000,unknown:90000});
+  assert.ok(busSource.includes("const continuityBacked=!!evidence.routeContinuity;"));
+  assert.ok(busSource.includes("const recoverable=trustedJourney || continuityBacked || (scheduleBacked && d<=MAX_VEH_DIST);"));
+  assert.ok(busSource.includes("const recovered=!!(continuityBacked || ((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low')));"));
+
   const routeOverlayRetention = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={
@@ -1762,7 +1775,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.19'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.20'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
