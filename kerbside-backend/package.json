@@ -1,7 +1,7 @@
 {
   "name": "kerbside-backend",
   "private": true,
-  "version": "0.7.19",
+  "version": "0.7.20",
   "type": "module",
   "scripts": {
     "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs && node --check tests/identity-regression.mjs && node --check tests/multi-vehicle-regression.mjs && node --check tests/audit-regression.mjs && node --check tests/accuracy-hardening-regression.mjs && node --check tests/stop-side-regression.mjs && node --check tests/journey-identity-regression.mjs && node --check tests/disruption-regression.mjs && node --check tests/listing-reliability-regression.mjs",
