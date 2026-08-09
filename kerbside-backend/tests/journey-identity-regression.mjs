@@ -64,7 +64,10 @@ try{
       timetableRegion:state.timetableRegion,
       timetableRun:state.timetableRun,
       dir:state.dir,
-      destFilter:state.destFilter
+      destFilter:state.destFilter,
+      vehicles:state.vehicles,
+      onlyServing:state.onlyServing,
+      hideAway:state.hideAway
     };
     const now=Date.now();
     const stop={id:'BRIGHTSTONE',timetableId:'BRIGHTSTONE',source:'official',name:'Brightstone Road',lat:52.45,lon:-1.96};
@@ -125,7 +128,7 @@ try{
       // which side of Brightstone Road the bus will serve. This must recover a
       // live route pattern without claiming a specific scheduled departure.
       const aliasPatternId='brightstone-61-inbound';
-      state.ttStop={id:'BRIGHTSTONE',d:[[
+      state.ttStop={id:'BRIGHTSTONE',match:'code',d:[[
         minuteAt(8),'61','Moor St Queensway','','in','BRIGHTSTONE-INBOUND',aliasPatternId,'R61','',3,minuteAt(-30)
       ]]};
       state.timetable={
@@ -154,6 +157,45 @@ try{
       const aliasBaseEvidence=api.routeEvidence('61',aliasVehicle.dest,'',aliasVehicle);
       const aliasInference=api.inferVehicleJourneyPattern(aliasVehicle,stop,now);
       const aliasEvidence=api.inferredRouteEvidence(aliasBaseEvidence,aliasInference);
+      const aliasPlan={matches:[{
+        trip:'BRIGHTSTONE-INBOUND',line:'61',head:'Moor St Queensway',pattern:aliasInference.pattern,
+        targetAlong:aliasInference.fit.target.along,at:now+8*60000,originAt:null,routeId:'R61',operator:'',stopSequence:3
+      }]};
+      const aliasScanInference=api.inferredRouteScanMatch(aliasPlan,{...aliasVehicle},now);
+      const aliasScanVehicle=api.matchRouteScanVehicle(aliasPlan,{...aliasVehicle,id:'61-route-scan-strong',journey:'BRIGHTSTONE-INBOUND',hist:[]});
+
+      // Reproduce the visible flicker: an exact realtime trip is initially shown
+      // before its route-pattern shard arrives. The shard then contains only a
+      // nearby opposite-kerb stop instead of the selected national stop id. The
+      // new geometry must abstain rather than suddenly declaring the bus passed.
+      const flickerPatternId='brightstone-wrong-kerb';
+      state.ttStop={id:'BRIGHTSTONE',match:'code',d:[[
+        minuteAt(6),'61','Moor St Queensway','','in','FLICKER-TRIP',flickerPatternId,'R61','',3,minuteAt(-20)
+      ]]};
+      state.timetable={services:{},tripPatterns:{'FLICKER-TRIP':flickerPatternId},patterns:{}};
+      state.timetableSource='national';
+      state.timetableFallback=false;
+      state.timetableRun=Number(state.timetableRun||0)+1;
+      state.dir='all';state.destFilter=null;state.onlyServing=true;state.hideAway=false;
+      const flickerVehicle={
+        id:'61-pattern-load',line:'61',lineRef:'61',owner:'',operator:'',dest:'Digbeth',journey:'OPAQUE',
+        matchedTrip:'FLICKER-TRIP',matchedRouteId:'R61',matchedLagMs:0,matchedTripAt:now,matchedObservationAt:now,
+        lat:52.4480,lon:-1.9600,bearing:180,ts:now,sourceTs:now,hist:[
+          {lat:52.4490,lon:-1.9600,ts:now-30000},{lat:52.4480,lon:-1.9600,ts:now}
+        ],speed:6,cadence:20
+      };
+      state.vehicles=new Map([[flickerVehicle.id,flickerVehicle]]);
+      const flickerBefore=api.relevant().some(row=>row.v&&row.v.id===flickerVehicle.id);
+      state.timetable.patterns[flickerPatternId]={
+        p:[[52.4600,-1.9600],[52.4520,-1.9600],[52.4480,-1.9600],[52.4440,-1.9600]],
+        s:[
+          ['UPSTREAM','Upstream',52.4600,-1.9600,1],
+          ['MID','Middle',52.4520,-1.9600,2],
+          ['BRIGHTSTONE-OTHER-SIDE','Brightstone Road',52.45025,-1.9600,3]
+        ],g:1
+      };
+      const flickerAfter=api.relevant().some(row=>row.v&&row.v.id===flickerVehicle.id);
+      const flickerPassed=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.passed||0);
 
       const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
       const stickyPrev={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-30000,matchedObservationAt:now-30000,matchedLagMs:0,matchSource:'gtfs-rt'};
@@ -196,6 +238,11 @@ try{
           journeyMatch:!!(aliasEvidence&&aliasEvidence.journeyMatch),
           matchedTrip:String(aliasEvidence&&aliasEvidence.matchedTrip||'')
         },
+        routeScanAlias:{
+          inferred:!!aliasScanInference,patternOnly:!!(aliasScanInference&&aliasScanInference.patternOnly),
+          corridorTrip:String(aliasScanVehicle&&aliasScanVehicle.corridorTrip||'')
+        },
+        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},
         sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
         uniquePhysicalKey,
         budget:{empty:Array.isArray(budgetResult)&&budgetResult.length===0,elapsed:budgetElapsed},
@@ -230,6 +277,8 @@ try{
   assert.deepEqual(result.destinationAliasPattern,{
     inferred:true,patternOnly:true,patternId:'brightstone-61-inbound',score:4,journeyMatch:false,matchedTrip:''
   },'GPS movement on the ordered 61 pattern must recover a Digbeth versus Moor St Queensway naming mismatch without inventing a scheduled trip identity');
+  assert.deepEqual(result.routeScanAlias,{inferred:true,patternOnly:true,corridorTrip:'BRIGHTSTONE-INBOUND'},'the upstream route scan must apply the same destination-alias rule when the exact selected stop is present in the ordered pattern');
+  assert.deepEqual(result.patternLoadFlicker,{before:true,after:true,passed:0},'loading a route pattern with only a nearby opposite-kerb stop must not make a previously visible exact realtime bus disappear as already passed');
   assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');
   assert.equal(result.uniquePhysicalKey,'OPTEST|vehicle-unique|UNIQUE-9','VehicleUniqueId must identify a physical bus when VehicleRef is absent');
   assert.equal(result.budget.empty,true,'a slow matched feed should degrade to no auxiliary identities');
