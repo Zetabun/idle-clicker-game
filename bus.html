@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.13';
+const APP_VERSION = '0.7.14';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2897,7 +2897,7 @@ function scheduledJourneyDirection(row){
   if(!row||!anchor) return 'unknown';
   const pattern=timetablePatternRecord(row.trip);
   if(!pattern) return 'unknown';
-  const stops=orderedPatternStops(pattern), index=selectedPatternStopIndex(stops,undefined,undefined,row&&row.stopSequence);
+  const stops=orderedPatternStops(pattern), index=selectedPatternStopIndexForEvidence(stops,undefined,undefined,row&&row.stopSequence);
   if(index<0) return 'unknown';
   const before=stops[Math.max(0,index-1)], after=stops[Math.min(stops.length-1,index+1)];
   if(!before||!after||before===after) return 'unknown';
@@ -3060,7 +3060,8 @@ function journeyGeometry(v,stop){
   const pattern=timetablePatternRecord(v.progressTrip||vehicleJourneyRef(v),v.progressPattern);
   if(!pattern) return null;
   const vehicle=projectVehicleToPattern(pattern,v);
-  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,stop,vehicle&&vehicle.along);
+  const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndexForEvidence(ordered,stop,vehicle&&vehicle.along);
+  if(authoritativePatternStopRequired()&&selectedIndex<0) return null;
   const selected=selectedIndex>=0?ordered[selectedIndex]:null;
   // Only project the stop onto the whole pattern when the ordered stop list
   // could not place it. That scan walks every point of the route and its
@@ -3153,6 +3154,27 @@ function selectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence){
   }
   return pick(same);
 }
+/* National departure rows and national pattern stops come from the same GTFS
+   build. Once the selected stop has an exact national code, a nearby stop is no
+   longer an acceptable substitute for route geometry: on opposite kerbs it can
+   reverse whether a vehicle is before or after the passenger. Keep the looser
+   proximity fallback only for non-authoritative/legacy stop data. */
+function authoritativePatternStopRequired(){
+  return !!(S.timetableSource==='national'&&!S.timetableFallback&&S.ttStop&&S.ttStop.match==='code');
+}
+function exactSelectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence){
+  const chosen=selectedStop||S.stop;
+  if(!Array.isArray(stops)||!stops.length||!chosen) return -1;
+  const ids=[chosen===S.stop&&S.ttStop&&S.ttStop.id,chosen.timetableId,chosen.atco,chosen.code,chosen.id]
+    .map(value=>String(value||'')).filter(Boolean);
+  if(!ids.length||!stops.some(stop=>ids.includes(String(stop&&stop.id||'')))) return -1;
+  return selectedPatternStopIndex(stops,chosen,fromAlong,stopSequence);
+}
+function selectedPatternStopIndexForEvidence(stops,selectedStop,fromAlong,stopSequence){
+  return authoritativePatternStopRequired()
+    ? exactSelectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence)
+    : selectedPatternStopIndex(stops,selectedStop,fromAlong,stopSequence);
+}
 function routePatternMovementFit(pattern,v,stop){
   const history=recentMovementPoints(v);
   if(!pattern||!stop||history.length<2) return null;
@@ -3174,7 +3196,8 @@ function routePatternMovementFit(pattern,v,stop){
   if(used<2||moved<ROUTE_INFERENCE_MIN_MOVEMENT||!first||!last) return null;
   const forward=last.along-first.along;
   if(forward<Math.max(ROUTE_INFERENCE_MIN_FORWARD,moved*.2)) return null;
-  const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndex(stops,stop,last&&last.along);
+  const stops=orderedPatternStops(pattern),selectedIndex=selectedPatternStopIndexForEvidence(stops,stop,last&&last.along);
+  if(authoritativePatternStopRequired()&&selectedIndex<0) return null;
   const selected=selectedIndex>=0?stops[selectedIndex]:null;
   const projectedTarget=selected?null:projectToPattern(pattern.points,stop.lat,stop.lon);
   const target=selected?{along:selected.along,metres:dist(selected.lat,selected.lon,stop.lat,stop.lon)}:projectedTarget;
@@ -3546,7 +3569,8 @@ function routeScanPlans(now=Date.now()){
   const groups=new Map();
   for(const row of rows){
     const pattern=timetablePatternRecord(row.trip); if(!pattern) continue;
-    const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndex(ordered,undefined,undefined,row.stopSequence);
+    const ordered=orderedPatternStops(pattern), selectedIndex=selectedPatternStopIndexForEvidence(ordered,undefined,undefined,row.stopSequence);
+    if(authoritativePatternStopRequired()&&selectedIndex<0) continue;
     const selected=selectedIndex>=0?ordered[selectedIndex]:null;
     const projected=selected?null:projectToPattern(pattern.points,S.stop.lat,S.stop.lon);
     const targetAlong=selected?selected.along:projected&&projected.along;
@@ -3599,7 +3623,6 @@ function inferredRouteScanMatch(plan,v,now=Date.now()){
   for(const match of plan.matches||[]){
     if(String(v.line)!==String(match.line)||routeIdentityAgreement(match,v)<0) continue;
     const similarity=v.dest&&match.head?destinationSimilarity(v.dest,match.head):1;
-    if(v.dest&&match.head&&similarity<.34) continue;
     const fit=routePatternMovementFit(match.pattern,v,S.stop);
     if(!fit) continue;
     const rawSpeed=Number(v.speed),feedSpeed=Number(v.feedSpeed);
@@ -3618,11 +3641,17 @@ function inferredRouteScanMatch(plan,v,now=Date.now()){
   const best=chooseInferredJourneyCandidate(representatives);
   return best?{...best,trip:'',patternOnly:true,patternId:String(best.pattern.id)}:null;
 }
+function routeScanBranchCompatible(match,v){
+  if(!match||!v) return false;
+  if(!v.dest||!match.head||destinationSimilarity(v.dest,match.head)>=.34) return true;
+  const stops=orderedPatternStops(match.pattern);
+  return exactSelectedPatternStopIndex(stops,S.stop,undefined,match.stopSequence)>=0;
+}
 function matchRouteScanVehicle(plan,v){
   if(!plan||!v) return null;
   const compatible=(plan.matches||[]).filter(match=>String(v.line)===String(match.line)
     &&routeIdentityAgreement(match,v)>=0
-    &&(!v.dest||!match.head||destinationSimilarity(v.dest,match.head)>=.34));
+    &&routeScanBranchCompatible(match,v));
   let match=null;
   if(v.journey){
     const tripMatch=uniqueCompatibleTrips(compatible,v.journey,item=>item.trip);
