@@ -1,0 +1,134 @@
+name: Diagnose Kerbside disruptions refresh
+
+on:
+  push:
+    branches:
+      - agent/diagnose-kerbside-disruptions-20260810
+    paths:
+      - .github/workflows/diagnose-kerbside-disruptions.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out diagnostic branch
+        uses: actions/checkout@v5
+        with:
+          ref: agent/diagnose-kerbside-disruptions-20260810
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Probe source and workflow state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          mkdir -p diagnostics
+          BUILD_LOG="$(mktemp)"
+          python .github/scripts/build-disruptions.py >"$BUILD_LOG" 2>&1
+          BUILD_RC=$?
+          export BUILD_LOG BUILD_RC
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import urllib.request
+          from datetime import datetime, timezone
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          build_rc = int(os.environ.get('BUILD_RC', '999'))
+          build_log = pathlib.Path(os.environ['BUILD_LOG']).read_text(encoding='utf-8', errors='replace')[-16000:]
+
+          def github_json(path):
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}{path}',
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f'Bearer {token}',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'Kerbside-disruption-diagnostic/1.0',
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  return json.load(response)
+
+          def checked_in_feed():
+              try:
+                  raw = subprocess.check_output(['git', 'show', 'HEAD:disruptions.json'], text=True)
+                  data = json.loads(raw)
+                  return {
+                      'built': data.get('built'),
+                      'count': data.get('count'),
+                      'published': data.get('published'),
+                  }
+              except Exception as exc:
+                  return {'error': f'{type(exc).__name__}: {exc}'}
+
+          generated = None
+          if pathlib.Path('disruptions.json').exists():
+              try:
+                  data = json.loads(pathlib.Path('disruptions.json').read_text(encoding='utf-8'))
+                  generated = {
+                      'built': data.get('built'),
+                      'count': data.get('count'),
+                      'published': data.get('published'),
+                  }
+              except Exception as exc:
+                  generated = {'error': f'{type(exc).__name__}: {exc}'}
+
+          try:
+              workflow_raw = github_json('/actions/workflows/kerbside-disruptions.yml')
+              workflow = {key: workflow_raw.get(key) for key in ('id', 'name', 'path', 'state', 'created_at', 'updated_at')}
+          except Exception as exc:
+              workflow = {'error': f'{type(exc).__name__}: {exc}'}
+
+          try:
+              runs_raw = github_json('/actions/workflows/kerbside-disruptions.yml/runs?per_page=30')
+              runs = []
+              for run in runs_raw.get('workflow_runs', []):
+                  runs.append({
+                      key: run.get(key)
+                      for key in ('id', 'event', 'status', 'conclusion', 'head_sha', 'created_at', 'updated_at', 'run_started_at', 'html_url')
+                  })
+          except Exception as exc:
+              runs = [{'error': f'{type(exc).__name__}: {exc}'}]
+
+          report = {
+              'diagnosed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'checked_in_feed': checked_in_feed(),
+              'build_probe': {
+                  'return_code': build_rc,
+                  'generated_feed': generated,
+                  'log_tail': build_log,
+              },
+              'workflow': workflow,
+              'recent_runs': runs,
+          }
+          pathlib.Path('diagnostics/kerbside-disruptions.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          exit 0
+
+      - name: Publish diagnostic result to branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/kerbside-disruptions.json
+          git commit -m 'Record Kerbside disruption diagnostics'
+          git push origin HEAD:agent/diagnose-kerbside-disruptions-20260810
