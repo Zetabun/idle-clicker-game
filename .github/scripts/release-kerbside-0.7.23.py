@@ -45,10 +45,9 @@ exact_stop_helper = r'''function exactTripSelectedStopEvidence(trip,patternId,st
 }
 function exactStopContradiction(v,evidence,matchedRow){
   if(!authoritativePatternStopRequired()) return null;
-  /* Only a current strong trip identity can hard-reject a kerb. progressTrip is
-     render state and may legitimately lag during a journey handover, so it is
-     deliberately not an authority here. */
-  const trip=String(evidence&&evidence.matchedTrip||v&&v.matchedTrip||'');
+  /* Only the current evidence result can hard-reject a kerb. progressTrip and
+     the raw cached matchedTrip may legitimately lag during a journey handover. */
+  const trip=String(evidence&&evidence.matchedTrip||'');
   if(!trip) return null;
   const patternId=String(matchedRow&&matchedRow.pattern||((v&&String(v.progressTrip||'')===trip)?v.progressPattern:'')||'');
   const check=exactTripSelectedStopEvidence(trip,patternId,S.stop,matchedRow&&matchedRow.stopSequence);
@@ -87,6 +86,16 @@ replace_once(
     'reject stale realtime trip identity before spatial matching',
 )
 
+# Sticky matched identities are useful for one missed auxiliary poll, but they
+# must not freeze a bus onto its previous trip through a turnaround. Age the
+# underlying GTFS-RT observation, not merely the time at which it was assigned.
+replace_once(
+    'bus.html',
+    """  const matchedAt=Number(prev.matchedTripAt);\n  if(!sameService||!prev.matchedTrip||!Number.isFinite(matchedAt)||now-matchedAt>MATCHED_IDENTITY_GRACE_MS) return false;\n  v.matchedTrip=String(prev.matchedTrip);\n""",
+    """  const matchedAt=Number(prev.matchedTripAt);\n  if(!sameService||!prev.matchedTrip||!Number.isFinite(matchedAt)||now-matchedAt>MATCHED_IDENTITY_GRACE_MS) return false;\n  const nextReferenceTs=Number.isFinite(Number(v.sourceTs))?Number(v.sourceTs):Number(v.ts);\n  const previousObservation=Number(prev.matchedObservationAt);\n  const observationAge=Number.isFinite(nextReferenceTs)&&Number.isFinite(previousObservation)?Math.max(0,nextReferenceTs-previousObservation):Infinity;\n  if(observationAge>matchedIdentityFreshnessMs(v)) return false;\n  v.matchedTrip=String(prev.matchedTrip);\n""",
+    'do not retain stale matched trip through a turnaround',
+)
+
 # Make the exact-stop contradiction a hard gate before *all* recovery paths.
 # This is the key wrong-side fix: if a loaded authoritative trip pattern serves
 # the opposite Brightstone Road ATCO code, MATCH RETAINED and destination alias
@@ -120,7 +129,7 @@ replace_once(
 # "NO MATCHING LIVE BUS YET" schedule card to coexist.
 claim_helper = r'''function exactIdentityScheduleClaim(row){
   if(!row||!row.v||!S.ttStop) return null;
-  const evidence=row.evidence||{}, trip=String(evidence.matchedTrip||row.v.progressTrip||row.v.matchedTrip||'');
+  const evidence=row.evidence||{}, trip=String(evidence.matchedTrip||row.v.progressTrip||'');
   if(!trip) return null;
   const rows=timetableRowsForLine(row.v.line,new Date()).filter(schedule=>String(schedule.trip||'')===trip);
   const valid=rows.filter(schedule=>{
@@ -169,7 +178,7 @@ replace_once(
 # Regression contract
 # ---------------------------------------------------------------------------
 regression_anchor = "  assert.ok(busSource.includes(\"const PASSED_STOP_LOCK_MS = 30*60*1000;\"));\n"
-regression_checks = """  assert.ok(busSource.includes(\"const PASSED_STOP_LOCK_MS = 30*60*1000;\"));\n  assert.ok(busSource.includes(\"function exactTripSelectedStopEvidence(trip,patternId,stop=S.stop,stopSequence)\"));\n  assert.ok(busSource.includes(\"const stopContradiction=exactStopContradiction(v,evidence,matchedRow);\"));\n  assert.ok(busSource.includes(\"rejectLive(diagnostics,'exactStop',v); continue;\"));\n  assert.ok(busSource.includes(\"identityAge>matchedIdentityFreshnessMs(v)\"));\n  assert.ok(busSource.includes(\"return row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;\"));\n  assert.ok(busSource.indexOf(\"const stopContradiction=exactStopContradiction(v,evidence,matchedRow);\") < busSource.indexOf(\"setVehicleProgressIdentity(v,evidence,inference,matchedRow);\"));\n"""
+regression_checks = """  assert.ok(busSource.includes(\"const PASSED_STOP_LOCK_MS = 30*60*1000;\"));\n  assert.ok(busSource.includes(\"function exactTripSelectedStopEvidence(trip,patternId,stop=S.stop,stopSequence)\"));\n  assert.ok(busSource.includes(\"const stopContradiction=exactStopContradiction(v,evidence,matchedRow);\"));\n  assert.ok(busSource.includes(\"rejectLive(diagnostics,'exactStop',v); continue;\"));\n  assert.ok(busSource.includes(\"identityAge>matchedIdentityFreshnessMs(v)\"));\n  assert.ok(busSource.includes(\"observationAge>matchedIdentityFreshnessMs(v)\"));\n  assert.ok(busSource.includes(\"return row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;\"));\n  assert.ok(busSource.indexOf(\"const stopContradiction=exactStopContradiction(v,evidence,matchedRow);\") < busSource.indexOf(\"setVehicleProgressIdentity(v,evidence,inference,matchedRow);\"));\n"""
 replace_once(
     'kerbside-backend/tests/browser-regression.mjs',
     regression_anchor,
@@ -234,6 +243,13 @@ journey_case = r'''      const flickerPassed=Number(state.liveDiag&&state.liveDi
       const staleMatchedInput={...baseVehicle,id:'stale-rt',vehicleRef:'BUS-STALE',vehicleUniqueId:'',journey:'OPAQUE',matchedTrip:'',sourceTs:now,ts:now,cadence:20};
       const staleMatchedCount=api.applyMatchedIdentities([staleMatchedInput],[{entityId:'entity-stale',vehicleId:'BUS-STALE',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-120000}],now);
 
+      // Sticky identity must also age the *underlying observation*. A fresh
+      // assignment timestamp is not enough if the GTFS-RT position itself is
+      // two minutes behind the current SIRI vehicle.
+      const staleStickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',cadence:20};
+      const staleStickyPrevious={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-10000,matchedObservationAt:now-120000,matchedLagMs:0,matchSource:'gtfs-rt'};
+      const staleStickyRetained=api.retainMatchedIdentity(staleStickyPrevious,staleStickyIncoming,now);
+
       const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
 '''
 replace_once(
@@ -245,13 +261,13 @@ replace_once(
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
     """        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
-    """        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},\n        wrongSide,\n        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},\n        staleMatchedIdentity:{count:staleMatchedCount,trip:String(staleMatchedInput.matchedTrip||'')},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
+    """        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},\n        wrongSide,\n        exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},\n        staleMatchedIdentity:{count:staleMatchedCount,trip:String(staleMatchedInput.matchedTrip||'')},\n        staleStickyIdentity:{retained:staleStickyRetained,trip:String(staleStickyIncoming.matchedTrip||'')},\n        sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},\n""",
     'return matching-hardening regression results',
 )
 replace_once(
     'kerbside-backend/tests/journey-identity-regression.mjs',
     """  assert.deepEqual(result.patternLoadFlicker,{before:true,after:true,passed:0},'loading a route pattern with only a nearby opposite-kerb stop must not make a previously visible exact realtime bus disappear as already passed');\n  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');\n""",
-    """  assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');\n  assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');\n  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');\n  assert.deepEqual(result.staleMatchedIdentity,{count:0,trip:''},'a two-minute-old matched identity must not assign the previous journey to a fresh SIRI vehicle');\n  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');\n""",
+    """  assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');\n  assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');\n  assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');\n  assert.deepEqual(result.staleMatchedIdentity,{count:0,trip:''},'a two-minute-old matched identity must not assign the previous journey to a fresh SIRI vehicle');\n  assert.deepEqual(result.staleStickyIdentity,{retained:false,trip:''},'sticky matched identity must expire from the observation age rather than the local assignment time');\n  assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');\n""",
     'update matching hardening regression expectations',
 )
 
