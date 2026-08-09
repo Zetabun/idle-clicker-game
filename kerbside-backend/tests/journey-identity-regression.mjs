@@ -15,6 +15,8 @@ const root=path.resolve(testsDir,'..','..');
 const busSource=await readFile(path.join(root,'bus.html'),'utf8');
 
 assert.match(busSource,/function journeyDestinationAgreement\(rows,dest\)/);
+assert.match(busSource,/function journeyDestinationAlternative\(rows,matchedRows,dest\)/);
+assert.match(busSource,/destination wording differs/);
 assert.match(busSource,/journeyDestinationConflict/);
 assert.match(busSource,/function setVehicleProgressIdentity\(v,evidence,inference,matchedRow\)/);
 assert.match(busSource,/progressIdentityBlocked/);
@@ -155,6 +157,7 @@ try{
         ],speed:6,cadence:20
       };
       const aliasBaseEvidence=api.routeEvidence('61',aliasVehicle.dest,'',aliasVehicle);
+      const aliasJourneyEvidence=api.routeEvidence('61',aliasVehicle.dest,'BRIGHTSTONE-INBOUND',{...aliasVehicle,journey:'BRIGHTSTONE-INBOUND'});
       const aliasInference=api.inferVehicleJourneyPattern(aliasVehicle,stop,now);
       const aliasEvidence=api.inferredRouteEvidence(aliasBaseEvidence,aliasInference);
       const aliasPlan={matches:[{
@@ -230,6 +233,14 @@ try{
         oneToOne:{count:duplicateCount,near:duplicateNear.matchedTrip||'',far:duplicateFar.matchedTrip||''},
         routeGuard:{lineRealtime:!!routeMismatch.matchedRealtime,lineTrip:String(routeMismatch.matchedTrip||''),routeRealtime:!!routeIdMismatch.matchedRealtime,routeTrip:String(routeIdMismatch.matchedTrip||'')},
         handover:{realtime:!!handover.matchedRealtime,trip:String(handover.matchedTrip||''),conflict:!!handover.journeyDestinationConflict},
+        destinationAliasJourney:{
+          score:Number(aliasJourneyEvidence&&aliasJourneyEvidence.score||0),
+          journeyMatch:!!(aliasJourneyEvidence&&aliasJourneyEvidence.journeyMatch),
+          matchedTrip:String(aliasJourneyEvidence&&aliasJourneyEvidence.matchedTrip||''),
+          conflict:!!(aliasJourneyEvidence&&aliasJourneyEvidence.journeyDestinationConflict),
+          wordingMismatch:!!(aliasJourneyEvidence&&aliasJourneyEvidence.journeyDestinationWordingMismatch),
+          label:String(aliasJourneyEvidence&&aliasJourneyEvidence.label||'')
+        },
         destinationAliasPattern:{
           inferred:!!aliasInference,
           patternOnly:!!(aliasInference&&aliasInference.patternOnly),
@@ -274,6 +285,10 @@ try{
   assert.deepEqual(result.oneToOne,{count:1,near:'OUTBOUND',far:''},'one GTFS-RT entity must be allocated to at most one SIRI vehicle');
   assert.deepEqual(result.routeGuard,{lineRealtime:false,lineTrip:'',routeRealtime:false,routeTrip:''},'a matched trip from the wrong public line or GTFS route must fall back instead of becoming authoritative');
   assert.deepEqual(result.handover,{realtime:false,trip:'INBOUND',conflict:false},'an older conflicting matched identity must yield to newer SIRI journey evidence during a terminus handover');
+  assert.deepEqual(result.destinationAliasJourney,{
+    score:6,journeyMatch:true,matchedTrip:'BRIGHTSTONE-INBOUND',conflict:false,wordingMismatch:true,
+    label:'exact journey and stop sequence matched; destination wording differs'
+  },'a strong exact journey calling at this stop must survive a locality-versus-terminus wording mismatch when no other branch matches the live destination');
   assert.deepEqual(result.destinationAliasPattern,{
     inferred:true,patternOnly:true,patternId:'brightstone-61-inbound',score:4,journeyMatch:false,matchedTrip:''
   },'GPS movement on the ordered 61 pattern must recover a Digbeth versus Moor St Queensway naming mismatch without inventing a scheduled trip identity');
