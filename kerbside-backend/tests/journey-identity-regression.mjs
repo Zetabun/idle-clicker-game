@@ -119,6 +119,42 @@ try{
       const routeIdMismatch=api.routeEvidence('61','Frankley Arden Road Terminus','OUTBOUND',{...baseVehicle,journey:'OPAQUE',matchedTrip:'OUTBOUND',matchedRouteId:'WRONG-ROUTE',matchedLagMs:0});
       const handover=api.routeEvidence('61','Digbeth Moor Street Queensway','OUTBOUND',{...baseVehicle,journey:'INBOUND',matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedLagMs:60000});
 
+      // Some operators publish a locality ("Digbeth") while the timetable uses
+      // the actual terminus stop ("Moor St Queensway"). Text similarity is low,
+      // but two GPS fixes moving forward on the ordered inbound pattern prove
+      // which side of Brightstone Road the bus will serve. This must recover a
+      // live route pattern without claiming a specific scheduled departure.
+      const aliasPatternId='brightstone-61-inbound';
+      state.ttStop={id:'BRIGHTSTONE',d:[[
+        minuteAt(8),'61','Moor St Queensway','','in','BRIGHTSTONE-INBOUND',aliasPatternId,'R61','',3,minuteAt(-30)
+      ]]};
+      state.timetable={
+        services:{},
+        tripPatterns:{'BRIGHTSTONE-INBOUND':aliasPatternId},
+        patterns:{
+          [aliasPatternId]:{
+            p:[[52.4600,-1.9600],[52.4550,-1.9600],[52.4500,-1.9600]],
+            s:[
+              ['UPSTREAM','Upstream',52.4600,-1.9600,1],
+              ['MID','Middle',52.4550,-1.9600,2],
+              ['BRIGHTSTONE','Brightstone Road',52.4500,-1.9600,3]
+            ],
+            g:1
+          }
+        }
+      };
+      state.timetableRun=Number(state.timetableRun||0)+1;
+      const aliasVehicle={
+        id:'61-inbound-alias',line:'61',lineRef:'61',owner:'',operator:'',dest:'Digbeth',journey:'',
+        lat:52.4550,lon:-1.9600,bearing:180,ts:now,sourceTs:now,hist:[
+          {lat:52.4590,lon:-1.9600,ts:now-30000},
+          {lat:52.4550,lon:-1.9600,ts:now}
+        ],speed:6,cadence:20
+      };
+      const aliasBaseEvidence=api.routeEvidence('61',aliasVehicle.dest,'',aliasVehicle);
+      const aliasInference=api.inferVehicleJourneyPattern(aliasVehicle,stop,now);
+      const aliasEvidence=api.inferredRouteEvidence(aliasBaseEvidence,aliasInference);
+
       const stickyIncoming={...baseVehicle,sourceTs:now,ts:now,matchedTrip:'',matchedTripAt:undefined,matchSource:'',matchedSticky:false};
       const stickyPrev={...baseVehicle,matchedTrip:'OUTBOUND',matchedRouteId:'R61',matchedTripAt:now-30000,matchedObservationAt:now-30000,matchedLagMs:0,matchSource:'gtfs-rt'};
       const stickyRetained=api.retainMatchedIdentity(stickyPrev,stickyIncoming,now);
@@ -152,6 +188,14 @@ try{
         oneToOne:{count:duplicateCount,near:duplicateNear.matchedTrip||'',far:duplicateFar.matchedTrip||''},
         routeGuard:{lineRealtime:!!routeMismatch.matchedRealtime,lineTrip:String(routeMismatch.matchedTrip||''),routeRealtime:!!routeIdMismatch.matchedRealtime,routeTrip:String(routeIdMismatch.matchedTrip||'')},
         handover:{realtime:!!handover.matchedRealtime,trip:String(handover.matchedTrip||''),conflict:!!handover.journeyDestinationConflict},
+        destinationAliasPattern:{
+          inferred:!!aliasInference,
+          patternOnly:!!(aliasInference&&aliasInference.patternOnly),
+          patternId:String(aliasInference&&aliasInference.patternId||''),
+          score:Number(aliasEvidence&&aliasEvidence.score||0),
+          journeyMatch:!!(aliasEvidence&&aliasEvidence.journeyMatch),
+          matchedTrip:String(aliasEvidence&&aliasEvidence.matchedTrip||'')
+        },
         sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
         uniquePhysicalKey,
         budget:{empty:Array.isArray(budgetResult)&&budgetResult.length===0,elapsed:budgetElapsed},
@@ -183,6 +227,9 @@ try{
   assert.deepEqual(result.oneToOne,{count:1,near:'OUTBOUND',far:''},'one GTFS-RT entity must be allocated to at most one SIRI vehicle');
   assert.deepEqual(result.routeGuard,{lineRealtime:false,lineTrip:'',routeRealtime:false,routeTrip:''},'a matched trip from the wrong public line or GTFS route must fall back instead of becoming authoritative');
   assert.deepEqual(result.handover,{realtime:false,trip:'INBOUND',conflict:false},'an older conflicting matched identity must yield to newer SIRI journey evidence during a terminus handover');
+  assert.deepEqual(result.destinationAliasPattern,{
+    inferred:true,patternOnly:true,patternId:'brightstone-61-inbound',score:4,journeyMatch:false,matchedTrip:''
+  },'GPS movement on the ordered 61 pattern must recover a Digbeth versus Moor St Queensway naming mismatch without inventing a scheduled trip identity');
   assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');
   assert.equal(result.uniquePhysicalKey,'OPTEST|vehicle-unique|UNIQUE-9','VehicleUniqueId must identify a physical bus when VehicleRef is absent');
   assert.equal(result.budget.empty,true,'a slow matched feed should degrade to no auxiliary identities');
