@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.18';
+const APP_VERSION = '0.7.19';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -5332,7 +5332,6 @@ function dropLive(out,v,diagnostics,reason,now){
    never an admission path for a new bus: a score >=2 must seed it first. */
 const ROUTE_CONTINUITY_MAX_GAP_MS = 90*1000;
 const ROUTE_CONTINUITY_MAX_METRES = 2500;
-const ROUTE_CONTINUITY_MAX_STOP_RETREAT = 250;
 const ROUTE_CONTINUITY_FIELDS = [
   'routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon',
   'routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest',
@@ -5373,7 +5372,6 @@ function routeEvidenceWithContinuity(v,evidence,now=Date.now()){
   const verifiedAt=Number(v.routeVerifiedAt)||0;
   if(!gpsTs||!previousTs||gpsTs<previousTs||!verifiedAt) return evidence;
   if(now-verifiedAt>ROUTE_CONTINUITY_MAX_GAP_MS||!gpsLiveDisplayFresh(v,now)) return evidence;
-  if(movementTrend(v,S.stop)<0) return evidence;
   if(gpsTs>previousTs){
     const gap=gpsTs-previousTs;
     if(gap>ROUTE_CONTINUITY_MAX_GAP_MS) return evidence;
@@ -5381,8 +5379,7 @@ function routeEvidenceWithContinuity(v,evidence,now=Date.now()){
     const metres=dist(Number(v.routeVerifiedLat),Number(v.routeVerifiedLon),lat,lon);
     const allowed=Math.min(ROUTE_CONTINUITY_MAX_METRES,Math.max(120,gap/1000*35+100));
     if(!Number.isFinite(metres)||metres>allowed) return evidence;
-    const stopDistance=dist(lat,lon,S.stop.lat,S.stop.lon), previousStopDistance=Number(v.routeVerifiedStopDistance);
-    if(Number.isFinite(previousStopDistance)&&stopDistance>previousStopDistance+ROUTE_CONTINUITY_MAX_STOP_RETREAT) return evidence;
+    const stopDistance=dist(lat,lon,S.stop.lat,S.stop.lon);
     v.routeVerifiedAt=now; v.routeVerifiedGpsTs=gpsTs; v.routeVerifiedLat=lat; v.routeVerifiedLon=lon;
     v.routeVerifiedStopDistance=stopDistance;
   }
@@ -5492,10 +5489,11 @@ function collect(gate,diagnostics){
     const dir=inferDirection(v), gpsMoveDir=gpsMovementDirection(v);
     const orderedMovement=geometry?routePatternMovementFit(geometry.pattern,v,S.stop):null;
     const routeAhead=!!(geometry&&!geometry.passed&&geometry.remaining>=-120&&orderedMovement);
+    const routeDirectionTrusted=!!(evidence.routeContinuity||evidence.journeyMatch||evidence.pathMatch||evidence.matchedRealtime);
     if(S.dir!=='all'){
       const timetableContradicts=scheduledDir!=='unknown' && scheduledDir!==S.dir;
       const gpsContradicts=gpsMoveDir!=='unknown' && gpsMoveDir!==S.dir;
-      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead&&!journeyBearingOverride)){ dropLive(out,v,diagnostics,'direction',now); continue; }
+      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead&&!journeyBearingOverride&&!routeDirectionTrusted)){ dropLive(out,v,diagnostics,'direction',now); continue; }
     }
     if(S.dir!=='all'&&gpsMoveDir!=='unknown'&&scheduledDir!=='unknown'&&gpsMoveDir!==scheduledDir&&!routeAhead){ dropLive(out,v,diagnostics,'direction',now); continue; }
     if(diagnostics) diagnostics.direction++;
@@ -5510,7 +5508,7 @@ function collect(gate,diagnostics){
        the bus recedes before it arrives. The direction gate above already makes
        that exception; without it here, a matched journey was dropped anyway and
        the recovered branch below never got the chance to save it. */
-    if(S.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride){
+    if(S.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride && !routeDirectionTrusted){
       dropLive(out,v,diagnostics,'away',now); continue;
     }
     if(diagnostics) diagnostics.approaching++;
