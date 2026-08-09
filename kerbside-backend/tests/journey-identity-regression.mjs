@@ -302,6 +302,13 @@ try{
       api.setVehicleProgressIdentity(matchedVehicle,{journeyDestinationConflict:false,matchedTrip:'OUTBOUND'},null,{pattern:'OUTBOUND-PATTERN',stopSequence:7});
       const matchedProgress={blocked:matchedVehicle.progressIdentityBlocked,trip:matchedVehicle.progressTrip,pattern:matchedVehicle.progressPattern,stopSequence:matchedVehicle.progressStopSequence};
 
+      // A live vehicle often has route evidence before a specific timetable row
+      // is resolved. Number(null) is finite, so the guard must test the row itself
+      // before reading stopSequence or every board render throws.
+      const unmatchedVehicle={journey:'OPAQUE',corridorTrip:''};
+      api.setVehicleProgressIdentity(unmatchedVehicle,{journeyDestinationConflict:false,matchedTrip:''},null,null);
+      const unmatchedProgress={blocked:unmatchedVehicle.progressIdentityBlocked,trip:unmatchedVehicle.progressTrip,pattern:unmatchedVehicle.progressPattern,stopSequence:unmatchedVehicle.progressStopSequence};
+
       return {
         exactConflict:{score:exactConflict.score,journeyMatch:!!exactConflict.journeyMatch,matchedTrip:String(exactConflict.matchedTrip||''),conflict:!!exactConflict.journeyDestinationConflict,timetableVerified:!!exactConflict.timetableVerified,label:exactConflict.label},
         originConflict:{score:originConflict.score,journeyMatch:!!originConflict.journeyMatch,matchedTrip:String(originConflict.matchedTrip||''),conflict:!!originConflict.journeyDestinationConflict,timetableVerified:!!originConflict.timetableVerified,label:originConflict.label},
@@ -346,7 +353,8 @@ try{
         budget:{empty:Array.isArray(budgetResult)&&budgetResult.length===0,elapsed:budgetElapsed},
         blockedProgress,
         inferredProgress,
-        matchedProgress
+        matchedProgress,
+        unmatchedProgress
       };
     } finally {
       Object.assign(state,saved);
@@ -396,6 +404,7 @@ try{
   assert.deepEqual(result.blockedProgress,{blocked:true,trip:'',pattern:''},'conflicting identity with no safe geometry must withhold journey progress');
   assert.deepEqual(result.inferredProgress,{blocked:false,trip:'',pattern:'SAFE-INBOUND-PATTERN'},'movement-inferred pattern may restore progress without manufacturing a trip identity');
   assert.deepEqual(result.matchedProgress,{blocked:false,trip:'OUTBOUND',pattern:'OUTBOUND-PATTERN',stopSequence:7},'compatible matched journey should continue to drive progress using the selected stop sequence, not the vehicle current-stop sequence');
+  assert.deepEqual(result.unmatchedProgress,{blocked:false,trip:'OPAQUE',pattern:'',stopSequence:null},'a vehicle without a matched timetable row must remain renderable and expose no stop sequence');
   assert.deepEqual(pageErrors,[],'journey identity regression page should not raise browser errors');
   await context.close();
 } finally {
