@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.15';
+const APP_VERSION = '0.7.16';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4572,6 +4572,24 @@ function journeyDestinationAgreement(rows,dest){
   const best=heads.reduce((score,head)=>Math.max(score,destinationSimilarity(live,head)),0);
   return {comparable:true,compatible:best>=.34,conflict:best<.34,best,heads};
 }
+/* A strong live journey reference can disagree with the timetable headsign
+   simply because the operator publishes a locality while GTFS names the
+   terminus stop. Before treating that as a branch contradiction, check whether
+   the live destination actually agrees with a different scheduled journey at
+   this stop. If it does, keep the handover protection. If it does not, the
+   wording is non-comparable rather than evidence for the opposite branch. */
+function journeyDestinationAlternative(rows,matchedRows,dest){
+  const live=String(dest||'').trim();
+  if(!live) return false;
+  const matchedTrips=new Set((Array.isArray(matchedRows)?matchedRows:[])
+    .map(row=>String(row&&row.trip||'')).filter(Boolean));
+  return (Array.isArray(rows)?rows:[]).some(row=>{
+    if(!row||!row.head) return false;
+    const trip=String(row.trip||'');
+    if(trip&&matchedTrips.has(trip)) return false;
+    return destinationSimilarity(live,row.head)>=.34;
+  });
+}
 function routeEvidence(line,dest,journey,identity){
   if(!S.stop) return {score:0,label:'unverified'};
   const l=String(line);
@@ -4612,12 +4630,16 @@ function routeEvidence(line,dest,journey,identity){
   const tripMatch=fallbackJourney?uniqueCompatibleTrips(ttRows,fallbackJourney):{items:[],ref:'',strength:0,ambiguous:false};
   if(tripMatch.items.length){
     const destination=journeyDestinationAgreement(tripMatch.items,dest);
-    if(!destination.conflict){
+    const alternativeBranch=destination.conflict&&journeyDestinationAlternative(ttRows,tripMatch.items,dest);
+    const wordingOnlyConflict=!!(destination.conflict&&tripMatch.strength>=3&&!alternativeBranch);
+    if(!destination.conflict||wordingOnlyConflict){
       const path=!!timetablePattern(tripMatch.ref), literal=tripMatch.strength===4;
+      const label=path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable');
       return {
         score:path?6:5,
-        label:path?(literal?'exact journey and stop sequence matched':'unique journey alias and stop sequence matched'):(literal?'exact journey matched to timetable':'unique journey alias matched to timetable'),
+        label:label+(wordingOnlyConflict?'; destination wording differs':''),
         journeyMatch:true,pathMatch:path,matchStrength:tripMatch.strength,matchedTrip:tripMatch.ref,
+        journeyDestinationWordingMismatch:wordingOnlyConflict,
         routeIdentityMatch:identityInfo.strong
       };
     }
