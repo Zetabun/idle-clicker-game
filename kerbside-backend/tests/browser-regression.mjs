@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.25'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.26'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -149,9 +149,11 @@ assert.match(busSource, /function journeyRouteContext/);
 assert.match(busSource, /function shouldClearJourneyRoute/);
 assert.match(busSource, /function ignoreMapContextMenu\(e\)/);
 assert.match(busSource, /function selectStopFromMap\(s\)/);
-assert.match(busSource, /selectStop\(s,true\);\n  setAppView\('times'\);/);
+assert.match(busSource, /setAppView\('times'\);\n  selectStop\(s,true\);/);
 assert.match(busSource, /m\.on\('click',\(\)=>selectStopFromMap\(s\)\)/);
 assert.doesNotMatch(busSource, /m\.on\('click',\(\)=>selectStop\(s,true\)\)/);
+assert.match(busSource, /function localStopSuggestions\(query,limit=6\)/);
+assert.match(busSource, /Live data received · board update failed/);
 assert.match(busSource, /map\.on\('contextmenu',ignoreMapContextMenu\)/);
 /* The producer is a property of the ServiceDelivery, so it must be resolved once
    per delivery rather than per vehicle. Spreading every descendant of the
@@ -1699,6 +1701,30 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     changed:true,selected:'map-test-stop',target:'map-test-stop',heading:'Map-selected stop (B)',
     appView:'times',timesSelected:'true',mapSelected:'false'
   });
+  const nearbyStopSearch = await page.evaluate(() => {
+    const api=window.__KERBSIDE_TEST__,state=api.liveState;
+    const previous={stops:state.stops,origin:state.origin};
+    try{
+      state.origin={lat:52.509,lon:-2.087,label:'Dudley'};
+      state.stops=[
+        {id:'near-a',name:'Castle Street',ind:'A',atco:'ATCO-A',lat:52.5091,lon:-2.0871,d:35},
+        {id:'near-b',name:'Priory Road',ind:'B',atco:'ATCO-B',lat:52.5092,lon:-2.0872,d:80}
+      ];
+      const nearest=api.localStopSuggestions('Dudley').map(stop=>stop.id);
+      const matched=api.localStopSuggestions('priory').map(stop=>stop.id);
+      api.renderSuggest([],'Dudley');
+      return {
+        nearest,matched,
+        options:[...document.querySelectorAll('#suggest [role="option"]')].map(option=>option.textContent.trim()),
+        visible:getComputedStyle(document.getElementById('suggest')).display
+      };
+    }finally{Object.assign(state,previous);}
+  });
+  assert.deepEqual(nearbyStopSearch,{
+    nearest:['near-a','near-b'],matched:['near-b'],
+    options:['Castle StreetNearby stop · Stop A · 40 m','Priory RoadNearby stop · Stop B · 80 m'],
+    visible:'block'
+  });
   const alertGrace = await page.evaluate(() => {
     const retain=window.__KERBSIDE_TEST__.retainFiredAlarm;
     const alarm={fired:true,lastSeenAt:1000};
@@ -1814,7 +1840,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.25'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.26'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

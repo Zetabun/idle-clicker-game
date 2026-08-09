@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.25';
+const APP_VERSION = '0.7.26';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1571,19 +1571,43 @@ function cancelGeocode(){
   geocodeRun++;
   if(geocodeAbort){ geocodeAbort.abort(); geocodeAbort=null; }
 }
+function searchSuggestionText(value){
+  return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function localStopSuggestions(query,limit=6){
+  const typed=searchSuggestionText(query), originLabel=searchSuggestionText(S.origin&&S.origin.label);
+  // The field normally retains the chosen place. Treat that value as an empty
+  // stop query so focusing it brings the nearest stands back immediately.
+  const needle=typed&&typed!==originLabel?typed:'';
+  return (Array.isArray(S.stops)?S.stops:[]).map(stop=>{
+    const name=searchSuggestionText(stop&&stop.name);
+    const hay=searchSuggestionText([stop&&stop.name,stop&&stop.ind,stop&&stop.atco,stop&&stop.naptan,stop&&stop.code].filter(Boolean).join(' '));
+    if(needle&&!hay.includes(needle)) return null;
+    const score=!needle?0:name===needle?4:name.startsWith(needle)?3:hay.startsWith(needle)?2:1;
+    return {stop,score};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score||Number(a.stop.d)-Number(b.stop.d)).slice(0,limit).map(item=>item.stop);
+}
+$('q').addEventListener('focus',()=>{
+  if(S.stops.length) renderSuggest([],$('q').value);
+});
 $('q').addEventListener('input', e=>{
   // Typing is an explicit location choice. Invalidate any outstanding device
   // lookup immediately so a late GPS callback cannot overwrite the search.
   cancelPendingDeviceLocation();
   const v=e.target.value.trim();
   clearTimeout(sugTimer);
-  if(v.length<3){ cancelGeocode(); hideSuggest(); return; }
+  if(v.length<3){
+    cancelGeocode();
+    if(localStopSuggestions(v).length) renderSuggest([],v); else hideSuggest();
+    return;
+  }
+  if(localStopSuggestions(v).length) renderSuggest([],v);
   sugTimer=setTimeout(()=>geocode(v,true),280);
 });
 $('q').addEventListener('keydown', e=>{
   if(e.key==='Enter'){
     e.preventDefault();
-    if(sugIdx>=0 && sugItems[sugIdx]) pickPlace(sugItems[sugIdx]);
+    if(sugIdx>=0 && sugItems[sugIdx]) pickSuggestion(sugItems[sugIdx]);
     else { const v=$('q').value.trim(); if(v) geocode(v,false); }
   } else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
     if(!sugItems.length) return;
@@ -1609,12 +1633,16 @@ async function geocode(q, asSuggest){
     const j = await r.json();
     if(run!==geocodeRun) return;
     const feats = (j.features||[]).filter(f=>f.geometry && f.geometry.coordinates);
-    if(!feats.length){ if(!asSuggest) toast('No match for that address. Try a postcode.',true); hideSuggest(); return; }
-    if(asSuggest){ renderSuggest(feats); }
+    if(!feats.length){
+      if(!asSuggest) toast('No match for that address. Try a postcode.',true);
+      if(asSuggest&&localStopSuggestions(q).length) renderSuggest([],q); else hideSuggest();
+      return;
+    }
+    if(asSuggest){ renderSuggest(feats,q); }
     else { hideSuggest(); pickPlace(feats[0]); }
   }catch(err){
     if(run!==geocodeRun || (err&&err.name==='AbortError')) return;
-    hideSuggest();
+    if(asSuggest&&localStopSuggestions(q).length) renderSuggest([],q); else hideSuggest();
     if(!asSuggest) toast('Address lookup failed — check your connection.',true);
   }finally{
     if(run===geocodeRun) geocodeAbort=null;
@@ -1627,15 +1655,32 @@ function placeLabel(f){
   const uniq = [...new Set(bits)].slice(0,2).join(', ');
   return {main:name, sub:[p.postcode,uniq].filter(Boolean).join(' · ')};
 }
-function renderSuggest(feats){
-  sugItems=feats; sugIdx=-1;
+function renderSuggest(feats,query=''){
+  const local=localStopSuggestions(query).map(stop=>({kind:'stop',stop}));
+  const places=(Array.isArray(feats)?feats:[]).map(feature=>({kind:'place',feature}));
+  sugItems=[...local,...places]; sugIdx=-1;
   const box=$('suggest');
-  box.innerHTML = feats.map(f=>{
-    const l=placeLabel(f);
+  if(!sugItems.length){ hideSuggest(); return; }
+  box.innerHTML = sugItems.map(item=>{
+    if(item.kind==='stop'){
+      const s=item.stop, detail=['Nearby stop',s.ind?'Stop '+s.ind:'',fmtDist(s.d)].filter(Boolean).join(' · ');
+      return '<button type="button" role="option"><span>'+esc(s.name)+'</span><span class="sub">'+esc(detail)+'</span></button>';
+    }
+    const l=placeLabel(item.feature);
     return '<button type="button" role="option">'+esc(l.main)+'<span class="sub">'+esc(l.sub)+'</span></button>';
   }).join('');
-  [...box.children].forEach((b,i)=>b.addEventListener('click',()=>pickPlace(feats[i])));
+  [...box.children].forEach((b,i)=>b.addEventListener('click',()=>pickSuggestion(sugItems[i])));
   box.style.display='block';
+}
+function pickSuggestion(item){
+  if(item&&item.kind==='stop'){
+    const stop=item.stop;
+    cancelGeocode(); $('q').value=stop.name; hideSuggest();
+    map.setView([stop.lat,stop.lon],Math.max(map.getZoom(),17));
+    selectStopFromMap(stop);
+    return;
+  }
+  pickPlace(item&&item.kind==='place'?item.feature:item);
 }
 function pickPlace(f){
   cancelGeocode();
@@ -1644,6 +1689,9 @@ function pickPlace(f){
   $('q').value=l.main;
   hideSuggest();
   setOrigin(lat,lon,l.main);
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),searchSuggestionText,localStopSuggestions,renderSuggest,pickSuggestion};
 }
 
 /* ============================================================
@@ -2525,8 +2573,10 @@ out body 120;`;
 
 function selectStopFromMap(s){
   if(!s) return;
-  selectStop(s,true);
+  // Switch first: a later board-rendering failure must not make a successful
+  // marker tap look as though nothing happened on the map-only mobile view.
   setAppView('times');
+  selectStop(s,true);
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),selectStopFromMap};
@@ -2551,7 +2601,10 @@ function drawStops(){
       icon:L.divIcon({className:'',html:stopMarkerSvg(sel),
         // Anchored on the tip of the pin, which is the point that marks the stop.
         iconSize:sel?[19,25]:[13,17], iconAnchor:sel?[9.5,25]:[6.5,17]}),
-      zIndexOffset: sel?500:0
+      zIndexOffset: sel?500:0,
+      title:'Select '+s.name+(s.ind?' (Stop '+s.ind+')':''),
+      alt:'Select bus stop '+s.name+(s.ind?', stop '+s.ind:''),
+      keyboard:true
     }).addTo(stopLayer);
     m.on('click',()=>selectStopFromMap(s));
     // The pin rises from its anchor, so the label has to clear its full height
@@ -5682,7 +5735,7 @@ function setVehicleProgressIdentity(v,evidence,inference,matchedRow){
   }
   v.progressTrip=v.progressIdentityBlocked?'':String(evidence&&evidence.matchedTrip||v.corridorTrip||v.journey||'');
   v.progressPattern=String(matchedRow&&matchedRow.pattern||'');
-  v.progressStopSequence=!v.progressIdentityBlocked&&Number.isFinite(Number(matchedRow&&matchedRow.stopSequence))
+  v.progressStopSequence=!v.progressIdentityBlocked&&matchedRow&&Number.isFinite(Number(matchedRow.stopSequence))
     ?Number(matchedRow.stopSequence):null;
 }
 function collect(gate,diagnostics){
@@ -7162,8 +7215,10 @@ async function poll(force){
   S.busy=true; S.feedRefreshing=true;
   const ctl=new AbortController(); S.pollAbort=ctl;
   const dt=Math.min(90,(Date.now()-lastPoll)/1000)||S.interval; lastPoll=Date.now();
+  let feedReceived=false;
   try{
     const list=S.demo?fetchSim(dt):await fetchLive(ctl.signal);
+    feedReceived=true;
     ingest(list); learnDests(); learnServing(); S.lastOk=Date.now(); S.lastFeedAt=Date.now();
     const now=Date.now(), tracked=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
     const fresh=tracked.filter(v=>gpsLiveDisplayFresh(v,now)).length, delayed=tracked.length-fresh;
@@ -7183,6 +7238,13 @@ async function poll(force){
     if(!S.demo) void pollRouteCorridor();
   }catch(e){
     if(!ctl.signal.aborted){
+      if(feedReceived){
+        console.error('Kerbside received live data but could not update the board.',e);
+        setStatus('Live data received · board update failed','err');
+        S.feedRefreshing=false;
+        renderGpsStats();
+        return;
+      }
       const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
       const scheduled=S.ttStop&&timetableRows(new Date()).some(row=>row.at>Date.now()-60000&&row.at<Date.now()+3*3600000);
       const retained=[...S.vehicles.values()].some(v=>Date.now()-v.ts<=MAX_AGE_MS+GPS_RESULT_GRACE_MS);
