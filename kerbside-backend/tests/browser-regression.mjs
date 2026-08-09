@@ -98,8 +98,13 @@ assert.match(busSource, /const APP_VERSION = '0\.7\.26'/);
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
 assert.doesNotMatch(busSource, /naptan\.api\.dft\.gov\.uk/);
-// A stop with no published attributes leaves the line hidden rather than empty.
+// Stop identity provenance belongs behind the info button rather than being
+// duplicated in the heading or passenger-facing facts line.
 assert.match(busSource, /function stopFactsHtml\(stop\)/);
+assert.ok(busSource.includes("$('stopName').textContent=s.name; updateStopMeta();"));
+assert.ok(busSource.includes("if(indicator) details.push('Stop <b>'+esc(indicator)+'</b>');"));
+assert.ok(busSource.includes("details.push(displayCode?'Stop reference <b>'+esc(displayCode)+'</b>':'No stop reference published');"));
+assert.doesNotMatch(busSource, /const label=indicator\?'Stop '\+indicator:'Exact stop';/);
 assert.match(busSource, /el\.hidden=!html;/);
 assert.match(busSource, /class="brand-icon" src="data:image\/svg\+xml,%3Csvg/);
 assert.match(busSource, /\.brand-icon\{display:block;width:38px;height:38px;flex:0 0 38px;object-fit:contain\}/);
@@ -1683,7 +1688,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
     const before=state.stop&&String(state.stop.id);
     const base=state.stop||state.origin||{lat:52.509,lon:-2.087};
-    const target={id:'map-test-stop',name:'Map-selected stop',ind:'B',lat:Number(base.lat)+.0001,lon:Number(base.lon)+.0001,d:120,region:'test',shard:'aa',timetableId:'map-test-stop'};
+    const target={id:'map-test-stop',name:'Map-selected stop',ind:'B',atco:'490G00012345',lat:Number(base.lat)+.0001,lon:Number(base.lon)+.0001,d:120,region:'test',shard:'aa',timetableId:'map-test-stop'};
     state.stops=[...state.stops.filter(stop=>String(stop.id)!==target.id),target];
     document.getElementById('vMap').click();
     api.selectStopFromMap(target);
@@ -1692,13 +1697,18 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       selected:String(state.stop&&state.stop.id),
       target:target.id,
       heading:document.getElementById('stopName').textContent,
+      infoHasStop:document.getElementById('stopSource').textContent.includes('Stop B'),
+      infoHasReference:document.getElementById('stopSource').textContent.includes('490G00012345'),
+      infoHidden:document.getElementById('boardInfoPanel').hidden,
+      factsHasIdentity:/Stop B|ATCO 490G00012345/.test(document.getElementById('stopFacts').textContent),
       appView:state.appView,
       timesSelected:document.getElementById('vTimes').getAttribute('aria-selected'),
       mapSelected:document.getElementById('vMap').getAttribute('aria-selected')
     };
   });
   assert.deepEqual(mapStopSelection,{
-    changed:true,selected:'map-test-stop',target:'map-test-stop',heading:'Map-selected stop (B)',
+    changed:true,selected:'map-test-stop',target:'map-test-stop',heading:'Map-selected stop',
+    infoHasStop:true,infoHasReference:true,infoHidden:true,factsHasIdentity:false,
     appView:'times',timesSelected:'true',mapSelected:'false'
   });
   const nearbyStopSearch = await page.evaluate(() => {
