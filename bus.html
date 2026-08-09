@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.12';
+const APP_VERSION = '0.7.13';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -3198,12 +3198,18 @@ function inferenceCandidate(row,pattern,fit,v,now){
   const scheduleSecs=(Number(row.at)-now)/1000;
   const scheduleGap=Math.abs(scheduleSecs-routeSecs);
   const similarity=v.dest&&row.head?destinationSimilarity(v.dest,row.head):1;
-  if(v.dest&&row.head&&similarity<.34) return null;
+  const destinationConflict=!!(v.dest&&row.head&&similarity<.34);
+  /* SIRI destinations are often localities while timetable headsigns are the
+     named terminus stop (for example Digbeth versus Moor St Queensway). The
+     ordered route pattern plus measured forward GPS movement is stronger
+     evidence of which side of a stop the bus will serve than those words.
+     Keep the text disagreement as a scoring penalty, but do not discard a
+     geometry-proven pattern before it gets a chance to disambiguate direction. */
   const points=pattern.points,segment=Math.max(0,Math.min(points.length-2,fit.current.segment));
   const routeBearing=bearingTo(points[segment].lat,points[segment].lon,points[segment+1].lat,points[segment+1].lon);
   const bearingGap=isFinite(Number(v.bearing))?headingDifference(Number(v.bearing),routeBearing):0;
   const score=fit.meanOffset*.55+fit.current.metres*.45+Math.min(420,scheduleGap*.18)+bearingGap*.7+(1-similarity)*90;
-  return {row,trip:String(row.trip),pattern,fit,score,scheduleGap,similarity};
+  return {row,trip:String(row.trip),pattern,fit,score,scheduleGap,similarity,destinationConflict};
 }
 function inferVehicleJourneyPattern(v,stop,now=Date.now()){
   if(!v||!stop||!S.ttStop||!S.timetable) return null;
