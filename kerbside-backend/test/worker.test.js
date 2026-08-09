@@ -80,10 +80,13 @@ test('matched endpoint exposes compact GTFS trip identity without replacing SIRI
     entity: [{
       id: 'entity-1',
       vehicle: {
-        trip: { tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61' },
+        trip: { tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61', startDate: '20260809', startTime: '21:30:00', directionId: 1 },
         position: { latitude: 52.5, longitude: -2.1, bearing: 90 },
         timestamp: nowSeconds,
-        vehicle: { id: 'BUS-740' }
+        vehicle: { id: 'BUS-740' },
+        currentStopSequence: 12,
+        currentStatus: 2,
+        stopId: '1800STOP'
       }
     }]
   })).finish();
@@ -101,8 +104,18 @@ test('matched endpoint exposes compact GTFS trip identity without replacing SIRI
       entityId: body.vehicles[0].entityId,
       vehicleId: body.vehicles[0].vehicleId,
       tripId: body.vehicles[0].tripId,
-      routeId: body.vehicles[0].routeId
-    }, { entityId: 'entity-1', vehicleId: 'BUS-740', tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61' });
+      routeId: body.vehicles[0].routeId,
+      startDate: body.vehicles[0].startDate,
+      startTime: body.vehicles[0].startTime,
+      directionId: body.vehicles[0].directionId,
+      currentStopSequence: body.vehicles[0].currentStopSequence,
+      currentStatus: body.vehicles[0].currentStatus,
+      stopId: body.vehicles[0].stopId
+    }, {
+      entityId: 'entity-1', vehicleId: 'BUS-740', tripId: 'GTFS-TRIP-61', routeId: 'GTFS-ROUTE-61',
+      startDate: '20260809', startTime: '21:30:00', directionId: '1', currentStopSequence: 12,
+      currentStatus: '2', stopId: '1800STOP'
+    });
     assert.equal(runtime.state.fetches, 1);
   } finally {
     runtime.restore();
@@ -133,7 +146,7 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.7.24');
+  assert.equal(body.version, '0.7.25');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);

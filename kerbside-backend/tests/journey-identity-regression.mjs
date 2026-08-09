@@ -76,6 +76,7 @@ try{
     const parts=api.ukDateTimeParts(new Date(now));
     const minuteNow=Number(parts.hour)*60+Number(parts.minute);
     const minuteAt=delta=>((minuteNow+delta)%1440+1440)%1440;
+    const gtfsClock=mins=>`${String(Math.floor(Number(mins)/60)).padStart(2,'0')}:${String(Number(mins)%60).padStart(2,'0')}:00`;
     const rawRow=(delta,line,head,trip,originDelta,routeId='')=>[
       minuteAt(delta),line,head,'','',trip,'',routeId,'',10,minuteAt(originDelta)
     ];
@@ -113,8 +114,11 @@ try{
       const agreementCompatible=api.journeyDestinationAgreement([{head:'Digbeth Moor Street Queensway'}],'Moor Street Queensway');
 
       const matchedInput={...baseVehicle,vehicleRef:'BUS-740',vehicleUniqueId:'',journey:'OPAQUE-SIRI-JOURNEY',sourceTs:now-1000,ts:now-1000};
-      const matchedCount=api.applyMatchedIdentities([matchedInput],[{entityId:'entity-740',vehicleId:'BUS-740',tripId:'OUTBOUND',routeId:'R61',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-1000}],now);
+      const matchedCount=api.applyMatchedIdentities([matchedInput],[{entityId:'entity-740',vehicleId:'BUS-740',tripId:'OUTBOUND',routeId:'R61',startDate:outbound.serviceDate,startTime:gtfsClock(outbound.originMins),currentStopSequence:4,currentStatus:'2',stopId:'PREVIOUS',lat:baseVehicle.lat,lon:baseVehicle.lon,timestamp:now-1000}],now);
       const matchedRealtime=api.routeEvidence('61',matchedInput.dest,api.vehicleJourneyRef(matchedInput),matchedInput);
+      const wrongServiceIdentity={...matchedInput,matchedStartDate:'19990101',matchedServiceKey:''};
+      wrongServiceIdentity.matchedServiceKey=api.matchedServiceInstanceKey(wrongServiceIdentity);
+      const wrongServiceEvidence=api.routeEvidence('61',wrongServiceIdentity.dest,api.vehicleJourneyRef(wrongServiceIdentity),wrongServiceIdentity);
 
       const duplicateNear={...baseVehicle,id:'duplicate-near',vehicleRef:'BUS-DUPE',vehicleUniqueId:'',journey:'',dest:'Frankley Arden Road Terminus',lat:52.4600,lon:-1.9500,sourceTs:now,ts:now};
       const duplicateFar={...duplicateNear,id:'duplicate-far',lat:52.4610};
@@ -167,10 +171,21 @@ try{
       const aliasScanInference=api.inferredRouteScanMatch(aliasPlan,{...aliasVehicle},now);
       const aliasScanVehicle=api.matchRouteScanVehicle(aliasPlan,{...aliasVehicle,id:'61-route-scan-strong',journey:'BRIGHTSTONE-INBOUND',hist:[]});
 
-      // Reproduce the visible flicker: an exact realtime trip is initially shown
-      // before its route-pattern shard arrives. The shard then contains only a
-      // nearby opposite-kerb stop instead of the selected national stop id. The
-      // new geometry must abstain rather than suddenly declaring the bus passed.
+      // A route number and plausible destination are not enough to choose a
+      // kerb. Initial board admission at an exact national stop waits for a
+      // trip or inferred pattern that explicitly contains that ATCO stop.
+      state.onlyServing=true;state.hideAway=false;
+      const routeOnlyVehicle={
+        id:'61-route-only',line:'61',lineRef:'61',owner:'',operator:'',dest:'Moor St Queensway',journey:'',
+        lat:52.4550,lon:-1.9600,bearing:180,ts:now,sourceTs:now,hist:[],speed:null,cadence:20
+      };
+      state.vehicles=new Map([[routeOnlyVehicle.id,routeOnlyVehicle]]);
+      const routeOnlyShown=api.relevant().some(row=>row.v&&row.v.id===routeOnlyVehicle.id);
+      const routeOnlyExactStopRejected=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.exactStop||0);
+
+      // An exact realtime trip must not be shown before its route-pattern shard
+      // proves the selected kerb. If the shard then proves only the nearby
+      // opposite stop, the bus remains excluded without being mislabelled passed.
       const flickerPatternId='brightstone-wrong-kerb';
       state.ttStop={id:'BRIGHTSTONE',match:'code',d:[[
         minuteAt(6),'61','Moor St Queensway','','in','FLICKER-TRIP',flickerPatternId,'R61','',3,minuteAt(-20)
@@ -241,12 +256,16 @@ try{
         p:[[52.4600,-1.9600],[52.4520,-1.9600],[52.4500,-1.9600]],
         s:[['UPSTREAM','Upstream',52.4600,-1.9600,1],['BRIGHTSTONE','Brightstone Road',52.4500,-1.9600,3]],g:1
       };
-      const rightSideVehicle={...wrongSideVehicle,id:'right-side-live',matchedTrip:rightSideTrip,progressTrip:rightSideTrip,progressPattern:rightSidePattern};
+      const rightSideVehicle={...wrongSideVehicle,id:'right-side-live',matchedTrip:rightSideTrip,matchedStartDate:'20260809',matchedStartTime:'08:10:00',progressTrip:rightSideTrip,progressPattern:rightSidePattern};
+      rightSideVehicle.matchedServiceKey=api.matchedServiceInstanceKey(rightSideVehicle);
       const rightSideProof=api.currentExactStopProof(rightSideVehicle,{score:6,matchedTrip:rightSideTrip},null,{trip:rightSideTrip,pattern:rightSidePattern,stopSequence:3},now);
       const rightSideRetentionSeed=api.rememberRouteContinuity(rightSideVehicle,{score:6,matchedTrip:rightSideTrip},now,rightSideProof);
+      const nextServiceVehicle={...rightSideVehicle,matchedStartDate:'20260810',matchedServiceKey:''};
+      nextServiceVehicle.matchedServiceKey=api.matchedServiceInstanceKey(nextServiceVehicle);
       const retentionProof={
         wrongSideServes:wrongSideProof.serves,wrongSideSeed:wrongSideRetentionSeed,wrongSideHas:api.hasExactStopRetentionProof(wrongSideVehicle),
-        rightSideServes:rightSideProof.serves,rightSideSeed:rightSideRetentionSeed,rightSideHas:api.hasExactStopRetentionProof(rightSideVehicle)
+        rightSideServes:rightSideProof.serves,rightSideSeed:rightSideRetentionSeed,rightSideHas:api.hasExactStopRetentionProof(rightSideVehicle),
+        nextServiceHas:api.hasExactStopRetentionProof(nextServiceVehicle)
       };
 
       // A GTFS-RT identity old enough to plausibly belong to the previous
@@ -280,8 +299,8 @@ try{
       const inferredProgress={blocked:inferredVehicle.progressIdentityBlocked,trip:inferredVehicle.progressTrip,pattern:inferredVehicle.progressPattern};
 
       const matchedVehicle={journey:'OUTBOUND',corridorTrip:''};
-      api.setVehicleProgressIdentity(matchedVehicle,{journeyDestinationConflict:false,matchedTrip:'OUTBOUND'},null,{pattern:'OUTBOUND-PATTERN'});
-      const matchedProgress={blocked:matchedVehicle.progressIdentityBlocked,trip:matchedVehicle.progressTrip,pattern:matchedVehicle.progressPattern};
+      api.setVehicleProgressIdentity(matchedVehicle,{journeyDestinationConflict:false,matchedTrip:'OUTBOUND'},null,{pattern:'OUTBOUND-PATTERN',stopSequence:7});
+      const matchedProgress={blocked:matchedVehicle.progressIdentityBlocked,trip:matchedVehicle.progressTrip,pattern:matchedVehicle.progressPattern,stopSequence:matchedVehicle.progressStopSequence};
 
       return {
         exactConflict:{score:exactConflict.score,journeyMatch:!!exactConflict.journeyMatch,matchedTrip:String(exactConflict.matchedTrip||''),conflict:!!exactConflict.journeyDestinationConflict,timetableVerified:!!exactConflict.timetableVerified,label:exactConflict.label},
@@ -290,7 +309,8 @@ try{
         destinationMissing:{journeyMatch:!!destinationMissing.journeyMatch,matchedTrip:String(destinationMissing.matchedTrip||''),conflict:!!destinationMissing.journeyDestinationConflict},
         agreementConflict,
         agreementCompatible,
-        matchedIdentity:{count:matchedCount,trip:matchedInput.matchedTrip,source:matchedInput.matchSource,realtime:!!matchedRealtime.matchedRealtime,journeyMatch:!!matchedRealtime.journeyMatch,matchedTrip:String(matchedRealtime.matchedTrip||''),conflict:!!matchedRealtime.journeyDestinationConflict},
+        matchedIdentity:{count:matchedCount,trip:matchedInput.matchedTrip,source:matchedInput.matchSource,realtime:!!matchedRealtime.matchedRealtime,journeyMatch:!!matchedRealtime.journeyMatch,matchedTrip:String(matchedRealtime.matchedTrip||''),conflict:!!matchedRealtime.journeyDestinationConflict,dateMatches:matchedInput.matchedStartDate===outbound.serviceDate,timeMatches:matchedInput.matchedStartTime===gtfsClock(outbound.originMins),serviceKeyValid:/^trip\|OUTBOUND\|\d{8}\|\d{2}:\d{2}:00\|$/.test(matchedInput.matchedServiceKey),currentSequence:matchedInput.matchedCurrentStopSequence,currentStatus:matchedInput.matchedCurrentStatus,stopId:matchedInput.matchedStopId},
+        wrongServiceIdentity:{realtime:!!wrongServiceEvidence.matchedRealtime,journeyMatch:!!wrongServiceEvidence.journeyMatch,matchedTrip:String(wrongServiceEvidence.matchedTrip||'')},
         oneToOne:{count:duplicateCount,near:duplicateNear.matchedTrip||'',far:duplicateFar.matchedTrip||''},
         routeGuard:{lineRealtime:!!routeMismatch.matchedRealtime,lineTrip:String(routeMismatch.matchedTrip||''),routeRealtime:!!routeIdMismatch.matchedRealtime,routeTrip:String(routeIdMismatch.matchedTrip||'')},
         handover:{realtime:!!handover.matchedRealtime,trip:String(handover.matchedTrip||''),conflict:!!handover.journeyDestinationConflict},
@@ -314,6 +334,7 @@ try{
           inferred:!!aliasScanInference,patternOnly:!!(aliasScanInference&&aliasScanInference.patternOnly),
           corridorTrip:String(aliasScanVehicle&&aliasScanVehicle.corridorTrip||'')
         },
+        routeOnly:{shown:routeOnlyShown,exactStopRejected:routeOnlyExactStopRejected},
         patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},
         wrongSide,
         exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},
@@ -347,7 +368,8 @@ try{
   assert.equal(result.destinationMissing.matchedTrip,'OUTBOUND');
   assert.equal(result.agreementConflict.conflict,true);
   assert.equal(result.agreementCompatible.conflict,false,'minor stop-name wording differences should remain compatible');
-  assert.deepEqual(result.matchedIdentity,{count:1,trip:'OUTBOUND',source:'gtfs-rt',realtime:true,journeyMatch:true,matchedTrip:'OUTBOUND',conflict:true},'a fresh BODS matched trip may outrank stale destination text when route and trip identity agree');
+  assert.deepEqual(result.matchedIdentity,{count:1,trip:'OUTBOUND',source:'gtfs-rt',realtime:true,journeyMatch:true,matchedTrip:'OUTBOUND',conflict:true,dateMatches:true,timeMatches:true,serviceKeyValid:true,currentSequence:4,currentStatus:'2',stopId:'PREVIOUS'},'a fresh BODS matched service instance may carry date, origin time and current-stop context while outranking stale destination text');
+  assert.deepEqual(result.wrongServiceIdentity,{realtime:false,journeyMatch:false,matchedTrip:''},'a reused trip id from another service date must not become exact realtime identity');
   assert.deepEqual(result.oneToOne,{count:1,near:'OUTBOUND',far:''},'one GTFS-RT entity must be allocated to at most one SIRI vehicle');
   assert.deepEqual(result.routeGuard,{lineRealtime:false,lineTrip:'',routeRealtime:false,routeTrip:''},'a matched trip from the wrong public line or GTFS route must fall back instead of becoming authoritative');
   assert.deepEqual(result.handover,{realtime:false,trip:'INBOUND',conflict:false},'an older conflicting matched identity must yield to newer SIRI journey evidence during a terminus handover');
@@ -359,10 +381,11 @@ try{
     inferred:true,patternOnly:true,patternId:'brightstone-61-inbound',score:4,journeyMatch:false,matchedTrip:''
   },'GPS movement on the ordered 61 pattern must recover a Digbeth versus Moor St Queensway naming mismatch without inventing a scheduled trip identity');
   assert.deepEqual(result.routeScanAlias,{inferred:true,patternOnly:true,corridorTrip:'BRIGHTSTONE-INBOUND'},'the upstream route scan must apply the same destination-alias rule when the exact selected stop is present in the ordered pattern');
-  assert.deepEqual(result.patternLoadFlicker,{before:true,after:false,passed:0},'once an authoritative pattern is loaded and contains only the opposite kerb, exact stop identity must override earlier realtime visibility');
+  assert.deepEqual(result.routeOnly,{shown:false,exactStopRejected:1},'same-route GPS without exact trip/pattern proof must not choose a side of the road');
+  assert.deepEqual(result.patternLoadFlicker,{before:false,after:false,passed:0},'an authoritative board must wait for exact selected-stop proof and keep an opposite-kerb trip excluded');
   assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');
   assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');
-  assert.deepEqual(result.retentionProof,{wrongSideServes:false,wrongSideSeed:false,wrongSideHas:false,rightSideServes:true,rightSideSeed:true,rightSideHas:true},'retention may be seeded only by proof that the exact selected stop occurs in the ordered journey pattern');
+  assert.deepEqual(result.retentionProof,{wrongSideServes:false,wrongSideSeed:false,wrongSideHas:false,rightSideServes:true,rightSideSeed:true,rightSideHas:true,nextServiceHas:false},'retention may be seeded only by proof for the exact stop and same service instance');
   assert.deepEqual(result.staleMatchedIdentity,{count:0,trip:''},'a two-minute-old matched identity must not assign the previous journey to a fresh SIRI vehicle');
   assert.deepEqual(result.staleStickyIdentity,{retained:false,trip:''},'sticky matched identity must expire from the observation age rather than the local assignment time');
   assert.deepEqual(result.sticky,{retained:true,trip:'OUTBOUND',sticky:true,lag:30000,expired:false,expiredTrip:''},'matched identity should survive a short auxiliary-feed gap, age its observation lag, and expire rather than stick indefinitely');
@@ -372,7 +395,7 @@ try{
 
   assert.deepEqual(result.blockedProgress,{blocked:true,trip:'',pattern:''},'conflicting identity with no safe geometry must withhold journey progress');
   assert.deepEqual(result.inferredProgress,{blocked:false,trip:'',pattern:'SAFE-INBOUND-PATTERN'},'movement-inferred pattern may restore progress without manufacturing a trip identity');
-  assert.deepEqual(result.matchedProgress,{blocked:false,trip:'OUTBOUND',pattern:'OUTBOUND-PATTERN'},'compatible matched journey should continue to drive progress normally');
+  assert.deepEqual(result.matchedProgress,{blocked:false,trip:'OUTBOUND',pattern:'OUTBOUND-PATTERN',stopSequence:7},'compatible matched journey should continue to drive progress using the selected stop sequence, not the vehicle current-stop sequence');
   assert.deepEqual(pageErrors,[],'journey identity regression page should not raise browser errors');
   await context.close();
 } finally {

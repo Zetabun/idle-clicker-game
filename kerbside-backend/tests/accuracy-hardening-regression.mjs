@@ -182,6 +182,10 @@ try {
       state.destFilter = null;
       const outageVehicle = {
         id: 'outage',
+        progressTrip: 'PATTERN-A', progressPattern: patternId,
+        routeVerifiedExactStopId: 'STOP', routeVerifiedExactTrip: 'PATTERN-A',
+        routeVerifiedExactPattern: patternId, routeVerifiedExactStopIndex: 2,
+        routeVerifiedExactServiceKey: 'trip|PATTERN-A', routeVerifiedExactAt: now - 90000,
         lastShownSnapshot: { secs: 300, confidence: 'high' },
         lastShownStopId: 'STOP',
         lastShownBoardDir: 'all',
@@ -240,7 +244,7 @@ try {
   assert.equal(matrix.missingSpeed.mode, 'average');
   assert.equal(matrix.missingSpeed.dwell, 0, 'missing-speed fallback must not add dwell to an average that already includes stops');
   assert.ok(Number.isFinite(matrix.missingSpeed.secs));
-  assert.ok(matrix.stationary.secs > matrix.missingSpeed.secs, 'known stationary GPS must not receive moving age extrapolation');
+  assert.ok(Math.abs(matrix.stationary.secs - matrix.missingSpeed.secs) < 1, 'neither stationary nor delayed unknown-speed GPS should receive assumed movement through an old fix');
   assert.ok(matrix.movingModel.remainingStops >= 1, 'moving-speed model should see the intermediate stop');
   if (expectsSpeedProvenance) {
     assert.ok(matrix.movingModel.dwell >= 18, 'instantaneous feed speed should add stop-based dwell');
@@ -310,7 +314,11 @@ try {
   {
     const pair = await newPage('Europe/London', true);
     await pair.page.waitForFunction(() => window.__KERBSIDE_GEO_MOCK__?.calls === 1);
-    await pair.page.locator('#q').fill('x');
+    // Exercise the same key/input sequence as real manual typing. WebKit can
+    // optimise fill() into a value replacement without the per-key path this
+    // cancellation guard is intended to cover.
+    await pair.page.locator('#q').pressSequentially('x');
+    await pair.page.waitForFunction(() => window.__KERBSIDE_GEO_MOCK__?.cleared >= 1);
     const cancelled = await pair.page.evaluate(() => ({
       cleared: window.__KERBSIDE_GEO_MOCK__.cleared,
       origin: window.__KERBSIDE_TEST__.liveState.origin

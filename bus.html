@@ -1067,7 +1067,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.24';
+const APP_VERSION = '0.7.25';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1101,7 +1101,8 @@ let DATA_MANIFEST_SOURCE = '';
 const DISRUPTIONS_URL = 'disruptions.json';
 const DISRUPTIONS_REFRESH_MS = 15*60*1000;
 const DISRUPTIONS_RETRY_MS = 2*60*1000;
-const DISRUPTIONS_MAX_AGE = 24*3600*1000;   // a feed staler than this is not shown
+const DISRUPTIONS_WARN_AGE = 24*3600*1000;  // still usable, but tell the passenger that updates are delayed
+const DISRUPTIONS_MAX_AGE = 72*3600*1000;   // retain a bounded last-known feed through a short source outage
 const DISRUPTIONS_MAX_SHOWN = 6;
 let DISRUPTIONS = null;
 let DISRUPTIONS_INDEX = null;      // lower-cased ATCO -> situation positions
@@ -1169,6 +1170,7 @@ const LOCATION_TARGET_ACCURACY_METRES = 60;
 const LOCATION_WARNING_ACCURACY_METRES = 150;
 const LOCATION_FIX_TIMEOUT_MS = 10000;
 const MAX_SCHEDULED_ROWS = 72;
+const MAX_LIVE_ROWS = 25;
 // How long a drawn journey line may outlive its row while the vehicle is still
 // tracked. Covers a lazy-loading gap, not a bus that has left the feed.
 const JOURNEY_ROUTE_HOLD_MS = 60*1000;
@@ -1199,7 +1201,7 @@ const ROUTE_INFERENCE_MIN_MOVEMENT = 30;
 const ROUTE_INFERENCE_MIN_FORWARD = 12;
 const MATCHED_IDENTITY_GRACE_MS = 3*60*1000;
 const MATCHED_IDENTITY_MAX_SKEW_MS = 3*60*1000;
-const MATCHED_IDENTITY_MAX_METRES = 2500;
+const MATCHED_IDENTITY_MAX_METRES = 1200;
 const MATCHED_IDENTITY_WAIT_MS = 1200;
 const MATCHED_HANDOVER_MAX_LAG_MS = 45*1000;
 const ROUTE_INFERENCE_MIN_MARGIN = 90;
@@ -1895,7 +1897,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionState,disruptionActive,disruptionRelevant,disruptionAppliesToService,boardPatternRecords,disruptionMatches,disruptionReasonLabel,disruptionTimingText,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,directionAnchor,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',at:0,value:null};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionFeedAgeMs,disruptionFeedDelayed,disruptionState,disruptionActive,disruptionRelevant,disruptionAppliesToService,boardPatternRecords,disruptionMatches,disruptionReasonLabel,disruptionTimingText,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,directionAnchor,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',at:0,value:null};}};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -2705,28 +2707,34 @@ function activateTimetable(data,source,region,meta){
   const info=meta||{};S.timetable=data||null;S.timetableSource=source||'';S.timetableRegion=region||'';
   S.timetableBuilt=String(info.built||(data&&data.built)||'');S.timetableFallback=!!info.fallback;S.timetableUnknownServices=0;PATTERN_CACHE.clear();
 }
+let FALLBACK_TIMETABLE_PROMISE=null;
 async function loadTimetable(){
-  S.ttError=null;
-  try{
-    const r=await fetchTimed('timetable.json',{cache:'no-cache'},12000);
-    if(!r.ok) throw new Error(r.status===404?'not installed':'HTTP '+r.status);
-    const raw=await r.text(); if(!raw.trim()) throw new Error('empty timetable file');
-    const data=JSON.parse(raw);
-    if(!data||!data.stops||typeof data.stops!=='object'||!Object.keys(data.stops).length) throw new Error('no stop data');
-    S.fallbackTimetable=data;
-    if(S.timetableSource!=='national') activateTimetable(data,'regional','west_midlands');
-  }catch(e){
-    S.fallbackTimetable=null;
-    if(S.timetableSource!=='national') activateTimetable(null,'','');
-    S.ttError=(e&&e.name==='AbortError')?'timed out':String((e&&e.message)||'could not be read');
-  }
-  if(S.stop) loadStopTimetable(S.stop);
+  if(S.fallbackTimetable) return S.fallbackTimetable;
+  if(FALLBACK_TIMETABLE_PROMISE) return FALLBACK_TIMETABLE_PROMISE;
+  FALLBACK_TIMETABLE_PROMISE=(async()=>{
+    try{
+      const r=await fetchTimed('timetable.json',{cache:'no-cache'},20000);
+      if(!r.ok) throw new Error(r.status===404?'not installed':'HTTP '+r.status);
+      const raw=await r.text(); if(!raw.trim()) throw new Error('empty timetable file');
+      const data=JSON.parse(raw);
+      if(!data||!data.stops||typeof data.stops!=='object'||!Object.keys(data.stops).length) throw new Error('no stop data');
+      S.fallbackTimetable=data;
+      return data;
+    }catch(e){
+      S.fallbackTimetable=null;
+      throw e;
+    }finally{ FALLBACK_TIMETABLE_PROMISE=null; }
+  })();
+  return FALLBACK_TIMETABLE_PROMISE;
 }
 async function loadStopTimetable(stop){
   const run=++S.timetableRun;
   S.ttError=null;
-  activateTimetable(S.fallbackTimetable,S.fallbackTimetable?'regional':'',S.fallbackTimetable?'west_midlands':'');
-  S.ttStop=matchTimetableStop(stop); updateStopMeta(); renderServingNote(); renderDests(); render();
+  // The national stop/departure shards are the primary path and are tiny. Do
+  // not download and parse the 50 MB regional fallback during every startup;
+  // it is loaded only if the national path actually fails for this stop.
+  activateTimetable(null,'','');
+  S.ttStop=null; updateStopMeta(); renderServingNote(); renderDests(); render();
   try{
     const matched=await loadBestNationalStop(stop);
     if(run!==S.timetableRun||!S.stop||String(S.stop.id)!==String(stop.id)) return;
@@ -2736,7 +2744,21 @@ async function loadStopTimetable(stop){
     if(!stop.ind&&raw.ind) stop.ind=String(raw.ind);
     activateTimetable(matched.data,'national',matched.region,{built:matched.data&&matched.data.built,fallback:matched.fallback}); S.ttError=null;
     S.ttStop={id:matched.id,...matched.timetableStop,match:'code'};
-  }catch(e){ if(run!==S.timetableRun) return; S.ttError=String((e&&e.message)||'national timetable unavailable'); }
+  }catch(e){
+    if(run!==S.timetableRun) return;
+    const nationalError=String((e&&e.message)||'national timetable unavailable');
+    try{
+      const fallback=await loadTimetable();
+      if(run!==S.timetableRun) return;
+      activateTimetable(fallback,'regional','west_midlands',{fallback:true});
+      S.ttStop=matchTimetableStop(stop);
+      S.ttError=S.ttStop?'National timetable unavailable; using regional fallback':nationalError;
+    }catch(fallbackError){
+      if(run!==S.timetableRun) return;
+      activateTimetable(null,'',''); S.ttStop=null;
+      S.ttError=nationalError+'; fallback '+String((fallbackError&&fallbackError.message)||'unavailable');
+    }
+  }
   updateStopMeta(); renderServingNote(); renderDests(); render();
 }
 function looksLikeAtco(value){ return /^\d{3}0[A-Za-z0-9]{4,8}$/.test(String(value||'').trim()); }
@@ -2819,7 +2841,7 @@ function timetableRows(now){
       const originRaw=parseDepMinutes(e[10]), hasOrigin=isFinite(originRaw);
       const originMins=hasOrigin?originRaw:null;
       const originAt=hasOrigin?serviceDepartureTime(serviceDate,originRaw).getTime():null;
-      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, direction:e[4], trip:e[5]||'', pattern:e[6]||'', routeId:String(e[7]||''), operator:String(e[8]||''), stopSequence:Number.isFinite(Number(e[9]))?Number(e[9]):null, originMins, originAt});
+      out.push({at:at.getTime(), mins, line:cleanLine(e[1]), head:cleanName(e[2]||''), service, serviceDate:serviceDateKey(serviceDate), direction:e[4], trip:e[5]||'', pattern:e[6]||'', routeId:String(e[7]||''), operator:String(e[8]||''), stopSequence:Number.isFinite(Number(e[9]))?Number(e[9]):null, originMins, originAt});
     }
   }
   TIMETABLE_ROWS_CACHE={stop,timetable:S.timetable,run:S.timetableRun,day,rows:out,byLine:indexTimetableRows(out)};
@@ -3194,11 +3216,19 @@ function exactStopContradiction(v,evidence,matchedRow){
 }
 const EXACT_STOP_PROOF_FIELDS = [
   'routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern',
-  'routeVerifiedExactStopIndex','routeVerifiedExactAt'
+  'routeVerifiedExactStopIndex','routeVerifiedExactServiceKey','routeVerifiedExactGpsTs','routeVerifiedExactAt'
 ];
+const EXACT_STOP_PROOF_MAX_AGE_MS = MAX_AGE_MS+GPS_RESULT_GRACE_MS;
+function exactStopProofIdentityKey(v,trip,pattern){
+  const tripId=String(trip||'').trim(), patternId=String(pattern||'').trim();
+  if(tripId&&String(v&&v.matchedTrip||'')===tripId){
+    return String(v&&v.matchedServiceKey||matchedServiceInstanceKey(v)||('trip|'+tripId));
+  }
+  return tripId?'trip|'+tripId:patternId?'pattern|'+patternId:'';
+}
 function currentExactStopProof(v,evidence,inference,matchedRow,now=Date.now()){
-  if(!authoritativePatternStopRequired()) return {required:false,known:true,serves:true,stopId:String(S.stop&&S.stop.id||''),trip:'',pattern:'',index:-1,at:now};
-  if(!S.stop) return {required:true,known:false,serves:false,stopId:'',trip:'',pattern:'',index:-1,at:now};
+  if(!authoritativePatternStopRequired()) return {required:false,known:true,serves:true,stopId:String(S.stop&&S.stop.id||''),trip:'',pattern:'',serviceKey:'',index:-1,gpsTs:Number(v&&v.ts)||0,at:now};
+  if(!S.stop) return {required:true,known:false,serves:false,stopId:'',trip:'',pattern:'',serviceKey:'',index:-1,gpsTs:Number(v&&v.ts)||0,at:now};
   const candidates=[];
   if(matchedRow){
     candidates.push({trip:String(matchedRow.trip||evidence&&evidence.matchedTrip||''),pattern:String(matchedRow.pattern||''),stopSequence:matchedRow.stopSequence});
@@ -3208,15 +3238,23 @@ function currentExactStopProof(v,evidence,inference,matchedRow,now=Date.now()){
   if(evidenceTrip||evidencePattern) candidates.push({trip:evidenceTrip,pattern:evidencePattern,stopSequence:undefined});
   const inferredPattern=String(inference&&inference.patternId||inference&&inference.pattern&&inference.pattern.id||'');
   if(inferredPattern) candidates.push({trip:'',pattern:inferredPattern,stopSequence:undefined});
-  let sawKnown=false;
+  let sawKnown=false, serving=null, contradiction=null;
   for(const candidate of candidates){
     const check=exactTripSelectedStopEvidence(candidate.trip,candidate.pattern,S.stop,candidate.stopSequence);
     if(!check.known) continue;
     sawKnown=true;
-    if(!check.serves) return {required:true,known:true,serves:false,stopId:String(S.stop.id),trip:candidate.trip,pattern:String(check.pattern&&check.pattern.id||candidate.pattern||''),index:check.index,at:now};
-    return {required:true,known:true,serves:true,stopId:String(S.stop.id),trip:candidate.trip,pattern:String(check.pattern&&check.pattern.id||candidate.pattern||''),index:check.index,at:now};
+    const pattern=String(check.pattern&&check.pattern.id||candidate.pattern||'');
+    const proof={required:true,known:true,serves:!!check.serves,stopId:String(S.stop.id),trip:candidate.trip,pattern,
+      serviceKey:exactStopProofIdentityKey(v,candidate.trip,pattern),index:check.index,gpsTs:Number(v&&v.ts)||0,at:now};
+    if(check.serves){ if(!serving) serving=proof; }
+    else if(!contradiction) contradiction=proof;
   }
-  return {required:true,known:sawKnown,serves:false,stopId:String(S.stop.id),trip:'',pattern:'',index:-1,at:now};
+  // A known candidate that omits the selected ATCO stop is stronger than a
+  // different candidate merely serving it. This prevents a stale retained
+  // pattern from rescuing a newer opposite-kerb journey during handover.
+  if(contradiction) return contradiction;
+  if(serving) return serving;
+  return {required:true,known:sawKnown,serves:false,stopId:String(S.stop.id),trip:'',pattern:'',serviceKey:'',index:-1,gpsTs:Number(v&&v.ts)||0,at:now};
 }
 function rememberExactStopProof(v,proof,now=Date.now()){
   if(!v||!proof||!proof.serves||!S.stop) return false;
@@ -3224,13 +3262,24 @@ function rememberExactStopProof(v,proof,now=Date.now()){
   v.routeVerifiedExactTrip=String(proof.trip||'');
   v.routeVerifiedExactPattern=String(proof.pattern||'');
   v.routeVerifiedExactStopIndex=Number.isFinite(Number(proof.index))?Number(proof.index):-1;
+  v.routeVerifiedExactServiceKey=String(proof.serviceKey||exactStopProofIdentityKey(v,proof.trip,proof.pattern));
+  v.routeVerifiedExactGpsTs=Number(proof.gpsTs)||Number(v.ts)||0;
   v.routeVerifiedExactAt=now;
   return true;
 }
-function hasExactStopRetentionProof(v){
+function hasExactStopRetentionProof(v,evidence=null,inference=null,now=Date.now()){
   if(!authoritativePatternStopRequired()) return true;
   if(!v||!S.stop) return false;
-  return v.routeVerifiedExactStopId===String(S.stop.id)&&Number(v.routeVerifiedExactAt)>0;
+  const at=Number(v.routeVerifiedExactAt)||0;
+  if(v.routeVerifiedExactStopId!==String(S.stop.id)||!at||now-at>EXACT_STOP_PROOF_MAX_AGE_MS) return false;
+  const proofTrip=String(v.routeVerifiedExactTrip||''), currentTrip=String(evidence&&evidence.matchedTrip||v.matchedTrip||v.progressTrip||'');
+  if(proofTrip&&currentTrip&&proofTrip!==currentTrip) return false;
+  const proofPattern=String(v.routeVerifiedExactPattern||''), currentPattern=String(inference&&inference.patternId||evidence&&evidence.patternId||v.progressPattern||v.inferredPattern||'');
+  if(proofPattern&&currentPattern&&proofPattern!==currentPattern) return false;
+  const proofService=String(v.routeVerifiedExactServiceKey||''), currentService=String(v.matchedServiceKey||matchedServiceInstanceKey(v));
+  if(proofService&&currentService&&proofService!==currentService) return false;
+  const proofGps=Number(v.routeVerifiedExactGpsTs)||0, currentGps=Number(v.ts)||0;
+  return !proofGps||!currentGps||currentGps>=proofGps;
 }
 function selectedPatternStopIndexForEvidence(stops,selectedStop,fromAlong,stopSequence){
   return authoritativePatternStopRequired()
@@ -3524,6 +3573,26 @@ function matchedVehicleToken(value){
   if(!raw) return '';
   return /^0+\d+$/.test(raw)?raw.replace(/^0+/,''):raw.toLowerCase();
 }
+function matchedServiceInstanceKey(identity){
+  const trip=String(identity&&(identity.matchedTrip||identity.tripId||identity.trip)||'').trim();
+  if(!trip) return '';
+  const date=String(identity&&(identity.matchedStartDate||identity.startDate)||'').replace(/[^0-9]/g,'');
+  const start=String(identity&&(identity.matchedStartTime||identity.startTime)||'').trim();
+  const direction=String(identity&&(identity.matchedDirectionId||identity.directionId)||'').trim();
+  return ['trip',trip,date,start,direction].join('|');
+}
+function matchedServiceInstanceRows(rows,identity){
+  const list=Array.isArray(rows)?rows:[];
+  const date=String(identity&&identity.matchedStartDate||'').replace(/[^0-9]/g,'');
+  const start=parseDepMinutes(identity&&identity.matchedStartTime);
+  const direction=String(identity&&identity.matchedDirectionId||'').trim();
+  return list.filter(row=>{
+    if(date&&row.serviceDate&&String(row.serviceDate)!==date) return false;
+    if(Number.isFinite(start)&&Number.isFinite(Number(row.originMins))&&Math.abs(Number(row.originMins)-start)>1) return false;
+    if(direction&&String(row.direction||'').trim()&&String(row.direction)!==direction) return false;
+    return true;
+  });
+}
 function matchedRecordKey(match){
   const entity=String(match&&match.entityId||'').trim();
   if(entity) return 'entity|'+entity;
@@ -3588,7 +3657,7 @@ function applyMatchedIdentities(vehicles,matches,now=Date.now()){
         const identityAge=Math.max(0,now-timestamp);
         if(identityAge>matchedIdentityFreshnessMs(v)) continue;
         const metres=dist(Number(v.lat),Number(v.lon),Number(match.lat),Number(match.lon));
-        const allowed=Math.min(MATCHED_IDENTITY_MAX_METRES,250+skew/1000*22);
+        const allowed=Math.min(MATCHED_IDENTITY_MAX_METRES,180+skew/1000*12);
         if(!Number.isFinite(metres)||metres>allowed) continue;
         candidates.push({match,key,metres,skew,lag:Math.max(0,referenceTs-timestamp)});
       }
@@ -3613,6 +3682,13 @@ function applyMatchedIdentities(vehicles,matches,now=Date.now()){
     claimed.add(best.key);
     v.matchedTrip=String(best.match.tripId);
     v.matchedRouteId=String(best.match.routeId||'');
+    v.matchedStartDate=String(best.match.startDate||'');
+    v.matchedStartTime=String(best.match.startTime||'');
+    v.matchedDirectionId=best.match.directionId==null?'':String(best.match.directionId);
+    v.matchedCurrentStopSequence=Number.isFinite(Number(best.match.currentStopSequence))?Number(best.match.currentStopSequence):null;
+    v.matchedCurrentStatus=String(best.match.currentStatus||'');
+    v.matchedStopId=String(best.match.stopId||'');
+    v.matchedServiceKey=matchedServiceInstanceKey(best.match);
     v.matchedTripAt=now;
     v.matchedObservationAt=Number(best.match.timestamp);
     v.matchedLagMs=best.lag;
@@ -4288,7 +4364,7 @@ function vehicleContinuitySeed(previous){
   const seed={hist:[],speed:null,motionSpeed:null,cadence:null};
   if(!previous) return seed;
   seed.hist=(Array.isArray(previous.hist)?previous.hist:[]).slice(-7).map(point=>({...point}));
-  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter','routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon','routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest','routeVerifiedBoardDir','routeVerifiedDestFilter','routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern','routeVerifiedExactStopIndex','routeVerifiedExactAt']){
+  for(const field of ['speed','motionSpeed','cadence','stationaryAt','lastShownStopId','lastShownAt','lastShownArrivalAt','lastShownBoardDir','lastShownDestFilter','routeVerifiedStopId','routeVerifiedAt','routeVerifiedGpsTs','routeVerifiedLat','routeVerifiedLon','routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest','routeVerifiedBoardDir','routeVerifiedDestFilter','routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern','routeVerifiedExactStopIndex','routeVerifiedExactServiceKey','routeVerifiedExactGpsTs','routeVerifiedExactAt']){
     if(previous[field]!==undefined) seed[field]=previous[field];
   }
   if(previous.lastShownSnapshot) seed.lastShownSnapshot={...previous.lastShownSnapshot,v:null};
@@ -4320,14 +4396,24 @@ function retainMatchedIdentity(prev,v,now=Date.now()){
   if(!prev||!v||v.matchedTrip) return false;
   const sameService=String(prev.line||'')===String(v.line||'')
     &&String(prev.owner||prev.operator||'')===String(v.owner||v.operator||'');
+  const previousOrigin=Number(prev.aimedOriginAt), nextOrigin=Number(v.aimedOriginAt);
+  const originChanged=Number.isFinite(previousOrigin)&&Number.isFinite(nextOrigin)
+    &&Math.abs(previousOrigin-nextOrigin)>ORIGIN_MATCH_TOLERANCE_MS;
   const matchedAt=Number(prev.matchedTripAt);
-  if(!sameService||!prev.matchedTrip||!Number.isFinite(matchedAt)||now-matchedAt>MATCHED_IDENTITY_GRACE_MS) return false;
+  if(!sameService||originChanged||!prev.matchedTrip||!Number.isFinite(matchedAt)||now-matchedAt>MATCHED_IDENTITY_GRACE_MS) return false;
   const nextReferenceTs=Number.isFinite(Number(v.sourceTs))?Number(v.sourceTs):Number(v.ts);
   const previousObservation=Number(prev.matchedObservationAt);
   const observationAge=Number.isFinite(nextReferenceTs)&&Number.isFinite(previousObservation)?Math.max(0,nextReferenceTs-previousObservation):Infinity;
   if(observationAge>matchedIdentityFreshnessMs(v)) return false;
   v.matchedTrip=String(prev.matchedTrip);
   v.matchedRouteId=String(prev.matchedRouteId||'');
+  v.matchedStartDate=String(prev.matchedStartDate||'');
+  v.matchedStartTime=String(prev.matchedStartTime||'');
+  v.matchedDirectionId=String(prev.matchedDirectionId||'');
+  v.matchedCurrentStopSequence=Number.isFinite(Number(prev.matchedCurrentStopSequence))?Number(prev.matchedCurrentStopSequence):null;
+  v.matchedCurrentStatus=String(prev.matchedCurrentStatus||'');
+  v.matchedStopId=String(prev.matchedStopId||'');
+  v.matchedServiceKey=String(prev.matchedServiceKey||matchedServiceInstanceKey(prev));
   v.matchedTripAt=matchedAt;
   v.matchedObservationAt=Number(prev.matchedObservationAt);
   const referenceTs=Number.isFinite(Number(v.sourceTs))?Number(v.sourceTs):Number(v.ts);
@@ -4350,11 +4436,19 @@ function ingest(list){
     // must not reappear beside the newer record as a second, older departure.
     if(!prev && supersededByNewerRecord(v,batch)) continue;
     retainMatchedIdentity(prev,v,now);
-    const matchedJourneyChanged=!!(prev&&prev.matchedTrip&&v.matchedTrip&&String(prev.matchedTrip)!==String(v.matchedTrip));
-    const matchedIdentityStable=!!(prev&&prev.matchedTrip&&v.matchedTrip&&String(prev.matchedTrip)===String(v.matchedTrip));
+    const previousMatchedService=String(prev&&prev.matchedServiceKey||matchedServiceInstanceKey(prev));
+    const nextMatchedService=String(v&&v.matchedServiceKey||matchedServiceInstanceKey(v));
+    const matchedJourneyChanged=!!(prev&&prev.matchedTrip&&v.matchedTrip&&(
+      String(prev.matchedTrip)!==String(v.matchedTrip)
+      ||(previousMatchedService&&nextMatchedService&&previousMatchedService!==nextMatchedService)
+    ));
+    const matchedIdentityStable=!!(prev&&prev.matchedTrip&&v.matchedTrip&&String(prev.matchedTrip)===String(v.matchedTrip)
+      &&(!previousMatchedService||!nextMatchedService||previousMatchedService===nextMatchedService));
     const rawJourneyChanged=!!(prev&&prev.journey&&v.journey&&prev.journey!==v.journey);
     const journeyChanged=matchedJourneyChanged||(rawJourneyChanged&&!matchedIdentityStable);
-    const routeIdentityChanged=!!(prev&&(String(prev.line)!==String(v.line)||String(prev.operator||'')!==String(v.operator||'')));
+    const routeIdentityChanged=!!(prev&&(String(prev.line)!==String(v.line)
+      ||String(prev.lineRef||'')!==String(v.lineRef||'')
+      ||String(prev.owner||prev.operator||'')!==String(v.owner||v.operator||'')));
     const reportGap=prev&&v.ts>prev.ts?(v.ts-prev.ts)/1000:0;
     const reportMove=prev&&v.ts>prev.ts?dist(prev.lat,prev.lon,v.lat,v.lon):0;
     const trackDiscontinuity=!!(prev&&!journeyChanged&&(reportGap>180||reportMove>3000));
@@ -4395,7 +4489,9 @@ function ingest(list){
     const corridorExpired=!!(prev&&!v.corridorTracked&&sameJourney&&prev.corridorTrip&&!keepCorridor);
     const corridor=keepCorridor?{trip:prev.corridorTrip,remaining:prev.corridorRemaining,at:prev.corridorConfirmedAt}:null;
     if(journeyChanged){delete rec.routeProjection;delete rec.corridorTrip;delete rec.corridorRemaining;delete rec.corridorConfirmedAt;delete rec.lastShownSnapshot;delete rec.lastShownAt;delete rec.lastShownArrivalAt;}
-    if(prev&&prev.matchedTrip&&!v.matchedTrip){delete rec.matchedTrip;delete rec.matchedRouteId;delete rec.matchedTripAt;delete rec.matchedObservationAt;delete rec.matchedLagMs;delete rec.matchSource;delete rec.matchedSticky;}
+    if(prev&&prev.matchedTrip&&!v.matchedTrip){
+      for(const field of ['matchedTrip','matchedRouteId','matchedStartDate','matchedStartTime','matchedDirectionId','matchedCurrentStopSequence','matchedCurrentStatus','matchedStopId','matchedServiceKey','matchedTripAt','matchedObservationAt','matchedLagMs','matchSource','matchedSticky']) delete rec[field];
+    }
     Object.assign(rec, v);
     if(corridor){ rec.corridorTrip=corridor.trip; rec.corridorRemaining=corridor.remaining; rec.corridorConfirmedAt=corridor.at; rec.corridorTracked=true; }
     else if(corridorExpired){ delete rec.corridorTrip; delete rec.corridorRemaining; delete rec.corridorConfirmedAt; rec.corridorTracked=false; }
@@ -4724,11 +4820,11 @@ function routeEvidence(line,dest,journey,identity){
   const allRows=timetableRowsForLine(l,new Date());
   const realtimeTrip=String(identity&&identity.matchedTrip||'');
   const matchedRoute=routeIdentityToken(identity&&identity.matchedRouteId);
-  const exactRealtimeRows=realtimeTrip?timetableRows(new Date()).filter(row=>{
+  const exactRealtimeRows=realtimeTrip?matchedServiceInstanceRows(timetableRows(new Date()).filter(row=>{
     if(String(row.trip)!==realtimeTrip||String(row.line)!==l) return false;
     const rowRoute=routeIdentityToken(row.routeId);
     return !matchedRoute||!rowRoute||rowRoute===matchedRoute;
-  }):[];
+  }),identity):[];
   let journeyDestinationConflict=false, conflictingTrip='';
   if(exactRealtimeRows.length){
     const realtimeInfo=timetableIdentityRows(exactRealtimeRows,identity);
@@ -4849,9 +4945,10 @@ function gpsLiveDisplayFresh(v,now=Date.now()){
 function scheduleEtaBlendWeight(evidence,quality){
   // Journey identity establishes *which* departure this is; it must not drag a
   // fresh GPS prediction back towards the static timetable. Fresh live data gets
-  // only a small stabilising correction. Delayed positions may lean slightly
-  // more on schedule, but never at the old 32-42% weights.
-  if(!quality||!quality.fresh) return .12;
+  // only a small correction. Once GPS is delayed, an exact service instance may
+  // lean 35% on schedule (route-only evidence 25%) so an old position does not
+  // dominate while movement still remains the majority signal.
+  if(!quality||!quality.fresh) return (evidence&&evidence.journeyMatch) ? .35 : .25;
   if(evidence&&evidence.inferredJourney) return .08;
   if(evidence&&evidence.journeyMatch) return .06;
   return timetableTrusted(evidence) ? .08 : .10;
@@ -4863,7 +4960,9 @@ function remainingStopsToTarget(v,stop){
   if(!pattern) return 0;
   const vehicle=projectVehicleToPattern(pattern,v);
   if(!vehicle||vehicle.metres>800) return 0;
-  const stops=orderedPatternStops(pattern),targetIndex=selectedPatternStopIndex(stops,stop,vehicle.along);
+  const stops=orderedPatternStops(pattern),targetIndex=selectedPatternStopIndexForEvidence(
+    stops,stop,vehicle.along,v&&v.progressStopSequence
+  );
   if(targetIndex<=0) return 0;
   return stops.slice(0,targetIndex).filter(call=>Number(call.along)>Number(vehicle.along)+25).length;
 }
@@ -4916,7 +5015,10 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   // extrapolation using the bus's own reporting cadence so a delayed feed does
   // not keep counting down as if the vehicle were still moving normally.
   const cadenceForAge=quality.cadence||Math.max(10,Number(S.interval)||15);
-  const ageCredit=motion.stationary?0:Math.min(quality.age,Math.max(20,cadenceForAge*1.25),60);
+  // A position age is not evidence that the vehicle moved continuously for the
+  // whole gap. Credit only half one expected report interval and never more
+  // than twenty seconds; delayed fixes lean on the matched schedule instead.
+  const ageCredit=motion.stationary||!quality.fresh?0:Math.min(quality.age,Math.max(8,cadenceForAge*.5),20);
   let spatial = Math.max(road/MAX_SPEED, road/sp + dwell - ageCredit);
   const liveSecs=spatial;
   const baseJourneyRef=vehicleJourneyRef(v);
@@ -5175,7 +5277,7 @@ out tags;`});
   return queries;
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,exactTripSelectedStopEvidence,exactStopContradiction,currentExactStopProof,hasExactStopRetentionProof,matchedIdentityFreshnessMs,exactIdentityScheduleClaim,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeEvidenceWithContinuity,rememberRouteContinuity,routeContinuityGapMs,exactTripSelectedStopEvidence,exactStopContradiction,currentExactStopProof,hasExactStopRetentionProof,matchedServiceInstanceKey,matchedServiceInstanceRows,matchedIdentityFreshnessMs,exactIdentityScheduleClaim,journeyDestinationAgreement,journeyDestinationWordingOnly,setVehicleProgressIdentity,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,etaFreshWindowSeconds,etaGpsQuality,gpsLiveDisplayFresh,GPS_LIVE_DISPLAY_SECONDS,scheduleEtaBlendWeight,remainingStopsToTarget,etaMotionModel,inferVehicleJourneyPattern,inferredRouteEvidence,inferredRouteScanMatch,authoritativeDiscoveredStopId,likelyOppositeStopPair,stopSelectionCandidates,stopSelectionNeedsChoice,matchTimetableStop,visualVehiclePosition,savedOriginSource,ukDateTimeParts,ukServiceDate,serviceDateKey,ukWallClockEpoch,formatClock,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,dueWithin,LIVE_DUE_SECONDS,SCHEDULE_DUE_SECONDS,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
 }
 
 async function fetchRoutesFor(stop){
@@ -5324,7 +5426,7 @@ function retainedGpsGraceMs(now=Date.now()){
 function retainedSnapshotRow(v,now=Date.now(),gpsLost=true){
   if(!v||!v.lastShownSnapshot||!S.stop) return null;
   if(v.lastShownStopId!==String(S.stop.id)) return null;
-  if(!hasExactStopRetentionProof(v)) return null;
+  if(!hasExactStopRetentionProof(v,null,null,now)) return null;
   if(v.lastShownBoardDir!==S.dir) return null;
   if(String(v.lastShownDestFilter||'')!==String(S.destFilter||'')) return null;
   const gpsAt=Number(v.ts)||0;
@@ -5491,7 +5593,7 @@ const ROUTE_CONTINUITY_FIELDS = [
   'routeVerifiedStopDistance','routeVerifiedLine','routeVerifiedOwner','routeVerifiedDest',
   'routeVerifiedBoardDir','routeVerifiedDestFilter',
   'routeVerifiedExactStopId','routeVerifiedExactTrip','routeVerifiedExactPattern',
-  'routeVerifiedExactStopIndex','routeVerifiedExactAt'
+  'routeVerifiedExactStopIndex','routeVerifiedExactServiceKey','routeVerifiedExactGpsTs','routeVerifiedExactAt'
 ];
 function clearRouteContinuity(v){
   if(!v) return;
@@ -5500,7 +5602,7 @@ function clearRouteContinuity(v){
 function routeContinuityContextMatches(v){
   if(!v||!S.stop) return false;
   if(v.routeVerifiedStopId!==String(S.stop.id)) return false;
-  if(!hasExactStopRetentionProof(v)) return false;
+  if(!hasExactStopRetentionProof(v,null,null,Date.now())) return false;
   if(v.routeVerifiedBoardDir!==S.dir) return false;
   if(String(v.routeVerifiedDestFilter||'')!==String(S.destFilter||'')) return false;
   if(String(v.routeVerifiedLine||'')!==String(v.line||'')) return false;
@@ -5575,10 +5677,13 @@ function setVehicleProgressIdentity(v,evidence,inference,matchedRow){
   if(inferredPattern){
     v.progressTrip='';
     v.progressPattern=inferredPattern;
+    v.progressStopSequence=null;
     return;
   }
   v.progressTrip=v.progressIdentityBlocked?'':String(evidence&&evidence.matchedTrip||v.corridorTrip||v.journey||'');
   v.progressPattern=String(matchedRow&&matchedRow.pattern||'');
+  v.progressStopSequence=!v.progressIdentityBlocked&&Number.isFinite(Number(matchedRow&&matchedRow.stopSequence))
+    ?Number(matchedRow.stopSequence):null;
 }
 function collect(gate,diagnostics){
   const out=[], now=Date.now();
@@ -5602,7 +5707,9 @@ function collect(gate,diagnostics){
     let evidence=routeEvidence(v.line,v.dest,journeyRef,v);
     const inference=!evidence.journeyMatch?inferVehicleJourneyPattern(v,S.stop,now):null;
     evidence=inferredRouteEvidence(evidence,inference);
-    let matchedRows=evidence.matchedTrip?timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)):[];
+    let matchedRows=evidence.matchedTrip?matchedServiceInstanceRows(
+      timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)),v
+    ):[];
     let matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
     let matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
     const stopContradiction=exactStopContradiction(v,evidence,matchedRow);
@@ -5612,9 +5719,19 @@ function collect(gate,diagnostics){
       rejectLive(diagnostics,'exactStop',v); continue;
     }
     const exactProof=currentExactStopProof(v,evidence,inference,matchedRow,now);
+    const retainedExactProof=hasExactStopRetentionProof(v,evidence,inference,now);
+    if(exactProof.required&&exactProof.known&&!exactProof.serves){
+      clearRouteContinuity(v);
+      delete v.lastShownSnapshot; delete v.lastShownAt; delete v.lastShownArrivalAt;
+      rejectLive(diagnostics,'exactStop',v); continue;
+    }
+    if(exactProof.required&&!exactProof.serves&&!retainedExactProof){
+      clearRouteContinuity(v);
+      rejectLive(diagnostics,'exactStop',v); continue;
+    }
     if(evidence.score>=2) rememberRouteContinuity(v,evidence,now,exactProof);
     else evidence=routeEvidenceWithContinuity(v,evidence,now);
-    if(evidence.routeContinuity&&!hasExactStopRetentionProof(v)){
+    if(evidence.routeContinuity&&!hasExactStopRetentionProof(v,evidence,inference,now)){
       clearRouteContinuity(v);
       rejectLive(diagnostics,'exactStop',v); continue;
     }
@@ -5731,8 +5848,8 @@ function collect(gate,diagnostics){
     out.push(row);
   }
   out.sort((a,b)=>a.secs-b.secs);
-  const limited=out.slice(0,25);
-  for(const row of out.slice(25)) rejectLive(diagnostics,'limit',row.v);
+  const limited=out.slice(0,MAX_LIVE_ROWS);
+  for(const row of out.slice(MAX_LIVE_ROWS)) rejectLive(diagnostics,'limit',row.v);
   if(diagnostics) diagnostics.shown=limited.length;
   return limited;
 }
@@ -5780,7 +5897,7 @@ function renderLiveDiagnostics(){
    passenger is told where these buses go rather than a compass point or a town
    that may not be on any route from here. */
 function stopDestinationNames(){
-  if(!S.stop) return [];
+  if(!S.stop) return {names:[],live:{}};
   const bag={...(S.destsByStop[String(S.stop.id)]||{})};
   const now=Date.now();
   timetableRows(new Date()).filter(r=>r.at>now-2*3600000 && r.at<now+20*3600000 && r.head).forEach(r=>{ if(!bag[r.head]) bag[r.head]=now-1; });
@@ -6120,8 +6237,15 @@ function validDisruptionFeed(data){
   const built=Date.parse(data.built||'');
   return isFinite(built)&&Date.now()-built<=DISRUPTIONS_MAX_AGE;
 }
+function disruptionFeedAgeMs(feed=DISRUPTIONS,now=Date.now()){
+  const built=Date.parse(feed&&feed.built||'');
+  return Number.isFinite(built)?Math.max(0,Number(now)-built):Infinity;
+}
+function disruptionFeedDelayed(feed=DISRUPTIONS,now=Date.now()){
+  return disruptionFeedAgeMs(feed,now)>DISRUPTIONS_WARN_AGE;
+}
 function disruptionFeedReady(){
-  return !!(DISRUPTIONS&&DISRUPTIONS_INDEX&&Array.isArray(DISRUPTIONS.situations));
+  return !!(validDisruptionFeed(DISRUPTIONS)&&DISRUPTIONS_INDEX&&Array.isArray(DISRUPTIONS.situations));
 }
 async function loadDisruptions(force){
   const now=Date.now();
@@ -6238,8 +6362,10 @@ function bearingWords(bearing){
 /* One line of plain English under the stop name. The bearing is the direction a
    bus faces at the stop, which is what tells you the side of the road. */
 function stopFactsHtml(stop){
-  const record=stopAttributes(stop);
-  if(!record) return '';
+  const record=stopAttributes(stop)||{};
+  const indicator=String(stop&&stop.ind||S.ttStop&&S.ttStop.ind||'').trim();
+  const atco=naptanCodesFor(stop)[0]||'';
+  if(!Object.keys(record).length&&!indicator&&!atco) return '';
   const street=String(record.s||'').trim();
   /* A compass bearing is the raw NaPTAN fact, not the useful one: "south-west"
      asks somebody to know which way south-west is. Where the timetable says
@@ -6256,6 +6382,10 @@ function stopFactsHtml(stop){
   else if(facing) parts.push('Buses here face <b>'+esc(facing)+'</b>.');
   const type=NAPTAN_STOP_TYPES[String(record.t||'').trim().toUpperCase()];
   if(type) parts.push('<span class="stopflag">'+esc(type.label)+'</span> <span class="stopflag-note">'+esc(type.note)+'</span>');
+  if(indicator||atco){
+    const label=indicator?'Stop '+indicator:'Exact stop';
+    parts.push('<span class="stopflag">'+esc(label)+'</span>'+(atco?' <span class="stopflag-note">ATCO '+esc(atco)+'</span>':''));
+  }
   return parts.join(' ');
 }
 function renderStopFacts(){
@@ -6483,10 +6613,18 @@ function renderDisruptions(){
   }
   if(Date.now()-DISRUPTIONS_AT>=DISRUPTIONS_REFRESH_MS) loadDisruptions();
   const matches=disruptionMatches(Date.now());
-  if(!matches.length){ host.hidden=true; host.innerHTML=''; return; }
+  const delayed=disruptionFeedDelayed(), ageHours=Math.max(1,Math.round(disruptionFeedAgeMs()/3600000));
+  if(!matches.length){
+    if(!delayed){ host.hidden=true; host.innerHTML=''; return; }
+    host.hidden=false;
+    host.innerHTML='<div class="disruptions-head">Disruption updates delayed</div>'
+      +'<div class="disrupt-src">The last valid DfT disruption feed is '+ageHours+' hours old. No current warning is shown for this stop; check the operator before travelling.</div>';
+    return;
+  }
   const shown=matches.slice(0,DISRUPTIONS_MAX_SHOWN), hidden=matches.length-shown.length;
   host.hidden=false;
-  host.innerHTML='<div class="disruptions-head">'
+  host.innerHTML=(delayed?'<div class="disrupt-src">DfT disruption updates are delayed; last valid feed '+ageHours+' hours ago.</div>':'')
+    +'<div class="disruptions-head">'
     +esc(matches.length===1?'1 disruption or planned change on your routes':matches.length+' disruptions or planned changes on your routes')+'</div>'
     +shown.map(entry=>{
       const situation=entry.situation, id=String(situation.id||''), open=DISRUPTIONS_EXPANDED.has(id), upcoming=entry.state==='upcoming';
@@ -7161,7 +7299,7 @@ function renderFeedStats(){
   $('statStopAreas').textContent=NAPTAN_INDEX?formatStat(Object.keys((NAPTAN_INDEX&&NAPTAN_INDEX.areas)||{}).length):'—';
 
   const states=[];
-  if(feed) states.push('disruptions live'); else if(DISRUPTIONS_ERROR) states.push('disruptions unavailable');
+  if(feed) states.push(disruptionFeedDelayed(feed,now)?'disruptions delayed':'disruptions live'); else if(DISRUPTIONS_ERROR) states.push('disruptions unavailable');
   if(NAPTAN_INDEX) states.push('stop details live'); else states.push('stop details unavailable');
   $('statsFeedStatus').textContent=states.length?states.join(' · '):'Checking feeds';
 
@@ -7303,7 +7441,6 @@ map.on('contextmenu',ignoreMapContextMenu);
 /* restore anything saved on this device — the address bar still wins */
 const saved = loadPrefs();
 applyTheme();
-loadTimetable();
 loadDests();
 loadLines();
 loadServing();

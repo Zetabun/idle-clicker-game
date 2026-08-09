@@ -82,6 +82,10 @@ try {
       const vehicle = ageMs => ({
         id: 'retained', journey: trip, progressTrip: trip, progressPattern: pattern,
         line: '61', dest: 'ETA End', lat: 52.5, lon: -2.1, ts: now - ageMs,
+        routeVerifiedExactStopId: 'ETA-END', routeVerifiedExactTrip: trip,
+        routeVerifiedExactPattern: pattern, routeVerifiedExactStopIndex: 2,
+        routeVerifiedExactServiceKey: `trip|${trip}`, routeVerifiedExactGpsTs: now - ageMs,
+        routeVerifiedExactAt: now - 1000,
         lastShownStopId: 'ETA-END', lastShownAt: now - 1000,
         lastShownArrivalAt: now + 15 * 60000, lastShownBoardDir: 'all', lastShownDestFilter: '',
         lastShownSnapshot: snapshot

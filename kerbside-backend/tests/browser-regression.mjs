@@ -22,12 +22,13 @@ console.log(`Browser regression engine: ${ENGINE_NAME}`);
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(testsDir, '..', '..');
-const busSource = await readFile(path.join(root, 'bus.html'), 'utf8');
+const busSource = (await readFile(path.join(root, 'bus.html'), 'utf8')).replace(/\r\n/g, '\n');
 const leafletRoot = path.join(root, 'kerbside-backend', 'vendor', 'leaflet');
 const leafletJs = await readFile(path.join(leafletRoot, 'leaflet.js'));
 const leafletCss = await readFile(path.join(leafletRoot, 'leaflet.css'));
 const leafletLicense = await readFile(path.join(leafletRoot, 'LICENSE'), 'utf8');
-assert.equal(createHash('sha256').update(leafletJs).digest('base64'), '20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=');
+const canonicalTextBytes = buffer => Buffer.from(buffer.toString('utf8').replace(/\r\n/g, '\n'));
+assert.equal(createHash('sha256').update(canonicalTextBytes(leafletJs)).digest('base64'), '20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=');
 assert.equal(createHash('sha256').update(leafletCss).digest('base64'), 'p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=');
 assert.match(leafletLicense, /Redistribution and use in source and binary forms/);
 assert.match(busSource, /const FAR_VEH_DIST = 18000/);
@@ -92,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.24'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.25'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -589,10 +590,12 @@ const mime = new Map([
   ['.css', 'text/css; charset=utf-8']
 ]);
 
+let localFallbackTimetableRequests = 0;
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://127.0.0.1');
     const pathname = decodeURIComponent(url.pathname === '/' ? '/bus.html' : url.pathname);
+    if(pathname==='/timetable.json') localFallbackTimetableRequests++;
     const filename = path.resolve(root, '.' + pathname);
     if (!filename.startsWith(root + path.sep) && filename !== path.join(root, 'bus.html')) {
       response.writeHead(403).end('Forbidden');
@@ -717,6 +720,7 @@ try {
   assert.match(await page.title(), /Kerbside/i);
   assert.equal(await page.evaluate(() => window.L && window.L.version), '1.9.4');
   assert.equal(leafletCdnRequests, 0);
+  assert.equal(localFallbackTimetableRequests, 0, 'the 50 MB regional fallback must not be fetched during startup');
   assert.equal(await page.locator('#map.leaflet-container').count(), 1, pageErrors.join('\n'));
   await page.waitForFunction(() => window.__KERBSIDE_TEST__?.currentTileProvider?.() === 'OpenStreetMap');
   assert.ok(cartoTileRequests >= 4);
@@ -1382,7 +1386,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.ok(busSource.includes("const PASSED_STOP_LOCK_MS = 30*60*1000;"));
   assert.ok(busSource.includes("function exactTripSelectedStopEvidence(trip,patternId,stop=S.stop,stopSequence)"));
   assert.ok(busSource.includes("function currentExactStopProof(v,evidence,inference,matchedRow,now=Date.now())"));
-  assert.ok(busSource.includes("if(!hasExactStopRetentionProof(v)) return null;"));
+  assert.ok(busSource.includes("if(!hasExactStopRetentionProof(v,null,null,now)) return null;"));
   assert.ok(busSource.includes("if(authoritativePatternStopRequired()&&(!proof||!proof.serves)) return false;"));
   assert.ok(busSource.includes("rememberRouteContinuity(v,evidence,now,exactProof)"));
   assert.ok(busSource.indexOf("const stopContradiction=exactStopContradiction(v,evidence,matchedRow);") < busSource.indexOf("rememberRouteContinuity(v,evidence,now,exactProof)"));
@@ -1810,7 +1814,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.24'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.25'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

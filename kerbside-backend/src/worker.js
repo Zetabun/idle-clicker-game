@@ -68,7 +68,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.7.24',
+    version: '0.7.25',
     bods: Boolean(env.BODS_KEY),
     matchedGtfsRt: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
@@ -234,7 +234,11 @@ export function compactGtfsRtFeed(feed, bbox, now = Date.now()) {
       timestamp,
       startDate: String(trip && trip.startDate || ''),
       startTime: String(trip && trip.startTime || ''),
-      directionId: trip && trip.directionId != null ? String(trip.directionId) : ''
+      directionId: trip && trip.directionId != null ? String(trip.directionId) : '',
+      currentStopSequence: Number.isFinite(protobufNumber(vehicle && vehicle.currentStopSequence))
+        ? protobufNumber(vehicle.currentStopSequence) : null,
+      currentStatus: vehicle && vehicle.currentStatus != null ? String(vehicle.currentStatus) : '',
+      stopId: String(vehicle && vehicle.stopId || '')
     });
   }
   return out;

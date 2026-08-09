@@ -38,14 +38,14 @@ R,S,U,Gamma,0,`);
        deliberately out of sequence order to prove the origin is chosen by
        stop_sequence rather than by position in the file. */
     await csv(path.join(gtfs, 'stop_times.txt'), `
-trip_id,arrival_time,departure_time,stop_id,stop_sequence
-T,08:05:00,08:05:00,B,2
-T,08:00:00,08:00:00,A,1
-T,08:10:00,08:10:00,C,3
-T,08:15:00,08:15:00,A,4
-U,09:10:00,09:10:00,B,2
-U,09:20:00,09:20:00,C,3
-U,09:00:00,09:00:00,Z,1`);
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type
+T,08:05:00,08:05:00,B,2,1
+T,08:00:00,08:00:00,A,1,0
+T,08:10:00,08:10:00,C,3,0
+T,08:15:00,08:15:00,A,4,0
+U,09:10:00,09:10:00,B,2,0
+U,09:20:00,09:20:00,C,3,0
+U,09:00:00,09:00:00,Z,1,0`);
     await csv(path.join(gtfs, 'calendar.txt'), `
 service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date
 S,1,1,1,1,1,1,1,20260101,20261231`);
@@ -71,7 +71,7 @@ SHAPE,52.502000,-1.896000,7`);
       for (const stop of Object.values(data.stops || {})) if (Array.isArray(stop.d)) departureRows.push(...stop.d);
     }
     // Adding the origin departure to every row is a shard format change.
-    assert.deepEqual([...departureVersions], [10]);
+    assert.deepEqual([...departureVersions], [11]);
     assert.ok(patternId, 'trip should reference a pattern');
     const patternFile = path.join(out, 'regions', 'test_region', 'patterns', patternId.slice(0, 2) + '.json');
     const shard = JSON.parse(await readFile(patternFile, 'utf8'));
@@ -85,6 +85,8 @@ SHAPE,52.502000,-1.896000,7`);
     assert.deepEqual(pattern.s.map(stop => stop[0]), ['A', 'B', 'C', 'A']);
     assert.deepEqual(pattern.s.map(stop => stop[1]), ['Alpha Stop', 'Beta Stop', 'Gamma Stop', 'Alpha Stop']);
     assert.deepEqual(pattern.s.map(stop => stop[4]), [1, 2, 3, 4]);
+    assert.equal(departureRows.some(row => row[5] === 'T' && row[9] === 2), false,
+      'a no-pickup call must remain in route geometry but not become a departure-board row');
     const repeatedDeparture = departureRows.find(row => row[5] === 'T' && row[9] === 4);
     assert.ok(repeatedDeparture, 'second call at the same stop should remain a distinct departure');
     assert.equal(repeatedDeparture[7], 'R');
