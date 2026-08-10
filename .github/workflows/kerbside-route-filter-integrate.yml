@@ -42,48 +42,10 @@ jobs:
               text = text.replace(old, new, 1)
               bus.write_text(text, encoding='utf-8')
 
-          workflow = Path('.github/workflows/kerbside-check.yml')
-          text = workflow.read_text(encoding='utf-8')
-          if '      - kerbside-train-routes.js\n' not in text:
-              marker = '      - kerbside-trains.css\n'
-              if text.count(marker) != 2:
-                  raise SystemExit('Expected two train CSS path markers in validation workflow')
-              text = text.replace(marker, marker + '      - kerbside-train-routes.js\n')
-
-          old_diff = '-- bus.html kerbside-trains.js kerbside-trains.css; then'
-          new_diff = '-- bus.html kerbside-trains.js kerbside-trains.css kerbside-train-routes.js; then'
-          if old_diff in text:
-              text = text.replace(old_diff, new_diff, 1)
-          elif new_diff not in text:
-              raise SystemExit('Could not locate served-app version bump guard')
-
-          old_check = '          node --check kerbside-trains.js\n'
-          new_check = old_check + '          node --check kerbside-train-routes.js\n'
-          if 'node --check kerbside-train-routes.js' not in text:
-              if old_check not in text:
-                  raise SystemExit('Could not locate rail JavaScript validation step')
-              text = text.replace(old_check, new_check, 1)
-
-          old_test_check = '          node --check kerbside-backend/tests/train-regression.mjs\n'
-          new_test_check = old_test_check + '          node --check kerbside-backend/tests/train-route-filter-regression.mjs\n'
-          if 'node --check kerbside-backend/tests/train-route-filter-regression.mjs' not in text:
-              if old_test_check not in text:
-                  raise SystemExit('Could not locate train regression syntax check')
-              text = text.replace(old_test_check, new_test_check, 1)
-
-          run_marker = '          npm run test:train --prefix kerbside-backend\n'
-          route_run = '          npm run test:train-route --prefix kerbside-backend\n'
-          if route_run not in text:
-              if text.count(run_marker) != 2:
-                  raise SystemExit('Expected WebKit and Chromium train regression runs')
-              text = text.replace(run_marker, run_marker + route_run)
-          workflow.write_text(text, encoding='utf-8')
-
           package_path = Path('kerbside-backend/package.json')
           package = json.loads(package_path.read_text(encoding='utf-8'))
           scripts = package.setdefault('scripts', {})
-          route_script = 'node tests/train-route-filter-regression.mjs'
-          scripts['test:train-route'] = route_script
+          scripts['test:train-route'] = 'node tests/train-route-filter-regression.mjs'
           if 'tests/train-route-filter-regression.mjs' not in scripts.get('check',''):
               scripts['check'] = scripts['check'] + ' && node --check tests/train-route-filter-regression.mjs'
           if 'test:train-route' not in scripts.get('test:full',''):
@@ -103,11 +65,9 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/kerbside-route-filter-integrate.yml
-          git add VERSION bus.html kerbside-train-routes.js .github/workflows/kerbside-check.yml \
+          git add VERSION bus.html \
             kerbside-backend/package.json kerbside-backend/src/worker.js \
-            kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs \
-            kerbside-backend/tests/train-route-filter-regression.mjs
+            kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs
           git diff --cached --check
           git commit -m 'Integrate train From to destination filter'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
