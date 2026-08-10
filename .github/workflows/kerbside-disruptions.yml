@@ -1,8 +1,8 @@
 name: Refresh Kerbside disruptions feed
 
 # Publishes disruptions.json next to bus.html on GitHub Pages. The DfT SIRI-SX
-# bulk archive needs no API key but sends no CORS header, so the browser cannot
-# read it directly; this job republishes it same-origin with the app.
+# API requires the repository BODS_KEY and sends no browser-friendly CORS policy,
+# so this job republishes a compact same-origin copy with the app.
 
 on:
   workflow_dispatch:
@@ -42,6 +42,8 @@ jobs:
 
       - name: Build disruptions feed
         id: build
+        env:
+          BODS_KEY: ${{ secrets.BODS_KEY }}
         run: python .github/scripts/build-disruptions.py
 
       - name: Verify the feed is well formed
