@@ -43,8 +43,20 @@ const allBoard={...directBoard,filterLocationName:null,filtercrs:null,trainServi
   directBoard.trainServices[0],
   {...directBoard.trainServices[0],serviceIdUrlSafe:'BHM-LIV',std:'21:50',destination:[{locationName:'Liverpool Lime Street',crs:'LIV'}]}
 ]};
+const eventResults={
+  head:{vars:['event','eventLabel','time','end','locationLabel','areaLabel','attendance']},
+  results:{bindings:[{
+    event:{type:'uri',value:'https://www.wikidata.org/entity/QTEST'},
+    eventLabel:{type:'literal','xml:lang':'en',value:'Birmingham Arena Concert'},
+    time:{type:'literal',datatype:'http://www.w3.org/2001/XMLSchema#dateTime',value:'2026-08-10T19:00:00Z'},
+    end:{type:'literal',datatype:'http://www.w3.org/2001/XMLSchema#dateTime',value:'2026-08-10T20:30:00Z'},
+    locationLabel:{type:'literal','xml:lang':'en',value:'Birmingham Arena'},
+    areaLabel:{type:'literal','xml:lang':'en',value:'Birmingham'},
+    attendance:{type:'literal',datatype:'http://www.w3.org/2001/XMLSchema#decimal',value:'15000'}
+  }]}
+};
 
-const diagnostics={primary:[],fallback:[],pageErrors:[],consoleErrors:[]};
+const diagnostics={primary:[],fallback:[],events:[],pageErrors:[],consoleErrors:[]};
 let browser;
 try{
   browser=await browserType.launch({headless:true});
@@ -69,6 +81,10 @@ try{
     if(pathname.startsWith('/service/'))return route.fulfill({status:200,contentType:'application/json',body:'{}'});
     return route.fulfill({status:404,contentType:'application/json',body:'{}'});
   });
+  await page.route('https://query.wikidata.org/**',route=>{
+    diagnostics.events.push(route.request().url());
+    return route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify(eventResults)});
+  });
 
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#transportTrain');
@@ -87,21 +103,39 @@ try{
   await page.fill('#trainDestinationQuery','Bristol Temple Meads');
   await page.click('#trainJourneyGo');
   await page.waitForFunction(()=>document.querySelectorAll('.train-service').length===1,{timeout:10000});
+  await page.waitForFunction(()=>window.__KERBSIDE_EVENTS__?.state?.status==='ready'&&window.__KERBSIDE_EVENTS__.state.events.length===1,{timeout:10000});
 
   assert.match(await page.locator('#trainBoard').textContent(),/Bristol Temple Meads/);
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Live train data unavailable/);
   assert.match(await page.locator('#trainJourneySummary').textContent(),/BHM → BRI/);
   assert.ok(diagnostics.primary.length>0,'primary Huxley endpoint should have been attempted');
   assert.ok(diagnostics.fallback.includes('/departures/BHM/to/BRI/20'),`fallback direct request missing: ${JSON.stringify(diagnostics)}`);
+  assert.ok(diagnostics.events.length>0,'same-day event source should be queried after a complete journey is selected');
+
   const provider=await page.evaluate(()=>window.__KERBSIDE_RAIL_PROVIDER__&&({active:window.__KERBSIDE_RAIL_PROVIDER__.state.active,fallbacks:window.__KERBSIDE_RAIL_PROVIDER__.state.fallbacks,providers:window.__KERBSIDE_RAIL_PROVIDER__.providers}));
   assert.equal(provider.active,'https://hux.azurewebsites.net');
   assert.ok(provider.fallbacks>0);
   assert.deepEqual(provider.providers,['https://huxley2.azurewebsites.net','https://hux.azurewebsites.net']);
 
+  const eventForecast=await page.evaluate(()=>{
+    const api=window.__KERBSIDE_TRAINS__;
+    const events=window.__KERBSIDE_EVENTS__;
+    const forecast=window.__KERBSIDE_FORECAST_V3__;
+    const service=api.state.services[0];
+    const result=forecast.forecast(service,0,api.state.services,{station:api.state.station,referenceDate:new Date(),messages:[]});
+    return {journey:events.currentJourney(),status:events.state.status,eventCount:events.state.events.length,eventPressure:result.eventPressure,reasons:result.reasons};
+  });
+  assert.equal(eventForecast.journey.origin,'Birmingham New Street');
+  assert.equal(eventForecast.journey.destination,'Bristol Temple Meads');
+  assert.equal(eventForecast.status,'ready');
+  assert.equal(eventForecast.eventCount,1);
+  assert.ok(eventForecast.eventPressure>0&&eventForecast.eventPressure<=0.8,`event pressure should be positive and bounded: ${JSON.stringify(eventForecast)}`);
+  assert.ok(eventForecast.reasons.some(reason=>/Birmingham Arena Concert/.test(reason)),`forecast should name the contributing event: ${JSON.stringify(eventForecast)}`);
+
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   assert.ok(overflow<=1,`combined train planner should not overflow mobile viewport; got ${overflow}px`);
   assert.deepEqual(diagnostics.pageErrors,[],`Unexpected page errors: ${diagnostics.pageErrors.join('\n')}`);
-  console.log(`Kerbside combined train journey planner regression passed in ${browserName}.`);
+  console.log(`Kerbside combined train journey planner and event-pressure regression passed in ${browserName}.`);
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
