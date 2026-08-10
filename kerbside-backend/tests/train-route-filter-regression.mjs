@@ -9,6 +9,18 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const browserName = (process.env.KERBSIDE_BROWSER || 'webkit').toLowerCase();
 const browserType = browserName === 'chromium' ? chromium : webkit;
+function londonStamp(date=new Date()){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+  const map=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+function addCalendarDays(stamp,days){
+  const [year,month,day]=stamp.split('-').map(Number);
+  return new Date(Date.UTC(year,month-1,day+days,12)).toISOString().slice(0,10);
+}
+const TODAY=londonStamp();
+const TOMORROW=addCalendarDays(TODAY,1);
+const FUTURE_DATE=addCalendarDays(TODAY,4);
 
 const mime = {
   '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
@@ -131,6 +143,10 @@ async function selectBristol(page,diagnostics){
     `expected direct Huxley request, got ${JSON.stringify(diagnostics.requests)}`);
 }
 
+function departureRequestCount(diagnostics){
+  return diagnostics.requests.filter(item=>item.startsWith('/departures/')).length;
+}
+
 async function runDesktop(browser){
   const page = await browser.newPage({viewport:{width:1280,height:800}});
   const diagnostics = attachDiagnostics(page);
@@ -145,7 +161,7 @@ async function runDesktop(browser){
   assert.equal(await page.locator('label[for="trainDestinationQuery"]').textContent(),'To');
   assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false);
   assert.equal(await page.locator('label[for="trainTravelDate"]').textContent(),'Travel date');
-  assert.equal(await page.locator('#trainTravelDate').inputValue(),'2026-08-10');
+  assert.equal(await page.locator('#trainTravelDate').inputValue(),TODAY);
   const visibleFindActions = await page.locator('.train-route-planner button').evaluateAll(buttons=>buttons.filter(button=>{
     const style=getComputedStyle(button),box=button.getBoundingClientRect();
     return /find/i.test(button.textContent||'') && style.display!=='none' && Number(style.opacity)>0 && box.width>2 && box.height>2;
@@ -155,21 +171,34 @@ async function runDesktop(browser){
   await selectBirmingham(page);
   await selectBristol(page,diagnostics);
 
-  // A future date must not reuse today's Darwin board. Until an approved future
-  // timetable provider is connected, the planner should show an explicit
-  // scheduled-service provider state instead of inventing future trains.
-  await page.locator('#trainTravelDate').fill('2026-08-14');
+  // Future dates are planning state, never today's Darwin board. This pins the
+  // screenshot regression where a complete BHM -> BRI journey still showed
+  // "Choose a station" and "Live journey loaded" after tomorrow was selected.
+  const liveRequestsBeforeFuture = departureRequestCount(diagnostics);
+  await page.locator('#trainTravelDate').fill(FUTURE_DATE);
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'planning');
-  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/scheduled services.*advance crowding forecast/i);
+  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/advance journey.*scheduled services/i);
   await page.waitForSelector('#trainBoard .train-future-date');
   assert.equal(await page.locator('.train-service').count(),0);
-  assert.match(await page.locator('#trainBoard').textContent(),/Future timetable support is ready|timetable provider must be configured/i);
-  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),'2026-08-14');
+  assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
+  assert.match(await page.locator('#trainStationMeta').textContent(),/BHM → BRI.*scheduled services/i);
+  assert.equal(await page.locator('#trainRefresh').isDisabled(),true);
+  assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Advance');
+  assert.match(await page.locator('#trainBoard').textContent(),/Advance timetable/);
+  assert.match(await page.locator('#trainBoard').textContent(),/Exact future train times need the scheduled timetable feed/i);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),FUTURE_DATE);
+
+  await page.click('#trainJourneyGo');
+  await page.waitForFunction(()=>/Advance journey ready/i.test(document.getElementById('trainPlannerMessage')?.textContent||''));
+  assert.doesNotMatch(await page.locator('#trainPlannerMessage').textContent(),/Live journey loaded/i);
+  assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
+    `future Find trains must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
+  assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
 
   await page.click('#trainTravelToday');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'live');
-  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/live-adjusted/i);
+  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/live departures.*live-adjusted/i);
   await waitForServiceCount(page,1);
 
   assert.equal(await page.locator('.train-service').count(),1);
@@ -217,8 +246,39 @@ async function runMobile(browser){
   assert.ok(destinationBox,'destination controls should be visible on mobile');
   assert.ok(destinationBox.x >= -0.5 && destinationBox.x + destinationBox.width <= 390.5,
     `destination controls should fit the viewport: ${JSON.stringify(destinationBox)}`);
-  const overflow = await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-  assert.ok(overflow <= 1,`mobile route filter should not overflow; got ${overflow}px`);
+
+  const mobileLayout = await page.evaluate(()=>{
+    const top=document.getElementById('topbar').getBoundingClientRect();
+    const brand=document.querySelector('#topbar .brand').getBoundingClientRect();
+    const mode=document.querySelector('#topbar .transport-switch').getBoundingClientRect();
+    const settings=document.getElementById('setBtn').getBoundingClientRect();
+    const planner=document.querySelector('.train-route-planner').getBoundingClientRect();
+    const centres=[brand,mode,settings].map(rect=>rect.top+rect.height/2);
+    return {
+      topHeight:top.height,
+      rowSpread:Math.max(...centres)-Math.min(...centres),
+      ordered:brand.right<=mode.left+2&&mode.right<=settings.left+2,
+      within:brand.left>=-0.5&&settings.right<=innerWidth+0.5,
+      plannerHeight:planner.height,
+      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
+    };
+  });
+  assert.ok(mobileLayout.topHeight<105,`train header should stay compact: ${JSON.stringify(mobileLayout)}`);
+  assert.ok(mobileLayout.rowSpread<=12,`brand, mode and settings should share a row: ${JSON.stringify(mobileLayout)}`);
+  assert.ok(mobileLayout.ordered&&mobileLayout.within,`train header controls should not overlap: ${JSON.stringify(mobileLayout)}`);
+  assert.ok(mobileLayout.plannerHeight<440,`journey planner should not dominate the phone viewport: ${JSON.stringify(mobileLayout)}`);
+  assert.ok(mobileLayout.overflow<=1,`mobile route filter should not overflow: ${JSON.stringify(mobileLayout)}`);
+
+  const liveRequestsBeforeFuture = departureRequestCount(diagnostics);
+  await page.locator('#trainTravelDate').fill(TOMORROW);
+  await page.locator('#trainTravelDate').dispatchEvent('change');
+  await page.waitForSelector('#trainBoard .train-future-card');
+  await page.click('#trainJourneyGo');
+  await page.waitForFunction(()=>/Advance journey ready/i.test(document.getElementById('trainPlannerMessage')?.textContent||''));
+  assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture);
+  assert.match(await page.locator('#trainStationName').textContent(),/Birmingham New Street → Bristol Temple Meads/);
+  assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Choose a station/);
+
   assert.deepEqual(diagnostics.pageErrors,[],`Unexpected mobile page errors: ${diagnostics.pageErrors.join('\n')}`);
   await page.close();
 }
@@ -228,7 +288,7 @@ try{
   browser = await browserType.launch({headless:true});
   await runDesktop(browser);
   await runMobile(browser);
-  console.log(`Kerbside train From → To route filter regression passed in ${browserName}.`);
+  console.log(`Kerbside train From → To, future-date and mobile layout regression passed in ${browserName}.`);
 }finally{
   if(browser) await browser.close();
   await new Promise(resolve=>server.close(resolve));

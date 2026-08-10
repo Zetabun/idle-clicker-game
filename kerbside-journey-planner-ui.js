@@ -87,20 +87,56 @@ function installStyles(){
 .train-route-planner .train-search-wrap{margin:0}.train-route-planner .train-search-wrap label{font-size:10px;letter-spacing:.16em;margin-bottom:5px}.train-route-planner .train-search-box{display:block}.train-route-planner .train-search-box input{width:100%}
 .train-route-planner #trainStationGo,.train-route-planner #trainDestinationGo{position:absolute!important;right:0!important;bottom:0!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;white-space:nowrap!important;padding:0!important;border:0!important}
 .train-route-stack{position:relative;display:grid;gap:0}.train-route-stack:before{content:'';position:absolute;left:17px;top:43px;bottom:43px;width:2px;background:var(--border);z-index:0}
-.train-route-stack .train-search-wrap{position:relative;z-index:1}.train-route-stack input{background:var(--bg);border-radius:14px;padding-left:34px;padding-right:48px}
+.train-route-stack .train-search-wrap{position:relative;z-index:1}.train-route-stack input{background:var(--ink);border-radius:14px;padding-left:34px;padding-right:48px}
 .train-route-divider{height:9px}.train-route-dot{position:absolute;left:12px;width:12px;height:12px;border:3px solid var(--panel);border-radius:50%;background:var(--led);z-index:2}.train-route-dot.from{top:44px}.train-route-dot.to{bottom:35px}
 .train-route-swap{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:4;width:38px;height:38px;padding:0;border-radius:50%;font-size:20px;line-height:1;background:var(--panel);box-shadow:0 2px 8px rgb(0 0 0 / .08)}
-.train-route-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px}.train-route-meta .train-destination-clear{margin:0;font-size:10px}.train-planner-time{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-dim);white-space:nowrap}.train-planner-time input{width:104px;padding:7px 9px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+.train-route-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px}.train-route-meta .train-destination-clear{margin:0;font-size:10px}.train-planner-time{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-dim);white-space:nowrap}.train-planner-time input{width:104px;padding:7px 9px;border:1px solid var(--border);border-radius:10px;background:var(--ink);color:var(--text)}
 .train-date-wrap{margin:10px 0 0!important;padding-top:10px;border-top:1px solid var(--border)}.train-date-row{grid-template-columns:minmax(0,1fr) auto!important}.train-date-today{border-radius:12px!important;padding:0 14px!important}.train-date-meta{padding:0 2px}
-.train-journey-go{width:100%;min-height:48px;margin-top:12px;border-radius:14px!important;font-weight:800!important;font-size:14px!important;letter-spacing:.01em}.train-journey-go[disabled]{opacity:.62;cursor:wait}.train-planner-message{min-height:16px;margin-top:7px;color:var(--text-dim);font-size:10px;line-height:1.4}.train-planner-message.error{color:var(--danger,#d33)}
-@media(max-width:620px){.train-route-planner{padding:11px;border-radius:16px}.train-route-meta{align-items:flex-start;flex-direction:column}.train-planner-time{width:100%;justify-content:space-between}.train-planner-time input{width:118px}}
+.train-journey-go{width:100%;min-height:48px;margin-top:12px;border-radius:14px!important;font-weight:800!important;font-size:14px!important;letter-spacing:.01em}.train-journey-go[disabled]{opacity:.62;cursor:wait}.train-planner-message{min-height:16px;margin-top:7px;color:var(--text-dim);font-size:10px;line-height:1.4}.train-planner-message:empty{display:none}.train-planner-message.error{color:var(--danger,var(--warn))}
+.train-future-card{align-content:center;justify-items:center;gap:8px!important;min-height:180px!important;margin:8px 4px;padding:24px!important;border:1px solid var(--rule);border-radius:16px;background:var(--ink-2)}
+.train-future-badge{display:inline-flex!important;max-width:none!important;padding:4px 9px;border:1px solid rgb(var(--led-rgb) / .32);border-radius:999px;color:var(--led)!important;background:rgb(var(--led-rgb) / .07);font-family:'Martian Mono',ui-monospace,monospace;font-size:9px!important;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.train-future-route{max-width:42rem!important;color:var(--text)!important;font-size:12px!important;font-weight:700}.train-future-note{max-width:38rem!important}
+@media(max-width:820px){
+  body[data-transport="train"] #topbar{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:8px!important;min-height:calc(62px + env(safe-area-inset-top))!important;padding:calc(8px + env(safe-area-inset-top)) 10px 8px!important}
+  body[data-transport="train"] #topbar .brand{min-width:0!important;margin:0 auto 0 0!important}
+  body[data-transport="train"] #topbar .transport-switch{position:static!important;inset:auto!important;margin:0!important;flex:0 0 auto!important}
+  body[data-transport="train"] #topbar #setBtn{position:static!important;margin:0!important;flex:0 0 auto!important}
+  body[data-transport="train"] .train-sidebar{padding:9px 10px 8px!important}
+  body[data-transport="train"] .train-sidebar>.train-kicker{margin:0 2px 6px}
+  .train-route-planner{margin:2px 0 6px;padding:10px;border-radius:15px;box-shadow:none}
+  .train-route-stack input{min-height:46px;padding-left:33px;padding-right:46px}
+  .train-route-meta{align-items:center;flex-direction:row;gap:8px;margin-top:8px}
+  .train-route-meta .train-destination-clear{min-width:0;flex:1;font-size:9.5px;text-align:left}
+  .train-planner-time{flex:0 0 auto;gap:6px;font-size:9.5px}.train-planner-time input{width:92px;padding:6px 7px}
+  .train-date-wrap{margin-top:8px!important;padding-top:8px}.train-date-meta{margin-top:5px!important;font-size:9.5px!important;line-height:1.35}
+  .train-journey-go{min-height:44px;margin-top:9px;font-size:13px!important}
+  .train-planner-message{margin-top:6px;min-height:0}
+  .train-future-card{min-height:150px!important;margin:6px 2px;padding:20px 16px!important}
+}
+@media(max-width:430px){
+  body[data-transport="train"] #topbar .brand{margin-right:auto!important}
+  body[data-transport="train"] #topbar .transport-switch button{min-height:36px!important;padding:6px 8px!important}
+  .train-route-meta{gap:6px}.train-route-meta .train-destination-clear{font-size:9px}.train-planner-time span{font-size:9px}.train-planner-time input{width:84px}
+}
 `;
   document.head.appendChild(s);
 }
 function storedTime(){try{return localStorage.getItem(STORE)||'09:00'}catch(e){return'09:00'}}
 function saveTime(v){try{localStorage.setItem(STORE,v)}catch(e){}}
-function dispatch(){window.dispatchEvent(new CustomEvent('kerbside:journey-planner-change',{detail:{departAfter:$('trainDepartAfter')?.value||''}}));window.__KERBSIDE_FORECAST_V3__?.apply?.()}
+function dispatch(){
+  const date=window.__KERBSIDE_TRAIN_DATE__&&window.__KERBSIDE_TRAIN_DATE__.state&&window.__KERBSIDE_TRAIN_DATE__.state.date||'';
+  window.dispatchEvent(new CustomEvent('kerbside:journey-planner-change',{detail:{departAfter:$('trainDepartAfter')?.value||'',date}}));
+  window.__KERBSIDE_FORECAST_V3__?.apply?.();
+}
 function normalise(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ')}
+function dateApi(){return window.__KERBSIDE_TRAIN_DATE__||null}
+function isFutureJourney(){const api=dateApi();return !!(api&&typeof api.isToday==='function'&&!api.isToday())}
+function travelDateLabel(){
+  const api=dateApi(),value=api&&api.state&&api.state.date;
+  if(!value)return 'the selected date';
+  const date=new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime())?value:date.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+}
 function stationRows(json,exclude=''){
   return (Array.isArray(json)?json:[]).map(item=>({name:String(item&&item.stationName||'').trim(),crs:String(item&&item.crsCode||'').trim().toUpperCase()})).filter(item=>item.name&&/^[A-Z0-9]{3}$/.test(item.crs)&&item.crs!==exclude);
 }
@@ -135,13 +171,14 @@ function selectOrigin(item){
   if(!input||!go)return;
   input.value=item.crs;
   go.click();
-  setTimeout(()=>{if(input)input.value=item.name;const el=$('trainSuggest');if(el){el.hidden=true;el.innerHTML='';}},0);
+  setTimeout(()=>{if(input)input.value=item.name;const el=$('trainSuggest');if(el){el.hidden=true;el.innerHTML='';}if(isFutureJourney())dateApi()?.applyForecasts?.();},0);
 }
 function selectDestination(item){
   const route=window.__KERBSIDE_TRAIN_ROUTES__;
   if(!route||!item)return;
   route.selectDestination(item);
   const el=$('trainDestinationSuggest');if(el){el.hidden=true;el.innerHTML='';}
+  if(isFutureJourney())setTimeout(()=>dateApi()?.applyForecasts?.(),0);
 }
 function cloneInput(id){
   const old=$(id);if(!old||old.dataset.kerbsidePlanner==='1')return old;
@@ -179,6 +216,17 @@ async function resolveDestination(){
   selectDestination(match);
   return true;
 }
+async function finishJourney(){
+  dispatch();
+  if(!isFutureJourney()){
+    plannerMessage('Live journey loaded.');
+    return;
+  }
+  const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
+  if(timetable&&typeof timetable.load==='function')await timetable.load();
+  else dateApi()?.applyForecasts?.();
+  plannerMessage(`Advance journey ready for ${travelDateLabel()}.`);
+}
 async function findTrains(){
   const button=$('trainJourneyGo');
   if(button){button.disabled=true;button.textContent='Finding trains…';}
@@ -188,8 +236,7 @@ async function findTrains(){
     const to=$('trainDestinationQuery');
     if(!to||to.value.trim().length<2){plannerMessage('Add a destination to search this journey.',true);to?.focus();return;}
     if(!(await resolveDestination()))return;
-    plannerMessage('Live journey loaded.');
-    dispatch();
+    await finishJourney();
   }catch(error){
     plannerMessage(error&&error.message?error.message:'Train search is temporarily unavailable.',true);
   }finally{
@@ -210,6 +257,7 @@ async function swap(){
   }
   const to=$('trainDestinationQuery');if(to)to.value=origin.name||origin.crs;
   selectDestination({name:origin.name||origin.crs,crs:origin.crs});
+  if(isFutureJourney())setTimeout(()=>dateApi()?.applyForecasts?.(),0);
 }
 function bindRobustInputs(){
   const from=cloneInput('trainStationQuery'),to=cloneInput('trainDestinationQuery');
@@ -252,10 +300,11 @@ function install(){
   const input=$('trainDepartAfter');input.value=storedTime();input.addEventListener('change',()=>{saveTime(input.value);dispatch()});
   const go=document.createElement('button');go.id='trainJourneyGo';go.type='button';go.className='train-journey-go';go.textContent='Find trains';go.addEventListener('click',findTrains);planner.appendChild(go);
   const message=document.createElement('div');message.id='trainPlannerMessage';message.className='train-planner-message';message.setAttribute('aria-live','polite');planner.appendChild(message);
-  setTimeout(()=>{const date=$('trainTravelDate')?.closest('.train-date-wrap');if(date&&!date.closest('.train-route-planner'))planner.insertBefore(date,go);bindRobustInputs();},0);
+  document.addEventListener('kerbside:train-date-change',()=>{planner.dataset.mode=isFutureJourney()?'future':'live';plannerMessage('');});
+  setTimeout(()=>{const date=$('trainTravelDate')?.closest('.train-date-wrap');if(date&&!date.closest('.train-route-planner'))planner.insertBefore(date,go);bindRobustInputs();planner.dataset.mode=isFutureJourney()?'future':'live';},0);
   return true;
 }
 function init(){if(!install())setTimeout(init,0)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
+window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
 })();
