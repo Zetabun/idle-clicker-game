@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.7\.30'/);
+assert.match(busSource, /const APP_VERSION = '0\.7\.31'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -979,7 +979,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   const loadedPattern=await page.evaluate(async patternId=>{
     const api=window.__KERBSIDE_TEST__,state=api.liveState,saved={timetable:state.timetable,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion};
     await api.resetDataPatternForTest(true);
-    state.timetable={patterns:{},tripPatterns:{'trip-pattern':patternId}};state.timetableSource='national';state.timetableRegion='west_midlands';
+    state.timetable={tripPatterns:{'trip-pattern':patternId},patterns:{}};state.timetableSource='national';state.timetableRegion='west_midlands';
     try{
       await api.queuePattern(patternId);
       return {loaded:!!state.timetable.patterns[patternId],record:!!api.timetablePatternRecord('trip-pattern'),source:api.dataPatternSource('west_midlands','aa')};
@@ -1017,9 +1017,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       stale:parsed.stale,unknownAge:parsed.unknownAge,malformed:parsed.malformed
     };
   });
-  // Identity combines journey and vehicle, so two buses sharing a journey code
-  // stay separate. These two already differed by operator, so both are still
-  // kept — the id simply now carries the vehicle reference as well.
   assert.deepEqual(liveParsing, {
     ids:['OP-A|journey|trip-a|vehicle|42','OP-B|journey|trip-b|vehicle|42'],count:2,newestLat:52.501,
     rawRef:'42',line:'9',dest:'St Helens',stale:2,unknownAge:1,malformed:1
@@ -1064,10 +1061,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       Object.assign(state,saved);
     }
   });
-  // Five simultaneous buses publishing one placeholder fleet code. The id now
-  // carries the vehicle reference, and all five must survive: a code repeated
-  // within a single snapshot cannot identify one bus, so it never retires a
-  // sibling journey.
   assert.deepEqual(multiVehicleBoard,{
     parsed:5,
     parsedIds:[1,2,3,4,5].map(index=>`OP-FIVE|journey|route-9-trip-${index}|vehicle|SHARED-FLEET-CODE`),
@@ -1148,12 +1141,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   });
   assert.equal(gpsFixes.corridor,true);assert.equal(gpsFixes.live,1);assert.equal(gpsFixes.progress,true);assert.equal(gpsFixes.held,true);assert.equal(gpsFixes.away,false);
 
-
-  // A producer can change the journey/activity key while the physical bus,
-  // route and GPS track are continuous. The replacement identity must inherit
-  // only display/movement continuity so a transient route gate cannot blink a
-  // previously verified row off the board. A different live destination must
-  // not inherit that snapshot across a genuine branch/journey handover.
   const identityContinuity = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={stop:state.stop,vehicles:state.vehicles,dir:state.dir,destFilter:state.destFilter};
@@ -1236,11 +1223,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.equal(gpsSafety.freshClaims,true);
   assert.equal(gpsSafety.wrongBoardDirection,false);
 
-  // A live bus identity-matched to a departure but running far enough off its
-  // scheduled time that estimate() declines to blend the two. It used not to
-  // claim the timetable row, so the same journey appeared twice: once live and
-  // again as a schedule-only row, sometimes captioned "possible GPS match was
-  // filtered" next to the very bus it was describing.
   const duplicateDeparture = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
     const saved={ttStop:state.ttStop,dir:state.dir,destFilter:state.destFilter,timetable:state.timetable};
@@ -1257,13 +1239,8 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       return {bare:bare.length,matchedOnly:matchedOnly.length,identityOnly:identityOnly.length,blended:blended.length,lost:lost.length};
     }finally{Object.assign(state,saved);}
   });
-  // Identity alone suppresses the duplicate; losing GPS releases the claim so
-  // the timetable shows through again.
   assert.deepEqual(duplicateDeparture,{bare:1,matchedOnly:0,identityOnly:0,blended:0,lost:1});
 
-  // One malformed box among several used to fall through to "no buses were
-  // reported": a broken response presented as a verified empty area, counted as
-  // a successful poll, with the previous vehicles left to age out silently.
   const malformedCoverage = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
     const saved={origin:state.origin,proxy:state.proxy,key:state.key,demo:state.demo,lastWideFetch:state.lastWideFetch,stop:state.stop};
@@ -1289,14 +1266,11 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     } finally { window.fetch=originalFetch; Object.assign(state,saved); }
   });
   assert.equal(malformedCoverage.one.boxes>1,true,'the wide scan must fetch more than one box');
-  // A single bad box raises a feed error and flags partial coverage, so the
-  // caller keeps the last verified board instead of blanking it.
   assert.equal(malformedCoverage.one.soft,true);
   assert.match(malformedCoverage.one.msg,/Part of the live feed returned malformed XML/);
   assert.equal(malformedCoverage.one.partial,true);
   assert.equal(malformedCoverage.one.emptied,false);
   assert.match(malformedCoverage.all.msg,/^The live feed returned malformed XML\.$/);
-  // A genuinely empty area is still reported as empty, not as a failure.
   assert.equal(malformedCoverage.none.soft,false);
   assert.equal(malformedCoverage.none.emptied,true);
   assert.equal(malformedCoverage.none.partial,false);
@@ -1332,11 +1306,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.ok(busSource.includes("const routeDirectionTrusted=!!(evidence.routeContinuity||evidence.journeyMatch||evidence.pathMatch||evidence.matchedRealtime);"));
   assert.ok(busSource.includes("if(S.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride && !routeDirectionTrusted){"));
 
-  // Once a route has genuinely passed the gate, a new plausible GPS fix may
-  // carry that verification across a temporary route/journey evidence dropout.
-  // Re-rendering the same fix cannot extend it indefinitely. A destination
-  // branch change or implausible jump still fails closed, while straight-line
-  // retreat alone is allowed because real road routes can temporarily bend away.
   const freshRouteContinuity = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={stop:state.stop,dir:state.dir,destFilter:state.destFilter};
@@ -1511,7 +1480,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       Object.assign(state,saved);
     }
   });
-  // Ids carry the vehicle reference alongside the journey since 0.6.61.
   assert.deepEqual(wideFallback,{count:2,ids:['NEAR|journey|nearby-1-trip|vehicle|nearby-1','WIDE|journey|wide-1-trip|vehicle|wide-1'],cooldown:true});
   assert.ok(wideFeedRequests>=2);
   assert.equal(nearbyFeedRequests,1);
@@ -1628,9 +1596,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       officialIndicator:merged.find(stop=>String(stop.id)==='490G00012345')?.ind
     };
   });
-  /* These two fixes are 2.6 metres apart — the same phone standing still. They
-     must now share a key: separating them is exactly what stopped the cache
-     from ever being read. A genuinely different area still gets its own key. */
   assert.equal(stopDiscoveryPolicy.cacheA,stopDiscoveryPolicy.cacheB);
   assert.notEqual(stopDiscoveryPolicy.cacheA,stopDiscoveryPolicy.cacheFarAway);
   assert.match(stopDiscoveryPolicy.cacheA,/kerbside\.stops\.v7/);
@@ -1885,7 +1850,6 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   }));
   assert.ok(after.scrollWidth <= before.width + 1);
   assert.ok(after.viewbarBottom <= after.height + 1);
-
 
   const mobileLayouts=[];
   for(const viewport of [{width:320,height:568},{width:360,height:800},{width:393,height:852},{width:430,height:932}]){
