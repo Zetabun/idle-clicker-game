@@ -13,7 +13,7 @@ const browserType = browserName === 'chromium' ? chromium : webkit;
 const mime = {
   '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
   '.css':'text/css; charset=utf-8', '.json':'application/json; charset=utf-8',
-  '.png':'image/png', '.svg':'image/svg+xml', '.woff2':'font/woff2'
+  '.png':'image/png', '.svg':'image/svg+xml; charset=utf-8', '.woff2':'font/woff2'
 };
 
 const server = http.createServer(async (req,res)=>{
@@ -77,7 +77,7 @@ function attachDiagnostics(page){
 }
 
 async function mockExternal(page,diagnostics){
-  await page.route('**://huxley2.azurewebsites.net/**',async route=>{
+  const handle = async route=>{
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
     diagnostics.requests.push(pathname);
@@ -102,7 +102,9 @@ async function mockExternal(page,diagnostics){
       return;
     }
     await route.fulfill({status:404,contentType:'application/json',body:'{}'});
-  });
+  };
+  await page.route('**://huxley2.azurewebsites.net/**', handle);
+  await page.route('**://hux.azurewebsites.net/**', handle);
 }
 
 async function waitForServiceCount(page,count){
@@ -111,7 +113,9 @@ async function waitForServiceCount(page,count){
 
 async function selectBirmingham(page){
   await page.fill('#trainStationQuery','BHM');
-  await page.click('#trainStationGo');
+  // The legacy origin button remains only as a compatibility hook for the train
+  // modules; the combined journey planner deliberately hides it from users.
+  await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServiceCount(page,2);
   assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street');
   assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false);
@@ -135,13 +139,18 @@ async function runDesktop(browser){
   await page.waitForSelector('#transportTrain');
   await page.click('#transportTrain');
   await page.waitForSelector('#trainDestinationQuery');
+  await page.waitForSelector('#trainJourneyGo');
 
   assert.equal(await page.locator('label[for="trainStationQuery"]').textContent(),'From');
   assert.equal(await page.locator('label[for="trainDestinationQuery"]').textContent(),'To');
-  assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),true);
+  assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false);
   assert.equal(await page.locator('label[for="trainTravelDate"]').textContent(),'Travel date');
   assert.equal(await page.locator('#trainTravelDate').inputValue(),'2026-08-10');
-
+  const visibleFindActions = await page.locator('.train-route-planner button').evaluateAll(buttons=>buttons.filter(button=>{
+    const style=getComputedStyle(button),box=button.getBoundingClientRect();
+    return /find/i.test(button.textContent||'') && style.display!=='none' && Number(style.opacity)>0 && box.width>2 && box.height>2;
+  }).map(button=>(button.textContent||'').trim()));
+  assert.deepEqual(visibleFindActions,['Find trains']);
 
   await selectBirmingham(page);
   await selectBristol(page,diagnostics);
@@ -193,6 +202,7 @@ async function runMobile(browser){
   await page.waitForSelector('#transportTrain');
   await page.click('#transportTrain');
   await page.waitForSelector('#trainDestinationQuery');
+  await page.waitForSelector('#trainJourneyGo');
   await selectBirmingham(page);
   await selectBristol(page,diagnostics);
 
