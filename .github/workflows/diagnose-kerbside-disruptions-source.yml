@@ -1,0 +1,123 @@
+name: One-shot Kerbside disruption source probe
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/diagnose-kerbside-disruptions-source.yml
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Probe legacy and API disruption endpoints
+        env:
+          BODS_KEY: ${{ secrets.BODS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import html
+          import json
+          import os
+          import pathlib
+          import re
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from datetime import datetime, timezone
+
+          legacy = 'https://data.bus-data.dft.gov.uk/disruptions/download/bulk_archive'
+          api = 'https://data.bus-data.dft.gov.uk/api/v1/siri-sx'
+          key = os.environ.get('BODS_KEY', '')
+          uas = {
+              'kerbside_1_0': 'Kerbside-disruptions-build/1.0 (+https://zetabun.github.io/idle-clicker-game/bus.html)',
+              'kerbside_1_1': 'Kerbside-disruptions-build/1.1 (+https://zetabun.github.io/idle-clicker-game/bus.html)',
+              'browser': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36',
+              'python': 'Python-urllib/3.12',
+          }
+
+          def probe(url, ua):
+              request = urllib.request.Request(url, headers={'User-Agent': ua, 'Accept': '*/*'})
+              try:
+                  with urllib.request.urlopen(request, timeout=45) as response:
+                      body = response.read(20000)
+                      status = getattr(response, 'status', None)
+                      headers = response.headers
+                      final_url = response.geturl()
+              except urllib.error.HTTPError as exc:
+                  body = exc.read(20000)
+                  status = exc.code
+                  headers = exc.headers
+                  final_url = exc.geturl()
+              except Exception as exc:
+                  return {'error': f'{type(exc).__name__}: {exc}'}
+              text = body.decode('utf-8', errors='replace')
+              title = re.search(r'<title[^>]*>(.*?)</title>', text, re.I | re.S)
+              h1 = re.search(r'<h1[^>]*>(.*?)</h1>', text, re.I | re.S)
+              clean = lambda value: re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', html.unescape(value or ''))).strip()[:500]
+              return {
+                  'status': status,
+                  'content_type': headers.get('Content-Type'),
+                  'content_length': headers.get('Content-Length'),
+                  'location': headers.get('Location'),
+                  'final_url': final_url,
+                  'prefix_hex': body[:16].hex(),
+                  'zip_signature': body.startswith((b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08')),
+                  'xml_signature': body.lstrip().startswith((b'<?xml', b'<Siri', b'<siri')),
+                  'title': clean(title.group(1)) if title else '',
+                  'h1': clean(h1.group(1)) if h1 else '',
+                  'body_excerpt': clean(text[:4000]),
+              }
+
+          report = {
+              'diagnosed_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'legacy': {name: probe(legacy, ua) for name, ua in uas.items()},
+              'api_without_key': probe(api, uas['kerbside_1_1']),
+              'api_key_available': bool(key),
+          }
+          if key:
+              report['api_with_key'] = probe(api + '?' + urllib.parse.urlencode({'api_key': key}), uas['kerbside_1_1'])
+          pathlib.Path('/tmp/kerbside-disruption-source-probe.json').write_text(
+              json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(report, indent=2, sort_keys=True))
+          PY
+
+      - name: Publish report on diagnostic branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin agent/diagnose-kerbside-disruptions-20260810
+          git switch agent/diagnose-kerbside-disruptions-20260810
+          mkdir -p diagnostics
+          cp /tmp/kerbside-disruption-source-probe.json diagnostics/kerbside-disruptions-source.json
+          git add diagnostics/kerbside-disruptions-source.json
+          git commit -m 'Record Kerbside disruption source probe'
+          git push origin HEAD:agent/diagnose-kerbside-disruptions-20260810
+
+      - name: Remove one-shot workflow from main
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git switch -C main origin/main
+          git rm .github/workflows/diagnose-kerbside-disruptions-source.yml
+          git commit -m 'Remove one-shot Kerbside disruption source probe'
+          git push origin HEAD:main
