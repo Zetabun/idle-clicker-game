@@ -208,7 +208,9 @@ async function runDesktop(browser){
   assert.match(await page.locator('#trainSuggest').textContent(),/Bristol Temple Meads/);
 
   await page.fill('#trainStationQuery','BRI');
-  await page.click('#trainStationGo');
+  // The combined planner hides the legacy origin button from users, but the
+  // underlying station-only board API remains available for this focused test.
+  await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServices(page, diagnostics);
   assert.equal(await page.locator('#trainStationName').textContent(),'Bristol Temple Meads');
   assert.match(await page.locator('.train-service').first().textContent(),/Cardiff Central/);
@@ -252,7 +254,7 @@ async function runMobile(browser){
   await page.click('#transportTrain');
   assert.equal(await page.locator('#trainMain').evaluate(el=>getComputedStyle(el).display),'flex');
   await page.fill('#trainStationQuery','BRI');
-  await page.click('#trainStationGo');
+  await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServices(page, diagnostics);
   await page.locator('.train-service-summary').first().click();
   await page.waitForSelector('.train-feedback');
