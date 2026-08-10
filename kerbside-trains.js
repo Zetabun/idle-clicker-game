@@ -932,7 +932,7 @@ function renderServiceDetail(service,index,forecast,detail){
       <span class="train-model-label">Help calibrate this forecast</span>
       <strong>What was the train actually like?</strong>
       <p>If you are on this train, or have just used it, one tap adds a local crowding label for similar future services. Nothing is uploaded.</p>
-      <div class="train-search-box">${feedbackButtons}</div>
+      <div class="train-search-box train-feedback" style="flex-wrap:wrap;margin-top:8px">${feedbackButtons}</div>
       ${recorded ? `<div class="train-detail-note">Saved locally: ${esc(FEEDBACK_LABEL[recorded] || recorded)}.</div>` : ''}
     </div>
     ${calling}`;
