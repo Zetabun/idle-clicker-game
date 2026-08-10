@@ -1,0 +1,47 @@
+name: Sync Kerbside 0.7.28 version
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - VERSION
+      - kerbside-trains.js
+      - kerbside-backend/package.json
+      - .github/workflows/sync-kerbside-0.7.28.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.head_ref == 'agent/kerbside-train-crowding-v2'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Sync version copies
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat VERSION)" = "0.7.28"
+          python3 .github/scripts/sync-version.py
+          python3 .github/scripts/sync-version.py --check
+
+      - name: Commit synchronized version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'Version copies already synchronized.'
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add VERSION bus.html kerbside-backend/package.json kerbside-backend/src/worker.js kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs
+          git commit -m 'Sync Kerbside 0.7.28 version'
+          git push origin HEAD:${{ github.head_ref }}
