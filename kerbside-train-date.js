@@ -104,7 +104,7 @@ function applyForecasts(){
       setText(explain.querySelector('strong'),forecast.label);
       setText(explain.querySelector('span'),`${forecast.confidence} confidence · model v${api.modelVersion} · ${live ? 'live-adjusted' : 'planning'}`);
       const reason = explain.querySelector('p');
-      if(reason) setText(reason,`Why: ${forecast.reasons.join(', ')}. ${live ? 'This forecast is using current running conditions and can change as new data arrives.' : 'This planning estimate excludes today’s delays, cancellations and formation because they do not describe the selected future date.'}`);
+      if(reason) setText(reason,`Why: ${forecast.reasons.join(', ')}. ${live ? 'This forecast is using current running conditions and can change as new data arrives.' : 'This planning estimate excludes today’s delays, cancellations and formation because they do not describe the selected future date.'} Kerbside does not use ticket sales, seat reservations or live carriage occupancy, so it deliberately avoids an exact percentage.`);
     }
   });
 }
