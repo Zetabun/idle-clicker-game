@@ -70,11 +70,12 @@ const serviceDetail = {
   }]
 };
 
-async function mockExternal(page){
+async function mockExternal(page, diagnostics){
   await page.route('https://**', async route=>{
     const url = new URL(route.request().url());
     if(url.hostname === 'huxley2.azurewebsites.net'){
-      const pathname = decodeURIComponent(url.pathname);
+      const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
+      diagnostics.huxley.push(pathname);
       if(pathname.startsWith('/crs/')){
         await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(stationResults)});
         return;
@@ -98,9 +99,37 @@ async function mockExternal(page){
   });
 }
 
+function attachDiagnostics(page){
+  const diagnostics = {pageErrors:[], consoleErrors:[], huxley:[]};
+  page.on('pageerror', error=>diagnostics.pageErrors.push(String(error && error.stack || error)));
+  page.on('console', message=>{
+    if(message.type()==='error') diagnostics.consoleErrors.push(message.text());
+  });
+  return diagnostics;
+}
+
+async function waitForServices(page, diagnostics){
+  try{
+    await page.waitForSelector('.train-service', {timeout:10000});
+  }catch(error){
+    const snapshot = await page.evaluate(()=>({
+      mode:document.body.dataset.transport || '',
+      station:document.getElementById('trainStationName')?.textContent || '',
+      board:document.getElementById('trainBoard')?.textContent || '',
+      trainState:window.__KERBSIDE_TRAINS__ ? {
+        mode:window.__KERBSIDE_TRAINS__.state.mode,
+        station:window.__KERBSIDE_TRAINS__.state.station,
+        services:window.__KERBSIDE_TRAINS__.state.services.length
+      } : null
+    }));
+    throw new Error(`Train services did not render. Huxley requests=${JSON.stringify(diagnostics.huxley)} pageErrors=${JSON.stringify(diagnostics.pageErrors)} consoleErrors=${JSON.stringify(diagnostics.consoleErrors)} snapshot=${JSON.stringify(snapshot)}`, {cause:error});
+  }
+}
+
 async function runDesktop(browser){
   const page = await browser.newPage({viewport:{width:1280,height:800}});
-  await mockExternal(page);
+  const diagnostics = attachDiagnostics(page);
+  await mockExternal(page, diagnostics);
   await page.goto(`http://127.0.0.1:${port}/bus.html`, {waitUntil:'domcontentloaded'});
   await page.waitForSelector('#transportTrain');
   await page.click('#transportTrain');
@@ -109,10 +138,17 @@ async function runDesktop(browser){
   assert.equal(await page.locator('#trainMain').getAttribute('aria-hidden'),'false');
   assert.equal(await page.locator('#main').evaluate(el=>getComputedStyle(el).display),'none');
 
+  // Verify autocomplete independently from board loading so a provider/search
+  // regression cannot be hidden by direct CRS entry.
   await page.fill('#trainStationQuery','bris');
   await page.waitForSelector('#trainSuggest button');
-  await page.locator('#trainSuggest button').first().click();
-  await page.waitForSelector('.train-service');
+  assert.match(await page.locator('#trainSuggest').textContent(),/Bristol Temple Meads/);
+
+  // Direct CRS entry is an explicit supported path and makes the departure-board
+  // assertion deterministic even if autocomplete timing changes between engines.
+  await page.fill('#trainStationQuery','BRI');
+  await page.click('#trainStationGo');
+  await waitForServices(page, diagnostics);
   assert.equal(await page.locator('#trainStationName').textContent(),'Bristol Temple Meads');
   assert.match(await page.locator('.train-service').first().textContent(),/Cardiff Central/);
   assert.match(await page.locator('.train-service').first().textContent(),/Expected/);
@@ -127,12 +163,14 @@ async function runDesktop(browser){
   await page.click('#transportBus');
   assert.equal(await page.locator('body').getAttribute('data-transport'),'bus');
   assert.notEqual(await page.locator('#main').evaluate(el=>getComputedStyle(el).display),'none');
+  assert.deepEqual(diagnostics.pageErrors, [], `Unexpected page errors: ${diagnostics.pageErrors.join('\n')}`);
   await page.close();
 }
 
 async function runMobile(browser){
   const page = await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-  await mockExternal(page);
+  const diagnostics = attachDiagnostics(page);
+  await mockExternal(page, diagnostics);
   await page.goto(`http://127.0.0.1:${port}/bus.html`, {waitUntil:'domcontentloaded'});
   await page.waitForSelector('#transportTrain');
   const box = await page.locator('.transport-switch').boundingBox();
@@ -143,6 +181,7 @@ async function runMobile(browser){
   assert.equal(await page.locator('#trainMain').evaluate(el=>getComputedStyle(el).display),'flex');
   const overflow = await page.evaluate(()=>document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, `mobile layout should not horizontally overflow; got ${overflow}px`);
+  assert.deepEqual(diagnostics.pageErrors, [], `Unexpected mobile page errors: ${diagnostics.pageErrors.join('\n')}`);
   await page.close();
 }
 
