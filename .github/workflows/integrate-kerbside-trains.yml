@@ -2,37 +2,37 @@ name: Integrate and validate Kerbside train mode
 
 on:
   workflow_dispatch:
-  issues:
-    types:
-      - opened
-  push:
+  pull_request:
     branches:
       - main
     paths:
-      - .github/workflows/integrate-kerbside-trains.yml
+      - TRAIN_INTEGRATION_REQUEST.md
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: kerbside-train-integration
+  group: kerbside-train-integration-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   integrate:
-    if: github.event_name != 'issues' || github.event.issue.title == '[agent] integrate Kerbside train mode 0.7.27'
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
-      - name: Check out exact main revision
+      - name: Check out the train integration branch
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
-      - name: Record guarded base
+      - name: Record guarded head
         shell: bash
-        run: echo "GUARDED_BASE=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+        run: |
+          echo "GUARDED_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "HEAD_REF=${{ github.event.pull_request.head.ref || github.ref_name }}" >> "$GITHUB_ENV"
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -142,14 +142,15 @@ jobs:
           KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
           KERBSIDE_BROWSER=webkit npm run test:browser --prefix kerbside-backend
 
-      - name: Publish validated Kerbside 0.7.27 to main
+      - name: Commit validated integration to the PR branch
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
-          remote_main="$(git rev-parse origin/main)"
-          if [[ "$remote_main" != "$GUARDED_BASE" ]]; then
-            echo "::error::main moved during validation: guarded $GUARDED_BASE, now $remote_main"
+          git fetch origin "$HEAD_REF"
+          remote_head="$(git rev-parse "origin/$HEAD_REF")"
+          if [[ "$remote_head" != "$GUARDED_HEAD" ]]; then
+            echo "::error::PR branch moved during validation: guarded $GUARDED_HEAD, now $remote_head"
             exit 1
           fi
 
@@ -164,17 +165,21 @@ jobs:
             kerbside-backend/tests/browser-regression.mjs
 
           git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'Train integration already present on branch.'
+            exit 0
+          fi
           git commit -m "Kerbside 0.7.27: add train mode"
-          git push origin HEAD:main
+          git push origin HEAD:"$HEAD_REF"
 
-      - name: Summarize train release
+      - name: Summarize train validation
         shell: bash
         run: |
           {
-            echo '## Kerbside 0.7.27 train mode'
-            echo '- Bus / Train switch added to the existing header.'
-            echo '- Train UI and logic remain isolated in kerbside-trains.css and kerbside-trains.js.'
-            echo '- Live Darwin departures, station search, platform, delay, calling points and disruption notices are available through the replaceable Huxley 2 provider.'
-            echo '- Crowding is explicitly forecast-only in this first build; it uses time-of-day, formation length, delay and cancellation pressure, never invented ticket-sales or occupancy percentages.'
-            echo '- New train regression and existing bus browser regression passed in Chromium and WebKit before publishing.'
+            echo '## Kerbside 0.7.27 train mode validated'
+            echo '- Bus / Train switch is injected into the existing header.'
+            echo '- Rail UI and logic stay isolated in kerbside-trains.css and kerbside-trains.js.'
+            echo '- Live Darwin departures, station search, platforms, delays, calling points and disruption notices use the replaceable Huxley 2 provider.'
+            echo '- Crowding remains explicitly forecast-only: time of day, formation length, delay and cancellation pressure; no invented ticket-sales or occupancy percentages.'
+            echo '- New train regression and existing bus browser regression both ran in Chromium and WebKit.'
           } >> "$GITHUB_STEP_SUMMARY"
