@@ -19,7 +19,8 @@ const state = {
   detailAbort: null,
   searchTimer: null,
   refreshTimer: null,
-  requestSeq: 0
+  searchSeq: 0,
+  boardSeq: 0
 };
 
 const $ = id => document.getElementById(id);
@@ -274,6 +275,8 @@ function applyMode(mode, {persist=true}={}){
 }
 
 function closeSuggestions(){
+  clearTimeout(state.searchTimer);
+  state.searchTimer = null;
   const suggest = $('trainSuggest');
   if(suggest){ suggest.hidden = true; suggest.innerHTML=''; }
   if(state.searchAbort){ state.searchAbort.abort(); state.searchAbort=null; }
@@ -302,12 +305,12 @@ async function searchStations(query){
   if(state.searchAbort) state.searchAbort.abort();
   const controller = new AbortController();
   state.searchAbort = controller;
-  const seq = ++state.requestSeq;
+  const seq = ++state.searchSeq;
   try{
     const response = await fetchWithTimeout(`${PROVIDER_BASE}/crs/${encodeURIComponent(q)}`, {signal:controller.signal});
     if(!response.ok) throw new Error(`Station search returned ${response.status}`);
     const json = await response.json();
-    if(seq !== state.requestSeq || controller.signal.aborted) return;
+    if(seq !== state.searchSeq || controller.signal.aborted) return;
     const items = (Array.isArray(json) ? json : [])
       .map(x=>({name:String(x.stationName || '').trim(), crs:String(x.crsCode || '').trim().toUpperCase()}))
       .filter(x=>x.name && /^[A-Z0-9]{3}$/.test(x.crs));
@@ -515,13 +518,13 @@ async function loadBoard(station, {silent=false}={}){
   if(state.boardAbort) state.boardAbort.abort();
   const controller = new AbortController();
   state.boardAbort = controller;
-  const seq = ++state.requestSeq;
+  const seq = ++state.boardSeq;
   setBoardLoading(silent);
   try{
     const response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20`, {signal:controller.signal});
     if(!response.ok) throw new Error(`Departure board returned ${response.status}`);
     const json = await response.json();
-    if(controller.signal.aborted || seq !== state.requestSeq) return;
+    if(controller.signal.aborted || seq !== state.boardSeq) return;
     state.board = json || {};
     state.services = Array.isArray(json && json.trainServices) ? json.trainServices : [];
     if(json && json.locationName) state.station.name = json.locationName;

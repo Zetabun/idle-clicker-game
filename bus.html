@@ -797,6 +797,7 @@ body.theme-crystal .leaflet-bar a{
 }
 body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 </style>
+<link rel="stylesheet" href="kerbside-trains.css">
 </head>
 <body>
 <div id="app">
@@ -1067,7 +1068,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.26';
+const APP_VERSION = '0.7.27';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -7560,5 +7561,6 @@ if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='man
 window.addEventListener('resize',()=>map.invalidateSize());
 })();
 </script>
+<script src="kerbside-trains.js"></script>
 </body>
 </html>
