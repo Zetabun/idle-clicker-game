@@ -1,0 +1,176 @@
+name: Integrate and validate Kerbside train mode
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/integrate-kerbside-trains.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-train-integration
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out exact main revision
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Record guarded base
+        shell: bash
+        run: echo "GUARDED_BASE=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Integrate isolated train assets and bump version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          bus_path = Path('bus.html')
+          bus = bus_path.read_text(encoding='utf-8')
+          css_ref = '<link rel="stylesheet" href="kerbside-trains.css">'
+          js_ref = '<script src="kerbside-trains.js"></script>'
+
+          if bus.count(css_ref) > 1 or bus.count(js_ref) > 1:
+              raise SystemExit('Train asset references are duplicated in bus.html')
+
+          if css_ref not in bus:
+              marker = '</style>\n</head>'
+              if bus.count(marker) != 1:
+                  raise SystemExit(f'Expected one head style marker, found {bus.count(marker)}')
+              bus = bus.replace(marker, f'</style>\n{css_ref}\n</head>', 1)
+
+          if js_ref not in bus:
+              marker = '</body>'
+              if bus.count(marker) != 1:
+                  raise SystemExit(f'Expected one body marker, found {bus.count(marker)}')
+              bus = bus.replace(marker, f'{js_ref}\n</body>', 1)
+
+          bus_path.write_text(bus, encoding='utf-8')
+
+          version_path = Path('VERSION')
+          current = version_path.read_text(encoding='utf-8').strip()
+          if current not in {'0.7.26', '0.7.27'}:
+              raise SystemExit(f'Unexpected Kerbside version before train integration: {current}')
+          version_path.write_text('0.7.27\n', encoding='utf-8')
+          PY
+
+          python3 .github/scripts/sync-version.py
+
+      - name: Install validation dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          if git ls-files --error-unmatch kerbside-backend/vendor/leaflet/leaflet.js >/dev/null 2>&1; then
+            git diff --exit-code -- kerbside-backend/vendor/leaflet
+          fi
+          cd kerbside-backend
+          npx playwright install --with-deps chromium webkit
+
+      - name: Static validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync-version.py --check
+          node --check kerbside-trains.js
+          node --check kerbside-backend/tests/train-regression.mjs
+          npm run check --prefix kerbside-backend
+          python3 - <<'PY'
+          import re
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          bus = Path('bus.html').read_text(encoding='utf-8')
+          required = [
+              '<link rel="stylesheet" href="kerbside-trains.css">',
+              '<script src="kerbside-trains.js"></script>',
+              "const APP_VERSION = '0.7.27';",
+          ]
+          missing = [item for item in required if item not in bus]
+          if missing:
+              raise SystemExit(f'Missing train integration tokens: {missing}')
+          if bus.count('kerbside-trains.css') != 1 or bus.count('kerbside-trains.js') != 1:
+              raise SystemExit('Train integration references must each appear exactly once')
+
+          css = Path('kerbside-trains.css').read_text(encoding='utf-8')
+          if css.count('{') != css.count('}'):
+              raise SystemExit('Train stylesheet has unbalanced braces')
+          for token in ['.transport-switch', '.train-main', 'body[data-transport="train"] #main', '@media (max-width:820px)']:
+              if token not in css:
+                  raise SystemExit(f'Missing train stylesheet token: {token}')
+
+          scripts = re.findall(r'<script(?![^>]*\\bsrc=)[^>]*>(.*?)</script>', bus, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  target = Path(directory) / f'inline-{index}.js'
+                  target.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(target)], check=True)
+          PY
+          git diff --check
+
+      - name: Run train and bus browser validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          KERBSIDE_BROWSER=chromium node kerbside-backend/tests/train-regression.mjs
+          KERBSIDE_BROWSER=webkit node kerbside-backend/tests/train-regression.mjs
+          KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+          KERBSIDE_BROWSER=webkit npm run test:browser --prefix kerbside-backend
+
+      - name: Publish validated Kerbside 0.7.27 to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          remote_main="$(git rev-parse origin/main)"
+          if [[ "$remote_main" != "$GUARDED_BASE" ]]; then
+            echo "::error::main moved during validation: guarded $GUARDED_BASE, now $remote_main"
+            exit 1
+          fi
+
+          git config user.name "OpenAI Agent"
+          git config user.email "noreply@openai.com"
+          git add \
+            VERSION \
+            bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs
+
+          git diff --cached --check
+          git commit -m "Kerbside 0.7.27: add train mode"
+          git push origin HEAD:main
+
+      - name: Summarize train release
+        shell: bash
+        run: |
+          {
+            echo '## Kerbside 0.7.27 train mode'
+            echo '- Bus / Train switch added to the existing header.'
+            echo '- Train UI and logic remain isolated in kerbside-trains.css and kerbside-trains.js.'
+            echo '- Live Darwin departures, station search, platform, delay, calling points and disruption notices are available through the replaceable Huxley 2 provider.'
+            echo '- Crowding is explicitly forecast-only in this first build; it uses time-of-day, formation length, delay and cancellation pressure, never invented ticket-sales or occupancy percentages.'
+            echo '- New train regression and existing bus browser regression passed in Chromium and WebKit before publishing.'
+          } >> "$GITHUB_STEP_SUMMARY"
