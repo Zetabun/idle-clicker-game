@@ -59,3 +59,5 @@ jobs:
           git add kerbside-train-routes.js
           git commit -m 'Fix train route empty-state observer loop'
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+# Temporary guarded workflow. Removed after the fix commit lands.
