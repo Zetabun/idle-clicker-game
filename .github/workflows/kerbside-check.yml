@@ -7,6 +7,8 @@ on:
     paths:
       - VERSION
       - bus.html
+      - kerbside-trains.js
+      - kerbside-trains.css
       - build-timetable.js
       - kerbside-backend/**
       - .github/scripts/sync-version.py
@@ -27,6 +29,8 @@ on:
     paths:
       - VERSION
       - bus.html
+      - kerbside-trains.js
+      - kerbside-trains.css
       - build-timetable.js
       - kerbside-backend/**
       - .github/scripts/sync-version.py
@@ -83,10 +87,9 @@ jobs:
           set -euo pipefail
           python3 .github/scripts/sync-version.py --check
 
-      # Consistency across files is not the same as advancing. Three different
-      # bus.html contents shipped as 0.6.85 because commits changed the app
-      # without touching VERSION, and the production smoke test could not tell
-      # them apart. Changing the served app must change its version.
+      # Consistency across files is not the same as advancing. The served app
+      # includes the bus shell plus isolated rail assets, so any of those must
+      # advance VERSION together to keep production verification meaningful.
       - name: Require a version bump when the app changes
         shell: bash
         run: |
@@ -101,20 +104,21 @@ jobs:
           if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
             base_sha="$(git rev-list --max-parents=0 "$head_sha" | tail -n 1)"
           fi
-          if git diff --quiet "$base_sha" "$head_sha" -- bus.html; then
-            echo 'bus.html unchanged; no bump required.'
+          if git diff --quiet "$base_sha" "$head_sha" -- bus.html kerbside-trains.js kerbside-trains.css; then
+            echo 'Served app unchanged; no bump required.'
             exit 0
           fi
           if git diff --quiet "$base_sha" "$head_sha" -- VERSION; then
-            echo "::error::bus.html changed between $base_sha and $head_sha but VERSION did not."
+            echo "::error::Served app changed between $base_sha and $head_sha but VERSION did not."
             exit 1
           fi
-          echo "bus.html changed across the full event range and VERSION advanced to $(cat VERSION)."
+          echo "Served app changed across the full event range and VERSION advanced to $(cat VERSION)."
 
       - name: Validate browser JavaScript
         shell: bash
         run: |
           set -euo pipefail
+          node --check kerbside-trains.js
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -130,7 +134,7 @@ jobs:
                   filename = Path(directory) / f'inline-{index}.js'
                   filename.write_text(script, encoding='utf-8')
                   subprocess.run(['node', '--check', str(filename)], check=True)
-          print(f'Validated {len(scripts)} inline browser script(s).')
+          print(f'Validated {len(scripts)} inline browser script(s) plus kerbside-trains.js.')
           PY
 
       - name: Validate timetable builders, reliability tooling and Worker
@@ -141,6 +145,7 @@ jobs:
           node --check kerbside-backend/scripts/apply-stop-side-hardening-build.mjs
           node --check kerbside-backend/scripts/apply-journey-identity-hardening-build.mjs
           node --check kerbside-backend/scripts/apply-reliability-hardening-build.mjs
+          node --check kerbside-backend/tests/train-regression.mjs
           node --check kerbside-backend/tests/stop-side-regression.mjs
           node --check kerbside-backend/tests/journey-identity-regression.mjs
           node --check kerbside-backend/tests/disruption-regression.mjs
@@ -150,15 +155,14 @@ jobs:
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
-      # The identity and multi-vehicle suites live in tests/, which node --test
-      # does not discover: it looks for *.test.*, test-* or a directory named
-      # test, and tests/identity-regression.mjs matches none of those. They
-      # have to be named explicitly or they never run.
+      # The identity, train and multi-vehicle suites live in tests/, which
+      # node --test does not discover automatically. Run them explicitly.
       - name: Run WebKit mobile regression checks
         shell: bash
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
+          npm run test:train --prefix kerbside-backend
           npm run test:identity --prefix kerbside-backend
           npm run test:multi-vehicle --prefix kerbside-backend
           npm run test:audit --prefix kerbside-backend
@@ -178,6 +182,7 @@ jobs:
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
+          npm run test:train --prefix kerbside-backend
           npm run test:identity --prefix kerbside-backend
           npm run test:multi-vehicle --prefix kerbside-backend
           npm run test:audit --prefix kerbside-backend
