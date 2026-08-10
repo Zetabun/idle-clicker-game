@@ -92,9 +92,16 @@ async function run(browser){
   await page.locator('#trainDestinationSuggest button').filter({hasText:'Bristol Parkway'}).click();
   await page.waitForFunction(()=>window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination?.crs==='BPW');
 
-  // Empty live data must preserve the journey identity instead of leaving the
-  // board header at its initial "Choose a station" state.
-  await page.waitForFunction(()=>/No direct live departures|No live departures/.test(document.getElementById('trainBoard')?.textContent||''));
+  // Empty live data must preserve the complete journey identity. Wait for the
+  // destination-aware state itself rather than matching the earlier origin-only
+  // empty board, which can still be on screen for one task while the direct
+  // request settles in Chromium.
+  await page.waitForFunction(()=>{
+    const header=document.getElementById('trainStationName')?.textContent||'';
+    const board=document.getElementById('trainBoard')?.textContent||'';
+    return /Birmingham Moor Street\s*→\s*Bristol Parkway/.test(header)
+      && /No direct live departures in this window/i.test(board);
+  });
   assert.equal((await page.locator('#trainStationName').textContent()).trim(),'Birmingham Moor Street → Bristol Parkway');
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Choose a station/);
   assert.match(await page.locator('#trainBoard').textContent(),/No direct live departures in this window/i);
