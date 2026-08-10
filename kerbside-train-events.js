@@ -10,7 +10,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const mins=t=>{const m=String(t||'').match(/^(\d{1,2}):(\d{2})/);return m?+m[1]*60 + +m[2]:null};
 const unique=a=>[...new Set(a.filter(Boolean))];
 function stationName(v){return String(v&&((v.locationName||v.name)||v.crs)||'').trim()}
-function currentJourney(){const trains=window.__KERBSIDE_TRAINS__;const route=window.__KERBSIDE_TRAIN_ROUTE__;return {origin:stationName(trains&&trains.state&&trains.state.station),destination:stationName(route&&route.state&&route.state.destination)}}
+function currentJourney(){const trains=window.__KERBSIDE_TRAINS__;const route=window.__KERBSIDE_TRAIN_ROUTES__||window.__KERBSIDE_TRAIN_ROUTE__;return {origin:stationName(trains&&trains.state&&trains.state.station),destination:stationName(route&&route.state&&route.state.destination)}}
 function locality(value){const words=String(value||'').trim().split(/\s+/).filter(Boolean);return words[0]||'';}
 function londonDate(date=new Date()){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${map.year}-${map.month}-${map.day}`;}
 function normalise(raw){if(!raw)return null;const title=String(raw.title||raw.name||'').trim();const place=String(raw.place||raw.location||raw.venue||'').trim();const start=mins(raw.startTime||raw.start||raw.time);const end=mins(raw.endTime||raw.end)||(start==null?null:start+150);const attendance=Number(raw.attendance||raw.capacity||0);const confidence=clamp(Number(raw.confidence)||0.65,0,1);if(!title||start==null)return null;return {title,place,start,end,attendance,confidence,type:String(raw.type||'event'),source:String(raw.source||'Wikidata')};}
@@ -27,5 +27,5 @@ async function refresh(){const provider=window.__KERBSIDE_EVENT_SOURCE__;if(!pro
 window.addEventListener('kerbside:journey-planner-change',refresh);
 document.addEventListener('kerbside:train-route-change',refresh);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(refresh,0),{once:true});else setTimeout(refresh,0);
-window.__KERBSIDE_EVENTS__={state,setEvents,refresh,pressureForJourney,MAX_EVENT_PRESSURE,normalise,relevance,locality,placeMatches,sparqlForJourney,rowsToEvents,wikidataEventsForJourney};
+window.__KERBSIDE_EVENTS__={state,setEvents,refresh,pressureForJourney,MAX_EVENT_PRESSURE,normalise,relevance,locality,placeMatches,sparqlForJourney,rowsToEvents,wikidataEventsForJourney,currentJourney};
 })();
