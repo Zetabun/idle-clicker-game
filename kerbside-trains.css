@@ -207,7 +207,7 @@ body.theme-crystal .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
   .train-sidebar h2{display:none}
   .train-intro{display:none}
   .train-search-wrap{margin:7px 0 8px}
-  .train-model-card{display:none}
+  .train-sidebar .train-model-card{display:none}
   .train-provider-note{margin:7px 0 0;font-size:9.5px;line-height:1.35}
   .train-content{flex:1;min-height:0}
   .train-board-head{padding:10px 12px 9px;gap:10px}
