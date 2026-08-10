@@ -71,31 +71,27 @@ const serviceDetail = {
 };
 
 async function mockExternal(page, diagnostics){
-  await page.route('https://**', async route=>{
+  await page.route('**://huxley2.azurewebsites.net/**', async route=>{
     const url = new URL(route.request().url());
-    if(url.hostname === 'huxley2.azurewebsites.net'){
-      const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
-      diagnostics.huxley.push(pathname);
-      if(pathname.startsWith('/crs/')){
-        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(stationResults)});
-        return;
-      }
-      if(pathname === '/departures/BRI/20'){
-        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(board)});
-        return;
-      }
-      if(pathname === '/service/SVC1'){
-        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(serviceDetail)});
-        return;
-      }
-      if(pathname === '/service/SVC2'){
-        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({})});
-        return;
-      }
-      await route.fulfill({status:404,contentType:'application/json',body:'{}'});
+    const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
+    diagnostics.huxley.push(pathname);
+    if(pathname.startsWith('/crs/')){
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(stationResults)});
       return;
     }
-    await route.abort();
+    if(pathname === '/departures/BRI/20'){
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(board)});
+      return;
+    }
+    if(pathname === '/service/SVC1'){
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(serviceDetail)});
+      return;
+    }
+    if(pathname === '/service/SVC2'){
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({})});
+      return;
+    }
+    await route.fulfill({status:404,contentType:'application/json',body:'{}'});
   });
 }
 
