@@ -223,9 +223,10 @@ async function runDesktop(browser){
 
   await page.locator('.train-service-summary').first().click();
   await page.waitForSelector('.train-call');
-  assert.match(await page.locator('.train-service-detail').first().textContent(),/Bath Spa/);
-  assert.match(await page.locator('.train-service-detail').first().textContent(),/does not use ticket sales/i);
-  assert.match(await page.locator('.train-service-detail').first().textContent(),/Help calibrate this forecast/i);
+  const detailText = await page.locator('.train-service-detail').first().textContent();
+  assert.match(detailText,/Bath Spa/);
+  assert.match(detailText,/Passenger-submitted crowding reports are not used to calculate this forecast/i);
+  assert.match(detailText,/Help calibrate this forecast/i);
 
   const feedbackButton = page.locator('[data-crowd-feedback="busy"]').first();
   await feedbackButton.click();
