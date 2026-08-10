@@ -208,20 +208,25 @@ async function runDesktop(browser){
   assert.match(await page.locator('#trainSuggest').textContent(),/Bristol Temple Meads/);
 
   await page.fill('#trainStationQuery','BRI');
-  await page.click('#trainStationGo');
+  // The combined planner hides the legacy origin button from users, but the
+  // underlying station-only board API remains available for this focused test.
+  await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServices(page, diagnostics);
   assert.equal(await page.locator('#trainStationName').textContent(),'Bristol Temple Meads');
-  assert.match(await page.locator('.train-service').first().textContent(),/Cardiff Central/);
-  assert.match(await page.locator('.train-service').first().textContent(),/Expected/);
+  const firstServiceText = await page.locator('.train-service').first().textContent();
+  assert.match(firstServiceText,/Cardiff Central/);
+  assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);
+  assert.match(firstServiceText,/forecast v3/i);
   assert.match(await page.locator('.train-provider-note').textContent(),/crowding model v2/i);
   assert.match(await page.locator('.train-provider-note').textContent(),/not ticket-sales data and not live occupancy/i);
   assert.match(await page.locator('#trainAlerts').textContent(),/Test disruption/);
 
   await page.locator('.train-service-summary').first().click();
   await page.waitForSelector('.train-call');
-  assert.match(await page.locator('.train-service-detail').first().textContent(),/Bath Spa/);
-  assert.match(await page.locator('.train-service-detail').first().textContent(),/does not use ticket sales/i);
-  assert.match(await page.locator('.train-service-detail').first().textContent(),/Help calibrate this forecast/i);
+  const detailText = await page.locator('.train-service-detail').first().textContent();
+  assert.match(detailText,/Bath Spa/);
+  assert.match(detailText,/Passenger-submitted crowding reports are not used to calculate this forecast/i);
+  assert.match(detailText,/Help calibrate this forecast/i);
 
   const feedbackButton = page.locator('[data-crowd-feedback="busy"]').first();
   await feedbackButton.click();
@@ -252,7 +257,7 @@ async function runMobile(browser){
   await page.click('#transportTrain');
   assert.equal(await page.locator('#trainMain').evaluate(el=>getComputedStyle(el).display),'flex');
   await page.fill('#trainStationQuery','BRI');
-  await page.click('#trainStationGo');
+  await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServices(page, diagnostics);
   await page.locator('.train-service-summary').first().click();
   await page.waitForSelector('.train-feedback');
