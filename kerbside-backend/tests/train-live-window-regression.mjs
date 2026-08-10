@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, webkit } from 'playwright';
 
+// This regression intentionally mirrors the reported midnight mobile journey state.
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(here,'..','..');
 const browserName=(process.env.KERBSIDE_BROWSER||'webkit').toLowerCase();
