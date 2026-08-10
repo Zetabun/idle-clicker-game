@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Build Kerbside's compact roadworks and disruption feed.
 
-Reads the Department for Transport Bus Open Data Service SIRI-SX bulk archive and
-writes `disruptions.json` for `bus.html`. The archive needs no API key, but it is a
-single national XML download that sends no CORS header, so it cannot be fetched
-from the browser. This script runs in GitHub Actions and publishes a small
-same-origin copy alongside the app on GitHub Pages.
+Reads the Department for Transport Bus Open Data Service authenticated SIRI-SX
+API and writes `disruptions.json` for `bus.html`. The upstream XML does not send
+a browser-friendly CORS policy, so this script runs in GitHub Actions and
+publishes a compact same-origin copy alongside the app on GitHub Pages.
 
 The output carries an ATCO stop index so the browser can match a disruption to a
 route by exact stop code rather than by line name. Line names are not unique: most
@@ -22,55 +21,87 @@ import os
 import re
 import sys
 import time
+import urllib.error
+import urllib.parse
 import urllib.request
-import zipfile
 from datetime import datetime, timedelta, timezone
-from io import BytesIO
 
-SOURCE = 'https://data.bus-data.dft.gov.uk/disruptions/download/bulk_archive'
+API_SOURCE = 'https://data.bus-data.dft.gov.uk/api/v1/siri-sx/'
 OUTPUT = 'disruptions.json'
 FORMAT_VERSION = 1
 
-# Situations that ended before now are dropped. The archive contains a sizeable
+# Situations that ended before now are dropped. The feed contains a sizeable
 # expired tail, and `<Progress>open</Progress>` does not mean currently active.
 # Future ones are kept briefly so the app can show upcoming planned closures.
 FUTURE_HORIZON_DAYS = 7
 # The browser currently accepts a disruption build for 24 hours. Publish a much
-# shorter heartbeat so an unchanged archive cannot age out silently.
+# shorter heartbeat so an unchanged source cannot age out silently.
 HEARTBEAT_HOURS = 6
 SUMMARY_MAX = 180
 DETAIL_MAX = 400
 MAX_STOPS_PER_SITUATION = 400
 
-UA = 'Kerbside-disruptions-build/1.1 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
+UA = 'Kerbside-disruptions-build/1.2 (+https://zetabun.github.io/idle-clicker-game/bus.html)'
+TAG_PREFIX = r'(?:[A-Za-z_][\w.-]*:)?'
 
 
-def is_zip_payload(payload):
-    return isinstance(payload, (bytes, bytearray)) and payload.startswith(
-        (b'PK\x03\x04', b'PK\x05\x06', b'PK\x07\x08'))
+def is_xml_payload(payload):
+    if not isinstance(payload, (bytes, bytearray)):
+        return False
+    head = bytes(payload).lstrip()
+    return head.startswith(b'<?xml') or head.startswith(b'<Siri') or head.startswith(b'<siri:')
 
 
-def fetch(url, attempts=5):
+def error_summary(error):
+    """Describe a download failure without echoing credential-bearing URLs."""
+    if isinstance(error, urllib.error.HTTPError):
+        return 'HTTP %s: %s' % (error.code, error.reason)
+    if isinstance(error, urllib.error.URLError):
+        return '%s: %s' % (type(error.reason).__name__, error.reason)
+    return '%s: %s' % (type(error).__name__, error)
+
+
+def fetch_api(api_key, attempts=5):
+    """Fetch the authenticated SIRI-SX XML without exposing the API key in logs."""
+    key = str(api_key or '').strip()
+    if not key:
+        raise SystemExit('BODS_KEY is required to refresh Kerbside disruptions')
+
+    url = API_SOURCE + '?' + urllib.parse.urlencode({'api_key': key})
+    request = urllib.request.Request(
+        url,
+        headers={
+            'User-Agent': UA,
+            'Accept': 'application/xml,text/xml;q=0.9,*/*;q=0.1',
+        },
+    )
     last = None
-    request = urllib.request.Request(url, headers={'User-Agent': UA})
     for attempt in range(attempts):
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
                 payload = response.read()
                 content_type = str(response.headers.get('Content-Type') or '')
-            if is_zip_payload(payload):
+            if is_xml_payload(payload):
                 return payload
             preview = re.sub(rb'\s+', b' ', payload[:160]).decode('utf-8', 'replace')
-            last = RuntimeError('expected ZIP, received %s (%s)' % (content_type or 'unknown content type', preview))
+            last = RuntimeError(
+                'expected XML, received %s (%s)'
+                % (content_type or 'unknown content type', preview)
+            )
         except Exception as error:  # noqa: BLE001 - retried below
-            last = error
+            last = RuntimeError(error_summary(error))
         if attempt + 1 < attempts:
             time.sleep(min(8, 2 ** attempt))
-    raise SystemExit('Could not download %s: %s' % (url, last))
+    raise SystemExit('Could not download BODS SIRI-SX API: %s' % last)
+
+
+def tag_pattern(tag):
+    return TAG_PREFIX + re.escape(tag)
 
 
 def text(source, tag):
-    match = re.search('<%s>([^<]*)</%s>' % (tag, tag), source)
+    pattern = r'<%s(?:\s[^>]*)?>([^<]*)</%s\s*>' % (tag_pattern(tag), tag_pattern(tag))
+    match = re.search(pattern, source)
     return match.group(1).strip() if match else ''
 
 
@@ -94,10 +125,20 @@ def parse_time(value):
         return None
 
 
+def situation_blocks(xml):
+    pattern = r'<%sPtSituationElement\b[^>]*>.*?</%sPtSituationElement\s*>' % (TAG_PREFIX, TAG_PREFIX)
+    return re.findall(pattern, xml, re.S)
+
+
+def tagged_values(source, tag):
+    pattern = r'<%s(?:\s[^>]*)?>([^<]+)</%s\s*>' % (tag_pattern(tag), tag_pattern(tag))
+    return re.findall(pattern, source)
+
+
 def parse(xml, now):
     horizon = now + timedelta(days=FUTURE_HORIZON_DAYS)
     situations = []
-    for block in re.findall(r'<PtSituationElement>.*?</PtSituationElement>', xml, re.S):
+    for block in situation_blocks(xml):
         end = parse_time(text(block, 'EndTime'))
         start = parse_time(text(block, 'StartTime'))
         if end and end < now:
@@ -111,7 +152,7 @@ def parse(xml, now):
                   or text(block, 'EnvironmentReason') or text(block, 'PersonnelReason'))
         stops = []
         seen = set()
-        for code in re.findall(r'<StopPointRef>([^<]+)<', block):
+        for code in tagged_values(block, 'StopPointRef'):
             code = code.strip()
             if code and code not in seen:
                 seen.add(code)
@@ -134,10 +175,10 @@ def parse(xml, now):
             'from': text(block, 'StartTime'),
             'to': text(block, 'EndTime'),
             'stops': stops,
-            'lines': sorted({clean(name, 24) for name in
-                             re.findall(r'<PublishedLineName>([^<]+)<', block) if name.strip()}),
-            'operators': sorted({code.strip() for code in
-                                 re.findall(r'<OperatorRef>([^<]+)<', block) if code.strip()}),
+            'lines': sorted({clean(name, 24) for name in tagged_values(block, 'PublishedLineName')
+                             if name.strip()}),
+            'operators': sorted({code.strip() for code in tagged_values(block, 'OperatorRef')
+                                 if code.strip()}),
             'source': text(block, 'ParticipantRef')[:40],
         })
     return situations
@@ -195,17 +236,15 @@ def load_previous(path=OUTPUT):
 
 def main():
     now = datetime.now(timezone.utc)
-    archive = fetch(SOURCE)
-    with zipfile.ZipFile(BytesIO(archive)) as bundle:
-        names = [name for name in bundle.namelist() if name.lower().endswith('.xml')]
-        if not names:
-            raise SystemExit('The BODS disruptions archive contained no XML')
-        xml = bundle.read(names[0]).decode('utf-8', 'replace')
+    payload = fetch_api(os.environ.get('BODS_KEY'))
+    xml = payload.decode('utf-8', 'replace')
 
-    total = xml.count('<PtSituationElement>')
+    total = len(situation_blocks(xml))
+    if not total:
+        raise SystemExit('The BODS SIRI-SX API returned no PtSituationElement records')
     situations = parse(xml, now)
-    if total and not situations:
-        raise SystemExit('Parsed %d situations from the archive but kept none' % total)
+    if not situations:
+        raise SystemExit('Parsed %d situations from the API but kept none' % total)
 
     index = build_index(situations)
     document = {
@@ -222,20 +261,20 @@ def main():
 
     previous = load_previous()
     changed, reason = publish_decision(previous, document, now)
-    payload = json.dumps(document, separators=(',', ':'), ensure_ascii=False)
+    output = json.dumps(document, separators=(',', ':'), ensure_ascii=False)
 
     with open(OUTPUT, 'w', encoding='utf-8', newline='\n') as handle:
-        handle.write(payload + '\n')
+        handle.write(output + '\n')
 
-    raw = len(payload.encode('utf-8'))
-    print('published situations in archive : %d' % total)
+    raw = len(output.encode('utf-8'))
+    print('published situations in API     : %d' % total)
     print('kept (current or upcoming)      : %d' % len(situations))
     print('distinct affected stop codes    : %d' % len(index))
     print('with stop codes / with lines    : %d / %d'
           % (sum(1 for s in situations if s['stops']),
              sum(1 for s in situations if s['lines'])))
     print('output                          : %.0f KB (%.0f KB gzipped)'
-          % (raw / 1024, len(gzip.compress(payload.encode('utf-8'), 9)) / 1024))
+          % (raw / 1024, len(gzip.compress(output.encode('utf-8'), 9)) / 1024))
     print('publish required                : %s (%s)' % ('yes' if changed else 'no', reason))
 
     marker = os.environ.get('GITHUB_OUTPUT')
