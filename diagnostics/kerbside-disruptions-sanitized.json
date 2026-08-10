@@ -1,0 +1,25 @@
+{
+  "diagnosed_at": "2026-08-10T00:03:37Z",
+  "legacy_bulk_archive": {
+    "status": 200,
+    "content_type": "text/html",
+    "content_length": 12705,
+    "zip_signature": false,
+    "title": "Problem with the service - GOV.UK",
+    "heading": "Sorry, there is a problem with the service",
+    "same_result_with_old_kerbside_user_agent": true,
+    "same_result_with_current_kerbside_user_agent": true,
+    "same_result_with_browser_user_agent": true
+  },
+  "authenticated_siri_sx_api": {
+    "repository_bods_key_was_available": true,
+    "status": 200,
+    "content_type": "text/xml",
+    "xml_signature": true,
+    "content_length": 7106643
+  },
+  "unauthenticated_siri_sx_api": {
+    "status": 401
+  },
+  "note": "Sanitized diagnostic record. No API key value or credential-bearing URL is stored here."
+}
