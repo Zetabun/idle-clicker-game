@@ -97,6 +97,8 @@ try{
       state.stop={...officialA,ind:'A'};
       state.ttStop={id:A,ind:'A'};
       const exactStopFacts=api.stopFactsHtml(state.stop);
+      api.updateStopMeta();
+      const exactStopInfo=document.getElementById('stopSource').textContent;
 
       const patternStops=[
         {id:'LOCAL-A',name:'High Street',lat,lon,along:100,sequence:10},
@@ -109,7 +111,7 @@ try{
         distinctOfficialMerged,officialOsmMerged,pairDetected,deviceCandidates,deviceChoice,manualChoice,manualUnrelated,
         ambiguousTimetable:ambiguousTimetable&&ambiguousTimetable.id,
         exactTimetable:exactTimetable&&exactTimetable.id,
-        ambiguousPattern,sequencedPattern,exactStopFacts
+        ambiguousPattern,sequencedPattern,exactStopFacts,exactStopInfo
       };
     } finally {
       Object.assign(state,saved);
@@ -127,8 +129,9 @@ try{
   assert.equal(result.exactTimetable,'490012345','an exact authoritative timetable stop code must still win immediately');
   assert.equal(result.ambiguousPattern,-1,'pattern fallback must not choose between two comparable opposite calls by metres alone');
   assert.equal(result.sequencedPattern,1,'an explicit stop sequence remains authoritative enough to choose the call');
-  assert.match(result.exactStopFacts,/Stop A/,'the selected stand indicator must remain visible beside the board');
-  assert.match(result.exactStopFacts,/ATCO 490012345/,'the exact national stop code must be visible for side-of-road verification');
+  assert.doesNotMatch(result.exactStopFacts,/Stop A|ATCO 490012345/,'stop identity must not be duplicated in the visible facts line');
+  assert.match(result.exactStopInfo,/Stop A/,'the selected stand indicator must remain available in the info panel');
+  assert.match(result.exactStopInfo,/Stop reference 490012345/,'the exact national stop code must remain available in the info panel for side-of-road verification');
   assert.deepEqual(pageErrors,[],'stop-side regression page should not raise browser errors');
   await context.close();
 } finally {
