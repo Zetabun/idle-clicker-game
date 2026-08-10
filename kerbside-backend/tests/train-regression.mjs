@@ -213,8 +213,10 @@ async function runDesktop(browser){
   await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServices(page, diagnostics);
   assert.equal(await page.locator('#trainStationName').textContent(),'Bristol Temple Meads');
-  assert.match(await page.locator('.train-service').first().textContent(),/Cardiff Central/);
-  assert.match(await page.locator('.train-service').first().textContent(),/Expected/);
+  const firstServiceText = await page.locator('.train-service').first().textContent();
+  assert.match(firstServiceText,/Cardiff Central/);
+  assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);
+  assert.match(firstServiceText,/forecast v3/i);
   assert.match(await page.locator('.train-provider-note').textContent(),/crowding model v2/i);
   assert.match(await page.locator('.train-provider-note').textContent(),/not ticket-sales data and not live occupancy/i);
   assert.match(await page.locator('#trainAlerts').textContent(),/Test disruption/);
