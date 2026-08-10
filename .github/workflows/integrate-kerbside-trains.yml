@@ -68,6 +68,32 @@ jobs:
 
           bus_path.write_text(bus, encoding='utf-8')
 
+          # Keep rail search and board freshness independent. A pending autocomplete
+          # debounce must never invalidate a departure response after a user chooses
+          # a station or submits a three-letter CRS code.
+          train_path = Path('kerbside-trains.js')
+          train = train_path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "  searchTimer: null,\n  refreshTimer: null,\n  requestSeq: 0\n};",
+                  "  searchTimer: null,\n  refreshTimer: null,\n  searchSeq: 0,\n  boardSeq: 0\n};"
+              ),
+              (
+                  "function closeSuggestions(){\n  const suggest = $('trainSuggest');",
+                  "function closeSuggestions(){\n  clearTimeout(state.searchTimer);\n  state.searchTimer = null;\n  const suggest = $('trainSuggest');"
+              ),
+              ("  const seq = ++state.requestSeq;\n  try{\n    const response = await fetchWithTimeout(`${PROVIDER_BASE}/crs/", "  const seq = ++state.searchSeq;\n  try{\n    const response = await fetchWithTimeout(`${PROVIDER_BASE}/crs/"),
+              ("    if(seq !== state.requestSeq || controller.signal.aborted) return;", "    if(seq !== state.searchSeq || controller.signal.aborted) return;"),
+              ("  const seq = ++state.requestSeq;\n  setBoardLoading(silent);", "  const seq = ++state.boardSeq;\n  setBoardLoading(silent);"),
+              ("    if(controller.signal.aborted || seq !== state.requestSeq) return;", "    if(controller.signal.aborted || seq !== state.boardSeq) return;")
+          ]
+          for old, new in replacements:
+              if old in train:
+                  train = train.replace(old, new, 1)
+              elif new not in train:
+                  raise SystemExit(f'Could not apply train request-sequencing guard: {old[:60]!r}')
+          train_path.write_text(train, encoding='utf-8')
+
           version_path = Path('VERSION')
           current = version_path.read_text(encoding='utf-8').strip()
           if current not in {'0.7.26', '0.7.27'}:
@@ -115,6 +141,11 @@ jobs:
           if bus.count('kerbside-trains.css') != 1 or bus.count('kerbside-trains.js') != 1:
               raise SystemExit('Train integration references must each appear exactly once')
 
+          train = Path('kerbside-trains.js').read_text(encoding='utf-8')
+          for token in ['searchSeq: 0', 'boardSeq: 0', 'seq !== state.searchSeq', 'seq !== state.boardSeq']:
+              if token not in train:
+                  raise SystemExit(f'Missing train request-sequencing guard: {token}')
+
           css = Path('kerbside-trains.css').read_text(encoding='utf-8')
           if css.count('{') != css.count('}'):
               raise SystemExit('Train stylesheet has unbalanced braces')
@@ -159,6 +190,7 @@ jobs:
           git add \
             VERSION \
             bus.html \
+            kerbside-trains.js \
             kerbside-backend/package.json \
             kerbside-backend/src/worker.js \
             kerbside-backend/test/worker.test.js \
@@ -181,5 +213,6 @@ jobs:
             echo '- Rail UI and logic stay isolated in kerbside-trains.css and kerbside-trains.js.'
             echo '- Live Darwin departures, station search, platforms, delays, calling points and disruption notices use the replaceable Huxley 2 provider.'
             echo '- Crowding remains explicitly forecast-only: time of day, formation length, delay and cancellation pressure; no invented ticket-sales or occupancy percentages.'
+            echo '- Train search and board requests use independent freshness guards so autocomplete cannot invalidate a selected station board.'
             echo '- New train regression and existing bus browser regression both ran in Chromium and WebKit.'
           } >> "$GITHUB_STEP_SUMMARY"
