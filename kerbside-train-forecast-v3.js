@@ -14,12 +14,27 @@ function stamp(date){
   return `${map.year}-${map.month}-${map.day}`;
 }
 function day(date){ return new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short'}).format(date||new Date()); }
+function dayClass(date){ const d=day(date); return d==='Fri'?'friday':(d==='Sat'||d==='Sun'?'weekend':'weekday'); }
 function parseMinutes(value){ const m=String(value||'').match(/^(\d{1,2}):(\d{2})$/); return m?Number(m[1])*60+Number(m[2]):null; }
 function clamp(value,min,max){ return Math.max(min,Math.min(max,value)); }
 function unique(values){ return [...new Set(values.filter(Boolean))]; }
 function labelFor(score){ return score>=4?'Very busy':score>=2.75?'Busy':score>=1.55?'Moderate':'Quiet'; }
 function levelFor(score){ return score>=4?'very-busy':score>=2.75?'busy':score>=1.55?'moderate':'quiet'; }
 function isFuture(date){ return stamp(date)>stamp(new Date()); }
+function normalise(value){ return String(value||'').trim().toLowerCase().replace(/\s+/g,' '); }
+function destinationIdentity(service){ const item=Array.isArray(service&&service.destination)?service.destination.find(Boolean):null; return normalise(item&&(item.crs||item.locationName)||'unknown'); }
+function operatorIdentity(service){ return normalise(service&&(service.operatorCode||service.operator)||'unknown'); }
+function profileKey(service,station,date){
+  const stationCode=normalise(station&&(station.crs||station.name)||'unknown');
+  const minute=parseMinutes(service&&service.std);
+  const band=minute==null?'unknown':String(Math.floor(minute/120)*2).padStart(2,'0');
+  return [stationCode,operatorIdentity(service),destinationIdentity(service),dayClass(date),band].join('|');
+}
+function getProfile(api,service,date){
+  const model=api&&api.state&&api.state.crowdingModel;
+  if(!model||!model.profiles) return null;
+  return model.profiles[profileKey(service,api.state.station,date)]||null;
+}
 
 function calendarSignal(date,minute){
   let amount=0;
@@ -61,25 +76,14 @@ function liveSignal(service,index,services){
 function historicalSignal(api,service,date){
   let amount=0;
   const reasons=[];
-  const model=api && api.state && api.state.crowdingModel;
-  if(!model || !model.profiles) return {amount,reasons};
-  const minute=parseMinutes(service&&service.std);
-  const station=String(api.state.station&&(api.state.station.crs||api.state.station.name)||'').toLowerCase();
-  const operator=String(service&&(service.operatorCode||service.operator)||'').toLowerCase();
-  const destination=String(service&&service.destination&&service.destination[0]&&(service.destination[0].crs||service.destination[0].locationName)||'').toLowerCase();
-  const band=minute==null?'unknown':String(Math.floor(minute/120)*2).padStart(2,'0');
-  const cls=day(date)==='Fri'?'friday':(['Sat','Sun'].includes(day(date))?'weekend':'weekday');
-  const tokens=[station,operator,destination,cls,band].filter(Boolean);
-  const profile=Object.entries(model.profiles).find(([key])=>tokens.every(token=>key.includes(token)));
-  if(profile){
-    const data=profile[1]||{};
-    const observations=Number(data.count||data.samples||data.observationCount)||0;
-    if(observations>=3){ amount+=0.3; reasons.push('historical service pattern available'); }
-    const typicalLength=Number(data.lengthMean||data.avgLength||data.typicalLength)||0;
-    const currentLength=Number(service&&service.length)||0;
-    if(currentLength&&typicalLength&&currentLength<typicalLength*0.75){ amount+=0.55; reasons.push('formation below its historical norm'); }
-  }
-  return {amount,reasons};
+  const profile=getProfile(api,service,date);
+  if(!profile) return {amount,reasons,profile:null};
+  const observations=Number(profile.samples||profile.count||profile.observationCount)||0;
+  if(observations>=3){ amount+=0.3; reasons.push('historical service pattern available'); }
+  const typicalLength=Number(profile.avgLength||profile.lengthMean||profile.typicalLength)||0;
+  const currentLength=Number(service&&service.length)||0;
+  if(currentLength&&typicalLength&&currentLength<typicalLength*0.75){ amount+=0.55; reasons.push('formation below its historical norm'); }
+  return {amount,reasons,profile};
 }
 
 function eventSignal(){
@@ -91,9 +95,18 @@ function eventSignal(){
   }catch(error){ return {amount:0,reasons:[]}; }
 }
 
+function removeLegacyFeedback(score,profile){
+  const count=profile?Number(profile.feedbackCount)||0:0;
+  const target=profile?Number(profile.feedbackMean):NaN;
+  if(!count||!Number.isFinite(target)) return score;
+  const weight=Math.min(0.5,0.12+count*0.06);
+  if(weight<=0||weight>=1) return score;
+  return (score-target*weight)/(1-weight);
+}
+
 function forecast(service,index,services,context={}){
   const api=window.__KERBSIDE_TRAINS__;
-  const base=api && typeof api.crowdingForecast==='function' ? api.crowdingForecast(service,index,services,{...context,disableFeedback:true}) : {score:1.8,reasons:[],confidence:'Low'};
+  const base=api && typeof api.crowdingForecast==='function' ? api.crowdingForecast(service,index,services,context) : {score:1.8,reasons:[],confidence:'Low'};
   const date=context.referenceDate instanceof Date?context.referenceDate:new Date(context.referenceDate||Date.now());
   const minute=parseMinutes(service&&service.std);
   const future=isFuture(date);
@@ -103,11 +116,10 @@ function forecast(service,index,services,context={}){
   const live=future?{amount:0,reasons:[]}:liveSignal(service,index,services);
   let score=Number(base.score);
   if(!Number.isFinite(score)) score=1.8;
-  // Remove any v2 local passenger-feedback calibration from the inherited baseline when exposed.
-  if(base.feedbackAdjustment) score-=Number(base.feedbackAdjustment)||0;
+  score=removeLegacyFeedback(score,historical.profile);
   score=clamp(score+calendar.amount+historical.amount+events.amount+live.amount,0.25,5);
   const reasons=unique([...(base.reasons||[]).filter(reason=>!/passenger feedback|local feedback|reported crowding/i.test(reason)),...historical.reasons,...calendar.reasons,...events.reasons,...live.reasons]);
-  let evidence=2+(historical.reasons.length?1:0)+(calendar.reasons.length?1:0)+(events.reasons.length?2:0)+(live.reasons.length?2:0);
+  const evidence=2+(historical.reasons.length?1:0)+(calendar.reasons.length?1:0)+(events.reasons.length?2:0)+(live.reasons.length?2:0);
   const confidence=evidence>=6?'High':evidence>=4?'Medium-high':evidence>=3?'Medium':'Low';
   return {score,level:levelFor(score),label:labelFor(score),confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],modelVersion:VERSION};
 }
@@ -142,5 +154,5 @@ async function loadCalendar(){
 }
 function init(){ const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule(); }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,calendarSignal,liveSignal,historicalSignal};
+window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,calendarSignal,liveSignal,historicalSignal,removeLegacyFeedback};
 })();
