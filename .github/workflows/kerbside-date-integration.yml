@@ -11,6 +11,10 @@ permissions:
   contents: write
   pull-requests: read
 
+concurrency:
+  group: kerbside-date-integration-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   integrate:
     if: github.head_ref == 'agent/kerbside-train-travel-date'
@@ -34,7 +38,6 @@ jobs:
           new = '<script src="kerbside-trains.js"></script>\n<script src="kerbside-train-routes.js"></script>\n<script src="kerbside-train-date.js"></script>\n</body>'
           if old not in text: raise SystemExit('Expected train script block not found')
           bus.write_text(text.replace(old,new,1),encoding='utf-8')
-
           test = Path('kerbside-backend/tests/train-route-filter-regression.mjs')
           source = test.read_text(encoding='utf-8')
           anchor = "  assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),true);\n"
