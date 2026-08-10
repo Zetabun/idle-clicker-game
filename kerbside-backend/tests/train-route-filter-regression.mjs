@@ -155,15 +155,22 @@ async function runDesktop(browser){
   await selectBirmingham(page);
   await selectBristol(page,diagnostics);
 
+  // A future date must not reuse today's Darwin board. Until an approved future
+  // timetable provider is connected, the planner should show an explicit
+  // scheduled-service provider state instead of inventing future trains.
   await page.locator('#trainTravelDate').fill('2026-08-14');
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'planning');
-  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/planning forecast/i);
-  assert.match(await page.locator('.train-crowding small').first().textContent(),/planning/i);
+  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/scheduled services.*advance crowding forecast/i);
+  await page.waitForSelector('#trainBoard .train-future-date');
+  assert.equal(await page.locator('.train-service').count(),0);
+  assert.match(await page.locator('#trainBoard').textContent(),/Future timetable support is ready|timetable provider must be configured/i);
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),'2026-08-14');
+
   await page.click('#trainTravelToday');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'live');
   assert.match(await page.locator('#trainTravelDateMeta').textContent(),/live-adjusted/i);
+  await waitForServiceCount(page,1);
 
   assert.equal(await page.locator('.train-service').count(),1);
   assert.match(await page.locator('.train-service').first().textContent(),/Plymouth/,
