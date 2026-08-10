@@ -9,6 +9,18 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const browserName = (process.env.KERBSIDE_BROWSER || 'webkit').toLowerCase();
 const browserType = browserName === 'chromium' ? chromium : webkit;
+function londonStamp(date=new Date()){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+  const map=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+function addCalendarDays(stamp,days){
+  const [year,month,day]=stamp.split('-').map(Number);
+  return new Date(Date.UTC(year,month-1,day+days,12)).toISOString().slice(0,10);
+}
+const TODAY=londonStamp();
+const TOMORROW=addCalendarDays(TODAY,1);
+const FUTURE_DATE=addCalendarDays(TODAY,4);
 
 const mime = {
   '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
@@ -149,7 +161,7 @@ async function runDesktop(browser){
   assert.equal(await page.locator('label[for="trainDestinationQuery"]').textContent(),'To');
   assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false);
   assert.equal(await page.locator('label[for="trainTravelDate"]').textContent(),'Travel date');
-  assert.equal(await page.locator('#trainTravelDate').inputValue(),'2026-08-10');
+  assert.equal(await page.locator('#trainTravelDate').inputValue(),TODAY);
   const visibleFindActions = await page.locator('.train-route-planner button').evaluateAll(buttons=>buttons.filter(button=>{
     const style=getComputedStyle(button),box=button.getBoundingClientRect();
     return /find/i.test(button.textContent||'') && style.display!=='none' && Number(style.opacity)>0 && box.width>2 && box.height>2;
@@ -163,7 +175,7 @@ async function runDesktop(browser){
   // screenshot regression where a complete BHM -> BRI journey still showed
   // "Choose a station" and "Live journey loaded" after tomorrow was selected.
   const liveRequestsBeforeFuture = departureRequestCount(diagnostics);
-  await page.locator('#trainTravelDate').fill('2026-08-14');
+  await page.locator('#trainTravelDate').fill(FUTURE_DATE);
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'planning');
   assert.match(await page.locator('#trainTravelDateMeta').textContent(),/advance journey.*scheduled services/i);
@@ -175,7 +187,7 @@ async function runDesktop(browser){
   assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Advance');
   assert.match(await page.locator('#trainBoard').textContent(),/Advance timetable/);
   assert.match(await page.locator('#trainBoard').textContent(),/Exact future train times need the scheduled timetable feed/i);
-  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),'2026-08-14');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),FUTURE_DATE);
 
   await page.click('#trainJourneyGo');
   await page.waitForFunction(()=>/Advance journey ready/i.test(document.getElementById('trainPlannerMessage')?.textContent||''));
@@ -258,7 +270,7 @@ async function runMobile(browser){
   assert.ok(mobileLayout.overflow<=1,`mobile route filter should not overflow: ${JSON.stringify(mobileLayout)}`);
 
   const liveRequestsBeforeFuture = departureRequestCount(diagnostics);
-  await page.locator('#trainTravelDate').fill('2026-08-11');
+  await page.locator('#trainTravelDate').fill(TOMORROW);
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForSelector('#trainBoard .train-future-card');
   await page.click('#trainJourneyGo');
