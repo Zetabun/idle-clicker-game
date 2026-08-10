@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression coverage for the generated Kerbside disruption feed heartbeat."""
+"""Regression coverage for the generated Kerbside disruption feed builder."""
 from datetime import datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
@@ -51,8 +51,40 @@ assert changed is True and reason == 'initial', (changed, reason)
 assert MODULE.comparable_document(fresh) == MODULE.comparable_document(current)
 assert MODULE.heartbeat_due(old, NOW) is True
 assert MODULE.heartbeat_due(fresh, NOW) is False
-assert MODULE.is_zip_payload(b'PK\x03\x04archive') is True
-assert MODULE.is_zip_payload(b'PK\x05\x06') is True
-assert MODULE.is_zip_payload(b'<!DOCTYPE html><title>Problem with the service</title>') is False
 
-print('Kerbside disruption build heartbeat regression checks passed.')
+assert MODULE.is_xml_payload(b'<?xml version="1.0"?><Siri/>') is True
+assert MODULE.is_xml_payload(b'<Siri/>') is True
+assert MODULE.is_xml_payload(b'<siri:Siri xmlns:siri="x"/>') is True
+assert MODULE.is_xml_payload(b'<!DOCTYPE html><title>Problem with the service</title>') is False
+
+namespaced_xml = '''<?xml version="1.0"?>
+<siri:Siri xmlns:siri="http://www.siri.org.uk/siri">
+  <siri:PtSituationElement>
+    <siri:SituationNumber>one</siri:SituationNumber>
+    <siri:ParticipantRef>WestofEngland</siri:ParticipantRef>
+    <siri:Progress>open</siri:Progress>
+    <siri:Planned>true</siri:Planned>
+    <siri:Summary>Roadworks</siri:Summary>
+    <siri:Description>Road closed</siri:Description>
+    <siri:StopPointRef>1800TEST</siri:StopPointRef>
+    <siri:PublishedLineName>5</siri:PublishedLineName>
+    <siri:OperatorRef>OP</siri:OperatorRef>
+  </siri:PtSituationElement>
+</siri:Siri>'''
+assert len(MODULE.situation_blocks(namespaced_xml)) == 1
+parsed = MODULE.parse(namespaced_xml, NOW)
+assert len(parsed) == 1
+assert parsed[0]['id'] == 'one'
+assert parsed[0]['stops'] == ['1800TEST']
+assert parsed[0]['lines'] == ['5']
+assert parsed[0]['operators'] == ['OP']
+assert parsed[0]['source'] == 'WestofEngland'
+
+try:
+    MODULE.fetch_api('')
+except SystemExit as error:
+    assert 'BODS_KEY is required' in str(error)
+else:
+    raise AssertionError('missing BODS_KEY must fail closed')
+
+print('Kerbside disruption build regression checks passed.')
