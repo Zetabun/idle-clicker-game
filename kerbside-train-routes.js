@@ -87,6 +87,23 @@ function updateSummary(){
   summary.innerHTML = `<strong>${esc(routeState.fromCrs)} → ${esc(routeState.destination.crs)}</strong><span>Direct trains to ${esc(routeState.destination.name || routeState.destination.crs)} only</span>`;
 }
 
+function isFutureJourney(){
+  const date = window.__KERBSIDE_TRAIN_DATE__;
+  return !!(date && typeof date.isToday === 'function' && !date.isToday());
+}
+
+function loadFutureJourney(){
+  if(!isFutureJourney()) return false;
+  const timetable = window.__KERBSIDE_TRAIN_TIMETABLE__;
+  if(timetable && typeof timetable.load === 'function'){
+    timetable.load();
+    return true;
+  }
+  const date = window.__KERBSIDE_TRAIN_DATE__;
+  if(date && typeof date.applyForecasts === 'function') date.applyForecasts();
+  return true;
+}
+
 function clearDestination({reload=false,disable=false}={}){
   routeState.destination = null;
   routeState.lastDirectRequest = '';
@@ -242,7 +259,7 @@ function selectDestination(station){
   updateSummary();
   setTimeout(()=>{
     closeSuggestions();
-    reloadBoard();
+    if(!loadFutureJourney()) reloadBoard();
   },0);
 }
 
@@ -259,6 +276,7 @@ async function submitDestination(){
 }
 
 function reloadBoard(){
+  if(loadFutureJourney()) return;
   const refresh = $('trainRefresh');
   if(refresh && !refresh.disabled){
     refresh.click();
@@ -369,7 +387,7 @@ function installUi(){
 }
 
 function improveEmptyState(){
-  if(!routeState.destination) return;
+  if(isFutureJourney() || !routeState.destination) return;
   const board = $('trainBoard');
   if(!board || board.querySelector('.train-service')) return;
   const empty = board.querySelector('.train-empty');
@@ -407,7 +425,9 @@ window.__KERBSIDE_TRAIN_ROUTES__ = {
   state:routeState,
   clearDestination,
   selectDestination,
-  rewrittenDepartureUrl
+  rewrittenDepartureUrl,
+  reloadBoard,
+  isFutureJourney
 };
 
 })();
