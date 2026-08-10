@@ -1850,7 +1850,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.30'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.7.31'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
