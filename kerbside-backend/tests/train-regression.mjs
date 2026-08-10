@@ -122,6 +122,75 @@ async function waitForServices(page, diagnostics){
   }
 }
 
+async function assertCrowdingModelV2(page){
+  const result = await page.evaluate(()=>{
+    const api = window.__KERBSIDE_TRAINS__;
+    const referenceDate = new Date('2026-08-10T07:30:00Z');
+    const station = {name:'Bristol Temple Meads',crs:'BRI'};
+    api.state.crowdingModel = {version:2,profiles:{},seen:{},feedbackSeen:{}};
+
+    const pressured = [
+      {
+        origin:[{locationName:'Bath Spa',crs:'BTH'}],
+        destination:[{locationName:'Cardiff Central',crs:'CDF'}],
+        serviceIdUrlSafe:'PRESSURE-CANCELLED',std:'08:00',etd:'Cancelled',
+        operator:'Great Western Railway',operatorCode:'GW',length:9,isCancelled:true
+      },
+      {
+        origin:[{locationName:'Bath Spa',crs:'BTH'}],
+        destination:[{locationName:'Cardiff Central',crs:'CDF'}],
+        serviceIdUrlSafe:'PRESSURE-NOW',std:'08:30',etd:'08:50',
+        operator:'Great Western Railway',operatorCode:'GW',length:3,isCancelled:false
+      },
+      {
+        origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
+        destination:[{locationName:'Cardiff Central',crs:'CDF'}],
+        serviceIdUrlSafe:'PRESSURE-NEXT',std:'09:00',etd:'On time',
+        operator:'Great Western Railway',operatorCode:'GW',length:9,isCancelled:false
+      }
+    ];
+    const quiet = [
+      {
+        origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
+        destination:[{locationName:'Weston-super-Mare',crs:'WSM'}],
+        serviceIdUrlSafe:'QUIET-PREV',std:'10:45',etd:'On time',
+        operator:'Great Western Railway',operatorCode:'GW',length:9,isCancelled:false
+      },
+      {
+        origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
+        destination:[{locationName:'Weston-super-Mare',crs:'WSM'}],
+        serviceIdUrlSafe:'QUIET-NOW',std:'11:00',etd:'On time',
+        operator:'Great Western Railway',operatorCode:'GW',length:9,isCancelled:false
+      }
+    ];
+
+    const pressuredForecast = api.crowdingForecast(pressured[1],1,pressured,{station,referenceDate,messages:[]});
+    const quietForecast = api.crowdingForecast(quiet[1],1,quiet,{station,referenceDate,messages:[]});
+
+    api.state.crowdingModel.profiles['bri|gw|cdf|weekday|4'] = {
+      samples:12,
+      lengthSamples:10,avgLength:9,
+      headwaySamples:10,avgHeadway:15,
+      delaySamples:10,avgDelay:4,
+      cancelledSamples:12,cancelledCount:1,
+      feedbackCount:5,feedbackMean:4.45,
+      updatedAt:Date.now()
+    };
+    const learnedForecast = api.crowdingForecast(pressured[1],1,pressured,{station,referenceDate,messages:[]});
+    return {modelVersion:api.modelVersion,pressuredForecast,quietForecast,learnedForecast};
+  });
+
+  assert.equal(result.modelVersion,2);
+  assert.equal(result.pressuredForecast.level,'very-busy');
+  assert.equal(result.quietForecast.level,'quiet');
+  assert.ok(result.pressuredForecast.score > result.quietForecast.score + 2.5,
+    `pressure scenario should score materially above quiet scenario: ${JSON.stringify(result)}`);
+  assert.equal(result.learnedForecast.feedbackSamples,5);
+  assert.match(result.learnedForecast.confidence,/Medium/);
+  assert.ok(result.learnedForecast.reasons.some(reason=>/local crowding feedback|local history/.test(reason)),
+    `learned forecast should explain historical calibration: ${JSON.stringify(result.learnedForecast)}`);
+}
+
 async function runDesktop(browser){
   const page = await browser.newPage({viewport:{width:1280,height:800}});
   const diagnostics = attachDiagnostics(page);
@@ -134,20 +203,17 @@ async function runDesktop(browser){
   assert.equal(await page.locator('#trainMain').getAttribute('aria-hidden'),'false');
   assert.equal(await page.locator('#main').evaluate(el=>getComputedStyle(el).display),'none');
 
-  // Verify autocomplete independently from board loading so a provider/search
-  // regression cannot be hidden by direct CRS entry.
   await page.fill('#trainStationQuery','bris');
   await page.waitForSelector('#trainSuggest button');
   assert.match(await page.locator('#trainSuggest').textContent(),/Bristol Temple Meads/);
 
-  // Direct CRS entry is an explicit supported path and makes the departure-board
-  // assertion deterministic even if autocomplete timing changes between engines.
   await page.fill('#trainStationQuery','BRI');
   await page.click('#trainStationGo');
   await waitForServices(page, diagnostics);
   assert.equal(await page.locator('#trainStationName').textContent(),'Bristol Temple Meads');
   assert.match(await page.locator('.train-service').first().textContent(),/Cardiff Central/);
   assert.match(await page.locator('.train-service').first().textContent(),/Expected/);
+  assert.match(await page.locator('.train-provider-note').textContent(),/crowding model v2/i);
   assert.match(await page.locator('.train-provider-note').textContent(),/not ticket-sales data and not live occupancy/i);
   assert.match(await page.locator('#trainAlerts').textContent(),/Test disruption/);
 
@@ -155,6 +221,16 @@ async function runDesktop(browser){
   await page.waitForSelector('.train-call');
   assert.match(await page.locator('.train-service-detail').first().textContent(),/Bath Spa/);
   assert.match(await page.locator('.train-service-detail').first().textContent(),/does not use ticket sales/i);
+  assert.match(await page.locator('.train-service-detail').first().textContent(),/Help calibrate this forecast/i);
+
+  const feedbackButton = page.locator('[data-crowd-feedback="busy"]').first();
+  await feedbackButton.click();
+  await page.waitForFunction(()=>document.querySelector('.train-service-detail')?.textContent?.includes('Saved locally: Busy'));
+  const feedbackStore = await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.crowding.v2') || '{}'));
+  assert.equal(feedbackStore.version,2);
+  assert.equal(Object.keys(feedbackStore.feedbackSeen || {}).length,1);
+
+  await assertCrowdingModelV2(page);
 
   await page.click('#transportBus');
   assert.equal(await page.locator('body').getAttribute('data-transport'),'bus');
@@ -175,6 +251,13 @@ async function runMobile(browser){
   assert.ok(box.y < 100, 'transport toggle should remain in the top header row');
   await page.click('#transportTrain');
   assert.equal(await page.locator('#trainMain').evaluate(el=>getComputedStyle(el).display),'flex');
+  await page.fill('#trainStationQuery','BRI');
+  await page.click('#trainStationGo');
+  await waitForServices(page, diagnostics);
+  await page.locator('.train-service-summary').first().click();
+  await page.waitForSelector('.train-feedback');
+  const feedbackOverflow = await page.locator('.train-feedback').evaluate(el=>el.scrollWidth-el.clientWidth);
+  assert.ok(feedbackOverflow <= 1, `crowding feedback controls should wrap without overflow; got ${feedbackOverflow}px`);
   const overflow = await page.evaluate(()=>document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, `mobile layout should not horizontally overflow; got ${overflow}px`);
   assert.deepEqual(diagnostics.pageErrors, [], `Unexpected mobile page errors: ${diagnostics.pageErrors.join('\n')}`);
@@ -186,7 +269,7 @@ try{
   browser = await browserType.launch({headless:true});
   await runDesktop(browser);
   await runMobile(browser);
-  console.log(`Kerbside train regression passed in ${browserName}.`);
+  console.log(`Kerbside train crowding model v2 regression passed in ${browserName}.`);
 }finally{
   if(browser) await browser.close();
   await new Promise(resolve=>server.close(resolve));
