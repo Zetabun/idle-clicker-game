@@ -3,9 +3,29 @@
 
 const PROVIDER_BASE = 'https://huxley2.azurewebsites.net';
 const STORE_KEY = 'kerbside.rail.v1';
+const MODEL_KEY = 'kerbside.rail.crowding.v2';
+const MODEL_VERSION = 2;
 const REFRESH_MS = 30000;
 const SEARCH_DELAY_MS = 280;
 const REQUEST_TIMEOUT_MS = 10000;
+const MODEL_MAX_PROFILES = 180;
+const MODEL_MAX_SEEN = 500;
+const MODEL_PROFILE_MAX_AGE_MS = 120 * 24 * 60 * 60 * 1000;
+const MODEL_SEEN_MAX_AGE_MS = 21 * 24 * 60 * 60 * 1000;
+const MODEL_FEEDBACK_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
+
+const FEEDBACK_SCORE = {
+  quiet: 0.75,
+  moderate: 2.0,
+  busy: 3.25,
+  'very-busy': 4.45
+};
+const FEEDBACK_LABEL = {
+  quiet: 'Quiet',
+  moderate: 'Moderate',
+  busy: 'Busy',
+  'very-busy': 'Very busy'
+};
 
 const state = {
   mode: 'bus',
@@ -20,7 +40,8 @@ const state = {
   searchTimer: null,
   refreshTimer: null,
   searchSeq: 0,
-  boardSeq: 0
+  boardSeq: 0,
+  crowdingModel: null
 };
 
 const $ = id => document.getElementById(id);
@@ -43,6 +64,64 @@ function savePrefs(){
       mode: state.mode,
       station: state.station ? {name: state.station.name, crs: state.station.crs} : null
     }));
+  }catch(e){}
+}
+
+function emptyCrowdingModel(){
+  return {version:MODEL_VERSION, profiles:{}, seen:{}, feedbackSeen:{}};
+}
+
+function safeReadCrowdingModel(){
+  try{
+    const raw = localStorage.getItem(MODEL_KEY);
+    if(!raw) return emptyCrowdingModel();
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== 'object' || parsed.version !== MODEL_VERSION) return emptyCrowdingModel();
+    if(!parsed.profiles || typeof parsed.profiles !== 'object') parsed.profiles = {};
+    if(!parsed.seen || typeof parsed.seen !== 'object') parsed.seen = {};
+    if(!parsed.feedbackSeen || typeof parsed.feedbackSeen !== 'object') parsed.feedbackSeen = {};
+    return parsed;
+  }catch(e){ return emptyCrowdingModel(); }
+}
+
+function pruneTimestampMap(map, maxAge, maxEntries){
+  const now = Date.now();
+  Object.keys(map).forEach(key=>{
+    const value = map[key];
+    const ts = Number(value && typeof value === 'object' ? value.ts : value) || 0;
+    if(!ts || now - ts > maxAge) delete map[key];
+  });
+  const keys = Object.keys(map);
+  if(keys.length <= maxEntries) return;
+  keys.sort((a,b)=>{
+    const aValue = map[a], bValue = map[b];
+    const aTs = Number(aValue && typeof aValue === 'object' ? aValue.ts : aValue) || 0;
+    const bTs = Number(bValue && typeof bValue === 'object' ? bValue.ts : bValue) || 0;
+    return bTs - aTs;
+  });
+  keys.slice(maxEntries).forEach(key=>delete map[key]);
+}
+
+function pruneCrowdingModel(model){
+  const now = Date.now();
+  Object.keys(model.profiles).forEach(key=>{
+    const profile = model.profiles[key];
+    if(!profile || now - (Number(profile.updatedAt) || 0) > MODEL_PROFILE_MAX_AGE_MS) delete model.profiles[key];
+  });
+  const profileKeys = Object.keys(model.profiles);
+  if(profileKeys.length > MODEL_MAX_PROFILES){
+    profileKeys.sort((a,b)=>(Number(model.profiles[b].updatedAt)||0)-(Number(model.profiles[a].updatedAt)||0));
+    profileKeys.slice(MODEL_MAX_PROFILES).forEach(key=>delete model.profiles[key]);
+  }
+  pruneTimestampMap(model.seen, MODEL_SEEN_MAX_AGE_MS, MODEL_MAX_SEEN);
+  pruneTimestampMap(model.feedbackSeen, MODEL_FEEDBACK_MAX_AGE_MS, MODEL_MAX_SEEN);
+}
+
+function saveCrowdingModel(){
+  try{
+    if(!state.crowdingModel) return;
+    pruneCrowdingModel(state.crowdingModel);
+    localStorage.setItem(MODEL_KEY, JSON.stringify(state.crowdingModel));
   }catch(e){}
 }
 
@@ -69,9 +148,20 @@ function stripHtml(value){
   return (div.textContent || '').replace(/\s+/g,' ').trim();
 }
 
+function normaliseToken(value){
+  return String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
+}
+
 function parseMinutes(value){
   const m = String(value || '').match(/^(\d{1,2}):(\d{2})$/);
   return m ? Number(m[1])*60 + Number(m[2]) : null;
+}
+
+function forwardGap(fromMinute, toMinute){
+  if(fromMinute == null || toMinute == null) return null;
+  let gap = toMinute - fromMinute;
+  if(gap < 0) gap += 1440;
+  return gap;
 }
 
 function delayMinutes(service){
@@ -96,6 +186,14 @@ function originText(service){
   return names.length ? names.join(' / ') : 'Origin unavailable';
 }
 
+function primaryDestination(service){
+  const item = Array.isArray(service && service.destination) ? service.destination.find(Boolean) : null;
+  return {
+    name: item && item.locationName ? String(item.locationName) : destinationText(service),
+    crs: item && item.crs ? String(item.crs).toUpperCase() : ''
+  };
+}
+
 function serviceKey(service, index){
   return String(service.serviceIdUrlSafe || service.serviceID || service.rsid || `${service.std || 'time'}-${index}`);
 }
@@ -111,78 +209,413 @@ function statusFor(service){
   return {label:etd, cls:'expected'};
 }
 
-function isPeakMinute(minute){
-  return (minute >= 6*60+30 && minute <= 9*60+30) || (minute >= 16*60 && minute <= 19*60);
+function referenceDateFromBoard(){
+  const generated = state.board && state.board.generatedAt ? new Date(state.board.generatedAt) : null;
+  return generated && !Number.isNaN(generated.getTime()) ? generated : new Date();
 }
 
-function crowdingForecast(service, index, allServices){
+function gbDayIndex(date){
+  const label = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short'}).format(date || new Date());
+  return ({Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6})[label] ?? (date || new Date()).getDay();
+}
+
+function gbDateStamp(date){
+  const parts = new Intl.DateTimeFormat('en-GB',{
+    timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(date || new Date());
+  const map = Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  return `${map.year || '0000'}-${map.month || '00'}-${map.day || '00'}`;
+}
+
+function dayClassFor(date){
+  const day = gbDayIndex(date || new Date());
+  if(day === 5) return 'friday';
+  if(day === 0 || day === 6) return 'weekend';
+  return 'weekday';
+}
+
+function demandSignal(date, minute){
+  if(minute == null) return {amount:0.15, reason:'unknown departure-time demand'};
+  const day = gbDayIndex(date || new Date());
+  const weekday = day >= 1 && day <= 5;
+  let amount = 0.1;
+  let reason = 'lower-demand travel period';
+
+  if(weekday){
+    if(minute >= 7*60+30 && minute < 9*60){
+      amount = 1.4; reason = 'strong weekday morning demand';
+    }else if((minute >= 6*60+30 && minute < 7*60+30) || (minute >= 9*60 && minute < 10*60)){
+      amount = 0.85; reason = 'weekday morning shoulder demand';
+    }else if(minute >= 16*60+30 && minute < 18*60+30){
+      amount = 1.3; reason = 'strong weekday evening demand';
+    }else if((minute >= 15*60+30 && minute < 16*60+30) || (minute >= 18*60+30 && minute < 20*60)){
+      amount = 0.75; reason = 'weekday evening shoulder demand';
+    }else if(minute >= 10*60 && minute < 15*60+30){
+      amount = 0.3; reason = 'weekday daytime demand';
+    }else if(minute >= 20*60 && minute < 22*60){
+      amount = 0.35; reason = 'weekday evening leisure demand';
+    }
+    if(day === 5 && minute >= 14*60 && minute < 20*60){
+      amount += 0.3;
+      reason = 'Friday afternoon and evening demand';
+    }
+  }else if(minute >= 10*60 && minute < 18*60){
+    amount = 0.55; reason = 'weekend daytime demand';
+  }else if(minute >= 18*60 && minute < 21*60){
+    amount = 0.4; reason = 'weekend evening demand';
+  }
+  return {amount, reason};
+}
+
+function operatorIdentity(service){
+  return normaliseToken(service && (service.operatorCode || service.operator || 'unknown'));
+}
+
+function destinationIdentity(service){
+  const destination = primaryDestination(service);
+  return normaliseToken(destination.crs || destination.name || 'unknown');
+}
+
+function isSimilarService(a,b){
+  if(!a || !b) return false;
+  const aDest = destinationIdentity(a);
+  const bDest = destinationIdentity(b);
+  if(!aDest || !bDest || aDest !== bDest) return false;
+  const aOperator = operatorIdentity(a);
+  const bOperator = operatorIdentity(b);
+  return !aOperator || !bOperator || aOperator === bOperator;
+}
+
+function routeContext(service,index,allServices){
+  const list = Array.isArray(allServices) ? allServices : [];
+  const currentMinute = parseMinutes(service && service.std);
+  let previous = null;
+  let next = null;
+  let cancelledBefore = 0;
+  let cancelledAfter = 0;
+
+  for(let i=index-1;i>=0;i--){
+    const candidate = list[i];
+    if(!isSimilarService(service,candidate)) continue;
+    const candidateMinute = parseMinutes(candidate.std);
+    const gap = forwardGap(candidateMinute,currentMinute);
+    if(gap == null || gap > 180) continue;
+    if(candidate.isCancelled){
+      if(gap <= 90) cancelledBefore++;
+      continue;
+    }
+    previous = {service:candidate,index:i,gap};
+    break;
+  }
+
+  for(let i=index+1;i<list.length;i++){
+    const candidate = list[i];
+    if(!isSimilarService(service,candidate)) continue;
+    const candidateMinute = parseMinutes(candidate.std);
+    const gap = forwardGap(currentMinute,candidateMinute);
+    if(gap == null || gap > 180) continue;
+    if(candidate.isCancelled){
+      if(gap <= 60) cancelledAfter++;
+      continue;
+    }
+    next = {service:candidate,index:i,gap};
+    break;
+  }
+
+  return {
+    previous,
+    next,
+    precedingGap:previous ? previous.gap : null,
+    followingGap:next ? next.gap : null,
+    cancelledBefore,
+    cancelledAfter
+  };
+}
+
+function median(values){
+  const nums = values.map(Number).filter(value=>Number.isFinite(value) && value > 0).sort((a,b)=>a-b);
+  if(!nums.length) return 0;
+  const middle = Math.floor(nums.length/2);
+  return nums.length % 2 ? nums[middle] : (nums[middle-1]+nums[middle])/2;
+}
+
+function boardFormationBaseline(service,allServices){
+  const operator = operatorIdentity(service);
+  const sameOperator = (Array.isArray(allServices) ? allServices : [])
+    .filter(candidate=>!candidate.isCancelled && operatorIdentity(candidate) === operator)
+    .map(candidate=>Number(candidate.length) || 0)
+    .filter(Boolean);
+  if(sameOperator.length >= 2) return median(sameOperator);
+  const allLengths = (Array.isArray(allServices) ? allServices : [])
+    .filter(candidate=>!candidate.isCancelled)
+    .map(candidate=>Number(candidate.length) || 0)
+    .filter(Boolean);
+  return allLengths.length >= 3 ? median(allLengths) : 0;
+}
+
+function stationMatchesOrigin(service,station){
+  const origins = Array.isArray(service && service.origin) ? service.origin.filter(Boolean) : [];
+  if(!origins.length || !station) return null;
+  const stationCrs = String(station.crs || '').toUpperCase();
+  const stationName = normaliseToken(station.name);
+  return origins.some(origin=>{
+    const originCrs = String(origin.crs || '').toUpperCase();
+    const originName = normaliseToken(origin.locationName);
+    return (stationCrs && originCrs === stationCrs) || (stationName && originName === stationName);
+  });
+}
+
+function profileKeyFor(service,station,date){
+  const stationCode = normaliseToken(station && (station.crs || station.name) || 'unknown');
+  const minute = parseMinutes(service && service.std);
+  const band = minute == null ? 'x' : String(Math.floor(minute / 120));
+  return [stationCode,operatorIdentity(service),destinationIdentity(service),dayClassFor(date),band].join('|');
+}
+
+function ensureProfile(key){
+  const model = state.crowdingModel || (state.crowdingModel = emptyCrowdingModel());
+  if(!model.profiles[key]){
+    model.profiles[key] = {
+      samples:0,
+      lengthSamples:0,avgLength:0,
+      headwaySamples:0,avgHeadway:0,
+      delaySamples:0,avgDelay:0,
+      cancelledSamples:0,cancelledCount:0,
+      feedbackCount:0,feedbackMean:0,
+      updatedAt:Date.now()
+    };
+  }
+  return model.profiles[key];
+}
+
+function getProfile(service,station,date){
+  const model = state.crowdingModel;
+  if(!model) return null;
+  return model.profiles[profileKeyFor(service,station,date)] || null;
+}
+
+function updateAverage(profile,valueField,countField,value){
+  if(!Number.isFinite(value)) return;
+  const count = Number(profile[countField]) || 0;
+  const average = Number(profile[valueField]) || 0;
+  profile[valueField] = count ? average + (value-average)/(count+1) : value;
+  profile[countField] = count + 1;
+}
+
+function observationId(service,index,station,date){
+  return [gbDateStamp(date),String(station && station.crs || '').toUpperCase(),serviceKey(service,index),service.std || ''].join('|');
+}
+
+function recordBoardObservations(){
+  if(!state.station || !state.services.length) return;
+  if(!state.crowdingModel) state.crowdingModel = safeReadCrowdingModel();
+  const date = referenceDateFromBoard();
+  let changed = false;
+
+  state.services.forEach((service,index)=>{
+    const id = observationId(service,index,state.station,date);
+    if(state.crowdingModel.seen[id]) return;
+    const profile = ensureProfile(profileKeyFor(service,state.station,date));
+    const context = routeContext(service,index,state.services);
+    const length = Number(service.length) || 0;
+    const delay = delayMinutes(service);
+    const headway = context.precedingGap || context.followingGap;
+
+    profile.samples = (Number(profile.samples) || 0) + 1;
+    if(length > 0) updateAverage(profile,'avgLength','lengthSamples',length);
+    if(headway != null && headway > 0 && headway <= 180) updateAverage(profile,'avgHeadway','headwaySamples',headway);
+    if(!service.isCancelled && Number.isFinite(delay)) updateAverage(profile,'avgDelay','delaySamples',delay);
+    profile.cancelledSamples = (Number(profile.cancelledSamples) || 0) + 1;
+    if(service.isCancelled) profile.cancelledCount = (Number(profile.cancelledCount) || 0) + 1;
+    profile.updatedAt = Date.now();
+    state.crowdingModel.seen[id] = Date.now();
+    changed = true;
+  });
+
+  if(changed) saveCrowdingModel();
+}
+
+function feedbackForService(service,index){
+  if(!state.crowdingModel || !state.station) return '';
+  const date = referenceDateFromBoard();
+  const value = state.crowdingModel.feedbackSeen[observationId(service,index,state.station,date)];
+  return value && typeof value === 'object' ? String(value.level || '') : '';
+}
+
+function recordCrowdingFeedback(service,index,level){
+  if(!Object.prototype.hasOwnProperty.call(FEEDBACK_SCORE,level) || !state.station) return false;
+  if(!state.crowdingModel) state.crowdingModel = safeReadCrowdingModel();
+  const date = referenceDateFromBoard();
+  const id = observationId(service,index,state.station,date);
+  if(state.crowdingModel.feedbackSeen[id]) return false;
+
+  const profile = ensureProfile(profileKeyFor(service,state.station,date));
+  const count = Number(profile.feedbackCount) || 0;
+  const mean = Number(profile.feedbackMean) || 0;
+  const value = FEEDBACK_SCORE[level];
+  profile.feedbackMean = count ? mean + (value-mean)/(count+1) : value;
+  profile.feedbackCount = count + 1;
+  profile.updatedAt = Date.now();
+  state.crowdingModel.feedbackSeen[id] = {level,ts:Date.now()};
+  saveCrowdingModel();
+  return true;
+}
+
+function disruptionMessageSignal(messages){
+  const text = (Array.isArray(messages) ? messages : [])
+    .map(item=>stripHtml(item && (item.value || item.message || item)))
+    .join(' ')
+    .toLowerCase();
+  if(!text) return 0;
+  if(/cancel|fewer train|reduced service|short formation|overcrowd|severe disruption|major disruption/.test(text)) return 0.35;
+  if(/disrupt|delay|altered service|service change/.test(text)) return 0.18;
+  return 0;
+}
+
+function confidenceLabel(evidence){
+  if(evidence >= 4) return 'Medium–high';
+  if(evidence >= 3) return 'Medium';
+  if(evidence >= 1.75) return 'Low–medium';
+  return 'Low';
+}
+
+function crowdingForecast(service,index,allServices,options={}){
   if(service.isCancelled){
-    return {level:'unknown', label:'Not applicable', confidence:'—', score:null, reasons:['This service is cancelled.']};
+    return {
+      level:'unknown',label:'Not applicable',confidence:'—',score:null,
+      reasons:['This service is cancelled.'],historySamples:0,feedbackSamples:0,modelVersion:MODEL_VERSION
+    };
   }
 
-  const now = new Date();
-  const day = now.getDay();
+  const station = options.station || state.station || null;
+  const date = options.referenceDate instanceof Date ? options.referenceDate : referenceDateFromBoard();
+  const messages = options.messages || (state.board && state.board.nrccMessages) || [];
+  const profile = getProfile(service,station,date);
   const depMinute = parseMinutes(service.std);
-  let score = 1;
-  const reasons = [];
+  const context = routeContext(service,index,allServices);
+  const contributors = [];
+  let score = 0.7;
+  let evidence = 0.5;
 
-  if(depMinute != null && isPeakMinute(depMinute) && day >= 1 && day <= 5){
-    score += 2;
-    reasons.push('weekday peak departure');
-  }
-  if(day === 5 && depMinute != null && depMinute >= 14*60 && depMinute <= 20*60){
-    score += 1;
-    reasons.push('Friday travel period');
-  }
-  if((day === 0 || day === 6) && depMinute != null && depMinute >= 10*60 && depMinute <= 18*60){
-    score += 0.5;
-    reasons.push('weekend daytime demand');
-  }
+  const add = (amount,reason,evidenceGain=0)=>{
+    if(!Number.isFinite(amount) || !amount) return;
+    score += amount;
+    contributors.push({amount,reason});
+    evidence += evidenceGain;
+  };
+
+  const demand = demandSignal(date,depMinute);
+  add(demand.amount,demand.reason,0.35);
 
   const length = Number(service.length) || 0;
-  if(length > 0 && length <= 4){
-    score += 1;
-    reasons.push('short formation reported');
-  }else if(length >= 9){
-    score -= 0.75;
-    reasons.push('longer formation reported');
+  let expectedLength = 0;
+  let lengthSource = '';
+  if(profile && Number(profile.lengthSamples) >= 3 && Number(profile.avgLength) > 0){
+    expectedLength = Number(profile.avgLength);
+    lengthSource = 'local history';
+    evidence += 1.1;
+  }else{
+    expectedLength = boardFormationBaseline(service,allServices);
+    if(expectedLength){ lengthSource = 'nearby services'; evidence += 0.55; }
   }
 
+  if(length > 0){
+    evidence += 0.45;
+    if(expectedLength > 0){
+      const ratio = length / expectedLength;
+      if(ratio <= 0.7) add(1.0,`formation is much shorter than ${lengthSource} suggests`,0.15);
+      else if(ratio <= 0.85) add(0.65,`formation is shorter than ${lengthSource} suggests`,0.15);
+      else if(ratio <= 0.95) add(0.25,`formation is slightly shorter than ${lengthSource} suggests`,0.1);
+      else if(ratio >= 1.3) add(-0.55,`formation is much longer than ${lengthSource} suggests`,0.15);
+      else if(ratio >= 1.15) add(-0.3,`formation is longer than ${lengthSource} suggests`,0.1);
+    }else if(length <= 3){
+      add(0.45,'short formation reported',0.1);
+    }else if(length >= 9){
+      add(-0.25,'long formation reported',0.1);
+    }
+  }
+
+  const precedingGap = context.precedingGap;
+  const historicalHeadway = profile && Number(profile.headwaySamples) >= 3 ? Number(profile.avgHeadway) : 0;
+  if(precedingGap != null){
+    evidence += 0.45;
+    if(historicalHeadway > 0){
+      const ratio = precedingGap / historicalHeadway;
+      evidence += 0.8;
+      if(ratio >= 1.6) add(0.7,'gap before this train is much longer than normal',0.1);
+      else if(ratio >= 1.3) add(0.4,'gap before this train is longer than normal',0.1);
+      else if(ratio <= 0.65) add(-0.2,'similar trains are running closer together than normal',0.1);
+    }else if(precedingGap >= 45){
+      add(0.35,'long gap since the previous similar train',0.05);
+    }else if(precedingGap >= 25){
+      add(0.15,'wider gap since the previous similar train',0.05);
+    }else if(precedingGap <= 10){
+      add(-0.15,'another similar train ran shortly before',0.05);
+    }
+  }
+
+  if(context.cancelledBefore){
+    add(Math.min(1.25,context.cancelledBefore*0.6),
+      `${context.cancelledBefore} earlier similar service${context.cancelledBefore===1?' was':'s were'} cancelled`,0.65);
+  }
+  if(context.cancelledAfter){
+    add(Math.min(0.45,context.cancelledAfter*0.25),
+      'a nearby later similar service is cancelled',0.25);
+  }
+
+  const etd = String(service.etd || '').trim();
   const delay = delayMinutes(service);
-  if(delay >= 10){
-    score += 0.5;
-    reasons.push('meaningful delay may concentrate demand');
+  if(/^delayed$/i.test(etd)) add(0.55,'service is currently reported delayed',0.45);
+  else if(delay >= 20) add(0.7,`current delay is ${delay} minutes`,0.5);
+  else if(delay >= 10) add(0.45,`current delay is ${delay} minutes`,0.45);
+  else if(delay >= 5) add(0.2,`current delay is ${delay} minutes`,0.35);
+  else evidence += 0.2;
+
+  const startsHere = stationMatchesOrigin(service,station);
+  if(startsHere === true) add(-0.25,'train starts at this station',0.35);
+  else if(startsHere === false) add(0.25,'through train may already carry passengers',0.35);
+
+  const disruption = disruptionMessageSignal(messages);
+  if(disruption >= 0.3) add(disruption,'station disruption may shift passengers onto remaining trains',0.2);
+  else if(disruption > 0) add(disruption,'current station disruption adds demand uncertainty',0.1);
+
+  const feedbackCount = profile ? Number(profile.feedbackCount) || 0 : 0;
+  if(feedbackCount > 0 && Number.isFinite(Number(profile.feedbackMean))){
+    const target = Number(profile.feedbackMean);
+    const weight = Math.min(0.5,0.12 + feedbackCount*0.06);
+    const blended = score*(1-weight) + target*weight;
+    const delta = blended - score;
+    score = blended;
+    if(Math.abs(delta) >= 0.05){
+      contributors.push({amount:delta,reason:'local crowding feedback for similar trains and time bands'});
+    }
+    evidence += 1 + Math.min(1.2,feedbackCount*0.25);
   }
 
-  const dest = destinationText(service);
-  const planned = parseMinutes(service.std);
-  const disruptionPressure = (Array.isArray(allServices) ? allServices : []).some((other, otherIndex)=>{
-    if(otherIndex >= index || !other || !other.isCancelled) return false;
-    if(destinationText(other) !== dest) return false;
-    const otherPlanned = parseMinutes(other.std);
-    if(planned == null || otherPlanned == null) return false;
-    let gap = planned - otherPlanned;
-    if(gap < 0) gap += 1440;
-    return gap <= 45;
-  });
-  if(disruptionPressure){
-    score += 1.25;
-    reasons.push('earlier similar service cancelled');
-  }
-
-  score = Math.max(0, Math.min(5, score));
+  score = Math.max(0,Math.min(5,score));
   let level = 'quiet', label = 'Expected quiet';
-  if(score >= 4){ level='very-busy'; label='Expected very busy'; }
-  else if(score >= 2.8){ level='busy'; label='Expected busy'; }
-  else if(score >= 1.6){ level='moderate'; label='Expected moderate'; }
+  if(score >= 3.7){ level='very-busy'; label='Expected very busy'; }
+  else if(score >= 2.5){ level='busy'; label='Expected busy'; }
+  else if(score >= 1.45){ level='moderate'; label='Expected moderate'; }
 
-  const confidence = length > 0 || disruptionPressure ? 'Low–medium' : 'Low';
-  if(!reasons.length) reasons.push('typical off-peak demand');
-  return {level, label, confidence, score, reasons};
+  contributors.sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+  const reasons = contributors.map(item=>item.reason).filter(Boolean).slice(0,5);
+  if(!reasons.length) reasons.push('typical lower-demand operating conditions');
+
+  return {
+    level,
+    label,
+    confidence:confidenceLabel(evidence),
+    score,
+    reasons,
+    historySamples:profile ? Number(profile.samples) || 0 : 0,
+    feedbackSamples:feedbackCount,
+    modelVersion:MODEL_VERSION
+  };
 }
 
 function providerNotice(){
-  return 'Live running times use the Huxley 2 community JSON proxy for National Rail Darwin. Crowding is a Kerbside prototype forecast from time of day, reported train length and current disruption pressure. It is not ticket-sales data and not live occupancy.';
+  return 'Live running times use the Huxley 2 community JSON proxy for National Rail Darwin. Crowding model v2 combines time-band demand, formation versus comparable trains, service gaps, delays, cancellations, through-train status and locally learned patterns. It is not ticket-sales data and not live occupancy.';
 }
 
 function installMarkup(){
@@ -220,9 +653,9 @@ function installMarkup(){
           <div id="trainSuggest" class="train-suggest" role="listbox" hidden></div>
         </div>
         <div class="train-model-card">
-          <span class="train-model-label">Crowding forecast</span>
-          <strong>Prototype prediction</strong>
-          <p>Kerbside combines typical demand periods, train length when reported, delay and nearby cancellations. Ticket-sales, reservation and live carriage data can be added later through the provider adapter.</p>
+          <span class="train-model-label">Crowding model v2</span>
+          <strong>Service-relative prediction</strong>
+          <p>Kerbside now compares formation and headway with similar trains, accounts for delays, cancellations and through-train loading, and learns recurring patterns locally. Optional crowding feedback calibrates future predictions on this device.</p>
         </div>
         <p class="train-provider-note">${esc(providerNotice())}</p>
       </aside>
@@ -375,6 +808,14 @@ function renderAlerts(messages){
   el.hidden=false;
 }
 
+function forecastFor(service,index){
+  return crowdingForecast(service,index,state.services,{
+    station:state.station,
+    referenceDate:referenceDateFromBoard(),
+    messages:state.board && state.board.nrccMessages
+  });
+}
+
 function renderBoard(){
   const board = $('trainBoard');
   const name = $('trainStationName');
@@ -402,7 +843,7 @@ function renderBoard(){
   board.innerHTML = services.map((service,index)=>{
     const key = serviceKey(service,index);
     const status = statusFor(service);
-    const forecast = crowdingForecast(service,index,services);
+    const forecast = forecastFor(service,index);
     const length = Number(service.length) || 0;
     const platform = service.platform ? `Platform ${esc(service.platform)}` : 'Platform TBC';
     const detailOpen = state.selectedServiceId === key;
@@ -416,7 +857,7 @@ function renderBoard(){
         <span class="train-formation"><b>${esc(coachText)}</b><small>train length</small></span>
         <span class="train-chevron" aria-hidden="true">⌄</span>
       </button>
-      <div class="train-service-detail" id="train-detail-${esc(key)}" ${detailOpen?'':'hidden'}>${detailOpen ? renderDetailPlaceholder(key, service, forecast) : ''}</div>
+      <div class="train-service-detail" id="train-detail-${esc(key)}" ${detailOpen?'':'hidden'}>${detailOpen ? renderDetailPlaceholder(key, service, index, forecast) : ''}</div>
     </article>`;
   }).join('');
 
@@ -430,9 +871,9 @@ function renderBoard(){
   }
 }
 
-function renderDetailPlaceholder(key, service, forecast){
+function renderDetailPlaceholder(key, service, index, forecast){
   const cached = state.detailCache.get(key);
-  if(cached) return renderServiceDetail(service, forecast, cached);
+  if(cached) return renderServiceDetail(service,index,forecast,cached);
   return '<div class="train-detail-loading">Loading calling points…</div>';
 }
 
@@ -462,12 +903,20 @@ function normaliseCallingPointGroups(detail){
   return groups;
 }
 
-function renderServiceDetail(service, forecast, detail){
+function renderServiceDetail(service,index,forecast,detail){
   const points = normaliseCallingPointGroups(detail);
   const calling = points.length ? `<div class="train-calling"><div class="train-detail-title">Calling points</div>${points.map(point=>
     `<div class="train-call ${point.phase}${point.cancelled?' cancelled':''}"><i></i><span><b>${esc(point.name)}</b><small>${esc(point.et || point.st || '')}${point.cancelled?' · cancelled':''}</small></span></div>`
   ).join('')}</div>` : '<div class="train-detail-note">Calling-point data is unavailable for this service.</div>';
   const length = Number(service.length) || 0;
+  const key = serviceKey(service,index);
+  const recorded = feedbackForService(service,index);
+  const learningText = forecast.feedbackSamples > 0
+    ? `${forecast.historySamples} local service observation${forecast.historySamples===1?'':'s'} · ${forecast.feedbackSamples} crowding report${forecast.feedbackSamples===1?'':'s'}`
+    : `${forecast.historySamples} local service observation${forecast.historySamples===1?'':'s'} so far`;
+  const feedbackButtons = Object.keys(FEEDBACK_LABEL).map(level=>
+    `<button type="button" data-crowd-feedback="${esc(level)}" data-service-id="${esc(key)}"${recorded?' disabled':''}>${esc(FEEDBACK_LABEL[level])}</button>`
+  ).join('');
   return `<div class="train-detail-grid">
       <div><span>From</span><b>${esc(originText(service))}</b></div>
       <div><span>Operator</span><b>${esc(service.operator || 'Unknown')}</b></div>
@@ -475,8 +924,16 @@ function renderServiceDetail(service, forecast, detail){
       <div><span>Formation</span><b>${length ? `${length} coaches` : 'Not reported'}</b></div>
     </div>
     <div class="train-crowding-explain crowd-${esc(forecast.level)}">
-      <div><i></i><strong>${esc(forecast.label)}</strong><span>${esc(forecast.confidence)} confidence</span></div>
-      <p>Why: ${esc(forecast.reasons.join(', '))}. This first build does not use ticket sales, seat reservations or live carriage occupancy, so Kerbside deliberately avoids showing a percentage.</p>
+      <div><i></i><strong>${esc(forecast.label)}</strong><span>${esc(forecast.confidence)} confidence · model v${MODEL_VERSION}</span></div>
+      <p>Why: ${esc(forecast.reasons.join(', '))}. Kerbside does not use ticket sales, seat reservations or live carriage occupancy, so it deliberately avoids an exact percentage.</p>
+      <p>${esc(learningText)}</p>
+    </div>
+    <div class="train-model-card">
+      <span class="train-model-label">Help calibrate this forecast</span>
+      <strong>What was the train actually like?</strong>
+      <p>If you are on this train, or have just used it, one tap adds a local crowding label for similar future services. Nothing is uploaded.</p>
+      <div class="train-search-box">${feedbackButtons}</div>
+      ${recorded ? `<div class="train-detail-note">Saved locally: ${esc(FEEDBACK_LABEL[recorded] || recorded)}.</div>` : ''}
     </div>
     ${calling}`;
 }
@@ -490,11 +947,11 @@ async function hydrateDetail(service, index){
   const key = serviceKey(service,index);
   const target = document.getElementById(`train-detail-${key}`);
   if(!target || state.selectedServiceId !== key) return;
-  const forecast = crowdingForecast(service,index,state.services);
+  const forecast = forecastFor(service,index);
   const cached = state.detailCache.get(key);
-  if(cached){ target.innerHTML = renderServiceDetail(service, forecast, cached); return; }
+  if(cached){ target.innerHTML = renderServiceDetail(service,index,forecast,cached); return; }
   const serviceId = service.serviceIdUrlSafe || service.serviceIdGuid || service.serviceID;
-  if(!serviceId){ target.innerHTML = renderServiceDetail(service, forecast, {}); return; }
+  if(!serviceId){ target.innerHTML = renderServiceDetail(service,index,forecast,{}); return; }
   if(state.detailAbort) state.detailAbort.abort();
   const controller = new AbortController();
   state.detailAbort = controller;
@@ -504,10 +961,10 @@ async function hydrateDetail(service, index){
     const json = await response.json();
     if(controller.signal.aborted || state.selectedServiceId !== key) return;
     state.detailCache.set(key,json || {});
-    target.innerHTML = renderServiceDetail(service, forecast, json || {});
+    target.innerHTML = renderServiceDetail(service,index,forecast,json || {});
   }catch(error){
     if(controller.signal.aborted) return;
-    target.innerHTML = renderServiceDetail(service, forecast, {});
+    target.innerHTML = renderServiceDetail(service,index,forecast,{});
   }finally{
     if(state.detailAbort === controller) state.detailAbort = null;
   }
@@ -528,6 +985,7 @@ async function loadBoard(station, {silent=false}={}){
     state.board = json || {};
     state.services = Array.isArray(json && json.trainServices) ? json.trainServices : [];
     if(json && json.locationName) state.station.name = json.locationName;
+    recordBoardObservations();
     renderBoard();
     savePrefs();
   }catch(error){
@@ -554,6 +1012,15 @@ function stopRefreshLoop(){
   if(state.refreshTimer){ clearInterval(state.refreshTimer); state.refreshTimer=null; }
 }
 
+function handleFeedbackClick(button){
+  if(!button || !button.dataset) return;
+  const key = button.dataset.serviceId;
+  const level = button.dataset.crowdFeedback;
+  const index = state.services.findIndex((service,serviceIndex)=>serviceKey(service,serviceIndex) === key);
+  if(index < 0) return;
+  if(recordCrowdingFeedback(state.services[index],index,level)) renderBoard();
+}
+
 function bindEvents(){
   $('transportBus').addEventListener('click',()=>applyMode('bus'));
   $('transportTrain').addEventListener('click',()=>applyMode('train'));
@@ -565,6 +1032,8 @@ function bindEvents(){
   $('trainStationGo').addEventListener('click',submitStationSearch);
   $('trainRefresh').addEventListener('click',()=>{ if(state.station) loadBoard(state.station,{silent:false}); });
   document.addEventListener('click',event=>{
+    const feedbackButton = event.target && event.target.closest ? event.target.closest('[data-crowd-feedback]') : null;
+    if(feedbackButton){ handleFeedbackClick(feedbackButton); return; }
     const wrap = event.target && event.target.closest ? event.target.closest('.train-search-wrap') : null;
     if(!wrap) closeSuggestions();
   });
@@ -574,6 +1043,8 @@ function bindEvents(){
 }
 
 function restorePrefs(){
+  state.crowdingModel = safeReadCrowdingModel();
+  pruneCrowdingModel(state.crowdingModel);
   const prefs = safeReadPrefs();
   if(prefs && prefs.station && prefs.station.crs){
     state.station = {name:prefs.station.name || prefs.station.crs, crs:String(prefs.station.crs).toUpperCase()};
@@ -594,10 +1065,13 @@ else init();
 
 window.__KERBSIDE_TRAINS__ = {
   providerBase: PROVIDER_BASE,
+  modelVersion: MODEL_VERSION,
   crowdingForecast,
+  recordCrowdingFeedback,
   delayMinutes,
   statusFor,
   destinationText,
+  routeContext,
   state
 };
 
