@@ -5,8 +5,7 @@ const $=id=>document.getElementById(id);
 const STORE='kerbside.rail.depart-after.v1';
 const PROVIDERS=[
   'https://huxley2.azurewebsites.net',
-  'https://hux.azurewebsites.net',
-  'https://onrails.azurewebsites.net'
+  'https://hux.azurewebsites.net'
 ];
 const REQUEST_TIMEOUT_MS=10000;
 const SEARCH_DELAY_MS=240;
@@ -218,7 +217,7 @@ function bindRobustInputs(){
     from.addEventListener('input',()=>{
       const api=window.__KERBSIDE_TRAINS__,route=window.__KERBSIDE_TRAIN_ROUTES__,selected=api&&api.state&&api.state.station;
       const matches=selected&&(normalise(from.value)===normalise(selected.name)||from.value.trim().toUpperCase()===String(selected.crs||'').toUpperCase());
-      if(!matches&&route&&route.state){route.state.fromCrs='';route.clearDestination({disable:true});}
+      if(!matches&&route&&route.state){route.state.fromCrs='';route.clearDestination({disable:false});const destination=$('trainDestinationQuery');if(destination){destination.disabled=false;destination.placeholder='e.g. Bristol Temple Meads or BRI';}}
       clearTimeout(fromTimer);if(fromAbort)fromAbort.abort();
       fromTimer=setTimeout(async()=>{const q=from.value.trim();if(q.length<2)return;fromAbort=new AbortController();try{renderFromSuggestions(await stationLookup(q,fromAbort.signal));}catch(e){}},SEARCH_DELAY_MS);
     });
@@ -238,6 +237,8 @@ function install(){
   installStyles();
   const from=$('trainStationQuery'),to=$('trainDestinationQuery');
   if(!from||!to)return false;
+  to.disabled=false;to.placeholder='e.g. Bristol Temple Meads or BRI';
+  ['trainStationGo','trainDestinationGo'].forEach(id=>{const button=$(id);if(button){button.tabIndex=-1;button.setAttribute('aria-hidden','true');}});
   const fromWrap=from.closest('.train-search-wrap'),toWrap=to.closest('.train-search-wrap');
   if(!fromWrap||!toWrap)return false;
   if(fromWrap.closest('.train-route-planner'))return true;
