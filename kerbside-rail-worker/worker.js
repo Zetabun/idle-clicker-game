@@ -6,6 +6,8 @@ const RATE_LIMIT_DEFAULT = 60;
 const MAX_RATE_BUCKETS = 2048;
 const RATE_BUCKETS = new Map();
 const INFLIGHT = new Map();
+const MESSAGE_TEXT_KEYS = ['value', 'message', 'text', 'content', 'displayText', '#text', '_'];
+const MESSAGE_METADATA_KEYS = /^(?:type|id|code|category|severity|status|url|uri|href)$/i;
 
 export default {
   async fetch(request, env, ctx) {
@@ -161,6 +163,8 @@ async function refreshRailBoard(request, env, board, cache, cacheKey) {
     let parsed;
     try { parsed = JSON.parse(body); } catch { return { response: null, status: 502 }; }
     if (!validBoardPayload(parsed, board.from)) return { response: null, status: 502 };
+    const normalised = normaliseBoardMessages(parsed);
+    const responseBody = normalised === parsed ? body : JSON.stringify(normalised);
 
     const headers = new Headers();
     headers.set('Content-Type', 'application/json; charset=utf-8');
@@ -169,7 +173,7 @@ async function refreshRailBoard(request, env, board, cache, cacheKey) {
     headers.set('X-Kerbside-Upstream', String(response.status));
     headers.set('X-Kerbside-Cached-At', String(Date.now()));
     applyCors(headers, request, env);
-    const successful = new Response(body, { status: 200, headers });
+    const successful = new Response(responseBody, { status: 200, headers });
     try { await cache.put(cacheKey, successful.clone()); } catch {}
     return { response: successful, status: 200 };
   } catch (error) {
@@ -184,6 +188,48 @@ export function validBoardPayload(value, expectedCrs = '') {
   if (expectedCrs && crs !== String(expectedCrs).toUpperCase()) return false;
   if (!Object.prototype.hasOwnProperty.call(value, 'trainServices')) return false;
   return value.trainServices == null || Array.isArray(value.trainServices);
+}
+
+export function normaliseMessageText(value, depth = 0, seen = new Set()) {
+  if (value == null || depth > 8) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).replace(/\s+/g, ' ').trim();
+  }
+  if (typeof value !== 'object' || seen.has(value)) return '';
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value
+      .map(item => normaliseMessageText(item, depth + 1, seen))
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  for (const key of MESSAGE_TEXT_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+    const text = normaliseMessageText(value[key], depth + 1, seen);
+    if (text) return text;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    if (MESSAGE_METADATA_KEYS.test(key)) continue;
+    const text = normaliseMessageText(child, depth + 1, seen);
+    if (text) return text;
+  }
+  return '';
+}
+
+export function normaliseBoardMessages(board) {
+  if (!board || typeof board !== 'object' || !Object.prototype.hasOwnProperty.call(board, 'nrccMessages')) return board;
+  const raw = board.nrccMessages;
+  const messages = Array.isArray(raw) ? raw : (raw == null ? [] : [raw]);
+  const nrccMessages = messages
+    .map(item => normaliseMessageText(item))
+    .filter(Boolean)
+    .map(value => ({ value }));
+  return { ...board, nrccMessages };
 }
 
 async function fetchTextWithTimeout(url, options, timeout) {

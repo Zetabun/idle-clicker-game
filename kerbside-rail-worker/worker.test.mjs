@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildUpstreamUrl,
+  normaliseBoardMessages,
   parseBoardPath,
   resetWorkerStateForTests,
   routeRequest,
@@ -74,6 +75,24 @@ test('validates the minimum LDB board shape without inventing departures', () =>
   assert.equal(validBoardPayload({ crs: 'BHM' }, 'BHM'), false);
 });
 
+test('normalises nested RDM disruption messages into displayable text', () => {
+  const board = normaliseBoardMessages({
+    ...BOARD,
+    nrccMessages: [
+      { value: { value: '<p>Major disruption between Birmingham and Bristol.</p>' } },
+      { message: { '#text': 'Platform alterations may apply.' } },
+      { value: 'Legacy plain-text notice.' },
+      { value: {} }
+    ]
+  });
+  assert.deepEqual(board.nrccMessages, [
+    { value: '<p>Major disruption between Birmingham and Bristol.</p>' },
+    { value: 'Platform alterations may apply.' },
+    { value: 'Legacy plain-text notice.' }
+  ]);
+  assert.doesNotMatch(JSON.stringify(board.nrccMessages), /\[object Object\]/);
+});
+
 test('health reports whether the Rail Data key is configured', async () => {
   const absent = await routeRequest(new Request('https://example.test/health'), {});
   assert.equal((await absent.json()).ldbConfigured, false);
@@ -104,6 +123,35 @@ test('official board request keeps the consumer key server-side', async () => {
     assert.doesNotMatch(call.url, new RegExp(API_KEY));
     assert.equal(response.headers.get('x-apikey'), null);
     assert.equal(runtime.state.puts, 1);
+  } finally {
+    runtime.restore();
+  }
+});
+
+test('official board response flattens nested RDM travel updates for the app', async () => {
+  const upstreamBoard = {
+    ...BOARD,
+    nrccMessages: [
+      { value: { text: '<strong>Service disruption</strong> near Birmingham.' } },
+      { message: { value: 'Check platform screens before boarding.' } }
+    ]
+  };
+  const runtime = installRuntime(async () => new Response(JSON.stringify(upstreamBoard), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  }));
+  try {
+    const response = await routeRequest(
+      new Request('https://example.test/departures/BHM/9?expand=true'),
+      { RDM_LDB_API_KEY: API_KEY }
+    );
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body.nrccMessages, [
+      { value: '<strong>Service disruption</strong> near Birmingham.' },
+      { value: 'Check platform screens before boarding.' }
+    ]);
+    assert.doesNotMatch(JSON.stringify(body.nrccMessages), /\[object Object\]/);
   } finally {
     runtime.restore();
   }
