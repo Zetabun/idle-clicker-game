@@ -138,8 +138,13 @@ async function liveWindowFetch(input,init){
   let lastResponse=null,lastError=null;
 
   for(let index=0;index<order.length;index++){
-    const candidate=new URL(next.toString());
-    candidate.origin=order[index];
+    /* URL.origin is a getter with no setter, so assigning to it throws
+       "Attempted to assign to readonly property" under 'use strict' - which
+       took the whole board down, because this runs before any provider is
+       even contacted. Rebuild the URL against the target origin instead;
+       passing the path, query and hash as a relative reference keeps the
+       timeOffset/timeWindow parameters and any /to/ route filter intact. */
+    const candidate=new URL(next.pathname+next.search+next.hash,order[index]);
     state.lastUrl=candidate.toString();
     const attempt=await providerAttempt(candidate,init);
     const resolved=preferredProvider(candidate.origin);
