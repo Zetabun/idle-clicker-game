@@ -8,14 +8,25 @@ on:
       - .github/workflows/rdm-diagnostic.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  cleanup:
+  diagnose:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Remove diagnostic branch
+      - name: Inspect deployed rail Worker
         shell: bash
-        run: git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" --delete agent/rdm-diagnostic
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for url in \
+            'https://kerbside-rail.adambullas.workers.dev/health' \
+            'https://kerbside-rail.adambullas.workers.dev/departures/BHM/9?expand=true'; do
+            body="$(mktemp)"
+            status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 20 -o "$body" -w '%{http_code}' "$url" || true)"
+            echo "URL: $url"
+            echo "HTTP: $status"
+            cat "$body" || true
+            echo
+            rm -f "$body"
+          done
