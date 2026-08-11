@@ -203,7 +203,7 @@ body.theme-crystal .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
   #topbar .transport-switch button{min-height:34px;padding:6px 9px;font-size:11.5px}
   body[data-transport="train"] #topbar{min-height:calc(54px + env(safe-area-inset-top));flex-wrap:nowrap}
   body[data-transport="train"] #topbar .brand{margin-right:150px}
-  .train-shell{display:flex;flex-direction:column;min-height:0}
+  .train-shell{display:flex;flex-direction:column;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
   .train-sidebar{
     flex:0 0 auto;overflow:visible;padding:12px 12px 10px;border-right:0;border-bottom:1px solid var(--rule)
   }
@@ -212,7 +212,7 @@ body.theme-crystal .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
   .train-search-wrap{margin:7px 0 8px}
   .train-sidebar .train-model-card{display:none}
   .train-provider-note{margin:7px 0 0;font-size:9.5px;line-height:1.35}
-  .train-content{flex:1;min-height:0}
+  .train-content{flex:0 0 auto;min-height:0}
   .train-board-head{padding:10px 12px 9px;gap:10px}
   .train-board-head h2{font-size:17px}
   .train-station-meta{font-size:10.5px}
@@ -222,7 +222,7 @@ body.theme-crystal .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
   .train-alert strong{display:block;margin-bottom:2px}
   .train-legend{min-height:34px;padding:6px 12px;gap:11px;font-size:9.5px}
   .train-legend b{display:none}
-  .train-board{padding:3px 8px 14px}
+  .train-board{flex:0 0 auto;min-height:0;overflow:visible;padding:3px 8px calc(14px + env(safe-area-inset-bottom))}
   .train-service-summary{
     grid-template-columns:56px minmax(0,1fr) 18px;gap:8px;min-height:68px;padding:9px 7px
   }
