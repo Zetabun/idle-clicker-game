@@ -978,14 +978,33 @@ async function loadBoard(station, {silent=false}={}){
   const seq = ++state.boardSeq;
   setBoardLoading(silent);
   try{
-    /* expand=true asks Huxley for GetDepBoardWithDetails instead of
-       GetDepartureBoard, which returns subsequentCallingPoints inline for
-       every service in the same response. That is what lets the crowding
-       model know when a train actually arrives at the user's destination,
-       at no extra request cost. Both fetch rewrites downstream preserve
-       url.search, so the parameter survives the route filter. */
-    const response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20?expand=true`, {signal:controller.signal});
-    if(!response.ok) throw new Error(`Departure board returned ${response.status}`);
+    /* expand=true asks Huxley for GetDepBoardWithDetails rather than
+       GetDepartureBoard, returning subsequentCallingPoints inline so the
+       crowding model knows when a train reaches the user's destination.
+
+       The catch: Darwin caps numRows at "between 0 and 10 exclusive" for
+       every *WithDetails method, while the plain board allows up to 150.
+       Asking for 20 rows with expand=true is rejected outright, which is
+       what took the board down. Nine is the most the detailed call permits.
+
+       A full board matters more than calling points, so if the detailed
+       request fails for any reason - an older proxy, a provider that does
+       not implement expand, a future parameter change - fall back to the
+       plain 20-row board and carry on with the signals that do not need
+       calling points. resilientRailFetch throws once every provider has
+       failed, so the detailed attempt can fail by exception as well as by
+       status; both paths land on the fallback. */
+    let response = null;
+    try{
+      response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/9?expand=true`, {signal:controller.signal});
+    }catch(expandError){
+      if(controller.signal.aborted) return;
+      response = null;
+    }
+    if((!response || !response.ok) && !controller.signal.aborted){
+      response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20`, {signal:controller.signal});
+    }
+    if(!response || !response.ok) throw new Error(`Departure board returned ${response?response.status:'no response'}`);
     const json = await response.json();
     if(controller.signal.aborted || seq !== state.boardSeq) return;
     state.board = json || {};
