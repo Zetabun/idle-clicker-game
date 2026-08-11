@@ -141,13 +141,33 @@
 .train-detail-grid span{color:var(--text-dim);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em}
 .train-detail-grid b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:11.5px}
 .train-crowding-explain{
-  padding:10px 11px;margin-bottom:12px;border:1px solid var(--rule);border-radius:7px;
+  padding:13px 13px 12px;margin-bottom:12px;border:1px solid var(--rule);border-left-width:3px;border-radius:10px;
   background:var(--ink);color:var(--text-dim);font-size:10.5px;line-height:1.5;
 }
-.train-crowding-explain>div{display:flex;align-items:center;gap:7px}
-.train-crowding-explain strong{color:var(--text);font-size:11.5px}
-.train-crowding-explain span{margin-left:auto;color:var(--text-mute)}
-.train-crowding-explain p{margin:5px 0 0}
+.train-crowding-explain.crowd-quiet{border-left-color:var(--live)}
+.train-crowding-explain.crowd-moderate{border-left-color:var(--led)}
+.train-crowding-explain.crowd-busy{border-left-color:#FF8C42}
+.train-crowding-explain.crowd-very-busy{border-left-color:var(--warn)}
+.train-crowding-explain.crowd-unknown{border-left-color:var(--text-mute)}
+.train-forecast-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.train-forecast-status{display:flex;align-items:center;gap:8px;min-width:0}
+.train-forecast-status i{flex:0 0 auto;width:9px;height:9px}
+.train-crowding-explain.crowd-quiet .train-forecast-status i{background:var(--live)}
+.train-crowding-explain.crowd-moderate .train-forecast-status i{background:var(--led)}
+.train-crowding-explain.crowd-busy .train-forecast-status i{background:#FF8C42}
+.train-crowding-explain.crowd-very-busy .train-forecast-status i{background:var(--warn)}
+.train-crowding-explain.crowd-unknown .train-forecast-status i{background:var(--text-mute)}
+.train-forecast-status strong{color:var(--text);font-size:13px;letter-spacing:-.01em}
+.train-forecast-meta{flex:0 1 auto;padding:4px 7px;border:1px solid var(--rule);border-radius:999px;background:var(--ink-2);color:var(--text-mute);font-size:9px;line-height:1.2;text-align:right}
+.train-forecast-reasons{padding-top:10px}
+.train-forecast-reasons>span{display:block;color:var(--text-mute);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.train-forecast-reasons ul{display:grid;gap:5px;margin:7px 0 0;padding-left:17px}
+.train-forecast-reasons li{padding-left:2px;color:var(--text-dim);font-size:11px;line-height:1.45}
+.train-forecast-reasons li::marker{color:var(--led)}
+.train-forecast-method{margin-top:10px;padding:8px 9px;border-radius:8px;background:var(--ink-2);color:var(--text-mute);font-size:9.5px;line-height:1.45}
+.train-forecast-history{display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text-mute);font-size:9.5px}
+.train-forecast-history span{padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-dim);font-weight:700}
+.train-forecast-history b{color:var(--text-dim);font-weight:600}
 .train-detail-title{
   margin:0 0 8px;color:var(--text-dim);font-size:9.5px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;
@@ -188,6 +208,7 @@ body.theme-crystal .train-service{margin:6px 0;border:1px solid var(--rule);bord
 body.theme-crystal .train-service-summary:hover,body.theme-crystal .train-service.open .train-service-summary{background:var(--ink-3)}
 body.theme-crystal .train-service-detail{background:var(--ink-2)}
 body.theme-crystal .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
+body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 1px 2px rgb(var(--shadow-rgb) / .08)}
 
 @media (max-width:1000px){
   .train-shell{grid-template-columns:260px minmax(0,1fr)}
@@ -239,7 +260,11 @@ body.theme-crystal .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
   .train-chevron{grid-column:3;grid-row:1 / span 2}
   .train-service-detail{padding:0 8px 12px}
   .train-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:10px}
-  .train-crowding-explain span{display:none}
+  .train-crowding-explain{padding:12px 11px}
+  .train-forecast-head{align-items:flex-start;flex-direction:column;gap:7px}
+  .train-forecast-meta{text-align:left}
+  .train-forecast-reasons li{font-size:10.5px}
+  .train-forecast-history{align-items:flex-start;flex-direction:column;gap:5px}
 }
 
 @media (max-width:430px){
