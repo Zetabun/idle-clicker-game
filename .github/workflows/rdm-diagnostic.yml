@@ -14,19 +14,32 @@ jobs:
   diagnose:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      RDM_LDB_API_KEY: ${{ secrets.RDM_LDB_API_KEY }}
     steps:
-      - name: Inspect deployed rail Worker
+      - name: Test exact Live Departure Board endpoint
         shell: bash
         run: |
           set -euo pipefail
-          for url in \
-            'https://kerbside-rail.adambullas.workers.dev/health' \
-            'https://kerbside-rail.adambullas.workers.dev/departures/BHM/9?expand=true'; do
-            body="$(mktemp)"
-            status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 20 -o "$body" -w '%{http_code}' "$url" || true)"
-            echo "URL: $url"
-            echo "HTTP: $status"
-            cat "$body" || true
+          if [[ -z "${RDM_LDB_API_KEY:-}" ]]; then
+            echo "::error::RDM_LDB_API_KEY is missing or empty"
+            exit 1
+          fi
+
+          body="$(mktemp)"
+          trap 'rm -f "$body"' EXIT
+          url='https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard/BHM?numRows=9'
+          status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 25 \
+            -H "x-apikey: $RDM_LDB_API_KEY" \
+            -H 'Accept: application/json' \
+            -o "$body" -w '%{http_code}' "$url" || true)"
+
+          echo "HTTP: $status"
+          if [[ "$status" == "200" ]]; then
+            jq '{crs, locationName, trainServicesCount: ((.trainServices // []) | length)}' "$body"
+            jq -e '.crs == "BHM" and has("trainServices")' "$body" >/dev/null
+          else
+            head -c 1000 "$body" || true
             echo
-            rm -f "$body"
-          done
+            exit 1
+          fi
