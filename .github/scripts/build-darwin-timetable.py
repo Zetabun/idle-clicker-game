@@ -3,8 +3,8 @@
 
 Usage:
   python3 .github/scripts/build-darwin-timetable.py \
-    PPTimetable_YYYYMMDDHHMMSS_v8.xml.gz \
-    PPTimetable_YYYYMMDDHHMMSS_ref_v4.xml.gz \
+    20260811020500_v8.xml.gz \
+    20260811020500_ref_v4.xml.gz \
     kerbside-rail-timetable
 """
 from __future__ import annotations
@@ -48,12 +48,33 @@ def clock(value: int) -> str:
     return "" if value < 0 or value >= 1440 else f"{value // 60:02d}:{value % 60:02d}"
 
 
+def root_timetable_id(path: Path) -> str:
+    with gzip.open(path, "rb") as handle:
+        for _, element in ET.iterparse(handle, events=("start",)):
+            return (
+                element.attrib.get("timetableID")
+                or element.attrib.get("timetableId")
+                or ""
+            ).strip()
+    return ""
+
+
 def load_reference(path: Path):
     locations = {}
     toc_names = {}
+    reference_id = ""
     with gzip.open(path, "rb") as handle:
-        for _, element in ET.iterparse(handle, events=("end",)):
+        for event, element in ET.iterparse(handle, events=("start", "end")):
             tag = local_name(element.tag)
+            if event == "start" and not reference_id:
+                reference_id = (
+                    element.attrib.get("timetableID")
+                    or element.attrib.get("timetableId")
+                    or ""
+                ).strip()
+                continue
+            if event != "end":
+                continue
             attrs = element.attrib
             if tag == "LocationRef":
                 tpl = (attrs.get("tpl") or "").strip()
@@ -68,11 +89,19 @@ def load_reference(path: Path):
                 if code:
                     toc_names[code] = (attrs.get("tocname") or "").strip() or code
             element.clear()
-    return locations, toc_names
+    return reference_id, locations, toc_names
 
 
 def build(timetable: Path, reference: Path, output: Path) -> None:
-    locations, toc_names = load_reference(reference)
+    timetable_id = root_timetable_id(timetable)
+    reference_id, locations, toc_names = load_reference(reference)
+    if not timetable_id:
+        raise SystemExit(f"Could not read Darwin timetable ID from {timetable.name}")
+    if reference_id and reference_id != timetable_id:
+        raise SystemExit(
+            f"Darwin timetable/reference mismatch: {timetable_id} != {reference_id}"
+        )
+
     by_date = defaultdict(list)
     counts = Counter()
     coverage = defaultdict(lambda: {"min": 1440, "max": -1})
@@ -83,7 +112,10 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
             if local_name(element.tag) != "Journey":
                 continue
             attrs = element.attrib
-            if attrs.get("isPassengerSvc") == "false" or attrs.get("status") in BUS_OR_FERRY_STATUS:
+            if (
+                attrs.get("isPassengerSvc") == "false"
+                or attrs.get("status") in BUS_OR_FERRY_STATUS
+            ):
                 element.clear()
                 continue
             service_start = attrs.get("ssd") or ""
@@ -98,7 +130,9 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
                 if local_name(child.tag) not in {"OR", "IP", "DT"}:
                     continue
                 call = child.attrib
-                crs, _name, _toc = locations.get(call.get("tpl") or "", ("", "", ""))
+                crs, _name, _toc = locations.get(
+                    call.get("tpl") or "", ("", "", "")
+                )
                 if not crs:
                     continue
                 departure = hhmm(call.get("ptd") or call.get("wtd") or "")
@@ -109,7 +143,9 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
                 if previous is not None and current + 720 < previous:
                     day_offset += 1
                 previous = current
-                calls.append([crs, arrival, departure, call.get("plat") or "", day_offset])
+                calls.append(
+                    [crs, arrival, departure, call.get("plat") or "", day_offset]
+                )
 
             merged = []
             for call in calls:
@@ -137,7 +173,9 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
                 service_start,
                 calls,
             ]
-            departure_days = sorted({call[4] for call in calls[:-1] if call[2] or call[1]})
+            departure_days = sorted(
+                {call[4] for call in calls[:-1] if call[2] or call[1]}
+            )
             for offset in departure_days:
                 stamp = day_stamp(service_start, offset)
                 by_date[stamp].append(row)
@@ -153,17 +191,29 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
                 coverage[stamp]["max"] = max(coverage[stamp]["max"], minute)
             element.clear()
 
-    match = re.search(r"PPTimetable_(\d+)", timetable.name)
-    timetable_id = match.group(1) if match else ""
-    snapshot_date = f"{timetable_id[:4]}-{timetable_id[4:6]}-{timetable_id[6:8]}" if len(timetable_id) >= 8 else ""
-    valid_dates = sorted(stamp for stamp in by_date if not snapshot_date or stamp >= snapshot_date)
+    snapshot_date = (
+        f"{timetable_id[:4]}-{timetable_id[4:6]}-{timetable_id[6:8]}"
+    )
+    valid_dates = sorted(stamp for stamp in by_date if stamp >= snapshot_date)
+    if not valid_dates:
+        raise SystemExit(
+            f"No passenger timetable dates found on or after {snapshot_date}"
+        )
 
     output.mkdir(parents=True, exist_ok=True)
     for stamp in valid_dates:
         rows = by_date[stamp]
-        raw = json.dumps(rows, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        raw = json.dumps(
+            rows, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
         with open(output / f"{stamp}.json.gz", "wb") as raw_target:
-            with gzip.GzipFile(filename="", mode="wb", compresslevel=9, fileobj=raw_target, mtime=0) as target:
+            with gzip.GzipFile(
+                filename="",
+                mode="wb",
+                compresslevel=9,
+                fileobj=raw_target,
+                mtime=0,
+            ) as target:
                 target.write(raw)
 
     crs_locations = {}
@@ -171,7 +221,12 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
         if crs and crs not in crs_locations:
             crs_locations[crs] = [name or crs, tpl, toc]
     (output / "locations.json").write_text(
-        json.dumps(crs_locations, separators=(",", ":"), ensure_ascii=False, sort_keys=True),
+        json.dumps(
+            crs_locations,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
 
@@ -185,7 +240,8 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
             stamp: {
                 "from": clock(coverage[stamp]["min"]),
                 "to": clock(coverage[stamp]["max"]),
-                "partial": coverage[stamp]["min"] > 15 or coverage[stamp]["max"] < 1425,
+                "partial": coverage[stamp]["min"] > 15
+                or coverage[stamp]["max"] < 1425,
             }
             for stamp in valid_dates
         },
@@ -193,7 +249,12 @@ def build(timetable: Path, reference: Path, output: Path) -> None:
         "journeys": journey_count,
     }
     (output / "manifest.json").write_text(
-        json.dumps(manifest, separators=(",", ":"), ensure_ascii=False, sort_keys=True),
+        json.dumps(
+            manifest,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     print(json.dumps(manifest, indent=2))
