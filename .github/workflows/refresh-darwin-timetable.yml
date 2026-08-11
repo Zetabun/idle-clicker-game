@@ -1,0 +1,154 @@
+name: Refresh Darwin timetable
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 4,8 * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/refresh-darwin-timetable.yml
+      - .github/scripts/build-darwin-timetable.py
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: refresh-darwin-timetable
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: project-ab1969d6-ac34-49d1-9e8
+  GCP_WIF_PROVIDER: projects/476681838032/locations/global/workloadIdentityPools/kerbside-github/providers/github
+  GCS_BUCKET: kerbside-darwin-timetable-1985
+  GCS_PREFIX: darwin/timetable/PPTimetable
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          version: '>= 416.0.0'
+
+      - name: Find newest complete Darwin timetable snapshot
+        id: snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t objects < <(gcloud storage ls --recursive "gs://${GCS_BUCKET}/${GCS_PREFIX}/")
+          if (( ${#objects[@]} == 0 )); then
+            echo '::error::No Darwin timetable objects were found in the configured bucket prefix.'
+            exit 1
+          fi
+
+          snapshot=''
+          while IFS= read -r candidate; do
+            [[ -n "$candidate" ]] || continue
+            if printf '%s\n' "${objects[@]}" | grep -Fqx "gs://${GCS_BUCKET}/${GCS_PREFIX}/${candidate}_ref_v4.xml.gz"; then
+              snapshot="$candidate"
+              break
+            fi
+          done < <(
+            printf '%s\n' "${objects[@]}" \
+              | sed -nE 's#^.*/([0-9]{14})_v8\.xml\.gz$#\1#p' \
+              | sort -r -u
+          )
+
+          if [[ -z "$snapshot" ]]; then
+            echo '::error::No matching Darwin v8 + ref_v4 timetable pair was found.'
+            exit 1
+          fi
+
+          current=''
+          if [[ -f kerbside-rail-timetable/manifest.json ]]; then
+            current="$(python3 -c "import json; print(json.load(open('kerbside-rail-timetable/manifest.json', encoding='utf-8')).get('timetableId', ''))")"
+          fi
+
+          echo "snapshot_id=$snapshot" >> "$GITHUB_OUTPUT"
+          if [[ "$current" == "$snapshot" ]]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo "Darwin timetable snapshot $snapshot is already published."
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            echo "Newest complete Darwin timetable snapshot: $snapshot (published: ${current:-none})."
+          fi
+
+      - name: Download newest Darwin timetable pair
+        if: steps.snapshot.outputs.changed == 'true'
+        shell: bash
+        env:
+          SNAPSHOT_ID: ${{ steps.snapshot.outputs.snapshot_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/darwin-timetable
+          gcloud storage cp \
+            "gs://${GCS_BUCKET}/${GCS_PREFIX}/${SNAPSHOT_ID}_v8.xml.gz" \
+            "/tmp/darwin-timetable/${SNAPSHOT_ID}_v8.xml.gz"
+          gcloud storage cp \
+            "gs://${GCS_BUCKET}/${GCS_PREFIX}/${SNAPSHOT_ID}_ref_v4.xml.gz" \
+            "/tmp/darwin-timetable/${SNAPSHOT_ID}_ref_v4.xml.gz"
+
+      - name: Build and validate Kerbside timetable
+        if: steps.snapshot.outputs.changed == 'true'
+        shell: bash
+        env:
+          SNAPSHOT_ID: ${{ steps.snapshot.outputs.snapshot_id }}
+        run: |
+          set -euo pipefail
+          rm -rf kerbside-rail-timetable.next
+          python3 .github/scripts/build-darwin-timetable.py \
+            "/tmp/darwin-timetable/${SNAPSHOT_ID}_v8.xml.gz" \
+            "/tmp/darwin-timetable/${SNAPSHOT_ID}_ref_v4.xml.gz" \
+            kerbside-rail-timetable.next
+
+          python3 -c "import json,os,pathlib; m=json.load(open('kerbside-rail-timetable.next/manifest.json', encoding='utf-8')); expected=os.environ['SNAPSHOT_ID']; assert m.get('timetableId') == expected, (m.get('timetableId'), expected); dates=m.get('dates') or []; assert len(dates) >= 2, dates; missing=[d for d in dates if not (pathlib.Path('kerbside-rail-timetable.next') / f'{d}.json.gz').is_file()]; assert not missing, missing; print('Validated Darwin snapshot', expected, ':', ', '.join(dates))"
+
+          node --check kerbside-train-timetable.js
+          node --test kerbside-backend/test/train-timetable-provider.test.js
+
+          rm -rf kerbside-rail-timetable
+          mv kerbside-rail-timetable.next kerbside-rail-timetable
+          git diff --check
+
+      - name: Publish timetable snapshot
+        if: steps.snapshot.outputs.changed == 'true'
+        shell: bash
+        env:
+          SNAPSHOT_ID: ${{ steps.snapshot.outputs.snapshot_id }}
+        run: |
+          set -euo pipefail
+          git add kerbside-rail-timetable
+          if git diff --cached --quiet; then
+            echo 'Generated timetable data is unchanged; nothing to publish.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "Refresh Darwin timetable snapshot ${SNAPSHOT_ID}"
+          git pull --rebase origin main
+          git push origin HEAD:main
