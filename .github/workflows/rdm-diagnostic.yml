@@ -1,0 +1,32 @@
+name: Rail Data diagnostic
+
+on:
+  push:
+    branches:
+      - agent/rdm-diagnostic
+    paths:
+      - .github/workflows/rdm-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect deployed rail Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in \
+            'https://kerbside-rail.adambullas.workers.dev/health' \
+            'https://kerbside-rail.adambullas.workers.dev/departures/BHM/9?expand=true'; do
+            body="$(mktemp)"
+            status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 20 -o "$body" -w '%{http_code}' "$url" || true)"
+            echo "URL: $url"
+            echo "HTTP: $status"
+            cat "$body" || true
+            echo
+            rm -f "$body"
+          done
