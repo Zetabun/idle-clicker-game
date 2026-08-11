@@ -78,49 +78,184 @@ async function resilientRailFetch(input,init){
 window.fetch=resilientRailFetch;
 window.__KERBSIDE_RAIL_PROVIDER__={state:providerState,providers:[...PROVIDERS],fetch:resilientRailFetch};
 
+/* ------------------------------------------------------------------
+   Styles.
+
+   Every colour resolves against tokens actually declared in bus.html
+   (--ink-2 / --ink-3 / --rule / --led / --text / --text-dim /
+   --text-faint / --warn / --on-accent), so both the amber night theme
+   and the light Crystal theme recolour the planner without a second
+   rule. The previous sheet reached for --border and --panel, which are
+   declared nowhere: every shorthand containing them was invalid at
+   computed-value time, so the planner rendered with no background, no
+   border, no connector line and no ring on the route dots.
+
+   Geometry is a three-column grid rather than hardcoded pixel offsets,
+   so the markers stay aligned when the webfont lands late, when a
+   station name wraps, or when browser text size is increased.
+------------------------------------------------------------------ */
 function installStyles(){
   if($('kerbsideJourneyPlannerStyles'))return;
   const s=document.createElement('style');
   s.id='kerbsideJourneyPlannerStyles';
   s.textContent=`
-.train-route-planner{position:relative;margin:4px 0 14px;padding:14px;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:0 8px 24px rgb(0 0 0 / .04)}
-.train-route-planner .train-search-wrap{margin:0}.train-route-planner .train-search-wrap label{font-size:10px;letter-spacing:.16em;margin-bottom:5px}.train-route-planner .train-search-box{display:block}.train-route-planner .train-search-box input{width:100%}
-.train-route-planner #trainStationGo,.train-route-planner #trainDestinationGo{position:absolute!important;right:0!important;bottom:0!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;white-space:nowrap!important;padding:0!important;border:0!important}
-.train-route-stack{position:relative;display:grid;gap:0}.train-route-stack:before{content:'';position:absolute;left:17px;top:43px;bottom:43px;width:2px;background:var(--border);z-index:0}
-.train-route-stack .train-search-wrap{position:relative;z-index:1}.train-route-stack input{background:var(--ink);border-radius:14px;padding-left:34px;padding-right:48px}
-.train-route-divider{height:9px}.train-route-dot{position:absolute;left:12px;width:12px;height:12px;border:3px solid var(--panel);border-radius:50%;background:var(--led);z-index:2}.train-route-dot.from{top:44px}.train-route-dot.to{bottom:35px}
-.train-route-swap{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:4;width:38px;height:38px;padding:0;border-radius:50%;font-size:20px;line-height:1;background:var(--panel);box-shadow:0 2px 8px rgb(0 0 0 / .08)}
-.train-route-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px}.train-route-meta .train-destination-clear{margin:0;font-size:10px}.train-planner-time{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-dim);white-space:nowrap}.train-planner-time input{width:104px;padding:7px 9px;border:1px solid var(--border);border-radius:10px;background:var(--ink);color:var(--text)}
-.train-date-wrap{margin:10px 0 0!important;padding-top:10px;border-top:1px solid var(--border)}.train-date-row{grid-template-columns:minmax(0,1fr) auto!important}.train-date-today{border-radius:12px!important;padding:0 14px!important}.train-date-meta{padding:0 2px}
-.train-journey-go{width:100%;min-height:48px;margin-top:12px;border-radius:14px!important;font-weight:800!important;font-size:14px!important;letter-spacing:.01em}.train-journey-go[disabled]{opacity:.62;cursor:wait}.train-planner-message{min-height:16px;margin-top:7px;color:var(--text-dim);font-size:10px;line-height:1.4}.train-planner-message:empty{display:none}.train-planner-message.error{color:var(--danger,var(--warn))}
-.train-future-card{align-content:center;justify-items:center;gap:8px!important;min-height:180px!important;margin:8px 4px;padding:24px!important;border:1px solid var(--rule);border-radius:16px;background:var(--ink-2)}
-.train-future-badge{display:inline-flex!important;max-width:none!important;padding:4px 9px;border:1px solid rgb(var(--led-rgb) / .32);border-radius:999px;color:var(--led)!important;background:rgb(var(--led-rgb) / .07);font-family:'Martian Mono',ui-monospace,monospace;font-size:9px!important;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-.train-future-route{max-width:42rem!important;color:var(--text)!important;font-size:12px!important;font-weight:700}.train-future-note{max-width:38rem!important}
+.train-planner{display:flex;flex-direction:column;gap:10px;margin:4px 0 14px}
+
+.train-card{
+  padding:14px;border:1px solid var(--rule);border-radius:var(--radius-lg,16px);
+  background:var(--ink-3);box-shadow:0 6px 18px rgb(var(--shadow-rgb) / .10);
+}
+.train-card-title{margin:0 0 11px;color:var(--text);font-size:14px;font-weight:800;letter-spacing:-.015em}
+
+/* The planner adopts the two search wraps built by trains.js and
+   train-routes.js, so neutralise their sidebar spacing and reduce their
+   visible labels to assistive text. The marker, the placeholder and the
+   card title already say which field is which. */
+.train-card .train-search-wrap{margin:0;min-width:0}
+.train-card .train-search-wrap>label{
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;
+}
+.train-card .train-search-box{display:block}
+.train-card .train-search-box input{width:100%}
+/* Per-field Find buttons are redundant beside one Find trains action.
+   Keep them in the DOM (other modules click them) but out of the
+   layout, the tab order and the accessibility tree. */
+.train-card #trainStationGo,
+.train-card #trainDestinationGo{
+  position:absolute!important;right:0!important;bottom:0!important;
+  width:1px!important;height:1px!important;padding:0!important;border:0!important;
+  opacity:0!important;overflow:hidden!important;white-space:nowrap!important;pointer-events:none!important;
+}
+
+/* ---- Where ---- */
+.train-where-grid{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center}
+.train-where-marker{justify-self:center;width:13px;height:13px;border-radius:50%;box-sizing:border-box}
+.train-where-marker.from{border:3px solid var(--led);background:transparent}
+.train-where-marker.to{border:3px solid var(--led);background:var(--led)}
+.train-where-link{
+  justify-self:center;width:2px;height:16px;
+  background:repeating-linear-gradient(var(--text-faint) 0 2px,transparent 2px 6px);
+}
+.train-where-gap{height:16px}
+.train-where-swap{
+  justify-self:center;display:grid;place-items:center;width:40px;height:40px;
+  margin-left:4px;border-radius:50%;color:var(--text);background:transparent;
+  transition:background .12s,color .12s;
+}
+.train-where-swap svg{display:block;width:19px;height:19px}
+.train-where-swap:hover{color:var(--led);background:rgb(var(--led-rgb) / .10)}
+.train-where-swap:disabled{opacity:.4;cursor:default}
+.train-where-swap:disabled:hover{color:var(--text);background:transparent}
+
+/* 16px is not a taste call: iOS Safari zooms the whole layout viewport
+   when a focused input is under 16px, which is the "everything jumps
+   and I can't get back" behaviour on the phone. */
+.train-card .train-search-box input,
+.train-card .train-date-row input,
+.train-planner-time input{font-size:16px!important}
+
+.train-where-grid .train-search-box input{
+  padding:13px 12px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--ink-2);color:var(--text);font-weight:700;line-height:1.25;
+}
+.train-where-grid .train-search-box input::placeholder{font-weight:500;color:var(--text-faint)}
+.train-where-grid .train-search-box input:focus{
+  border-color:var(--led);outline:2px solid rgb(var(--led-rgb) / .18);outline-offset:1px;
+}
+
+/* ---- When ---- */
+.train-when-grid{display:grid;gap:9px}
+.train-card .train-date-wrap{margin:0!important;padding:0!important;border-top:0!important}
+.train-card .train-date-row{grid-template-columns:minmax(0,1fr) auto!important;gap:9px!important}
+.train-card .train-date-row input{
+  padding:12px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--ink-2);color:var(--text);font-weight:600;
+}
+.train-card .train-date-today{
+  padding:0 15px!important;border:1px solid var(--rule);border-radius:12px!important;
+  background:var(--ink-2);color:var(--text);font-size:13px;font-weight:700;white-space:nowrap;
+}
+.train-card .train-date-today:hover{border-color:var(--led);color:var(--led)}
+.train-card .train-date-meta{margin-top:0!important;padding:0 2px}
+.train-planner-time{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;
+  margin:0;color:var(--text-dim);font-size:12px;
+}
+.train-planner-time>span{padding-left:2px}
+.train-planner-time input{
+  width:100%;padding:12px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--ink-2);color:var(--text);font-weight:600;
+}
+
+/* ---- Action ---- */
+.train-journey-go{
+  width:100%;min-height:50px;border:1px solid var(--led)!important;border-radius:14px!important;
+  background:var(--led)!important;color:var(--on-accent)!important;
+  font-size:15px!important;font-weight:800!important;letter-spacing:.01em;
+  transition:filter .12s;
+}
+.train-journey-go:hover:not([disabled]){filter:brightness(1.06)}
+.train-journey-go[disabled]{opacity:.62;cursor:wait}
+.train-planner-message{min-height:16px;padding:0 2px;color:var(--text-dim);font-size:11.5px;line-height:1.45}
+.train-planner-message:empty{display:none}
+.train-planner-message.error{color:var(--warn)}
+.train-planner-foot{display:flex;justify-content:flex-start;padding:0 2px}
+.train-planner-foot .train-destination-clear{margin:0!important;font-size:11.5px!important}
+.train-planner-foot:empty{display:none}
+
+/* Suggestion lists must clear the card, and on desktop the sidebar is
+   the scroll container, so raise them above both. */
+.train-card .train-suggest{top:calc(100% + 6px);z-index:1800}
+
+.train-future-card{
+  align-content:center;justify-items:center;gap:8px!important;min-height:180px!important;
+  margin:8px 4px;padding:24px!important;border:1px solid var(--rule);border-radius:16px;background:var(--ink-2);
+}
+.train-future-badge{
+  display:inline-flex!important;max-width:none!important;padding:4px 9px;
+  border:1px solid rgb(var(--led-rgb) / .32);border-radius:999px;
+  color:var(--led)!important;background:rgb(var(--led-rgb) / .07);
+  font-family:'Martian Mono',ui-monospace,monospace;font-size:9px!important;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.train-future-route{max-width:42rem!important;color:var(--text)!important;font-size:12px!important;font-weight:700}
+.train-future-note{max-width:38rem!important}
+
 @media(max-width:820px){
-  body[data-transport="train"] #topbar{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:8px!important;min-height:calc(62px + env(safe-area-inset-top))!important;padding:calc(8px + env(safe-area-inset-top)) 10px 8px!important}
+  body[data-transport="train"] #topbar{
+    display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:8px!important;
+    min-height:calc(62px + env(safe-area-inset-top))!important;
+    padding:calc(8px + env(safe-area-inset-top)) 10px 8px!important;
+  }
   body[data-transport="train"] #topbar .brand{min-width:0!important;margin:0 auto 0 0!important}
   body[data-transport="train"] #topbar .transport-switch{position:static!important;inset:auto!important;margin:0!important;flex:0 0 auto!important}
   body[data-transport="train"] #topbar #setBtn{position:static!important;margin:0!important;flex:0 0 auto!important}
   body[data-transport="train"] .train-sidebar{padding:9px 10px 8px!important}
   body[data-transport="train"] .train-sidebar>.train-kicker{margin:0 2px 6px}
-  .train-route-planner{margin:2px 0 6px;padding:10px;border-radius:15px;box-shadow:none}
-  .train-route-stack input{min-height:46px;padding-left:33px;padding-right:46px}
-  .train-route-meta{align-items:center;flex-direction:row;gap:8px;margin-top:8px}
-  .train-route-meta .train-destination-clear{min-width:0;flex:1;font-size:9.5px;text-align:left}
-  .train-planner-time{flex:0 0 auto;gap:6px;font-size:9.5px}.train-planner-time input{width:92px;padding:6px 7px}
-  .train-date-wrap{margin-top:8px!important;padding-top:8px}.train-date-meta{margin-top:5px!important;font-size:9.5px!important;line-height:1.35}
-  .train-journey-go{min-height:44px;margin-top:9px;font-size:13px!important}
-  .train-planner-message{margin-top:6px;min-height:0}
+  .train-planner{gap:8px;margin:2px 0 6px}
+  .train-card{padding:11px;border-radius:15px;box-shadow:none}
+  .train-card-title{margin-bottom:9px;font-size:13px}
+  .train-where-grid .train-search-box input{padding:12px 11px}
+  .train-card .train-date-row input,.train-planner-time input{padding:11px}
+  .train-journey-go{min-height:48px;font-size:14px!important}
   .train-future-card{min-height:150px!important;margin:6px 2px;padding:20px 16px!important}
 }
 @media(max-width:430px){
   body[data-transport="train"] #topbar .brand{margin-right:auto!important}
   body[data-transport="train"] #topbar .transport-switch button{min-height:36px!important;padding:6px 8px!important}
-  .train-route-meta{gap:6px}.train-route-meta .train-destination-clear{font-size:9px}.train-planner-time span{font-size:9px}.train-planner-time input{width:84px}
+  .train-where-grid{grid-template-columns:22px minmax(0,1fr) auto}
+  .train-where-swap{width:38px;height:38px;margin-left:2px}
+  .train-planner-time{grid-template-columns:auto minmax(0,1fr)}
+  .train-planner-time input{justify-self:end;max-width:150px}
+}
+@media(prefers-reduced-motion:reduce){
+  .train-where-swap,.train-journey-go{transition:none!important}
 }
 `;
   document.head.appendChild(s);
 }
+
 function storedTime(){try{return localStorage.getItem(STORE)||'09:00'}catch(e){return'09:00'}}
 function saveTime(v){try{localStorage.setItem(STORE,v)}catch(e){}}
 function dispatch(){
@@ -137,13 +272,30 @@ function travelDateLabel(){
   const date=new Date(`${value}T12:00:00`);
   return Number.isNaN(date.getTime())?value:date.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 }
+/* Polls a predicate rather than racing a fixed sleep, and reports
+   whether it actually became true so callers can decide. */
+function waitFor(test,timeout=1500,interval=30){
+  return new Promise(resolve=>{
+    const start=Date.now();
+    const tick=()=>{
+      let ok=false;
+      try{ok=!!test();}catch(e){ok=false;}
+      if(ok)return resolve(true);
+      if(Date.now()-start>=timeout)return resolve(false);
+      setTimeout(tick,interval);
+    };
+    tick();
+  });
+}
 function stationRows(json,exclude=''){
   return (Array.isArray(json)?json:[]).map(item=>({name:String(item&&item.stationName||'').trim(),crs:String(item&&item.crsCode||'').trim().toUpperCase()})).filter(item=>item.name&&/^[A-Z0-9]{3}$/.test(item.crs)&&item.crs!==exclude);
 }
 async function stationLookup(query,signal,exclude=''){
   const q=String(query||'').trim();
   if(q.length<2)return[];
-  const response=await resilientRailFetch(`${PROVIDERS[0]}/crs/${encodeURIComponent(q)}`,{signal,headers:{Accept:'application/json'}});
+  /* Start from whichever provider last answered rather than always
+     PROVIDERS[0]; resilientRailFetch still falls through to the other. */
+  const response=await resilientRailFetch(`${providerState.active}/crs/${encodeURIComponent(q)}`,{signal,headers:{Accept:'application/json'}});
   if(!response.ok)throw new Error(`Station search returned ${response.status}`);
   return stationRows(await response.json(),exclude);
 }
@@ -151,19 +303,19 @@ function bestMatch(items,query){
   const q=normalise(query),crs=String(query||'').trim().toUpperCase();
   return items.find(item=>item.crs===crs)||items.find(item=>normalise(item.name)===q)||(items.length===1?items[0]:null);
 }
-function renderFromSuggestions(items){
-  const el=$('trainSuggest');if(!el)return;
-  if(!items.length){el.innerHTML='<div class="train-suggest-empty">No matching stations found.</div>';el.hidden=false;return;}
-  el.innerHTML=items.slice(0,8).map((item,index)=>`<button type="button" role="option" data-k-from="${index}"><span>${item.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><b>${item.crs}</b></button>`).join('');
+function esc(value){return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function renderSuggestions(elementId,items,attribute,onPick,emptyText){
+  const el=$(elementId);if(!el)return;
+  if(!items.length){el.innerHTML=`<div class="train-suggest-empty">${emptyText}</div>`;el.hidden=false;return;}
+  el.innerHTML=items.slice(0,8).map((item,index)=>`<button type="button" role="option" ${attribute}="${index}"><span>${esc(item.name)}</span><b>${esc(item.crs)}</b></button>`).join('');
   el.hidden=false;
-  [...el.querySelectorAll('[data-k-from]')].forEach((button,index)=>button.addEventListener('click',()=>selectOrigin(items[index])));
+  [...el.querySelectorAll(`[${attribute}]`)].forEach((button,index)=>button.addEventListener('click',()=>onPick(items[index])));
+}
+function renderFromSuggestions(items){
+  renderSuggestions('trainSuggest',items,'data-k-from',selectOrigin,'No matching stations found.');
 }
 function renderToSuggestions(items){
-  const el=$('trainDestinationSuggest');if(!el)return;
-  if(!items.length){el.innerHTML='<div class="train-suggest-empty">No matching destination stations found.</div>';el.hidden=false;return;}
-  el.innerHTML=items.slice(0,8).map((item,index)=>`<button type="button" role="option" data-k-to="${index}"><span>${item.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><b>${item.crs}</b></button>`).join('');
-  el.hidden=false;
-  [...el.querySelectorAll('[data-k-to]')].forEach((button,index)=>button.addEventListener('click',()=>selectDestination(items[index])));
+  renderSuggestions('trainDestinationSuggest',items,'data-k-to',selectDestination,'No matching destination stations found.');
 }
 function selectOrigin(item){
   if(!item)return;
@@ -195,12 +347,7 @@ async function resolveOrigin(){
   const match=bestMatch(items,q);
   if(!match){renderFromSuggestions(items);plannerMessage('Choose the departure station from the suggestions.',true);return false;}
   selectOrigin(match);
-  const start=Date.now();
-  while(Date.now()-start<1500){
-    if(api.state&&api.state.station&&String(api.state.station.crs).toUpperCase()===match.crs)return true;
-    await new Promise(resolve=>setTimeout(resolve,30));
-  }
-  return false;
+  return waitFor(()=>api.state&&api.state.station&&String(api.state.station.crs).toUpperCase()===match.crs,1500);
 }
 async function resolveDestination(){
   const input=$('trainDestinationQuery'),route=window.__KERBSIDE_TRAIN_ROUTES__,api=window.__KERBSIDE_TRAINS__;
@@ -232,6 +379,8 @@ async function findTrains(){
   if(button){button.disabled=true;button.textContent='Finding trains…';}
   plannerMessage('');
   try{
+    const from=$('trainStationQuery');
+    if(!from||from.value.trim().length<2){plannerMessage('Add a departure station to search this journey.',true);from?.focus();return;}
     if(!(await resolveOrigin()))return;
     const to=$('trainDestinationQuery');
     if(!to||to.value.trim().length<2){plannerMessage('Add a destination to search this journey.',true);to?.focus();return;}
@@ -243,29 +392,54 @@ async function findTrains(){
     if(button){button.disabled=false;button.textContent='Find trains';}
   }
 }
+
+/* Swap used to require both stations to already be *selected*, so the
+   button silently did nothing when the user had only typed. It also set
+   the new destination before train-routes.js had caught up with the new
+   origin: setFromCrs() blanks the destination whenever the origin
+   changes, so the freshly-set destination was wiped a beat later. Now it
+   works from the field text and waits for fromCrs to settle first. */
 async function swap(){
   const api=window.__KERBSIDE_TRAINS__,route=window.__KERBSIDE_TRAIN_ROUTES__;
-  if(!api||!route)return;
-  const origin=api.state&&api.state.station,destination=route.state&&route.state.destination;
-  if(!origin||!destination)return;
-  route.clearDestination({reload:false});
-  selectOrigin(destination);
-  const start=Date.now();
-  while(Date.now()-start<1200){
-    if(api.state&&api.state.station&&String(api.state.station.crs).toUpperCase()===destination.crs.toUpperCase())break;
-    await new Promise(resolve=>setTimeout(resolve,30));
+  const fromInput=$('trainStationQuery'),toInput=$('trainDestinationQuery');
+  if(!api||!route||!fromInput||!toInput)return;
+  const origin=api.state&&api.state.station;
+  const destination=route.state&&route.state.destination;
+  const fromText=(origin&&(origin.name||origin.crs))||fromInput.value.trim();
+  const toText=(destination&&(destination.name||destination.crs))||toInput.value.trim();
+  if(!fromText||!toText){plannerMessage('Add both stations before swapping.',true);return;}
+
+  const button=$('trainRouteSwap');
+  if(button)button.disabled=true;
+  plannerMessage('');
+  try{
+    route.clearDestination({reload:false});
+    if(route.state)route.state.fromCrs='';
+    fromInput.value=toText;
+    toInput.value=fromText;
+    if(!(await resolveOrigin())){plannerMessage('Choose the new departure station from the suggestions.',true);return;}
+
+    const nextOrigin=api.state&&api.state.station;
+    const nextCrs=nextOrigin?String(nextOrigin.crs||'').toUpperCase():'';
+    await waitFor(()=>route.state&&nextCrs&&String(route.state.fromCrs||'').toUpperCase()===nextCrs,1500);
+
+    toInput.value=fromText;
+    if(!(await resolveDestination()))return;
+    await finishJourney();
+  }catch(error){
+    plannerMessage(error&&error.message?error.message:'The journey could not be swapped.',true);
+  }finally{
+    if(button)button.disabled=false;
   }
-  const to=$('trainDestinationQuery');if(to)to.value=origin.name||origin.crs;
-  selectDestination({name:origin.name||origin.crs,crs:origin.crs});
-  if(isFutureJourney())setTimeout(()=>dateApi()?.applyForecasts?.(),0);
 }
+
 function bindRobustInputs(){
   const from=cloneInput('trainStationQuery'),to=cloneInput('trainDestinationQuery');
   if(from){
     from.addEventListener('input',()=>{
-      const api=window.__KERBSIDE_TRAINS__,route=window.__KERBSIDE_TRAIN_ROUTES__,selected=api&&api.state&&api.state.station;
+      const route=window.__KERBSIDE_TRAIN_ROUTES__,api=window.__KERBSIDE_TRAINS__,selected=api&&api.state&&api.state.station;
       const matches=selected&&(normalise(from.value)===normalise(selected.name)||from.value.trim().toUpperCase()===String(selected.crs||'').toUpperCase());
-      if(!matches&&route&&route.state){route.state.fromCrs='';route.clearDestination({disable:false});const destination=$('trainDestinationQuery');if(destination){destination.disabled=false;destination.placeholder='e.g. Bristol Temple Meads or BRI';}}
+      if(!matches&&route&&route.state){route.state.fromCrs='';route.clearDestination({disable:false});const destination=$('trainDestinationQuery');if(destination){destination.disabled=false;destination.placeholder='Bristol Temple Meads';}}
       clearTimeout(fromTimer);if(fromAbort)fromAbort.abort();
       fromTimer=setTimeout(async()=>{const q=from.value.trim();if(q.length<2)return;fromAbort=new AbortController();try{renderFromSuggestions(await stationLookup(q,fromAbort.signal));}catch(e){}},SEARCH_DELAY_MS);
     });
@@ -281,27 +455,160 @@ function bindRobustInputs(){
     to.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();findTrains();}});
   }
 }
+
+const SWAP_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 20V4M4 8l4-4 4 4"/><path d="M16 4v16M20 16l-4 4-4-4"/></svg>';
+
+function buildWhereCard(fromWrap,toWrap){
+  const card=document.createElement('section');
+  card.className='train-card train-where-card';
+  card.setAttribute('aria-labelledby','trainWhereTitle');
+
+  const title=document.createElement('h3');
+  title.id='trainWhereTitle';
+  title.className='train-card-title';
+  title.textContent='Where';
+  card.appendChild(title);
+
+  const grid=document.createElement('div');
+  grid.className='train-where-grid';
+
+  const fromMarker=document.createElement('span');
+  fromMarker.className='train-where-marker from';
+  fromMarker.setAttribute('aria-hidden','true');
+
+  const topRight=document.createElement('span');
+
+  const link=document.createElement('span');
+  link.className='train-where-link';
+  link.setAttribute('aria-hidden','true');
+
+  const midCell=document.createElement('span');
+  midCell.className='train-where-gap';
+
+  const midRight=document.createElement('span');
+
+  const toMarker=document.createElement('span');
+  toMarker.className='train-where-marker to';
+  toMarker.setAttribute('aria-hidden','true');
+
+  const swapBtn=document.createElement('button');
+  swapBtn.id='trainRouteSwap';
+  swapBtn.type='button';
+  swapBtn.className='train-where-swap';
+  swapBtn.title='Swap departure and destination';
+  swapBtn.setAttribute('aria-label','Swap departure and destination');
+  swapBtn.innerHTML=SWAP_ICON;
+  swapBtn.addEventListener('click',swap);
+
+  /* Row 1: hollow marker | From field | (empty)
+     Row 2: dotted link   | spacer     | (empty)
+     Row 3: filled marker | To field   | swap
+     Grid placement is source order, so append cell by cell. */
+  grid.append(fromMarker,fromWrap,topRight);
+  grid.append(link,midCell,midRight);
+  grid.append(toMarker,toWrap,swapBtn);
+
+  card.appendChild(grid);
+  return card;
+}
+
+function buildWhenCard(){
+  const card=document.createElement('section');
+  card.className='train-card train-when-card';
+  card.setAttribute('aria-labelledby','trainWhenTitle');
+
+  const title=document.createElement('h3');
+  title.id='trainWhenTitle';
+  title.className='train-card-title';
+  title.textContent='When';
+  card.appendChild(title);
+
+  const grid=document.createElement('div');
+  grid.className='train-when-grid';
+  grid.id='trainWhenGrid';
+
+  const time=document.createElement('label');
+  time.className='train-planner-time';
+  time.innerHTML='<span>Depart after</span><input id="trainDepartAfter" type="time" step="900">';
+  grid.appendChild(time);
+
+  card.appendChild(grid);
+  return card;
+}
+
+/* train-date.js builds the travel-date row asynchronously and inserts it
+   after the destination wrap, which by then lives inside the Where grid.
+   Left alone it lands in the middle of the route markers. Adopt it as
+   soon as it appears, however the race falls out. */
+function adoptDateRow(){
+  const grid=$('trainWhenGrid');
+  if(!grid)return false;
+  const wrap=$('trainTravelDate')?.closest('.train-date-wrap');
+  if(!wrap)return false;
+  if(wrap.parentNode===grid)return true;
+  grid.insertBefore(wrap,grid.firstChild);
+  return true;
+}
+function watchForDateRow(){
+  if(adoptDateRow())return;
+  const observer=new MutationObserver(()=>{if(adoptDateRow())observer.disconnect();});
+  observer.observe(document.body,{childList:true,subtree:true});
+  setTimeout(()=>observer.disconnect(),15000);
+}
+
 function install(){
   installStyles();
   const from=$('trainStationQuery'),to=$('trainDestinationQuery');
   if(!from||!to)return false;
-  to.disabled=false;to.placeholder='e.g. Bristol Temple Meads or BRI';
+  to.disabled=false;
+  from.placeholder='Birmingham New Street';
+  to.placeholder='Bristol Temple Meads';
   ['trainStationGo','trainDestinationGo'].forEach(id=>{const button=$(id);if(button){button.tabIndex=-1;button.setAttribute('aria-hidden','true');}});
+
   const fromWrap=from.closest('.train-search-wrap'),toWrap=to.closest('.train-search-wrap');
   if(!fromWrap||!toWrap)return false;
-  if(fromWrap.closest('.train-route-planner'))return true;
-  const planner=document.createElement('section');planner.className='train-route-planner';planner.setAttribute('aria-label','Plan a train journey');
-  const stack=document.createElement('div');stack.className='train-route-stack';fromWrap.parentNode.insertBefore(planner,fromWrap);planner.appendChild(stack);stack.appendChild(fromWrap);
-  const divider=document.createElement('div');divider.className='train-route-divider';stack.appendChild(divider);stack.appendChild(toWrap);
-  const d1=document.createElement('span');d1.className='train-route-dot from';const d2=document.createElement('span');d2.className='train-route-dot to';stack.append(d1,d2);
-  const swapBtn=document.createElement('button');swapBtn.type='button';swapBtn.className='train-route-swap';swapBtn.title='Swap origin and destination';swapBtn.setAttribute('aria-label','Swap origin and destination');swapBtn.textContent='⇅';swapBtn.addEventListener('click',swap);stack.appendChild(swapBtn);
-  const clear=$('trainDestinationClear'),meta=document.createElement('div');meta.className='train-route-meta';if(clear)meta.appendChild(clear);
-  const time=document.createElement('label');time.className='train-planner-time';time.innerHTML='<span>Depart after</span><input id="trainDepartAfter" type="time" step="900">';meta.appendChild(time);planner.appendChild(meta);
-  const input=$('trainDepartAfter');input.value=storedTime();input.addEventListener('change',()=>{saveTime(input.value);dispatch()});
-  const go=document.createElement('button');go.id='trainJourneyGo';go.type='button';go.className='train-journey-go';go.textContent='Find trains';go.addEventListener('click',findTrains);planner.appendChild(go);
-  const message=document.createElement('div');message.id='trainPlannerMessage';message.className='train-planner-message';message.setAttribute('aria-live','polite');planner.appendChild(message);
-  document.addEventListener('kerbside:train-date-change',()=>{planner.dataset.mode=isFutureJourney()?'future':'live';plannerMessage('');});
-  setTimeout(()=>{const date=$('trainTravelDate')?.closest('.train-date-wrap');if(date&&!date.closest('.train-route-planner'))planner.insertBefore(date,go);bindRobustInputs();planner.dataset.mode=isFutureJourney()?'future':'live';},0);
+  if(fromWrap.closest('.train-planner'))return true;
+
+  const planner=document.createElement('div');
+  planner.className='train-planner';
+  planner.id='trainPlanner';
+  fromWrap.parentNode.insertBefore(planner,fromWrap);
+
+  planner.appendChild(buildWhereCard(fromWrap,toWrap));
+  planner.appendChild(buildWhenCard());
+
+  const go=document.createElement('button');
+  go.id='trainJourneyGo';go.type='button';go.className='train-journey-go';go.textContent='Find trains';
+  go.addEventListener('click',findTrains);
+  planner.appendChild(go);
+
+  const message=document.createElement('div');
+  message.id='trainPlannerMessage';message.className='train-planner-message';
+  message.setAttribute('aria-live','polite');
+  planner.appendChild(message);
+
+  const foot=document.createElement('div');
+  foot.className='train-planner-foot';
+  const clear=$('trainDestinationClear');
+  if(clear)foot.appendChild(clear);
+  planner.appendChild(foot);
+
+  const departAfter=$('trainDepartAfter');
+  if(departAfter){
+    departAfter.value=storedTime();
+    departAfter.addEventListener('change',()=>{saveTime(departAfter.value);dispatch();});
+  }
+
+  document.addEventListener('kerbside:train-date-change',()=>{
+    planner.dataset.mode=isFutureJourney()?'future':'live';
+    plannerMessage('');
+  });
+
+  setTimeout(()=>{
+    watchForDateRow();
+    bindRobustInputs();
+    planner.dataset.mode=isFutureJourney()?'future':'live';
+  },0);
   return true;
 }
 function init(){if(!install())setTimeout(init,0)}

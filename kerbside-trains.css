@@ -35,9 +35,12 @@
   letter-spacing:.08em;text-transform:uppercase;
 }
 .train-search-box{display:flex;gap:7px}
+/* 16px, not 13px: iOS Safari zooms the layout viewport whenever a focused
+   text field is under 16px, and a fixed shell cannot be zoomed back out by
+   scrolling. Every focusable field in rail mode has to clear that floor. */
 .train-search-box input{
   min-width:0;flex:1;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;
-  background:var(--ink);color:var(--text);font-size:13px;
+  background:var(--ink);color:var(--text);font-size:16px;
 }
 .train-search-box input:focus{border-color:var(--led-dim);outline:2px solid rgb(var(--led-rgb) / .12);outline-offset:1px}
 .train-search-box button,.train-refresh{

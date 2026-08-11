@@ -2,7 +2,12 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- viewport-fit=cover is required for env(safe-area-inset-*) to resolve to
+     anything other than 0. Without it every calc(x + env(safe-area-inset-top))
+     in this sheet was silently a no-op, so the topbar never cleared the notch.
+     interactive-widget=resizes-content makes Chrome on Android shrink the
+     layout viewport for the on-screen keyboard instead of scrolling over it. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="theme-color" content="#0B1119">
 <title>Kerbside — live buses near you</title>
@@ -135,8 +140,16 @@ button{cursor:pointer;border:0;background:none}
      then sat below the fold and the page could be dragged up to reach it,
      which is the "it scrolls a bit" report. 100dvh tracks the viewport that
      is actually visible; with a height set, the bottom inset is ignored, and
-     a browser too old for dvh simply keeps the inset:0 behaviour. */
+     a browser too old for dvh simply keeps the inset:0 behaviour.
+
+     dvh still does not account for the on-screen keyboard on iOS: Safari
+     leaves the layout viewport alone and shifts the visual viewport instead,
+     which drags a position:fixed shell up under the browser chrome and
+     leaves it there. --app-vh is set from visualViewport while a field is
+     focused so the shell tracks what is actually on screen; it falls back
+     to 100dvh everywhere else and on every browser without the API. */
   height:100dvh;
+  height:var(--app-vh,100dvh);
 }
 #topbar{
   display:flex;align-items:center;gap:10px;
@@ -1068,7 +1081,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.7.32';
+const APP_VERSION = '0.7.33';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -7262,14 +7275,55 @@ async function poll(force){
     if(S.pollAgain){ S.pollAgain=false; setTimeout(()=>poll(false),0); }
   }
 }
+/* ---------- mobile viewport ----------
+   Two separate iOS behaviours, both of which read to the user as "the app
+   scrolled and I can't get it back":
+
+   1. Focusing an input opens the keyboard. Safari shrinks the *visual*
+      viewport but not the layout viewport, then scrolls the visual viewport
+      to reveal the caret, dragging the fixed shell up with it. Nothing can
+      scroll it back because html and body are overflow:hidden.
+   2. On dismissing the keyboard, the visual viewport grows again but the
+      scroll offset is not always restored.
+
+   Tracking visualViewport.height while a field is focused fixes (1); forcing
+   the window scroll offset back to zero on every visual-viewport scroll
+   fixes (2). Everything degrades to the previous behaviour without the API. */
+const viewportShell=(()=>{
+  const vv=window.visualViewport;
+  if(!vv) return {sync(){},release(){}};
+  const root=document.documentElement;
+  let raf=0;
+  const editable=()=>{
+    const el=document.activeElement;
+    if(!el) return false;
+    return el.matches&&el.matches('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
+  };
+  const apply=()=>{
+    raf=0;
+    // A keyboard covers a meaningful slice; a hiding URL bar covers a sliver.
+    const covered=window.innerHeight-vv.height;
+    if(editable()&&covered>120) root.style.setProperty('--app-vh',vv.height+'px');
+    else root.style.removeProperty('--app-vh');
+    if(window.scrollY||window.scrollX){ try{ window.scrollTo(0,0); }catch(e){} }
+  };
+  const sync=()=>{ if(!raf) raf=requestAnimationFrame(apply); };
+  vv.addEventListener('resize',sync);
+  vv.addEventListener('scroll',sync);
+  window.addEventListener('focusin',sync);
+  window.addEventListener('focusout',()=>setTimeout(sync,60));
+  return {sync,release(){ root.style.removeProperty('--app-vh'); }};
+})();
+
 function repairLayoutAfterResume(){
+  viewportShell.release();
   const active=document.activeElement;
   if(active&&active!==document.body&&typeof active.blur==='function') active.blur();
   document.documentElement.scrollTop=0; document.body.scrollTop=0;
   try{ window.scrollTo(0,0); }catch(e){}
   const repair=()=>{ try{ map.invalidateSize({pan:false,animate:false}); }catch(e){} };
   requestAnimationFrame(()=>{ repair(); requestAnimationFrame(repair); });
-  setTimeout(()=>{ try{ window.scrollTo(0,0); }catch(e){} repair(); },180);
+  setTimeout(()=>{ try{ window.scrollTo(0,0); }catch(e){} repair(); viewportShell.sync(); },180);
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden) stopPolling();

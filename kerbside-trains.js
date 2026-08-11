@@ -978,7 +978,13 @@ async function loadBoard(station, {silent=false}={}){
   const seq = ++state.boardSeq;
   setBoardLoading(silent);
   try{
-    const response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20`, {signal:controller.signal});
+    /* expand=true asks Huxley for GetDepBoardWithDetails instead of
+       GetDepartureBoard, which returns subsequentCallingPoints inline for
+       every service in the same response. That is what lets the crowding
+       model know when a train actually arrives at the user's destination,
+       at no extra request cost. Both fetch rewrites downstream preserve
+       url.search, so the parameter survives the route filter. */
+    const response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20?expand=true`, {signal:controller.signal});
     if(!response.ok) throw new Error(`Departure board returned ${response.status}`);
     const json = await response.json();
     if(controller.signal.aborted || seq !== state.boardSeq) return;
@@ -1067,6 +1073,10 @@ window.__KERBSIDE_TRAINS__ = {
   providerBase: PROVIDER_BASE,
   modelVersion: MODEL_VERSION,
   crowdingForecast,
+  /* Exported so kerbside-train-forecast-v3.js can pair a rendered
+     .train-service row with its service by data-service-id rather than by
+     array position. */
+  serviceKey,
   recordCrowdingFeedback,
   delayMinutes,
   statusFor,
