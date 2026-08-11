@@ -1,4 +1,4 @@
-const RDM_LDB_BASE = 'https://api1.raildata.org.uk/1010-live-departure-board-dep/LDBWS/api/20220120';
+const RDM_LDB_BASE = 'https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120';
 const UPSTREAM_TIMEOUT_MS = 3500;
 const CACHE_SECONDS = 20;
 const RATE_WINDOW_MS = 60 * 1000;
