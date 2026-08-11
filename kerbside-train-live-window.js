@@ -3,14 +3,16 @@
 
 const PRIMARY='https://huxley2.azurewebsites.net';
 const SECONDARY='https://hux.azurewebsites.net';
-const PROVIDERS=new Set([PRIMARY,SECONDARY]);
+const PROVIDER_LIST=[PRIMARY,SECONDARY];
+const PROVIDERS=new Set(PROVIDER_LIST);
+const PROVIDER_ATTEMPT_MS=4000;
 const STORE='kerbside.rail.depart-after.v1';
 const MAX_OFFSET_MINUTES=119;
 const MAX_WINDOW_MINUTES=120;
 const MAX_LIVE_HORIZON=MAX_OFFSET_MINUTES+MAX_WINDOW_MINUTES;
 const NON_RAIL_SUFFIX=/\((?:bus|coach|ferry)\)\s*$/i;
 const $=id=>document.getElementById(id);
-const state={installed:false,lastStatus:0,lastUrl:'',fallbacks:0,filteredStations:0,rejectedStations:0};
+const state={installed:false,lastStatus:0,lastUrl:'',lastProvider:'',lastFailure:'',attempts:[],fallbacks:0,filteredStations:0,rejectedStations:0};
 const nonRailCrs=new Set();
 let upstreamFetch=null;
 let boardObserver=null;
@@ -96,26 +98,70 @@ function timedUrl(url){
   next.searchParams.set('timeWindow',String(info.window));
   return next;
 }
+function preferredProvider(fallback=PRIMARY){
+  const provider=window.__KERBSIDE_RAIL_PROVIDER__;
+  const active=provider&&provider.state&&provider.state.active;
+  return PROVIDERS.has(active)?active:(PROVIDERS.has(fallback)?fallback:PRIMARY);
+}
+function providerOrder(url){
+  const preferred=preferredProvider(url&&url.origin);
+  return [preferred,...PROVIDER_LIST.filter(origin=>origin!==preferred)];
+}
+async function providerAttempt(url,init){
+  const outer=init&&init.signal;
+  const controller=new AbortController();
+  let timedOut=false,detach=null;
+  const timeout=setTimeout(()=>{timedOut=true;controller.abort();},PROVIDER_ATTEMPT_MS);
+  if(outer){
+    const abort=()=>controller.abort();
+    if(outer.aborted)abort();
+    else{outer.addEventListener('abort',abort,{once:true});detach=()=>outer.removeEventListener('abort',abort);}
+  }
+  try{
+    const response=await upstreamFetch(url.toString(),{...(init||{}),signal:controller.signal});
+    return {response,error:null,timedOut:false};
+  }catch(error){
+    if(outer&&outer.aborted)throw error;
+    return {response:null,error,timedOut:timedOut||!!(error&&error.name==='AbortError')};
+  }finally{
+    clearTimeout(timeout);
+    if(detach)detach();
+  }
+}
 async function liveWindowFetch(input,init){
   const original=requestUrl(input);
   if(!original||!departureRequest(original)||!isToday())return upstreamFetch(input,init);
   const next=timedUrl(original);
-  state.lastUrl=next.toString();
-  let response=await upstreamFetch(next.toString(),init);
-  state.lastStatus=response.status;
-  if(response.ok)return response;
+  const order=providerOrder(next);
+  state.attempts=[];
+  state.lastFailure='';
+  let lastResponse=null,lastError=null;
 
-  // The existing planner already retries network/5xx failures. It used to
-  // accept a 4xx response from the first Huxley host immediately, so give the
-  // second community deployment one chance before surfacing that response.
-  if(next.origin===PRIMARY&&response.status<500){
-    const fallback=new URL(next.toString());
-    fallback.origin=SECONDARY;
-    response=await upstreamFetch(fallback.toString(),init);
-    state.lastStatus=response.status;
-    if(response.ok)state.fallbacks++;
+  for(let index=0;index<order.length;index++){
+    const candidate=new URL(next.toString());
+    candidate.origin=order[index];
+    state.lastUrl=candidate.toString();
+    const attempt=await providerAttempt(candidate,init);
+    const resolved=preferredProvider(candidate.origin);
+    const status=attempt.response?attempt.response.status:0;
+    state.attempts.push({provider:candidate.origin,resolvedProvider:resolved,status,timedOut:!!attempt.timedOut,error:attempt.error&&attempt.error.message?attempt.error.message:''});
+    state.lastStatus=status;
+    if(attempt.response){
+      lastResponse=attempt.response;
+      state.lastProvider=resolved;
+      if(attempt.response.ok){
+        if(index>0)state.fallbacks++;
+        return attempt.response;
+      }
+      lastError=new Error(`Rail provider returned ${status}`);
+      continue;
+    }
+    lastError=attempt.error||new Error('Rail provider unavailable');
   }
-  return response;
+
+  state.lastFailure=lastError&&lastError.message?lastError.message:'unavailable';
+  if(lastResponse)return lastResponse;
+  throw new Error('Live rail providers are temporarily unavailable. Please retry in a moment.');
 }
 function setText(element,value){if(element&&element.textContent!==value)element.textContent=value;}
 function syncHeader(status='Live departures'){
@@ -343,5 +389,5 @@ function init(attempt=0){
   if(attempt<80)setTimeout(()=>init(attempt+1),50);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
-window.__KERBSIDE_TRAIN_LIVE_WINDOW__={state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,isRailStation,filterSuggestionList,clearNonRailDestination,MAX_LIVE_HORIZON};
+window.__KERBSIDE_TRAIN_LIVE_WINDOW__={state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,isRailStation,filterSuggestionList,clearNonRailDestination,providerOrder,PROVIDER_ATTEMPT_MS,MAX_LIVE_HORIZON};
 })();
