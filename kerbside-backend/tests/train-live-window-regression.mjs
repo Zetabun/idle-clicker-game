@@ -26,10 +26,11 @@ const server=http.createServer(async(req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const {port}=server.address();
 
-const emptyBoard={generatedAt:'2026-08-11T00:16:00+01:00',locationName:'Birmingham Moor Street',crs:'BMO',nrccMessages:[],trainServices:[]};
+const emptyBoard={generatedAt:'2026-08-11T00:45:00+01:00',locationName:'Birmingham Moor Street',crs:'BMO',nrccMessages:[],trainServices:[]};
 const stations=[
   {stationName:'Birmingham Moor Street',crsCode:'BMO'},
-  {stationName:'Bristol Parkway',crsCode:'BPW'}
+  {stationName:'Bristol Parkway',crsCode:'BPW'},
+  {stationName:'Bristol Intl Airport (Bus)',crsCode:'XPB'}
 ];
 function londonStamp(date=new Date()){
   const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
@@ -48,6 +49,9 @@ async function mockExternal(page,requests){
     }
     if(pathname==='/departures/BMO/20'||pathname==='/departures/BMO/to/BPW/20'){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(emptyBoard)});return;
+    }
+    if(pathname.includes('/to/XPB/')){
+      await route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Invalid rail filter CRS'})});return;
     }
     if(pathname.startsWith('/service/')){await route.fulfill({status:200,contentType:'application/json',body:'{}'});return;}
     await route.fulfill({status:404,contentType:'application/json',body:'{}'});
@@ -76,17 +80,42 @@ async function run(browser){
   const pure=await page.evaluate(()=>({
     later:window.__KERBSIDE_TRAIN_LIVE_WINDOW__.liveWindowFor('09:00',16),
     near:window.__KERBSIDE_TRAIN_LIVE_WINDOW__.liveWindowFor('02:00',60),
-    midnightDefault:window.__KERBSIDE_TRAIN_LIVE_WINDOW__.defaultDepartAfter(new Date('2026-08-10T23:16:00Z'))
+    midnightDefault:window.__KERBSIDE_TRAIN_LIVE_WINDOW__.defaultDepartAfter(new Date('2026-08-10T23:16:00Z')),
+    busIsRail:window.__KERBSIDE_TRAIN_LIVE_WINDOW__.isRailStation({name:'Bristol Intl Airport (Bus)',crs:'XPB'}),
+    parkwayIsRail:window.__KERBSIDE_TRAIN_LIVE_WINDOW__.isRailStation({name:'Bristol Parkway',crs:'BPW'})
   }));
   assert.equal(pure.later.mode,'planning','09:00 at 00:16 must not be treated as a live-board request');
   assert.equal(pure.near.mode,'live');
   assert.equal(pure.near.offset,60);
   assert.equal(pure.near.window,120);
   assert.equal(pure.midnightDefault,'00:30','blank same-day time should default near now, not 09:00');
+  assert.equal(pure.busIsRail,false,'bus connection CRS entries must not be selectable in Train mode');
+  assert.equal(pure.parkwayIsRail,true);
 
   await page.fill('#trainStationQuery','BMO');
   await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await page.waitForFunction(()=>window.__KERBSIDE_TRAINS__?.state?.station?.crs==='BMO');
+  await page.waitForFunction(()=>document.getElementById('trainStationQuery')?.value==='Birmingham Moor Street');
+
+  // The Huxley CRS catalogue contains associated bus/coach/ferry locations.
+  // They must be removed from both the visible suggestions and route API before
+  // a Darwin departure request is allowed to use them.
+  await page.fill('#trainDestinationQuery','bristol');
+  await page.waitForSelector('#trainDestinationSuggest');
+  await page.waitForFunction(()=>{
+    const text=document.getElementById('trainDestinationSuggest')?.textContent||'';
+    return /Bristol Parkway/.test(text)&&!/Bristol Intl Airport \(Bus\)/.test(text);
+  });
+  const suggestionText=await page.locator('#trainDestinationSuggest').textContent();
+  assert.match(suggestionText,/Bristol Parkway/);
+  assert.doesNotMatch(suggestionText,/Bristol Intl Airport \(Bus\)/);
+
+  const invalidResult=await page.evaluate(()=>window.__KERBSIDE_TRAIN_ROUTES__.selectDestination({name:'Bristol Intl Airport (Bus)',crs:'XPB'}));
+  assert.equal(invalidResult,false);
+  assert.equal(await page.evaluate(()=>window.__KERBSIDE_TRAIN_ROUTES__.state.destination),null);
+  assert.equal(requests.some(value=>value.includes('/to/XPB/')),false,'non-rail CRS must never reach a live departure-board request');
+  assert.match(await page.locator('#trainPlannerMessage').textContent(),/National Rail station/i);
+
   await page.fill('#trainDestinationQuery','BPW');
   await page.waitForSelector('#trainDestinationSuggest button');
   await page.locator('#trainDestinationSuggest button').filter({hasText:'Bristol Parkway'}).click();
@@ -104,11 +133,12 @@ async function run(browser){
   });
   assert.equal((await page.locator('#trainStationName').textContent()).trim(),'Birmingham Moor Street → Bristol Parkway');
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Choose a station/);
+  assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Live train data unavailable/i);
   assert.match(await page.locator('#trainBoard').textContent(),/No direct live departures in this window/i);
 
-  // Reproduce the screenshot clock/time combination deterministically. Rendering
-  // the same-day planning state must not issue a live board request or imply
-  // that an empty Darwin window means there are no trains later today.
+  // Reproduce the 00:16 + 09:00 case deterministically. Rendering the same-day
+  // planning state must not issue a live board request or imply that an empty
+  // Darwin window means there are no trains later today.
   const departuresBefore=requests.filter(value=>value.startsWith('/departures/')).length;
   await page.evaluate(()=>{
     const input=document.getElementById('trainDepartAfter');
@@ -131,7 +161,7 @@ let browser;
 try{
   browser=await browserType.launch({headless:true});
   await run(browser);
-  console.log(`Kerbside same-day live-window regression passed in ${browserName}.`);
+  console.log(`Kerbside same-day live-window and rail-station regression passed in ${browserName}.`);
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

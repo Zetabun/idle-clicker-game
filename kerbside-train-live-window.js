@@ -8,10 +8,13 @@ const STORE='kerbside.rail.depart-after.v1';
 const MAX_OFFSET_MINUTES=119;
 const MAX_WINDOW_MINUTES=120;
 const MAX_LIVE_HORIZON=MAX_OFFSET_MINUTES+MAX_WINDOW_MINUTES;
+const NON_RAIL_SUFFIX=/\((?:bus|coach|ferry)\)\s*$/i;
 const $=id=>document.getElementById(id);
-const state={installed:false,lastStatus:0,lastUrl:'',fallbacks:0};
+const state={installed:false,lastStatus:0,lastUrl:'',fallbacks:0,filteredStations:0,rejectedStations:0};
+const nonRailCrs=new Set();
 let upstreamFetch=null;
 let boardObserver=null;
+let suggestionObserver=null;
 let syncTimer=null;
 
 function parseMinutes(value){
@@ -50,7 +53,19 @@ function journey(){
   const trains=window.__KERBSIDE_TRAINS__,routes=window.__KERBSIDE_TRAIN_ROUTES__;
   return {from:trains&&trains.state&&trains.state.station||null,to:routes&&routes.state&&routes.state.destination||null};
 }
-function stationName(station,fallback){return station&&(station.name||station.locationName||station.crs)||fallback;}
+function stationName(station,fallback){return station&&(station.name||station.locationName||station.stationName||station.crs)||fallback;}
+function stationCrs(station){return String(station&&(station.crs||station.crsCode)||'').trim().toUpperCase();}
+function isRailStation(station){
+  const name=String(stationName(station,'')||'').trim();
+  const crs=stationCrs(station);
+  if(!name||!crs)return false;
+  if(nonRailCrs.has(crs))return false;
+  if(NON_RAIL_SUFFIX.test(name)){
+    nonRailCrs.add(crs);
+    return false;
+  }
+  return true;
+}
 function routeText(){
   const {from,to}=journey();
   return from&&to?`${stationName(from,from.crs)} → ${stationName(to,to.crs)}`:from?stationName(from,from.crs):'Train journey';
@@ -160,12 +175,93 @@ function reloadLiveJourney(){
   input.value=previous;
   return true;
 }
+function canonicaliseJourneyInputs(){
+  const {from,to}=journey();
+  const fromInput=$('trainStationQuery'),toInput=$('trainDestinationQuery');
+  if(from&&fromInput&&from.name&&fromInput.value.trim().toUpperCase()===stationCrs(from))fromInput.value=from.name;
+  if(to&&toInput&&to.name&&toInput.value.trim().toUpperCase()===stationCrs(to))toInput.value=to.name;
+}
+function suggestionStation(button){
+  if(!button)return null;
+  const name=String(button.querySelector('span')?.textContent||'').trim();
+  const crs=String(button.querySelector('b')?.textContent||'').trim().toUpperCase();
+  return {name,crs};
+}
+function filterSuggestionList(root){
+  if(!root)return;
+  let removed=0;
+  [...root.querySelectorAll('button')].forEach(button=>{
+    const station=suggestionStation(button);
+    if(station&&station.name&&station.crs&&!isRailStation(station)){
+      button.remove();
+      removed++;
+    }
+  });
+  if(removed){
+    state.filteredStations+=removed;
+    if(!root.querySelector('button')&&!root.querySelector('.train-suggest-empty')){
+      root.innerHTML='<div class="train-suggest-empty">No matching National Rail stations found.</div>';
+    }
+  }
+}
+function guardSuggestionClick(event){
+  const button=event.target&&event.target.closest&&event.target.closest('#trainSuggest button,#trainDestinationSuggest button');
+  if(!button)return;
+  const station=suggestionStation(button);
+  if(!station||isRailStation(station))return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  button.remove();
+  state.rejectedStations++;
+  plannerMessage('Choose a National Rail station. Bus, coach and ferry connection points are not train destinations.',true);
+}
+function clearNonRailDestination(message=true){
+  const routes=window.__KERBSIDE_TRAIN_ROUTES__;
+  const destination=routes&&routes.state&&routes.state.destination;
+  if(!destination||isRailStation(destination))return false;
+  state.rejectedStations++;
+  if(typeof routes.clearDestination==='function')routes.clearDestination({reload:false,disable:false});
+  const input=$('trainDestinationQuery');
+  if(input){input.value='';input.disabled=false;input.placeholder='e.g. Bristol Temple Meads or BRI';}
+  if(message)plannerMessage('That location is a bus, coach or ferry connection point. Choose a National Rail station instead.',true);
+  return true;
+}
+function guardRouteSelection(){
+  const routes=window.__KERBSIDE_TRAIN_ROUTES__;
+  if(!routes||routes.__kerbsideRailOnlyGuarded)return;
+  const original=typeof routes.selectDestination==='function'?routes.selectDestination.bind(routes):null;
+  if(original){
+    routes.selectDestination=function(station){
+      if(!isRailStation(station)){
+        const crs=stationCrs(station);if(crs)nonRailCrs.add(crs);
+        state.rejectedStations++;
+        if(typeof routes.clearDestination==='function')routes.clearDestination({reload:false,disable:false});
+        const input=$('trainDestinationQuery');if(input){input.value='';input.disabled=false;}
+        plannerMessage('Choose a National Rail station. Bus, coach and ferry connection points cannot be used as train destinations.',true);
+        return false;
+      }
+      return original(station);
+    };
+  }
+  routes.__kerbsideRailOnlyGuarded=true;
+  clearNonRailDestination(false);
+}
+function observeSuggestions(){
+  if(suggestionObserver)return;
+  const roots=[$('trainSuggest'),$('trainDestinationSuggest')].filter(Boolean);
+  if(!roots.length)return;
+  suggestionObserver=new MutationObserver(()=>roots.forEach(filterSuggestionList));
+  roots.forEach(root=>{filterSuggestionList(root);suggestionObserver.observe(root,{childList:true,subtree:true});});
+  document.addEventListener('click',guardSuggestionClick,true);
+}
 function improveEmptyState(){
   if(!isToday())return;
   const {from,to}=journey();
   if(!from)return;
   const board=$('trainBoard');
   if(!board)return;
+  canonicaliseJourneyInputs();
+  if(clearNonRailDestination())return;
   syncHeader();
   const error=board.querySelector('.train-empty.error');
   if(error){
@@ -192,6 +288,8 @@ function syncOutcome(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(()=>{
     if(!isToday())return;
+    canonicaliseJourneyInputs();
+    if(clearNonRailDestination())return;
     const info=liveWindowFor(currentDepartAfter());
     if(info.mode==='planning'){renderSameDayPlanning(info);return;}
     improveEmptyState();
@@ -199,6 +297,8 @@ function syncOutcome(){
 }
 function handleJourneyChange(){
   if(!isToday())return;
+  canonicaliseJourneyInputs();
+  if(clearNonRailDestination())return;
   const info=liveWindowFor(currentDepartAfter());
   if(info.mode==='planning'){renderSameDayPlanning(info);return;}
   restoreLiveDateMeta();
@@ -228,10 +328,13 @@ function install(){
   installDefaultTime();
   upstreamFetch=window.fetch.bind(window);
   window.fetch=liveWindowFetch;
+  guardRouteSelection();
+  observeSuggestions();
   observeBoard();
+  canonicaliseJourneyInputs();
   window.addEventListener('kerbside:journey-planner-change',()=>setTimeout(handleJourneyChange,0));
-  document.addEventListener('kerbside:train-route-change',syncOutcome);
-  document.addEventListener('kerbside:train-date-change',()=>setTimeout(()=>{if(isToday()){installDefaultTime();syncOutcome();}},0));
+  document.addEventListener('kerbside:train-route-change',()=>{canonicaliseJourneyInputs();if(!clearNonRailDestination())syncOutcome();});
+  document.addEventListener('kerbside:train-date-change',()=>setTimeout(()=>{if(isToday()){installDefaultTime();canonicaliseJourneyInputs();syncOutcome();}},0));
   syncOutcome();
   return true;
 }
@@ -240,5 +343,5 @@ function init(attempt=0){
   if(attempt<80)setTimeout(()=>init(attempt+1),50);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
-window.__KERBSIDE_TRAIN_LIVE_WINDOW__={state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,MAX_LIVE_HORIZON};
+window.__KERBSIDE_TRAIN_LIVE_WINDOW__={state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,isRailStation,filterSuggestionList,clearNonRailDestination,MAX_LIVE_HORIZON};
 })();
