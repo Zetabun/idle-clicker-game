@@ -1,0 +1,12 @@
+{
+  "name": "kerbside-rail-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check worker.js && node --check worker.test.mjs && node --check live-window.test.mjs && node --check ../kerbside-train-live-window.js",
+    "test": "node --test worker.test.mjs live-window.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.28.1"
+  }
+}

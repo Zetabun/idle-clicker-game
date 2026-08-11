@@ -3,8 +3,10 @@
 
 const PRIMARY='https://huxley2.azurewebsites.net';
 const SECONDARY='https://hux.azurewebsites.net';
+const OFFICIAL='https://kerbside-rail.adambullas.workers.dev';
 const PROVIDER_LIST=[PRIMARY,SECONDARY];
 const PROVIDERS=new Set(PROVIDER_LIST);
+const OFFICIAL_ATTEMPT_MS=1500;
 const PROVIDER_ATTEMPT_MS=4000;
 const STORE='kerbside.rail.depart-after.v1';
 const MAX_OFFSET_MINUTES=119;
@@ -12,7 +14,10 @@ const MAX_WINDOW_MINUTES=120;
 const MAX_LIVE_HORIZON=MAX_OFFSET_MINUTES+MAX_WINDOW_MINUTES;
 const NON_RAIL_SUFFIX=/\((?:bus|coach|ferry)\)\s*$/i;
 const $=id=>document.getElementById(id);
-const state={installed:false,lastStatus:0,lastUrl:'',lastProvider:'',lastFailure:'',attempts:[],fallbacks:0,filteredStations:0,rejectedStations:0};
+const state={
+  installed:false,lastStatus:0,lastUrl:'',lastProvider:'',lastFailure:'',source:'',
+  officialStatus:0,officialFailure:'',attempts:[],fallbacks:0,filteredStations:0,rejectedStations:0
+};
 const nonRailCrs=new Set();
 let upstreamFetch=null;
 let boardObserver=null;
@@ -70,11 +75,11 @@ function isRailStation(station){
 }
 function routeText(){
   const {from,to}=journey();
-  return from&&to?`${stationName(from,from.crs)} → ${stationName(to,to.crs)}`:from?stationName(from,from.crs):'Train journey';
+  return from&&to?`${stationName(from,from.crs)} \u2192 ${stationName(to,to.crs)}`:from?stationName(from,from.crs):'Train journey';
 }
 function routeCodes(){
   const {from,to}=journey();
-  return from&&to?`${from.crs||''} → ${to.crs||''}`:from?String(from.crs||''):'';
+  return from&&to?`${from.crs||''} \u2192 ${to.crs||''}`:from?String(from.crs||''):'';
 }
 function currentDepartAfter(){return $('trainDepartAfter')?.value||defaultDepartAfter();}
 function requestUrl(input){
@@ -98,6 +103,25 @@ function timedUrl(url){
   next.searchParams.set('timeWindow',String(info.window));
   return next;
 }
+function officialEnabled(){
+  const host=typeof location==='undefined'?'':String(location.hostname||'').toLowerCase();
+  return !/^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(host);
+}
+
+function officialBoardUrl(url){
+  const info=departureRequest(url);
+  if(!info)return null;
+  const selected=journey().to;
+  const to=stationCrs(selected)||info.to;
+  const path=to&&to!==info.from
+    ? `/departures/${encodeURIComponent(info.from)}/to/${encodeURIComponent(to)}/${encodeURIComponent(info.rows)}`
+    : `/departures/${encodeURIComponent(info.from)}/${encodeURIComponent(info.rows)}`;
+  const official=new URL(path,OFFICIAL);
+  ['expand','timeOffset','timeWindow'].forEach(name=>{
+    if(url.searchParams.has(name))official.searchParams.set(name,url.searchParams.get(name));
+  });
+  return official;
+}
 function preferredProvider(fallback=PRIMARY){
   const provider=window.__KERBSIDE_RAIL_PROVIDER__;
   const active=provider&&provider.state&&provider.state.active;
@@ -107,11 +131,11 @@ function providerOrder(url){
   const preferred=preferredProvider(url&&url.origin);
   return [preferred,...PROVIDER_LIST.filter(origin=>origin!==preferred)];
 }
-async function providerAttempt(url,init){
+async function timedAttempt(url,init,timeoutMs){
   const outer=init&&init.signal;
   const controller=new AbortController();
   let timedOut=false,detach=null;
-  const timeout=setTimeout(()=>{timedOut=true;controller.abort();},PROVIDER_ATTEMPT_MS);
+  const timeout=setTimeout(()=>{timedOut=true;controller.abort();},timeoutMs);
   if(outer){
     const abort=()=>controller.abort();
     if(outer.aborted)abort();
@@ -132,21 +156,33 @@ async function liveWindowFetch(input,init){
   const original=requestUrl(input);
   if(!original||!departureRequest(original)||!isToday())return upstreamFetch(input,init);
   const next=timedUrl(original);
-  const order=providerOrder(next);
   state.attempts=[];
   state.lastFailure='';
-  let lastResponse=null,lastError=null;
+  state.officialFailure='';
+  state.officialStatus=0;
 
+  const official=officialEnabled()?officialBoardUrl(next):null;
+  if(official){
+    state.lastUrl=official.toString();
+    const attempt=await timedAttempt(official,init,OFFICIAL_ATTEMPT_MS);
+    const status=attempt.response?attempt.response.status:0;
+    state.officialStatus=status;
+    state.attempts.push({provider:'rdm-ldb',status,timedOut:!!attempt.timedOut,error:attempt.error&&attempt.error.message?attempt.error.message:''});
+    if(attempt.response&&attempt.response.ok){
+      state.lastStatus=status;
+      state.lastProvider='rdm-ldb';
+      state.source='official';
+      return attempt.response;
+    }
+    state.officialFailure=attempt.error&&attempt.error.message?attempt.error.message:(status?`HTTP ${status}`:'unavailable');
+  }
+
+  const order=providerOrder(next);
+  let lastResponse=null,lastError=null;
   for(let index=0;index<order.length;index++){
-    /* URL.origin is a getter with no setter, so assigning to it throws
-       "Attempted to assign to readonly property" under 'use strict' - which
-       took the whole board down, because this runs before any provider is
-       even contacted. Rebuild the URL against the target origin instead;
-       passing the path, query and hash as a relative reference keeps the
-       timeOffset/timeWindow parameters and any /to/ route filter intact. */
     const candidate=new URL(next.pathname+next.search+next.hash,order[index]);
     state.lastUrl=candidate.toString();
-    const attempt=await providerAttempt(candidate,init);
+    const attempt=await timedAttempt(candidate,init,PROVIDER_ATTEMPT_MS);
     const resolved=preferredProvider(candidate.origin);
     const status=attempt.response?attempt.response.status:0;
     state.attempts.push({provider:candidate.origin,resolvedProvider:resolved,status,timedOut:!!attempt.timedOut,error:attempt.error&&attempt.error.message?attempt.error.message:''});
@@ -155,7 +191,8 @@ async function liveWindowFetch(input,init){
       lastResponse=attempt.response;
       state.lastProvider=resolved;
       if(attempt.response.ok){
-        if(index>0)state.fallbacks++;
+        state.source='community-fallback';
+        state.fallbacks++;
         return attempt.response;
       }
       lastError=new Error(`Rail provider returned ${status}`);
@@ -164,18 +201,24 @@ async function liveWindowFetch(input,init){
     lastError=attempt.error||new Error('Rail provider unavailable');
   }
 
-  state.lastFailure=lastError&&lastError.message?lastError.message:'unavailable';
+  state.source='unavailable';
+  state.lastFailure=lastError&&lastError.message?lastError.message:(state.officialFailure||'unavailable');
   if(lastResponse)return lastResponse;
   throw new Error('Live rail providers are temporarily unavailable. Please retry in a moment.');
 }
 function setText(element,value){if(element&&element.textContent!==value)element.textContent=value;}
+function syncProviderNote(){
+  const note=document.querySelector('.train-provider-note');
+  if(!note)return;
+  note.textContent='Live running times prefer official National Rail Darwin data via Rail Data Marketplace, with Huxley community services as a resilience fallback. Crowding is Kerbside\'s forecast, not live occupancy.';
+}
 function syncHeader(status='Live departures'){
   if(!isToday())return;
   const {from,to}=journey();
   if(!from)return;
-  setText($('trainStationName'),to?`${stationName(from,from.crs)} → ${stationName(to,to.crs)}`:stationName(from,from.crs));
+  setText($('trainStationName'),to?`${stationName(from,from.crs)} \u2192 ${stationName(to,to.crs)}`:stationName(from,from.crs));
   const codes=routeCodes();
-  if(codes)setText($('trainStationMeta'),`${codes} · ${status}`);
+  if(codes)setText($('trainStationMeta'),`${codes} \u00b7 ${status}`);
 }
 function dateLabel(){
   const date=dateApi()&&dateApi().state&&dateApi().state.date;
@@ -202,12 +245,12 @@ function renderSameDayPlanning(info=liveWindowFor(currentDepartAfter())){
   const time=hhmm(info.target==null?parseMinutes(currentDepartAfter()):info.target);
   const name=$('trainStationName'),meta=$('trainStationMeta'),refresh=$('trainRefresh'),dateMeta=$('trainTravelDateMeta'),board=$('trainBoard');
   setText(name,to?routeText():stationName(from,from.crs));
-  setText(meta,`${routeCodes()} · ${dateLabel()} · ${time} · same-day planning`);
+  setText(meta,`${routeCodes()} \u00b7 ${dateLabel()} \u00b7 ${time} \u00b7 same-day planning`);
   if(refresh){refresh.disabled=true;setText(refresh,'Schedule');}
-  if(dateMeta){setText(dateMeta,`${dateLabel()} · same-day planning · timetable feed needed`);dateMeta.dataset.mode='planning';}
+  if(dateMeta){setText(dateMeta,`${dateLabel()} \u00b7 same-day planning \u00b7 timetable feed needed`);dateMeta.dataset.mode='planning';}
   if(board){
     const route=to?routeText():stationName(from,from.crs);
-    board.innerHTML=`<div class="train-empty train-future-date train-future-card train-same-day-plan"><span class="train-future-badge">Later today</span><strong>Same-day timetable needed</strong><span class="train-future-route">${escapeHtml(route)} · depart after ${escapeHtml(time)}</span><span class="train-future-note">This time is beyond the live Darwin departure window. Exact later-today services and journeys with changes need the scheduled timetable feed. Kerbside will not treat an empty live board as proof that there are no trains.</span></div>`;
+    board.innerHTML=`<div class="train-empty train-future-date train-future-card train-same-day-plan"><span class="train-future-badge">Later today</span><strong>Same-day timetable needed</strong><span class="train-future-route">${escapeHtml(route)} \u00b7 depart after ${escapeHtml(time)}</span><span class="train-future-note">This time is beyond the live Darwin departure window. Exact later-today services and journeys with changes need the scheduled timetable feed. Kerbside will not treat an empty live board as proof that there are no trains.</span></div>`;
   }
   plannerMessage(`${time} is beyond the live departure window; exact same-day times need the scheduled timetable feed.`);
   return true;
@@ -316,11 +359,11 @@ function improveEmptyState(){
   syncHeader();
   const error=board.querySelector('.train-empty.error');
   if(error){
-    plannerMessage('Live train data is unavailable right now. Retry will check the live providers again.',true);
+    plannerMessage('Live train data is unavailable right now. Retry will check the official feed and fallback providers again.',true);
     return;
   }
   if(board.querySelector('.train-service')){
-    plannerMessage('Live journey loaded.');
+    plannerMessage(state.source==='official'?'Live journey loaded from official Rail Data.':'Live journey loaded.');
     return;
   }
   const empty=board.querySelector('.train-empty');
@@ -328,7 +371,7 @@ function improveEmptyState(){
   const strong=empty.querySelector('strong'),note=empty.querySelector('span');
   if(to){
     const title='No direct live departures in this window';
-    const message='The live board did not return a direct service for this From → To pair in the current live window. Connecting journey planning needs the scheduled timetable feed.';
+    const message='The live board did not return a direct service for this From \u2192 To pair in the current live window. Connecting journey planning needs the scheduled timetable feed.';
     setText(strong,title);setText(note,message);plannerMessage(title+'.');
   }else{
     const title='No live departures in this window';
@@ -355,7 +398,7 @@ function handleJourneyChange(){
   restoreLiveDateMeta();
   const label=info.target==null||info.delta<=0?'Live departures now':`Live departures from ${hhmm(info.target)}`;
   syncHeader(label);
-  plannerMessage('Loading live departures…');
+  plannerMessage('Loading live departures\u2026');
   reloadLiveJourney();
   syncOutcome();
 }
@@ -383,6 +426,7 @@ function install(){
   observeSuggestions();
   observeBoard();
   canonicaliseJourneyInputs();
+  syncProviderNote();
   window.addEventListener('kerbside:journey-planner-change',()=>setTimeout(handleJourneyChange,0));
   document.addEventListener('kerbside:train-route-change',()=>{canonicaliseJourneyInputs();if(!clearNonRailDestination())syncOutcome();});
   document.addEventListener('kerbside:train-date-change',()=>setTimeout(()=>{if(isToday()){installDefaultTime();canonicaliseJourneyInputs();syncOutcome();}},0));
@@ -394,5 +438,9 @@ function init(attempt=0){
   if(attempt<80)setTimeout(()=>init(attempt+1),50);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
-window.__KERBSIDE_TRAIN_LIVE_WINDOW__={state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,isRailStation,filterSuggestionList,clearNonRailDestination,providerOrder,PROVIDER_ATTEMPT_MS,MAX_LIVE_HORIZON};
+window.__KERBSIDE_TRAIN_LIVE_WINDOW__={
+  state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,
+  isRailStation,filterSuggestionList,clearNonRailDestination,providerOrder,officialEnabled,officialBoardUrl,
+  OFFICIAL,OFFICIAL_ATTEMPT_MS,PROVIDER_ATTEMPT_MS,MAX_LIVE_HORIZON
+};
 })();
