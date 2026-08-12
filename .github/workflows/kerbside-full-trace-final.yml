@@ -68,8 +68,10 @@ jobs:
           curl -fsSL --retry 2 --connect-timeout 10 --max-time 30 -H 'Cache-Control: no-cache' "$app/bus.html?$token" -o "$tmp/app"
           grep -Fq "const APP_VERSION = '$version';" "$tmp/app"
           grep -Fq "kerbside-train-forecast-v3.js?v=$version" "$tmp/app"
-          grep -Fq "kerbside-train-timetable.js?v=$version" "$tmp/app"
-          echo "app-version=$version"
+          grep -Fq "kerbside-train-date.js?v=$version" "$tmp/app"
+          curl -fsSL --retry 2 --connect-timeout 10 --max-time 30 -H 'Cache-Control: no-cache' "$app/kerbside-train-timetable.js?v=$version&$token" -o "$tmp/timetable-js"
+          grep -Fq "journeyType:'connection'" "$tmp/timetable-js"
+          echo "app-version=$version timetable-module=reachable"
 
           echo '=== BUS WORKER / LIVE SIRI ==='
           curl -fsSL --retry 2 --connect-timeout 10 --max-time 30 "$bus/health?$token" -o "$tmp/bus-health"
