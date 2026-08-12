@@ -98,6 +98,7 @@ jobs:
           grep -F "kerbsideScope" kerbside-journey-planner-ui.js
           grep -F "Promise.resolve(pending).then(ok=>{if(ok)handleOverlay();})" kerbside-train-timetable.js
           grep -F "const timetableOwned=" kerbside-trains.js
+          grep -F "const origin=raw.map" kerbside-train-timetable.js
 
       - name: Run current rail browser bundle in WebKit
         shell: bash
