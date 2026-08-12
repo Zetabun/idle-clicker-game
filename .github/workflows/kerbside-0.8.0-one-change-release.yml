@@ -1,5 +1,5 @@
 name: Kerbside 0.8.0 one-change journey release
-# Retry final gate after making the pre-live label assertion race-stable.
+# Final gate with a clean staging tree before the release commit is published.
 
 on:
   workflow_dispatch:
@@ -63,6 +63,7 @@ jobs:
           path.write_text(text.replace(old,new,1),encoding='utf-8')
           PY
           python3 .github/scripts/augment-kerbside-0.8.0-live-connections.py
+          git checkout -- .github/scripts/augment-kerbside-0.8.0-live-connections.py
           python3 .github/scripts/fix-kerbside-0.8.0-origin-scope.py
           python3 .github/scripts/finalize-kerbside-0.8.0.py
           python3 .github/scripts/sync-version.py
@@ -102,6 +103,7 @@ jobs:
           grep -F "Promise.resolve(pending).then(ok=>{if(ok)handleOverlay();})" kerbside-train-timetable.js
           grep -F "const timetableOwned=" kerbside-trains.js
           grep -F "const origin=raw.map" kerbside-train-timetable.js
+          test -z "$(git status --porcelain -- .github/scripts/augment-kerbside-0.8.0-live-connections.py)"
 
       - name: Run current rail browser bundle in WebKit
         shell: bash
