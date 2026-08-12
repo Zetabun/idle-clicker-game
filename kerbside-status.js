@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='0.7.41';
+const VERSION='0.7.42';
 const REFRESH_CACHE_MS=5*60*1000;
 const REQUEST_TIMEOUT_MS=7000;
 const BUS_DATA_BASE='https://kerbside-data-zetabun.pages.dev';
@@ -138,6 +138,7 @@ function timestampFreshness(value,{healthyMs,degradedMs}){
   const age=now()-d.getTime();if(age<=healthyMs)return{status:'healthy',age};if(age<=degradedMs)return{status:'degraded',age};return{status:'down',age};
 }
 function busManifestFreshness(manifest){return timestampFreshness(manifest&&manifest.built,{healthyMs:36*3600*1000,degradedMs:72*3600*1000});}
+function liveRailProbeState(status){return [408,429,502,504].includes(Number(status))?'degraded':'down';}
 
 const SOURCE_META=[
   {id:'app-pages',category:'Platform & pipelines',name:'Kerbside app / GitHub Pages',description:'The deployed app shell and release version.',critical:true},
@@ -190,7 +191,7 @@ function sourceDefinitions(){
     {...byId['bods-disruptions'],probe:async source=>{const r=await request(`disruptions.json?status=${Date.now()}`,{type:'json'});if(!r.response.ok)return result(source,'down',`Disruption feed returned HTTP ${r.response.status}.`,r.latency);const fresh=timestampFreshness(r.body&&r.body.built,{healthyMs:24*3600*1000,degradedMs:72*3600*1000});return result(source,fresh.status,`Published disruption feed${r.body&&r.body.built?` built ${formatStamp(r.body.built)} · ${ageText(fresh.age)}`:' has no build timestamp'}.`,r.latency);}},
     {...byId['naptan'],probe:async source=>{const r=await request(`naptan/index.json?status=${Date.now()}`,{type:'json'});if(!r.response.ok)return result(source,'down',`NaPTAN index returned HTTP ${r.response.status}.`,r.latency);const fresh=timestampFreshness(r.body&&r.body.built,{healthyMs:10*86400000,degradedMs:21*86400000});const count=Number(r.body&&r.body.count)||0;return result(source,fresh.status,`${count?count.toLocaleString('en-GB')+' active bus stops · ':''}${r.body&&r.body.built?`built ${formatStamp(r.body.built)} · ${ageText(fresh.age)}`:'build time unavailable'}.`,r.latency);}},
 
-    {...byId['rdm-darwin'],probe:async source=>{const r=await request(`${RAIL_WORKER}/departures/BHM/1?timeWindow=1`,{type:'json',headers:{Accept:'application/json'}});if(!r.response.ok)return result(source,r.response.status===429?'degraded':'down',`Official live rail probe returned HTTP ${r.response.status}.`,r.latency);const valid=r.body&&String(r.body.crs||'').toUpperCase()==='BHM'&&Object.prototype.hasOwnProperty.call(r.body,'trainServices');return result(source,valid?'healthy':'down',valid?'Official Darwin departure board returned valid data.':'Official Darwin response was not a valid departure board.',r.latency);}},
+    {...byId['rdm-darwin'],probe:async source=>{let last=null,totalLatency=0;for(let attempt=0;attempt<2;attempt++){const r=await request(`${RAIL_WORKER}/departures/BHM/1?timeWindow=1`,{type:'json',headers:{Accept:'application/json'}});last=r;totalLatency+=Number(r.latency)||0;if(r.response.ok){const valid=r.body&&String(r.body.crs||'').toUpperCase()==='BHM'&&Object.prototype.hasOwnProperty.call(r.body,'trainServices');return result(source,valid?'healthy':'down',valid?(attempt?'Official Darwin recovered on retry and returned valid data.':'Official Darwin departure board returned valid data.'):'Official Darwin response was not a valid departure board.',totalLatency);}if(liveRailProbeState(r.response.status)!=='degraded')return result(source,'down',`Official live rail probe returned HTTP ${r.response.status}.`,totalLatency);if(attempt===0)await new Promise(resolve=>setTimeout(resolve,300));}const status=last&&last.response&&last.response.status||0;return result(source,'degraded',`Official Darwin is temporarily unavailable (HTTP ${status}). Kerbside will use Huxley fallbacks for live boards while it recovers.`,totalLatency,'Degraded');}},
     {...byId['rail-timetable'],probe:async(source,context)=>{const r=await railManifest(context);if(!r.response.ok)return result(source,'down',`Timetable manifest returned HTTP ${r.response.status}.`,r.latency);const manifest=r.body||{},selectedDate=$('trainTravelDate')&&$('trainTravelDate').value||'',selectedTime=$('trainDepartAfter')&&$('trainDepartAfter').value||'';const coverage=coverageHealth(manifest,selectedDate,selectedTime);const snapshot=timedIdDate(manifest.timetableId),age=snapshot?now()-snapshot.getTime():Infinity;let status=coverage.status;if(status==='healthy'){if(age>52*3600*1000)status='down';else if(age>30*3600*1000)status='degraded';}const detail=`Snapshot ${manifest.timetableId||'unknown'}${snapshot?` · ${ageText(age)}`:''}. ${coverage.detail}`;return result(source,status,detail,r.latency);}},
     {...byId['huxley2'],probe:async source=>{const r=await request(`${HUXLEY_PRIMARY}/departures/BHM/1`,{type:'json',headers:{Accept:'application/json'}});if(!r.response.ok)return result(source,'down',`Fallback returned HTTP ${r.response.status}.`,r.latency);return result(source,'standby','Fallback is reachable and ready if the official source fails.',r.latency,'Standby');}},
     {...byId['huxley'],probe:async source=>{const r=await request(`${HUXLEY_SECONDARY}/departures/BHM/1`,{type:'json',headers:{Accept:'application/json'}});if(!r.response.ok)return result(source,'down',`Fallback returned HTTP ${r.response.status}.`,r.latency);return result(source,'standby','Secondary fallback is reachable.',r.latency,'Standby');}},
@@ -309,6 +310,6 @@ function bind(){
 function install(){if(state.installed)return true;installStyles();if(!installUi())return false;const definitions=sourceDefinitions();renderSkeleton(definitions);renderOverall(definitions);bind();state.installed=true;return true;}
 function init(){if(!install())setTimeout(init,50);}
 
-window.__KERBSIDE_STATUS_SWITCHBOARD__={version:VERSION,state,SOURCE_META,coverageHealth,overallState,sourceDefinitions,refresh,install};
+window.__KERBSIDE_STATUS_SWITCHBOARD__={version:VERSION,state,SOURCE_META,coverageHealth,overallState,liveRailProbeState,sourceDefinitions,refresh,install};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

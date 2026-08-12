@@ -45,3 +45,16 @@ test('overall status only goes red for a critical failed dependency',()=>{
   assert.equal(api.overallState([{critical:true,status:'down'},{critical:false,status:'healthy'}]).status,'down');
   assert.equal(api.overallState([{critical:true,status:'healthy'},{critical:false,status:'standby'}]).status,'healthy');
 });
+
+
+test('retryable official rail HTTP failures are degraded rather than hard down',()=>{
+  const api=load();
+  assert.equal(api.liveRailProbeState(408),'degraded');
+  assert.equal(api.liveRailProbeState(429),'degraded');
+  assert.equal(api.liveRailProbeState(502),'degraded');
+  assert.equal(api.liveRailProbeState(504),'degraded');
+  assert.equal(api.liveRailProbeState(401),'down');
+  assert.equal(api.liveRailProbeState(403),'down');
+  assert.equal(api.liveRailProbeState(500),'down');
+  assert.equal(api.liveRailProbeState(503),'down');
+});
