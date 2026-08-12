@@ -325,12 +325,23 @@ function selectOrigin(item){
   go.click();
   setTimeout(()=>{if(input)input.value=item.name;const el=$('trainSuggest');if(el){el.hidden=true;el.innerHTML='';}if(isFutureJourney())dateApi()?.applyForecasts?.();},0);
 }
-function selectDestination(item){
+function syncRouteOrigin(station){
   const route=window.__KERBSIDE_TRAIN_ROUTES__;
-  if(!route||!item)return;
-  route.selectDestination(item);
+  const crs=String(station&&(station.crs||station.crsCode)||'').trim().toUpperCase();
+  if(!route||!/^[A-Z0-9]{3}$/.test(crs))return false;
+  if(typeof route.setFromCrs==='function')return route.setFromCrs(crs)!==false;
+  if(route.state){route.state.fromCrs=crs;return true;}
+  return false;
+}
+function selectDestination(item,{reload=true}={}){
+  const route=window.__KERBSIDE_TRAIN_ROUTES__;
+  if(!route||!item)return false;
+  const selected=route.selectDestination(item,{reload});
   const el=$('trainDestinationSuggest');if(el){el.hidden=true;el.innerHTML='';}
   if(isFutureJourney())setTimeout(()=>dateApi()?.applyForecasts?.(),0);
+  const current=route.state&&route.state.destination;
+  const crs=String(item.crs||item.crsCode||'').trim().toUpperCase();
+  return selected!==false&&!!(current&&String(current.crs||'').toUpperCase()===crs);
 }
 function cloneInput(id){
   const old=$(id);if(!old||old.dataset.kerbsidePlanner==='1')return old;
@@ -341,15 +352,16 @@ async function resolveOrigin(){
   const input=$('trainStationQuery'),api=window.__KERBSIDE_TRAINS__;
   if(!input||!api)return false;
   const q=input.value.trim(),selected=api.state&&api.state.station;
-  if(selected&&(normalise(q)===normalise(selected.name)||q.toUpperCase()===String(selected.crs||'').toUpperCase()))return true;
+  if(selected&&(normalise(q)===normalise(selected.name)||q.toUpperCase()===String(selected.crs||'').toUpperCase()))return syncRouteOrigin(selected);
   const ctl=new AbortController();
   const items=await stationLookup(q,ctl.signal);
   const match=bestMatch(items,q);
   if(!match){renderFromSuggestions(items);plannerMessage('Choose the departure station from the suggestions.',true);return false;}
   selectOrigin(match);
-  return waitFor(()=>api.state&&api.state.station&&String(api.state.station.crs).toUpperCase()===match.crs,1500);
+  const ready=await waitFor(()=>api.state&&api.state.station&&String(api.state.station.crs).toUpperCase()===match.crs,1500);
+  return ready&&syncRouteOrigin(api.state&&api.state.station||match);
 }
-async function resolveDestination(){
+async function resolveDestination({reload=true}={}){
   const input=$('trainDestinationQuery'),route=window.__KERBSIDE_TRAIN_ROUTES__,api=window.__KERBSIDE_TRAINS__;
   if(!input||!route||!api)return false;
   const q=input.value.trim();
@@ -360,18 +372,44 @@ async function resolveDestination(){
   const items=await stationLookup(q,ctl.signal,from);
   const match=bestMatch(items,q);
   if(!match){renderToSuggestions(items);plannerMessage('Choose the destination station from the suggestions.',true);return false;}
-  selectDestination(match);
+  if(!selectDestination(match,{reload})){
+    plannerMessage('The destination could not be attached to the selected departure station. Please try again.',true);
+    return false;
+  }
   return true;
 }
-async function finishJourney(){
+async function refreshJourneyBoard(){
+  const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
+  const mode=timetable&&typeof timetable.journeyMode==='function'?timetable.journeyMode():'';
+  if(mode&&typeof timetable.load==='function'){
+    await timetable.load({mode});
+    return true;
+  }
+  const route=window.__KERBSIDE_TRAIN_ROUTES__;
+  if(route&&typeof route.reloadBoard==='function'){
+    route.reloadBoard();
+    return true;
+  }
+  const api=window.__KERBSIDE_TRAINS__,station=api&&api.state&&api.state.station,input=$('trainStationQuery'),go=$('trainStationGo');
+  if(!station||!input||!go)return false;
+  const previous=input.value;
+  input.value=station.crs||station.name||previous;
+  go.click();
+  input.value=previous;
+  return true;
+}
+async function finishJourney({reload=false}={}){
   dispatch();
+  const refreshed=reload?await refreshJourneyBoard():false;
   if(!isFutureJourney()){
-    plannerMessage('Live journey loaded.');
+    plannerMessage('Journey loaded.');
     return;
   }
-  const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
-  if(timetable&&typeof timetable.load==='function')await timetable.load();
-  else dateApi()?.applyForecasts?.();
+  if(!refreshed){
+    const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
+    if(timetable&&typeof timetable.load==='function')await timetable.load();
+    else dateApi()?.applyForecasts?.();
+  }
   plannerMessage(`Advance journey ready for ${travelDateLabel()}.`);
 }
 async function findTrains(){
@@ -384,8 +422,8 @@ async function findTrains(){
     if(!(await resolveOrigin()))return;
     const to=$('trainDestinationQuery');
     if(!to||to.value.trim().length<2){plannerMessage('Add a destination to search this journey.',true);to?.focus();return;}
-    if(!(await resolveDestination()))return;
-    await finishJourney();
+    if(!(await resolveDestination({reload:false})))return;
+    await finishJourney({reload:true});
   }catch(error){
     plannerMessage(error&&error.message?error.message:'Train search is temporarily unavailable.',true);
   }finally{
@@ -393,39 +431,58 @@ async function findTrains(){
   }
 }
 
-/* Swap used to require both stations to already be *selected*, so the
-   button silently did nothing when the user had only typed. It also set
-   the new destination before train-routes.js had caught up with the new
-   origin: setFromCrs() blanks the destination whenever the origin
-   changes, so the freshly-set destination was wiped a beat later. Now it
-   works from the field text and waits for fromCrs to settle first. */
+/* Resolve both ends before mutating the active journey, then commit the
+   reverse route explicitly. The old implementation blanked route.fromCrs and
+   waited for a Huxley URL rewrite to repopulate it. Official RDM responses do
+   not pass through that rewrite, leaving the route permanently half-cleared. */
+function stationRecord(station){
+  if(!station)return null;
+  const crs=String(station.crs||station.crsCode||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{3}$/.test(crs))return null;
+  return {name:String(station.name||station.stationName||crs).trim()||crs,crs};
+}
+function stationMatchesQuery(station,query){
+  const record=stationRecord(station),q=String(query||'').trim();
+  return !!(record&&q&&(normalise(q)===normalise(record.name)||q.toUpperCase()===record.crs));
+}
+async function resolveSwapStation(selected,query,exclude=''){
+  const record=stationRecord(selected);
+  if(record&&stationMatchesQuery(record,query))return record;
+  const ctl=new AbortController();
+  const items=await stationLookup(query,ctl.signal,exclude);
+  return bestMatch(items,query);
+}
 async function swap(){
   const api=window.__KERBSIDE_TRAINS__,route=window.__KERBSIDE_TRAIN_ROUTES__;
   const fromInput=$('trainStationQuery'),toInput=$('trainDestinationQuery');
   if(!api||!route||!fromInput||!toInput)return;
-  const origin=api.state&&api.state.station;
-  const destination=route.state&&route.state.destination;
-  const fromText=(origin&&(origin.name||origin.crs))||fromInput.value.trim();
-  const toText=(destination&&(destination.name||destination.crs))||toInput.value.trim();
+  const selectedOrigin=api.state&&api.state.station;
+  const selectedDestination=route.state&&route.state.destination;
+  const fromText=fromInput.value.trim()||(selectedOrigin&&(selectedOrigin.name||selectedOrigin.crs))||'';
+  const toText=toInput.value.trim()||(selectedDestination&&(selectedDestination.name||selectedDestination.crs))||'';
   if(!fromText||!toText){plannerMessage('Add both stations before swapping.',true);return;}
 
   const button=$('trainRouteSwap');
   if(button)button.disabled=true;
   plannerMessage('');
   try{
+    const oldOrigin=await resolveSwapStation(selectedOrigin,fromText);
+    if(!oldOrigin){plannerMessage('Choose the departure station from the suggestions before swapping.',true);return;}
+    const oldDestination=await resolveSwapStation(selectedDestination,toText,oldOrigin.crs);
+    if(!oldDestination){plannerMessage('Choose the destination station from the suggestions before swapping.',true);return;}
+    if(oldOrigin.crs===oldDestination.crs){plannerMessage('Departure and destination must be different stations.',true);return;}
+
     route.clearDestination({reload:false});
-    if(route.state)route.state.fromCrs='';
-    fromInput.value=toText;
-    toInput.value=fromText;
-    if(!(await resolveOrigin())){plannerMessage('Choose the new departure station from the suggestions.',true);return;}
+    fromInput.value=oldDestination.crs;
+    toInput.value=oldOrigin.name;
+    selectOrigin(oldDestination);
+    const originReady=await waitFor(()=>api.state&&api.state.station&&String(api.state.station.crs||'').toUpperCase()===oldDestination.crs,1500);
+    if(!originReady||!syncRouteOrigin(api.state&&api.state.station||oldDestination))throw new Error('The reversed departure station did not finish loading.');
 
-    const nextOrigin=api.state&&api.state.station;
-    const nextCrs=nextOrigin?String(nextOrigin.crs||'').toUpperCase():'';
-    await waitFor(()=>route.state&&nextCrs&&String(route.state.fromCrs||'').toUpperCase()===nextCrs,1500);
-
-    toInput.value=fromText;
-    if(!(await resolveDestination()))return;
-    await finishJourney();
+    fromInput.value=oldDestination.name;
+    toInput.value=oldOrigin.name;
+    if(!selectDestination(oldOrigin,{reload:false}))throw new Error('The reversed destination could not be selected.');
+    await finishJourney({reload:true});
   }catch(error){
     plannerMessage(error&&error.message?error.message:'The journey could not be swapped.',true);
   }finally{
@@ -613,5 +670,5 @@ function install(){
 }
 function init(){if(!install())setTimeout(init,0)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
+window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,syncRouteOrigin,refreshJourneyBoard,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
 })();

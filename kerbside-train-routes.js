@@ -101,7 +101,7 @@ function clearDestination({reload=false,disable=false}={}){
 
 function setFromCrs(value){
   const next = String(value || '').trim().toUpperCase();
-  if(!/^[A-Z0-9]{3}$/.test(next)) return;
+  if(!/^[A-Z0-9]{3}$/.test(next)) return false;
   if(routeState.fromCrs && routeState.fromCrs !== next){
     routeState.destination = null;
     routeState.lastDirectRequest = '';
@@ -112,6 +112,7 @@ function setFromCrs(value){
   routeState.fromCrs = next;
   setDestinationEnabled(true);
   updateSummary();
+  return true;
 }
 
 function departureRequest(url){
@@ -231,19 +232,21 @@ function scheduleSearch(){
   routeState.searchTimer = setTimeout(()=>searchDestinations($('trainDestinationQuery') ? $('trainDestinationQuery').value : ''),SEARCH_DELAY_MS);
 }
 
-function selectDestination(station){
-  if(!routeState.fromCrs || !station) return;
+function selectDestination(station,{reload=true}={}){
+  if(!routeState.fromCrs || !station) return false;
   const crs = String(station.crs || '').trim().toUpperCase();
-  if(!/^[A-Z0-9]{3}$/.test(crs) || crs === routeState.fromCrs) return;
+  if(!/^[A-Z0-9]{3}$/.test(crs) || crs === routeState.fromCrs) return false;
   routeState.destination = {name:String(station.name || crs),crs};
+  routeState.lastDirectRequest = '';
   const input = $('trainDestinationQuery');
   if(input) input.value = routeState.destination.name;
   saveRoute();
   updateSummary();
   setTimeout(()=>{
     closeSuggestions();
-    reloadBoard();
+    if(reload) reloadBoard();
   },0);
+  return true;
 }
 
 async function submitDestination(){
@@ -406,7 +409,9 @@ else init();
 window.__KERBSIDE_TRAIN_ROUTES__ = {
   state:routeState,
   clearDestination,
+  setFromCrs,
   selectDestination,
+  reloadBoard,
   rewrittenDepartureUrl
 };
 

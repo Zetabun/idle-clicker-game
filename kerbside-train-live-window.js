@@ -325,7 +325,7 @@ function guardRouteSelection(){
   if(!routes||routes.__kerbsideRailOnlyGuarded)return;
   const original=typeof routes.selectDestination==='function'?routes.selectDestination.bind(routes):null;
   if(original){
-    routes.selectDestination=function(station){
+    routes.selectDestination=function(station,options){
       if(!isRailStation(station)){
         const crs=stationCrs(station);if(crs)nonRailCrs.add(crs);
         state.rejectedStations++;
@@ -334,7 +334,7 @@ function guardRouteSelection(){
         plannerMessage('Choose a National Rail station. Bus, coach and ferry connection points cannot be used as train destinations.',true);
         return false;
       }
-      return original(station);
+      return original(station,options);
     };
   }
   routes.__kerbsideRailOnlyGuarded=true;

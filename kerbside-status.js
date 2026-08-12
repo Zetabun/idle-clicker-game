@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='0.7.42';
+const VERSION='0.7.43';
 const REFRESH_CACHE_MS=5*60*1000;
 const REQUEST_TIMEOUT_MS=7000;
 const BUS_DATA_BASE='https://kerbside-data-zetabun.pages.dev';
