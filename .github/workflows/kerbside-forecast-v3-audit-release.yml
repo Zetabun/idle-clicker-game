@@ -48,10 +48,10 @@ jobs:
           node --check kerbside-train-timetable.js
           node --check kerbside-rail-calibration.js
           node --check kerbside-backend/tests/train-regression.mjs
+          node --check kerbside-backend/tests/train-live-window-regression.mjs
+          node --check kerbside-backend/tests/train-journey-planner-regression.mjs
           node --test kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs
           node --test kerbside-backend/test/train-timetable-provider.test.js
-          node --test kerbside-backend/tests/train-live-window-regression.mjs
-          node --test kerbside-backend/tests/train-journey-planner-regression.mjs
           git diff --check
           grep -Fx '0.7.40' VERSION
           grep -F "modelLayer:'v3-baseline'" kerbside-train-forecast-v3.js
