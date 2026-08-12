@@ -123,8 +123,6 @@ replace_once(
     "state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';state.includeConnections=false;",
     "state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';state.includeConnections=false;state.connectionTargets=[];"
 )
-# Both forced refresh sites were patched by the augment script to carry the old
-# boolean. Replace both together and fail if a future refactor changes the count.
 text=read(overlay)
 old="refresh({crs:state.crs,date:state.date,force:true,includeConnections:state.includeConnections});"
 new="refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets});"
@@ -160,18 +158,13 @@ replace_once(
     "assert.equal(diagnostics.railRequests.some(value=>value.includes('kerbsideScope')),false,'private live-scope marker must be stripped before the provider request');",
     "assert.equal(diagnostics.railRequests.some(value=>value.includes('kerbsideScope')),false,'connection evidence must use normal provider URLs only');"
 )
-# The live overlay can settle before Playwright reads the initial connection
-# card. Do not require the transient pre-live '1 change' / '15m change' labels;
-# the test below still requires the stronger final at-risk state and 7m live
-# transfer. Scheduled 15m/10m-buffer construction is covered deterministically.
+# Augment has already replaced the scheduled 15m assertion with the live-risk
+# wait by the time this patch runs. Only remove the transient '1 change' label;
+# the stronger live-risk and 7m assertions remain immediately below.
 replace_once(
     browser,
-    """  assert.match(await connection.textContent(),/1 change/);
-  assert.match(await connection.textContent(),/Cheltenham Spa/);
-  assert.match(await connection.textContent(),/15m change/);
-""",
-    """  assert.match(await connection.textContent(),/Cheltenham Spa/);
-"""
+    "  assert.match(await connection.textContent(),/1 change/);\n",
+    ""
 )
 
 print('Replaced Kerbside 0.8.0 origin-scoped live board with precise interchange-filtered live boards and race-stable browser assertions.')
