@@ -1,5 +1,5 @@
 name: Kerbside 0.8.0 one-change journey release
-# Final gate: deterministic checks, then WebKit and Chromium before publish.
+# Retry final gate after making the pre-live label assertion race-stable.
 
 on:
   workflow_dispatch:
