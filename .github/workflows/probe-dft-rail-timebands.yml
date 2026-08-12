@@ -1,0 +1,62 @@
+name: Probe DfT rail time bands
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/probe-dft-rail-timebands.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download and inspect official DfT ODS tables
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4dfa24d44672cf1b4644/rai0202.ods' -o /tmp/rai0202.ods
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4da7c7c34404041b463b/rai0203.ods' -o /tmp/rai0203.ods
+          python3 - <<'PY'
+          import zipfile, xml.etree.ElementTree as ET
+          NS={
+            'office':'urn:oasis:names:tc:opendocument:xmlns:office:1.0',
+            'table':'urn:oasis:names:tc:opendocument:xmlns:table:1.0',
+            'text':'urn:oasis:names:tc:opendocument:xmlns:text:1.0',
+          }
+          def cell_text(cell):
+            parts=[]
+            for p in cell.findall('.//text:p',NS):
+              value=''.join(p.itertext()).strip()
+              if value: parts.append(value)
+            return ' '.join(parts)
+          def inspect(path):
+            print('\n###',path)
+            with zipfile.ZipFile(path) as z:
+              root=ET.fromstring(z.read('content.xml'))
+            sheets=root.findall('.//table:table',NS)
+            print('sheets:',[s.attrib.get('{%s}name'%NS['table']) for s in sheets])
+            for sheet in sheets:
+              name=sheet.attrib.get('{%s}name'%NS['table'])
+              print('\n-- SHEET',name,'--')
+              shown=0
+              for row in sheet.findall('table:table-row',NS):
+                repeat=int(row.attrib.get('{%s}number-rows-repeated'%NS['table'],'1'))
+                values=[]
+                for cell in row.findall('table:table-cell',NS):
+                  crepeat=int(cell.attrib.get('{%s}number-columns-repeated'%NS['table'],'1'))
+                  text=cell_text(cell)
+                  values.extend([text]*min(crepeat,8))
+                while values and not values[-1]: values.pop()
+                if any(values):
+                  print(f'row x{repeat}:',repr(values[:30]))
+                  shown+=1
+                  if shown>=28: break
+          inspect('/tmp/rai0202.ods')
+          inspect('/tmp/rai0203.ods')
+          PY
