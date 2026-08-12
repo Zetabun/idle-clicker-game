@@ -65,6 +65,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Kerbside 0.7.43: recover route swaps reliably'
+          git restore .github/scripts/apply-kerbside-0.7.43.py
           for attempt in 1 2 3; do
             git pull --rebase origin main
             if git push origin HEAD:main; then
