@@ -25,10 +25,13 @@ function routeAwarePath(url){
   const match=decodeURIComponent(path).match(/^\/departures\/([A-Za-z0-9]{3})\/(\d+)\/?$/i);
   const route=window.__KERBSIDE_TRAIN_ROUTES__;
   const destination=route&&route.state&&route.state.destination;
-  if(match&&destination&&destination.crs&&destination.crs.toUpperCase()!==match[1].toUpperCase()){
+  const originScoped=url.searchParams.get('kerbsideScope')==='origin';
+  if(match&&!originScoped&&destination&&destination.crs&&destination.crs.toUpperCase()!==match[1].toUpperCase()){
     path=`/departures/${encodeURIComponent(match[1].toUpperCase())}/to/${encodeURIComponent(destination.crs.toUpperCase())}/${encodeURIComponent(match[2])}`;
   }
-  return path+url.search;
+  const params=new URLSearchParams(url.search);params.delete('kerbsideScope');
+  const query=params.toString();
+  return path+(query?`?${query}`:'');
 }
 function providerCandidates(url){
   const path=routeAwarePath(url);

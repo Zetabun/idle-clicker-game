@@ -14,10 +14,13 @@ const manifest={
   dates:['2026-08-12'],coverage:{'2026-08-12':{from:'00:01',to:'23:59',partial:false}},
   tocNames:{XC:'CrossCountry'}
 };
-const locations={BHM:['Birmingham New Street','BHAMNWS',''],BRI:['Bristol Temple Meads','BRSTLTM',''],PLY:['Plymouth','PLYMTH','']};
+const locations={BHM:['Birmingham New Street','BHAMNWS',''],BRI:['Bristol Temple Meads','BRSTLTM',''],PLY:['Plymouth','PLYMTH',''],CNM:['Cheltenham Spa','CHLTNHM',''],GLO:['Gloucester','GLOSTER','']};
 const rows=[
   ['rid-1','uid-1','1A01','XC','2026-08-12',[["BHM","","09:12","11",0],["BRI","10:33","10:35","3",0],["PLY","12:20","","",0]]],
-  ['rid-2','uid-2','1A02','XC','2026-08-12',[["BHM","","08:42","10",0],["BRI","10:02","10:04","4",0],["PLY","11:50","","",0]]]
+  ['rid-2','uid-2','1A02','XC','2026-08-12',[["BHM","","08:42","10",0],["BRI","10:02","10:04","4",0],["PLY","11:50","","",0]]],
+  ['rid-change-a','uid-change-a','1C10','XC','2026-08-12',[["BHM","","09:05","8",0],["CNM","09:45","","2",0]]],
+  ['rid-change-tight','uid-change-tight','1G01','XC','2026-08-12',[["CNM","","09:52","4",0],["GLO","10:25","","1",0]]],
+  ['rid-change-b','uid-change-b','1G02','XC','2026-08-12',[["CNM","","10:00","4",0],["GLO","10:32","","1",0]]]
 ];
 const gz=gzipSync(Buffer.from(JSON.stringify(rows)));
 
@@ -59,6 +62,33 @@ test('direct services use schedule calls and respect depart-after',async()=>{
   assert.equal(services[0].routeDestination.crs,'BRI');
   assert.equal(services[0].serviceTerminus.crs,'PLY');
   assert.equal(services[0].scheduledOnly,true);
+});
+
+
+test('one-change journeys use a conservative same-station interchange buffer',async()=>{
+  const provider=loadProvider();
+  const services=await provider.getServices({from:'BHM',to:'GLO',date:'2026-08-12',departAfter:'09:00'});
+  assert.equal(services.length,1);
+  const journey=services[0];
+  assert.equal(journey.journeyType,'connection');
+  assert.equal(journey.changes,1);
+  assert.equal(journey.interchange.crs,'CNM');
+  assert.equal(journey.connectionMinutes,15);
+  assert.equal(journey.minimumConnectionMinutes,10);
+  assert.equal(journey.legs[0].std,'09:05');
+  assert.equal(journey.legs[0].arrival,'09:45');
+  assert.equal(journey.legs[1].std,'10:00');
+  assert.equal(journey.arrival,'10:32');
+  assert.equal(journey.legs.some(leg=>leg.serviceID==='rid-change-tight'),false,'7-minute change must be rejected');
+});
+
+test('connection buffer status distinguishes safe, tight and at-risk changes',()=>{
+  const provider=loadProvider();
+  assert.equal(provider.connectionMinimum('CNM'),10);
+  assert.equal(provider.connectionMinimum('BHM'),12);
+  assert.equal(provider.connectionRiskFor(18,10),'good');
+  assert.equal(provider.connectionRiskFor(12,10),'tight');
+  assert.equal(provider.connectionRiskFor(8,10),'at-risk');
 });
 
 test('out-of-snapshot dates fail closed',async()=>{

@@ -112,7 +112,7 @@ function officialBoardUrl(url){
   const info=departureRequest(url);
   if(!info)return null;
   const selected=journey().to;
-  const to=stationCrs(selected)||info.to;
+  const to=info.to||stationCrs(selected);
   const path=to&&to!==info.from
     ? `/departures/${encodeURIComponent(info.from)}/to/${encodeURIComponent(to)}/${encodeURIComponent(info.rows)}`
     : `/departures/${encodeURIComponent(info.from)}/${encodeURIComponent(info.rows)}`;

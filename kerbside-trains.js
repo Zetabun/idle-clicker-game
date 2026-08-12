@@ -843,14 +843,20 @@ function renderBoard(){
 
   const payload = state.board || {};
   const services = state.services;
-  name.textContent = payload.locationName || state.station.name || state.station.crs;
-  state.station.name = name.textContent;
+  /* The scheduled timetable and hidden live board share these controls. A
+     late Darwin response must not collapse BHM → GLO back to just BHM. */
+  const timetableOwned=$('trainMain')?.dataset.railView==='scheduled'&&!$('trainScheduledBoard')?.hidden;
+  const resolvedStationName=payload.locationName||state.station.name||state.station.crs;
+  state.station.name=resolvedStationName;
+  if(!timetableOwned)name.textContent=resolvedStationName;
   const generated = payload.generatedAt ? new Date(payload.generatedAt) : null;
   const freshText = generated && !Number.isNaN(generated.getTime())
     ? `Live board · updated ${generated.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`
     : 'Live board';
-  meta.textContent = `${state.station.crs} · ${freshText}`;
-  if(refresh){ refresh.disabled=false; refresh.textContent='Refresh'; }
+  if(!timetableOwned){
+    meta.textContent = `${state.station.crs} · ${freshText}`;
+    if(refresh){ refresh.disabled=false; refresh.textContent='Refresh'; }
+  }
   renderAlerts(payload.nrccMessages);
 
   if(!services.length){

@@ -197,10 +197,29 @@
 /* Status under the departure time. A timetabled row reads as muted on
    purpose: it must not borrow the authority of a live-confirmed one. */
 .train-status-timetabled{color:var(--text-mute)}
+.train-status-connection{color:var(--led)}
 .train-status-ontime{color:var(--live)}
 .train-status-late{color:#FF8C42}
 .train-status-cancelled{color:var(--warn)}
 .train-detail-warn{color:var(--warn-soft)!important}
+.train-connection-itinerary{
+  display:grid;gap:8px;margin:0 0 12px;padding:12px;border:1px solid var(--rule);border-radius:10px;background:var(--ink)
+}
+.train-connection-itinerary .train-detail-title{margin-bottom:1px}
+.train-connection-leg{display:grid;grid-template-columns:58px minmax(0,1fr) minmax(115px,.45fr);gap:10px;align-items:center;min-width:0}
+.train-connection-time,.train-connection-route,.train-connection-crowd{display:flex;flex-direction:column;min-width:0}
+.train-connection-time b{font-family:'Martian Mono',ui-monospace,monospace;font-size:12px;color:var(--text)}
+.train-connection-time small,.train-connection-route small,.train-connection-crowd small{margin-top:2px;color:var(--text-dim);font-size:9.5px;line-height:1.35}
+.train-connection-route b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:11.5px}
+.train-connection-crowd{position:relative;padding-left:13px}
+.train-connection-crowd>i{position:absolute;left:0;top:5px;width:7px;height:7px;border-radius:50%}
+.train-connection-crowd b{font-size:10.5px;color:var(--text)}
+.train-connection-change{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;margin-left:28px;padding:8px 10px;border-left:2px solid var(--rule);background:var(--ink-2);color:var(--text-dim)}
+.train-connection-change span{font-size:10px;font-weight:700;color:var(--text)}
+.train-connection-change b{font-family:'Martian Mono',ui-monospace,monospace;font-size:10px;color:var(--text)}
+.train-connection-change small{grid-column:1 / -1;font-size:9px;line-height:1.35;color:var(--text-mute)}
+.train-connection-change.connection-risk-tight,.train-connection-change.connection-risk-at-risk{border-left-color:var(--warn)}
+.train-connection-service .train-formation b{color:var(--led)}
 .train-scheduled-service .train-route small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .train-scheduled-service .train-formation b{
   font-family:'Martian Mono',ui-monospace,monospace;font-size:11px;letter-spacing:-.04em;
@@ -309,6 +328,12 @@ body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 
   .train-service-detail{padding:0 8px 12px}
   .train-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:10px}
   .train-crowding-explain{padding:12px 11px}
+  .train-connection-itinerary{padding:10px;gap:7px}
+  .train-connection-leg{grid-template-columns:50px minmax(0,1fr);gap:8px}
+  .train-connection-crowd{grid-column:2;flex-direction:row;align-items:center;gap:5px;padding-left:12px}
+  .train-connection-crowd>i{top:5px}
+  .train-connection-crowd small{margin-top:0}
+  .train-connection-change{margin-left:20px}
   .train-forecast-head{align-items:flex-start;flex-direction:column;gap:7px}
   .train-forecast-meta{text-align:left}
   .train-forecast-reasons li{font-size:10.5px}

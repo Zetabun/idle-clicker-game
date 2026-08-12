@@ -41,7 +41,7 @@ const REFRESH_MS=60000;
 const DETAILED_ROWS=9;
 const PLAIN_ROWS=20;
 
-const state={crs:'',date:'',services:[],messages:[],index:null,updatedAt:0,status:'idle',error:'',seq:0,timer:null};
+const state={crs:'',date:'',services:[],messages:[],index:null,updatedAt:0,status:'idle',error:'',seq:0,timer:null,includeConnections:false,connectionTargets:[]};
 
 function londonStamp(date){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date||new Date());const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${map.year}-${map.month}-${map.day}`;}
 function isToday(date){return String(date||'')===londonStamp();}
@@ -158,8 +158,10 @@ function extraServices(matchedIndexes,toCrs){
     .filter(({service,index})=>!taken.has(index)&&!!departureOf(service)&&servesDestination(service,toCrs));
 }
 
-async function requestBoard(crs,signal){
-  const detailed=`${PROVIDER_BASE}/departures/${encodeURIComponent(crs)}/${DETAILED_ROWS}?expand=true`;
+async function requestBoard(crs,signal,{target=''}={}){
+  const to=String(target||'').trim().toUpperCase();
+  const route=to?`/departures/${encodeURIComponent(crs)}/to/${encodeURIComponent(to)}`:`/departures/${encodeURIComponent(crs)}`;
+  const detailed=`${PROVIDER_BASE}${route}/${DETAILED_ROWS}?expand=true`;
   try{
     const response=await fetch(detailed,{signal,headers:{Accept:'application/json'}});
     if(response&&response.ok)return response.json();
@@ -167,22 +169,40 @@ async function requestBoard(crs,signal){
   /* Same fallback kerbside-trains.js uses: the detailed board caps at 9
      rows and some providers do not implement expand at all. A plain
      20-row board still carries times, platforms and cancellations. */
-  const plain=await fetch(`${PROVIDER_BASE}/departures/${encodeURIComponent(crs)}/${PLAIN_ROWS}`,{signal,headers:{Accept:'application/json'}});
-  if(!plain||!plain.ok)throw new Error(`Departure board returned ${plain?plain.status:'no response'}`);
-  return plain.json();
+  const plain=`${PROVIDER_BASE}${route}/${PLAIN_ROWS}`;
+  const response=await fetch(plain,{signal,headers:{Accept:'application/json'}});
+  if(!response||!response.ok)throw new Error(`Departure board returned ${response?response.status:'no response'}`);
+  return response.json();
+}
+function serviceIdentity(service){return ridOf(service)||uidOf(service)||(headcodeOf(service)&&departureOf(service)?`${headcodeOf(service)}|${departureOf(service)}`:'')||`${departureOf(service)}|${operatorOf(service)}|${destinationCrsOf(service)}`;}
+function mergeBoards(primary,origin){
+  const services=[],seen=new Set();
+  for(const board of [primary,origin])for(const service of (board&&Array.isArray(board.trainServices)?board.trainServices:[])){
+    const key=serviceIdentity(service);if(key&&seen.has(key))continue;if(key)seen.add(key);services.push(service);
+  }
+  const messages=[];for(const board of [primary,origin])for(const message of (board&&Array.isArray(board.nrccMessages)?board.nrccMessages:[])){
+    const key=JSON.stringify(message);if(!messages.some(item=>JSON.stringify(item)===key))messages.push(message);
+  }
+  return {...(primary||origin||{}),trainServices:services,nrccMessages:messages};
 }
 
-async function refresh({crs,date,force=false}={}){
+async function refresh({crs,date,force=false,connectionTargets=state.connectionTargets}={}){
   const code=upper(crs);
   if(!code||!isToday(date)){clear();return false;}
-  const fresh=state.crs===code&&state.status==='ready'&&Date.now()-state.updatedAt<FRESH_MS;
+  const targets=[...new Set((Array.isArray(connectionTargets)?connectionTargets:[]).map(value=>String(value||'').trim().toUpperCase()).filter(value=>/^[A-Z0-9]{3}$/.test(value)&&value!==code))].slice(0,4);
+  const targetKey=targets.join(',');
+  const wantsConnections=targets.length>0;
+  const fresh=state.crs===code&&state.status==='ready'&&state.connectionTargets.join(',')===targetKey&&Date.now()-state.updatedAt<FRESH_MS;
   if(fresh&&!force)return true;
   const seq=++state.seq;
   state.crs=code;
   state.date=String(date);
+  state.includeConnections=wantsConnections;
+  state.connectionTargets=targets;
   state.status='loading';
   try{
-    const json=await requestBoard(code);
+    const boards=await Promise.all([requestBoard(code),...targets.map(target=>requestBoard(code,undefined,{target}))]);
+    const json=boards.slice(1).reduce((merged,board)=>mergeBoards(merged,board),boards[0]||{});
     if(seq!==state.seq)return false;
     state.services=Array.isArray(json&&json.trainServices)?json.trainServices:[];
     /* Darwin's NRCC messages are the network's own words about disruption -
@@ -212,7 +232,7 @@ function messages(){return state.status==='ready'&&Array.isArray(state.messages)
 function clear(){
   if(state.status==='idle'&&!state.services.length)return;
   state.seq++;
-  state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';
+  state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';state.includeConnections=false;state.connectionTargets=[];
 }
 
 function start(){
@@ -221,7 +241,7 @@ function start(){
     if(document.hidden)return;
     const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
     if(!timetable||!timetable.state||timetable.state.mode!=='today')return;
-    refresh({crs:state.crs,date:state.date,force:true});
+    refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets});
   },REFRESH_MS);
 }
 function stop(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
@@ -229,11 +249,11 @@ function stop(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden)return;
   const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
-  if(timetable&&timetable.state&&timetable.state.mode==='today'&&state.crs)refresh({crs:state.crs,date:state.date,force:true});
+  if(timetable&&timetable.state&&timetable.state.mode==='today'&&state.crs)refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets});
 });
 
 window.__KERBSIDE_TRAIN_OVERLAY__={
   state,refresh,clear,start,stop,evidenceFor,extraServices,servesDestination,messages,
-  flattenCallingPoints,buildIndex,matchEntry,isToday
+  flattenCallingPoints,buildIndex,matchEntry,mergeBoards,isToday
 };
 })();
