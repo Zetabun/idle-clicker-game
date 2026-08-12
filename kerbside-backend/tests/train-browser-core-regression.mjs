@@ -39,6 +39,7 @@ const locations={
   GLO:['Gloucester','GLOSTER','']
 };
 function rowsFor(date){return [
+  [`rid-completed-${date}`,`uid-completed-${date}`,'1A00','XC',date,[['BHM','','07:45','6',0],['BRI','09:00','','2',0]]],
   [`rid-forward-${date}`,`uid-forward-${date}`,'1A01','XC',date,[['BHM','','10:42','7',0],['BRI','12:07','','3',0]]],
   [`rid-reverse-${date}`,`uid-reverse-${date}`,'1A02','XC',date,[['BRI','','10:50','3',0],['BHM','12:15','','7',0]]],
   [`rid-change-a-${date}`,`uid-change-a-${date}`,'1C10','XC',date,[['BHM','','10:05','8',0],['CNM','10:45','','2',0]]],
@@ -165,16 +166,22 @@ try{
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const diagnostics={pageErrors:[],railRequests:[]};
   page.on('pageerror',error=>diagnostics.pageErrors.push(String(error&&error.stack||error)));
-  await page.addInitScript(today=>{
+  const FIXED_NOW=`${TODAY}T08:30:00Z`;
+  await page.addInitScript(({today,fixedNow})=>{
+    const RealDate=Date,fixed=RealDate.parse(fixedNow);
+    function FixedDate(...args){if(new.target)return new RealDate(...(args.length?args:[fixed]));return new RealDate(fixed).toString();}
+    FixedDate.now=()=>fixed;FixedDate.parse=RealDate.parse;FixedDate.UTC=RealDate.UTC;FixedDate.prototype=RealDate.prototype;window.Date=FixedDate;
     localStorage.setItem('kerbside.rail.travel-date.v1',today);
     localStorage.setItem('kerbside.rail.depart-after.v1','09:00');
     localStorage.removeItem('kerbside.rail.route.v1');
-  },TODAY);
+  },{today:TODAY,fixedNow:FIXED_NOW});
   await mockExternal(page,diagnostics);
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#transportTrain');
   await page.click('#transportTrain');
   await page.waitForSelector('#trainPlanner');
+  const railNow=await page.evaluate(()=>window.__KERBSIDE_TRAIN_LIVE_WINDOW__.currentRailTime());
+  assert.equal(await page.locator('#trainDepartAfter').inputValue(),railNow,'Today should clamp a stale saved departure time to the current UK railway minute');
 
   const visibleFind=await page.locator('.train-planner button').evaluateAll(buttons=>buttons.filter(button=>{
     const style=getComputedStyle(button),box=button.getBoundingClientRect();
@@ -185,6 +192,7 @@ try{
   await findJourney(page,'BHM','BRI');
   assert.equal((await page.locator('#trainStationName').textContent()).trim(),'Birmingham New Street → Bristol Temple Meads');
   assert.equal(await page.locator('#trainScheduledBoard .train-scheduled-service').count(),1);
+  assert.equal(await page.locator('#trainScheduledBoard').getByText('07:45',{exact:true}).count(),0,'a completed train must not be shown on Today even when localStorage contains an old departure preference');
   assert.match(await page.locator('#trainScheduledBoard .train-scheduled-service').first().textContent(),/10:42/);
   assert.match(await page.locator('#trainScheduledBoard .train-scheduled-service').first().textContent(),/Bristol Temple Meads/);
   assert.equal(await page.locator('#trainScheduledBoard .train-service-date').count(),0,'today must not repeat the date on each row');
@@ -289,6 +297,7 @@ try{
   await page.locator('#trainTravelDate').fill(TOMORROW);
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode==='planning');
+  assert.equal(await page.locator('#trainDepartAfter').inputValue(),'09:00','future dates should restore the traveller\'s saved departure preference');
   await page.click('#trainJourneyGo');
   await page.waitForFunction(()=>/Advance journey ready/i.test(document.getElementById('trainPlannerMessage')?.textContent||''));
   await page.waitForFunction(()=>document.querySelectorAll('#trainScheduledBoard .train-scheduled-service').length===1);

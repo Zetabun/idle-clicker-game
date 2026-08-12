@@ -28,7 +28,15 @@ const dataState={manifestPromise:null,manifestCheckedAt:0,locationsPromise:null,
 
 function dateApi(){return window.__KERBSIDE_TRAIN_DATE__||null;}
 function selectedDate(){return dateApi()&&dateApi().state&&dateApi().state.date||'';}
-function currentTime(){return $('trainDepartAfter')?.value||'00:00';}
+function railNowTime(){
+  const live=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;if(live&&typeof live.currentRailTime==='function')return live.currentRailTime();
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));let hour=Number(map.hour)||0;if(hour===24)hour=0;return `${String(hour).padStart(2,'0')}:${String(Number(map.minute)||0).padStart(2,'0')}`;
+}
+function effectiveDepartAfter(value=$('trainDepartAfter')?.value||'00:00'){
+  const selected=String(value||'00:00'),api=dateApi();if(!api||typeof api.isToday!=='function'||!api.isToday())return selected;
+  const now=railNowTime(),selectedMinute=parseMinutes(selected),nowMinute=parseMinutes(now);return selectedMinute!=null&&nowMinute!=null&&selectedMinute>=nowMinute?selected:now;
+}
+function currentTime(){return effectiveDepartAfter();}
 function liveWindowInfo(){const live=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;return live&&typeof live.liveWindowFor==='function'?live.liveWindowFor(currentTime()):null;}
 function liveWindowPhase(){const api=dateApi();if(!api||typeof api.isToday!=='function'||!api.isToday())return'advance';const info=liveWindowInfo();if(!info)return'pending';return info.mode==='planning'?'scheduled-only':'live-eligible';}
 function liveOverlayEligible(){return liveWindowPhase()==='live-eligible';}
@@ -578,7 +586,7 @@ function updateRecoveryChoice(service,overlay,toCrs,interchangeArrival){
 }
 function mergeOverlay(){
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
-  if(!overlay||state.mode!=='today'||!liveOverlayEligible()||!state.services.length)return false;
+  if(!overlay||state.mode!=='today'||!liveOverlayEligible())return false;
   if(overlay.state.status!=='ready'||!overlayMatchesRoute(overlay))return false;
   const r=route(),toCrs=r.to&&r.to.crs||'';
   const matched=[];let changed=false;
@@ -913,5 +921,5 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,effectiveDepartAfter,railNowTime,provider:timetableProvider};
 })();

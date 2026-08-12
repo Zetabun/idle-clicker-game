@@ -11,7 +11,7 @@ const REQUEST_TIMEOUT_MS=10000;
 const SEARCH_DELAY_MS=240;
 const previousFetch=window.fetch.bind(window);
 const providerState={active:PROVIDERS[0],lastFailure:'',fallbacks:0};
-let fromTimer=null,toTimer=null,fromAbort=null,toAbort=null;
+let fromTimer=null,toTimer=null,fromAbort=null,toAbort=null,timeFloorTimer=null;
 
 function requestUrl(input){
   try{
@@ -269,6 +269,19 @@ function dispatch(){
 function normalise(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ')}
 function dateApi(){return window.__KERBSIDE_TRAIN_DATE__||null}
 function isFutureJourney(){const api=dateApi();return !!(api&&typeof api.isToday==='function'&&!api.isToday())}
+function timeMinutes(value){const match=String(value||'').match(/^(\d{1,2}):(\d{2})$/);if(!match)return null;const h=Number(match[1]),m=Number(match[2]);return h>=0&&h<24&&m>=0&&m<60?h*60+m:null;}
+function fallbackRailNow(){
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  let hour=Number(map.hour)||0;if(hour===24)hour=0;return `${String(hour).padStart(2,'0')}:${String(Number(map.minute)||0).padStart(2,'0')}`;
+}
+function railNow(){const live=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;return live&&typeof live.currentRailTime==='function'?live.currentRailTime():fallbackRailNow();}
+function syncDepartAfterForDate(){
+  const input=$('trainDepartAfter');if(!input)return'';
+  if(isFutureJourney()){const preferred=storedTime();if(input.value!==preferred)input.value=preferred;return input.value;}
+  const now=railNow(),chosen=input.value||storedTime(),nowMinute=timeMinutes(now),chosenMinute=timeMinutes(chosen),next=chosenMinute!=null&&nowMinute!=null&&chosenMinute>=nowMinute?chosen:now;
+  if(input.value!==next)input.value=next;
+  return input.value;
+}
 function travelDateLabel(){
   const api=dateApi(),value=api&&api.state&&api.state.date;
   if(!value)return 'the selected date';
@@ -589,7 +602,7 @@ function buildWhenCard(){
 
   const time=document.createElement('label');
   time.className='train-planner-time';
-  time.innerHTML='<span>Depart after</span><input id="trainDepartAfter" type="time" step="900">';
+  time.innerHTML='<span>Depart after</span><input id="trainDepartAfter" type="time" step="60">';
   grid.appendChild(time);
 
   card.appendChild(grid);
@@ -656,13 +669,20 @@ function install(){
   const departAfter=$('trainDepartAfter');
   if(departAfter){
     departAfter.value=storedTime();
-    departAfter.addEventListener('change',()=>{saveTime(departAfter.value);dispatch();});
+    syncDepartAfterForDate();
+    departAfter.addEventListener('change',()=>{saveTime(departAfter.value);syncDepartAfterForDate();dispatch();});
   }
 
   document.addEventListener('kerbside:train-date-change',()=>{
     planner.dataset.mode=isFutureJourney()?'future':'live';
+    syncDepartAfterForDate();
     plannerMessage('');
   });
+  if(!timeFloorTimer)timeFloorTimer=setInterval(()=>{
+    if(isFutureJourney())return;
+    const before=$('trainDepartAfter')?.value||'',after=syncDepartAfterForDate();
+    if(after&&after!==before)dispatch();
+  },30*1000);
 
   setTimeout(()=>{
     watchForDateRow();
@@ -673,5 +693,5 @@ function install(){
 }
 function init(){if(!install())setTimeout(init,0)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,syncRouteOrigin,refreshJourneyBoard,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
+window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,syncRouteOrigin,refreshJourneyBoard,syncDepartAfterForDate,railNow,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
 })();

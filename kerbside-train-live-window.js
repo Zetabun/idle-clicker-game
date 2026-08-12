@@ -41,6 +41,7 @@ function hhmm(minutes){
   const safe=Math.max(0,Math.min(1439,Math.round(Number(minutes)||0)));
   return `${String(Math.floor(safe/60)).padStart(2,'0')}:${String(safe%60).padStart(2,'0')}`;
 }
+function currentRailTime(date=new Date()){return hhmm(londonMinutes(date));}
 function defaultDepartAfter(date=new Date()){
   const now=londonMinutes(date);
   const rounded=Math.min(1439,Math.ceil(now/15)*15);
@@ -446,7 +447,7 @@ function init(attempt=0){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
 window.__KERBSIDE_TRAIN_LIVE_WINDOW__={
-  state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,journeyBoardActive,
+  state,install,liveWindowFor,currentRailTime,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,journeyBoardActive,
   isRailStation,filterSuggestionList,clearNonRailDestination,providerOrder,officialEnabled,officialBoardUrl,
   OFFICIAL,OFFICIAL_ATTEMPT_MS,PROVIDER_ATTEMPT_MS,MAX_LIVE_HORIZON
 };
