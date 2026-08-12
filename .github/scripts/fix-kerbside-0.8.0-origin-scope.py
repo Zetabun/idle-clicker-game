@@ -160,5 +160,18 @@ replace_once(
     "assert.equal(diagnostics.railRequests.some(value=>value.includes('kerbsideScope')),false,'private live-scope marker must be stripped before the provider request');",
     "assert.equal(diagnostics.railRequests.some(value=>value.includes('kerbsideScope')),false,'connection evidence must use normal provider URLs only');"
 )
+# The live overlay can settle before Playwright reads the initial connection
+# card. Do not require the transient pre-live '1 change' / '15m change' labels;
+# the test below still requires the stronger final at-risk state and 7m live
+# transfer. Scheduled 15m/10m-buffer construction is covered deterministically.
+replace_once(
+    browser,
+    """  assert.match(await connection.textContent(),/1 change/);
+  assert.match(await connection.textContent(),/Cheltenham Spa/);
+  assert.match(await connection.textContent(),/15m change/);
+""",
+    """  assert.match(await connection.textContent(),/Cheltenham Spa/);
+"""
+)
 
-print('Replaced Kerbside 0.8.0 origin-scoped live board with precise interchange-filtered live boards.')
+print('Replaced Kerbside 0.8.0 origin-scoped live board with precise interchange-filtered live boards and race-stable browser assertions.')
