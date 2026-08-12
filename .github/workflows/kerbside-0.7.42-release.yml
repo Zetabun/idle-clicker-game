@@ -1,0 +1,68 @@
+name: Kerbside 0.7.42 release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/kerbside-0.7.42-release.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-0.7.42-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply release patch
+        run: python3 .github/scripts/apply-kerbside-0.7.42.py
+
+      - name: Validate rail status semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check kerbside-status.js
+          node --check kerbside-train-live-window.js
+          node --test kerbside-backend/test/status-switchboard.test.mjs
+          node --test kerbside-backend/test/train-timetable-provider.test.js
+          node --check kerbside-backend/tests/train-provider-timeout-regression.mjs
+          node --check kerbside-backend/tests/train-live-window-regression.mjs
+          git diff --check
+          grep -Fx '0.7.42' VERSION
+          grep -F 'kerbside-status.js?v=0.7.42' bus.html
+          grep -F "liveRailProbeState" kerbside-status.js
+
+      - name: Publish Kerbside 0.7.42
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add VERSION bus.html kerbside-status.js kerbside-backend/test/status-switchboard.test.mjs
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Kerbside 0.7.42: soften retryable Darwin status failures'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo 'Failed to publish after three rebased attempts.' >&2
+          exit 1
