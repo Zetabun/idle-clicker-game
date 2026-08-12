@@ -1,0 +1,181 @@
+name: Kerbside 0.8.1 quality and calibration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/kerbside-0.8.1-quality-calibration.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-0.8.1-quality-calibration
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BODS_KEY: ${{ secrets.BODS_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Build official DfT 2025 time-band calibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4dfa24d44672cf1b4644/rai0202.ods' -o /tmp/rai0202.ods
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4da7c7c34404041b463b/rai0203.ods' -o /tmp/rai0203.ods
+          python3 .github/scripts/build-dft-rail-timebands.py /tmp/rai0202.ods /tmp/rai0203.ods kerbside-rail-timebands.js
+          node --check kerbside-rail-timebands.js
+          grep -Fq 'const YEAR=2025;' kerbside-rail-timebands.js
+          grep -Fq 'DfT RAI0202/RAI0203' kerbside-rail-timebands.js
+
+      - name: Apply Kerbside 0.8.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/apply-kerbside-0.8.1-final.py
+          python3 .github/scripts/sync-version.py
+          python3 .github/scripts/sync-version.py --check
+          grep -Fx '0.8.1' VERSION
+          grep -Fq 'kerbside-rail-timebands.js?v=0.8.1' bus.html
+
+      - name: Install validation dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm install --prefix kerbside-rail-worker --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+
+      - name: Validate deterministic engines and workers
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check kerbside-trains.js
+          node --check kerbside-train-timetable.js
+          node --check kerbside-train-forecast-v3.js
+          node --check kerbside-rail-calibration.js
+          node --check kerbside-rail-timebands.js
+          node --check kerbside-status.js
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+          npm run check --prefix kerbside-rail-worker
+          npm test --prefix kerbside-rail-worker
+          node --test kerbside-backend/test/train-dft-timebands.test.mjs
+          node --test kerbside-backend/test/train-forecast-accuracy.test.mjs
+          node --test kerbside-backend/test/train-timetable-provider.test.js
+          node --test kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs
+          node --test kerbside-backend/test/status-switchboard.test.mjs
+          git diff --check
+
+      - name: Full WebKit system gate
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: webkit
+        run: |
+          set -euo pipefail
+          npm run test:full --prefix kerbside-backend
+
+      - name: Full Chromium system gate
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: chromium
+        run: |
+          set -euo pipefail
+          npm run test:full --prefix kerbside-backend
+
+      - name: Publish Kerbside 0.8.1 to main
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            VERSION bus.html kerbside-status.js kerbside-trains.js \
+            kerbside-train-timetable.js kerbside-train-forecast-v3.js \
+            kerbside-rail-calibration.js kerbside-rail-timebands.js \
+            kerbside-backend/src/worker.js kerbside-backend/package.json \
+            kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/test/train-dft-timebands.test.mjs \
+            kerbside-backend/test/train-forecast-accuracy.test.mjs \
+            kerbside-backend/test/train-timetable-provider.test.js \
+            kerbside-backend/test/status-switchboard.test.mjs
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Kerbside 0.8.1: improve journey quality and forecast calibration'
+          release_sha="$(git rev-parse HEAD)"
+          echo "release_sha=$release_sha" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              echo "Published $release_sha"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo 'Failed to publish after three rebased attempts.' >&2
+          exit 1
+
+      - name: Deploy version-aligned bus Worker
+        shell: bash
+        working-directory: kerbside-backend
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN BODS_KEY; do
+            if [[ -z "${!name:-}" ]]; then echo "::error::Required secret $name is missing."; exit 1; fi
+          done
+          npx wrangler deploy
+          printf '%s' "$BODS_KEY" | npx wrangler secret put BODS_KEY
+          health="$(mktemp)"; matched="$(mktemp)"; trap 'rm -f "$health" "$matched"' EXIT
+          ready=false
+          for attempt in $(seq 1 8); do
+            if curl -fsSL --connect-timeout 10 --max-time 25 "https://kerbside-bus.adambullas.workers.dev/health?release=${GITHUB_RUN_ID}-${attempt}" -o "$health"; then
+              if jq -e '.ok==true and .version=="0.8.1" and .bods==true' "$health" >/dev/null; then ready=true; break; fi
+            fi
+            sleep 4
+          done
+          test "$ready" = true
+          jq -c '{ok,service,version,bods,matchedGtfsRt}' "$health"
+          curl -fsSL --retry 3 --connect-timeout 10 --max-time 25 \
+            "https://kerbside-bus.adambullas.workers.dev/matched?bbox=-2.15000,52.45000,-2.05000,52.55000&release=${GITHUB_RUN_ID}" -o "$matched"
+          jq -e '.vehicles|type=="array"' "$matched" >/dev/null
+
+      - name: Verify deployed GitHub Pages build
+        shell: bash
+        run: |
+          set -euo pipefail
+          version_url='https://zetabun.github.io/idle-clicker-game/VERSION'
+          app_url='https://zetabun.github.io/idle-clicker-game/bus.html'
+          timetable_url='https://zetabun.github.io/idle-clicker-game/kerbside-rail-timebands.js'
+          ready=false
+          for attempt in $(seq 1 36); do
+            value="$(curl -fsSL --connect-timeout 10 --max-time 20 -H 'Cache-Control: no-cache' "$version_url?release=${GITHUB_RUN_ID}-${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
+            if [[ "$value" == '0.8.1' ]]; then ready=true; break; fi
+            echo "Pages still reports ${value:-unavailable}; waiting."
+            sleep 5
+          done
+          test "$ready" = true
+          curl -fsSL -H 'Cache-Control: no-cache' "$app_url?release=${GITHUB_RUN_ID}" -o /tmp/kerbside-app.html
+          grep -Fq "const APP_VERSION = '0.8.1';" /tmp/kerbside-app.html
+          grep -Fq 'kerbside-rail-timebands.js?v=0.8.1' /tmp/kerbside-app.html
+          curl -fsSL -H 'Cache-Control: no-cache' "$timetable_url?release=${GITHUB_RUN_ID}" -o /tmp/kerbside-timebands.js
+          grep -Fq 'const YEAR=2025;' /tmp/kerbside-timebands.js
+          echo 'Kerbside 0.8.1 production app, DfT calibration and bus Worker are aligned.'
