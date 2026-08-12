@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..','..');
 const css=await fs.readFile(path.join(root,'kerbside-trains.css'),'utf8');
-const forecast=await fs.readFile(path.join(root,'kerbside-train-forecast-v3.js'),'utf8');
+const forecast=await fs.readFile(path.join(root,'kerbside-train-forecast-v4.js'),'utf8');
 
 test('measured baseline source is not constrained to forecast-dot geometry',()=>{
   assert.match(forecast,/train-forecast-calibration[^\n]+<i>/,'calibration source should still render inside its semantic source element');

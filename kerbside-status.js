@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='0.8.3';
+const VERSION='0.8.4';
 const REFRESH_CACHE_MS=5*60*1000;
 const REQUEST_TIMEOUT_MS=7000;
 const HISTORY_KEY='kerbside.status.history.v1';
@@ -179,11 +179,11 @@ const SOURCE_META=[
   {id:'huxley2',category:'Rail data',name:'Huxley2 fallback',description:'Primary community fallback when the official rail Worker cannot answer.',critical:false},
   {id:'huxley',category:'Rail data',name:'Huxley fallback',description:'Secondary community fallback for live rail departures.',critical:false},
 
-  {id:'gov-holidays',category:'Prediction & events',name:'GOV.UK bank holidays',description:'Calendar input to Forecast v3.',critical:false},
+  {id:'gov-holidays',category:'Prediction & events',name:'GOV.UK bank holidays',description:'Calendar input to Forecast v4.',critical:false},
   {id:'wikidata-events',category:'Prediction & events',name:'Wikidata events',description:'CC0 event source used for destination and origin demand pressure.',critical:false},
   {id:'openfootball',category:'Prediction & events',name:'openfootball fixtures',description:'Public-domain football fixtures used for match-day demand pressure.',critical:false},
-  {id:'dft-calibration',category:'Prediction & events',name:'DfT rail crowding calibration',description:'Bundled measured 2025 rail crowding aggregates used by Forecast v3.',critical:false},
-  {id:'forecast-v3',category:'Prediction & events',name:'Forecast v3 engine',description:'Kerbside crowding model combining timetable, calendar, event and live evidence.',critical:true},
+  {id:'dft-calibration',category:'Prediction & events',name:'DfT rail crowding calibration',description:'Bundled measured 2025 rail crowding aggregates used by Forecast v4.',critical:false},
+  {id:'forecast-v3',category:'Prediction & events',name:'Forecast v4 engine',description:'Kerbside crowding model combining timetable, calendar, event and live evidence.',critical:true},
 
   {id:'photon',category:'Maps & support',name:'Photon geocoder',description:'Address/place search provided by Komoot Photon.',critical:false},
   {id:'overpass',category:'Maps & support',name:'OpenStreetMap Overpass pool',description:'Four-provider fallback pool for stop and route-map enrichment.',critical:false},
@@ -220,7 +220,7 @@ function sourceDefinitions(){
     {...byId['wikidata-events'],probe:async source=>{const query=encodeURIComponent('ASK { <http://www.wikidata.org/entity/Q42> ?p ?o }');const r=await request(`${WIKIDATA}?query=${query}&format=json`,{type:'json',headers:{Accept:'application/sparql-results+json,application/json'}});const valid=r.response.ok&&r.body&&typeof r.body.boolean==='boolean';return result(source,valid?'healthy':'down',valid?'Wikidata SPARQL endpoint returned a valid query result.':`Wikidata returned ${r.response.status||'invalid data'}.`,r.latency);}},
     {...byId['openfootball'],probe:async source=>{const r=await request(`${OPENFOOTBALL}?status=${Date.now()}`,{type:'json'});const valid=r.response.ok&&r.body&&typeof r.body==='object';return result(source,valid?'healthy':'down',valid?'Fixture repository is reachable.':`Fixture source returned ${r.response.status||'invalid data'}.`,r.latency);}},
     {...byId['dft-calibration'],probe:async source=>{const api=window.__KERBSIDE_CALIBRATION__;const ok=!!(api&&typeof api.demandShape==='function'&&typeof api.serviceClassSignal==='function');return result(source,ok?'healthy':'down',ok?`Bundled calibration loaded${api.source?` · ${api.source}`:''}.`:'DfT calibration module is not loaded.');}},
-    {...byId['forecast-v3'],probe:async source=>{const api=window.__KERBSIDE_FORECAST_V3__;const ok=!!(api&&typeof api.forecast==='function');return result(source,ok?'healthy':'down',ok?`Forecast v${api.version||3} engine is loaded.`:'Forecast v3 engine is not loaded.');}},
+    {...byId['forecast-v3'],probe:async source=>{const api=window.__KERBSIDE_FORECAST_V3__;const ok=!!(api&&typeof api.forecast==='function');return result(source,ok?'healthy':'down',ok?`Forecast v${api.version||3} engine is loaded.`:'Forecast v4 engine is not loaded.');}},
 
     {...byId['photon'],probe:async source=>{const r=await request('https://photon.komoot.io/api/?q=Birmingham&limit=1&lang=en&countrycode=GB&bbox=-9,49,3,61',{type:'json',headers:{Accept:'application/json'}});const valid=r.response.ok&&r.body&&Array.isArray(r.body.features);return result(source,valid?'healthy':'down',valid?'Geocoder returned a valid result.':`Photon returned ${r.response.status||'invalid data'}.`,r.latency);}},
     {...byId['overpass'],probe:async source=>{const query=encodeURIComponent('[out:json][timeout:5];node(1);out;');const attempts=await Promise.all(OVERPASS.map(async endpoint=>{try{const r=await request(`${endpoint}?data=${query}`,{type:'json',timeout:6000});return r.response.ok;}catch(error){return false;}}));const up=attempts.filter(Boolean).length;return result(source,up>=2?'healthy':up===1?'degraded':'down',`${up}/${OVERPASS.length} Overpass endpoints reachable.`);}},

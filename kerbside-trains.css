@@ -363,3 +363,8 @@ body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 
   body[data-transport="train"] #topbar .brand{margin-right:135px}
   .train-provider-note{display:none}
 }
+
+/* Forecast v4 empirical probability readout. */
+.train-forecast-probabilities{display:grid;gap:3px;margin-top:9px;padding:8px 9px;border:1px solid var(--rule);border-radius:7px;background:var(--ink-2)}
+.train-forecast-probabilities>span{font-family:'Martian Mono',ui-monospace,monospace;font-size:8px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--text-mute)}
+.train-forecast-probabilities>b{font-size:10px;line-height:1.45;color:var(--text-dim);font-weight:600}

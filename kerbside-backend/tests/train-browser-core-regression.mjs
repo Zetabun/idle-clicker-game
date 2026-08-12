@@ -193,7 +193,7 @@ try{
   await page.locator('#trainScheduledBoard [data-scheduled-toggle]').first().click();
   const detail=page.locator('#trainScheduledBoard .train-service-detail').first();
   await detail.waitFor({state:'visible'});
-  assert.match(await detail.textContent(),/Forecast v3|Why this forecast/i);
+  assert.match(await detail.textContent(),/Forecast v4|Why this forecast/i);
 
   // Swap and swap back through the visible mobile control. The route must stay
   // internally complete after each transition, which protects the 0.7.43 fix.

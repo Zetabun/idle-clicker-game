@@ -122,12 +122,12 @@ async function waitForServices(page, diagnostics){
   }
 }
 
-async function assertCrowdingModelV2(page){
+async function assertCrowdingBaselineModel(page){
   const result = await page.evaluate(()=>{
     const api = window.__KERBSIDE_TRAINS__;
     const referenceDate = new Date('2026-08-10T07:30:00Z');
     const station = {name:'Bristol Temple Meads',crs:'BRI'};
-    api.state.crowdingModel = {version:2,profiles:{},seen:{},feedbackSeen:{}};
+    api.state.crowdingModel = {version:3,profiles:{},patternProfiles:{},seen:{},feedbackSeen:{}};
 
     const pressured = [
       {
@@ -180,7 +180,7 @@ async function assertCrowdingModelV2(page){
     return {modelVersion:api.modelVersion,pressuredForecast,quietForecast,learnedForecast};
   });
 
-  assert.equal(result.modelVersion,2);
+  assert.equal(result.modelVersion,3);
   assert.equal(result.pressuredForecast.level,'very-busy');
   assert.equal(result.quietForecast.level,'quiet');
   assert.ok(result.pressuredForecast.score > result.quietForecast.score + 2.5,
@@ -216,8 +216,8 @@ async function runDesktop(browser){
   const firstServiceText = await page.locator('.train-service').first().textContent();
   assert.match(firstServiceText,/Cardiff Central/);
   assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);
-  assert.match(firstServiceText,/forecast v3/i);
-  assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V3__?.version),3);
+  assert.match(firstServiceText,/forecast v4/i);
+  assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V4__?.version),4);
   const providerNote = await page.locator('.train-provider-note').textContent();
   assert.match(providerNote,/official National Rail Darwin data via Rail Data Marketplace/i);
   assert.match(providerNote,/Huxley community services as a resilience fallback/i);
@@ -235,10 +235,11 @@ async function runDesktop(browser){
   await feedbackButton.click();
   await page.waitForFunction(()=>document.querySelector('.train-service-detail')?.textContent?.includes('Saved locally: Busy'));
   const feedbackStore = await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.crowding.v2') || '{}'));
-  assert.equal(feedbackStore.version,2);
+  assert.equal(feedbackStore.version,3);
+  assert.equal(typeof feedbackStore.patternProfiles,'object');
   assert.equal(Object.keys(feedbackStore.feedbackSeen || {}).length,1);
 
-  await assertCrowdingModelV2(page);
+  await assertCrowdingBaselineModel(page);
 
   await page.click('#transportBus');
   assert.equal(await page.locator('body').getAttribute('data-transport'),'bus');

@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..','..');
 const trainsSource=await fs.readFile(path.join(root,'kerbside-trains.js'),'utf8');
-const forecastSource=await fs.readFile(path.join(root,'kerbside-train-forecast-v3.js'),'utf8');
+const forecastSource=await fs.readFile(path.join(root,'kerbside-train-forecast-v4.js'),'utf8');
 const eventsSource=await fs.readFile(path.join(root,'kerbside-train-events.js'),'utf8');
 
 class FixedDate extends Date{
@@ -45,7 +45,7 @@ function service(overrides={}){
   return {std:'10:00',etd:'',operator:'Test Rail',operatorCode:'ZZ',length:0,isCancelled:false,scheduledOnly:true,origin:[{locationName:'Earlier Town',crs:'AAA'}],destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}],...overrides};
 }
 
-test('Forecast v3 and v2 share the same two-hour profile key and real-terminus identity',()=>{
+test('Forecast v4 and v2 share the same two-hour profile key and real-terminus identity',()=>{
   const station={name:'Birmingham New Street',crs:'BHM'};
   const key='bhm|xc|ply|weekday|5';
   const model={version:2,profiles:{[key]:{samples:5,lengthSamples:0,avgLength:0,headwaySamples:0,feedbackCount:0,updatedAt:FixedDate.now()}},seen:{},feedbackSeen:{}};
@@ -70,7 +70,7 @@ test('history increases evidence without increasing passenger-demand score by it
   assert.equal(learned.v3.historicalSignal(learned.trains,row,new FixedDate('2026-08-12T12:00:00Z'),station).amount,0);
 });
 
-test('passenger feedback stored in the legacy profile cannot leak into Forecast v3',()=>{
+test('passenger feedback stored in the legacy profile cannot leak into Forecast v4',()=>{
   const station={name:'Test Station',crs:'ZZZ'};
   const row=service({origin:[{locationName:'Test Station',crs:'ZZZ'}]});
   const none=loadPrediction({station,model:{version:2,profiles:{},seen:{},feedbackSeen:{}}});
@@ -128,7 +128,7 @@ test('Friday and weekend demand are not added a second time by the v3 calendar l
   assert.equal(saturday.amount,0);
 });
 
-test('Forecast v3 explicitly requests the de-duplicated baseline',()=>{
+test('Forecast v4 explicitly requests the de-duplicated baseline',()=>{
   const station={name:'Test Station',crs:'ZZZ'};
   const {trains,v3}=loadPrediction({station});
   let seen=null;
@@ -181,7 +181,7 @@ test('Wikidata event query includes connection interchange cities',()=>{
   assert.match(query,/birmingham/);assert.match(query,/gloucester/);assert.match(query,/cheltenham/);
 });
 
-test('Forecast v3 forwards the exact leg geography to event pressure',()=>{
+test('Forecast v4 forwards the exact leg geography to event pressure',()=>{
   const station={name:'Cheltenham Spa',crs:'CNM'},loaded=loadPrediction({station});let seen=null;
   loaded.context.window.__KERBSIDE_EVENTS__={state:{date:'2026-08-12'},pressureForJourney(row,journey){seen=journey;return {amount:.5,reasons:['interchange event pressure']};}};
   const row=service({std:'11:00',arrival:'11:32',origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}]});

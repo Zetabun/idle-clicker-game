@@ -323,9 +323,54 @@ function contextNote(station,minute,date){
 }
 
 
+function v4Data(){return window.__KERBSIDE_RAIL_DEMAND_V4__||null;}
+function stationUsageRecord(station){const data=v4Data();return data&&typeof data.station==='function'?data.station(crsOf(station)):null;}
+function stationUsageSignal(station){
+  const row=stationUsageRecord(station);if(!row)return {amount:0,reasons:[],measured:false};
+  const percentile=Number(row.percentile),usage=Number(row.usage)||0,interchanges=Number(row.interchanges)||0;
+  let amount=Number.isFinite(percentile)?clamp((percentile-.5)*.52,-.12,.32):0;
+  const interchangeShare=usage>0?interchanges/usage:0;if(interchangeShare>=.18)amount+=.08;else if(interchangeShare>=.08)amount+=.04;
+  const reasons=[];if(percentile>=.95)reasons.push(`${row.name} is in the busiest 5% of GB stations in ORR 2024-25 usage`);else if(percentile>=.8)reasons.push(`${row.name} has high measured ORR station usage`);else if(percentile<=.2)reasons.push(`${row.name} has relatively low measured ORR station usage`);
+  if(interchangeShare>=.08)reasons.push('ORR records substantial interchange traffic at this station');
+  return {amount:clamp(amount,-.15,.4),reasons,measured:true,row};
+}
+function destinationCrs(service,context={}){const override=context&&context.eventJourney&&context.eventJourney.destinationCrs;if(override)return String(override).toUpperCase();const route=service&&(service.routeDestination||service.displayDestination);if(route&&route.crs)return String(route.crs).toUpperCase();const item=Array.isArray(service&&service.destination)?service.destination.find(Boolean):null;return String(item&&item.crs||'').toUpperCase();}
+function routeFlowSignal(station,destination){
+  const data=v4Data(),from=data&&data.station?data.station(crsOf(station)):null,to=data&&data.station?data.station(crsOf(destination)):null;if(!from||!to)return {amount:0,reasons:[],measured:false};
+  const direct=String(from.mainCrs||'')===String(to&&destination&&destination.crs||destination||'').toUpperCase(),reverse=String(to.mainCrs||'')===crsOf(station);if(!direct&&!reverse)return {amount:0,reasons:[],measured:true};
+  const source=direct?from:to,base=Math.max(1,Number(source.usage)||0),share=Math.min(1,(Number(source.mainJourneys)||0)/base),amount=clamp(.12+share*.8,.12,.42);
+  return {amount,reasons:[`ORR station estimates identify ${source.mainName} as ${source.name}'s largest origin/destination flow`],measured:true,share};
+}
+const OPERATOR_ALIASES={XC:['crosscountry'],GW:['great western'],VT:['avanti west coast'],GR:['london north eastern','lner'],EM:['east midlands'],LM:['west midlands','london northwestern'],NT:['northern'],TP:['transpennine'],CH:['chiltern'],AW:['transport for wales','arriva trains wales'],SE:['southeastern'],SN:['southern'],TL:['thameslink','govia thameslink'],GN:['great northern','govia thameslink'],SW:['south western'],CC:['c2c'],LE:['greater anglia'],LO:['london overground']};
+function operatorKeys(service){const data=v4Data(),normalise=data&&data.norm?data.norm:(v=>String(v||'').toLowerCase()),full=normalise(service&&(service.operator||'')),code=String(service&&(service.operatorCode||'')).toUpperCase();return [full,...(OPERATOR_ALIASES[code]||[])].filter(Boolean);}
+function findOperator(area,service){if(!area||!area.operators)return null;const keys=operatorKeys(service),data=v4Data(),normalise=data&&data.norm?data.norm:(v=>String(v||'').toLowerCase());for(const key of keys){if(area.operators[key])return area.operators[key];for(const [name,row] of Object.entries(area.operators)){if(name==='_total')continue;const n=normalise(name);if(n.includes(key)||key.includes(n))return row;}}return null;}
+function peakDirection(minute){return inBand(minute,AM_PEAK)?'am':inBand(minute,PM_PEAK)?'pm':'';}
+function operatorCrowdingSignal(service,station,minute){
+  const dir=peakDirection(minute),data=v4Data(),profile=profileFor(station);if(!dir||!data||!profile)return {amount:0,reasons:[],measured:false};
+  const area=(typeof data.stationOperator==='function'&&data.stationOperator(crsOf(station)))||(typeof data.cityOperator==='function'&&data.cityOperator(profile.city||''));if(!area)return {amount:0,reasons:[],measured:false};
+  const row=findOperator(area,service),total=area.operators&&area.operators._total;if(!row||!row[dir])return {amount:0,reasons:[],measured:false};
+  const r=row[dir],t=total&&total[dir]||{},stand=Number(r.standing),pixc=Number(r.pixc),baseStand=Number(t.standing),basePixc=Number(t.pixc);
+  const pressure=(Number.isFinite(stand)?stand:0)+(Number.isFinite(pixc)?pixc*2:0),baseline=(Number.isFinite(baseStand)?baseStand:0)+(Number.isFinite(basePixc)?basePixc*2:0),amount=clamp((pressure-baseline)*1.9,-.32,.55),reasons=[];
+  if(Number.isFinite(stand))reasons.push(`DfT 2025 measured ${Math.round(stand*100)}% standing passengers for ${row.name} in this ${dir.toUpperCase()} peak area`);if(Number.isFinite(pixc)&&pixc>=.01)reasons.push(`DfT measured ${Math.round(pixc*1000)/10}% of ${row.name} passengers in excess of capacity here`);
+  return {amount,reasons,measured:true,row};
+}
+function peakCapacitySignal(station,minute){
+  const dir=peakDirection(minute),data=v4Data(),profile=profileFor(station);if(!dir||!data||!profile)return {amount:0,reasons:[],measured:false};
+  const area=(typeof data.stationPeak==='function'&&data.stationPeak(crsOf(station)))||(typeof data.cityPeak==='function'&&data.cityPeak(profile.city||'')),row=area&&area[dir];if(!row)return {amount:0,reasons:[],measured:false};
+  const critical=Number(row.critical),seats=Number(row.seats),capacity=Number(row.capacity),seatLoad=critical>0&&seats>0?critical/seats:null,overall=critical>0&&capacity>0?critical/capacity:null;let amount=0;const reasons=[];
+  if(Number.isFinite(seatLoad)){amount+=clamp((seatLoad-.7)*.55,-.2,.4);if(seatLoad>=.9)reasons.push(`DfT peak critical load is about ${Math.round(seatLoad*100)} passengers per 100 seats in this area`);}if(Number.isFinite(overall)&&overall>=.9){amount+=clamp((overall-.9)*.7,0,.18);reasons.push('DfT peak loads run close to the published total capacity here');}
+  return {amount:clamp(amount,-.2,.5),reasons,measured:true,row,seatLoad,overall};
+}
+function utilisationPrior(service,station,minute,date){
+  const data=v4Data(),u=data&&data.utilisation;if(!u||!u.priors||!isWeekday(date)||!peakDirection(minute))return null;const code=String(service&&(service.operatorCode||'')).toUpperCase(),name=String(service&&(service.operator||'')).toLowerCase(),profile=profileFor(station),usage=stationUsageRecord(station);
+  const longDistance=['XC','VT','GR'].includes(code)||/crosscountry|avanti|lner|london north eastern/.test(name),group=longDistance?'longDistance':(profile&&profile.area==='london')||(usage&&String(usage.region).toLowerCase()==='london')?'london':'regional';
+  const probabilities=u.priors[group]||u.priors.all,mean=u.means&&u.means[group];return {group,probabilities:Array.isArray(probabilities)?probabilities.slice():null,mean:Number(mean),source:'DfT RAI0216 2025 empirical peak utilisation'};
+}
+
 window.__KERBSIDE_CALIBRATION__={
   source:SOURCE,released:RELEASED,countPeriod:COUNT_PERIOD,
   scaleSignal,demandShape,serviceClassSignal,contextNote,measuredBand,measuredCrowdingBand,scoreThresholds,
+  stationUsageRecord,stationUsageSignal,routeFlowSignal,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,
   profileFor,operatorClass,isWeekday,
   NETWORK,GEOGRAPHY,OPERATOR_CLASS,LONDON_TERMINALS,CITIES,TIME_BANDS,SCORE_THRESHOLDS,LOAD_FACTOR_BANDS,AM_PEAK,PM_PEAK
 };

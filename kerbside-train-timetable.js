@@ -382,7 +382,7 @@ function normalise(item){
   const legs=connection?(item.legs||[]).map(normaliseLeg):[];
   return {
     /* etd stays empty until the overlay supplies one. The old build
-       hardcoded 'On time', which told Forecast v3 that a train three days
+       hardcoded 'On time', which told Forecast v4 that a train three days
        out was running to time and made the row indistinguishable from a
        live one. */
     std:item.std||item.departure||item.departureTime||'',etd:'',arrival:item.arrival||'',platform:item.platform||'',
@@ -448,7 +448,7 @@ function liveMessages(){
   if(!overlay||!overlayMatchesRoute(overlay)||overlay.state.status!=='ready')return [];
   return typeof overlay.messages==='function'?overlay.messages():[];
 }
-function forecastOne(service,index,services,station=route().from,messages=liveMessages(),extraContext={}){const v3=window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`),context={station,referenceDate:date,messages,...(extraContext||{})};if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,context);if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,context);return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
+function forecastOne(service,index,services,station=route().from,messages=liveMessages(),extraContext={}){const v3=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`),context={station,referenceDate:date,messages,...(extraContext||{})};if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,context);if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,context);return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
 function confidenceFloor(results){const rank={Low:0,Medium:1,'Medium-high':2,High:3};let best=3;for(const result of results){const value=rank[result&&result.confidence];if(Number.isFinite(value))best=Math.min(best,value);}return Object.keys(rank).find(key=>rank[key]===best)||'Low';}
 function forecastIdentity(service){return String(service&&(service.serviceID||service.serviceIdGuid||service.serviceIdGuId||service.rid||service.uid||((service.trainId||service.trainid)&&service.std?`${service.trainId||service.trainid}|${service.std}`:''))||'').toUpperCase();}
 function forecastBoardContext(service,board,fallback=[]){
@@ -488,7 +488,7 @@ function coverageNote(manifest,date){const c=coverageFor(manifest,date);if(!c)re
    raw stacked text with the operator welded onto the destination. These
    rows now use exactly the live board's structure (summary button with
    time / route / crowding / formation columns, collapsible detail) and
-   hand the reasons to Forecast v3's bullet card.
+   hand the reasons to Forecast v4's bullet card.
 ------------------------------------------------------------------ */
 function serviceKey(service,index){return String((service&&(service.serviceID||service.uid||service.trainId))||`${(service&&service.std)||'time'}-${index}`);}
 function durationLabel(from,to){const start=parseMinutes(from),end=parseMinutes(to);if(start==null||end==null)return'';let span=end-start;if(span<0)span+=1440;if(span<=0)return'';const h=Math.floor(span/60),m=span%60;return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m}m`;}
@@ -642,16 +642,16 @@ function modeNote(mode){
   if(mode!=='today')return 'Live delays, cancellations and formation are folded in automatically on the day of travel.';
   return liveOverlayEligible()
     ?'Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.'
-    :'This service is outside the live Darwin window. Forecast v3 is using the scheduled timetable and planning signals; live Darwin evidence will take priority automatically when the service enters the live window.';
+    :'This service is outside the live Darwin window. Forecast v4 is using the scheduled timetable and planning signals; live Darwin evidence will take priority automatically when the service enters the live window.';
 }
-/* Forecast v3 owns the bullet-card markup, so the scheduled board asks it
+/* Forecast v4 owns the bullet-card markup, so the scheduled board asks it
    for the same card the live board shows rather than keeping a second,
    drifting copy. The fallback only matters if v3 has not loaded yet. */
 function explainMarkup(result,mode){
   const v3=window.__KERBSIDE_FORECAST_V3__,date=new Date(`${state.sourceDate||route().date}T12:00:00`);
   if(v3&&typeof v3.detailMarkup==='function')return v3.detailMarkup(result,date,{mode:modeLabel(mode),note:modeNote(mode)});
   const items=(result.reasons||[]).map(reason=>`<li>${esc(reason)}</li>`).join('');
-  return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(result.confidence)} confidence · Forecast v3 · ${esc(modeLabel(mode))}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. ${esc(modeNote(mode))}</div>`;
+  return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(result.confidence)} confidence · Forecast v4 · ${esc(modeLabel(mode))}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. ${esc(modeNote(mode))}</div>`;
 }
 /* Calling points only exist once Darwin has been asked with expand=true,
    so they appear on today's rows and stay absent on advance ones rather
@@ -752,11 +752,11 @@ function renderRows(rows,{mode,manifest}){
   board.innerHTML=state.services.map((s,i)=>serviceMarkup(s,i,forecast(s,i,state.services),{mode,destinationFallback,explains})).join('')
     +`<div class="train-empty train-future-date train-future-card train-scheduled-foot"><span class="train-future-badge">Official timetable</span><span class="train-future-note">${esc(coverage)} Scheduled journey options come from National Rail Darwin Timetable Files. Where an authoritative station minimum is not loaded, one-change results use an explicit conservative Kerbside fallback; CTI is not treated as a minimum-time feed. Live Darwin evidence can update both legs and recovery options.</span></div>`;
   /* Prime the markup cache refreshForecasts() compares against, so the first
-     Forecast v3 pass after render is a genuine no-op rather than a rewrite. */
+     Forecast v4 pass after render is a genuine no-op rather than a rewrite. */
   board.querySelectorAll('.train-scheduled-service .train-crowding-explain').forEach((el,i)=>{el.__kerbsideMarkup=explains[i];});
 }
 
-/* Called by Forecast v3 whenever its inputs change after render - the bank
+/* Called by Forecast v4 whenever its inputs change after render - the bank
    holiday calendar resolving, or the events module returning fixtures for
    the chosen date. Previously v3.apply() only walked #trainBoard, so an
    advance journey kept whatever score it happened to have at first paint
@@ -820,7 +820,7 @@ async function load(options={}){
   const r=route();state.signature=routeSignature();
   if(!r.from||!r.to){renderUnavailable('Select both stations, then use Find trains to search the Darwin timetable.',{mode});return true;}
   const id=++state.request;state.loading=true;state.lastError='';
-  const board=scheduledBoard();setScheduledVisibility(true);if(board)board.innerHTML='<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Darwin timetable</span><strong>Loading scheduled services…</strong><span>Reading the official timetable snapshot and preparing Forecast v3.</span></div>';
+  const board=scheduledBoard();setScheduledVisibility(true);if(board)board.innerHTML='<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Darwin timetable</span><strong>Loading scheduled services…</strong><span>Reading the official timetable snapshot and preparing Forecast v4.</span></div>';
   try{
     const manifest=await timetableProvider.getCoverage();
     if(id!==state.request)return true;

@@ -4,7 +4,7 @@
 const PROVIDER_BASE = 'https://huxley2.azurewebsites.net';
 const STORE_KEY = 'kerbside.rail.v1';
 const MODEL_KEY = 'kerbside.rail.crowding.v2';
-const MODEL_VERSION = 2;
+const MODEL_VERSION = 3;
 const REFRESH_MS = 30000;
 const SEARCH_DELAY_MS = 280;
 const REQUEST_TIMEOUT_MS = 10000;
@@ -14,7 +14,7 @@ const MODEL_PROFILE_MAX_AGE_MS = 120 * 24 * 60 * 60 * 1000;
 const MODEL_SEEN_MAX_AGE_MS = 21 * 24 * 60 * 60 * 1000;
 const MODEL_FEEDBACK_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
 const ACCURACY_KEY = 'kerbside.rail.forecast.accuracy.v1';
-const ACCURACY_VERSION = 1;
+const ACCURACY_VERSION = 2;
 const ACCURACY_RECENT_MAX = 120;
 const CROWD_LEVEL_RANK = {quiet:0,moderate:1,busy:2,'very-busy':3};
 
@@ -73,7 +73,7 @@ function savePrefs(){
 }
 
 function emptyCrowdingModel(){
-  return {version:MODEL_VERSION, profiles:{}, seen:{}, feedbackSeen:{}};
+  return {version:MODEL_VERSION, profiles:{}, patternProfiles:{}, seen:{}, feedbackSeen:{}};
 }
 
 function safeReadCrowdingModel(){
@@ -81,8 +81,11 @@ function safeReadCrowdingModel(){
     const raw = localStorage.getItem(MODEL_KEY);
     if(!raw) return emptyCrowdingModel();
     const parsed = JSON.parse(raw);
-    if(!parsed || typeof parsed !== 'object' || parsed.version !== MODEL_VERSION) return emptyCrowdingModel();
+    if(!parsed || typeof parsed !== 'object') return emptyCrowdingModel();
+    if(parsed.version===2) parsed.version=MODEL_VERSION;
+    if(parsed.version!==MODEL_VERSION) return emptyCrowdingModel();
     if(!parsed.profiles || typeof parsed.profiles !== 'object') parsed.profiles = {};
+    if(!parsed.patternProfiles || typeof parsed.patternProfiles !== 'object') parsed.patternProfiles = {};
     if(!parsed.seen || typeof parsed.seen !== 'object') parsed.seen = {};
     if(!parsed.feedbackSeen || typeof parsed.feedbackSeen !== 'object') parsed.feedbackSeen = {};
     return parsed;
@@ -113,6 +116,7 @@ function pruneCrowdingModel(model){
     const profile = model.profiles[key];
     if(!profile || now - (Number(profile.updatedAt) || 0) > MODEL_PROFILE_MAX_AGE_MS) delete model.profiles[key];
   });
+  const patternKeys=Object.keys(model.patternProfiles||{});if(patternKeys.length>240){patternKeys.sort((a,b)=>(Number(model.patternProfiles[b].updatedAt)||0)-(Number(model.patternProfiles[a].updatedAt)||0));patternKeys.slice(240).forEach(key=>delete model.patternProfiles[key]);}
   const profileKeys = Object.keys(model.profiles);
   if(profileKeys.length > MODEL_MAX_PROFILES){
     profileKeys.sort((a,b)=>(Number(model.profiles[b].updatedAt)||0)-(Number(model.profiles[a].updatedAt)||0));
@@ -131,29 +135,24 @@ function saveCrowdingModel(){
 }
 
 
-function emptyForecastAccuracy(){return {version:ACCURACY_VERSION,total:0,exact:0,withinOne:0,absoluteError:0,recent:[]};}
+function emptyForecastAccuracy(){return {version:ACCURACY_VERSION,total:0,exact:0,withinOne:0,absoluteError:0,buckets:{},recent:[]};}
 function safeReadForecastAccuracy(){
-  try{const parsed=JSON.parse(localStorage.getItem(ACCURACY_KEY)||'null');if(!parsed||parsed.version!==ACCURACY_VERSION)return emptyForecastAccuracy();if(!Array.isArray(parsed.recent))parsed.recent=[];return parsed;}catch(error){return emptyForecastAccuracy();}
+  try{const parsed=JSON.parse(localStorage.getItem(ACCURACY_KEY)||'null');if(!parsed)return emptyForecastAccuracy();if(parsed.version===1){parsed.version=ACCURACY_VERSION;parsed.buckets={};}if(parsed.version!==ACCURACY_VERSION)return emptyForecastAccuracy();if(!parsed.buckets||typeof parsed.buckets!=='object')parsed.buckets={};if(!Array.isArray(parsed.recent))parsed.recent=[];return parsed;}catch(error){return emptyForecastAccuracy();}
 }
 function saveForecastAccuracy(){try{if(!state.forecastAccuracy)return;state.forecastAccuracy.recent=(state.forecastAccuracy.recent||[]).slice(-ACCURACY_RECENT_MAX);localStorage.setItem(ACCURACY_KEY,JSON.stringify(state.forecastAccuracy));}catch(error){}}
-function forecastAccuracySummary(){
-  const data=state.forecastAccuracy||safeReadForecastAccuracy(),total=Number(data.total)||0;
-  return {total,exact:total?Number(data.exact||0)/total:0,withinOne:total?Number(data.withinOne||0)/total:0,meanAbsoluteError:total?Number(data.absoluteError||0)/total:0,recent:Array.isArray(data.recent)?data.recent.length:0};
-}
+function forecastAccuracySummary(){const data=state.forecastAccuracy||safeReadForecastAccuracy(),total=Number(data.total)||0;return {total,exact:total?Number(data.exact||0)/total:0,withinOne:total?Number(data.withinOne||0)/total:0,meanAbsoluteError:total?Number(data.absoluteError||0)/total:0,recent:Array.isArray(data.recent)?data.recent.length:0};}
+function forecastAccuracyForBucket(bucket){const data=state.forecastAccuracy||safeReadForecastAccuracy(),row=data.buckets&&data.buckets[String(bucket||'')],total=Number(row&&row.total)||0;return {total,exact:total?Number(row.exact||0)/total:0,withinOne:total?Number(row.withinOne||0)/total:0,meanAbsoluteError:total?Number(row.absoluteError||0)/total:0};}
 function recordForecastAccuracy(service,index,reportedLevel,date){
-  const actual=CROWD_LEVEL_RANK[reportedLevel],api=window.__KERBSIDE_FORECAST_V3__;
+  const actual=CROWD_LEVEL_RANK[reportedLevel],api=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__;
   if(actual==null||!api||typeof api.forecast!=='function'||!state.station)return false;
   let result;try{result=api.forecast(service,index,state.services,{station:state.station,referenceDate:date,messages:state.board&&state.board.nrccMessages||[]});}catch(error){return false;}
   const predictedLevel=String(result&&result.level||''),predicted=CROWD_LEVEL_RANK[predictedLevel];if(predicted==null)return false;
   if(!state.forecastAccuracy)state.forecastAccuracy=safeReadForecastAccuracy();
-  const error=Math.abs(predicted-actual),data=state.forecastAccuracy,ts=Date.now();
-  data.total=(Number(data.total)||0)+1;
-  if(error===0)data.exact=(Number(data.exact)||0)+1;
-  if(error<=1)data.withinOne=(Number(data.withinOne)||0)+1;
-  data.absoluteError=(Number(data.absoluteError)||0)+error;
-  /* No station, service, route, train ID or user identifier is retained. */
-  data.recent=(Array.isArray(data.recent)?data.recent:[]).concat([{ts,predicted:predictedLevel,actual:reportedLevel,error}]).slice(-ACCURACY_RECENT_MAX);
-  saveForecastAccuracy();return true;
+  const error=Math.abs(predicted-actual),data=state.forecastAccuracy,ts=Date.now(),bucket=String(result&&result.accuracyBucket||'legacy');
+  data.total=(Number(data.total)||0)+1;if(error===0)data.exact=(Number(data.exact)||0)+1;if(error<=1)data.withinOne=(Number(data.withinOne)||0)+1;data.absoluteError=(Number(data.absoluteError)||0)+error;
+  const row=data.buckets[bucket]||(data.buckets[bucket]={total:0,exact:0,withinOne:0,absoluteError:0});row.total++;if(error===0)row.exact++;if(error<=1)row.withinOne++;row.absoluteError+=error;
+  /* Only evidence bucket + predicted/actual band/error are retained. No station, service, route, train ID or user identifier. */
+  data.recent=(Array.isArray(data.recent)?data.recent:[]).concat([{ts,predicted:predictedLevel,actual:reportedLevel,error,bucket}]).slice(-ACCURACY_RECENT_MAX);saveForecastAccuracy();return true;
 }
 
 function fetchWithTimeout(url, options={}){
@@ -413,6 +412,10 @@ function profileKeyFor(service,station,date){
   return [stationCode,operatorIdentity(service),profileDestinationIdentity(service),dayClassFor(date),band].join('|');
 }
 
+function patternKeyFor(service,station,date){const stationCode=normaliseToken(station&&(station.crs||station.name)||'unknown'),minute=parseMinutes(service&&service.std),slot=minute==null?'x':String(Math.round(minute/30));return [stationCode,operatorIdentity(service),profileDestinationIdentity(service),dayClassFor(date),slot].join('|');}
+function ensurePatternProfile(key){const model=state.crowdingModel||(state.crowdingModel=emptyCrowdingModel());if(!model.patternProfiles)model.patternProfiles={};if(!model.patternProfiles[key])model.patternProfiles[key]={samples:0,lengthSamples:0,avgLength:0,delaySamples:0,avgDelay:0,headwaySamples:0,avgHeadway:0,cancelledSamples:0,cancelledCount:0,updatedAt:Date.now()};return model.patternProfiles[key];}
+function servicePatternProfile(service,station,date){const model=state.crowdingModel;if(!model||!model.patternProfiles)return null;return model.patternProfiles[patternKeyFor(service,station,date)]||null;}
+
 function ensureProfile(key){
   const model = state.crowdingModel || (state.crowdingModel = emptyCrowdingModel());
   if(!model.profiles[key]){
@@ -457,6 +460,7 @@ function recordBoardObservations(){
     const id = observationId(service,index,state.station,date);
     if(state.crowdingModel.seen[id]) return;
     const profile = ensureProfile(profileKeyFor(service,state.station,date));
+    const pattern = ensurePatternProfile(patternKeyFor(service,state.station,date));
     const context = routeContext(service,index,state.services);
     const length = Number(service.length) || 0;
     const delay = delayMinutes(service);
@@ -469,6 +473,7 @@ function recordBoardObservations(){
     profile.cancelledSamples = (Number(profile.cancelledSamples) || 0) + 1;
     if(service.isCancelled) profile.cancelledCount = (Number(profile.cancelledCount) || 0) + 1;
     profile.updatedAt = Date.now();
+    pattern.samples=(Number(pattern.samples)||0)+1;if(length>0)updateAverage(pattern,'avgLength','lengthSamples',length);if(headway!=null&&headway>0&&headway<=180)updateAverage(pattern,'avgHeadway','headwaySamples',headway);if(!service.isCancelled&&Number.isFinite(delay))updateAverage(pattern,'avgDelay','delaySamples',delay);pattern.cancelledSamples=(Number(pattern.cancelledSamples)||0)+1;if(service.isCancelled)pattern.cancelledCount=(Number(pattern.cancelledCount)||0)+1;pattern.updatedAt=Date.now();
     state.crowdingModel.seen[id] = Date.now();
     changed = true;
   });
@@ -666,7 +671,7 @@ function crowdingForecast(service,index,allServices,options={}){
 }
 
 function providerNotice(){
-  return "Live running evidence comes from National Rail Darwin with the app's configured fallbacks. Forecast v3 combines timetable demand, service spacing, events, calendar effects, DfT calibration and live Darwin evidence when available. Passenger-submitted crowding reports do not alter the Forecast v3 score. It is not ticket-sales data and not live occupancy.";
+  return "Live running evidence comes from National Rail Darwin with the app's configured fallbacks. Forecast v3 combines timetable demand, service spacing, events, calendar effects, DfT calibration and live Darwin evidence when available. Passenger-submitted crowding reports do not alter the Forecast v4 score. It is not ticket-sales data and not live occupancy.";
 }
 
 function installMarkup(){
@@ -861,8 +866,8 @@ function renderAlerts(messages){
 
 function forecastFor(service,index){
   const context={station:state.station,referenceDate:referenceDateFromBoard(),messages:state.board&&state.board.nrccMessages};
-  const v3=window.__KERBSIDE_FORECAST_V3__;
-  if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,state.services,context);
+  const v4=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__;
+  if(v4&&typeof v4.forecast==='function')return v4.forecast(service,index,state.services,context);
   return crowdingForecast(service,index,state.services,context);
 }
 
@@ -970,8 +975,8 @@ function renderServiceDetail(service,index,forecast,detail){
   const historySamples=Number(forecast.historySamples)||0;
   const learningText=`${historySamples} local service observation${historySamples===1?'':'s'} available`;
   const accuracy=forecastAccuracySummary();
-  const accuracyText=accuracy.total?`Local Forecast v3 validation: ${Math.round(accuracy.exact*100)}% exact · ${Math.round(accuracy.withinOne*100)}% within one band · ${accuracy.total} report${accuracy.total===1?'':'s'}.`:'Local Forecast v3 validation starts after you record actual crowding.';
-  const modelLabel=Number(forecast.modelVersion)>=3?'Forecast v3':`model v${MODEL_VERSION}`;
+  const accuracyText=accuracy.total?`Local Forecast v4 validation: ${Math.round(accuracy.exact*100)}% exact · ${Math.round(accuracy.withinOne*100)}% within one band · ${accuracy.total} report${accuracy.total===1?'':'s'}.`:'Local Forecast v4 validation starts after you record actual crowding.';
+  const modelLabel=Number(forecast.modelVersion)>=4?'Forecast v4':Number(forecast.modelVersion)>=3?'Forecast v3':`model v${MODEL_VERSION}`;
   const feedbackButtons = Object.keys(FEEDBACK_LABEL).map(level=>
     `<button type="button" data-crowd-feedback="${esc(level)}" data-service-id="${esc(key)}"${recorded?' disabled':''}>${esc(FEEDBACK_LABEL[level])}</button>`
   ).join('');
@@ -989,7 +994,7 @@ function renderServiceDetail(service,index,forecast,detail){
     <div class="train-model-card">
       <span class="train-model-label">Record actual crowding</span>
       <strong>What was the train actually like?</strong>
-      <p>If you are on this train, or have just used it, one tap saves a local observation for later accuracy checks. It does not change the Forecast v3 score and nothing is uploaded.</p>
+      <p>If you are on this train, or have just used it, one tap saves a local observation for later accuracy checks. It does not change the Forecast v4 score and nothing is uploaded.</p>
       <div class="train-search-box train-feedback" style="flex-wrap:wrap;margin-top:8px">${feedbackButtons}</div>
       ${recorded ? `<div class="train-detail-note">Saved locally: ${esc(FEEDBACK_LABEL[recorded] || recorded)}.</div>` : ''}
       <div class="train-detail-note">${esc(accuracyText)} Nothing is uploaded.</div>
@@ -1159,6 +1164,8 @@ window.__KERBSIDE_TRAINS__ = {
   recordCrowdingFeedback,
   recordForecastAccuracy,
   forecastAccuracySummary,
+  forecastAccuracyForBucket,
+  servicePatternProfile,
   delayMinutes,
   statusFor,
   destinationText,
