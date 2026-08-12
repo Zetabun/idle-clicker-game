@@ -58,4 +58,13 @@ once(test,
 "assert.equal(capacity.measured,true,capacity);assert.equal(prior.group,'longDistance');assert.ok(Math.abs(prior.probabilities.reduce((a,b)=>a+b,0)-1)<1e-5);assert.equal(cal.utilisationPrior(service,station,13*60,new FixedDate('2026-08-12T12:00:00Z')),null);"
 )
 
-print('Applied Forecast v4 staging-scope and peak-prior fixes.')
+# train-regression predates the v4 global. The compatibility V3 alias now
+# deliberately points at v4, so assert the real engine rather than an obsolete
+# version number on the alias.
+browser='kerbside-backend/tests/train-regression.mjs'
+once(browser,
+"assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V3__?.version),3);",
+"assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V4__?.version),4);"
+)
+
+print('Applied Forecast v4 staging-scope, peak-prior and browser assertion fixes.')
