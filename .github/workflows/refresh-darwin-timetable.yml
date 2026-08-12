@@ -3,10 +3,13 @@ name: Refresh Darwin timetable
 on:
   workflow_dispatch:
   schedule:
-    # Darwin snapshots are normally stamped around 02:05 UTC. Check soon
-    # afterwards, then retry before the existing morning refreshes. Each run
-    # is a no-op when the newest complete v8/ref_v4 pair is already published.
-    - cron: '30 2,3,4,8 * * *'
+    # Darwin snapshots are normally stamped around 02:05 UTC, but the complete
+    # v8/ref_v4 pair can appear later. Retry through the early-morning
+    # publication window so the rolling 48-hour board does not spend hours on
+    # yesterday's edge snapshot. Every retry is a no-op once the newest pair is
+    # already published.
+    - cron: '20,50 2-4 * * *'
+    - cron: '20 5,6,8 * * *'
   push:
     branches:
       - main
@@ -89,6 +92,12 @@ jobs:
           current=''
           if [[ -f kerbside-rail-timetable/manifest.json ]]; then
             current="$(python3 -c "import json; print(json.load(open('kerbside-rail-timetable/manifest.json', encoding='utf-8')).get('timetableId', ''))")"
+          fi
+
+          snapshot_day="${snapshot:0:8}"
+          today_utc="$(date -u +%Y%m%d)"
+          if [[ "$snapshot_day" < "$today_utc" ]]; then
+            echo "::warning::Newest complete Darwin snapshot is still $snapshot; today's pair has not appeared in GCS yet."
           fi
 
           echo "snapshot_id=$snapshot" >> "$GITHUB_OUTPUT"
