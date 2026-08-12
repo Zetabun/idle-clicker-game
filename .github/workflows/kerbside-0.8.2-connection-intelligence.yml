@@ -56,6 +56,19 @@ jobs:
           p.write_text(text.replace(old_call,new_call,1),encoding='utf-8')
           PY
           python3 .github/scripts/apply-kerbside-0.8.2.py
+          # 0.8.2 deliberately labels the transfer threshold as a Kerbside
+          # fallback unless an authoritative MCT map is loaded. Keep the browser
+          # regression strict about that provenance rather than matching the old
+          # generic "minimum" wording.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('kerbside-backend/tests/train-browser-core-regression.mjs')
+          text=p.read_text(encoding='utf-8')
+          old="  assert.match(await connectionDetail.textContent(),/10 min minimum/);"
+          new="  assert.match(await connectionDetail.textContent(),/Kerbside fallback minimum: 10 min/);"
+          if text.count(old)!=1: raise SystemExit(f'Expected one legacy connection minimum assertion, found {text.count(old)}')
+          p.write_text(text.replace(old,new,1),encoding='utf-8')
+          PY
           git checkout -- .github/scripts/apply-kerbside-0.8.2.py
           python3 .github/scripts/sync-version.py
 
