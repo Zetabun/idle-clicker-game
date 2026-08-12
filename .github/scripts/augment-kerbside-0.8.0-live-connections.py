@@ -182,7 +182,7 @@ timetable='kerbside-train-timetable.js'
 replace_once(
     timetable,
     "  overlay.refresh({crs:r.from.crs,date:r.date});\n",
-    "  overlay.refresh({crs:r.from.crs,date:r.date,includeConnections:state.services.some(service=>service&&service.journeyType==='connection')});\n"
+    "  const pending=overlay.refresh({crs:r.from.crs,date:r.date,includeConnections:state.services.some(service=>service&&service.journeyType==='connection')});\n  /* A route sync can repaint scheduled rows while the matching live board is\n     still fresh. refresh() deliberately does not emit another event on a\n     cache hit, so re-apply the cached evidence after every successful call. */\n  Promise.resolve(pending).then(ok=>{if(ok)handleOverlay();}).catch(()=>{});\n"
 )
 
 # Load the following calendar date as well when available. This lets a 23:xx
@@ -271,4 +271,4 @@ replace_once(
 """
 )
 
-print('Augmented Kerbside 0.8.0 with origin-scoped live evidence and overnight connection support.')
+print('Augmented Kerbside 0.8.0 with origin-scoped live evidence, cached re-merge and overnight connection support.')
