@@ -11,6 +11,8 @@ const CONNECTION_SECOND_CHOICES=6;
 const CONNECTION_COMFORT_MARGIN=8;
 const CONNECTION_LONG_WAIT=40;
 const CONNECTION_DETOUR_REJECT_EXCESS=12;
+const CONNECTION_RECOVERY_WINDOW=120;
+const CONNECTION_RECOVERY_CHOICES=3;
 /* The compact Darwin snapshot does not carry the official National Rail
    minimum-connection-time dataset. These are deliberately conservative
    Kerbside planning buffers: 10 minutes generally, 12 at the largest or
@@ -140,11 +142,18 @@ function location(locations,crs){const row=locations&&locations[String(crs||'').
 function actualCallDate(row,call){return addDays(row[4],Number(call&&call[4])||0);}
 function operatorName(manifest,code){return manifest&&manifest.tocNames&&manifest.tocNames[code]||code||'Scheduled service';}
 
-function connectionMinimum(crs,graph=null){
-  const code=String(crs||'').toUpperCase(),fixed=CONNECTION_HUB_MINUTES[code]||10,degree=graph&&graph.get(code)?graph.get(code).size:0;
-  const topology=degree>=12?15:degree>=7?12:10;
-  return Math.max(fixed,topology);
+function connectionMinimumInfo(crs,graph=null){
+  const code=String(crs||'').toUpperCase(),officialMap=window.__KERBSIDE_OFFICIAL_CONNECTION_TIMES__||{},official=Number(officialMap&&officialMap[code]);
+  /* National Rail's CTI feed identifies connecting trains; it is not a
+     substitute for the station minimum interchange times used by the Journey
+     Planner. Until a licensed/machine-readable MCT source is loaded, Kerbside
+     keeps an explicit conservative fallback instead of presenting guesses as
+     official data. */
+  if(Number.isFinite(official)&&official>=1&&official<=60)return {minutes:official,source:'official'};
+  const fixed=CONNECTION_HUB_MINUTES[code]||10,degree=graph&&graph.get(code)?graph.get(code).size:0,topology=degree>=12?15:degree>=7?12:10;
+  return {minutes:Math.max(fixed,topology),source:'kerbside-topology'};
 }
+function connectionMinimum(crs,graph=null){return connectionMinimumInfo(crs,graph).minutes;}
 function callMinute(baseDate,row,call,value){
   const minute=parseMinutes(value);if(minute==null)return null;
   const actual=actualCallDate(row,call),base=new Date(`${baseDate}T12:00:00Z`),at=new Date(`${actual}T12:00:00Z`);
@@ -261,7 +270,7 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
       if(!changeCode||changeCode===fromCode||changeCode===toCode)continue;
       const arrivalValue=changeCall[1]||changeCall[2]||'',arrivalMinute=callMinute(date,candidate.row,changeCall,arrivalValue);
       if(arrivalMinute==null||arrivalMinute<=candidate.departureMinute||arrivalMinute-candidate.departureMinute>CONNECTION_MAX_TOTAL)continue;
-      const minimum=connectionMinimum(changeCode,graph),earliest=arrivalMinute+minimum,latest=arrivalMinute+CONNECTION_MAX_WAIT;
+      const minimumInfo=connectionMinimumInfo(changeCode,graph),minimum=minimumInfo.minutes,earliest=arrivalMinute+minimum,latest=arrivalMinute+CONNECTION_MAX_WAIT;
       const list=departures.get(changeCode)||[];let pos=lowerBound(list,earliest),examined=0;
       for(;pos<list.length&&list[pos].departureMinute<=latest&&examined<CONNECTION_SECOND_CHOICES;pos++,examined++){
         const second=list[pos];if(rowIdentity(second.row)===rowIdentity(candidate.row))continue;
@@ -275,6 +284,16 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
         const key=`${firstLeg.serviceID}|${changeCode}|${secondLeg.serviceID}`;if(seen.has(key))continue;seen.add(key);
         const interchange=location(locations,changeCode),operators=[...new Set([firstLeg.operator,secondLeg.operator].filter(Boolean))];
         const margin=connectionMinutes-minimum,tightPenalty=margin<CONNECTION_COMFORT_MARGIN?(CONNECTION_COMFORT_MARGIN-margin)*6:0,longPenalty=connectionMinutes>CONNECTION_LONG_WAIT?(connectionMinutes-CONNECTION_LONG_WAIT)*.8:0,routePenalty=Number(routeQuality.penalty)||0;
+        const recoveryOptions=[];
+        const recoveryLimit=second.departureMinute+CONNECTION_RECOVERY_WINDOW;
+        for(let recoveryPos=pos+1;recoveryPos<list.length&&recoveryOptions.length<CONNECTION_RECOVERY_CHOICES;recoveryPos++){
+          const alternative=list[recoveryPos];if(alternative.departureMinute>recoveryLimit)break;
+          if(rowIdentity(alternative.row)===rowIdentity(candidate.row)||rowIdentity(alternative.row)===rowIdentity(second.row))continue;
+          const alternativeDestination=destinationIndexAfter(alternative.row,toCode,alternative.callIndex);if(alternativeDestination<0)continue;
+          const alternativeLeg=legFromRow(alternative.row,alternative.callIndex,alternativeDestination,locations,manifest,date);if(!alternativeLeg)continue;
+          const alternativeQuality=connectionRouteQuality(candidate.row,candidate.originIndex,changeIndex,alternative.row,alternative.callIndex,alternativeDestination,graph,shortest);if(alternativeQuality.reject)continue;
+          recoveryOptions.push({...alternativeLeg,routeQuality:alternativeQuality});
+        }
         found.push({
           journeyType:'connection',changes:1,std:firstLeg.std,departure:firstLeg.std,arrival:secondLeg.arrival,
           platform:firstLeg.platform,arrivalPlatform:secondLeg.arrivalPlatform,
@@ -284,7 +303,7 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
           origin:firstLeg.origin,destination:[{locationName:secondLeg.routeDestination.name,crs:secondLeg.routeDestination.crs}],
           routeDestination:secondLeg.routeDestination,serviceTerminus:secondLeg.routeDestination,
           departureMinute:candidate.departureMinute,arrivalMinute:secondLeg.arrivalMinute,totalMinutes,
-          connectionMinutes,minimumConnectionMinutes:minimum,
+          connectionMinutes,minimumConnectionMinutes:minimum,minimumConnectionSource:minimumInfo.source,recoveryOptions,
           interchange:{...interchange,arrival:firstLeg.arrival,departure:secondLeg.std,minutes:connectionMinutes,minimum,margin,quality:connectionQuality(connectionMinutes,minimum),routeQuality},
           legs:[firstLeg,secondLeg],rankScore:secondLeg.arrivalMinute+14+tightPenalty+longPenalty+routePenalty,
           scheduledOnly:true,isCancelled:false,length:0
@@ -304,12 +323,32 @@ function connectionDominated(connection,directs){
     return depGap>=-10&&depGap<=30&&direct.arrivalMinute<=connection.arrivalMinute+20;
   });
 }
+function connectionVariantDominated(connection,all){
+  const first=connection&&connection.legs&&connection.legs[0],change=connection&&connection.interchange&&connection.interchange.crs;
+  if(!first||!change)return false;
+  return all.some(other=>other!==connection&&other&&other.legs&&other.legs[0]&&other.legs[0].serviceID===first.serviceID&&other.interchange&&other.interchange.crs===change&&other.arrivalMinute<=connection.arrivalMinute&&other.rankScore<=connection.rankScore);
+}
+function addJourneyLabel(service,label){if(!service||!label)return;const list=Array.isArray(service.journeyLabels)?service.journeyLabels:(service.journeyLabels=[]);if(!list.includes(label))list.push(label);}
+function applyJourneyLabels(items){
+  const list=Array.isArray(items)?items:[];if(!list.length)return list;
+  list.forEach(item=>{item.journeyLabels=[];if(item.changes===0)addJourneyLabel(item,'Direct');});
+  const fastest=list.reduce((best,item)=>!best||item.arrivalMinute<best.arrivalMinute?item:best,null);if(fastest)addJourneyLabel(fastest,'Fastest');
+  const connections=list.filter(item=>item.journeyType==='connection');
+  if(connections.length){
+    const best=connections.reduce((winner,item)=>!winner||item.rankScore<winner.rankScore?item:winner,null);if(best)addJourneyLabel(best,'Best connection');
+    const safest=connections.reduce((winner,item)=>!winner||(Number(item.interchange&&item.interchange.margin)||0)>(Number(winner.interchange&&winner.interchange.margin)||0)?item:winner,null);
+    if(safest&&safest!==best&&(Number(safest.interchange&&safest.interchange.margin)||0)>=(Number(best&&best.interchange&&best.interchange.margin)||0)+5)addJourneyLabel(safest,'Safer change');
+  }
+  return list;
+}
 function journeysFromRows(rows,locations,manifest,options){
   const direct=servicesFromRows(rows,locations,manifest,options);
-  const connections=connectionsFromRows(rows,locations,manifest,options).filter(item=>!connectionDominated(item,direct));
-  return [...direct,...connections]
+  const rawConnections=connectionsFromRows(rows,locations,manifest,options);
+  const connections=rawConnections.filter(item=>!connectionVariantDominated(item,rawConnections)&&!connectionDominated(item,direct));
+  const ranked=[...direct,...connections]
     .sort((a,b)=>a.departureMinute-b.departureMinute||a.changes-b.changes||a.rankScore-b.rankScore||a.arrivalMinute-b.arrivalMinute)
     .slice(0,MAX_RESULTS);
+  return applyJourneyLabels(ranked);
 }
 
 const timetableProvider={
@@ -324,7 +363,7 @@ const timetableProvider={
     const rows=[],seen=new Set();for(const set of sets)for(const row of (Array.isArray(set)?set:[])){const key=rowIdentity(row);if(key&&seen.has(key))continue;if(key)seen.add(key);rows.push(row);}
     return journeysFromRows(rows,locations,manifest,{from,to,date,departAfter});
   },
-  servicesFromRows,connectionsFromRows,journeysFromRows,connectionMinimum,connectionRiskFor,buildStationGraph,shortestNetworkStops,connectionRouteQuality
+  servicesFromRows,connectionsFromRows,journeysFromRows,connectionMinimum,connectionMinimumInfo,connectionRiskFor,buildStationGraph,shortestNetworkStops,connectionRouteQuality
 };
 window.__KERBSIDE_TIMETABLE_PROVIDER__=timetableProvider;
 
@@ -355,7 +394,8 @@ function normalise(item){
     journeyType:connection?'connection':'direct',changes:connection?1:0,legs,interchange:item.interchange?{...item.interchange}:null,
     connectionMinutes:Number(item.connectionMinutes)||0,minimumConnectionMinutes:Number(item.minimumConnectionMinutes)||0,totalMinutes:Number(item.totalMinutes)||0,
     departureMinute:Number(item.departureMinute),arrivalMinute:Number(item.arrivalMinute),rankScore:Number(item.rankScore)||0,
-    liveConnectionMinutes:null,liveInterchangeArrival:'',connectionRisk:'scheduled',
+    liveConnectionMinutes:null,liveInterchangeArrival:'',connectionRisk:'scheduled',secondLiveEvidence:false,onwardCancelled:false,
+    recoveryOptions:connection?(item.recoveryOptions||[]).map(normaliseLeg):[],recoveryChoice:null,minimumConnectionSource:item.minimumConnectionSource||'kerbside-topology',journeyLabels:Array.isArray(item.journeyLabels)?item.journeyLabels.slice():[],
     scheduledOnly:true,liveEvidence:false,liveVia:'',cancelReason:'',delayReason:''
   };
 }
@@ -439,28 +479,42 @@ function serviceDateLabel(mode,date=state.sourceDate||route().date){return mode=
 function connectionBufferMinutes(arrival,departure){const a=parseMinutes(arrival),d=parseMinutes(departure);if(a==null||d==null)return null;let span=d-a;while(span<0)span+=1440;return span;}
 function liveConnectionRiskFor(minutes,minimum){return timetableProvider.connectionRiskFor(minutes,minimum);}
 function connectionChangeText(service){const live=Number.isFinite(service&&service.liveConnectionMinutes)?service.liveConnectionMinutes:null,value=live==null?Number(service&&service.connectionMinutes)||0:live;return `${live==null?'': 'live '}${value}m change`;}
+function journeyBadgesMarkup(service){const labels=Array.isArray(service&&service.journeyLabels)?service.journeyLabels:[];return labels.length?`<span class="train-journey-badges">${labels.map(label=>`<em>${esc(label)}</em>`).join('')}</span>`:'';}
+function recoverySummary(service){const choice=service&&service.recoveryChoice;if(!choice)return'';return `Backup ${choice.departure||choice.std||'—'} → ${choice.arrival||'—'}${choice.live?' · live':''}`;}
 function connectionWarning(service){
-  if(!service||service.journeyType!=='connection'||!Number.isFinite(service.liveConnectionMinutes))return'';
-  const change=displayName(service.interchange,'the interchange'),minimum=Number(service.minimumConnectionMinutes)||10,minutes=service.liveConnectionMinutes,arrival=service.liveInterchangeArrival?` at ${service.liveInterchangeArrival}`:'';
-  if(service.connectionRisk==='at-risk')return `Live first-leg evidence reaches ${change}${arrival}, leaving ${minutes} minutes for the change — below Kerbside's ${minimum}-minute planning buffer. The onward train is still timetabled, so treat this connection as at risk.`;
-  if(service.connectionRisk==='tight')return `Live first-leg evidence leaves ${minutes} minutes at ${change}, only ${minutes-minimum} minutes above Kerbside's ${minimum}-minute planning buffer.`;
+  if(!service||service.journeyType!=='connection')return'';
+  const change=displayName(service.interchange,'the interchange'),minimum=Number(service.minimumConnectionMinutes)||10,minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,arrival=service.liveInterchangeArrival?` at ${service.liveInterchangeArrival}`:'',backup=recoverySummary(service);
+  if(service.connectionRisk==='first-cancelled')return `The first train is cancelled, so Kerbside cannot assume you can reach ${change}. Re-plan from the origin rather than relying on the onward leg.`;
+  if(service.connectionRisk==='onward-cancelled')return `The planned onward train from ${change} is cancelled.${backup?` ${backup} is the next workable timetable option Kerbside found.`:''}`;
+  if(service.connectionRisk==='at-risk')return `Live evidence reaches ${change}${arrival}, leaving ${minutes} minutes for the change — below the ${minimum}-minute planning buffer.${backup?` ${backup} is the next workable option if this connection is missed.`:''}`;
+  if(service.connectionRisk==='tight')return `Live evidence leaves ${minutes} minutes at ${change}, only ${minutes-minimum} minutes above the ${minimum}-minute planning buffer.`;
   return'';
+}
+function recoveryMarkup(service){
+  if(!service||service.journeyType!=='connection'||!['at-risk','onward-cancelled'].includes(service.connectionRisk))return'';
+  const choice=service.recoveryChoice;
+  if(!choice)return `<div class="train-recovery-card train-recovery-none"><span>Recovery</span><strong>No later workable onward train found</strong><small>Kerbside checked the loaded timetable recovery window. Refresh as live information changes.</small></div>`;
+  const platform=choice.platform?` · Plat ${choice.platform}`:'',live=choice.live?'Live Darwin evidence':'Scheduled timetable';
+  return `<div class="train-recovery-card"><span>Backup if missed</span><strong>${esc(`${choice.departure||choice.std||'—'} → ${choice.arrival||'—'}`)}</strong><small>${esc(`${choice.operator||'Onward service'}${platform} · ${live}`)}</small></div>`;
 }
 function connectionItineraryMarkup(service,result){
   if(!service||service.journeyType!=='connection'||!Array.isArray(service.legs))return'';
   const results=Array.isArray(result&&result.journeyLegResults)?result.journeyLegResults:[];
   const legs=service.legs.map((leg,index)=>{
     const crowd=results[index]||{label:'Forecast pending',level:'unknown',confidence:'Low'};
-    const from=displayName(leg.from,'Departure'),to=displayName(leg.to,'Destination');
-    const platform=leg.platform?`Plat ${leg.platform}`:'Plat TBC';
-    const train=leg.trainId?` · ${leg.trainId}`:'';
-    return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(leg.std||'—')}</b><small>${esc(leg.arrival||'—')}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(`${crowd.confidence||'Low'} confidence`)}</small></span></div>`;
+    const from=displayName(leg.from,'Departure'),to=displayName(leg.to,'Destination'),live=!!leg.liveEvidence;
+    const depart=live&&/^\d{1,2}:\d{2}$/.test(String(leg.etd||''))?leg.etd:leg.std,arrive=leg.liveArrival||leg.arrival;
+    const platform=leg.platform?`Plat ${leg.platform}`:'Plat TBC',train=leg.trainId?` · ${leg.trainId}`:'';
+    return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(depart||'—')}</b><small>${esc(arrive||'—')}${live?' · live':''}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform} · ${live?'live':'scheduled'}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(`${crowd.confidence||'Low'} confidence`)}</small></span></div>`;
   });
   const change=service.interchange||{},minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,minimum=Number(service.minimumConnectionMinutes)||10,risk=service.connectionRisk||change.quality||'scheduled';
-  const quality=service.connectionRisk==='at-risk'?'At risk':service.connectionRisk==='tight'?'Tight':String(change.quality||'comfortable').replace(/^./,c=>c.toUpperCase());
-  const changeRow=`<div class="train-connection-change connection-risk-${esc(risk)}"><span>Change at ${esc(displayName(change,'interchange'))}</span><b>${esc(`${minutes} min`)}</b><small>${esc(quality)} connection · Kerbside planning buffer: ${esc(`${minimum} min minimum`)}${Number.isFinite(service.liveConnectionMinutes)?' · live first-leg arrival':''}</small></div>`;
+  const quality=service.connectionRisk==='at-risk'?'At risk':service.connectionRisk==='tight'?'Tight':service.connectionRisk==='onward-cancelled'?'Onward cancelled':service.connectionRisk==='first-cancelled'?'First train cancelled':String(change.quality||'comfortable').replace(/^./,c=>c.toUpperCase());
+  const evidence=service.secondLiveEvidence?' · live evidence on both legs':service.liveEvidence?' · live first-leg evidence':'';
+  const source=service.minimumConnectionSource==='official'?'official station minimum':'Kerbside fallback minimum';
+  const changeRow=`<div class="train-connection-change connection-risk-${esc(risk)}"><span>Change at ${esc(displayName(change,'interchange'))}</span><b>${esc(`${minutes} min`)}</b><small>${esc(`${quality} connection · ${source}: ${minimum} min${evidence}`)}</small></div>`;
   return `<div class="train-connection-itinerary"><div class="train-detail-title">Journey plan</div>${legs[0]||''}${changeRow}${legs[1]||''}</div>`;
 }
+
 
 /* ------------------------------------------------------------------
    Overlay merge. Darwin evidence is written onto the timetabled rows in
@@ -468,11 +522,14 @@ function connectionItineraryMarkup(service,result){
    state while gaining expected times, platform changes, cancellations,
    formation and calling points.
 ------------------------------------------------------------------ */
+function resetLegLive(leg){
+  if(!leg)return;leg.etd='';leg.platform=leg.scheduledPlatform||leg.platform;leg.isCancelled=false;leg.length=0;leg.liveEvidence=false;leg.liveVia='';leg.liveArrival='';leg.cancelReason='';leg.delayReason='';leg.previousCallingPoints=null;leg.subsequentCallingPoints=null;
+}
 function clearConnectionLive(service){
-  if(!service||service.journeyType!=='connection')return false;const first=service.legs&&service.legs[0];
-  const had=!!(service.liveEvidence||Number.isFinite(service.liveConnectionMinutes)||service.connectionRisk!=='scheduled');
-  if(first){first.etd='';first.platform=first.scheduledPlatform||first.platform;first.isCancelled=false;first.length=0;first.liveEvidence=false;first.liveVia='';first.cancelReason='';first.delayReason='';first.previousCallingPoints=null;first.subsequentCallingPoints=null;}
-  service.etd='';service.platform=service.scheduledPlatform||service.platform;service.isCancelled=false;service.length=0;service.liveEvidence=false;service.liveVia='';service.cancelReason='';service.delayReason='';service.liveConnectionMinutes=null;service.liveInterchangeArrival='';service.connectionRisk='scheduled';
+  if(!service||service.journeyType!=='connection')return false;
+  const had=!!(service.liveEvidence||service.secondLiveEvidence||Number.isFinite(service.liveConnectionMinutes)||service.connectionRisk!=='scheduled'||service.recoveryChoice);
+  (service.legs||[]).forEach(resetLegLive);(service.recoveryOptions||[]).forEach(resetLegLive);
+  service.etd='';service.platform=service.scheduledPlatform||service.platform;service.isCancelled=false;service.length=0;service.liveEvidence=false;service.secondLiveEvidence=false;service.onwardCancelled=false;service.liveVia='';service.cancelReason='';service.delayReason='';service.liveConnectionMinutes=null;service.liveInterchangeArrival='';service.connectionRisk='scheduled';service.recoveryChoice=null;
   return had;
 }
 function applyEvidence(target,evidence){
@@ -480,6 +537,23 @@ function applyEvidence(target,evidence){
   target.cancelReason=evidence.cancelReason;target.delayReason=evidence.delayReason;target.serviceIdUrlSafe=evidence.serviceIdUrlSafe;target.serviceIdGuid=evidence.serviceIdGuid;
   if(evidence.serviceID)target.liveServiceID=evidence.serviceID;if(evidence.previousCallingPoints)target.previousCallingPoints=evidence.previousCallingPoints;if(evidence.subsequentCallingPoints)target.subsequentCallingPoints=evidence.subsequentCallingPoints;
   target.liveEvidence=true;target.liveVia=evidence.via;
+}
+function evidenceArrivalAt(overlay,evidence,crs,fallback=''){
+  const points=overlay&&evidence?overlay.flattenCallingPoints(evidence.subsequentCallingPoints):[],code=String(crs||'').toUpperCase(),point=points.find(item=>String(item&&item.crs||'').toUpperCase()===code);
+  return String(point&&(point.at||point.et||point.st)||fallback||'').trim();
+}
+function liveDepartureFor(leg){const etd=String(leg&&leg.etd||'').trim();return /^\d{1,2}:\d{2}$/.test(etd)?etd:String(leg&&leg.std||'').trim();}
+function updateRecoveryChoice(service,overlay,toCrs,interchangeArrival){
+  service.recoveryChoice=null;const change=String(service.interchange&&service.interchange.crs||'').toUpperCase(),minimum=Number(service.minimumConnectionMinutes)||10;
+  for(const option of service.recoveryOptions||[]){
+    const evidence=overlay&&typeof overlay.evidenceForOnward==='function'?overlay.evidenceForOnward(option,change,toCrs):null;
+    if(evidence)applyEvidence(option,evidence);else resetLegLive(option);
+    if(option.isCancelled)continue;
+    const departure=liveDepartureFor(option),gap=interchangeArrival?connectionBufferMinutes(interchangeArrival,departure):null;
+    if(interchangeArrival&&(!Number.isFinite(gap)||gap<minimum))continue;
+    const arrival=evidenceArrivalAt(overlay,evidence,toCrs,option.arrival);
+    service.recoveryChoice={serviceID:option.serviceID,std:option.std,departure,arrival,operator:option.operator,platform:option.platform,trainId:option.trainId,live:!!evidence};return;
+  }
 }
 function mergeOverlay(){
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
@@ -490,15 +564,21 @@ function mergeOverlay(){
   state.services.forEach(service=>{
     if(service.liveOnly)return;
     if(service.journeyType==='connection'){
-      const first=service.legs&&service.legs[0],second=service.legs&&service.legs[1],evidence=first?overlay.evidenceFor(first):null;
-      if(!evidence){if(clearConnectionLive(service))changed=true;return;}
-      matched.push(evidence.index);
-      const before=`${service.etd}|${service.platform}|${service.isCancelled}|${service.length}|${service.liveConnectionMinutes}|${service.connectionRisk}`;
-      applyEvidence(first,evidence);service.etd=first.etd;if(evidence.platform)service.platform=evidence.platform;service.isCancelled=first.isCancelled;service.length=first.length;service.cancelReason=first.cancelReason;service.delayReason=first.delayReason;service.liveEvidence=true;service.liveVia=`first-leg-${evidence.via}`;
-      const points=overlay.flattenCallingPoints(evidence.subsequentCallingPoints),crs=String(service.interchange&&service.interchange.crs||'').toUpperCase(),point=points.find(item=>String(item&&item.crs||'').toUpperCase()===crs);
-      const expected=String(point&&(point.at||point.et||point.st)||'').trim(),minutes=second&&expected?connectionBufferMinutes(expected,second.std):null,minimum=Number(service.minimumConnectionMinutes)||10;
-      service.liveInterchangeArrival=expected;service.liveConnectionMinutes=Number.isFinite(minutes)?minutes:null;service.connectionRisk=service.isCancelled?'at-risk':liveConnectionRiskFor(minutes,minimum);
-      if(before!==`${service.etd}|${service.platform}|${service.isCancelled}|${service.length}|${service.liveConnectionMinutes}|${service.connectionRisk}`)changed=true;
+      const first=service.legs&&service.legs[0],second=service.legs&&service.legs[1],change=String(service.interchange&&service.interchange.crs||'').toUpperCase();
+      const firstEvidence=first?overlay.evidenceFor(first):null,secondEvidence=second&&typeof overlay.evidenceForOnward==='function'?overlay.evidenceForOnward(second,change,toCrs):null;
+      if(!firstEvidence&&!secondEvidence){if(clearConnectionLive(service))changed=true;return;}
+      if(firstEvidence)matched.push(firstEvidence.index);
+      const before=JSON.stringify([service.etd,service.platform,service.isCancelled,service.liveConnectionMinutes,service.connectionRisk,service.secondLiveEvidence,service.recoveryChoice&&service.recoveryChoice.serviceID,first&&first.etd,second&&second.etd,second&&second.isCancelled]);
+      if(firstEvidence){applyEvidence(first,firstEvidence);service.etd=first.etd;if(firstEvidence.platform)service.platform=firstEvidence.platform;service.isCancelled=first.isCancelled;service.length=first.length;service.cancelReason=first.cancelReason;service.delayReason=first.delayReason;}
+      else resetLegLive(first);
+      if(secondEvidence){applyEvidence(second,secondEvidence);second.liveArrival=evidenceArrivalAt(overlay,secondEvidence,toCrs,second.arrival);}else resetLegLive(second);
+      const firstArrival=firstEvidence?evidenceArrivalAt(overlay,firstEvidence,change,first&&first.arrival):String(first&&first.arrival||''),secondDeparture=second?liveDepartureFor(second):'',hasLiveTiming=!!(firstEvidence||secondEvidence),minutes=firstArrival&&secondDeparture&&hasLiveTiming?connectionBufferMinutes(firstArrival,secondDeparture):null,minimum=Number(service.minimumConnectionMinutes)||10;
+      if(first)first.liveArrival=firstArrival;
+      service.liveInterchangeArrival=firstArrival;service.liveConnectionMinutes=Number.isFinite(minutes)?minutes:null;service.secondLiveEvidence=!!secondEvidence;service.onwardCancelled=!!(second&&second.isCancelled);service.liveEvidence=!!(firstEvidence||secondEvidence);
+      service.liveVia=firstEvidence&&secondEvidence?'both-legs':firstEvidence?`first-leg-${firstEvidence.via}`:`onward-${secondEvidence&&secondEvidence.via||'live'}`;
+      service.connectionRisk=first&&first.isCancelled?'first-cancelled':second&&second.isCancelled?'onward-cancelled':liveConnectionRiskFor(minutes,minimum);
+      if(['at-risk','onward-cancelled'].includes(service.connectionRisk))updateRecoveryChoice(service,overlay,toCrs,firstArrival);else service.recoveryChoice=null;
+      const after=JSON.stringify([service.etd,service.platform,service.isCancelled,service.liveConnectionMinutes,service.connectionRisk,service.secondLiveEvidence,service.recoveryChoice&&service.recoveryChoice.serviceID,first&&first.etd,second&&second.etd,second&&second.isCancelled]);if(before!==after)changed=true;
       return;
     }
     const evidence=overlay.evidenceFor(service);
@@ -507,43 +587,31 @@ function mergeOverlay(){
       return;
     }
     matched.push(evidence.index);
-    const before=`${service.etd}|${service.platform}|${service.isCancelled}|${service.length}`;
-    applyEvidence(service,evidence);
-    if(before!==`${service.etd}|${service.platform}|${service.isCancelled}|${service.length}`)changed=true;
+    const before=`${service.etd}|${service.platform}|${service.isCancelled}|${service.length}`;applyEvidence(service,evidence);if(before!==`${service.etd}|${service.platform}|${service.isCancelled}|${service.length}`)changed=true;
   });
-  /* Short-notice additions Darwin is running but the snapshot predates.
-     extraServices() only returns those whose calling points prove they
-     reach the destination, so an unfiltered fallback board cannot inject
-     trains that never go there. */
   const existing=new Set(state.services.filter(s=>s.liveOnly).map(s=>String(s.serviceID||'')));
-  const extras=overlay.extraServices(matched,toCrs)
-    .map(({service})=>normaliseLive(service,toCrs))
-    .filter(row=>row.std&&!existing.has(String(row.serviceID||'')));
-  if(extras.length){
-    state.services=state.services.concat(extras)
-      .sort((a,b)=>(parseMinutes(a.std)??9999)-(parseMinutes(b.std)??9999));
-    changed=true;
-  }
+  const extras=overlay.extraServices(matched,toCrs).map(({service})=>normaliseLive(service,toCrs)).filter(row=>row.std&&!existing.has(String(row.serviceID||'')));
+  if(extras.length){state.services=state.services.concat(extras).sort((a,b)=>(parseMinutes(a.std)??9999)-(parseMinutes(b.std)??9999));changed=true;}
   return changed;
 }
+
 
 /* The status line under the departure time. A timetabled row says so
    plainly rather than borrowing the confidence of a live one. */
 function statusFor(service){
-  if(service.isCancelled)return {label:'Cancelled',cls:'cancelled'};
   if(service.journeyType==='connection'){
+    if(service.connectionRisk==='first-cancelled')return {label:'First train cancelled',cls:'cancelled'};
+    if(service.connectionRisk==='onward-cancelled')return {label:'Onward cancelled',cls:'cancelled'};
     if(service.connectionRisk==='at-risk')return {label:'Connection at risk',cls:'late'};
     if(service.connectionRisk==='tight')return {label:'Tight change',cls:'late'};
     return {label:'1 change',cls:'connection'};
   }
+  if(service.isCancelled)return {label:'Cancelled',cls:'cancelled'};
   if(!service.liveEvidence)return {label:'Timetabled',cls:'timetabled'};
   const etd=String(service.etd||'').trim();
   if(!etd||/^on time$/i.test(etd))return {label:'On time',cls:'ontime'};
   if(/^\d{1,2}:\d{2}$/.test(etd)){
-    const late=parseMinutes(etd),planned=parseMinutes(service.std);
-    let delay=late!=null&&planned!=null?late-planned:null;
-    if(delay!=null&&delay<-720)delay+=1440;
-    if(delay!=null&&delay>720)delay-=1440;
+    const late=parseMinutes(etd),planned=parseMinutes(service.std);let delay=late!=null&&planned!=null?late-planned:null;if(delay!=null&&delay<-720)delay+=1440;if(delay!=null&&delay>720)delay-=1440;
     return {label:`Expected ${etd}`,cls:delay!=null&&delay>=5?'late':'ontime'};
   }
   if(/delay/i.test(etd))return {label:etd,cls:'late'};
@@ -582,9 +650,10 @@ function callingMarkup(service){
 function sourceNote(service){
   if(service.liveOnly)return 'Added by National Rail Darwin after this timetable snapshot was published. Live evidence only.';
   if(service.journeyType==='connection'){
-    const minimum=Number(service.minimumConnectionMinutes)||10;
-    if(service.liveEvidence)return `Both legs are timetabled from the National Rail Darwin Timetable Files. Live Darwin evidence is applied to the first train from the departure station; the onward train remains scheduled. The connection uses Kerbside's ${minimum}-minute planning buffer, not an official National Rail minimum-connection-time feed.`;
-    return `Both legs are timetabled from the National Rail Darwin Timetable Files. This one-change result uses Kerbside's conservative ${minimum}-minute planning buffer; official station minimum connection times are not included in this snapshot.`;
+    const minimum=Number(service.minimumConnectionMinutes)||10,minimumText=service.minimumConnectionSource==='official'?`the official ${minimum}-minute station minimum`:`Kerbside's conservative ${minimum}-minute fallback buffer`;
+    if(service.secondLiveEvidence)return `Both legs are timetabled from the National Rail Darwin Timetable Files and both have been matched to live Darwin evidence. The connection uses ${minimumText}.`;
+    if(service.liveEvidence)return `Both legs are timetabled from the National Rail Darwin Timetable Files. Live Darwin evidence is currently available for one leg; the other remains scheduled. The connection uses ${minimumText}.`;
+    return `Both legs are timetabled from the National Rail Darwin Timetable Files. This one-change result uses ${minimumText}; Kerbside does not treat the Connecting Train Identifiers feed as a station minimum-time source.`;
   }
   if(service.liveEvidence)return `Timetabled from the National Rail Darwin Timetable Files, matched to live Darwin data by ${service.liveVia==='rid'?'service ID':service.liveVia==='uid'?'schedule UID':service.liveVia==='headcode'?'headcode':'departure time'}.`;
   return 'Timetabled from the National Rail Darwin Timetable Files. Live expected times, platform changes, cancellations and formation are added automatically once this service enters the live Darwin window.';
@@ -613,8 +682,9 @@ function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,ex
     :(warning||(service.delayReason?`${service.delayReason}.`:''));
   const formation=Number(service.length)||0;
   const serviceDate=serviceDateLabel(mode);
-  const rightLabel=connection?`${service.connectionMinutes}m`:(formation?`${formation} coach${formation===1?'':'es'}`:(duration||'—'));
-  const rightNote=connection?'scheduled change':(formation?'formation':(duration?'journey time':'duration unknown'));
+  const shownChange=connection&&Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:service.connectionMinutes;
+  const rightLabel=connection?`${shownChange}m`:(formation?`${formation} coach${formation===1?'':'es'}`:(duration||'—'));
+  const rightNote=connection?(Number.isFinite(service.liveConnectionMinutes)?'live change':'scheduled change'):(formation?'formation':(duration?'journey time':'duration unknown'));
   const crowdNote=service.isCancelled?'service cancelled':connection?`${forecastResult.confidence} confidence · peak leg`:`${forecastResult.confidence} confidence`;
   const detailGrid=connection
     ?`<div class="train-detail-grid"><div><span>Depart</span><b>${esc(`${service.std||'—'} · ${displayName(service.legs&&service.legs[0]&&service.legs[0].from,'Departure')}`)}</b></div><div><span>Change</span><b>${esc(displayName(service.interchange,'Interchange'))}</b></div><div><span>Connection</span><b>${esc(connectionChangeText(service))}</b></div><div><span>Arrive</span><b>${esc(`${service.arrival||'—'} · ${destinationFallback}`)}</b></div></div>`
@@ -622,7 +692,7 @@ function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,ex
   return `<article class="train-service train-scheduled-service${connection?' train-connection-service':''}${open?' open':''}" data-service-id="${esc(key)}">
       <button class="train-service-summary" type="button" data-scheduled-toggle="${esc(key)}" aria-expanded="${open?'true':'false'}" aria-controls="train-scheduled-detail-${esc(key)}">
         <span class="train-time"><b>${esc(service.std||'—')}</b><small class="train-status train-status-${esc(status.cls)}">${esc(status.label)}</small>${serviceDate?`<small class="train-service-date">${esc(serviceDate)}</small>`:''}</span>
-        <span class="train-route"><strong>${esc(terminus)}</strong><small>${esc(line.join(' · '))}</small></span>
+        <span class="train-route">${journeyBadgesMarkup(service)}<strong>${esc(terminus)}</strong><small>${esc(line.join(' · '))}</small></span>
         <span class="train-crowding crowd-${esc(forecastResult.level)}" title="${esc((forecastResult.reasons||[]).join(', '))}"><i></i><b>${esc(forecastResult.label)}</b><small>${esc(crowdNote)}</small></span>
         <span class="train-formation"><b>${esc(rightLabel)}</b><small>${esc(rightNote)}</small></span>
         <span class="train-chevron" aria-hidden="true">⌄</span>
@@ -630,6 +700,7 @@ function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,ex
       <div class="train-service-detail" id="train-scheduled-detail-${esc(key)}"${open?'':' hidden'}>
         ${detailGrid}
         ${connection?connectionItineraryMarkup(service,forecastResult):''}
+        ${connection?recoveryMarkup(service):''}
         <div class="train-crowding-explain crowd-${esc(forecastResult.level)}">${explain}</div>
         ${disruption?`<div class="train-detail-note train-detail-warn">${esc(disruption)}</div>`:''}
         ${callingMarkup(service)}
@@ -656,7 +727,7 @@ function renderRows(rows,{mode,manifest}){
   if(!state.services.length){board.innerHTML=`<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Darwin timetable</span><strong>No suitable direct or one-change journeys found</strong><span>${esc(coverage||'The timetable snapshot returned no matching journeys for this date and departure time.')}</span></div>`;return;}
   const destinationFallback=displayName(r.to,'Destination'),explains=[];
   board.innerHTML=state.services.map((s,i)=>serviceMarkup(s,i,forecast(s,i,state.services),{mode,destinationFallback,explains})).join('')
-    +`<div class="train-empty train-future-date train-future-card train-scheduled-foot"><span class="train-future-badge">Official timetable</span><span class="train-future-note">${esc(coverage)} Scheduled journey options come from National Rail Darwin Timetable Files. One-change results use conservative Kerbside interchange buffers rather than the official minimum-connection-time dataset. Live delays, cancellations and formations take precedence when LDB data is available.</span></div>`;
+    +`<div class="train-empty train-future-date train-future-card train-scheduled-foot"><span class="train-future-badge">Official timetable</span><span class="train-future-note">${esc(coverage)} Scheduled journey options come from National Rail Darwin Timetable Files. Where an authoritative station minimum is not loaded, one-change results use an explicit conservative Kerbside fallback; CTI is not treated as a minimum-time feed. Live Darwin evidence can update both legs and recovery options.</span></div>`;
   /* Prime the markup cache refreshForecasts() compares against, so the first
      Forecast v3 pass after render is a genuine no-op rather than a rewrite. */
   board.querySelectorAll('.train-scheduled-service .train-crowding-explain').forEach((el,i)=>{el.__kerbsideMarkup=explains[i];});
@@ -778,7 +849,8 @@ function requestOverlay(){
     if(typeof overlay.clear==='function')overlay.clear();
     return false;
   }
-  const pending=overlay.refresh({crs:r.from.crs,date:r.date,connectionTargets:[...new Set(state.services.filter(service=>service&&service.journeyType==='connection').map(service=>service.interchange&&service.interchange.crs).filter(Boolean))]});
+  const connections=state.services.filter(service=>service&&service.journeyType==='connection'),connectionTargets=[...new Set(connections.map(service=>service.interchange&&service.interchange.crs).filter(Boolean))],onwardTargets=connections.map(service=>({from:service.interchange&&service.interchange.crs,to:r.to&&r.to.crs})).filter(item=>item.from&&item.to);
+  const pending=overlay.refresh({crs:r.from.crs,date:r.date,connectionTargets,onwardTargets});
   /* A route sync can repaint scheduled rows while the matching live board is
      still fresh. refresh() deliberately does not emit another event on a
      cache hit, so re-apply the cached evidence after every successful call. */
@@ -812,5 +884,5 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,provider:timetableProvider};
 })();

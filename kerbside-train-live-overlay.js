@@ -41,7 +41,7 @@ const REFRESH_MS=60000;
 const DETAILED_ROWS=9;
 const PLAIN_ROWS=20;
 
-const state={crs:'',date:'',services:[],messages:[],index:null,updatedAt:0,status:'idle',error:'',seq:0,timer:null,includeConnections:false,connectionTargets:[]};
+const state={crs:'',date:'',services:[],messages:[],index:null,onwardIndexes:new Map(),updatedAt:0,status:'idle',error:'',seq:0,timer:null,includeConnections:false,connectionTargets:[],onwardTargets:[]};
 
 function londonStamp(date){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date||new Date());const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${map.year}-${map.month}-${map.day}`;}
 function isToday(date){return String(date||'')===londonStamp();}
@@ -104,48 +104,42 @@ function buildIndex(services){
 
 /* A timetabled row, as produced by kerbside-train-timetable.js, carries
    serviceID (RID), uid and trainId straight from the snapshot. */
-function matchEntry(row){
-  if(!state.index||!row)return null;
+function matchEntryIn(row,index){
+  if(!index||!row)return null;
   const rid=text(row.serviceID||row.serviceId||row.rid);
-  if(rid&&state.index.byRid.has(rid))return {entry:state.index.byRid.get(rid),via:'rid'};
+  if(rid&&index.byRid.has(rid))return {entry:index.byRid.get(rid),via:'rid'};
   const uid=upper(row.uid);
-  if(uid&&state.index.byUid.has(uid))return {entry:state.index.byUid.get(uid),via:'uid'};
+  if(uid&&index.byUid.has(uid))return {entry:index.byUid.get(uid),via:'uid'};
   const head=upper(row.trainId||row.trainid),std=timeOf(row.std);
-  if(head&&std&&state.index.byHead.has(`${head}|${std}`))return {entry:state.index.byHead.get(`${head}|${std}`),via:'headcode'};
+  if(head&&std&&index.byHead.has(`${head}|${std}`))return {entry:index.byHead.get(`${head}|${std}`),via:'headcode'};
   if(std){
     const key=`${std}|${upper(row.operatorCode)}|${destinationCrsOf(row)}`;
-    if(state.index.byTime.has(key))return {entry:state.index.byTime.get(key),via:'time'};
+    if(index.byTime.has(key))return {entry:index.byTime.get(key),via:'time'};
   }
   return null;
 }
+function matchEntry(row){return matchEntryIn(row,state.index);}
 
-/* The evidence a timetable row cannot know on its own. Returns null when
-   Darwin has nothing to say about this service, which is the normal case
-   for anything beyond the live window. */
-function evidenceFor(row){
-  const match=matchEntry(row);
+function evidenceFromMatch(match){
   if(!match)return null;
   const service=match.entry.service;
   const previous=flattenCallingPoints(service.previousCallingPoints);
   const ahead=flattenCallingPoints(service.subsequentCallingPoints);
   return {
-    via:match.via,
-    index:match.entry.index,
-    etd:text(service.etd)||'On time',
-    eta:text(service.eta),
-    platform:text(service.platform),
-    isCancelled:!!service.isCancelled,
-    cancelReason:text(service.cancelReason),
-    delayReason:text(service.delayReason),
-    length:Number(service.length)||0,
-    operator:text(service.operator),
-    serviceID:text(service.serviceID),
-    serviceIdUrlSafe:text(service.serviceIdUrlSafe),
-    serviceIdGuid:ridOf(service),
-    previousCallingPoints:previous.length?service.previousCallingPoints:null,
-    subsequentCallingPoints:ahead.length?service.subsequentCallingPoints:null,
+    via:match.via,index:match.entry.index,
+    etd:text(service.etd)||'On time',eta:text(service.eta),platform:text(service.platform),
+    isCancelled:!!service.isCancelled,cancelReason:text(service.cancelReason),delayReason:text(service.delayReason),length:Number(service.length)||0,
+    operator:text(service.operator),serviceID:text(service.serviceID),serviceIdUrlSafe:text(service.serviceIdUrlSafe),serviceIdGuid:ridOf(service),
+    previousCallingPoints:previous.length?service.previousCallingPoints:null,subsequentCallingPoints:ahead.length?service.subsequentCallingPoints:null,
     service
   };
+}
+/* Origin-board evidence for direct services and the first leg. */
+function evidenceFor(row){return evidenceFromMatch(matchEntry(row));}
+/* Interchange-board evidence for the onward leg and recovery candidates. */
+function evidenceForOnward(row,fromCrs,toCrs){
+  const key=`${upper(fromCrs)}|${upper(toCrs)}`,index=state.onwardIndexes.get(key);
+  return evidenceFromMatch(matchEntryIn(row,index));
 }
 
 /* Services Darwin knows about that the snapshot does not - short-notice
@@ -186,41 +180,42 @@ function mergeBoards(primary,origin){
   return {...(primary||origin||{}),trainServices:services,nrccMessages:messages};
 }
 
-async function refresh({crs,date,force=false,connectionTargets=state.connectionTargets}={}){
+function normaliseOnwardTargets(values){
+  const out=[],seen=new Set();
+  for(const item of Array.isArray(values)?values:[]){
+    const from=upper(item&&item.from),to=upper(item&&item.to);if(!/^[A-Z0-9]{3}$/.test(from)||!/^[A-Z0-9]{3}$/.test(to)||from===to)continue;
+    const key=`${from}|${to}`;if(seen.has(key))continue;seen.add(key);out.push({from,to});if(out.length>=4)break;
+  }
+  return out;
+}
+async function refresh({crs,date,force=false,connectionTargets=state.connectionTargets,onwardTargets=state.onwardTargets}={}){
   const code=upper(crs);
   if(!code||!isToday(date)){clear();return false;}
-  const targets=[...new Set((Array.isArray(connectionTargets)?connectionTargets:[]).map(value=>String(value||'').trim().toUpperCase()).filter(value=>/^[A-Z0-9]{3}$/.test(value)&&value!==code))].slice(0,4);
-  const targetKey=targets.join(',');
-  const wantsConnections=targets.length>0;
-  const fresh=state.crs===code&&state.status==='ready'&&state.connectionTargets.join(',')===targetKey&&Date.now()-state.updatedAt<FRESH_MS;
+  const targets=[...new Set((Array.isArray(connectionTargets)?connectionTargets:[]).map(value=>upper(value)).filter(value=>/^[A-Z0-9]{3}$/.test(value)&&value!==code))].slice(0,4);
+  const onward=normaliseOnwardTargets(onwardTargets),targetKey=targets.join(','),onwardKey=onward.map(item=>`${item.from}>${item.to}`).join(',');
+  const wantsConnections=targets.length>0||onward.length>0;
+  const fresh=state.crs===code&&state.status==='ready'&&state.connectionTargets.join(',')===targetKey&&state.onwardTargets.map(item=>`${item.from}>${item.to}`).join(',')===onwardKey&&Date.now()-state.updatedAt<FRESH_MS;
   if(fresh&&!force)return true;
   const seq=++state.seq;
-  state.crs=code;
-  state.date=String(date);
-  state.includeConnections=wantsConnections;
-  state.connectionTargets=targets;
-  state.status='loading';
+  state.crs=code;state.date=String(date);state.includeConnections=wantsConnections;state.connectionTargets=targets;state.onwardTargets=onward;state.status='loading';
   try{
-    const boards=await Promise.all([requestBoard(code),...targets.map(target=>requestBoard(code,undefined,{target}))]);
-    const json=boards.slice(1).reduce((merged,board)=>mergeBoards(merged,board),boards[0]||{});
+    const originBoards=await Promise.all([requestBoard(code),...targets.map(target=>requestBoard(code,undefined,{target}))]);
+    const onwardBoards=await Promise.all(onward.map(item=>requestBoard(item.from,undefined,{target:item.to})));
+    const json=originBoards.slice(1).reduce((merged,board)=>mergeBoards(merged,board),originBoards[0]||{});
     if(seq!==state.seq)return false;
     state.services=Array.isArray(json&&json.trainServices)?json.trainServices:[];
-    /* Darwin's NRCC messages are the network's own words about disruption -
-       "reduced service", "severe delays" - and the model already scores them.
-       Keep them here so the journey board can pass them on. */
     state.messages=Array.isArray(json&&json.nrccMessages)?json.nrccMessages:[];
     state.index=buildIndex(state.services);
-    state.updatedAt=Date.now();
-    state.status='ready';
-    state.error='';
-    document.dispatchEvent(new CustomEvent('kerbside:live-overlay',{detail:{crs:code,date:state.date,count:state.services.length}}));
+    state.onwardIndexes=new Map(onward.map((item,index)=>{
+      const board=onwardBoards[index],services=Array.isArray(board&&board.trainServices)?board.trainServices:[];
+      return [`${item.from}|${item.to}`,buildIndex(services)];
+    }));
+    state.updatedAt=Date.now();state.status='ready';state.error='';
+    document.dispatchEvent(new CustomEvent('kerbside:live-overlay',{detail:{crs:code,date:state.date,count:state.services.length,onwardBoards:state.onwardIndexes.size}}));
     return true;
   }catch(error){
     if(seq!==state.seq)return false;
-    state.status='error';
-    state.error=error&&error.message?error.message:'unavailable';
-    /* A failed overlay is not a failed board. The timetabled rows stand
-       on their own; they simply stay marked as scheduled. */
+    state.status='error';state.error=error&&error.message?error.message:'unavailable';
     document.dispatchEvent(new CustomEvent('kerbside:live-overlay',{detail:{crs:code,date:String(date),error:state.error}}));
     return false;
   }
@@ -232,7 +227,7 @@ function messages(){return state.status==='ready'&&Array.isArray(state.messages)
 function clear(){
   if(state.status==='idle'&&!state.services.length)return;
   state.seq++;
-  state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';state.includeConnections=false;state.connectionTargets=[];
+  state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.onwardIndexes=new Map();state.updatedAt=0;state.status='idle';state.error='';state.includeConnections=false;state.connectionTargets=[];state.onwardTargets=[];
 }
 
 function start(){
@@ -241,7 +236,7 @@ function start(){
     if(document.hidden)return;
     const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
     if(!timetable||!timetable.state||timetable.state.mode!=='today')return;
-    refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets});
+    refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets,onwardTargets:state.onwardTargets});
   },REFRESH_MS);
 }
 function stop(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
@@ -249,11 +244,11 @@ function stop(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden)return;
   const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
-  if(timetable&&timetable.state&&timetable.state.mode==='today'&&state.crs)refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets});
+  if(timetable&&timetable.state&&timetable.state.mode==='today'&&state.crs)refresh({crs:state.crs,date:state.date,force:true,connectionTargets:state.connectionTargets,onwardTargets:state.onwardTargets});
 });
 
 window.__KERBSIDE_TRAIN_OVERLAY__={
-  state,refresh,clear,start,stop,evidenceFor,extraServices,servesDestination,messages,
-  flattenCallingPoints,buildIndex,matchEntry,mergeBoards,isToday
+  state,refresh,clear,start,stop,evidenceFor,evidenceForOnward,extraServices,servesDestination,messages,
+  flattenCallingPoints,buildIndex,matchEntry,matchEntryIn,mergeBoards,isToday
 };
 })();

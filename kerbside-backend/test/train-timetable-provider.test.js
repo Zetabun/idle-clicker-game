@@ -20,7 +20,8 @@ const rows=[
   ['rid-2','uid-2','1A02','XC','2026-08-12',[["BHM","","08:42","10",0],["BRI","10:02","10:04","4",0],["PLY","11:50","","",0]]],
   ['rid-change-a','uid-change-a','1C10','XC','2026-08-12',[["BHM","","09:05","8",0],["CNM","09:45","","2",0]]],
   ['rid-change-tight','uid-change-tight','1G01','XC','2026-08-12',[["CNM","","09:52","4",0],["GLO","10:25","","1",0]]],
-  ['rid-change-b','uid-change-b','1G02','XC','2026-08-12',[["CNM","","10:00","4",0],["GLO","10:32","","1",0]]]
+  ['rid-change-b','uid-change-b','1G02','XC','2026-08-12',[["CNM","","10:00","4",0],["GLO","10:32","","1",0]]],
+  ['rid-change-recovery','uid-change-recovery','1G03','XC','2026-08-12',[["CNM","","10:20","5",0],["GLO","10:52","","2",0]]]
 ];
 const gz=gzipSync(Buffer.from(JSON.stringify(rows)));
 
@@ -80,12 +81,18 @@ test('one-change journeys use a conservative same-station interchange buffer',as
   assert.equal(journey.legs[1].std,'10:00');
   assert.equal(journey.arrival,'10:32');
   assert.equal(journey.legs.some(leg=>leg.serviceID==='rid-change-tight'),false,'7-minute change must be rejected');
+  assert.equal(journey.recoveryOptions.length,1);
+  assert.equal(journey.recoveryOptions[0].serviceID,'rid-change-recovery');
+  assert.equal(journey.recoveryOptions[0].std,'10:20');
+  assert.ok(journey.journeyLabels.includes('Fastest'));
+  assert.ok(journey.journeyLabels.includes('Best connection'));
 });
 
 test('connection buffer status distinguishes safe, tight and at-risk changes',()=>{
   const provider=loadProvider();
   assert.equal(provider.connectionMinimum('CNM'),10);
   assert.equal(provider.connectionMinimum('BHM'),15);
+  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:10,source:'kerbside-topology'});
   assert.equal(provider.connectionRiskFor(18,10),'good');
   assert.equal(provider.connectionRiskFor(12,10),'tight');
   assert.equal(provider.connectionRiskFor(8,10),'at-risk');

@@ -43,7 +43,8 @@ function rowsFor(date){return [
   [`rid-reverse-${date}`,`uid-reverse-${date}`,'1A02','XC',date,[['BRI','','10:50','3',0],['BHM','12:15','','7',0]]],
   [`rid-change-a-${date}`,`uid-change-a-${date}`,'1C10','XC',date,[['BHM','','10:05','8',0],['CNM','10:45','','2',0]]],
   [`rid-change-tight-${date}`,`uid-change-tight-${date}`,'1G01','GW',date,[['CNM','','10:52','4',0],['GLO','11:25','','1',0]]],
-  [`rid-change-b-${date}`,`uid-change-b-${date}`,'1G02','GW',date,[['CNM','','11:00','4',0],['GLO','11:32','','1',0]]]
+  [`rid-change-b-${date}`,`uid-change-b-${date}`,'1G02','GW',date,[['CNM','','11:00','4',0],['GLO','11:32','','1',0]]],
+  [`rid-change-recovery-${date}`,`uid-change-recovery-${date}`,'1G03','GW',date,[['CNM','','11:20','5',0],['GLO','11:52','','2',0]]]
 ];}
 const gz={
   [TODAY]:gzipSync(Buffer.from(JSON.stringify(rowsFor(TODAY)))),
@@ -80,23 +81,39 @@ const stations=[
   {stationName:'Cheltenham Spa',crsCode:'CNM'},
   {stationName:'Gloucester',crsCode:'GLO'}
 ];
-const liveService=(kind)=>kind==='connection'?{
-  origin:[{locationName:'Birmingham New Street',crs:'BHM'}],destination:[{locationName:'Cheltenham Spa',crs:'CNM'}],
-  serviceIdGuid:`rid-change-a-${TODAY}`,uid:`uid-change-a-${TODAY}`,trainid:'1C10',serviceIdUrlSafe:'live-change-a',
-  std:'10:05',etd:'10:12',platform:'8',operator:'CrossCountry',operatorCode:'XC',length:4,isCancelled:false,
-  subsequentCallingPoints:[{callingPoint:[{locationName:'Cheltenham Spa',crs:'CNM',st:'10:45',et:'10:53',isCancelled:false}]}]
-}:kind==='direct'?{
-  origin:[{locationName:'Birmingham New Street',crs:'BHM'}],destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
-  serviceIdGuid:`rid-forward-${TODAY}`,uid:`uid-forward-${TODAY}`,trainid:'1A01',serviceIdUrlSafe:'live-forward',
-  std:'10:42',etd:'On time',platform:'7',operator:'CrossCountry',operatorCode:'XC',length:8,isCancelled:false
-}:{
-  origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],destination:[{locationName:'Birmingham New Street',crs:'BHM'}],
-  serviceIdGuid:`rid-reverse-${TODAY}`,uid:`uid-reverse-${TODAY}`,trainid:'1A02',serviceIdUrlSafe:'live-reverse',
-  std:'10:50',etd:'On time',platform:'3',operator:'CrossCountry',operatorCode:'XC',length:8,isCancelled:false
+const liveService=(kind)=>{
+  if(kind==='connection')return {
+    origin:[{locationName:'Birmingham New Street',crs:'BHM'}],destination:[{locationName:'Cheltenham Spa',crs:'CNM'}],
+    serviceIdGuid:`rid-change-a-${TODAY}`,uid:`uid-change-a-${TODAY}`,trainid:'1C10',serviceIdUrlSafe:'live-change-a',
+    std:'10:05',etd:'10:12',platform:'8',operator:'CrossCountry',operatorCode:'XC',length:4,isCancelled:false,
+    subsequentCallingPoints:[{callingPoint:[{locationName:'Cheltenham Spa',crs:'CNM',st:'10:45',et:'10:53',isCancelled:false}]}]
+  };
+  if(kind==='onward')return {
+    origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}],
+    serviceIdGuid:`rid-change-b-${TODAY}`,uid:`uid-change-b-${TODAY}`,trainid:'1G02',serviceIdUrlSafe:'live-change-b',
+    std:'11:00',etd:'On time',platform:'4',operator:'Great Western Railway',operatorCode:'GW',length:3,isCancelled:false,
+    subsequentCallingPoints:[{callingPoint:[{locationName:'Gloucester',crs:'GLO',st:'11:32',et:'11:32',isCancelled:false}]}]
+  };
+  if(kind==='recovery')return {
+    origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}],
+    serviceIdGuid:`rid-change-recovery-${TODAY}`,uid:`uid-change-recovery-${TODAY}`,trainid:'1G03',serviceIdUrlSafe:'live-change-recovery',
+    std:'11:20',etd:'On time',platform:'5',operator:'Great Western Railway',operatorCode:'GW',length:5,isCancelled:false,
+    subsequentCallingPoints:[{callingPoint:[{locationName:'Gloucester',crs:'GLO',st:'11:52',et:'11:52',isCancelled:false}]}]
+  };
+  if(kind==='direct')return {
+    origin:[{locationName:'Birmingham New Street',crs:'BHM'}],destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
+    serviceIdGuid:`rid-forward-${TODAY}`,uid:`uid-forward-${TODAY}`,trainid:'1A01',serviceIdUrlSafe:'live-forward',
+    std:'10:42',etd:'On time',platform:'7',operator:'CrossCountry',operatorCode:'XC',length:8,isCancelled:false
+  };
+  return {
+    origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],destination:[{locationName:'Birmingham New Street',crs:'BHM'}],
+    serviceIdGuid:`rid-reverse-${TODAY}`,uid:`uid-reverse-${TODAY}`,trainid:'1A02',serviceIdUrlSafe:'live-reverse',
+    std:'10:50',etd:'On time',platform:'3',operator:'CrossCountry',operatorCode:'XC',length:8,isCancelled:false
+  };
 };
 const liveBoard=(crs,filter='')=>({
-  generatedAt:new Date().toISOString(),locationName:crs==='BRI'?'Bristol Temple Meads':'Birmingham New Street',crs,nrccMessages:[],
-  trainServices:crs==='BRI'?[liveService('reverse')]:filter==='BRI'?[liveService('direct')]:filter==='CNM'?[liveService('connection')]:filter==='GLO'?[]:[liveService('connection'),liveService('direct')]
+  generatedAt:new Date().toISOString(),locationName:crs==='BRI'?'Bristol Temple Meads':crs==='CNM'?'Cheltenham Spa':'Birmingham New Street',crs,nrccMessages:[],
+  trainServices:crs==='BRI'?[liveService('reverse')]:crs==='CNM'&&filter==='GLO'?[liveService('onward'),liveService('recovery')]:filter==='BRI'?[liveService('direct')]:filter==='CNM'?[liveService('connection')]:filter==='GLO'?[]:[liveService('connection'),liveService('direct')]
 });
 
 async function mockExternal(page,diagnostics){
@@ -199,6 +216,8 @@ try{
   assert.equal(await page.locator('#trainScheduledBoard .train-connection-service').count(),1);
   const connection=page.locator('#trainScheduledBoard .train-connection-service').first();
   assert.match(await connection.textContent(),/Cheltenham Spa/);
+  assert.match(await connection.textContent(),/Fastest/);
+  assert.match(await connection.textContent(),/Best connection/);
   try{
     await page.waitForFunction(()=>/Connection at risk/.test(document.querySelector('#trainScheduledBoard .train-connection-service')?.textContent||''),null,{timeout:10000});
   }catch(error){
@@ -225,15 +244,22 @@ try{
   }
   assert.match(await connection.textContent(),/Connection at risk/);
   assert.match(await connection.textContent(),/live 7m change/);
-  assert.ok(diagnostics.railRequests.some(value=>/^\/departures\/BHM\/to\/CNM\/9\?/.test(value)),'connection overlay should request a BHM → CNM interchange board');
+  assert.ok(diagnostics.railRequests.some(value=>/^\/departures\/BHM\/to\/CNM\/9\?/.test(value)),'connection overlay should request a BHM → CNM first-leg board');
+  assert.ok(diagnostics.railRequests.some(value=>/^\/departures\/CNM\/to\/GLO\/9\?/.test(value)),'connection overlay should request a CNM → GLO onward board');
+  const connectionState=await page.evaluate(()=>window.__KERBSIDE_TRAIN_TIMETABLE__.state.services.find(service=>service.journeyType==='connection'));
+  assert.equal(connectionState.secondLiveEvidence,true,'onward leg should carry live Darwin evidence');
+  assert.equal(connectionState.recoveryChoice?.serviceID,`rid-change-recovery-${TODAY}`);
   assert.equal(diagnostics.railRequests.some(value=>value.includes('kerbsideScope')),false,'connection evidence must use normal provider URLs only');
   await connection.locator('[data-scheduled-toggle]').click();
   const connectionDetail=connection.locator('.train-service-detail');
   await connectionDetail.waitFor({state:'visible'});
   assert.match(await connectionDetail.textContent(),/Journey plan/);
   assert.match(await connectionDetail.textContent(),/Great Western Railway/);
-  assert.match(await connectionDetail.textContent(),/10 min minimum/);
-  assert.match(await connectionDetail.textContent(),/below Kerbside's 10-minute planning buffer/);
+  assert.match(await connectionDetail.textContent(),/Kerbside fallback minimum: 10 min/);
+  assert.match(await connectionDetail.textContent(),/10-minute planning buffer/);
+  assert.match(await connectionDetail.textContent(),/live evidence on both legs/i);
+  assert.match(await connectionDetail.textContent(),/Backup if missed/);
+  assert.match(await connectionDetail.textContent(),/11:20 → 11:52/);
   assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);
   await page.evaluate(()=>{
     const api=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;
