@@ -228,7 +228,7 @@ async function runDesktop(browser){
   await page.waitForSelector('.train-call');
   const detailText = await page.locator('.train-service-detail').first().textContent();
   assert.match(detailText,/Bath Spa/);
-  assert.match(detailText,/Passenger-submitted crowding reports are not used to calculate this forecast/i);
+  assert.match(detailText,/Passenger-submitted crowding reports do not affect the score/i);
   assert.match(detailText,/Record actual crowding/i);
 
   const feedbackButton = page.locator('[data-crowd-feedback="busy"]').first();
