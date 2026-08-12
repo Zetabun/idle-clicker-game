@@ -1,5 +1,5 @@
 name: Kerbside 0.8.0 one-change journey release
-# Final gate with a clean staging tree before the release commit is published.
+# Final gate with duplicate timetable loads suppressed before publish.
 
 on:
   workflow_dispatch:
@@ -101,6 +101,7 @@ jobs:
           grep -F 'const route=to?' kerbside-train-live-overlay.js
           grep -F "const to=info.to||stationCrs(selected)" kerbside-train-live-window.js
           grep -F "Promise.resolve(pending).then(ok=>{if(ok)handleOverlay();})" kerbside-train-timetable.js
+          grep -F "const r=route();state.signature=routeSignature();" kerbside-train-timetable.js
           grep -F "const timetableOwned=" kerbside-trains.js
           grep -F "const origin=raw.map" kerbside-train-timetable.js
           test -z "$(git status --porcelain -- .github/scripts/augment-kerbside-0.8.0-live-connections.py)"
