@@ -10,6 +10,10 @@ const dataState={manifestPromise:null,locationsPromise:null,datePromises:new Map
 function dateApi(){return window.__KERBSIDE_TRAIN_DATE__||null;}
 function selectedDate(){return dateApi()&&dateApi().state&&dateApi().state.date||'';}
 function currentTime(){return $('trainDepartAfter')?.value||'00:00';}
+function liveWindowInfo(){const live=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;return live&&typeof live.liveWindowFor==='function'?live.liveWindowFor(currentTime()):null;}
+function liveWindowPhase(){const api=dateApi();if(!api||typeof api.isToday!=='function'||!api.isToday())return'advance';const info=liveWindowInfo();if(!info)return'pending';return info.mode==='planning'?'scheduled-only':'live-eligible';}
+function liveOverlayEligible(){return liveWindowPhase()==='live-eligible';}
+function overlayMatchesRoute(overlay){const r=route(),s=overlay&&overlay.state;return !!(s&&r.from&&String(s.crs||'').toUpperCase()===String(r.from.crs||'').toUpperCase()&&String(s.date||'')===String(r.date||''));}
 function route(){const api=window.__KERBSIDE_TRAINS__,r=window.__KERBSIDE_TRAIN_ROUTES__;return {from:api&&api.state&&api.state.station,to:r&&r.state&&r.state.destination,date:selectedDate(),departAfter:currentTime()};}
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function displayName(station,fallback){return station&&(station.name||station.locationName||station.crs)||fallback;}
@@ -40,16 +44,17 @@ function snapshotCovers(date){const m=state.manifest;return !!(m&&Array.isArray(
 function journeyMode(){
   const r=route();
   if(!r.from||!r.to||!r.date||!dateApi())return'';
-  /* Before the manifest lands there is nothing to check it against. For a
-     future date the live board cannot help anyway, so claim the board and
-     let load() report coverage; for today, leave live in place until the
-     manifest proves the snapshot can do better. */
-  if(!state.manifest)return dateApi().isToday()?'':'advance';
+  /* Claim the journey board before the manifest has loaded for both today
+     and future dates. load() is what fetches that manifest, so refusing to
+     claim today's board here creates a bootstrap loop where today's timetable
+     can never prove that it has coverage. A stale same-day snapshot still
+     falls back to the live board after load() checks the manifest. */
+  if(!state.manifest)return dateApi().isToday()?'today':'advance';
   if(!snapshotCovers(r.date))return dateApi().isToday()?'':'advance';
   return dateApi().isToday()?'today':'advance';
 }
 function planningMode(){return journeyMode();}
-function routeSignature(){const r=route();return `${r.from&&r.from.crs||''}|${r.to&&r.to.crs||''}|${r.date}|${r.departAfter}|${journeyMode()||'live'}`;}
+function routeSignature(){const r=route();return `${r.from&&r.from.crs||''}|${r.to&&r.to.crs||''}|${r.date}|${r.departAfter}|${journeyMode()||'live'}|${liveWindowPhase()}`;}
 
 function scheduledBoard(){
   let board=$('trainScheduledBoard');
@@ -208,21 +213,25 @@ function setHeader(mode,manifest){
   if(main)main.dataset.railView='scheduled';
   setScheduledVisibility(true);
   if(name)name.textContent=r.from&&r.to?`${from} → ${to}`:'Scheduled journey';
-  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
-  const liveNote=mode==='today'
-    ?(overlay&&overlay.state.status==='ready'?'timetable + live':overlay&&overlay.state.status==='error'?'timetable · live unavailable':'timetable · checking live')
-    :'advance timetable';
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,phase=liveWindowPhase(),sameRoute=overlayMatchesRoute(overlay);
+  let liveNote='advance timetable';
+  if(mode==='today'){
+    if(phase==='scheduled-only')liveNote='timetable · scheduled forecast';
+    else if(phase==='live-eligible')liveNote=sameRoute&&overlay.state.status==='ready'?'timetable + live':sameRoute&&overlay.state.status==='error'?'timetable · live unavailable':'timetable · checking live';
+    else liveNote='timetable · checking live window';
+  }
   if(meta)meta.textContent=r.from&&r.to?`${r.from.crs||''} → ${r.to.crs||''} · ${dateLabel(r.date,{short:true})} · ${liveNote}${snap?` · snapshot ${snap}`:''}`:dateLabel(r.date);
-  if(refresh){refresh.disabled=mode!=='today';refresh.textContent=mode==='today'?'Refresh':'Schedule';}
+  if(refresh){const canRefresh=mode==='today'&&phase==='live-eligible';refresh.disabled=!canRefresh;refresh.textContent=canRefresh?'Refresh':'Schedule';}
 }
 function setLiveMode(){const main=$('trainMain');if(main)main.dataset.railView='live';setScheduledVisibility(false);}
 /* Disruption messages were hardcoded to [] here, which quietly disabled
    disruptionMessageSignal on what is now the primary board - Darwin telling
    us "reduced service" is one of the strongest same-day flags there is. */
 function liveMessages(){
-  if(state.mode!=='today')return [];
+  if(state.mode!=='today'||!liveOverlayEligible())return [];
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
-  return overlay&&typeof overlay.messages==='function'?overlay.messages():[];
+  if(!overlay||!overlayMatchesRoute(overlay)||overlay.state.status!=='ready')return [];
+  return typeof overlay.messages==='function'?overlay.messages():[];
 }
 function forecast(service,index,services){const v3=window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`),messages=liveMessages();if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,{station:route().from,referenceDate:date,messages});if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,{station:route().from,referenceDate:date,messages});return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
 function coverageNote(manifest,date){const c=coverageFor(manifest,date);if(!c)return'';return c.partial?`Timetable coverage for this edge date is partial (${c.from}–${c.to}).`: `Full-day Darwin timetable coverage (${c.from}–${c.to}).`;}
@@ -240,7 +249,7 @@ function serviceKey(service,index){return String((service&&(service.serviceID||s
 function durationLabel(from,to){const start=parseMinutes(from),end=parseMinutes(to);if(start==null||end==null)return'';let span=end-start;if(span<0)span+=1440;if(span<=0)return'';const h=Math.floor(span/60),m=span%60;return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m}m`;}
 function terminusText(service,fallback){const d=service&&service.displayDestination;return (d&&(d.name||d.locationName||d.crs))||fallback;}
 function originText(service){const list=service&&Array.isArray(service.origin)?service.origin.find(Boolean):null;return (list&&(list.locationName||list.name||list.crs))||'Origin not published';}
-function modeLabel(mode){return mode==='today'?'Live-adjusted':'Advance timetable';}
+function modeLabel(mode){if(mode!=='today')return'Advance timetable';return liveOverlayEligible()?'Live-adjusted':'Same-day timetable';}
 
 /* ------------------------------------------------------------------
    Overlay merge. Darwin evidence is written onto the timetabled rows in
@@ -250,8 +259,8 @@ function modeLabel(mode){return mode==='today'?'Live-adjusted':'Advance timetabl
 ------------------------------------------------------------------ */
 function mergeOverlay(){
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
-  if(!overlay||state.mode!=='today'||!state.services.length)return false;
-  if(overlay.state.status!=='ready')return false;
+  if(!overlay||state.mode!=='today'||!liveOverlayEligible()||!state.services.length)return false;
+  if(overlay.state.status!=='ready'||!overlayMatchesRoute(overlay))return false;
   const r=route(),toCrs=r.to&&r.to.crs||'';
   const matched=[];
   let changed=false;
@@ -314,9 +323,12 @@ function statusFor(service){
   if(/delay/i.test(etd))return {label:etd,cls:'late'};
   return {label:etd,cls:'ontime'};
 }
-function modeNote(mode){return mode==='today'
-  ?'Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.'
-  :'Live delays, cancellations and formation are folded in automatically on the day of travel.';}
+function modeNote(mode){
+  if(mode!=='today')return 'Live delays, cancellations and formation are folded in automatically on the day of travel.';
+  return liveOverlayEligible()
+    ?'Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.'
+    :'This service is outside the live Darwin window. Forecast v3 is using the scheduled timetable and planning signals; live Darwin evidence will take priority automatically when the service enters the live window.';
+}
 /* Forecast v3 owns the bullet-card markup, so the scheduled board asks it
    for the same card the live board shows rather than keeping a second,
    drifting copy. The fallback only matters if v3 has not loaded yet. */
@@ -344,7 +356,7 @@ function callingMarkup(service){
 function sourceNote(service){
   if(service.liveOnly)return 'Added by National Rail Darwin after this timetable snapshot was published. Live evidence only.';
   if(service.liveEvidence)return `Timetabled from the National Rail Darwin Timetable Files, matched to live Darwin data by ${service.liveVia==='rid'?'service ID':service.liveVia==='uid'?'schedule UID':service.liveVia==='headcode'?'headcode':'departure time'}.`;
-  return 'Timetabled from the National Rail Darwin Timetable Files. Expected times, platform changes and formation arrive on the day of travel.';
+  return 'Timetabled from the National Rail Darwin Timetable Files. Live expected times, platform changes, cancellations and formation are added automatically once this service enters the live Darwin window.';
 }
 function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,explains}){
   const key=serviceKey(service,index),open=!!state.openId&&state.openId===key;
@@ -501,10 +513,15 @@ function clampDatePicker(manifest){
 }
 function requestOverlay(){
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,r=route();
-  if(!overlay)return;
-  if(state.mode!=='today'||!r.from||!r.from.crs){overlay.clear();return;}
+  if(!overlay)return false;
+  if(state.mode!=='today'||!r.from||!r.from.crs||!liveOverlayEligible()){
+    if(typeof overlay.stop==='function')overlay.stop();
+    if(typeof overlay.clear==='function')overlay.clear();
+    return false;
+  }
   overlay.refresh({crs:r.from.crs,date:r.date});
   overlay.start();
+  return true;
 }
 function handleOverlay(){
   if(state.mode!=='today')return;

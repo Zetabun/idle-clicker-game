@@ -178,12 +178,12 @@ async function refresh({crs,date,force=false}={}){
   const fresh=state.crs===code&&state.status==='ready'&&Date.now()-state.updatedAt<FRESH_MS;
   if(fresh&&!force)return true;
   const seq=++state.seq;
+  state.crs=code;
+  state.date=String(date);
   state.status='loading';
   try{
     const json=await requestBoard(code);
     if(seq!==state.seq)return false;
-    state.crs=code;
-    state.date=String(date);
     state.services=Array.isArray(json&&json.trainServices)?json.trainServices:[];
     /* Darwin's NRCC messages are the network's own words about disruption -
        "reduced service", "severe delays" - and the model already scores them.

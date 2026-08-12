@@ -66,3 +66,55 @@ test('out-of-snapshot dates fail closed',async()=>{
   const services=await provider.getServices({from:'BHM',to:'BRI',date:'2026-08-14',departAfter:'00:00'});
   assert.deepEqual(Array.from(services),[]);
 });
+
+function loadPriorityRuntime({today=true,liveMode='planning',departAfter='10:00'}={}){
+  const calls={refresh:0,start:0,stop:0,clear:0};
+  const from={name:'Birmingham New Street',crs:'BHM'};
+  const to={name:'Bristol Temple Meads',crs:'BRI'};
+  const overlay={
+    state:{status:'idle',crs:'',date:''},
+    refresh(){calls.refresh++;return Promise.resolve(true);},
+    start(){calls.start++;},stop(){calls.stop++;},clear(){calls.clear++;},messages(){return[];}
+  };
+  const context={
+    console,URL,Date,Intl,setTimeout,clearTimeout,setInterval(){return 0;},Blob,Response,TextDecoder,DecompressionStream,
+    fetch:async input=>responseFor(input),
+    document:{readyState:'loading',addEventListener(){},getElementById(id){return id==='trainDepartAfter'?{value:departAfter}:null;}},
+    window:{
+      __KERBSIDE_TRAIN_DATE__:{state:{date:'2026-08-12'},isToday(){return today;}},
+      __KERBSIDE_TRAINS__:{state:{station:from}},
+      __KERBSIDE_TRAIN_ROUTES__:{state:{destination:to}},
+      __KERBSIDE_TRAIN_LIVE_WINDOW__:{liveWindowFor(){return {mode:liveMode};}},
+      __KERBSIDE_TRAIN_OVERLAY__:overlay
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(timetableSource,context);
+  return {api:context.window.__KERBSIDE_TRAIN_TIMETABLE__,calls};
+}
+
+test('same-day journey claims the timetable before the manifest is cached',()=>{
+  const {api}=loadPriorityRuntime({today:true,liveMode:'planning'});
+  assert.equal(api.state.manifest,null);
+  assert.equal(api.journeyMode(),'today');
+});
+
+test('same-day services outside the live window stay timetable-only',()=>{
+  const {api,calls}=loadPriorityRuntime({today:true,liveMode:'planning'});
+  api.state.mode='today';
+  assert.equal(api.requestOverlay(),false);
+  assert.equal(calls.refresh,0);
+  assert.equal(calls.start,0);
+  assert.equal(calls.stop,1);
+  assert.equal(calls.clear,1);
+});
+
+test('same-day services inside the live window prioritise the live overlay',()=>{
+  const {api,calls}=loadPriorityRuntime({today:true,liveMode:'live'});
+  api.state.mode='today';
+  assert.equal(api.requestOverlay(),true);
+  assert.equal(calls.refresh,1);
+  assert.equal(calls.start,1);
+  assert.equal(calls.stop,0);
+  assert.equal(calls.clear,0);
+});
