@@ -1,0 +1,34 @@
+name: Validate Forecast v4 data builder
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/probe-forecast-v4-builder.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build official demand bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4e3430f5842e1f5a5ec5/rai0212.ods' -o /tmp/rai0212.ods
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4e4b13cf36b2315a5ebd/rai0213.ods' -o /tmp/rai0213.ods
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4dd08b7e4fa537e693fd/rai0214.ods' -o /tmp/rai0214.ods
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4e62c7c34404041b4641/rai0215.ods' -o /tmp/rai0215.ods
+          curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4de5c7c34404041b463f/rai0216.ods' -o /tmp/rai0216.ods
+          curl -fsSL --retry 3 'https://dataportal.orr.gov.uk/media/1909/table-1410-passenger-entries-and-exits-and-interchanges-by-station.csv' -o /tmp/orr1410.csv
+          python3 .github/scripts/build-forecast-v4-data.py /tmp/rai0212.ods /tmp/rai0213.ods /tmp/rai0214.ods /tmp/rai0215.ods /tmp/rai0216.ods /tmp/orr1410.csv /tmp/kerbside-rail-demand-v4.js
+          node --check /tmp/kerbside-rail-demand-v4.js
+          grep -Fq 'Birmingham' /tmp/kerbside-rail-demand-v4.js
+          grep -Fq 'CrossCountry' /tmp/kerbside-rail-demand-v4.js
+          grep -Fq 'BHM' /tmp/kerbside-rail-demand-v4.js
+          grep -Fq 'mainCrs' /tmp/kerbside-rail-demand-v4.js
+          wc -c /tmp/kerbside-rail-demand-v4.js
