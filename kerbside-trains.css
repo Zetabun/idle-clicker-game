@@ -175,7 +175,10 @@
   letter-spacing:.08em;text-transform:uppercase;
 }
 .train-forecast-calibration b{color:var(--text-dim);font-weight:600}
-.train-forecast-calibration i{color:var(--text-mute);font-size:9px;font-style:normal}
+.train-forecast-calibration i{
+  display:block;width:auto;height:auto;border-radius:0;
+  color:var(--text-mute);font-size:9px;font-style:normal;line-height:1.45;overflow-wrap:anywhere;
+}
 .train-forecast-history{display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text-mute);font-size:9.5px}
 .train-forecast-history span{padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-dim);font-weight:700}
 .train-forecast-history b{color:var(--text-dim);font-weight:600}
