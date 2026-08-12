@@ -76,6 +76,35 @@ jobs:
               raise SystemExit(f'expected one live connection-risk call, found {text.count(old_call)}')
           path.write_text(text.replace(old_call,new_call,1),encoding='utf-8')
           PY
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('kerbside-backend/tests/train-browser-core-regression.mjs')
+          text=path.read_text(encoding='utf-8')
+          start="  await findJourney(page,'BHM','GLO');"
+          injected="""  // The fixture uses fixed daytime train times. Force only this test case
+          // into the live-eligible phase so it remains deterministic when CI runs
+          // later in the day; production live-window rules are restored below.
+          await page.evaluate(()=>{
+            const api=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;
+            window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__=api.liveWindowFor;
+            api.liveWindowFor=()=>({mode:'live',offset:0,window:120});
+          });
+          await findJourney(page,'BHM','GLO');"""
+          if text.count(start)!=1:
+              raise SystemExit(f'expected one connection journey start, found {text.count(start)}')
+          text=text.replace(start,injected,1)
+          end="  assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);"
+          restored="""  assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);
+          await page.evaluate(()=>{
+            const api=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;
+            if(window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__)api.liveWindowFor=window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__;
+            delete window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__;
+            window.__KERBSIDE_TRAIN_OVERLAY__?.stop?.();
+          });"""
+          if text.count(end)!=1:
+              raise SystemExit(f'expected one connection detail end, found {text.count(end)}')
+          path.write_text(text.replace(end,restored,1),encoding='utf-8')
+          PY
           python3 .github/scripts/sync-version.py
 
       - name: Install browser regression dependencies
