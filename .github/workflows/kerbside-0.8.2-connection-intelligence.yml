@@ -38,15 +38,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The staging script deliberately writes replacement anchors back into
-          # the generated source. Make replace_span consume the old anchor first
-          # so it cannot duplicate function/comment markers.
+          # The staging script writes replacement anchors back into generated
+          # source. Consume each old end anchor before inserting its replacement.
           python3 - <<'PY'
           from pathlib import Path
           p=Path('.github/scripts/apply-kerbside-0.8.2.py')
           text=p.read_text(encoding='utf-8')
-          old="""    b=text.find(end,a)\n    if b<0: raise SystemExit(f'{path}: end marker missing: {end!r}')\n    write(path,text[:a]+new+text[b:])\n"""
-          new="""    b=text.find(end,a)\n    if b<0: raise SystemExit(f'{path}: end marker missing: {end!r}')\n    b+=len(end)\n    write(path,text[:a]+new+text[b:])\n"""
+          old="    if include_end: b+=len(end)\n"
+          new="    b+=len(end)\n"
           if text.count(old)!=1:
               raise SystemExit('Could not harden 0.8.2 replace_span helper')
           p.write_text(text.replace(old,new,1),encoding='utf-8')
