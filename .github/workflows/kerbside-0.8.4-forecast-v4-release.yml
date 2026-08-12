@@ -54,6 +54,7 @@ jobs:
           set -euo pipefail
           python3 .github/scripts/apply-kerbside-0.8.4.py
           python3 .github/scripts/apply-kerbside-0.8.4-tests.py
+          python3 .github/scripts/apply-kerbside-0.8.4-fixes.py
           python3 .github/scripts/sync-version.py
 
       - name: Install validation dependencies
