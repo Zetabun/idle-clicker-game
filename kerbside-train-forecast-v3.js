@@ -161,13 +161,42 @@ const scale=stationScaleSignal(context.station||(api&&api.state&&api.state.stati
 const school=schoolHolidaySignal(date,minute);
 const offpeak=offPeakSignal(date,minute);
 let score=Number(base.score);if(!Number.isFinite(score))score=1.8;score=removeLegacyFeedback(score,historical.profile);score=clamp(score+calendar.amount+historical.amount+events.amount+live.amount+shape.amount+scale.amount+school.amount+offpeak.amount,.25,5);const reasons=unique([...(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),...shape.reasons,...historical.reasons,...events.reasons,...live.reasons,...school.reasons,...offpeak.reasons,...calendar.reasons,...scale.reasons]).slice(0,6);const evidence=2+(historical.reasons.length?1:0)+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(live.reasons.length?2:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0);const confidence=evidence>=6?'High':evidence>=4?'Medium-high':evidence>=3?'Medium':'Low';return {score,level:levelFor(score),label:labelFor(score),confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],modelVersion:VERSION,eventPressure:events.amount,historySamples:Number(base.historySamples)||0};}
-function detailMarkup(result,date){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=isFuture(date)?'Planning':'Live-adjusted',meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v3 · ${mode}`;const items=reasons.map(reason=>`<li>${esc(reason)}</li>`).join('');const method=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">${esc(method)}</div>${historyMarkup}`;}
-function apply(){const api=window.__KERBSIDE_TRAINS__;if(!api||!api.state)return;const dateApi=window.__KERBSIDE_TRAIN_DATE__;const date=dateApi&&dateApi.state&&dateApi.state.date?new Date(`${dateApi.state.date}T12:00:00`):new Date(),services=Array.isArray(api.state.services)?api.state.services:[];/* Rows were paired to services by array index. renderBoard emits them 1:1
-   today so it happens to hold, but any future filtering would silently
-   attach each forecast to the wrong train. Rows already carry
-   data-service-id, so join on that and fall back to the index. */
-const keyed=new Map();if(api.serviceKey)services.forEach((service,index)=>keyed.set(String(api.serviceKey(service,index)),{service,index}));
-document.querySelectorAll('#trainBoard .train-service').forEach((article,position)=>{const id=article.getAttribute('data-service-id');const match=id&&keyed.get(id);const service=match?match.service:services[position];const index=match?match.index:position;if(!service)return;const result=forecast(service,index,services,{station:api.state.station,referenceDate:date,messages:api.state.board&&api.state.board.nrccMessages||[]});const suffix=result.cancelled?'':` · forecast v3`;const crowd=article.querySelector('.train-crowding');if(crowd){crowd.className=`train-crowding crowd-${result.level}`;const b=crowd.querySelector('b'),s=crowd.querySelector('small');if(b)b.textContent=result.label;if(s)s.textContent=result.cancelled?'service cancelled':`${result.confidence} confidence${suffix}`;crowd.title=result.reasons.join(', ');}const explain=article.querySelector('.train-crowding-explain');if(explain){explain.className=`train-crowding-explain crowd-${result.level}`;explain.innerHTML=detailMarkup(result,date);}});}
+/* options.mode overrides the Planning / Live-adjusted badge and options.note
+   appends a sentence to the method line, so the scheduled timetable board can
+   render this exact card with its own framing instead of maintaining a second
+   copy that drifts out of step. */
+function detailMarkup(result,date,options={}){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted'),meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v3 · ${mode}`;const items=reasons.map(reason=>`<li>${esc(reason)}</li>`).join('');const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const method=options.note?`${base} ${options.note}`:base;const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">${esc(method)}</div>${historyMarkup}`;}
+/* Every write below is compared first. The board is watched by a
+   MutationObserver that calls back into apply(), and re-assigning identical
+   text or innerHTML still counts as a mutation - so unguarded writes kept a
+   requestAnimationFrame loop alive for as long as the train view was open. */
+function setText(el,value){if(el&&el.textContent!==value){el.textContent=value;return true;}return false;}
+function setClass(el,value){if(el&&el.className!==value){el.className=value;return true;}return false;}
+function setMarkup(el,value){if(el&&el.__kerbsideMarkup!==value){el.__kerbsideMarkup=value;el.innerHTML=value;return true;}return false;}
+function applyLiveBoard(){
+  const api=window.__KERBSIDE_TRAINS__,board=$('trainBoard');
+  /* On an advance or same-day-planning date the live board is hidden with
+     stale rows still in it. Rewriting those rows served nobody and, worse,
+     tripped the travel-date observer into reloading the timetable. */
+  if(!api||!api.state||!board||board.hidden)return;
+  const dateApi=window.__KERBSIDE_TRAIN_DATE__;
+  const date=dateApi&&dateApi.state&&dateApi.state.date?new Date(`${dateApi.state.date}T12:00:00`):new Date(),services=Array.isArray(api.state.services)?api.state.services:[];
+  /* Rows were paired to services by array index. renderBoard emits them 1:1
+     today so it happens to hold, but any future filtering would silently
+     attach each forecast to the wrong train. Rows already carry
+     data-service-id, so join on that and fall back to the index. */
+  const keyed=new Map();if(api.serviceKey)services.forEach((service,index)=>keyed.set(String(api.serviceKey(service,index)),{service,index}));
+  board.querySelectorAll('.train-service').forEach((article,position)=>{const id=article.getAttribute('data-service-id');const match=id&&keyed.get(id);const service=match?match.service:services[position];const index=match?match.index:position;if(!service)return;const result=forecast(service,index,services,{station:api.state.station,referenceDate:date,messages:api.state.board&&api.state.board.nrccMessages||[]});const suffix=result.cancelled?'':` · forecast v3`;const crowd=article.querySelector('.train-crowding');if(crowd){setClass(crowd,`train-crowding crowd-${result.level}`);setText(crowd.querySelector('b'),result.label);setText(crowd.querySelector('small'),result.cancelled?'service cancelled':`${result.confidence} confidence${suffix}`);const title=result.reasons.join(', ');if(crowd.title!==title)crowd.title=title;}const explain=article.querySelector('.train-crowding-explain');if(explain){setClass(explain,`train-crowding-explain crowd-${result.level}`);setMarkup(explain,detailMarkup(result,date));}});
+}
+function apply(){
+  applyLiveBoard();
+  /* The scheduled board renders its own rows, so v3 hands it the refreshed
+     scores rather than reaching into markup it does not own. This is the
+     path that gets bank holidays and event pressure onto advance journeys
+     when those feeds resolve after first paint. */
+  const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
+  if(timetable&&typeof timetable.refreshForecasts==='function'){try{timetable.refreshForecasts();}catch(error){}}
+}
 function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimationFrame(()=>{state.scheduled=false;apply();});}
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}

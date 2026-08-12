@@ -238,7 +238,7 @@ function stopLiveBoard(){
   if(abort&&typeof abort.abort==='function')abort.abort();
 }
 function renderSameDayPlanning(info=liveWindowFor(currentDepartAfter())){
-  if(!isToday())return false;
+  if(!isToday()||journeyBoardActive())return false;
   const {from,to}=journey();
   if(!from)return false;
   stopLiveBoard();
@@ -378,10 +378,17 @@ function improveEmptyState(){
     setText(strong,title);setText(note,'The live Darwin board did not return an upcoming service in its current time window.');plannerMessage(title+'.');
   }
 }
+/* The timetable journey board now serves today as well, so the live-window
+   planner must stand down whenever it owns the view. Without this both
+   modules write the header, the planner message and the board at once. */
+function journeyBoardActive(){
+  const tt=window.__KERBSIDE_TRAIN_TIMETABLE__;
+  return !!(tt&&tt.state&&tt.state.mode&&tt.state.mode!=='live');
+}
 function syncOutcome(){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(()=>{
-    if(!isToday())return;
+    if(!isToday()||journeyBoardActive())return;
     canonicaliseJourneyInputs();
     if(clearNonRailDestination())return;
     const info=liveWindowFor(currentDepartAfter());
@@ -390,7 +397,7 @@ function syncOutcome(){
   },80);
 }
 function handleJourneyChange(){
-  if(!isToday())return;
+  if(!isToday()||journeyBoardActive())return;
   canonicaliseJourneyInputs();
   if(clearNonRailDestination())return;
   const info=liveWindowFor(currentDepartAfter());
@@ -439,7 +446,7 @@ function init(attempt=0){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
 window.__KERBSIDE_TRAIN_LIVE_WINDOW__={
-  state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,
+  state,install,liveWindowFor,defaultDepartAfter,renderSameDayPlanning,improveEmptyState,handleJourneyChange,journeyBoardActive,
   isRailStation,filterSuggestionList,clearNonRailDestination,providerOrder,officialEnabled,officialBoardUrl,
   OFFICIAL,OFFICIAL_ATTEMPT_MS,PROVIDER_ATTEMPT_MS,MAX_LIVE_HORIZON
 };

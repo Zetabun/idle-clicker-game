@@ -168,6 +168,34 @@
 .train-forecast-history{display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text-mute);font-size:9.5px}
 .train-forecast-history span{padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-dim);font-weight:700}
 .train-forecast-history b{color:var(--text-dim);font-weight:600}
+
+/* Scheduled rows (advance dates and later-today planning) reuse the live
+   board's summary/detail structure verbatim, so both views read the same.
+   The rules below only mark the difference in provenance: a Darwin
+   timetable snapshot rather than a live departure board. */
+.train-scheduled-service .train-time small{
+  font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+}
+/* Status under the departure time. A timetabled row reads as muted on
+   purpose: it must not borrow the authority of a live-confirmed one. */
+.train-status-timetabled{color:var(--text-mute)}
+.train-status-ontime{color:var(--live)}
+.train-status-late{color:#FF8C42}
+.train-status-cancelled{color:var(--warn)}
+.train-detail-warn{color:var(--warn-soft)!important}
+.train-scheduled-service .train-route small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.train-scheduled-service .train-formation b{
+  font-family:'Martian Mono',ui-monospace,monospace;font-size:11px;letter-spacing:-.04em;
+}
+.train-scheduled-service .train-crowding-explain{margin-bottom:0}
+.train-scheduled-service .train-detail-note{padding-bottom:0}
+.train-scheduled-foot{
+  align-content:start!important;justify-items:start!important;text-align:left!important;
+  min-height:auto!important;margin-top:10px;padding:14px 16px!important;
+}
+.train-scheduled-foot .train-future-note{max-width:46rem!important}
+
 .train-detail-title{
   margin:0 0 8px;color:var(--text-dim);font-size:9.5px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;
@@ -265,6 +293,9 @@ body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 
   .train-forecast-meta{text-align:left}
   .train-forecast-reasons li{font-size:10.5px}
   .train-forecast-history{align-items:flex-start;flex-direction:column;gap:5px}
+  .train-scheduled-service .train-time small{font-size:8px}
+  .train-scheduled-service .train-route small{font-size:9.5px}
+  .train-scheduled-foot{margin:8px 2px 0;padding:13px 13px!important}
 }
 
 @media (max-width:430px){
