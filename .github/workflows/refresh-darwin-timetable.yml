@@ -3,7 +3,10 @@ name: Refresh Darwin timetable
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 4,8 * * *'
+    # Darwin snapshots are normally stamped around 02:05 UTC. Check soon
+    # afterwards, then retry before the existing morning refreshes. Each run
+    # is a no-op when the newest complete v8/ref_v4 pair is already published.
+    - cron: '30 2,3,4,8 * * *'
   push:
     branches:
       - main
