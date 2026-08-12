@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: kerbside-rail-source-priority-release
@@ -120,13 +119,6 @@ jobs:
               "  const seq=++state.seq;\n  state.crs=code;\n  state.date=String(date);\n  state.status='loading';\n  try{\n    const json=await requestBoard(code);\n    if(seq!==state.seq)return false;"
           )
 
-          refresh = '.github/workflows/refresh-darwin-timetable.yml'
-          replace_once(
-              refresh,
-              "    - cron: '30 4,8 * * *'",
-              "    # Darwin snapshots are normally stamped around 02:05 UTC. Check soon\n    # afterwards, then retry before the existing morning refreshes. Each run\n    # is a no-op when the newest complete v8/ref_v4 pair is already published.\n    - cron: '30 2,3,4,8 * * *'"
-          )
-
           Path('VERSION').write_text('0.7.39\n', encoding='utf-8')
           bus = Path('bus.html')
           html = bus.read_text(encoding='utf-8')
@@ -206,25 +198,15 @@ jobs:
           node --test kerbside-backend/test/train-timetable-provider.test.js
           git diff --check
           grep -Fx '0.7.39' VERSION
-          grep -F "cron: '30 2,3,4,8 * * *'" .github/workflows/refresh-darwin-timetable.yml
 
       - name: Publish Kerbside 0.7.39
         shell: bash
         run: |
           set -euo pipefail
-          git rm .github/workflows/kerbside-rail-priority-release.yml
-          git add bus.html VERSION kerbside-train-timetable.js kerbside-train-live-overlay.js kerbside-backend/test/train-timetable-provider.test.js .github/workflows/refresh-darwin-timetable.yml
+          git add bus.html VERSION kerbside-train-timetable.js kerbside-train-live-overlay.js kerbside-backend/test/train-timetable-provider.test.js
           git diff --cached --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m "Kerbside 0.7.39: prioritise same-day rail data"
           git pull --rebase origin main
           git push origin HEAD:main
-
-      - name: Request an immediate Darwin timetable refresh
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh workflow run refresh-darwin-timetable.yml --ref main || echo 'Immediate timetable dispatch was unavailable; scheduled retries remain enabled.'
