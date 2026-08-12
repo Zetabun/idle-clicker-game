@@ -116,8 +116,17 @@ function formationSignal(api,service,services,date,station){
    event pressure. The events module is now date-aware and queries the chosen
    travel date, so the forecast just has to check it is looking at the same
    day before trusting it. */
-function eventSignal(service,date){const provider=window.__KERBSIDE_EVENTS__;
-if(provider&&provider.state&&provider.state.date&&provider.state.date!==stamp(date))return {amount:0,reasons:[]};if(!provider||typeof provider.pressureForJourney!=='function')return {amount:0,reasons:[]};try{const result=provider.pressureForJourney(service)||{};const amount=clamp(Number(result.amount)||0,0,MAX_EVENT_PRESSURE);return {amount,reasons:amount>=.16?unique(result.reasons||[]):[]};}catch(error){return {amount:0,reasons:[]};}}
+function eventSignal(service,date,context={}){const provider=window.__KERBSIDE_EVENTS__;
+if(provider&&provider.state&&provider.state.date&&provider.state.date!==stamp(date))return {amount:0,reasons:[]};if(!provider||typeof provider.pressureForJourney!=='function')return {amount:0,reasons:[]};try{const result=provider.pressureForJourney(service,context&&context.eventJourney||undefined)||{};const amount=clamp(Number(result.amount)||0,0,MAX_EVENT_PRESSURE);return {amount,reasons:amount>=.16?unique(result.reasons||[]):[]};}catch(error){return {amount:0,reasons:[]};}}
+/* A missed connection moves demand rather than creating it. The original
+   onward service is not inflated when the traveller may miss it; instead the
+   first viable recovery train receives a bounded pressure signal because the
+   same displaced passengers are likely to roll onto that service. */
+function connectionDisplacementSignal(context={}){
+  const raw=Number(context&&context.connectionDisplacement)||0,amount=clamp(raw,0,.8);
+  if(amount<.1)return {amount:0,reasons:[]};
+  return {amount,reasons:[amount>=.65?'cancelled or missed-connection passengers may roll onto this backup train':'missed-connection passengers may roll onto this backup train']};
+}
 /* ------------------------------------------------------------------
    Same-day signals. Every one of these runs on data the app already has
    in hand - the expanded Darwin board, the CRS code and the calendar -
@@ -280,7 +289,8 @@ function forecast(service,index,services,context={}){
   const minute=parseMinutes(service&&service.std),future=isFuture(date);
   const calendar=calendarSignal(date,minute);
   const historical=historicalSignal(api,service,date,station);
-  const events=eventSignal(service,date);
+  const events=eventSignal(service,date,context);
+  const displacement=connectionDisplacementSignal(context);
   const live=future?{amount:0,reasons:[]}:liveSignal(service,index,services);
   const formation=future?{amount:0,reasons:[]}:formationSignal(api,service,services,date,station);
   const shape=journeyShapeSignal(service,station);
@@ -291,16 +301,16 @@ function forecast(service,index,services,context={}){
   const serviceClass=serviceClassSignal(service,station,minute,date);
 
   let score=Number(base.score);if(!Number.isFinite(score))score=1.8;
-  score=clamp(score+calendar.amount+events.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount,.25,5);
+  score=clamp(score+calendar.amount+events.amount+displacement.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount,.25,5);
   const reasons=unique([
     ...(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),
-    ...shape.reasons,...events.reasons,...live.reasons,...formation.reasons,
+    ...shape.reasons,...events.reasons,...displacement.reasons,...live.reasons,...formation.reasons,
     ...serviceClass.reasons,...school.reasons,...offpeak.reasons,...shapeCal.reasons,...calendar.reasons,...scale.reasons
   ]).slice(0,6);
   const calibrated=!!(scale.reasons.length&&calibration()&&calibration().profileFor&&calibration().profileFor(station));
   const historySamples=Math.max(Number(base.historySamples)||0,Number(historical.samples)||0);
   const historyEvidence=historySamples>=3?1:(historySamples?0.5:0);
-  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0);
+  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(displacement.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0);
   const confidence=evidence>=6?'High':evidence>=4?'Medium-high':evidence>=3?'Medium':'Low';
   const cal=calibration();
   let calibrationNote='';
@@ -352,5 +362,5 @@ function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimat
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};
+window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};
 })();

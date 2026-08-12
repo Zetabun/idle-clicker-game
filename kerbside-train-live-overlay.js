@@ -99,7 +99,7 @@ function buildIndex(services){
       if(!byTime.has(key))byTime.set(key,entry);
     }
   });
-  return {byRid,byUid,byHead,byTime};
+  return {services:Array.isArray(services)?services.slice():[],byRid,byUid,byHead,byTime};
 }
 
 /* A timetabled row, as produced by kerbside-train-timetable.js, carries
@@ -140,6 +140,10 @@ function evidenceFor(row){return evidenceFromMatch(matchEntry(row));}
 function evidenceForOnward(row,fromCrs,toCrs){
   const key=`${upper(fromCrs)}|${upper(toCrs)}`,index=state.onwardIndexes.get(key);
   return evidenceFromMatch(matchEntryIn(row,index));
+}
+function onwardServices(fromCrs,toCrs){
+  const key=`${upper(fromCrs)}|${upper(toCrs)}`,index=state.onwardIndexes.get(key);
+  return index&&Array.isArray(index.services)?index.services:[];
 }
 
 /* Services Darwin knows about that the snapshot does not - short-notice
@@ -248,7 +252,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 window.__KERBSIDE_TRAIN_OVERLAY__={
-  state,refresh,clear,start,stop,evidenceFor,evidenceForOnward,extraServices,servesDestination,messages,
+  state,refresh,clear,start,stop,evidenceFor,evidenceForOnward,onwardServices,extraServices,servesDestination,messages,
   flattenCallingPoints,buildIndex,matchEntry,matchEntryIn,mergeBoards,isToday
 };
 })();

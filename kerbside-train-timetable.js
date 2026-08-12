@@ -448,15 +448,35 @@ function liveMessages(){
   if(!overlay||!overlayMatchesRoute(overlay)||overlay.state.status!=='ready')return [];
   return typeof overlay.messages==='function'?overlay.messages():[];
 }
-function forecastOne(service,index,services,station=route().from,messages=liveMessages()){const v3=window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`);if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,{station,referenceDate:date,messages});if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,{station,referenceDate:date,messages});return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
+function forecastOne(service,index,services,station=route().from,messages=liveMessages(),extraContext={}){const v3=window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`),context={station,referenceDate:date,messages,...(extraContext||{})};if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,context);if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,context);return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
 function confidenceFloor(results){const rank={Low:0,Medium:1,'Medium-high':2,High:3};let best=3;for(const result of results){const value=rank[result&&result.confidence];if(Number.isFinite(value))best=Math.min(best,value);}return Object.keys(rank).find(key=>rank[key]===best)||'Low';}
+function forecastIdentity(service){return String(service&&(service.serviceID||service.serviceIdGuid||service.serviceIdGuId||service.rid||service.uid||((service.trainId||service.trainid)&&service.std?`${service.trainId||service.trainid}|${service.std}`:''))||'').toUpperCase();}
+function forecastBoardContext(service,board,fallback=[]){
+  const rows=(Array.isArray(board)&&board.length?board:fallback).filter(Boolean).slice(),wanted=forecastIdentity(service);let index=wanted?rows.findIndex(item=>forecastIdentity(item)===wanted):-1;
+  if(index>=0)rows[index]=service;else{rows.push(service);rows.sort((a,b)=>(parseMinutes(a&&a.std)??9999)-(parseMinutes(b&&b.std)??9999));index=rows.indexOf(service);}
+  return {services:rows,index:Math.max(0,index)};
+}
+function legEventJourney(leg){return {origin:displayName(leg&&leg.from,'Departure'),destination:displayName(leg&&leg.to,'Destination'),destinationCrs:leg&&leg.to&&leg.to.crs||''};}
+function connectionLegForecast(connection,leg,legIndex){
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,r=route(),change=connection&&connection.interchange&&connection.interchange.crs||'',to=r.to&&r.to.crs||'';
+  const board=legIndex===0?(overlay&&overlay.state&&overlay.state.services||[]):(overlay&&typeof overlay.onwardServices==='function'?overlay.onwardServices(change,to):[]),context=forecastBoardContext(leg,board,connection&&connection.legs||[leg]);
+  return forecastOne(leg,context.index,context.services,leg&&leg.from||r.from,legIndex===0?liveMessages():[],{eventJourney:legEventJourney(leg),connectionRole:legIndex===0?'first-leg':'onward-leg'});
+}
 function forecastConnection(service){
   const legs=Array.isArray(service&&service.legs)?service.legs:[];if(!legs.length)return forecastOne(service,0,[service]);
-  const results=legs.map((leg,index)=>forecastOne(leg,index,legs,leg.from||route().from,index===0?liveMessages():[]));
+  const results=legs.map((leg,index)=>connectionLegForecast(service,leg,index));
   if(results[0]&&results[0].cancelled)return {...results[0],reasons:['the first train in this connection is cancelled'],journeyLegResults:results,peakLeg:0};
   let peakLeg=0,peakScore=-Infinity;results.forEach((result,index)=>{const score=Number(result&&result.score);if(Number.isFinite(score)&&score>peakScore){peakScore=score;peakLeg=index;}});
   const peak=results[peakLeg]||results[0],leg=legs[peakLeg]||{},from=displayName(leg.from,'first leg'),to=displayName(leg.to,'interchange');
   return {...peak,confidence:confidenceFloor(results),reasons:[`Peak crowding is forecast on ${from} → ${to}`,...(peak.reasons||[])].slice(0,6),journeyLegResults:results,peakLeg};
+}
+function forecastRecovery(service){
+  if(!service||service.journeyType!=='connection'||!service.recoveryChoice)return null;
+  const option=(service.recoveryOptions||[]).find(item=>String(item&&item.serviceID||'')===String(service.recoveryChoice.serviceID||''));
+  if(!option)return null;
+  const displacement=service.connectionRisk==='onward-cancelled'?.7:service.connectionRisk==='at-risk'?.45:0;
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,r=route(),change=service.interchange&&service.interchange.crs||'',to=r.to&&r.to.crs||'',board=overlay&&typeof overlay.onwardServices==='function'?overlay.onwardServices(change,to):[],context=forecastBoardContext(option,board,service.legs||[option]);
+  return forecastOne(option,context.index,context.services,option.from||service.interchange,[],{eventJourney:legEventJourney(option),connectionRole:'recovery-leg',connectionDisplacement:displacement});
 }
 function forecast(service,index,services){return service&&service.journeyType==='connection'?forecastConnection(service):forecastOne(service,index,services);}
 function coverageNote(manifest,date){const c=coverageFor(manifest,date);if(!c)return'';return c.partial?`Timetable coverage for this edge date is partial (${c.from}–${c.to}).`: `Full-day Darwin timetable coverage (${c.from}–${c.to}).`;}
@@ -494,8 +514,9 @@ function recoveryMarkup(service){
   if(!service||service.journeyType!=='connection'||!['at-risk','onward-cancelled'].includes(service.connectionRisk))return'';
   const choice=service.recoveryChoice;
   if(!choice)return `<div class="train-recovery-card train-recovery-none"><span>Recovery</span><strong>No later workable onward train found</strong><small>Kerbside checked the loaded timetable recovery window. Refresh as live information changes.</small></div>`;
-  const platform=choice.platform?` · Plat ${choice.platform}`:'',live=choice.live?'Live Darwin evidence':'Scheduled timetable';
-  return `<div class="train-recovery-card"><span>Backup if missed</span><strong>${esc(`${choice.departure||choice.std||'—'} → ${choice.arrival||'—'}`)}</strong><small>${esc(`${choice.operator||'Onward service'}${platform} · ${live}`)}</small></div>`;
+  const platform=choice.platform?` · Plat ${choice.platform}`:'',live=choice.live?'Live Darwin evidence':'Scheduled timetable',prediction=forecastRecovery(service),reason=prediction&&prediction.reasons&&prediction.reasons[0]||'';
+  const forecastMarkup=prediction?`<div class="train-recovery-forecast crowd-${esc(prediction.level||'unknown')}" title="${esc((prediction.reasons||[]).join(', '))}"><i></i><b>${esc(prediction.label||'Forecast pending')}</b><small>${esc(`${prediction.confidence||'Low'} confidence${reason?` · ${reason}`:''}`)}</small></div>`:'';
+  return `<div class="train-recovery-card"><span>Backup if missed</span><strong>${esc(`${choice.departure||choice.std||'—'} → ${choice.arrival||'—'}`)}</strong><small>${esc(`${choice.operator||'Onward service'}${platform} · ${live}`)}</small>${forecastMarkup}</div>`;
 }
 function connectionItineraryMarkup(service,result){
   if(!service||service.journeyType!=='connection'||!Array.isArray(service.legs))return'';
@@ -505,7 +526,7 @@ function connectionItineraryMarkup(service,result){
     const from=displayName(leg.from,'Departure'),to=displayName(leg.to,'Destination'),live=!!leg.liveEvidence;
     const depart=live&&/^\d{1,2}:\d{2}$/.test(String(leg.etd||''))?leg.etd:leg.std,arrive=leg.liveArrival||leg.arrival;
     const platform=leg.platform?`Plat ${leg.platform}`:'Plat TBC',train=leg.trainId?` · ${leg.trainId}`:'';
-    return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(depart||'—')}</b><small>${esc(arrive||'—')}${live?' · live':''}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform} · ${live?'live':'scheduled'}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(`${crowd.confidence||'Low'} confidence`)}</small></span></div>`;
+    return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(depart||'—')}</b><small>${esc(arrive||'—')}${live?' · live':''}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform} · ${live?'live':'scheduled'}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}" title="${esc((crowd.reasons||[]).join(', '))}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(`${crowd.confidence||'Low'} confidence`)}</small></span></div>`;
   });
   const change=service.interchange||{},minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,minimum=Number(service.minimumConnectionMinutes)||10,risk=service.connectionRisk||change.quality||'scheduled';
   const quality=service.connectionRisk==='at-risk'?'At risk':service.connectionRisk==='tight'?'Tight':service.connectionRisk==='onward-cancelled'?'Onward cancelled':service.connectionRisk==='first-cancelled'?'First train cancelled':String(change.quality||'comfortable').replace(/^./,c=>c.toUpperCase());
@@ -713,7 +734,9 @@ function renderServices(items,{mode,manifest}){
   const origin=raw.map(item=>item&&(item.from||(Array.isArray(item.legs)&&item.legs[0]&&item.legs[0].from))).find(item=>item&&String(item.crs||'').toUpperCase()===String(r.from&&r.from.crs||'').toUpperCase());
   const resolved=displayName(origin,'');
   if(r.from&&resolved&&resolved!==r.from.crs)r.from.name=resolved;
-  return renderRows(raw.map(normalise),{mode,manifest});
+  const rendered=renderRows(raw.map(normalise),{mode,manifest});
+  if(typeof document.dispatchEvent==='function'&&typeof CustomEvent==='function')setTimeout(()=>document.dispatchEvent(new CustomEvent('kerbside:timetable-services-ready',{detail:{date:r.date,connections:state.services.filter(service=>service&&service.journeyType==='connection').length}})),0);
+  return rendered;
 }
 /* Re-rendering after an overlay merge must not run normalise() again: the
    rows already carry live evidence and normalise() would strip it straight
@@ -773,7 +796,13 @@ function refreshForecasts(){
         if(legEl.className!==cls){legEl.className=cls;changed=true;}
         if(b&&b.textContent!==legResult.label){b.textContent=legResult.label;changed=true;}
         const note=`${legResult.confidence||'Low'} confidence`;if(small&&small.textContent!==note){small.textContent=note;changed=true;}
+        const legTitle=(legResult.reasons||[]).join(', ');if(legEl.title!==legTitle){legEl.title=legTitle;changed=true;}
       });
+      const recoveryEl=article.querySelector('.train-recovery-forecast'),recoveryResult=forecastRecovery(service);
+      if(recoveryEl&&recoveryResult){
+        const cls=`train-recovery-forecast crowd-${recoveryResult.level||'unknown'}`,b=recoveryEl.querySelector('b'),small=recoveryEl.querySelector('small'),reason=recoveryResult.reasons&&recoveryResult.reasons[0]||'',note=`${recoveryResult.confidence||'Low'} confidence${reason?` · ${reason}`:''}`,title=(recoveryResult.reasons||[]).join(', ');
+        if(recoveryEl.className!==cls){recoveryEl.className=cls;changed=true;}if(b&&b.textContent!==recoveryResult.label){b.textContent=recoveryResult.label;changed=true;}if(small&&small.textContent!==note){small.textContent=note;changed=true;}if(recoveryEl.title!==title){recoveryEl.title=title;changed=true;}
+      }
     }
     const explain=article.querySelector('.train-crowding-explain');
     if(explain){
@@ -884,5 +913,5 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,provider:timetableProvider};
 })();

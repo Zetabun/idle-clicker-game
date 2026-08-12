@@ -117,12 +117,17 @@ function locality(value){
   if(first.length<3&&words[1])return `${first} ${words[1]}`;
   return first;
 }
+function timetableInterchanges(){
+  const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,services=timetable&&timetable.state&&Array.isArray(timetable.state.services)?timetable.state.services:[];
+  return unique(services.filter(service=>service&&service.journeyType==='connection').map(service=>stationName(service.interchange)).filter(Boolean));
+}
 function currentJourney(){
   const trains=window.__KERBSIDE_TRAINS__;
   const route=window.__KERBSIDE_TRAIN_ROUTES__||window.__KERBSIDE_TRAIN_ROUTE__;
   return {
     origin:stationName(trains&&trains.state&&trains.state.station),
-    destination:stationName(route&&route.state&&route.state.destination)
+    destination:stationName(route&&route.state&&route.state.destination),
+    interchanges:timetableInterchanges()
   };
 }
 /* The travel date the user actually picked, not today. This is what makes
@@ -283,8 +288,8 @@ async function footballEventsFor(dateStamp){
 }
 
 /* --------------------------------------------------------------- */
-function sparqlForJourney({origin,destination,date}){
-  const cities=unique([locality(origin),locality(destination)])
+function sparqlForJourney({origin,destination,interchanges=[],date}){
+  const cities=unique([locality(origin),locality(destination),...(Array.isArray(interchanges)?interchanges.map(locality):[])])
     .filter(v=>v.length>=3)
     .map(v=>v.toLowerCase().replace(/["\\]/g,''));
   if(!cities.length)return '';
@@ -330,7 +335,8 @@ function rowsToEvents(rows){
 async function wikidataEventsForJourney(journey){
   const query=sparqlForJourney(journey);
   if(!query)return [];
-  const key=`wd|${journey.date}|${locality(journey.origin)}|${locality(journey.destination)}`.toLowerCase();
+  const places=[locality(journey.origin),locality(journey.destination),...(Array.isArray(journey.interchanges)?journey.interchanges.map(locality):[])].filter(Boolean).sort().join('|');
+  const key=`wd|${journey.date}|${places}`.toLowerCase();
   const stored=cache.get(key);
   if(stored&&Date.now()-stored.ts<MEMORY_CACHE_MS)return stored.rows;
   const json=await fetchJson(`${WIKIDATA_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`);
@@ -373,10 +379,10 @@ function relevance(event,service,journey){
   if(amount<.16)return null;
   return {amount,event,phase,nearOrigin,nearDest,delta};
 }
-function pressureForJourney(service){
-  const journey=currentJourney();
+function pressureForJourney(service,journeyOverride={}){
+  const journey={...currentJourney(),...(journeyOverride||{})};
   const route=window.__KERBSIDE_TRAIN_ROUTES__;
-  journey.destinationCrs=route&&route.state&&route.state.destination?route.state.destination.crs:'';
+  if(!journey.destinationCrs)journey.destinationCrs=route&&route.state&&route.state.destination?route.state.destination.crs:'';
   const matches=state.events.map(e=>relevance(e,service,journey)).filter(Boolean).sort((a,b)=>b.amount-a.amount);
   if(!matches.length)return {amount:0,reasons:[]};
   const best=matches[0];
@@ -434,6 +440,7 @@ async function refresh(){
 window.addEventListener('kerbside:journey-planner-change',refresh);
 document.addEventListener('kerbside:train-route-change',refresh);
 document.addEventListener('kerbside:train-date-change',refresh);
+document.addEventListener('kerbside:timetable-services-ready',refresh);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(refresh,0),{once:true});
 else setTimeout(refresh,0);
 
@@ -441,6 +448,6 @@ window.__KERBSIDE_EVENTS__={
   state,setEvents,refresh,pressureForJourney,MAX_EVENT_PRESSURE,
   normalise,relevance,locality,placeMatches,sparqlForJourney,rowsToEvents,
   wikidataEventsForJourney,footballEventsFor,loadFixtures,clubFor,
-  currentJourney,journeyDate,serviceArrival,signedGap,seasonsFor
+  currentJourney,timetableInterchanges,journeyDate,serviceArrival,signedGap,seasonsFor
 };
 })();

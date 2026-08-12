@@ -164,3 +164,40 @@ test('midnight expected arrival remains a valid zero-minute value',()=>{
   const row={subsequentCallingPoints:[{callingPoint:[{crs:'BRI',et:'00:00',st:'23:59'}]}]};
   assert.equal(events.serviceArrival(row,'BRI'),0);
 });
+
+
+test('event engine can score an interchange-specific connection leg',()=>{
+  const events=loadEvents();
+  events.setEvents([{title:'Cheltenham festival',place:'Cheltenham',startTime:'18:00',endTime:'20:00',attendance:30000,confidence:.9}],{date:'2026-08-12',sources:['test']});
+  const row={std:'20:20',arrival:'20:50'};
+  const result=events.pressureForJourney(row,{origin:'Cheltenham Spa',destination:'Gloucester',destinationCrs:'GLO'});
+  assert.ok(result.amount>0,result);
+  assert.match(result.reasons[0],/Cheltenham festival/);
+});
+
+test('Wikidata event query includes connection interchange cities',()=>{
+  const events=loadEvents();
+  const query=events.sparqlForJourney({origin:'Birmingham New Street',destination:'Gloucester',interchanges:['Cheltenham Spa'],date:'2026-08-12'}).toLowerCase();
+  assert.match(query,/birmingham/);assert.match(query,/gloucester/);assert.match(query,/cheltenham/);
+});
+
+test('Forecast v3 forwards the exact leg geography to event pressure',()=>{
+  const station={name:'Cheltenham Spa',crs:'CNM'},loaded=loadPrediction({station});let seen=null;
+  loaded.context.window.__KERBSIDE_EVENTS__={state:{date:'2026-08-12'},pressureForJourney(row,journey){seen=journey;return {amount:.5,reasons:['interchange event pressure']};}};
+  const row=service({std:'11:00',arrival:'11:32',origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}]});
+  const result=loaded.v3.forecast(row,0,[row],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z'),eventJourney:{origin:'Cheltenham Spa',destination:'Gloucester',destinationCrs:'GLO'}});
+  assert.deepEqual({...seen},{origin:'Cheltenham Spa',destination:'Gloucester',destinationCrs:'GLO'});
+  assert.equal(result.eventPressure,.5);assert.ok(result.reasons.some(reason=>/interchange event pressure/i.test(reason)));
+});
+
+
+test('connection displacement raises only the recovery-train context',()=>{
+  const station={name:'Cheltenham Spa',crs:'CNM'},loaded=loadPrediction({station});
+  const row=service({std:'11:20',origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}]});
+  const date=new FixedDate('2026-08-12T12:00:00Z');
+  const plain=loaded.v3.forecast(row,0,[row],{station,referenceDate:date});
+  const displaced=loaded.v3.forecast(row,0,[row],{station,referenceDate:date,connectionDisplacement:.45});
+  assert.ok(displaced.score>plain.score,{plain,displaced});
+  assert.ok(displaced.reasons.some(reason=>/missed-connection passengers/i.test(reason)));
+  assert.equal(loaded.v3.connectionDisplacementSignal({connectionDisplacement:0}).amount,0);
+});

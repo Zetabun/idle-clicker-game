@@ -88,6 +88,12 @@ const liveService=(kind)=>{
     std:'10:05',etd:'10:12',platform:'8',operator:'CrossCountry',operatorCode:'XC',length:4,isCancelled:false,
     subsequentCallingPoints:[{callingPoint:[{locationName:'Cheltenham Spa',crs:'CNM',st:'10:45',et:'10:53',isCancelled:false}]}]
   };
+  if(kind==='onward-previous-cancelled')return {
+    origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}],
+    serviceIdGuid:`live-cancelled-${TODAY}`,uid:`live-cancelled-${TODAY}`,trainid:'1G00',serviceIdUrlSafe:'live-cancelled',
+    std:'10:45',etd:'Cancelled',platform:'3',operator:'Great Western Railway',operatorCode:'GW',length:3,isCancelled:true,cancelReason:'Operational incident',
+    subsequentCallingPoints:[{callingPoint:[{locationName:'Gloucester',crs:'GLO',st:'11:15',isCancelled:true}]}]
+  };
   if(kind==='onward')return {
     origin:[{locationName:'Cheltenham Spa',crs:'CNM'}],destination:[{locationName:'Gloucester',crs:'GLO'}],
     serviceIdGuid:`rid-change-b-${TODAY}`,uid:`uid-change-b-${TODAY}`,trainid:'1G02',serviceIdUrlSafe:'live-change-b',
@@ -113,7 +119,7 @@ const liveService=(kind)=>{
 };
 const liveBoard=(crs,filter='')=>({
   generatedAt:new Date().toISOString(),locationName:crs==='BRI'?'Bristol Temple Meads':crs==='CNM'?'Cheltenham Spa':'Birmingham New Street',crs,nrccMessages:[],
-  trainServices:crs==='BRI'?[liveService('reverse')]:crs==='CNM'&&filter==='GLO'?[liveService('onward'),liveService('recovery')]:filter==='BRI'?[liveService('direct')]:filter==='CNM'?[liveService('connection')]:filter==='GLO'?[]:[liveService('connection'),liveService('direct')]
+  trainServices:crs==='BRI'?[liveService('reverse')]:crs==='CNM'&&filter==='GLO'?[liveService('onward-previous-cancelled'),liveService('onward'),liveService('recovery')]:filter==='BRI'?[liveService('direct')]:filter==='CNM'?[liveService('connection')]:filter==='GLO'?[]:[liveService('connection'),liveService('direct')]
 });
 
 async function mockExternal(page,diagnostics){
@@ -260,6 +266,12 @@ try{
   assert.match(await connectionDetail.textContent(),/live evidence on both legs/i);
   assert.match(await connectionDetail.textContent(),/Backup if missed/);
   assert.match(await connectionDetail.textContent(),/11:20 → 11:52/);
+  const legCrowds=connectionDetail.locator('.train-connection-crowd');
+  assert.match(await legCrowds.nth(1).getAttribute('title'),/previous service was cancelled|cancelled, concentrating/i);
+  const recoveryForecast=connectionDetail.locator('.train-recovery-forecast');
+  await recoveryForecast.waitFor({state:'visible'});
+  assert.match(await recoveryForecast.textContent(),/(Quiet|Moderate|Busy|Very busy)/);
+  assert.match(await recoveryForecast.getAttribute('title'),/missed-connection passengers/i);
   assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);
   await page.evaluate(()=>{
     const api=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;
