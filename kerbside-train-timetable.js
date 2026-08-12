@@ -216,7 +216,15 @@ function setHeader(mode,manifest){
   if(refresh){refresh.disabled=mode!=='today';refresh.textContent=mode==='today'?'Refresh':'Schedule';}
 }
 function setLiveMode(){const main=$('trainMain');if(main)main.dataset.railView='live';setScheduledVisibility(false);}
-function forecast(service,index,services){const v3=window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`);if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,{station:route().from,referenceDate:date,messages:[]});if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,{station:route().from,referenceDate:date,messages:[]});return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
+/* Disruption messages were hardcoded to [] here, which quietly disabled
+   disruptionMessageSignal on what is now the primary board - Darwin telling
+   us "reduced service" is one of the strongest same-day flags there is. */
+function liveMessages(){
+  if(state.mode!=='today')return [];
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
+  return overlay&&typeof overlay.messages==='function'?overlay.messages():[];
+}
+function forecast(service,index,services){const v3=window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`),messages=liveMessages();if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,{station:route().from,referenceDate:date,messages});if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,{station:route().from,referenceDate:date,messages});return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
 function coverageNote(manifest,date){const c=coverageFor(manifest,date);if(!c)return'';return c.partial?`Timetable coverage for this edge date is partial (${c.from}–${c.to}).`: `Full-day Darwin timetable coverage (${c.from}–${c.to}).`;}
 
 /* ------------------------------------------------------------------

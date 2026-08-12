@@ -41,7 +41,7 @@ const REFRESH_MS=60000;
 const DETAILED_ROWS=9;
 const PLAIN_ROWS=20;
 
-const state={crs:'',date:'',services:[],index:null,updatedAt:0,status:'idle',error:'',seq:0,timer:null};
+const state={crs:'',date:'',services:[],messages:[],index:null,updatedAt:0,status:'idle',error:'',seq:0,timer:null};
 
 function londonStamp(date){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date||new Date());const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${map.year}-${map.month}-${map.day}`;}
 function isToday(date){return String(date||'')===londonStamp();}
@@ -185,6 +185,10 @@ async function refresh({crs,date,force=false}={}){
     state.crs=code;
     state.date=String(date);
     state.services=Array.isArray(json&&json.trainServices)?json.trainServices:[];
+    /* Darwin's NRCC messages are the network's own words about disruption -
+       "reduced service", "severe delays" - and the model already scores them.
+       Keep them here so the journey board can pass them on. */
+    state.messages=Array.isArray(json&&json.nrccMessages)?json.nrccMessages:[];
     state.index=buildIndex(state.services);
     state.updatedAt=Date.now();
     state.status='ready';
@@ -202,10 +206,13 @@ async function refresh({crs,date,force=false}={}){
   }
 }
 
+/* The live disruption text for the station currently overlaid, or nothing
+   when the overlay is stale or was never loaded. */
+function messages(){return state.status==='ready'&&Array.isArray(state.messages)?state.messages:[];}
 function clear(){
   if(state.status==='idle'&&!state.services.length)return;
   state.seq++;
-  state.crs='';state.date='';state.services=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';
+  state.crs='';state.date='';state.services=[];state.messages=[];state.index=null;state.updatedAt=0;state.status='idle';state.error='';
 }
 
 function start(){
@@ -226,7 +233,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 window.__KERBSIDE_TRAIN_OVERLAY__={
-  state,refresh,clear,start,stop,evidenceFor,extraServices,servesDestination,
+  state,refresh,clear,start,stop,evidenceFor,extraServices,servesDestination,messages,
   flattenCallingPoints,buildIndex,matchEntry,isToday
 };
 })();

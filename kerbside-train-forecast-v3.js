@@ -20,7 +20,52 @@ function operatorIdentity(service){return normalise(service&&(service.operatorCo
 function profileKey(service,station,date){const stationCode=normalise(station&&(station.crs||station.name)||'unknown');const minute=parseMinutes(service&&service.std);const band=minute==null?'unknown':String(Math.floor(minute/120)*2).padStart(2,'0');return [stationCode,operatorIdentity(service),destinationIdentity(service),dayClass(date),band].join('|');}
 function getProfile(api,service,date){const model=api&&api.state&&api.state.crowdingModel;if(!model||!model.profiles)return null;return model.profiles[profileKey(service,api.state.station,date)]||null;}
 function calendarSignal(date,minute){let amount=0;const reasons=[];const weekday=day(date),dateStamp=stamp(date);if(state.bankHolidays.has(dateStamp)){amount+=.55;reasons.push('bank-holiday travel pattern');}if(weekday==='Fri'&&minute!=null&&minute>=840&&minute<1200){amount+=.35;reasons.push('Friday leisure and commuter demand');}if((weekday==='Sat'||weekday==='Sun')&&minute!=null&&minute>=600&&minute<1140){amount+=.2;reasons.push('weekend daytime demand');}const month=Number(dateStamp.slice(5,7)),dom=Number(dateStamp.slice(8,10));if(month===12&&dom>=18){amount+=.45;reasons.push('Christmas travel period');}if((month===7||month===8)&&(weekday==='Fri'||weekday==='Sat')){amount+=.2;reasons.push('summer leisure travel');}return {amount,reasons};}
-function liveSignal(service,index,services){let amount=0;const reasons=[];if(service&&service.isCancelled)return {amount:-5,reasons:['service cancelled']};const planned=parseMinutes(service&&service.std),expected=parseMinutes(service&&service.etd);if(planned!=null&&expected!=null){let delay=expected-planned;if(delay<-720)delay+=1440;if(delay>720)delay-=1440;if(delay>=20){amount+=.8;reasons.push(`${delay}-minute delay increasing passenger accumulation`);}else if(delay>=8){amount+=.4;reasons.push('current delay increasing platform demand');}}const previous=(services||[]).slice(0,index).reverse().find(item=>item&&item.isCancelled);if(previous){amount+=.75;reasons.push('an earlier service is cancelled');}const length=Number(service&&service.length)||0,lengths=(services||[]).map(s=>Number(s&&s.length)||0).filter(Boolean).sort((a,b)=>a-b);if(length&&lengths.length>=3){const median=lengths[Math.floor(lengths.length/2)];if(median&&length<=median*.65){amount+=.8;reasons.push('shorter-than-typical formation');}else if(median&&length>=median*1.35){amount-=.35;reasons.push('longer-than-typical formation');}}return {amount,reasons};}
+/* Cancellation knock-on.
+   This used to be a plain backwards scan for ANY earlier cancelled service,
+   worth a flat +0.75. That was safe while the board was Darwin's 9 rows over
+   about two hours, but the unified journey board carries up to 24 rows across
+   the whole day - so a 07:05 cancellation was still inflating the 22:10.
+   Displaced passengers do not wait fifteen hours: weight by how recently the
+   cancelled train was due, and let several cancellations in a row compound,
+   because that is genuinely worse than one. */
+const KNOCK_ON_FULL=30;      // minutes: passengers roll straight onto the next train
+const KNOCK_ON_FADE=90;      // minutes: beyond this the effect has dispersed
+const KNOCK_ON_MAX=1.6;
+function cancellationKnockOn(service,index,services){
+  const planned=parseMinutes(service&&service.std);
+  if(planned==null||!Array.isArray(services))return {amount:0,reasons:[]};
+  let amount=0,count=0,nearest=null;
+  for(let i=Math.min(index,services.length)-1;i>=0;i--){
+    const item=services[i];
+    if(!item||!item.isCancelled)continue;
+    const when=parseMinutes(item.std);
+    if(when==null)continue;
+    let gap=planned-when;
+    if(gap<0)gap+=1440;
+    if(gap>KNOCK_ON_FADE)continue;
+    const weight=gap<=KNOCK_ON_FULL?1:(KNOCK_ON_FADE-gap)/(KNOCK_ON_FADE-KNOCK_ON_FULL);
+    amount+=.75*weight;count++;
+    if(nearest==null||gap<nearest)nearest=gap;
+  }
+  if(!count)return {amount:0,reasons:[]};
+  amount=Math.min(amount,KNOCK_ON_MAX);
+  if(count>1)return {amount,reasons:[`${count} earlier services cancelled, concentrating their passengers here`]};
+  if(nearest<=KNOCK_ON_FULL)return {amount,reasons:['the previous service was cancelled, so its passengers roll onto this train']};
+  return {amount,reasons:['a recent service was cancelled']};
+}
+/* Formation comparison needs a few known train lengths to have a median worth
+   trusting. On the journey board only rows inside the live window carry a
+   length, so a short list would silently disable the signal - fall back to the
+   wider live departure board the overlay already holds. */
+function formationBaseline(services){
+  const own=(services||[]).map(s=>Number(s&&s.length)||0).filter(Boolean);
+  if(own.length>=3)return own;
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
+  const board=overlay&&overlay.state&&Array.isArray(overlay.state.services)?overlay.state.services:[];
+  const wider=board.map(s=>Number(s&&s.length)||0).filter(Boolean);
+  return wider.length>=3?wider:own;
+}
+function liveSignal(service,index,services){let amount=0;const reasons=[];if(service&&service.isCancelled)return {amount:-5,reasons:['service cancelled']};const planned=parseMinutes(service&&service.std),expected=parseMinutes(service&&service.etd);if(planned!=null&&expected!=null){let delay=expected-planned;if(delay<-720)delay+=1440;if(delay>720)delay-=1440;if(delay>=20){amount+=.8;reasons.push(`${delay}-minute delay increasing passenger accumulation`);}else if(delay>=8){amount+=.4;reasons.push('current delay increasing platform demand');}}const knock=cancellationKnockOn(service,index,services);amount+=knock.amount;knock.reasons.forEach(r=>reasons.push(r));const length=Number(service&&service.length)||0,lengths=formationBaseline(services).sort((a,b)=>a-b);if(length&&lengths.length>=3){const median=lengths[Math.floor(lengths.length/2)];if(median&&length<=median*.65){amount+=.8;reasons.push('shorter-than-typical formation');}else if(median&&length>=median*1.35){amount-=.35;reasons.push('longer-than-typical formation');}}return {amount,reasons};}
 function historicalSignal(api,service,date){let amount=0;const reasons=[],profile=getProfile(api,service,date);if(!profile)return {amount,reasons,profile:null};const observations=Number(profile.samples||profile.count||profile.observationCount)||0;if(observations>=3){amount+=.3;reasons.push('historical service pattern available');}const typicalLength=Number(profile.avgLength||profile.lengthMean||profile.typicalLength)||0,currentLength=Number(service&&service.length)||0;if(currentLength&&typicalLength&&currentLength<typicalLength*.75){amount+=.55;reasons.push('formation below its historical norm');}return {amount,reasons,profile};}
 /* The old guard bailed out for any future date, so advance journeys - the
    case where knowing about a cup final a week out matters most - scored zero
@@ -236,5 +281,5 @@ function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimat
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,eventSignal,journeyShapeSignal,stationScaleSignal,schoolHolidaySignal,offPeakSignal,calibratedDemandSignal,serviceClassSignal,calibration,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};
+window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,eventSignal,journeyShapeSignal,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};
 })();
