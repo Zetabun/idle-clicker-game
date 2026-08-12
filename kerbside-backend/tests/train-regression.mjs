@@ -217,8 +217,11 @@ async function runDesktop(browser){
   assert.match(firstServiceText,/Cardiff Central/);
   assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);
   assert.match(firstServiceText,/forecast v3/i);
-  assert.match(await page.locator('.train-provider-note').textContent(),/Forecast v3/i);
-  assert.match(await page.locator('.train-provider-note').textContent(),/not ticket-sales data and not live occupancy/i);
+  assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V3__?.version),3);
+  const providerNote = await page.locator('.train-provider-note').textContent();
+  assert.match(providerNote,/official National Rail Darwin data via Rail Data Marketplace/i);
+  assert.match(providerNote,/Huxley community services as a resilience fallback/i);
+  assert.match(providerNote,/Kerbside's forecast, not live occupancy/i);
   assert.match(await page.locator('#trainAlerts').textContent(),/Test disruption/);
 
   await page.locator('.train-service-summary').first().click();
