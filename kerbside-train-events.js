@@ -157,8 +157,6 @@ function signedGap(later,earlier){
  * response at no extra request cost.
  */
 function serviceArrival(service,destinationCrs){
-  const direct=mins(service&&(service.destinationArrival||service.sta||service.eta));
-  if(direct!=null)return direct;
   const groups=Array.isArray(service&&service.subsequentCallingPoints)?service.subsequentCallingPoints:[];
   const wanted=String(destinationCrs||'').toUpperCase();
   let last=null;
@@ -168,13 +166,19 @@ function serviceArrival(service,destinationCrs){
       :Array.isArray(group)?group:[];
     for(const point of points){
       if(!point)continue;
-      const at=mins(point.et)||mins(point.st);
+      const expected=mins(point.et),scheduled=mins(point.st);
+      const at=expected!=null?expected:scheduled;
       if(at==null)continue;
       last=at;
       if(wanted&&String(point.crs||'').toUpperCase()===wanted)return at;
     }
   }
-  // No filter station matched: the final calling point is the train's terminus.
+  /* The scheduled timetable provider already supplies arrival at the user's
+     selected destination. Use it whenever live calling points have not yet
+     arrived, which keeps destination-side events active for future and
+     same-day timetable-only journeys. */
+  const direct=mins(service&&(service.destinationArrival||service.arrival||service.sta||service.eta));
+  if(direct!=null)return direct;
   return wanted?null:last;
 }
 

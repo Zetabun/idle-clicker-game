@@ -276,6 +276,16 @@ function destinationIdentity(service){
   return normaliseToken(destination.crs || destination.name || 'unknown');
 }
 
+/* The route board deliberately rewrites service.destination to the user's
+   selected destination. Local history, however, was learned from the live
+   board under the train's real terminus. Keep those two identities separate
+   so BHM -> BRI on a Plymouth train can reuse the same historical profile. */
+function profileDestinationIdentity(service){
+  const display=service&&service.displayDestination;
+  const terminus=display&&(display.crs||display.name||display.locationName);
+  return normaliseToken(terminus||destinationIdentity(service)||'unknown');
+}
+
 function isSimilarService(a,b){
   if(!a || !b) return false;
   const aDest = destinationIdentity(a);
@@ -369,7 +379,7 @@ function profileKeyFor(service,station,date){
   const stationCode = normaliseToken(station && (station.crs || station.name) || 'unknown');
   const minute = parseMinutes(service && service.std);
   const band = minute == null ? 'x' : String(Math.floor(minute / 120));
-  return [stationCode,operatorIdentity(service),destinationIdentity(service),dayClassFor(date),band].join('|');
+  return [stationCode,operatorIdentity(service),profileDestinationIdentity(service),dayClassFor(date),band].join('|');
 }
 
 function ensureProfile(key){
@@ -480,6 +490,7 @@ function confidenceLabel(evidence){
 }
 
 function crowdingForecast(service,index,allServices,options={}){
+  const v3Baseline = options.modelLayer === 'v3-baseline';
   if(service.isCancelled){
     return {
       level:'unknown',label:'Not applicable',confidence:'—',score:null,
@@ -507,31 +518,33 @@ function crowdingForecast(service,index,allServices,options={}){
   const demand = demandSignal(date,depMinute);
   add(demand.amount,demand.reason,0.35);
 
-  const length = Number(service.length) || 0;
-  let expectedLength = 0;
-  let lengthSource = '';
-  if(profile && Number(profile.lengthSamples) >= 3 && Number(profile.avgLength) > 0){
-    expectedLength = Number(profile.avgLength);
-    lengthSource = 'local history';
-    evidence += 1.1;
-  }else{
-    expectedLength = boardFormationBaseline(service,allServices);
-    if(expectedLength){ lengthSource = 'nearby services'; evidence += 0.55; }
-  }
+  if(!v3Baseline){
+    const length = Number(service.length) || 0;
+    let expectedLength = 0;
+    let lengthSource = '';
+    if(profile && Number(profile.lengthSamples) >= 3 && Number(profile.avgLength) > 0){
+      expectedLength = Number(profile.avgLength);
+      lengthSource = 'local history';
+      evidence += 1.1;
+    }else{
+      expectedLength = boardFormationBaseline(service,allServices);
+      if(expectedLength){ lengthSource = 'nearby services'; evidence += 0.55; }
+    }
 
-  if(length > 0){
-    evidence += 0.45;
-    if(expectedLength > 0){
-      const ratio = length / expectedLength;
-      if(ratio <= 0.7) add(1.0,`formation is much shorter than ${lengthSource} suggests`,0.15);
-      else if(ratio <= 0.85) add(0.65,`formation is shorter than ${lengthSource} suggests`,0.15);
-      else if(ratio <= 0.95) add(0.25,`formation is slightly shorter than ${lengthSource} suggests`,0.1);
-      else if(ratio >= 1.3) add(-0.55,`formation is much longer than ${lengthSource} suggests`,0.15);
-      else if(ratio >= 1.15) add(-0.3,`formation is longer than ${lengthSource} suggests`,0.1);
-    }else if(length <= 3){
-      add(0.45,'short formation reported',0.1);
-    }else if(length >= 9){
-      add(-0.25,'long formation reported',0.1);
+    if(length > 0){
+      evidence += 0.45;
+      if(expectedLength > 0){
+        const ratio = length / expectedLength;
+        if(ratio <= 0.7) add(1.0,`formation is much shorter than ${lengthSource} suggests`,0.15);
+        else if(ratio <= 0.85) add(0.65,`formation is shorter than ${lengthSource} suggests`,0.15);
+        else if(ratio <= 0.95) add(0.25,`formation is slightly shorter than ${lengthSource} suggests`,0.1);
+        else if(ratio >= 1.3) add(-0.55,`formation is much longer than ${lengthSource} suggests`,0.15);
+        else if(ratio >= 1.15) add(-0.3,`formation is longer than ${lengthSource} suggests`,0.1);
+      }else if(length <= 3){
+        add(0.45,'short formation reported',0.1);
+      }else if(length >= 9){
+        add(-0.25,'long formation reported',0.1);
+      }
     }
   }
 
@@ -554,33 +567,39 @@ function crowdingForecast(service,index,allServices,options={}){
     }
   }
 
-  if(context.cancelledBefore){
-    add(Math.min(1.25,context.cancelledBefore*0.6),
-      `${context.cancelledBefore} earlier similar service${context.cancelledBefore===1?' was':'s were'} cancelled`,0.65);
-  }
-  if(context.cancelledAfter){
-    add(Math.min(0.45,context.cancelledAfter*0.25),
-      'a nearby later similar service is cancelled',0.25);
+  if(!v3Baseline){
+    if(context.cancelledBefore){
+      add(Math.min(1.25,context.cancelledBefore*0.6),
+        `${context.cancelledBefore} earlier similar service${context.cancelledBefore===1?' was':'s were'} cancelled`,0.65);
+    }
+    if(context.cancelledAfter){
+      add(Math.min(0.45,context.cancelledAfter*0.25),
+        'a nearby later similar service is cancelled',0.25);
+    }
   }
 
-  const etd = String(service.etd || '').trim();
-  const delay = delayMinutes(service);
-  if(/^delayed$/i.test(etd)) add(0.55,'service is currently reported delayed',0.45);
-  else if(delay >= 20) add(0.7,`current delay is ${delay} minutes`,0.5);
-  else if(delay >= 10) add(0.45,`current delay is ${delay} minutes`,0.45);
-  else if(delay >= 5) add(0.2,`current delay is ${delay} minutes`,0.35);
-  else evidence += 0.2;
+  if(!v3Baseline){
+    const etd = String(service.etd || '').trim();
+    const delay = delayMinutes(service);
+    if(/^delayed$/i.test(etd)) add(0.55,'service is currently reported delayed',0.45);
+    else if(delay >= 20) add(0.7,`current delay is ${delay} minutes`,0.5);
+    else if(delay >= 10) add(0.45,`current delay is ${delay} minutes`,0.45);
+    else if(delay >= 5) add(0.2,`current delay is ${delay} minutes`,0.35);
+    else evidence += 0.2;
+  }
 
-  const startsHere = stationMatchesOrigin(service,station);
-  if(startsHere === true) add(-0.25,'train starts at this station',0.35);
-  else if(startsHere === false) add(0.25,'through train may already carry passengers',0.35);
+  if(!v3Baseline){
+    const startsHere = stationMatchesOrigin(service,station);
+    if(startsHere === true) add(-0.25,'train starts at this station',0.35);
+    else if(startsHere === false) add(0.25,'through train may already carry passengers',0.35);
+  }
 
   const disruption = disruptionMessageSignal(messages);
   if(disruption >= 0.3) add(disruption,'station disruption may shift passengers onto remaining trains',0.2);
   else if(disruption > 0) add(disruption,'current station disruption adds demand uncertainty',0.1);
 
   const feedbackCount = profile ? Number(profile.feedbackCount) || 0 : 0;
-  if(feedbackCount > 0 && Number.isFinite(Number(profile.feedbackMean))){
+  if(!v3Baseline && options.includeFeedback !== false && feedbackCount > 0 && Number.isFinite(Number(profile.feedbackMean))){
     const target = Number(profile.feedbackMean);
     const weight = Math.min(0.5,0.12 + feedbackCount*0.06);
     const blended = score*(1-weight) + target*weight;
@@ -615,7 +634,7 @@ function crowdingForecast(service,index,allServices,options={}){
 }
 
 function providerNotice(){
-  return 'Live running times use the Huxley 2 community JSON proxy for National Rail Darwin. Crowding model v2 combines time-band demand, formation versus comparable trains, service gaps, delays, cancellations, through-train status and locally learned patterns. It is not ticket-sales data and not live occupancy.';
+  return "Live running evidence comes from National Rail Darwin with the app's configured fallbacks. Forecast v3 combines timetable demand, service spacing, events, calendar effects, DfT calibration and live Darwin evidence when available. Passenger-submitted crowding reports do not alter the Forecast v3 score. It is not ticket-sales data and not live occupancy.";
 }
 
 function installMarkup(){
@@ -653,9 +672,9 @@ function installMarkup(){
           <div id="trainSuggest" class="train-suggest" role="listbox" hidden></div>
         </div>
         <div class="train-model-card">
-          <span class="train-model-label">Crowding model v2</span>
-          <strong>Service-relative prediction</strong>
-          <p>Kerbside now compares formation and headway with similar trains, accounts for delays, cancellations and through-train loading, and learns recurring patterns locally. Optional crowding feedback calibrates future predictions on this device.</p>
+          <span class="train-model-label">Forecast v3</span>
+          <strong>Timetable + live prediction</strong>
+          <p>Kerbside combines timetable demand, service spacing, events, calendar effects and measured DfT calibration, then adds Darwin delays, cancellations, formation and route-loading evidence when those live fields become available. Passenger crowding reports are stored locally for accuracy checks, not score calibration.</p>
         </div>
         <p class="train-provider-note">${esc(providerNotice())}</p>
       </aside>
@@ -809,11 +828,10 @@ function renderAlerts(messages){
 }
 
 function forecastFor(service,index){
-  return crowdingForecast(service,index,state.services,{
-    station:state.station,
-    referenceDate:referenceDateFromBoard(),
-    messages:state.board && state.board.nrccMessages
-  });
+  const context={station:state.station,referenceDate:referenceDateFromBoard(),messages:state.board&&state.board.nrccMessages};
+  const v3=window.__KERBSIDE_FORECAST_V3__;
+  if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,state.services,context);
+  return crowdingForecast(service,index,state.services,context);
 }
 
 function renderBoard(){
@@ -911,9 +929,9 @@ function renderServiceDetail(service,index,forecast,detail){
   const length = Number(service.length) || 0;
   const key = serviceKey(service,index);
   const recorded = feedbackForService(service,index);
-  const learningText = forecast.feedbackSamples > 0
-    ? `${forecast.historySamples} local service observation${forecast.historySamples===1?'':'s'} · ${forecast.feedbackSamples} crowding report${forecast.feedbackSamples===1?'':'s'}`
-    : `${forecast.historySamples} local service observation${forecast.historySamples===1?'':'s'} so far`;
+  const historySamples=Number(forecast.historySamples)||0;
+  const learningText=`${historySamples} local service observation${historySamples===1?'':'s'} available`;
+  const modelLabel=Number(forecast.modelVersion)>=3?'Forecast v3':`model v${MODEL_VERSION}`;
   const feedbackButtons = Object.keys(FEEDBACK_LABEL).map(level=>
     `<button type="button" data-crowd-feedback="${esc(level)}" data-service-id="${esc(key)}"${recorded?' disabled':''}>${esc(FEEDBACK_LABEL[level])}</button>`
   ).join('');
@@ -924,14 +942,14 @@ function renderServiceDetail(service,index,forecast,detail){
       <div><span>Formation</span><b>${length ? `${length} coaches` : 'Not reported'}</b></div>
     </div>
     <div class="train-crowding-explain crowd-${esc(forecast.level)}">
-      <div><i></i><strong>${esc(forecast.label)}</strong><span>${esc(forecast.confidence)} confidence · model v${MODEL_VERSION}</span></div>
+      <div><i></i><strong>${esc(forecast.label)}</strong><span>${esc(forecast.confidence)} confidence · ${esc(modelLabel)}</span></div>
       <p>Why: ${esc(forecast.reasons.join(', '))}. Kerbside does not use ticket sales, seat reservations or live carriage occupancy, so it deliberately avoids an exact percentage.</p>
       <p>${esc(learningText)}</p>
     </div>
     <div class="train-model-card">
-      <span class="train-model-label">Help calibrate this forecast</span>
+      <span class="train-model-label">Record actual crowding</span>
       <strong>What was the train actually like?</strong>
-      <p>If you are on this train, or have just used it, one tap adds a local crowding label for similar future services. Nothing is uploaded.</p>
+      <p>If you are on this train, or have just used it, one tap saves a local observation for later accuracy checks. It does not change the Forecast v3 score and nothing is uploaded.</p>
       <div class="train-search-box train-feedback" style="flex-wrap:wrap;margin-top:8px">${feedbackButtons}</div>
       ${recorded ? `<div class="train-detail-note">Saved locally: ${esc(FEEDBACK_LABEL[recorded] || recorded)}.</div>` : ''}
     </div>

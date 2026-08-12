@@ -217,7 +217,7 @@ async function runDesktop(browser){
   assert.match(firstServiceText,/Cardiff Central/);
   assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);
   assert.match(firstServiceText,/forecast v3/i);
-  assert.match(await page.locator('.train-provider-note').textContent(),/crowding model v2/i);
+  assert.match(await page.locator('.train-provider-note').textContent(),/Forecast v3/i);
   assert.match(await page.locator('.train-provider-note').textContent(),/not ticket-sales data and not live occupancy/i);
   assert.match(await page.locator('#trainAlerts').textContent(),/Test disruption/);
 
@@ -226,7 +226,7 @@ async function runDesktop(browser){
   const detailText = await page.locator('.train-service-detail').first().textContent();
   assert.match(detailText,/Bath Spa/);
   assert.match(detailText,/Passenger-submitted crowding reports are not used to calculate this forecast/i);
-  assert.match(detailText,/Help calibrate this forecast/i);
+  assert.match(detailText,/Record actual crowding/i);
 
   const feedbackButton = page.locator('[data-crowd-feedback="busy"]').first();
   await feedbackButton.click();
