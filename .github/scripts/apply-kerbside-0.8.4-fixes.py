@@ -52,19 +52,26 @@ once(test,
 "const operator=cal.operatorCrowdingSignal(service,station,8*60),capacity=cal.peakCapacitySignal(station,8*60),prior=cal.utilisationPrior(service,station);",
 "const operator=cal.operatorCrowdingSignal(service,station,8*60),capacity=cal.peakCapacitySignal(station,8*60),prior=cal.utilisationPrior(service,station,8*60,new FixedDate('2026-08-12T12:00:00Z'));"
 )
-# Prove the same empirical distribution is not used off peak.
 once(test,
 "assert.equal(capacity.measured,true,capacity);assert.equal(prior.group,'longDistance');assert.ok(Math.abs(prior.probabilities.reduce((a,b)=>a+b,0)-1)<1e-5);",
 "assert.equal(capacity.measured,true,capacity);assert.equal(prior.group,'longDistance');assert.ok(Math.abs(prior.probabilities.reduce((a,b)=>a+b,0)-1)<1e-5);assert.equal(cal.utilisationPrior(service,station,13*60,new FixedDate('2026-08-12T12:00:00Z')),null);"
 )
 
-# train-regression predates the v4 global. The compatibility V3 alias now
-# deliberately points at v4, so assert the real engine rather than an obsolete
-# version number on the alias.
+# train-regression predates the v4 global and the v3 local-store schema. Keep
+# its useful baseline behavioural checks, but assert the current engine/store
+# rather than obsolete version numbers.
 browser='kerbside-backend/tests/train-regression.mjs'
 once(browser,
 "assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V3__?.version),3);",
 "assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V4__?.version),4);"
 )
+once(browser,'async function assertCrowdingModelV2(page){','async function assertCrowdingBaselineModel(page){')
+once(browser,
+"api.state.crowdingModel = {version:2,profiles:{},seen:{},feedbackSeen:{}};",
+"api.state.crowdingModel = {version:3,profiles:{},patternProfiles:{},seen:{},feedbackSeen:{}};"
+)
+once(browser,'assert.equal(result.modelVersion,2);','assert.equal(result.modelVersion,3);')
+once(browser,'assert.equal(feedbackStore.version,2);','assert.equal(feedbackStore.version,3);\n  assert.equal(typeof feedbackStore.patternProfiles,\'object\');')
+once(browser,'await assertCrowdingModelV2(page);','await assertCrowdingBaselineModel(page);')
 
-print('Applied Forecast v4 staging-scope, peak-prior and browser assertion fixes.')
+print('Applied Forecast v4 scope, peak-prior, engine and storage regression fixes.')
