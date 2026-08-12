@@ -58,3 +58,13 @@ test('retryable official rail HTTP failures are degraded rather than hard down',
   assert.equal(api.liveRailProbeState(500),'down');
   assert.equal(api.liveRailProbeState(503),'down');
 });
+
+
+test('status history reports rolling local availability, failures and median latency',()=>{
+  const api=load(),at=Date.now();
+  api.recordHistory({id:'rdm-darwin',status:'healthy',latency:300},at-3000);
+  api.recordHistory({id:'rdm-darwin',status:'degraded',latency:500},at-2000);
+  api.recordHistory({id:'rdm-darwin',status:'down',latency:null},at-1000);
+  const value=api.historySummary('rdm-darwin',at);
+  assert.equal(value.samples,3);assert.equal(value.failures,1);assert.equal(value.degraded,1);assert.ok(Math.abs(value.availability-2/3)<1e-9);assert.equal(value.medianLatency,400);
+});

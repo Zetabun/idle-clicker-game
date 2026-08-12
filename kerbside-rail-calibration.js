@@ -159,10 +159,16 @@ const CITIES={
   CBG:{city:'Cambridge'}
 };
 
-/* Placeholder for RAI0202 / RAI0203 once parsed: keys are CRS or city name,
-   values an array of 24 hourly shares summing to 1. demandShape() prefers it
-   over the coarse peak-share model as soon as it is populated. */
-const TIME_BANDS={};
+/* Exact 2025 DfT RAI0202/RAI0203 bands are generated from the official
+   ODS workbooks at release time. They contain two four-hour edge bands and
+   hourly 07:00-22:59 values; Kerbside preserves that shape rather than
+   inventing hourly values inside the edge bands. */
+const TIME_BANDS=window.__KERBSIDE_DFT_TIME_BANDS__||null;
+/* These are Kerbside interpretation thresholds, not categories published by
+   DfT. They anchor the 0-5 score to measured seat utilisation while leaving
+   room for live Darwin, event and route evidence to move an individual train. */
+const SCORE_THRESHOLDS={moderate:1.5,busy:2.65,veryBusy:3.85};
+const LOAD_FACTOR_BANDS={moderate:.32,busy:.64,veryBusy:.99};
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function crsOf(station){return String(station&&(station.crs||station)||'').toUpperCase();}
@@ -224,24 +230,51 @@ function scaleSignal(station){
    every commuter train. This only corrects for how much more (London) or less
    (regional) peaked a place is than the flat national assumption baked into
    that original curve. Net effect across the network is close to zero. */
+function measuredBand(station,minute,direction='departures'){
+  if(minute==null||!TIME_BANDS||typeof TIME_BANDS.recordFor!=='function'||typeof TIME_BANDS.bandIndex!=='function')return null;
+  const profile=profileFor(station);if(!profile)return null;
+  const record=TIME_BANDS.recordFor(station,profile.city||(profile.area==='london'?'London':''));if(!record)return null;
+  const index=TIME_BANDS.bandIndex(minute);if(index<0)return null;
+  const prefix=String(direction).toLowerCase().startsWith('arr')?'a':'d';
+  const passengers=Array.isArray(record[`${prefix}p`])?Number(record[`${prefix}p`][index]):NaN;
+  const seats=Array.isArray(record[`${prefix}s`])?Number(record[`${prefix}s`][index]):NaN;
+  const total=Number(record[`${prefix}pt`]);
+  const hours=Number(TIME_BANDS.bandHours&&TIME_BANDS.bandHours[index])||1;
+  const share=Number.isFinite(passengers)&&total>0?passengers/total:null;
+  const flatShare=hours/24;
+  const loadFactor=Number.isFinite(passengers)&&Number.isFinite(seats)&&seats>0?passengers/seats:null;
+  return {index,label:TIME_BANDS.bandLabels&&TIME_BANDS.bandLabels[index]||'',scope:record.scope,key:record.key,name:record.name,passengers:Number.isFinite(passengers)?passengers:null,seats:Number.isFinite(seats)?seats:null,total:Number.isFinite(total)?total:null,share,flatShare,loadFactor,hours};
+}
+function measuredCrowdingBand(loadFactor){
+  const value=Number(loadFactor);if(!Number.isFinite(value))return'';
+  if(value>=LOAD_FACTOR_BANDS.veryBusy)return'very-busy';
+  if(value>=LOAD_FACTOR_BANDS.busy)return'busy';
+  if(value>=LOAD_FACTOR_BANDS.moderate)return'moderate';
+  return'quiet';
+}
+function scoreThresholds(){return {...SCORE_THRESHOLDS};}
 function demandShape(station,minute,date){
   if(minute==null||!isWeekday(date))return {amount:0,reasons:[]};
-  const profile=profileFor(station);
-  if(!profile)return {amount:0,reasons:[]};
-  const bands=TIME_BANDS[profile.crs]||TIME_BANDS[profile.city];
-  if(Array.isArray(bands)&&bands.length===24){
-    /* Preferred path once RAI0202/RAI0203 are embedded: compare this hour's
-       measured share against a flat 1/24 and scale it. */
-    const share=Number(bands[Math.floor(minute/60)])||0;
-    const amount=clamp((share-1/24)*6,-0.5,0.6);
-    return amount?{amount,reasons:[`measured ${profile.city||profile.name} demand for this time of day`]}:{amount:0,reasons:[]};
+  const profile=profileFor(station);if(!profile)return {amount:0,reasons:[]};
+  const measured=measuredBand(station,minute,'departures');
+  if(measured&&Number.isFinite(measured.share)){
+    const ratio=measured.flatShare>0?measured.share/measured.flatShare:1;
+    const shapeAmount=clamp(Math.log2(Math.max(.25,ratio))*.22,-.35,.45);
+    const load=measured.loadFactor;
+    const capacityAmount=!Number.isFinite(load)?0:load>=1?.25:load>=.8?.15:load>=.6?.08:load<=.25?-.08:0;
+    const amount=clamp(shapeAmount+capacityAmount,-.4,.6),reasons=[];
+    const where=measured.scope==='station'?measured.name:(profile.city||profile.name);
+    if(Math.abs(shapeAmount)>=.04)reasons.push(`DfT 2025 measured ${where} departures are ${ratio>=1?'above':'below'} its all-day time-normalised average in this band`);
+    if(Number.isFinite(load)&&load>=.6)reasons.push(`DfT measured about ${Math.round(load*100)} passengers per 100 seats in this ${measured.label} aggregate`);
+    return {amount,reasons,measured};
   }
+  /* Suppressed/missing cells fail back to the older coarse peak correction. */
   const peak=inBand(minute,AM_PEAK)||inBand(minute,PM_PEAK);
   if(profile.area==='london'){
-    if(peak)return {amount:0.25,reasons:['London peak demand is far more concentrated than the network average']};
-    return {amount:-0.1,reasons:[]};
+    if(peak)return {amount:.25,reasons:['London peak demand is far more concentrated than the network average']};
+    return {amount:-.1,reasons:[]};
   }
-  if(peak)return {amount:-0.2,reasons:['peak demand outside London is measurably flatter than in the capital']};
+  if(peak)return {amount:-.2,reasons:['peak demand outside London is measurably flatter than in the capital']};
   return {amount:0,reasons:[]};
 }
 
@@ -273,22 +306,27 @@ function serviceClassSignal(service,station,minute,date){
    the user what the measured network actually looks like, so "Busy" means
    something concrete rather than a vibe. */
 function contextNote(station,minute,date){
-  const profile=profileFor(station);
+  const profile=profileFor(station),measured=isWeekday(date)?measuredBand(station,minute,'departures'):null;
   const peak=inBand(minute,AM_PEAK)||inBand(minute,PM_PEAK);
   if(!isWeekday(date))return '';
-  if(profile&&profile.area==='london'&&peak)
-    return `For scale: DfT counts found about a quarter of peak passengers standing in London, and just over half of peak services carrying more passengers than seats.`;
-  if(profile&&peak)
-    return `For scale: DfT counts found about 1 in 20 peak passengers standing outside London, with 14% of peak services above seating capacity.`;
-  if(peak)
-    return `For scale: DfT counts found about a third of peak services into major cities carry standing passengers, and 5% exceed total capacity.`;
+  if(measured){
+    const where=measured.scope==='station'?measured.name:(profile&&profile.city)||'this city';
+    const share=Number.isFinite(measured.share)?Math.round(measured.share*1000)/10:null;
+    const load=Number.isFinite(measured.loadFactor)?Math.round(measured.loadFactor*100):null;
+    if(load!=null)return `DfT 2025 measured baseline for ${where}, ${measured.label}: ${load} passengers per 100 seats, with ${share}% of the day's departures in this time band.`;
+    if(share!=null)return `DfT 2025 measured baseline for ${where}, ${measured.label}: ${share}% of the day's departures fall in this time band; the seat figure is suppressed or unavailable.`;
+  }
+  if(profile&&profile.area==='london'&&peak)return `For scale: DfT counts found about a quarter of peak passengers standing in London, and just over half of peak services carrying more passengers than seats.`;
+  if(profile&&peak)return `For scale: DfT counts found about 1 in 20 peak passengers standing outside London, with 14% of peak services above seating capacity.`;
+  if(peak)return `For scale: DfT counts found about a third of peak services into major cities carry standing passengers, and 5% exceed total capacity.`;
   return `For scale: DfT counts put the average all-day load factor at 29%, rising to 53% across the peaks.`;
 }
 
+
 window.__KERBSIDE_CALIBRATION__={
   source:SOURCE,released:RELEASED,countPeriod:COUNT_PERIOD,
-  scaleSignal,demandShape,serviceClassSignal,contextNote,
+  scaleSignal,demandShape,serviceClassSignal,contextNote,measuredBand,measuredCrowdingBand,scoreThresholds,
   profileFor,operatorClass,isWeekday,
-  NETWORK,GEOGRAPHY,OPERATOR_CLASS,LONDON_TERMINALS,CITIES,TIME_BANDS,AM_PEAK,PM_PEAK
+  NETWORK,GEOGRAPHY,OPERATOR_CLASS,LONDON_TERMINALS,CITIES,TIME_BANDS,SCORE_THRESHOLDS,LOAD_FACTOR_BANDS,AM_PEAK,PM_PEAK
 };
 })();

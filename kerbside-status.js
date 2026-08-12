@@ -1,9 +1,12 @@
 (function(){
 'use strict';
 
-const VERSION='0.8.0';
+const VERSION='0.8.1';
 const REFRESH_CACHE_MS=5*60*1000;
 const REQUEST_TIMEOUT_MS=7000;
+const HISTORY_KEY='kerbside.status.history.v1';
+const HISTORY_WINDOW_MS=24*60*60*1000;
+const HISTORY_MAX_PER_SOURCE=288;
 const BUS_DATA_BASE='https://kerbside-data-zetabun.pages.dev';
 const DEFAULT_BUS_WORKER='https://kerbside-bus.adambullas.workers.dev';
 const RAIL_WORKER='https://kerbside-rail.adambullas.workers.dev';
@@ -21,11 +24,28 @@ const OVERPASS=[
 ];
 const BUS_PROBE_BBOX='-1.91000,52.47000,-1.89000,52.49000';
 
-const state={installed:false,inFlight:false,lastChecked:0,results:new Map()};
+const state={installed:false,inFlight:false,lastChecked:0,results:new Map(),history:null};
 const $=id=>document.getElementById(id);
 const now=()=>Date.now();
 const elapsed=(start)=>Math.max(0,now()-start);
 const labelFor={healthy:'Healthy',degraded:'Degraded',down:'Down',checking:'Checking',standby:'Standby'};
+
+
+function readHistory(){try{const value=JSON.parse(localStorage.getItem(HISTORY_KEY)||'null');return value&&typeof value==='object'?value:{};}catch(error){return {};}}
+function pruneHistory(at=now()){
+  if(!state.history||typeof state.history!=='object')state.history={};const cutoff=at-HISTORY_WINDOW_MS;
+  for(const id of Object.keys(state.history)){const rows=(Array.isArray(state.history[id])?state.history[id]:[]).filter(row=>row&&Number(row.ts)>=cutoff).slice(-HISTORY_MAX_PER_SOURCE);if(rows.length)state.history[id]=rows;else delete state.history[id];}
+}
+function saveHistory(){try{pruneHistory();localStorage.setItem(HISTORY_KEY,JSON.stringify(state.history||{}));}catch(error){}}
+function recordHistory(value,ts=now()){
+  if(!value||!value.id)return;if(!state.history)state.history=readHistory();pruneHistory(ts);const rows=state.history[value.id]||(state.history[value.id]=[]);rows.push({ts:Number(ts)||now(),status:String(value.status||'down'),latency:Number.isFinite(value.latency)?value.latency:null});if(rows.length>HISTORY_MAX_PER_SOURCE)rows.splice(0,rows.length-HISTORY_MAX_PER_SOURCE);
+}
+function medianNumber(values){const nums=values.filter(value=>value!=null).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);if(!nums.length)return null;const mid=Math.floor(nums.length/2);return nums.length%2?nums[mid]:(nums[mid-1]+nums[mid])/2;}
+function historySummary(id,at=now()){
+  if(!state.history)state.history=readHistory();pruneHistory(at);const rows=Array.isArray(state.history[id])?state.history[id]:[],samples=rows.length,failures=rows.filter(row=>row.status==='down').length,degraded=rows.filter(row=>row.status==='degraded').length,available=rows.filter(row=>row.status!=='down').length,latency=medianNumber(rows.map(row=>row.latency));
+  return {samples,failures,degraded,availability:samples?available/samples:0,medianLatency:latency};
+}
+function historyText(id){const h=historySummary(id);if(!h.samples)return'No local 24h history yet';if(h.samples===1)return'24h local history · 1 check';const latency=Number.isFinite(h.medianLatency)?` · ${Math.round(h.medianLatency)} ms median`:'';return `24h local checks · ${Math.round(h.availability*1000)/10}% available · ${h.failures} failure${h.failures===1?'':'s'}${h.degraded?` · ${h.degraded} degraded`:''}${latency}`;}
 
 function normaliseUrl(value){
   const raw=String(value||'').trim();
@@ -235,7 +255,7 @@ function installStyles(){
   .status-refresh:disabled{opacity:.5}.status-note{margin:0;color:var(--text-dim);font-size:10.5px;line-height:1.55}
   .status-group{border-top:1px solid var(--rule);padding-top:12px}.status-group h3{margin:0 0 7px;font-size:12.5px}.status-list{display:grid;gap:6px}
   .status-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:start;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--ink)}
-  .status-copy{min-width:0}.status-copy b{display:block;font-size:11.5px}.status-description{display:block;margin-top:1px;color:var(--text-dim);font-size:9.5px;line-height:1.35}.status-detail{display:block;margin-top:4px;color:var(--text-dim);font-size:10px;line-height:1.4}
+  .status-copy{min-width:0}.status-copy b{display:block;font-size:11.5px}.status-description{display:block;margin-top:1px;color:var(--text-dim);font-size:9.5px;line-height:1.35}.status-detail{display:block;margin-top:4px;color:var(--text-dim);font-size:10px;line-height:1.4}.status-history{display:block;margin-top:4px;color:var(--text-mute);font-family:'Martian Mono',monospace;font-size:8.5px;line-height:1.4}
   .status-state{text-align:right;font-family:'Martian Mono',monospace;font-size:9px;line-height:1.4;color:var(--text-dim);white-space:nowrap}.status-state b{display:block;color:var(--text);font-size:9px}.status-row[data-state="healthy"] .status-state b{color:var(--live-soft)}.status-row[data-state="degraded"] .status-state b{color:var(--led)}.status-row[data-state="down"] .status-state b{color:var(--warn-soft)}
   @media(max-width:420px){.settings-heading{column-gap:8px}.settings-tab{padding-left:7px;padding-right:7px}.status-row{grid-template-columns:auto minmax(0,1fr)}.status-state{grid-column:2;text-align:left;display:flex;gap:7px;align-items:center}.status-state b{display:inline}.status-overview-actions{align-items:flex-start;flex-direction:column}.status-refresh{width:100%}}
   `;document.head.appendChild(style);
@@ -248,7 +268,7 @@ function installUi(){
   }
   if(!$('statusPanel')){
     const panel=document.createElement('section');panel.className='settings-panel';panel.id='statusPanel';panel.hidden=true;panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby','statusTab');panel.setAttribute('aria-live','polite');
-    panel.innerHTML='<div class="pad"><div class="status-switchboard"><div class="status-overview" id="statusOverview" data-state="checking"><div class="status-overview-head"><i class="status-overview-led"></i><strong id="statusOverallLabel">Checking Kerbside services</strong></div><p class="status-overview-summary" id="statusOverallSummary">The switchboard checks Kerbside infrastructure, transport feeds, prediction sources and mapping dependencies.</p><div class="status-overview-actions"><span id="statusCheckedAt">Not checked yet</span><button class="status-refresh" id="statusRefresh" type="button">Check again</button></div></div><p class="status-note">Checks run only when this tab is opened or you press Check again. Kerbside never exposes API keys. Authenticated third-party feeds are checked through the same Workers or published build outputs the app already uses.</p><div id="statusGroups"></div></div></div>';
+    panel.innerHTML='<div class="pad"><div class="status-switchboard"><div class="status-overview" id="statusOverview" data-state="checking"><div class="status-overview-head"><i class="status-overview-led"></i><strong id="statusOverallLabel">Checking Kerbside services</strong></div><p class="status-overview-summary" id="statusOverallSummary">The switchboard checks Kerbside infrastructure, transport feeds, prediction sources and mapping dependencies.</p><div class="status-overview-actions"><span id="statusCheckedAt">Not checked yet</span><button class="status-refresh" id="statusRefresh" type="button">Check again</button></div></div><p class="status-note">Checks run only when this tab is opened or you press Check again. The 24-hour reliability figures are local samples from checks made on this device, not continuous central monitoring. Kerbside never exposes API keys. Authenticated third-party feeds are checked through the same Workers or published build outputs the app already uses.</p><div id="statusGroups"></div></div></div>';
     body.appendChild(panel);
   }
   return true;
@@ -265,7 +285,7 @@ function renderSkeleton(definitions){
       const row=document.createElement('div');row.className='status-row';row.dataset.statusId=source.id;row.dataset.state='checking';
       const led=document.createElement('i');led.className='status-led';
       const copy=document.createElement('div');copy.className='status-copy';
-      const name=document.createElement('b');name.textContent=source.name;const description=document.createElement('span');description.className='status-description';description.textContent=source.description;const detail=document.createElement('span');detail.className='status-detail';detail.textContent='Waiting to check…';copy.append(name,description,detail);
+      const name=document.createElement('b');name.textContent=source.name;const description=document.createElement('span');description.className='status-description';description.textContent=source.description;const detail=document.createElement('span');detail.className='status-detail';detail.textContent='Waiting to check…';const history=document.createElement('span');history.className='status-history';history.textContent=historyText(source.id);copy.append(name,description,detail,history);
       const status=document.createElement('span');status.className='status-state';status.innerHTML='<b>Checking</b><span></span>';
       row.append(led,copy,status);list.appendChild(row);
     }
@@ -274,7 +294,7 @@ function renderSkeleton(definitions){
 }
 function renderResult(value){
   const row=document.querySelector(`[data-status-id="${value.id}"]`);if(!row)return;row.dataset.state=value.status;
-  const detail=row.querySelector('.status-detail');if(detail)detail.textContent=value.detail||'';
+  const detail=row.querySelector('.status-detail');if(detail)detail.textContent=value.detail||'';const history=row.querySelector('.status-history');if(history)history.textContent=historyText(value.id);
   const box=row.querySelector('.status-state'),strong=box&&box.querySelector('b'),small=box&&box.querySelector('span');if(strong)strong.textContent=value.label||labelFor[value.status]||value.status;if(small)small.textContent=value.latency!=null?formatLatency(value.latency):'';
 }
 function renderOverall(definitions){
@@ -291,9 +311,9 @@ async function refresh({force=false}={}){
   const context={};
   await runPool(definitions,async source=>{
     let value;try{value=await source.probe(source,context);}catch(error){value=sourceError(source,error);}
-    state.results.set(source.id,value);renderResult(value);renderOverall(definitions);return value;
+    state.results.set(source.id,value);recordHistory(value);renderResult(value);renderOverall(definitions);return value;
   },5);
-  state.lastChecked=now();state.inFlight=false;if(button){button.disabled=false;button.textContent='Check again';}renderOverall(definitions);return true;
+  saveHistory();state.lastChecked=now();state.inFlight=false;if(button){button.disabled=false;button.textContent='Check again';}renderOverall(definitions);return true;
 }
 function deactivate(){const tab=$('statusTab'),panel=$('statusPanel');if(tab)tab.setAttribute('aria-selected','false');if(panel)panel.hidden=true;}
 function activate(){
@@ -307,9 +327,9 @@ function bind(){
   $('statusRefresh').addEventListener('click',()=>refresh({force:true}));
   for(const id of ['dataTab','statsTab','setBtn']){const el=$(id);if(el)el.addEventListener('click',deactivate);}
 }
-function install(){if(state.installed)return true;installStyles();if(!installUi())return false;const definitions=sourceDefinitions();renderSkeleton(definitions);renderOverall(definitions);bind();state.installed=true;return true;}
+function install(){if(state.installed)return true;if(!state.history)state.history=readHistory();installStyles();if(!installUi())return false;const definitions=sourceDefinitions();renderSkeleton(definitions);renderOverall(definitions);bind();state.installed=true;return true;}
 function init(){if(!install())setTimeout(init,50);}
 
-window.__KERBSIDE_STATUS_SWITCHBOARD__={version:VERSION,state,SOURCE_META,coverageHealth,overallState,liveRailProbeState,sourceDefinitions,refresh,install};
+window.__KERBSIDE_STATUS_SWITCHBOARD__={version:VERSION,state,SOURCE_META,coverageHealth,overallState,liveRailProbeState,historySummary,recordHistory,sourceDefinitions,refresh,install};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

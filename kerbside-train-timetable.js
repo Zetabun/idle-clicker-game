@@ -8,13 +8,16 @@ const CONNECTION_MAX_WAIT=75;
 const CONNECTION_MAX_TOTAL=360;
 const CONNECTION_FIRST_LEGS=48;
 const CONNECTION_SECOND_CHOICES=6;
+const CONNECTION_COMFORT_MARGIN=8;
+const CONNECTION_LONG_WAIT=40;
+const CONNECTION_DETOUR_REJECT_EXCESS=12;
 /* The compact Darwin snapshot does not carry the official National Rail
    minimum-connection-time dataset. These are deliberately conservative
    Kerbside planning buffers: 10 minutes generally, 12 at the largest or
    more complex hubs. Cross-station transfers are never invented. */
 const CONNECTION_HUB_MINUTES={
-  BHM:12,MAN:12,LDS:12,EDB:12,GLC:12,GLQ:12,NCL:12,YRK:12,SHF:12,RDG:12,BRI:12,CDF:12,
-  EUS:12,KGX:12,STP:12,PAD:12,WAT:12,VIC:12,LBG:12,LST:12,CHX:12,MYB:12,CLJ:12
+  BHM:15,MAN:15,LDS:15,EDB:15,GLC:15,EUS:15,KGX:15,STP:15,PAD:15,WAT:15,VIC:15,LBG:15,LST:15,CLJ:15,
+  GLQ:12,NCL:12,YRK:12,SHF:12,RDG:12,BRI:12,CDF:12,CHX:12,MYB:12
 };
 const MANIFEST_CACHE_MS=5*60*1000;
 const EDGE_MANIFEST_RECHECK_MS=2*60*1000;
@@ -137,7 +140,11 @@ function location(locations,crs){const row=locations&&locations[String(crs||'').
 function actualCallDate(row,call){return addDays(row[4],Number(call&&call[4])||0);}
 function operatorName(manifest,code){return manifest&&manifest.tocNames&&manifest.tocNames[code]||code||'Scheduled service';}
 
-function connectionMinimum(crs){return CONNECTION_HUB_MINUTES[String(crs||'').toUpperCase()]||10;}
+function connectionMinimum(crs,graph=null){
+  const code=String(crs||'').toUpperCase(),fixed=CONNECTION_HUB_MINUTES[code]||10,degree=graph&&graph.get(code)?graph.get(code).size:0;
+  const topology=degree>=12?15:degree>=7?12:10;
+  return Math.max(fixed,topology);
+}
 function callMinute(baseDate,row,call,value){
   const minute=parseMinutes(value);if(minute==null)return null;
   const actual=actualCallDate(row,call),base=new Date(`${baseDate}T12:00:00Z`),at=new Date(`${actual}T12:00:00Z`);
@@ -206,16 +213,37 @@ function departureIndexForRows(rows,date){
   return index;
 }
 function lowerBound(list,value){let lo=0,hi=list.length;while(lo<hi){const mid=(lo+hi)>>1;if(list[mid].departureMinute<value)lo=mid+1;else hi=mid;}return lo;}
+function buildStationGraph(rows){
+  const graph=new Map(),link=(a,b)=>{if(!a||!b||a===b)return;if(!graph.has(a))graph.set(a,new Set());if(!graph.has(b))graph.set(b,new Set());graph.get(a).add(b);graph.get(b).add(a);};
+  for(const row of Array.isArray(rows)?rows:[]){const calls=Array.isArray(row&&row[5])?row[5]:[];for(let i=1;i<calls.length;i++)link(String(calls[i-1]&&calls[i-1][0]||'').toUpperCase(),String(calls[i]&&calls[i][0]||'').toUpperCase());}
+  return graph;
+}
+function shortestNetworkStops(graph,from,to){
+  const start=String(from||'').toUpperCase(),target=String(to||'').toUpperCase();if(!graph||!start||!target)return Infinity;if(start===target)return 0;
+  const seen=new Set([start]),queue=[[start,0]];for(let head=0;head<queue.length;head++){const [node,depth]=queue[head];if(depth>=40)continue;for(const next of graph.get(node)||[]){if(next===target)return depth+1;if(!seen.has(next)){seen.add(next);queue.push([next,depth+1]);}}}return Infinity;
+}
+function pathCodes(row,start,end){const calls=Array.isArray(row&&row[5])?row[5]:[];return calls.slice(start,end+1).map(call=>String(call&&call[0]||'').toUpperCase()).filter(Boolean);}
+function connectionRouteQuality(firstRow,firstStart,changeIndex,secondRow,secondStart,destinationIndex,graph,shortest){
+  const first=pathCodes(firstRow,firstStart,changeIndex),second=pathCodes(secondRow,secondStart,destinationIndex);if(first.length<2||second.length<2)return {reject:true,reason:'invalid path'};
+  const earlier=new Set(first.slice(0,-1)),returned=second.slice(1).find(code=>earlier.has(code));
+  if(returned)return {reject:true,reason:`backtracks through ${returned}`};
+  const edges=(first.length-1)+(second.length-1),base=Number.isFinite(shortest)&&shortest>0?shortest:null;
+  const detourRatio=base?edges/base:1,excess=base?edges-base:0;
+  if(base&&excess>=CONNECTION_DETOUR_REJECT_EXCESS&&detourRatio>2.5)return {reject:true,reason:'excessive network detour',edges,shortest:base,detourRatio};
+  const penalty=base?Math.max(0,excess-3)*2+Math.max(0,detourRatio-1.8)*8:0;
+  return {reject:false,reason:penalty?'indirect route':'direct network progression',edges,shortest:base,detourRatio,penalty};
+}
 function connectionRiskFor(minutes,minimum){
   if(!Number.isFinite(minutes))return'scheduled';
   if(minutes<minimum)return'at-risk';
   if(minutes<minimum+5)return'tight';
   return'good';
 }
-function connectionQuality(minutes,minimum){const margin=minutes-minimum;return margin<5?'tight':minutes>45?'long':'comfortable';}
+function connectionQuality(minutes,minimum){const margin=minutes-minimum;return margin<CONNECTION_COMFORT_MARGIN?'tight':minutes>CONNECTION_LONG_WAIT?'long':'comfortable';}
 function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter}){
   const fromCode=String(from||'').toUpperCase(),toCode=String(to||'').toUpperCase(),after=parseMinutes(departAfter);
   if(!/^[A-Z0-9]{3}$/.test(fromCode)||!/^[A-Z0-9]{3}$/.test(toCode)||fromCode===toCode)return[];
+  const graph=buildStationGraph(rows),shortest=shortestNetworkStops(graph,fromCode,toCode);
   const departures=departureIndexForRows(rows,date),first=[];
   for(const row of Array.isArray(rows)?rows:[]){
     const originIndex=originIndexFor(row,fromCode,date);if(originIndex<0)continue;
@@ -233,7 +261,7 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
       if(!changeCode||changeCode===fromCode||changeCode===toCode)continue;
       const arrivalValue=changeCall[1]||changeCall[2]||'',arrivalMinute=callMinute(date,candidate.row,changeCall,arrivalValue);
       if(arrivalMinute==null||arrivalMinute<=candidate.departureMinute||arrivalMinute-candidate.departureMinute>CONNECTION_MAX_TOTAL)continue;
-      const minimum=connectionMinimum(changeCode),earliest=arrivalMinute+minimum,latest=arrivalMinute+CONNECTION_MAX_WAIT;
+      const minimum=connectionMinimum(changeCode,graph),earliest=arrivalMinute+minimum,latest=arrivalMinute+CONNECTION_MAX_WAIT;
       const list=departures.get(changeCode)||[];let pos=lowerBound(list,earliest),examined=0;
       for(;pos<list.length&&list[pos].departureMinute<=latest&&examined<CONNECTION_SECOND_CHOICES;pos++,examined++){
         const second=list[pos];if(rowIdentity(second.row)===rowIdentity(candidate.row))continue;
@@ -241,11 +269,12 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
         const firstLeg=legFromRow(candidate.row,candidate.originIndex,changeIndex,locations,manifest,date);
         const secondLeg=legFromRow(second.row,second.callIndex,destinationIndex,locations,manifest,date);
         if(!firstLeg||!secondLeg)continue;
+        const routeQuality=connectionRouteQuality(candidate.row,candidate.originIndex,changeIndex,second.row,second.callIndex,destinationIndex,graph,shortest);if(routeQuality.reject)continue;
         const connectionMinutes=second.departureMinute-arrivalMinute,totalMinutes=secondLeg.arrivalMinute-candidate.departureMinute;
         if(connectionMinutes<minimum||connectionMinutes>CONNECTION_MAX_WAIT||totalMinutes<=0||totalMinutes>CONNECTION_MAX_TOTAL)continue;
         const key=`${firstLeg.serviceID}|${changeCode}|${secondLeg.serviceID}`;if(seen.has(key))continue;seen.add(key);
         const interchange=location(locations,changeCode),operators=[...new Set([firstLeg.operator,secondLeg.operator].filter(Boolean))];
-        const margin=connectionMinutes-minimum,tightPenalty=margin<5?(5-margin)*4:0,longPenalty=connectionMinutes>45?(connectionMinutes-45)*.5:0;
+        const margin=connectionMinutes-minimum,tightPenalty=margin<CONNECTION_COMFORT_MARGIN?(CONNECTION_COMFORT_MARGIN-margin)*6:0,longPenalty=connectionMinutes>CONNECTION_LONG_WAIT?(connectionMinutes-CONNECTION_LONG_WAIT)*.8:0,routePenalty=Number(routeQuality.penalty)||0;
         found.push({
           journeyType:'connection',changes:1,std:firstLeg.std,departure:firstLeg.std,arrival:secondLeg.arrival,
           platform:firstLeg.platform,arrivalPlatform:secondLeg.arrivalPlatform,
@@ -256,8 +285,8 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
           routeDestination:secondLeg.routeDestination,serviceTerminus:secondLeg.routeDestination,
           departureMinute:candidate.departureMinute,arrivalMinute:secondLeg.arrivalMinute,totalMinutes,
           connectionMinutes,minimumConnectionMinutes:minimum,
-          interchange:{...interchange,arrival:firstLeg.arrival,departure:secondLeg.std,minutes:connectionMinutes,minimum,margin,quality:connectionQuality(connectionMinutes,minimum)},
-          legs:[firstLeg,secondLeg],rankScore:secondLeg.arrivalMinute+12+tightPenalty+longPenalty,
+          interchange:{...interchange,arrival:firstLeg.arrival,departure:secondLeg.std,minutes:connectionMinutes,minimum,margin,quality:connectionQuality(connectionMinutes,minimum),routeQuality},
+          legs:[firstLeg,secondLeg],rankScore:secondLeg.arrivalMinute+14+tightPenalty+longPenalty+routePenalty,
           scheduledOnly:true,isCancelled:false,length:0
         });
         choices++;
@@ -272,7 +301,7 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
 function connectionDominated(connection,directs){
   return directs.some(direct=>{
     const depGap=direct.departureMinute-connection.departureMinute;
-    return depGap>=-5&&depGap<=20&&direct.arrivalMinute<=connection.arrivalMinute+15;
+    return depGap>=-10&&depGap<=30&&direct.arrivalMinute<=connection.arrivalMinute+20;
   });
 }
 function journeysFromRows(rows,locations,manifest,options){
@@ -295,7 +324,7 @@ const timetableProvider={
     const rows=[],seen=new Set();for(const set of sets)for(const row of (Array.isArray(set)?set:[])){const key=rowIdentity(row);if(key&&seen.has(key))continue;if(key)seen.add(key);rows.push(row);}
     return journeysFromRows(rows,locations,manifest,{from,to,date,departAfter});
   },
-  servicesFromRows,connectionsFromRows,journeysFromRows,connectionMinimum,connectionRiskFor
+  servicesFromRows,connectionsFromRows,journeysFromRows,connectionMinimum,connectionRiskFor,buildStationGraph,shortestNetworkStops,connectionRouteQuality
 };
 window.__KERBSIDE_TIMETABLE_PROVIDER__=timetableProvider;
 
@@ -428,7 +457,8 @@ function connectionItineraryMarkup(service,result){
     return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(leg.std||'—')}</b><small>${esc(leg.arrival||'—')}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(`${crowd.confidence||'Low'} confidence`)}</small></span></div>`;
   });
   const change=service.interchange||{},minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,minimum=Number(service.minimumConnectionMinutes)||10,risk=service.connectionRisk||change.quality||'scheduled';
-  const changeRow=`<div class="train-connection-change connection-risk-${esc(risk)}"><span>Change at ${esc(displayName(change,'interchange'))}</span><b>${esc(`${minutes} min`)}</b><small>Kerbside planning buffer: ${esc(`${minimum} min minimum`)}${Number.isFinite(service.liveConnectionMinutes)?' · live first-leg arrival':''}</small></div>`;
+  const quality=service.connectionRisk==='at-risk'?'At risk':service.connectionRisk==='tight'?'Tight':String(change.quality||'comfortable').replace(/^./,c=>c.toUpperCase());
+  const changeRow=`<div class="train-connection-change connection-risk-${esc(risk)}"><span>Change at ${esc(displayName(change,'interchange'))}</span><b>${esc(`${minutes} min`)}</b><small>${esc(quality)} connection · Kerbside planning buffer: ${esc(`${minimum} min minimum`)}${Number.isFinite(service.liveConnectionMinutes)?' · live first-leg arrival':''}</small></div>`;
   return `<div class="train-connection-itinerary"><div class="train-detail-title">Journey plan</div>${legs[0]||''}${changeRow}${legs[1]||''}</div>`;
 }
 

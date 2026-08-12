@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..','..'),source=await fs.readFile(path.join(root,'kerbside-trains.js'),'utf8');
+function storage(){const data=new Map();return {getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k),data};}
+function load(){const localStorage=storage(),window={addEventListener(){},dispatchEvent(){}},document={readyState:'loading',addEventListener(){},getElementById(){return null;},createElement(){return {innerHTML:'',textContent:''};}};const context={window,document,console,URL,Date,Intl,localStorage,setTimeout,clearTimeout,setInterval(){return 0;},clearInterval(){},AbortController,CustomEvent:class{constructor(type,opts={}){this.type=type;this.detail=opts.detail;}},fetch:async()=>{throw new Error('network not expected');}};vm.createContext(context);vm.runInContext(source,context);return {api:window.__KERBSIDE_TRAINS__,window,localStorage};}
+test('crowding reports validate Forecast v3 locally without storing journey identity',()=>{const {api,window}=load(),service={std:'10:00',operator:'Test',operatorCode:'ZZ',destination:[{crs:'BRI'}],origin:[{crs:'BHM'}]};api.state.station={name:'Birmingham New Street',crs:'BHM'};api.state.services=[service];api.state.board={generatedAt:'2026-08-12T09:55:00Z',nrccMessages:[]};window.__KERBSIDE_FORECAST_V3__={forecast(){return {level:'moderate',score:2};}};assert.equal(api.recordCrowdingFeedback(service,0,'busy'),true);const summary=api.forecastAccuracySummary();assert.equal(summary.total,1);assert.equal(summary.exact,0);assert.equal(summary.withinOne,1);assert.equal(summary.meanAbsoluteError,1);const row=api.state.forecastAccuracy.recent[0];assert.deepEqual(Object.keys(row).sort(),['actual','error','predicted','ts']);assert.equal(api.recordCrowdingFeedback(service,0,'very-busy'),false,'same observation cannot be counted twice');assert.equal(api.forecastAccuracySummary().total,1);});

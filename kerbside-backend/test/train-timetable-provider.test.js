@@ -85,7 +85,7 @@ test('one-change journeys use a conservative same-station interchange buffer',as
 test('connection buffer status distinguishes safe, tight and at-risk changes',()=>{
   const provider=loadProvider();
   assert.equal(provider.connectionMinimum('CNM'),10);
-  assert.equal(provider.connectionMinimum('BHM'),12);
+  assert.equal(provider.connectionMinimum('BHM'),15);
   assert.equal(provider.connectionRiskFor(18,10),'good');
   assert.equal(provider.connectionRiskFor(12,10),'tight');
   assert.equal(provider.connectionRiskFor(8,10),'at-risk');
@@ -164,4 +164,20 @@ test('future timetable rows expose their selected travel date while same-day row
   assert.match(future,/13 Aug/);
   assert.match(future,/Thu/);
   assert.equal(api.serviceDateLabel('today','2026-08-13'),'');
+});
+
+
+test('connection quality rejects literal network backtracking',()=>{
+  const provider=loadProvider();
+  const first=['a','a','a','XC','2026-08-12',[["BHM","","09:00","",0],["AAA","09:20","09:21","",0],["CNM","09:40","","",0]]];
+  const second=['b','b','b','XC','2026-08-12',[["CNM","","09:55","",0],["AAA","10:10","10:11","",0],["GLO","10:30","","",0]]];
+  const graph=provider.buildStationGraph([first,second]);
+  const value=provider.connectionRouteQuality(first,0,2,second,0,2,graph,provider.shortestNetworkStops(graph,'BHM','GLO'));
+  assert.equal(value.reject,true);assert.match(value.reason,/backtracks/);
+});
+
+test('timetable topology adds extra transfer time at a highly connected hub',()=>{
+  const provider=loadProvider(),rows=[];
+  for(let i=0;i<12;i++)rows.push([`r${i}`,`u${i}`,`t${i}`,'XC','2026-08-12',[["HUB","","09:00","",0],[`X${String(i).padStart(2,'0')}`,"09:10","","",0]]]);
+  const graph=provider.buildStationGraph(rows);assert.equal(graph.get('HUB').size,12);assert.equal(provider.connectionMinimum('HUB',graph),15);
 });

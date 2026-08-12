@@ -13,6 +13,10 @@ const MODEL_MAX_SEEN = 500;
 const MODEL_PROFILE_MAX_AGE_MS = 120 * 24 * 60 * 60 * 1000;
 const MODEL_SEEN_MAX_AGE_MS = 21 * 24 * 60 * 60 * 1000;
 const MODEL_FEEDBACK_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
+const ACCURACY_KEY = 'kerbside.rail.forecast.accuracy.v1';
+const ACCURACY_VERSION = 1;
+const ACCURACY_RECENT_MAX = 120;
+const CROWD_LEVEL_RANK = {quiet:0,moderate:1,busy:2,'very-busy':3};
 
 const FEEDBACK_SCORE = {
   quiet: 0.75,
@@ -41,7 +45,8 @@ const state = {
   refreshTimer: null,
   searchSeq: 0,
   boardSeq: 0,
-  crowdingModel: null
+  crowdingModel: null,
+  forecastAccuracy: null
 };
 
 const $ = id => document.getElementById(id);
@@ -123,6 +128,32 @@ function saveCrowdingModel(){
     pruneCrowdingModel(state.crowdingModel);
     localStorage.setItem(MODEL_KEY, JSON.stringify(state.crowdingModel));
   }catch(e){}
+}
+
+
+function emptyForecastAccuracy(){return {version:ACCURACY_VERSION,total:0,exact:0,withinOne:0,absoluteError:0,recent:[]};}
+function safeReadForecastAccuracy(){
+  try{const parsed=JSON.parse(localStorage.getItem(ACCURACY_KEY)||'null');if(!parsed||parsed.version!==ACCURACY_VERSION)return emptyForecastAccuracy();if(!Array.isArray(parsed.recent))parsed.recent=[];return parsed;}catch(error){return emptyForecastAccuracy();}
+}
+function saveForecastAccuracy(){try{if(!state.forecastAccuracy)return;state.forecastAccuracy.recent=(state.forecastAccuracy.recent||[]).slice(-ACCURACY_RECENT_MAX);localStorage.setItem(ACCURACY_KEY,JSON.stringify(state.forecastAccuracy));}catch(error){}}
+function forecastAccuracySummary(){
+  const data=state.forecastAccuracy||safeReadForecastAccuracy(),total=Number(data.total)||0;
+  return {total,exact:total?Number(data.exact||0)/total:0,withinOne:total?Number(data.withinOne||0)/total:0,meanAbsoluteError:total?Number(data.absoluteError||0)/total:0,recent:Array.isArray(data.recent)?data.recent.length:0};
+}
+function recordForecastAccuracy(service,index,reportedLevel,date){
+  const actual=CROWD_LEVEL_RANK[reportedLevel],api=window.__KERBSIDE_FORECAST_V3__;
+  if(actual==null||!api||typeof api.forecast!=='function'||!state.station)return false;
+  let result;try{result=api.forecast(service,index,state.services,{station:state.station,referenceDate:date,messages:state.board&&state.board.nrccMessages||[]});}catch(error){return false;}
+  const predictedLevel=String(result&&result.level||''),predicted=CROWD_LEVEL_RANK[predictedLevel];if(predicted==null)return false;
+  if(!state.forecastAccuracy)state.forecastAccuracy=safeReadForecastAccuracy();
+  const error=Math.abs(predicted-actual),data=state.forecastAccuracy,ts=Date.now();
+  data.total=(Number(data.total)||0)+1;
+  if(error===0)data.exact=(Number(data.exact)||0)+1;
+  if(error<=1)data.withinOne=(Number(data.withinOne)||0)+1;
+  data.absoluteError=(Number(data.absoluteError)||0)+error;
+  /* No station, service, route, train ID or user identifier is retained. */
+  data.recent=(Array.isArray(data.recent)?data.recent:[]).concat([{ts,predicted:predictedLevel,actual:reportedLevel,error}]).slice(-ACCURACY_RECENT_MAX);
+  saveForecastAccuracy();return true;
 }
 
 function fetchWithTimeout(url, options={}){
@@ -459,6 +490,7 @@ function recordCrowdingFeedback(service,index,level){
   const id = observationId(service,index,state.station,date);
   if(state.crowdingModel.feedbackSeen[id]) return false;
 
+  recordForecastAccuracy(service,index,level,date);
   const profile = ensureProfile(profileKeyFor(service,state.station,date));
   const count = Number(profile.feedbackCount) || 0;
   const mean = Number(profile.feedbackMean) || 0;
@@ -937,6 +969,8 @@ function renderServiceDetail(service,index,forecast,detail){
   const recorded = feedbackForService(service,index);
   const historySamples=Number(forecast.historySamples)||0;
   const learningText=`${historySamples} local service observation${historySamples===1?'':'s'} available`;
+  const accuracy=forecastAccuracySummary();
+  const accuracyText=accuracy.total?`Local Forecast v3 validation: ${Math.round(accuracy.exact*100)}% exact · ${Math.round(accuracy.withinOne*100)}% within one band · ${accuracy.total} report${accuracy.total===1?'':'s'}.`:'Local Forecast v3 validation starts after you record actual crowding.';
   const modelLabel=Number(forecast.modelVersion)>=3?'Forecast v3':`model v${MODEL_VERSION}`;
   const feedbackButtons = Object.keys(FEEDBACK_LABEL).map(level=>
     `<button type="button" data-crowd-feedback="${esc(level)}" data-service-id="${esc(key)}"${recorded?' disabled':''}>${esc(FEEDBACK_LABEL[level])}</button>`
@@ -958,6 +992,7 @@ function renderServiceDetail(service,index,forecast,detail){
       <p>If you are on this train, or have just used it, one tap saves a local observation for later accuracy checks. It does not change the Forecast v3 score and nothing is uploaded.</p>
       <div class="train-search-box train-feedback" style="flex-wrap:wrap;margin-top:8px">${feedbackButtons}</div>
       ${recorded ? `<div class="train-detail-note">Saved locally: ${esc(FEEDBACK_LABEL[recorded] || recorded)}.</div>` : ''}
+      <div class="train-detail-note">${esc(accuracyText)} Nothing is uploaded.</div>
     </div>
     ${calling}`;
 }
@@ -1093,6 +1128,7 @@ function bindEvents(){
 
 function restorePrefs(){
   state.crowdingModel = safeReadCrowdingModel();
+  state.forecastAccuracy = safeReadForecastAccuracy();
   pruneCrowdingModel(state.crowdingModel);
   const prefs = safeReadPrefs();
   if(prefs && prefs.station && prefs.station.crs){
@@ -1121,6 +1157,8 @@ window.__KERBSIDE_TRAINS__ = {
      array position. */
   serviceKey,
   recordCrowdingFeedback,
+  recordForecastAccuracy,
+  forecastAccuracySummary,
   delayMinutes,
   statusFor,
   destinationText,
