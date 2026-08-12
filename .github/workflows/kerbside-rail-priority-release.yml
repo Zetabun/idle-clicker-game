@@ -202,8 +202,8 @@ jobs:
           node --check kerbside-train-live-overlay.js
           node --check kerbside-train-live-window.js
           node --check kerbside-train-forecast-v3.js
+          node --check kerbside-backend/tests/train-live-window-regression.mjs
           node --test kerbside-backend/test/train-timetable-provider.test.js
-          node --test kerbside-backend/tests/train-live-window-regression.mjs
           git diff --check
           grep -Fx '0.7.39' VERSION
           grep -F "cron: '30 2,3,4,8 * * *'" .github/workflows/refresh-darwin-timetable.yml
