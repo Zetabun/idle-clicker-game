@@ -6,49 +6,17 @@ node:internal/modules/run_main:107
     triggerUncaughtException(
     ^
 
-AssertionError [ERR_ASSERTION]: The input did not match the regular expression /1 change/. Input:
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('#trainScheduledBoard .train-connection-service').first().locator('.train-service-detail') to be visible
+    63 × locator resolved to hidden <div hidden="" class="train-service-detail" id="train-scheduled-detail-connection:rid-change-a-2026-08-12:CNM:rid-change-b-2026-08-12">…</div>
 
-'\n' +
-  '      \n' +
-  '        10:05Connection at risk\n' +
-  '        Gloucestervia Cheltenham Spa · live 7m change · arr 11:32\n' +
-  '        QuietMedium confidence · peak leg\n' +
-  '        15mscheduled change\n' +
-  '        ⌄\n' +
-  '      \n' +
-  '      \n' +
-  '        Depart10:05 · Birmingham New StreetChangeCheltenham SpaConnectionlive 7m changeArrive11:32 · Gloucester\n' +
-  '        Journey plan10:0510:45Birmingham New Street → Cheltenham SpaCrossCountry · 1C10 · Plat 8QuietMedium-high confidenceChange at Cheltenham Spa7 minKerbside planning buffer: 10 min minimum · live first-leg arrival11:0011:32Cheltenham Spa → GloucesterGreat Western Railway · 1G02 · Plat 4QuietMedium confidence\n' +
-  '        QuietMedium confidence · Forecast v3 · Live-adjustedWhy this forecastPeak crowding is forecast on Birmingham New Street → Cheltenham SpaWeekday daytime demandTrain starts at this stationLong-distance services have no standing allowance and are the most likely to exceed capacity in DfT countsSummer holidays increase daytime leisure demandBirmingham is one of the busiest counted cities outside LondonForecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score. Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.Measured baselineFor scale: DfT counts put the average all-day load factor at 29%, rising to 53% across the peaks.DfT rail passenger numbers and crowding, autumn 2025 (OGL v3)Local history1 service observation so far\n' +
-  "        Live first-leg evidence reaches Cheltenham Spa at 10:53, leaving 7 minutes for the change — below Kerbside's 10-minute planning buffer. The onward train is still timetabled, so treat this connection as at risk.\n" +
-  '        First-leg calling pointsCheltenham Spa10:53\n' +
-  "        Both legs are timetabled from the National Rail Darwin Timetable Files. Live Darwin evidence is applied to the first train from the departure station; the onward train remains scheduled. The connection uses Kerbside's 10-minute planning buffer, not an official National Rail minimum-connection-time feed.\n" +
-  '      \n' +
-  '    '
-
-    at file:///home/runner/work/idle-clicker-game/idle-clicker-game/kerbside-backend/tests/train-browser-core-regression.mjs:201:10 {
-  generatedMessage: true,
-  code: 'ERR_ASSERTION',
-  actual: '\n' +
-    '      \n' +
-    '        10:05Connection at risk\n' +
-    '        Gloucestervia Cheltenham Spa · live 7m change · arr 11:32\n' +
-    '        QuietMedium confidence · peak leg\n' +
-    '        15mscheduled change\n' +
-    '        ⌄\n' +
-    '      \n' +
-    '      \n' +
-    '        Depart10:05 · Birmingham New StreetChangeCheltenham SpaConnectionlive 7m changeArrive11:32 · Gloucester\n' +
-    '        Journey plan10:0510:45Birmingham New Street → Cheltenham SpaCrossCountry · 1C10 · Plat 8QuietMedium-high confidenceChange at Cheltenham Spa7 minKerbside planning buffer: 10 min minimum · live first-leg arrival11:0011:32Cheltenham Spa → GloucesterGreat Western Railway · 1G02 · Plat 4QuietMedium confidence\n' +
-    '        QuietMedium confidence · Forecast v3 · Live-adjustedWhy this forecastPeak crowding is forecast on Birmingham New Street → Cheltenham SpaWeekday daytime demandTrain starts at this stationLong-distance services have no standing allowance and are the most likely to exceed capacity in DfT countsSummer holidays increase daytime leisure demandBirmingham is one of the busiest counted cities outside LondonForecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score. Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.Measured baselineFor scale: DfT counts put the average all-day load factor at 29%, rising to 53% across the peaks.DfT rail passenger numbers and crowding, autumn 2025 (OGL v3)Local history1 service observation so far\n' +
-    "        Live first-leg evidence reaches Cheltenham Spa at 10:53, leaving 7 minutes for the change — below Kerbside's 10-minute planning buffer. The onward train is still timetabled, so treat this connection as at risk.\n" +
-    '        First-leg calling pointsCheltenham Spa10:53\n' +
-    "        Both legs are timetabled from the National Rail Darwin Timetable Files. Live Darwin evidence is applied to the first train from the departure station; the onward train remains scheduled. The connection uses Kerbside's 10-minute planning buffer, not an official National Rail minimum-connection-time feed.\n" +
-    '      \n' +
-    '    ',
-  expected: /1 change/,
-  operator: 'match',
-  diff: 'simple'
+    at /home/runner/work/idle-clicker-game/idle-clicker-game/kerbside-backend/tests/train-browser-core-regression.mjs:232:26 {
+  log: [
+    "  - waiting for locator('#trainScheduledBoard .train-connection-service').first().locator('.train-service-detail') to be visible",
+    '    63 × locator resolved to hidden <div hidden="" class="train-service-detail" id="train-scheduled-detail-connection:rid-change-a-2026-08-12:CNM:rid-change-b-2026-08-12">…</div>'
+  ],
+  name: 'TimeoutError'
 }
 
-Node.js v24.19.0
+Node.js v24.18.0
