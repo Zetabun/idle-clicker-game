@@ -4,8 +4,10 @@
 const $=id=>document.getElementById(id);
 const DATA_BASE='kerbside-rail-timetable';
 const MAX_RESULTS=24;
-const state={loading:false,request:0,services:[],signature:'',mode:'live',manifest:null,lastError:'',sourceDate:'',openId:''};
-const dataState={manifestPromise:null,locationsPromise:null,datePromises:new Map()};
+const MANIFEST_CACHE_MS=5*60*1000;
+const EDGE_MANIFEST_RECHECK_MS=2*60*1000;
+const state={loading:false,request:0,services:[],signature:'',mode:'live',manifest:null,lastError:'',sourceDate:'',openId:'',edgeRefreshAt:0};
+const dataState={manifestPromise:null,manifestCheckedAt:0,locationsPromise:null,datePromises:new Map()};
 
 function dateApi(){return window.__KERBSIDE_TRAIN_DATE__||null;}
 function selectedDate(){return dateApi()&&dateApi().state&&dateApi().state.date||'';}
@@ -114,10 +116,11 @@ async function fetchGzipJson(path){
   }else text=new TextDecoder().decode(bytes);
   return JSON.parse(text);
 }
-function loadManifest(){if(!dataState.manifestPromise)dataState.manifestPromise=fetchJson(`${DATA_BASE}/manifest.json`).then(value=>{state.manifest=value;return value;});return dataState.manifestPromise;}
+function loadManifest({force=false}={}){const expired=!dataState.manifestCheckedAt||Date.now()-dataState.manifestCheckedAt>=MANIFEST_CACHE_MS;if(!dataState.manifestPromise||force||expired){const previous=state.manifest,previousId=previous&&previous.timetableId||'';dataState.manifestPromise=fetchJson(`${DATA_BASE}/manifest.json`).then(value=>{const nextId=value&&value.timetableId||'';if(previousId&&nextId&&nextId!==previousId){dataState.datePromises.clear();dataState.locationsPromise=null;}state.manifest=value;dataState.manifestCheckedAt=Date.now();return value;}).catch(error=>{dataState.manifestPromise=null;if(previous)return previous;throw error;});}return dataState.manifestPromise;}
 function loadLocations(){if(!dataState.locationsPromise)dataState.locationsPromise=fetchJson(`${DATA_BASE}/locations.json`);return dataState.locationsPromise;}
 function loadDate(date){if(!dataState.datePromises.has(date))dataState.datePromises.set(date,fetchGzipJson(`${DATA_BASE}/${encodeURIComponent(date)}.json.gz`).catch(error=>{dataState.datePromises.delete(date);throw error;}));return dataState.datePromises.get(date);}
 function coverageFor(manifest,date){return manifest&&manifest.coverage&&manifest.coverage[date]||null;}
+function coverageIncludesTime(coverage,value){if(!coverage)return false;if(!coverage.partial)return true;const minute=parseMinutes(value),from=parseMinutes(coverage.from),to=parseMinutes(coverage.to);if(minute==null)return true;return (from==null||minute>=from)&&(to==null||minute<=to);}
 function location(locations,crs){const row=locations&&locations[String(crs||'').toUpperCase()];return {name:row&&row[0]||crs||'',crs:String(crs||'').toUpperCase()};}
 function actualCallDate(row,call){return addDays(row[4],Number(call&&call[4])||0);}
 function operatorName(manifest,code){return manifest&&manifest.tocNames&&manifest.tocNames[code]||code||'Scheduled service';}
@@ -157,7 +160,8 @@ function servicesFromRows(rows,locations,manifest,{from,to,date,departAfter}){
 
 const timetableProvider={
   state:dataState,
-  async getCoverage(){return loadManifest();},
+  async getCoverage(options={}){return loadManifest(options);},
+  async refreshCoverage(){return loadManifest({force:true});},
   async getServices({from,to,date,departAfter='00:00'}){
     const manifest=await loadManifest();
     if(!manifest||!Array.isArray(manifest.dates)||!manifest.dates.includes(date))return[];
@@ -481,7 +485,14 @@ async function load(options={}){
       const range=manifest.dates.length?`${dateLabel(manifest.dates[0],{short:true})} to ${dateLabel(manifest.dates[manifest.dates.length-1],{short:true})}`:'the current snapshot';
       renderUnavailable(`This Darwin snapshot covers ${range}. Choose a date inside that range.`,{mode,manifest});return true;
     }
-    const items=await timetableProvider.getServices({from:r.from.crs,to:r.to.crs,date:r.date,departAfter:options.departAfter||r.departAfter||'00:00'});
+    const requestedTime=options.departAfter||r.departAfter||'00:00';
+    const edgeCoverage=coverageFor(manifest,r.date);
+    if(edgeCoverage&&edgeCoverage.partial&&!coverageIncludesTime(edgeCoverage,requestedTime)){
+      state.edgeRefreshAt=Date.now();
+      renderUnavailable(`The current Darwin snapshot only covers ${edgeCoverage.from}–${edgeCoverage.to} on this edge date. ${requestedTime} is beyond that window. Kerbside is checking automatically for today's newer timetable snapshot; this is not being treated as proof that there are no trains.`,{mode,manifest});
+      return true;
+    }
+    const items=await timetableProvider.getServices({from:r.from.crs,to:r.to.crs,date:r.date,departAfter:requestedTime});
     if(id!==state.request)return true;
     renderServices(items,{mode,manifest});
     requestOverlay();
@@ -530,6 +541,7 @@ function handleOverlay(){
      keeps the open row and reuses the same forecast pipeline. */
   renderRows(state.services,{mode:state.mode,manifest:state.manifest});
 }
+async function refreshEdgeManifest(){const r=route(),manifest=state.manifest;if(state.loading||!r.date||!manifest||!Array.isArray(manifest.dates)||!manifest.dates.length)return false;const coverage=coverageFor(manifest,r.date),last=manifest.dates[manifest.dates.length-1],needs=r.date===last&&coverage&&coverage.partial&&!coverageIncludesTime(coverage,r.departAfter||'00:00');if(!needs)return false;if(state.edgeRefreshAt&&Date.now()-state.edgeRefreshAt<EDGE_MANIFEST_RECHECK_MS)return false;state.edgeRefreshAt=Date.now();const before=String(manifest.timetableId||'');try{const next=await timetableProvider.refreshCoverage();if(!next||String(next.timetableId||'')===before)return false;state.signature='';await load({mode:journeyMode()||(dateApi()&&dateApi().isToday()?'today':'advance')});return true;}catch(error){return false;}}
 function sync(){
   const sig=routeSignature();
   if(sig===state.signature){if(journeyMode()&&state.mode!=='live')setHeader(state.mode,state.manifest);return;}
@@ -545,8 +557,8 @@ function init(){
   document.addEventListener('kerbside:train-date-change',()=>setTimeout(sync,60));
   document.addEventListener('kerbside:train-route-change',()=>setTimeout(sync,60));
   window.addEventListener('kerbside:journey-planner-change',()=>setTimeout(sync,120));
-  state.signature='';setTimeout(sync,0);setInterval(sync,1000);
+  state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,requestOverlay,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,requestOverlay,coverageIncludesTime,provider:timetableProvider};
 })();

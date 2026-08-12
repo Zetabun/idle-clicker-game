@@ -118,3 +118,11 @@ test('same-day services inside the live window prioritise the live overlay',()=>
   assert.equal(calls.stop,0);
   assert.equal(calls.clear,0);
 });
+
+
+test('partial edge coverage distinguishes a missing future window from no trains',()=>{
+  const {api}=loadPriorityRuntime({today:false,liveMode:'planning',departAfter:'12:15'});
+  assert.equal(api.coverageIncludesTime({from:'00:01',to:'07:54',partial:true},'07:30'),true);
+  assert.equal(api.coverageIncludesTime({from:'00:01',to:'07:54',partial:true},'12:15'),false);
+  assert.equal(api.coverageIncludesTime({from:'00:01',to:'23:59',partial:false},'23:30'),true);
+});
