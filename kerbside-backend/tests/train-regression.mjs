@@ -79,7 +79,7 @@ async function mockExternal(page, diagnostics){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(stationResults)});
       return;
     }
-    if(pathname === '/departures/BRI/20'){
+    if(pathname === '/departures/BRI/20' || pathname === '/departures/BRI/9'){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(board)});
       return;
     }
