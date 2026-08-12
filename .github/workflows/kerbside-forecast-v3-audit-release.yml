@@ -1,0 +1,539 @@
+name: Kerbside forecast v3 audit release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/kerbside-forecast-v3-audit-release.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-forecast-v3-audit-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply Forecast v3 audit fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8')
+
+          def replace_once(path, old, new):
+              text = read(path)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old[:120]!r}')
+              write(path, text.replace(old, new, 1))
+
+          def replace_between(path, start, end, new):
+              text = read(path)
+              if text.count(start) != 1:
+                  raise SystemExit(f'{path}: start marker count for {start[:100]!r} was {text.count(start)}')
+              i = text.index(start)
+              j = text.index(end, i)
+              write(path, text[:i] + new + text[j:])
+
+          # ------------------------------------------------------------
+          # v2 becomes a clean baseline when Forecast v3 calls it. The
+          # legacy v2 UI path is unchanged, but v3 no longer receives delay,
+          # formation, cancellation, origin-load or feedback contributions
+          # that it then adds a second time itself.
+          trains = 'kerbside-trains.js'
+          replace_once(
+              trains,
+              "function crowdingForecast(service,index,allServices,options={}){\n  if(service.isCancelled){",
+              "function crowdingForecast(service,index,allServices,options={}){\n  const v3Baseline = options.modelLayer === 'v3-baseline';\n  if(service.isCancelled){"
+          )
+
+          replace_between(
+              trains,
+              "  const length = Number(service.length) || 0;\n",
+              "  const precedingGap = context.precedingGap;\n",
+              """  if(!v3Baseline){
+    const length = Number(service.length) || 0;
+    let expectedLength = 0;
+    let lengthSource = '';
+    if(profile && Number(profile.lengthSamples) >= 3 && Number(profile.avgLength) > 0){
+      expectedLength = Number(profile.avgLength);
+      lengthSource = 'local history';
+      evidence += 1.1;
+    }else{
+      expectedLength = boardFormationBaseline(service,allServices);
+      if(expectedLength){ lengthSource = 'nearby services'; evidence += 0.55; }
+    }
+
+    if(length > 0){
+      evidence += 0.45;
+      if(expectedLength > 0){
+        const ratio = length / expectedLength;
+        if(ratio <= 0.7) add(1.0,`formation is much shorter than ${lengthSource} suggests`,0.15);
+        else if(ratio <= 0.85) add(0.65,`formation is shorter than ${lengthSource} suggests`,0.15);
+        else if(ratio <= 0.95) add(0.25,`formation is slightly shorter than ${lengthSource} suggests`,0.1);
+        else if(ratio >= 1.3) add(-0.55,`formation is much longer than ${lengthSource} suggests`,0.15);
+        else if(ratio >= 1.15) add(-0.3,`formation is longer than ${lengthSource} suggests`,0.1);
+      }else if(length <= 3){
+        add(0.45,'short formation reported',0.1);
+      }else if(length >= 9){
+        add(-0.25,'long formation reported',0.1);
+      }
+    }
+  }
+
+"""
+          )
+
+          replace_between(
+              trains,
+              "  if(context.cancelledBefore){\n",
+              "  const etd = String(service.etd || '').trim();\n",
+              """  if(!v3Baseline){
+    if(context.cancelledBefore){
+      add(Math.min(1.25,context.cancelledBefore*0.6),
+        `${context.cancelledBefore} earlier similar service${context.cancelledBefore===1?' was':'s were'} cancelled`,0.65);
+    }
+    if(context.cancelledAfter){
+      add(Math.min(0.45,context.cancelledAfter*0.25),
+        'a nearby later similar service is cancelled',0.25);
+    }
+  }
+
+"""
+          )
+
+          replace_between(
+              trains,
+              "  const etd = String(service.etd || '').trim();\n",
+              "  const startsHere = stationMatchesOrigin(service,station);\n",
+              """  if(!v3Baseline){
+    const etd = String(service.etd || '').trim();
+    const delay = delayMinutes(service);
+    if(/^delayed$/i.test(etd)) add(0.55,'service is currently reported delayed',0.45);
+    else if(delay >= 20) add(0.7,`current delay is ${delay} minutes`,0.5);
+    else if(delay >= 10) add(0.45,`current delay is ${delay} minutes`,0.45);
+    else if(delay >= 5) add(0.2,`current delay is ${delay} minutes`,0.35);
+    else evidence += 0.2;
+  }
+
+"""
+          )
+
+          replace_between(
+              trains,
+              "  const startsHere = stationMatchesOrigin(service,station);\n",
+              "  const disruption = disruptionMessageSignal(messages);\n",
+              """  if(!v3Baseline){
+    const startsHere = stationMatchesOrigin(service,station);
+    if(startsHere === true) add(-0.25,'train starts at this station',0.35);
+    else if(startsHere === false) add(0.25,'through train may already carry passengers',0.35);
+  }
+
+"""
+          )
+
+          replace_between(
+              trains,
+              "  const feedbackCount = profile ? Number(profile.feedbackCount) || 0 : 0;\n",
+              "  score = Math.max(0,Math.min(5,score));\n",
+              """  const feedbackCount = profile ? Number(profile.feedbackCount) || 0 : 0;
+  if(!v3Baseline && options.includeFeedback !== false && feedbackCount > 0 && Number.isFinite(Number(profile.feedbackMean))){
+    const target = Number(profile.feedbackMean);
+    const weight = Math.min(0.5,0.12 + feedbackCount*0.06);
+    const blended = score*(1-weight) + target*weight;
+    const delta = blended - score;
+    score = blended;
+    if(Math.abs(delta) >= 0.05){
+      contributors.push({amount:delta,reason:'local crowding feedback for similar trains and time bands'});
+    }
+    evidence += 1 + Math.min(1.2,feedbackCount*0.25);
+  }
+
+"""
+          )
+
+          replace_once(
+              trains,
+              "  return 'Live running times use the Huxley 2 community JSON proxy for National Rail Darwin. Crowding model v2 combines time-band demand, formation versus comparable trains, service gaps, delays, cancellations, through-train status and locally learned patterns. It is not ticket-sales data and not live occupancy.';",
+              "  return 'Live running times use National Rail Darwin with resilient provider fallbacks. Forecast v3 combines timetable demand, service gaps, events, calendar effects, DfT calibration and live Darwin evidence when available. Passenger-submitted crowding reports do not alter the forecast score. It is not ticket-sales data and not live occupancy.';"
+          )
+          replace_once(trains, '<span class="train-model-label">Crowding model v2</span>', '<span class="train-model-label">Forecast v3</span>')
+          replace_once(trains, '<strong>Service-relative prediction</strong>', '<strong>Timetable + live prediction</strong>')
+          replace_once(
+              trains,
+              '<p>Kerbside now compares formation and headway with similar trains, accounts for delays, cancellations and through-train loading, and learns recurring patterns locally. Optional crowding feedback calibrates future predictions on this device.</p>',
+              '<p>Kerbside combines timetable demand, service spacing, events, calendar effects and measured DfT calibration, then adds Darwin delays, cancellations, formation and route-loading evidence when those live fields become available. Passenger crowding feedback is not used to change Forecast v3.</p>'
+          )
+
+          # ------------------------------------------------------------
+          # Forecast v3 owns each high-level phenomenon exactly once.
+          forecast = 'kerbside-train-forecast-v3.js'
+          replace_once(
+              forecast,
+              "function profileKey(service,station,date){const stationCode=normalise(station&&(station.crs||station.name)||'unknown');const minute=parseMinutes(service&&service.std);const band=minute==null?'unknown':String(Math.floor(minute/120)*2).padStart(2,'0');return [stationCode,operatorIdentity(service),destinationIdentity(service),dayClass(date),band].join('|');}",
+              "function profileKey(service,station,date){const stationCode=normalise(station&&(station.crs||station.name)||'unknown');const minute=parseMinutes(service&&service.std);const band=minute==null?'x':String(Math.floor(minute/120));return [stationCode,operatorIdentity(service),destinationIdentity(service),dayClass(date),band].join('|');}"
+          )
+          replace_once(
+              forecast,
+              "function calendarSignal(date,minute){let amount=0;const reasons=[];const weekday=day(date),dateStamp=stamp(date);if(state.bankHolidays.has(dateStamp)){amount+=.55;reasons.push('bank-holiday travel pattern');}if(weekday==='Fri'&&minute!=null&&minute>=840&&minute<1200){amount+=.35;reasons.push('Friday leisure and commuter demand');}if((weekday==='Sat'||weekday==='Sun')&&minute!=null&&minute>=600&&minute<1140){amount+=.2;reasons.push('weekend daytime demand');}const month=Number(dateStamp.slice(5,7)),dom=Number(dateStamp.slice(8,10));if(month===12&&dom>=18){amount+=.45;reasons.push('Christmas travel period');}if((month===7||month===8)&&(weekday==='Fri'||weekday==='Sat')){amount+=.2;reasons.push('summer leisure travel');}return {amount,reasons};}",
+              "function calendarSignal(date,minute){let amount=0;const reasons=[];const dateStamp=stamp(date);if(state.bankHolidays.has(dateStamp)){amount+=.55;reasons.push('bank-holiday travel pattern');}const month=Number(dateStamp.slice(5,7)),dom=Number(dateStamp.slice(8,10));if(month===12&&dom>=18){amount+=.45;reasons.push('Christmas travel period');}return {amount,reasons};}"
+          )
+
+          replace_between(
+              forecast,
+              "function liveSignal(service,index,services){",
+              "/* The old guard bailed out for any future date",
+              """function liveSignal(service,index,services){
+  let amount=0;const reasons=[];
+  if(service&&service.isCancelled)return {amount:-5,reasons:['service cancelled']};
+  const planned=parseMinutes(service&&service.std),expected=parseMinutes(service&&service.etd);
+  if(planned!=null&&expected!=null){
+    let delay=expected-planned;if(delay<-720)delay+=1440;if(delay>720)delay-=1440;
+    if(delay>=20){amount+=.8;reasons.push(`${delay}-minute delay increasing passenger accumulation`);}
+    else if(delay>=8){amount+=.4;reasons.push('current delay increasing platform demand');}
+  }
+  const knock=cancellationKnockOn(service,index,services);
+  amount+=knock.amount;knock.reasons.forEach(r=>reasons.push(r));
+  return {amount,reasons};
+}
+function historicalSignal(api,service,date){
+  const profile=getProfile(api,service,date);
+  if(!profile)return {amount:0,reasons:[],profile:null,samples:0};
+  const samples=Number(profile.samples||profile.count||profile.observationCount)||0;
+  /* Merely having history is evidence, not extra passenger demand. Earlier
+     builds added +0.3 just because three observations existed, which made
+     better-instrumented services look busier for no behavioural reason. */
+  return {amount:0,reasons:[],profile,samples};
+}
+function formationSignal(api,service,services,date){
+  const length=Number(service&&service.length)||0;
+  if(!length)return {amount:0,reasons:[]};
+  const profile=getProfile(api,service,date);
+  const lengthSamples=profile?Number(profile.lengthSamples)||0:0;
+  const typical=profile?Number(profile.avgLength||profile.lengthMean||profile.typicalLength)||0:0;
+  let baseline=0,source='';
+  if(lengthSamples>=3&&typical>0){baseline=typical;source='its historical formation';}
+  else{
+    const lengths=formationBaseline(services).sort((a,b)=>a-b);
+    if(lengths.length>=3){baseline=lengths[Math.floor(lengths.length/2)];source='nearby live formations';}
+  }
+  if(!baseline)return {amount:0,reasons:[]};
+  const ratio=length/baseline;
+  if(ratio<=.65)return {amount:.8,reasons:[`formation is much shorter than ${source}`]};
+  if(ratio<=.8)return {amount:.45,reasons:[`formation is shorter than ${source}`]};
+  if(ratio>=1.35)return {amount:-.35,reasons:[`formation is much longer than ${source}`]};
+  if(ratio>=1.2)return {amount:-.2,reasons:[`formation is longer than ${source}`]};
+  return {amount:0,reasons:[]};
+}
+"""
+          )
+
+          replace_between(
+              forecast,
+              "function journeyShapeSignal(service){\n",
+              "\n\n/* School holidays.",
+              """function stationMatchesOrigin(service,station){
+  const origins=Array.isArray(service&&service.origin)?service.origin.filter(Boolean):[];
+  if(!origins.length||!station)return null;
+  const crs=String(station.crs||'').toUpperCase(),name=normalise(station.name);
+  return origins.some(origin=>{
+    const originCrs=String(origin.crs||'').toUpperCase(),originName=normalise(origin.locationName||origin.name);
+    return (crs&&originCrs===crs)||(name&&originName===name);
+  });
+}
+function journeyShapeSignal(service,station){
+  const before=callingPoints(service&&service.previousCallingPoints);
+  const after=callingPoints(service&&service.subsequentCallingPoints);
+  const startsHere=stationMatchesOrigin(service,station);
+  let amount=0;const reasons=[];
+  if(before.length>=12){amount+=.7;reasons.push('long run before this stop, so the train arrives already loaded');}
+  else if(before.length>=6){amount+=.45;reasons.push('several stops already made, so passengers have accumulated');}
+  else if(before.length>=2){amount+=.2;reasons.push('a few stops already made');}
+  else if(startsHere===true){amount-=.25;reasons.push('train starts at this station');}
+  else if(startsHere===false){amount+=.25;reasons.push('through train may already carry passengers');}
+  /* Expanded live calling points supersede the binary starts-here proxy.
+     That keeps future/schedule-only trains useful without counting through
+     loading a second time once richer Darwin evidence arrives. */
+  if(before.some(p=>(STATION_TIER[String(p.crs||'').toUpperCase()]||1)>=3)){
+    amount+=.35;reasons.push('has already called at a major hub');
+  }
+  if(after.length&&after.length<=3&&after.some(p=>(STATION_TIER[String(p.crs||'').toUpperCase()]||1)>=3)){
+    amount+=.3;reasons.push('fast service to a major destination');
+  }
+  const evidence=(before.length||after.length)?1:(startsHere==null?0:.5);
+  return {amount,reasons,evidence};
+}"""
+          )
+
+          replace_between(
+              forecast,
+              "function forecast(service,index,services,context={}){",
+              "/* options.mode overrides",
+              """function forecast(service,index,services,context={}){
+  const api=window.__KERBSIDE_TRAINS__;
+  const date=context.referenceDate instanceof Date?context.referenceDate:new Date(context.referenceDate||Date.now());
+  const station=context.station||(api&&api.state&&api.state.station);
+  const baseContext={...context,station,referenceDate:date,modelLayer:'v3-baseline',includeFeedback:false};
+  const base=api&&typeof api.crowdingForecast==='function'
+    ?api.crowdingForecast(service,index,services,baseContext)
+    :{score:1.8,reasons:[],confidence:'Low'};
+  if(service&&service.isCancelled)return {score:null,level:base.level||'unknown',label:base.label||'Not applicable',confidence:base.confidence||'—',reasons:base.reasons&&base.reasons.length?base.reasons:['This service is cancelled.'],modelVersion:VERSION,eventPressure:0,historySamples:Number(base.historySamples)||0,cancelled:true};
+
+  const minute=parseMinutes(service&&service.std),future=isFuture(date);
+  const calendar=calendarSignal(date,minute);
+  const historical=historicalSignal(api,service,date);
+  const events=eventSignal(service,date);
+  const live=future?{amount:0,reasons:[]}:liveSignal(service,index,services);
+  const formation=future?{amount:0,reasons:[]}:formationSignal(api,service,services,date);
+  const shape=journeyShapeSignal(service,station);
+  const scale=stationScaleSignal(station);
+  const school=schoolHolidaySignal(date,minute);
+  const offpeak=offPeakSignal(date,minute);
+  const shapeCal=calibratedDemandSignal(station,minute,date);
+  const serviceClass=serviceClassSignal(service,station,minute,date);
+
+  let score=Number(base.score);if(!Number.isFinite(score))score=1.8;
+  score=clamp(score+calendar.amount+events.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount,.25,5);
+  const reasons=unique([
+    ...(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),
+    ...shape.reasons,...events.reasons,...live.reasons,...formation.reasons,
+    ...serviceClass.reasons,...school.reasons,...offpeak.reasons,...shapeCal.reasons,...calendar.reasons,...scale.reasons
+  ]).slice(0,6);
+  const calibrated=!!(scale.reasons.length&&calibration()&&calibration().profileFor&&calibration().profileFor(station));
+  const historySamples=Math.max(Number(base.historySamples)||0,Number(historical.samples)||0);
+  const historyEvidence=historySamples>=3?1:(historySamples?0.5:0);
+  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0);
+  const confidence=evidence>=6?'High':evidence>=4?'Medium-high':evidence>=3?'Medium':'Low';
+  const cal=calibration();
+  let calibrationNote='';
+  if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,minute,date)||'';}catch(error){calibrationNote='';}}
+  return {score,level:levelFor(score),label:labelFor(score),confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated,calibrationNote,calibrationSource:cal?cal.source:''};
+}
+"""
+          )
+
+          replace_once(
+              forecast,
+              "window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,eventSignal,journeyShapeSignal,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};",
+              "window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};"
+          )
+
+          # ------------------------------------------------------------
+          # Scheduled timetable rows already know arrival at the selected
+          # destination. Let destination-side events use it before live
+          # calling points are available, and avoid treating 00:00 as false.
+          events = 'kerbside-train-events.js'
+          replace_once(
+              events,
+              "  const direct=mins(service&&(service.destinationArrival||service.sta||service.eta));",
+              "  const direct=mins(service&&(service.destinationArrival||service.arrival||service.sta||service.eta));"
+          )
+          replace_once(
+              events,
+              "      const at=mins(point.et)||mins(point.st);\n      if(at==null)continue;",
+              "      const expected=mins(point.et),scheduled=mins(point.st);\n      const at=expected!=null?expected:scheduled;\n      if(at==null)continue;"
+          )
+
+          # Cache-bust the browser modules as one release.
+          Path('VERSION').write_text('0.7.40\n', encoding='utf-8')
+          bus = read('bus.html')
+          if '?v=0.7.39' not in bus:
+              raise SystemExit('bus.html: expected 0.7.39 cache-busters were not found')
+          write('bus.html', bus.replace('?v=0.7.39','?v=0.7.40'))
+          PY
+
+      - name: Add dual-timetable forecast regression coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs <<'JS'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import vm from 'node:vm';
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import {fileURLToPath} from 'node:url';
+
+          const here=path.dirname(fileURLToPath(import.meta.url));
+          const root=path.resolve(here,'..','..');
+          const forecastSource=await fs.readFile(path.join(root,'kerbside-train-forecast-v3.js'),'utf8');
+          const eventsSource=await fs.readFile(path.join(root,'kerbside-train-events.js'),'utf8');
+          const trainsSource=await fs.readFile(path.join(root,'kerbside-trains.js'),'utf8');
+
+          class FixedDate extends Date{
+            constructor(...args){super(...(args.length?args:['2026-08-12T08:00:00Z']));}
+            static now(){return new Date('2026-08-12T08:00:00Z').getTime();}
+          }
+          const localStorage={getItem(){return null;},setItem(){},removeItem(){}};
+          const documentStub={readyState:'loading',addEventListener(){},getElementById(){return null;}};
+
+          function loadForecast({model=null,overlayServices=[]}={}){
+            const calls=[];
+            const station={name:'Birmingham New Street',crs:'BHM'};
+            const trains={
+              state:{station,crowdingModel:model},
+              crowdingForecast(service,index,services,options){
+                calls.push(options);
+                const key='bhm|xc|bri|weekday|5';
+                const profile=model&&model.profiles&&model.profiles[key];
+                return {score:1.0,reasons:['weekday timetable demand'],confidence:'Low',historySamples:Number(profile&&profile.samples)||0};
+              }
+            };
+            const window={
+              __KERBSIDE_TRAINS__:trains,
+              __KERBSIDE_TRAIN_OVERLAY__:{state:{services:overlayServices}},
+              addEventListener(){},dispatchEvent(){}
+            };
+            const context={window,document:documentStub,Date:FixedDate,Intl,console,localStorage,setTimeout,clearTimeout,requestAnimationFrame(){return 1;},MutationObserver:class{observe(){} disconnect(){}}};
+            vm.createContext(context);
+            vm.runInContext(forecastSource,context);
+            return {api:context.window.__KERBSIDE_FORECAST_V3__,calls,station};
+          }
+
+          function loadEvents(){
+            const window={addEventListener(){},dispatchEvent(){},__KERBSIDE_FORECAST_V3__:{apply(){}}};
+            const context={window,document:documentStub,Date:FixedDate,Intl,console,localStorage,setTimeout,clearTimeout,AbortController,fetch:async()=>{throw new Error('network not expected');}};
+            vm.createContext(context);
+            vm.runInContext(eventsSource,context);
+            return context.window.__KERBSIDE_EVENTS__;
+          }
+
+          test('Forecast v3 uses the same local-history key as crowding model v2',()=>{
+            const {api,station}=loadForecast();
+            const service={std:'10:00',operatorCode:'XC',destination:[{crs:'BRI',locationName:'Bristol Temple Meads'}]};
+            assert.equal(api.profileKey(service,station,new FixedDate('2026-08-12T12:00:00Z')),'bhm|xc|bri|weekday|5');
+          });
+
+          test('history improves confidence without automatically increasing demand',()=>{
+            const model={profiles:{'bhm|xc|bri|weekday|5':{samples:5,lengthSamples:0,avgLength:0}}};
+            const {api}=loadForecast({model});
+            const signal=api.historicalSignal({state:{station:{name:'Birmingham New Street',crs:'BHM'},crowdingModel:model}},{std:'10:00',operatorCode:'XC',destination:[{crs:'BRI'}]},new FixedDate('2026-08-12T12:00:00Z'));
+            assert.equal(signal.amount,0);
+            assert.equal(signal.samples,5);
+            assert.deepEqual(Array.from(signal.reasons),[]);
+          });
+
+          test('v3 requests a de-duplicated baseline with passenger feedback disabled',()=>{
+            const {api,calls,station}=loadForecast();
+            const service={std:'10:00',operatorCode:'XC',destination:[{crs:'BRI'}],origin:[{crs:'WVH',locationName:'Wolverhampton'}]};
+            api.forecast(service,0,[service],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z')});
+            assert.equal(calls.length,1);
+            assert.equal(calls[0].modelLayer,'v3-baseline');
+            assert.equal(calls[0].includeFeedback,false);
+          });
+
+          test('future timetable and same-day timetable use the same static prediction inputs',()=>{
+            const overlayServices=[{length:8},{length:8},{length:8}];
+            const {api,station}=loadForecast({overlayServices});
+            const scheduled={std:'10:00',etd:'',length:0,operatorCode:'ZZ',destination:[{crs:'BRI'}],origin:[{crs:'WVH',locationName:'Wolverhampton'}]};
+            const future=api.forecast(scheduled,0,[scheduled],{station,referenceDate:new FixedDate('2026-08-13T12:00:00Z')});
+            const sameDay=api.forecast(scheduled,0,[scheduled],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z')});
+            assert.equal(future.score,sameDay.score);
+            assert.equal(future.label,sameDay.label);
+          });
+
+          test('live Darwin evidence enriches the same prediction once, not twice',()=>{
+            const overlayServices=[{length:8},{length:8},{length:8}];
+            const {api,station}=loadForecast({overlayServices});
+            const scheduled={std:'10:00',etd:'',length:0,operatorCode:'ZZ',destination:[{crs:'BRI'}],origin:[{crs:'WVH',locationName:'Wolverhampton'}]};
+            const sameDay=api.forecast(scheduled,0,[scheduled],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z')});
+            const live={...scheduled,etd:'10:20',length:4,previousCallingPoints:[{callingPoint:[{crs:'AAA'},{crs:'AAB'},{crs:'AAC'},{crs:'AAD'},{crs:'AAE'},{crs:'AAF'}]}],subsequentCallingPoints:[{callingPoint:[{crs:'BRI'}]}]};
+            const enriched=api.forecast(live,0,[live],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z')});
+            assert.ok(enriched.score>sameDay.score+1.1,{sameDay,enriched});
+            assert.equal(enriched.reasons.filter(r=>/delay/i.test(r)).length,1);
+            assert.equal(enriched.reasons.filter(r=>/formation/i.test(r)).length,1);
+          });
+
+          test('Friday/weekend seasonality is not added again by the v3 calendar layer',()=>{
+            const {api}=loadForecast();
+            const friday=api.calendarSignal(new FixedDate('2026-08-14T12:00:00Z'),16*60);
+            assert.equal(friday.amount,0);
+            assert.deepEqual(Array.from(friday.reasons),[]);
+          });
+
+          test('scheduled destination arrival drives event pressure before live calling points exist',()=>{
+            const events=loadEvents();
+            const service={std:'13:00',arrival:'14:30'};
+            assert.equal(events.serviceArrival(service,'BRI'),14*60+30);
+            const match=events.relevance(
+              {title:'Bristol event',place:'Bristol',start:16*60,end:18*60,attendance:30000,confidence:.9},
+              service,
+              {origin:'Birmingham New Street',destination:'Bristol Temple Meads',destinationCrs:'BRI'}
+            );
+            assert.ok(match&&match.nearDest,{match});
+            assert.ok(match.amount>0);
+          });
+
+          test('midnight expected arrival is not discarded as a falsy value',()=>{
+            const events=loadEvents();
+            const service={subsequentCallingPoints:[{callingPoint:[{crs:'BRI',et:'00:00',st:'23:59'}]}]};
+            assert.equal(events.serviceArrival(service,'BRI'),0);
+          });
+
+          test('v2 source guards duplicate live phenomena when called as the v3 baseline',()=>{
+            assert.match(trainsSource,/const v3Baseline = options\.modelLayer === 'v3-baseline'/);
+            assert.match(trainsSource,/if\(!v3Baseline\)\{\n    const length = Number\(service\.length\)/);
+            assert.match(trainsSource,/if\(!v3Baseline && options\.includeFeedback !== false && feedbackCount > 0/);
+          });
+          JS
+
+      - name: Validate build and prediction wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check kerbside-trains.js
+          node --check kerbside-train-forecast-v3.js
+          node --check kerbside-train-events.js
+          node --check kerbside-train-timetable.js
+          node --check kerbside-rail-calibration.js
+          node --test kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs
+          node --test kerbside-backend/test/train-timetable-provider.test.js
+          node --test kerbside-backend/tests/train-live-window-regression.mjs
+          node --test kerbside-backend/tests/train-journey-planner-regression.mjs
+          git diff --check
+          grep -Fx '0.7.40' VERSION
+          grep -F "modelLayer:'v3-baseline'" kerbside-train-forecast-v3.js
+          grep -F 'service.destinationArrival||service.arrival||service.sta||service.eta' kerbside-train-events.js
+
+      - name: Publish Kerbside 0.7.40
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/kerbside-forecast-v3-audit-release.yml
+          git add bus.html VERSION kerbside-trains.js kerbside-train-forecast-v3.js kerbside-train-events.js kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Kerbside 0.7.40: align crowding forecast layers'
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo 'Failed to publish after three rebased attempts.' >&2
+          exit 1
