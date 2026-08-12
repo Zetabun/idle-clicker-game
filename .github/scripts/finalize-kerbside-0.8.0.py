@@ -106,6 +106,34 @@ replace_once(
 )
 replace_once(
     browser,
+    "  await page.waitForFunction(()=>/Connection at risk/.test(document.querySelector('#trainScheduledBoard .train-connection-service')?.textContent||''));",
+    """  try{
+    await page.waitForFunction(()=>/Connection at risk/.test(document.querySelector('#trainScheduledBoard .train-connection-service')?.textContent||''),null,{timeout:10000});
+  }catch(error){
+    const debug=await page.evaluate(()=>{
+      const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
+      return {
+        header:document.getElementById('trainStationName')?.textContent||'',
+        board:document.querySelector('#trainScheduledBoard .train-connection-service')?.textContent||'',
+        mode:timetable?.state?.mode||'',
+        route:{from:window.__KERBSIDE_TRAINS__?.state?.station,to:window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination},
+        timetableServices:(timetable?.state?.services||[]).map(service=>({
+          type:service.journeyType,risk:service.connectionRisk,live:service.liveEvidence,
+          liveMinutes:service.liveConnectionMinutes,connectionMinutes:service.connectionMinutes,
+          minimum:service.minimumConnectionMinutes,interchange:service.interchange,
+          first:service.legs?.[0]?{serviceID:service.legs[0].serviceID,uid:service.legs[0].uid,trainId:service.legs[0].trainId,std:service.legs[0].std,live:service.legs[0].liveEvidence,via:service.legs[0].liveVia,etd:service.legs[0].etd}:null,
+          second:service.legs?.[1]?{serviceID:service.legs[1].serviceID,std:service.legs[1].std}:null
+        })),
+        overlay:{status:overlay?.state?.status,crs:overlay?.state?.crs,date:overlay?.state?.date,includeConnections:overlay?.state?.includeConnections,count:overlay?.state?.services?.length||0,services:(overlay?.state?.services||[]).map(service=>({rid:service.serviceIdGuid||service.serviceIdGuId||service.rid||'',uid:service.uid||'',trainid:service.trainid||service.trainId||'',std:service.std||'',etd:service.etd||'',destination:service.destination,calling:service.subsequentCallingPoints}))},
+        liveWindow:window.__KERBSIDE_TRAIN_LIVE_WINDOW__?.liveWindowFor?.('09:00')
+      };
+    });
+    console.error('KERBSIDE CONNECTION DEBUG',JSON.stringify({debug,requests:diagnostics.railRequests},null,2));
+    throw error;
+  }"""
+)
+replace_once(
+    browser,
     "  assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);",
     """  assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);
   await page.evaluate(()=>{
