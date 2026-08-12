@@ -254,6 +254,7 @@ function durationLabel(from,to){const start=parseMinutes(from),end=parseMinutes(
 function terminusText(service,fallback){const d=service&&service.displayDestination;return (d&&(d.name||d.locationName||d.crs))||fallback;}
 function originText(service){const list=service&&Array.isArray(service.origin)?service.origin.find(Boolean):null;return (list&&(list.locationName||list.name||list.crs))||'Origin not published';}
 function modeLabel(mode){if(mode!=='today')return'Advance timetable';return liveOverlayEligible()?'Live-adjusted':'Same-day timetable';}
+function serviceDateLabel(mode,date=state.sourceDate||route().date){return mode==='advance'&&date?dateLabel(date,{short:true}).replace(/,/g,''):'';}
 
 /* ------------------------------------------------------------------
    Overlay merge. Darwin evidence is written onto the timetabled rows in
@@ -378,11 +379,12 @@ function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,ex
     ?`This service is cancelled.${service.cancelReason?` ${service.cancelReason}.`:''} Its knock-on demand is included in the trains either side of it.`
     :(service.delayReason?`${service.delayReason}.`:'');
   const formation=Number(service.length)||0;
+  const serviceDate=serviceDateLabel(mode);
   const rightLabel=formation?`${formation} coach${formation===1?'':'es'}`:(duration||'—');
   const rightNote=formation?'formation':(duration?'journey time':'duration unknown');
   return `<article class="train-service train-scheduled-service${open?' open':''}" data-service-id="${esc(key)}">
       <button class="train-service-summary" type="button" data-scheduled-toggle="${esc(key)}" aria-expanded="${open?'true':'false'}" aria-controls="train-scheduled-detail-${esc(key)}">
-        <span class="train-time"><b>${esc(service.std||'—')}</b><small class="train-status train-status-${esc(status.cls)}">${esc(status.label)}</small></span>
+        <span class="train-time"><b>${esc(service.std||'—')}</b><small class="train-status train-status-${esc(status.cls)}">${esc(status.label)}</small>${serviceDate?`<small class="train-service-date">${esc(serviceDate)}</small>`:''}</span>
         <span class="train-route"><strong>${esc(terminus)}</strong><small>${esc(line.join(' · '))}</small></span>
         <span class="train-crowding crowd-${esc(forecastResult.level)}" title="${esc((forecastResult.reasons||[]).join(', '))}"><i></i><b>${esc(forecastResult.label)}</b><small>${esc(service.isCancelled?'service cancelled':`${forecastResult.confidence} confidence`)}</small></span>
         <span class="train-formation"><b>${esc(rightLabel)}</b><small>${esc(rightNote)}</small></span>
@@ -560,5 +562,5 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,requestOverlay,coverageIncludesTime,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,provider:timetableProvider};
 })();

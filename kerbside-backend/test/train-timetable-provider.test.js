@@ -126,3 +126,12 @@ test('partial edge coverage distinguishes a missing future window from no trains
   assert.equal(api.coverageIncludesTime({from:'00:01',to:'07:54',partial:true},'12:15'),false);
   assert.equal(api.coverageIncludesTime({from:'00:01',to:'23:59',partial:false},'23:30'),true);
 });
+
+
+test('future timetable rows expose their selected travel date while same-day rows do not',()=>{
+  const {api}=loadPriorityRuntime({today:false,liveMode:'planning',departAfter:'09:00'});
+  const future=api.serviceDateLabel('advance','2026-08-13');
+  assert.match(future,/13 Aug/);
+  assert.match(future,/Thu/);
+  assert.equal(api.serviceDateLabel('today','2026-08-13'),'');
+});

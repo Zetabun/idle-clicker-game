@@ -191,6 +191,9 @@
   font-family:'Martian Mono',ui-monospace,monospace;
   font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
 }
+.train-scheduled-service .train-service-date{
+  margin-top:3px;color:var(--text-mute);font-size:8px;letter-spacing:.035em;text-transform:none;white-space:nowrap;
+}
 /* Status under the departure time. A timetabled row reads as muted on
    purpose: it must not borrow the authority of a live-confirmed one. */
 .train-status-timetabled{color:var(--text-mute)}
