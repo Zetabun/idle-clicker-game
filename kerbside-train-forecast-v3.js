@@ -50,12 +50,32 @@ const STATION_TIER={
   MCO:2,MCV:2,BHI:2,BMO:2,SAL:2,SWI:2,OXF:2,CBG:2,SVG:2,LTN:2,WFJ:2,MKC:2,
   // Everything else defaults to tier 1.
 };
+function calibration(){return window.__KERBSIDE_CALIBRATION__||null;}
 function stationScaleSignal(station){
+  /* Prefer DfT's measured counts where the station was actually counted;
+     the hand-built tier table below still covers the rest of the network,
+     and remains the whole answer if the calibration module is absent. */
+  const cal=calibration();
+  if(cal&&typeof cal.scaleSignal==='function'){
+    try{const measured=cal.scaleSignal(station);if(measured&&measured.measured)return {amount:measured.amount,reasons:measured.reasons};}catch(error){}
+  }
   const crs=String(station&&station.crs||'').toUpperCase();
   const tier=STATION_TIER[crs]||1;
   if(tier>=3)return {amount:.35,reasons:['major hub station with high passenger throughput']};
   if(tier===2)return {amount:.18,reasons:['large regional station']};
   return {amount:0,reasons:[]};
+}
+/* Two signals that exist only when the calibration module is loaded. Both
+   return a flat zero otherwise, so scores are unchanged without it. */
+function calibratedDemandSignal(station,minute,date){
+  const cal=calibration();
+  if(!cal||typeof cal.demandShape!=='function')return {amount:0,reasons:[]};
+  try{return cal.demandShape(station,minute,date)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
+}
+function serviceClassSignal(service,station,minute,date){
+  const cal=calibration();
+  if(!cal||typeof cal.serviceClassSignal!=='function')return {amount:0,reasons:[]};
+  try{return cal.serviceClassSignal(service,station,minute,date)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
 }
 
 /* Journey shape. Two facts that only became reachable once the board was
@@ -157,15 +177,30 @@ const date=context.referenceDate instanceof Date?context.referenceDate:new Date(
    carries, so it is same-day only. Station scale, school holidays and the
    off-peak spike are pure calendar and lookup work and apply to any date. */
 const shape=future?{amount:0,reasons:[],evidence:0}:journeyShapeSignal(service);
-const scale=stationScaleSignal(context.station||(api&&api.state&&api.state.station));
+const station=context.station||(api&&api.state&&api.state.station);
+const scale=stationScaleSignal(station);
 const school=schoolHolidaySignal(date,minute);
 const offpeak=offPeakSignal(date,minute);
-let score=Number(base.score);if(!Number.isFinite(score))score=1.8;score=removeLegacyFeedback(score,historical.profile);score=clamp(score+calendar.amount+historical.amount+events.amount+live.amount+shape.amount+scale.amount+school.amount+offpeak.amount,.25,5);const reasons=unique([...(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),...shape.reasons,...historical.reasons,...events.reasons,...live.reasons,...school.reasons,...offpeak.reasons,...calendar.reasons,...scale.reasons]).slice(0,6);const evidence=2+(historical.reasons.length?1:0)+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(live.reasons.length?2:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0);const confidence=evidence>=6?'High':evidence>=4?'Medium-high':evidence>=3?'Medium':'Low';return {score,level:levelFor(score),label:labelFor(score),confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],modelVersion:VERSION,eventPressure:events.amount,historySamples:Number(base.historySamples)||0};}
+/* DfT-calibrated signals. Both are no-ops without kerbside-rail-calibration.js. */
+const shapeCal=calibratedDemandSignal(station,minute,date);
+const serviceClass=serviceClassSignal(service,station,minute,date);
+let score=Number(base.score);if(!Number.isFinite(score))score=1.8;score=removeLegacyFeedback(score,historical.profile);score=clamp(score+calendar.amount+historical.amount+events.amount+live.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount,.25,5);const reasons=unique([...(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),...shape.reasons,...historical.reasons,...events.reasons,...live.reasons,...serviceClass.reasons,...school.reasons,...offpeak.reasons,...shapeCal.reasons,...calendar.reasons,...scale.reasons]).slice(0,6);/* Measured DfT figures are stronger evidence than a tuned weight, so a
+   calibrated station lifts confidence rather than just moving the score. */
+const calibrated=!!(scale.reasons.length&&calibration()&&calibration().profileFor&&calibration().profileFor(station));
+const evidence=2+(historical.reasons.length?1:0)+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(live.reasons.length?2:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0);const confidence=evidence>=6?'High':evidence>=4?'Medium-high':evidence>=3?'Medium':'Low';const cal=calibration();
+let calibrationNote='';
+if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,minute,date)||'';}catch(error){calibrationNote='';}}
+return {score,level:levelFor(score),label:labelFor(score),confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],modelVersion:VERSION,eventPressure:events.amount,historySamples:Number(base.historySamples)||0,calibrated,calibrationNote,calibrationSource:cal?cal.source:''};}
 /* options.mode overrides the Planning / Live-adjusted badge and options.note
    appends a sentence to the method line, so the scheduled timetable board can
    render this exact card with its own framing instead of maintaining a second
    copy that drifts out of step. */
-function detailMarkup(result,date,options={}){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted'),meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v3 · ${mode}`;const items=reasons.map(reason=>`<li>${esc(reason)}</li>`).join('');const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const method=options.note?`${base} ${options.note}`:base;const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">${esc(method)}</div>${historyMarkup}`;}
+function detailMarkup(result,date,options={}){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted'),meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v3 · ${mode}`;const items=reasons.map(reason=>`<li>${esc(reason)}</li>`).join('');const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const method=options.note?`${base} ${options.note}`:base;const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';
+/* The measured anchor. Without it "Busy" is a vibe; with it the user can see
+   what the counted network actually looks like at this time of day. */
+const calibrationMarkup=result.calibrationNote
+  ?`<div class="train-forecast-calibration"><span>Measured baseline</span><b>${esc(result.calibrationNote)}</b>${result.calibrationSource?`<i>${esc(result.calibrationSource)}</i>`:''}</div>`
+  :'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">${esc(method)}</div>${calibrationMarkup}${historyMarkup}`;}
 /* Every write below is compared first. The board is watched by a
    MutationObserver that calls back into apply(), and re-assigning identical
    text or innerHTML still counts as a mutation - so unguarded writes kept a
@@ -201,5 +236,5 @@ function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimat
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,eventSignal,journeyShapeSignal,stationScaleSignal,schoolHolidaySignal,offPeakSignal,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};
+window.__KERBSIDE_FORECAST_V3__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,eventSignal,journeyShapeSignal,stationScaleSignal,schoolHolidaySignal,offPeakSignal,calibratedDemandSignal,serviceClassSignal,calibration,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE};
 })();
