@@ -1,0 +1,233 @@
+name: Kerbside rail source priority release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/kerbside-rail-priority-release.yml
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: kerbside-rail-source-priority-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply rail source-priority fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old[:80]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          timetable = 'kerbside-train-timetable.js'
+
+          replace_once(
+              timetable,
+              "function currentTime(){return $('trainDepartAfter')?.value||'00:00';}\nfunction route(){",
+              "function currentTime(){return $('trainDepartAfter')?.value||'00:00';}\n"
+              "function liveWindowInfo(){const live=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;return live&&typeof live.liveWindowFor==='function'?live.liveWindowFor(currentTime()):null;}\n"
+              "function liveWindowPhase(){const api=dateApi();if(!api||typeof api.isToday!=='function'||!api.isToday())return'advance';const info=liveWindowInfo();if(!info)return'pending';return info.mode==='planning'?'scheduled-only':'live-eligible';}\n"
+              "function liveOverlayEligible(){return liveWindowPhase()==='live-eligible';}\n"
+              "function overlayMatchesRoute(overlay){const r=route(),s=overlay&&overlay.state;return !!(s&&r.from&&String(s.crs||'').toUpperCase()===String(r.from.crs||'').toUpperCase()&&String(s.date||'')===String(r.date||''));}\n"
+              "function route(){"
+          )
+
+          replace_once(
+              timetable,
+              "  /* Before the manifest lands there is nothing to check it against. For a\n     future date the live board cannot help anyway, so claim the board and\n     let load() report coverage; for today, leave live in place until the\n     manifest proves the snapshot can do better. */\n  if(!state.manifest)return dateApi().isToday()?'':'advance';",
+              "  /* Claim the journey board before the manifest has loaded for both today\n     and future dates. load() is what fetches that manifest, so refusing to\n     claim today's board here creates a bootstrap loop where today's timetable\n     can never prove that it has coverage. A stale same-day snapshot still\n     falls back to the live board after load() checks the manifest. */\n  if(!state.manifest)return dateApi().isToday()?'today':'advance';"
+          )
+
+          replace_once(
+              timetable,
+              "function routeSignature(){const r=route();return `${r.from&&r.from.crs||''}|${r.to&&r.to.crs||''}|${r.date}|${r.departAfter}|${journeyMode()||'live'}`;}",
+              "function routeSignature(){const r=route();return `${r.from&&r.from.crs||''}|${r.to&&r.to.crs||''}|${r.date}|${r.departAfter}|${journeyMode()||'live'}|${liveWindowPhase()}`;}"
+          )
+
+          replace_once(
+              timetable,
+              "  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;\n  const liveNote=mode==='today'\n    ?(overlay&&overlay.state.status==='ready'?'timetable + live':overlay&&overlay.state.status==='error'?'timetable · live unavailable':'timetable · checking live')\n    :'advance timetable';\n  if(meta)meta.textContent=r.from&&r.to?`${r.from.crs||''} → ${r.to.crs||''} · ${dateLabel(r.date,{short:true})} · ${liveNote}${snap?` · snapshot ${snap}`:''}`:dateLabel(r.date);\n  if(refresh){refresh.disabled=mode!=='today';refresh.textContent=mode==='today'?'Refresh':'Schedule';}",
+              "  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,phase=liveWindowPhase(),sameRoute=overlayMatchesRoute(overlay);\n  let liveNote='advance timetable';\n  if(mode==='today'){\n    if(phase==='scheduled-only')liveNote='timetable · scheduled forecast';\n    else if(phase==='live-eligible')liveNote=sameRoute&&overlay.state.status==='ready'?'timetable + live':sameRoute&&overlay.state.status==='error'?'timetable · live unavailable':'timetable · checking live';\n    else liveNote='timetable · checking live window';\n  }\n  if(meta)meta.textContent=r.from&&r.to?`${r.from.crs||''} → ${r.to.crs||''} · ${dateLabel(r.date,{short:true})} · ${liveNote}${snap?` · snapshot ${snap}`:''}`:dateLabel(r.date);\n  if(refresh){const canRefresh=mode==='today'&&phase==='live-eligible';refresh.disabled=!canRefresh;refresh.textContent=canRefresh?'Refresh':'Schedule';}"
+          )
+
+          replace_once(
+              timetable,
+              "function liveMessages(){\n  if(state.mode!=='today')return [];\n  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;\n  return overlay&&typeof overlay.messages==='function'?overlay.messages():[];\n}",
+              "function liveMessages(){\n  if(state.mode!=='today'||!liveOverlayEligible())return [];\n  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;\n  if(!overlay||!overlayMatchesRoute(overlay)||overlay.state.status!=='ready')return [];\n  return typeof overlay.messages==='function'?overlay.messages():[];\n}"
+          )
+
+          replace_once(
+              timetable,
+              "function modeLabel(mode){return mode==='today'?'Live-adjusted':'Advance timetable';}",
+              "function modeLabel(mode){if(mode!=='today')return'Advance timetable';return liveOverlayEligible()?'Live-adjusted':'Same-day timetable';}"
+          )
+
+          replace_once(
+              timetable,
+              "function mergeOverlay(){\n  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;\n  if(!overlay||state.mode!=='today'||!state.services.length)return false;\n  if(overlay.state.status!=='ready')return false;\n  const r=route(),toCrs=r.to&&r.to.crs||'';",
+              "function mergeOverlay(){\n  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;\n  if(!overlay||state.mode!=='today'||!liveOverlayEligible()||!state.services.length)return false;\n  if(overlay.state.status!=='ready'||!overlayMatchesRoute(overlay))return false;\n  const r=route(),toCrs=r.to&&r.to.crs||'';"
+          )
+
+          replace_once(
+              timetable,
+              "function modeNote(mode){return mode==='today'\n  ?'Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.'\n  :'Live delays, cancellations and formation are folded in automatically on the day of travel.';}",
+              "function modeNote(mode){\n  if(mode!=='today')return 'Live delays, cancellations and formation are folded in automatically on the day of travel.';\n  return liveOverlayEligible()\n    ?'Timetabled services carry live Darwin evidence where it exists: expected times, platform changes, cancellations and formation.'\n    :'This service is outside the live Darwin window. Forecast v3 is using the scheduled timetable and planning signals; live Darwin evidence will take priority automatically when the service enters the live window.';\n}"
+          )
+
+          replace_once(
+              timetable,
+              "  return 'Timetabled from the National Rail Darwin Timetable Files. Expected times, platform changes and formation arrive on the day of travel.';",
+              "  return 'Timetabled from the National Rail Darwin Timetable Files. Live expected times, platform changes, cancellations and formation are added automatically once this service enters the live Darwin window.';"
+          )
+
+          replace_once(
+              timetable,
+              "function requestOverlay(){\n  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,r=route();\n  if(!overlay)return;\n  if(state.mode!=='today'||!r.from||!r.from.crs){overlay.clear();return;}\n  overlay.refresh({crs:r.from.crs,date:r.date});\n  overlay.start();\n}",
+              "function requestOverlay(){\n  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,r=route();\n  if(!overlay)return false;\n  if(state.mode!=='today'||!r.from||!r.from.crs||!liveOverlayEligible()){\n    if(typeof overlay.stop==='function')overlay.stop();\n    if(typeof overlay.clear==='function')overlay.clear();\n    return false;\n  }\n  overlay.refresh({crs:r.from.crs,date:r.date});\n  overlay.start();\n  return true;\n}"
+          )
+
+          overlay_path = 'kerbside-train-live-overlay.js'
+          replace_once(
+              overlay_path,
+              "  const seq=++state.seq;\n  state.status='loading';\n  try{\n    const json=await requestBoard(code);\n    if(seq!==state.seq)return false;\n    state.crs=code;\n    state.date=String(date);",
+              "  const seq=++state.seq;\n  state.crs=code;\n  state.date=String(date);\n  state.status='loading';\n  try{\n    const json=await requestBoard(code);\n    if(seq!==state.seq)return false;"
+          )
+
+          refresh = '.github/workflows/refresh-darwin-timetable.yml'
+          replace_once(
+              refresh,
+              "    - cron: '30 4,8 * * *'",
+              "    # Darwin snapshots are normally stamped around 02:05 UTC. Check soon\n    # afterwards, then retry before the existing morning refreshes. Each run\n    # is a no-op when the newest complete v8/ref_v4 pair is already published.\n    - cron: '30 2,3,4,8 * * *'"
+          )
+
+          Path('VERSION').write_text('0.7.39\n', encoding='utf-8')
+          bus = Path('bus.html')
+          html = bus.read_text(encoding='utf-8')
+          if '?v=0.7.38' not in html:
+              raise SystemExit('bus.html: expected 0.7.38 cache-buster was not found')
+          html = html.replace('?v=0.7.38', '?v=0.7.39')
+          bus.write_text(html, encoding='utf-8')
+
+          test_path = Path('kerbside-backend/test/train-timetable-provider.test.js')
+          test_text = test_path.read_text(encoding='utf-8')
+          marker = "function loadPriorityRuntime({today=true,liveMode='planning',departAfter='10:00'}={})"
+          if marker in test_text:
+              raise SystemExit('priority regression tests already present unexpectedly')
+          test_text += r'''
+
+function loadPriorityRuntime({today=true,liveMode='planning',departAfter='10:00'}={}){
+  const calls={refresh:0,start:0,stop:0,clear:0};
+  const from={name:'Birmingham New Street',crs:'BHM'};
+  const to={name:'Bristol Temple Meads',crs:'BRI'};
+  const overlay={
+    state:{status:'idle',crs:'',date:''},
+    refresh(){calls.refresh++;return Promise.resolve(true);},
+    start(){calls.start++;},stop(){calls.stop++;},clear(){calls.clear++;},messages(){return[];}
+  };
+  const context={
+    console,URL,Date,Intl,setTimeout,clearTimeout,setInterval(){return 0;},Blob,Response,TextDecoder,DecompressionStream,
+    fetch:async input=>responseFor(input),
+    document:{readyState:'loading',addEventListener(){},getElementById(id){return id==='trainDepartAfter'?{value:departAfter}:null;}},
+    window:{
+      __KERBSIDE_TRAIN_DATE__:{state:{date:'2026-08-12'},isToday(){return today;}},
+      __KERBSIDE_TRAINS__:{state:{station:from}},
+      __KERBSIDE_TRAIN_ROUTES__:{state:{destination:to}},
+      __KERBSIDE_TRAIN_LIVE_WINDOW__:{liveWindowFor(){return {mode:liveMode};}},
+      __KERBSIDE_TRAIN_OVERLAY__:overlay
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(timetableSource,context);
+  return {api:context.window.__KERBSIDE_TRAIN_TIMETABLE__,calls};
+}
+
+test('same-day journey claims the timetable before the manifest is cached',()=>{
+  const {api}=loadPriorityRuntime({today:true,liveMode:'planning'});
+  assert.equal(api.state.manifest,null);
+  assert.equal(api.journeyMode(),'today');
+});
+
+test('same-day services outside the live window stay timetable-only',()=>{
+  const {api,calls}=loadPriorityRuntime({today:true,liveMode:'planning'});
+  api.state.mode='today';
+  assert.equal(api.requestOverlay(),false);
+  assert.equal(calls.refresh,0);
+  assert.equal(calls.start,0);
+  assert.equal(calls.stop,1);
+  assert.equal(calls.clear,1);
+});
+
+test('same-day services inside the live window prioritise the live overlay',()=>{
+  const {api,calls}=loadPriorityRuntime({today:true,liveMode:'live'});
+  api.state.mode='today';
+  assert.equal(api.requestOverlay(),true);
+  assert.equal(calls.refresh,1);
+  assert.equal(calls.start,1);
+  assert.equal(calls.stop,0);
+  assert.equal(calls.clear,0);
+});
+'''
+          test_path.write_text(test_text, encoding='utf-8')
+          PY
+
+      - name: Validate release
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check kerbside-train-timetable.js
+          node --check kerbside-train-live-overlay.js
+          node --check kerbside-train-live-window.js
+          node --check kerbside-train-forecast-v3.js
+          node --test kerbside-backend/test/train-timetable-provider.test.js
+          node --test kerbside-backend/tests/train-live-window-regression.mjs
+          git diff --check
+          grep -F "0.7.39" VERSION
+          grep -F "cron: '30 2,3,4,8 * * *'" .github/workflows/refresh-darwin-timetable.yml
+
+      - name: Publish Kerbside 0.7.39
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/kerbside-rail-priority-release.yml
+          git add bus.html VERSION kerbside-train-timetable.js kerbside-train-live-overlay.js kerbside-backend/test/train-timetable-provider.test.js .github/workflows/refresh-darwin-timetable.yml
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "Kerbside 0.7.39: prioritise same-day rail data"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Request an immediate Darwin timetable refresh
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run refresh-darwin-timetable.yml --ref main || echo 'Immediate timetable dispatch was unavailable; scheduled retries remain enabled.'
