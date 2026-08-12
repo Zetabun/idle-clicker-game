@@ -24,39 +24,30 @@ jobs:
           curl -fsSL --retry 3 'https://assets.publishing.service.gov.uk/media/6a5e4da7c7c34404041b463b/rai0203.ods' -o /tmp/rai0203.ods
           python3 - <<'PY'
           import zipfile, xml.etree.ElementTree as ET
-          NS={
-            'office':'urn:oasis:names:tc:opendocument:xmlns:office:1.0',
-            'table':'urn:oasis:names:tc:opendocument:xmlns:table:1.0',
-            'text':'urn:oasis:names:tc:opendocument:xmlns:text:1.0',
-          }
-          def cell_text(cell):
-            parts=[]
-            for p in cell.findall('.//text:p',NS):
-              value=''.join(p.itertext()).strip()
-              if value: parts.append(value)
-            return ' '.join(parts)
-          def inspect(path):
-            print('\n###',path)
-            with zipfile.ZipFile(path) as z:
-              root=ET.fromstring(z.read('content.xml'))
-            sheets=root.findall('.//table:table',NS)
-            print('sheets:',[s.attrib.get('{%s}name'%NS['table']) for s in sheets])
-            for sheet in sheets:
-              name=sheet.attrib.get('{%s}name'%NS['table'])
-              print('\n-- SHEET',name,'--')
-              shown=0
-              for row in sheet.findall('table:table-row',NS):
-                repeat=int(row.attrib.get('{%s}number-rows-repeated'%NS['table'],'1'))
-                values=[]
-                for cell in row.findall('table:table-cell',NS):
-                  crepeat=int(cell.attrib.get('{%s}number-columns-repeated'%NS['table'],'1'))
-                  text=cell_text(cell)
-                  values.extend([text]*min(crepeat,8))
-                while values and not values[-1]: values.pop()
-                if any(values):
-                  print(f'row x{repeat}:',repr(values[:30]))
-                  shown+=1
-                  if shown>=28: break
-          inspect('/tmp/rai0202.ods')
-          inspect('/tmp/rai0203.ods')
+          NS={'table':'urn:oasis:names:tc:opendocument:xmlns:table:1.0','text':'urn:oasis:names:tc:opendocument:xmlns:text:1.0'}
+          def text(cell):
+            return ' '.join(''.join(p.itertext()).strip() for p in cell.findall('.//text:p',NS) if ''.join(p.itertext()).strip())
+          def rows(path,sheet_name):
+            with zipfile.ZipFile(path) as z: root=ET.fromstring(z.read('content.xml'))
+            sheet=next(s for s in root.findall('.//table:table',NS) if s.attrib.get('{%s}name'%NS['table'])==sheet_name)
+            out=[]
+            for row in sheet.findall('table:table-row',NS):
+              values=[]
+              for cell in row.findall('table:table-cell',NS):
+                repeat=int(cell.attrib.get('{%s}number-columns-repeated'%NS['table'],'1'))
+                values.extend([text(cell)]*min(repeat,30))
+              while values and not values[-1]: values.pop()
+              if values: out.append(values)
+            return out
+          for path,sheet,label in [('/tmp/rai0202.ods','RAI0202','CITIES'),('/tmp/rai0203.ods','RAI0203','STATIONS')]:
+            data=rows(path,sheet)
+            header=next(r for r in data if r and r[0]=='Year')
+            print(label,'HEADER',repr(header))
+            current=[r for r in data if len(r)>4 and r[0].startswith('2025')]
+            entities=sorted({r[2] for r in current})
+            print(label,'2025 ENTITIES',repr(entities))
+            print(label,'2025 ROWS',len(current))
+            for entity in entities:
+              sample=[r for r in current if r[2]==entity and r[1]=='Departures' and r[3]=='Passengers']
+              if sample: print(label,entity,'DEPARTURES',repr(sample[0][:23]))
           PY
