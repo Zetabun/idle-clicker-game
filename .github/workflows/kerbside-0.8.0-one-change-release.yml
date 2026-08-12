@@ -63,6 +63,7 @@ jobs:
           path.write_text(text.replace(old,new,1),encoding='utf-8')
           PY
           python3 .github/scripts/augment-kerbside-0.8.0-live-connections.py
+          python3 .github/scripts/fix-kerbside-0.8.0-origin-scope.py
           python3 .github/scripts/finalize-kerbside-0.8.0.py
           python3 .github/scripts/sync-version.py
 
@@ -96,7 +97,8 @@ jobs:
           grep -Fx '0.8.0' VERSION
           grep -F "journeyType:'connection'" kerbside-train-timetable.js
           grep -F "includeConnections" kerbside-train-live-overlay.js
-          grep -F "kerbsideScope" kerbside-journey-planner-ui.js
+          grep -F "kerbsideOriginScoped" kerbside-train-live-overlay.js
+          grep -F "kerbsideOriginScoped" kerbside-journey-planner-ui.js
           grep -F "Promise.resolve(pending).then(ok=>{if(ok)handleOverlay();})" kerbside-train-timetable.js
           grep -F "const timetableOwned=" kerbside-trains.js
           grep -F "const origin=raw.map" kerbside-train-timetable.js
