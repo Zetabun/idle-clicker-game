@@ -66,6 +66,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Kerbside 0.7.40: align crowding forecast layers'
+          git restore .github/scripts/kerbside-forecast-v3-audit-release.py
           for attempt in 1 2 3; do
             git pull --rebase origin main
             if git push origin HEAD:main; then
