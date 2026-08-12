@@ -32,10 +32,31 @@ replace_once(
     "service.connectionRisk=service.isCancelled?'at-risk':liveConnectionRiskFor(minutes,minimum);"
 )
 
+# A station can temporarily be stored as {name:'BHM', crs:'BHM'} while the
+# combined journey planner changes route. The timetable rows themselves were
+# built from locations.json and therefore carry the authoritative display name.
+# Resolve that before renderRows() calls setHeader(), so scheduled journeys do
+# not expose a CRS in place of the station name.
+replace_once(
+    timetable,
+    """function renderServices(items,{mode,manifest}){
+  return renderRows(items.map(normalise),{mode,manifest});
+}
+""",
+    """function renderServices(items,{mode,manifest}){
+  const raw=Array.isArray(items)?items:[],r=route();
+  const origin=raw.map(item=>item&&(item.from||(Array.isArray(item.legs)&&item.legs[0]&&item.legs[0].from))).find(item=>item&&String(item.crs||'').toUpperCase()===String(r.from&&r.from.crs||'').toUpperCase());
+  const resolved=displayName(origin,'');
+  if(r.from&&resolved&&resolved!==r.from.crs)r.from.name=resolved;
+  return renderRows(raw.map(normalise),{mode,manifest});
+}
+"""
+)
+
 # The hidden live board and visible scheduled board share a header. A late live
 # board response may still render after the timetable has taken ownership, so
 # protect only the shared header/meta controls while continuing to keep the
-# hidden live board itself up to date.
+# hidden live board itself and the canonical station name up to date.
 trains='kerbside-trains.js'
 replace_once(
     trains,
@@ -51,10 +72,9 @@ replace_once(
     """  name.textContent = payload.locationName || state.station.name || state.station.crs;
   state.station.name = name.textContent;
 """,
-    """  if(!timetableOwned){
-    name.textContent = payload.locationName || state.station.name || state.station.crs;
-    state.station.name = name.textContent;
-  }
+    """  const resolvedStationName=payload.locationName||state.station.name||state.station.crs;
+  state.station.name=resolvedStationName;
+  if(!timetableOwned)name.textContent=resolvedStationName;
 """
 )
 replace_once(
@@ -96,4 +116,4 @@ replace_once(
   });"""
 )
 
-print('Finalized Kerbside 0.8.0 live-risk helper, timetable header ownership and deterministic browser fixture.')
+print('Finalized Kerbside 0.8.0 live-risk helper, authoritative timetable station names, header ownership and deterministic browser fixture.')
