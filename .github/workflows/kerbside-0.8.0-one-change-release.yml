@@ -97,7 +97,7 @@ jobs:
           grep -Fx '0.8.0' VERSION
           grep -F "journeyType:'connection'" kerbside-train-timetable.js
           grep -F "connectionTargets" kerbside-train-live-overlay.js
-          grep -F "/to/${encodeURIComponent(to)}" kerbside-train-live-overlay.js
+          grep -F 'const route=to?' kerbside-train-live-overlay.js
           grep -F "const to=info.to||stationCrs(selected)" kerbside-train-live-window.js
           grep -F "Promise.resolve(pending).then(ok=>{if(ok)handleOverlay();})" kerbside-train-timetable.js
           grep -F "const timetableOwned=" kerbside-trains.js
