@@ -31,7 +31,11 @@ jobs:
           node-version: '24'
 
       - name: Apply Forecast v3 audit fixes
-        run: python3 .github/scripts/kerbside-forecast-v3-audit-release.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/fix-forecast-release-helper.py
+          python3 .github/scripts/kerbside-forecast-v3-audit-release.py
 
       - name: Validate build and prediction wiring
         shell: bash
