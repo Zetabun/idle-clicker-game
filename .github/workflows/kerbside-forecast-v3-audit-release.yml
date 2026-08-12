@@ -34,9 +34,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Harden ambiguous source markers before applying the release patch.
           python3 .github/scripts/fix-forecast-release-helper.py
           python3 .github/scripts/kerbside-forecast-v3-audit-release.py
+          python3 .github/scripts/fix-generated-forecast-release.py
 
       - name: Validate build and prediction wiring
         shell: bash
