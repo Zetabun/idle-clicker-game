@@ -1,4 +1,5 @@
 name: Kerbside 0.8.0 one-change journey release
+# Diagnostic pass: preserve the full release gate while tracing live connection evidence.
 
 on:
   workflow_dispatch:
