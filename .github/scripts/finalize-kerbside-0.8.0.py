@@ -32,6 +32,20 @@ replace_once(
     "service.connectionRisk=service.isCancelled?'at-risk':liveConnectionRiskFor(minutes,minimum);"
 )
 
+# A direct load (the combined planner calls this after Find trains) and the
+# scheduled route-change sync can otherwise race each other. Record the current
+# signature inside load() itself so the delayed sync sees the journey as current
+# instead of launching a second identical render while a row is being opened.
+replace_once(
+    timetable,
+    """  const r=route();
+  if(!r.from||!r.to){renderUnavailable('Select both stations, then use Find trains to search the Darwin timetable.',{mode});return true;}
+""",
+    """  const r=route();state.signature=routeSignature();
+  if(!r.from||!r.to){renderUnavailable('Select both stations, then use Find trains to search the Darwin timetable.',{mode});return true;}
+"""
+)
+
 # A station can temporarily be stored as {name:'BHM', crs:'BHM'} while the
 # combined journey planner changes route. The timetable rows themselves were
 # built from locations.json and therefore carry the authoritative display name.
@@ -144,4 +158,4 @@ replace_once(
   });"""
 )
 
-print('Finalized Kerbside 0.8.0 live-risk helper, authoritative timetable station names, header ownership and deterministic browser fixture.')
+print('Finalized Kerbside 0.8.0 live-risk helper, duplicate-load prevention, authoritative timetable station names, header ownership and deterministic browser fixture.')
