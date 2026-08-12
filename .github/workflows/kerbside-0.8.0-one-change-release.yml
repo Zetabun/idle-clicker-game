@@ -1,5 +1,5 @@
 name: Kerbside 0.8.0 one-change journey release
-# Diagnostic pass: persist WebKit output only if the release gate fails.
+# Final gate: deterministic checks, then WebKit and Chromium before publish.
 
 on:
   workflow_dispatch:
