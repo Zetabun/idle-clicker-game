@@ -61,6 +61,21 @@ jobs:
           path.write_text(text.replace(old,new,1),encoding='utf-8')
           PY
           python3 .github/scripts/augment-kerbside-0.8.0-live-connections.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('kerbside-train-timetable.js')
+          text=path.read_text(encoding='utf-8')
+          old="function connectionRiskFor(minutes,minimum){return timetableProvider.connectionRiskFor(minutes,minimum);}"
+          new="function liveConnectionRiskFor(minutes,minimum){return timetableProvider.connectionRiskFor(minutes,minimum);}"
+          if text.count(old)!=1:
+              raise SystemExit(f'expected one UI connection-risk wrapper, found {text.count(old)}')
+          text=text.replace(old,new,1)
+          old_call="service.connectionRisk=service.isCancelled?'at-risk':connectionRiskFor(minutes,minimum);"
+          new_call="service.connectionRisk=service.isCancelled?'at-risk':liveConnectionRiskFor(minutes,minimum);"
+          if text.count(old_call)!=1:
+              raise SystemExit(f'expected one live connection-risk call, found {text.count(old_call)}')
+          path.write_text(text.replace(old_call,new_call,1),encoding='utf-8')
+          PY
           python3 .github/scripts/sync-version.py
 
       - name: Install browser regression dependencies
