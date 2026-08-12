@@ -1,5 +1,5 @@
 name: Kerbside 0.8.0 one-change journey release
-# Diagnostic pass: preserve the full release gate while tracing live connection evidence.
+# Diagnostic pass: persist WebKit output only if the release gate fails.
 
 on:
   workflow_dispatch:
@@ -104,8 +104,21 @@ jobs:
       - name: Run current rail browser bundle in WebKit
         shell: bash
         run: |
-          set -euo pipefail
-          npm run test:train-route --prefix kerbside-backend
+          set +e
+          npm run test:train-route --prefix kerbside-backend > /tmp/kerbside-webkit.log 2>&1
+          status=$?
+          cat /tmp/kerbside-webkit.log
+          if [ "$status" -ne 0 ]; then
+            mkdir -p .github/debug
+            cp /tmp/kerbside-webkit.log .github/debug/kerbside-0.8.0-webkit.log
+            git add .github/debug/kerbside-0.8.0-webkit.log
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Capture Kerbside 0.8.0 WebKit diagnostics'
+            git pull --rebase origin main
+            git push origin HEAD:main
+            exit "$status"
+          fi
 
       - name: Run current rail browser bundle in Chromium
         shell: bash
