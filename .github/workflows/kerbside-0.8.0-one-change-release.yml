@@ -35,6 +35,31 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/apply-kerbside-0.8.0.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('.github/scripts/augment-kerbside-0.8.0-live-connections.py')
+          text=path.read_text(encoding='utf-8')
+          old='''replace_once(
+              overlay,
+              "refresh({crs:state.crs,date:state.date,force:true});",
+              "refresh({crs:state.crs,date:state.date,force:true,includeConnections:state.includeConnections});"
+          )
+          # visibilitychange contains the same call; replace the remaining copy.
+          replace_once(
+              overlay,
+              "refresh({crs:state.crs,date:state.date,force:true});",
+              "refresh({crs:state.crs,date:state.date,force:true,includeConnections:state.includeConnections});"
+          )'''
+          new='''text=read(overlay)
+          needle="refresh({crs:state.crs,date:state.date,force:true});"
+          replacement="refresh({crs:state.crs,date:state.date,force:true,includeConnections:state.includeConnections});"
+          if text.count(needle)!=2:
+              raise SystemExit(f"{overlay}: expected two forced refresh calls, found {text.count(needle)}")
+          write(overlay,text.replace(needle,replacement))'''
+          if old not in text:
+              raise SystemExit('augment patcher refresh block not found')
+          path.write_text(text.replace(old,new,1),encoding='utf-8')
+          PY
           python3 .github/scripts/augment-kerbside-0.8.0-live-connections.py
           python3 .github/scripts/sync-version.py
 
