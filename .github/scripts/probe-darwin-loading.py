@@ -6,6 +6,14 @@ Kafka's latest edge, keeps service identifiers only in memory, and writes
 aggregate counters. Raw Darwin payloads, RIDs, train IDs, station identifiers
 and per-service loading values are never written to the report.
 
+Darwin exposes two materially different loading message families and they must
+not be conflated:
+
+* formationLoading: real-time estimated percentage loading per coach for a
+  specific service/formation/location.
+* serviceLoading: provider-supplied typical/expected loading for the whole
+  service at a location. It is useful evidence, but it is not live occupancy.
+
 Runtime credentials are supplied by GitHub Actions secrets for the Rail Data
 Marketplace Darwin Real Time Train Information PubSub product.
 """
@@ -26,13 +34,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 UNKNOWN_OPERATOR = "__unknown__"
 XML_KEYS = ("payload", "body", "value", "message", "data", "content")
 RID_KEYS = ("rid", "RID", "serviceRid", "serviceRID")
 TOC_KEYS = ("toc", "tocCode", "operatorCode", "atoc", "trainOperator")
-COACH_HINTS = ("coach", "carriage", "vehicle")
-LOADING_HINTS = ("loading", "load")
 
 
 def utc_now() -> str:
@@ -126,41 +132,17 @@ def decode_xml_candidates(raw: bytes | str | None) -> list[str]:
     return xml_candidates_from_json(parsed)
 
 
-def is_loading_element(element: ET.Element) -> bool:
-    name = local_name(element.tag).lower()
-    return name == "loading" or name.endswith("loading") or name in {"load", "trainload"}
+def parse_number(value: Any) -> float | None:
+    try:
+        number = float(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return number if 0 <= number <= 100 else None
 
 
-def has_coach_hint(element: ET.Element) -> bool:
-    for item in element.iter():
-        name = local_name(item.tag).lower()
-        if any(hint in name for hint in COACH_HINTS):
-            return True
-        for key in item.attrib:
-            low = str(key).lower()
-            if any(hint in low for hint in COACH_HINTS):
-                return True
-    return False
-
-
-def numeric_loading_values(element: ET.Element) -> list[float]:
-    values: list[float] = []
-    for item in element.iter():
-        name = local_name(item.tag).lower()
-        for key, raw in item.attrib.items():
-            low = str(key).lower()
-            if not any(hint in low for hint in LOADING_HINTS) and low not in {"value", "percentage", "percent", "count"}:
-                continue
-            try:
-                values.append(float(raw))
-            except (TypeError, ValueError):
-                pass
-        if item.text and ("loading" in name or name in {"value", "percentage", "percent", "count"}):
-            try:
-                values.append(float(item.text.strip()))
-            except (TypeError, ValueError):
-                pass
-    return values
+def child_nodes(element: ET.Element, name: str) -> list[ET.Element]:
+    target = name.lower()
+    return [item for item in element.iter() if item is not element and local_name(item.tag).lower() == target]
 
 
 @dataclass
@@ -170,19 +152,26 @@ class ProbeState:
     decode_failures: int = 0
     xml_documents: int = 0
     xml_parse_failures: int = 0
-    loading_messages: int = 0
-    loading_records: int = 0
-    coach_loading_records: int = 0
-    whole_train_loading_records: int = 0
-    numeric_loading_records: int = 0
-    numeric_values_seen: int = 0
     element_types: collections.Counter[str] = field(default_factory=collections.Counter)
     rid_to_toc: dict[str, str] = field(default_factory=dict)
     services_seen: set[str] = field(default_factory=set)
-    loading_services: set[str] = field(default_factory=set)
-    coach_loading_services: set[str] = field(default_factory=set)
-    loading_records_by_rid: collections.Counter[str] = field(default_factory=collections.Counter)
-    coach_records_by_rid: collections.Counter[str] = field(default_factory=collections.Counter)
+
+    formation_loading_messages: int = 0
+    formation_loading_records: int = 0
+    formation_numeric_values: int = 0
+    formation_loading_services: set[str] = field(default_factory=set)
+    formation_coach_services: set[str] = field(default_factory=set)
+    formation_records_by_rid: collections.Counter[str] = field(default_factory=collections.Counter)
+    formation_values_by_rid: collections.Counter[str] = field(default_factory=collections.Counter)
+
+    service_loading_messages: int = 0
+    service_loading_records: int = 0
+    service_loading_percentage_records: int = 0
+    service_loading_category_records: int = 0
+    service_loading_services: set[str] = field(default_factory=set)
+    service_loading_expected_services: set[str] = field(default_factory=set)
+    service_loading_typical_services: set[str] = field(default_factory=set)
+    service_records_by_rid: collections.Counter[str] = field(default_factory=collections.Counter)
 
     def observe_payload(self, raw: bytes | str | None) -> None:
         self.messages += 1
@@ -210,29 +199,63 @@ class ProbeState:
                 if toc:
                     self.rid_to_toc[rid] = safe_operator(toc)
 
-        loading_nodes = [node for node in root.iter() if is_loading_element(node)]
-        if not loading_nodes:
-            return
-        self.loading_messages += 1
-        for node in loading_nodes:
+        formation_nodes = [node for node in root.iter() if local_name(node.tag).lower() == "formationloading"]
+        service_nodes = [node for node in root.iter() if local_name(node.tag).lower() == "serviceloading"]
+        if formation_nodes:
+            self.formation_loading_messages += 1
+        if service_nodes:
+            self.service_loading_messages += 1
+
+        for node in formation_nodes:
             rid, toc = self._identity_for(node, parent)
-            self.loading_records += 1
-            coach = has_coach_hint(node)
-            values = numeric_loading_values(node)
-            if values:
-                self.numeric_loading_records += 1
-                self.numeric_values_seen += len(values)
-            if coach:
-                self.coach_loading_records += 1
-            else:
-                self.whole_train_loading_records += 1
+            self.formation_loading_records += 1
+            loads = child_nodes(node, "loading")
+            valid_values = 0
+            has_coach = False
+            for load in loads:
+                coach = first_attr(load, ("coachNumber", "coach", "carriage", "vehicle"))
+                if coach:
+                    has_coach = True
+                number = parse_number(load.text)
+                if number is None:
+                    for key in ("loading", "value", "percentage", "percent"):
+                        number = parse_number(load.attrib.get(key))
+                        if number is not None:
+                            break
+                if number is not None:
+                    valid_values += 1
+            self.formation_numeric_values += valid_values
             if rid:
                 self.services_seen.add(rid)
-                self.loading_services.add(rid)
-                self.loading_records_by_rid[rid] += 1
-                if coach:
-                    self.coach_loading_services.add(rid)
-                    self.coach_records_by_rid[rid] += 1
+                self.formation_loading_services.add(rid)
+                self.formation_records_by_rid[rid] += 1
+                self.formation_values_by_rid[rid] += valid_values
+                if has_coach:
+                    self.formation_coach_services.add(rid)
+                if toc:
+                    self.rid_to_toc[rid] = toc
+
+        for node in service_nodes:
+            rid, toc = self._identity_for(node, parent)
+            self.service_loading_records += 1
+            percentage_nodes = child_nodes(node, "loadingPercentage")
+            category_nodes = child_nodes(node, "loadingCategory")
+            self.service_loading_percentage_records += len(percentage_nodes)
+            self.service_loading_category_records += len(category_nodes)
+            kinds: set[str] = set()
+            for child in percentage_nodes + category_nodes:
+                kind = str(child.attrib.get("type") or "Typical").strip().lower()
+                kinds.add("expected" if kind == "expected" else "typical")
+            if not kinds:
+                kinds.add("typical")
+            if rid:
+                self.services_seen.add(rid)
+                self.service_loading_services.add(rid)
+                self.service_records_by_rid[rid] += 1
+                if "expected" in kinds:
+                    self.service_loading_expected_services.add(rid)
+                if "typical" in kinds:
+                    self.service_loading_typical_services.add(rid)
                 if toc:
                     self.rid_to_toc[rid] = toc
 
@@ -252,41 +275,60 @@ class ProbeState:
 
     def report(self, *, started_at: str, finished_at: str, sample_seconds: int) -> dict[str, Any]:
         service_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
-        loading_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
-        coach_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
-        record_groups: collections.Counter[str] = collections.Counter()
-        coach_record_groups: collections.Counter[str] = collections.Counter()
+        formation_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
+        formation_coach_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
+        service_loading_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
+        service_expected_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
+        service_typical_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
+        formation_record_groups: collections.Counter[str] = collections.Counter()
+        formation_value_groups: collections.Counter[str] = collections.Counter()
+        service_record_groups: collections.Counter[str] = collections.Counter()
 
         for rid in self.services_seen:
+            service_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+        for rid in self.formation_loading_services:
             operator = self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)
-            service_groups[operator].add(rid)
-        for rid in self.loading_services:
+            formation_groups[operator].add(rid)
+            formation_record_groups[operator] += self.formation_records_by_rid[rid]
+            formation_value_groups[operator] += self.formation_values_by_rid[rid]
+        for rid in self.formation_coach_services:
+            formation_coach_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+        for rid in self.service_loading_services:
             operator = self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)
-            loading_groups[operator].add(rid)
-            record_groups[operator] += self.loading_records_by_rid[rid]
-        for rid in self.coach_loading_services:
-            operator = self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)
-            coach_groups[operator].add(rid)
-            coach_record_groups[operator] += self.coach_records_by_rid[rid]
+            service_loading_groups[operator].add(rid)
+            service_record_groups[operator] += self.service_records_by_rid[rid]
+        for rid in self.service_loading_expected_services:
+            service_expected_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+        for rid in self.service_loading_typical_services:
+            service_typical_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
 
         operators: dict[str, Any] = {}
-        for operator in sorted(set(service_groups) | set(loading_groups)):
+        all_operators = set(service_groups) | set(formation_groups) | set(service_loading_groups)
+        for operator in sorted(all_operators):
             observed = len(service_groups[operator])
-            loaded = len(loading_groups[operator])
-            coach_loaded = len(coach_groups[operator])
+            formation = len(formation_groups[operator])
+            provider = len(service_loading_groups[operator])
+            any_loaded = len(formation_groups[operator] | service_loading_groups[operator])
             operators[operator] = {
                 "services_observed": observed,
-                "services_with_loading": loaded,
-                "sampled_service_loading_coverage": round(loaded / observed, 4) if observed else None,
-                "services_with_coach_loading": coach_loaded,
-                "coach_share_of_loaded_services": round(coach_loaded / loaded, 4) if loaded else None,
-                "loading_records": int(record_groups[operator]),
-                "coach_loading_records": int(coach_record_groups[operator]),
+                "services_with_any_loading": any_loaded,
+                "services_with_realtime_formation_loading": formation,
+                "realtime_formation_loading_coverage": round(formation / observed, 4) if observed else None,
+                "services_with_realtime_coach_loading": len(formation_coach_groups[operator]),
+                "realtime_formation_records": int(formation_record_groups[operator]),
+                "realtime_coach_values": int(formation_value_groups[operator]),
+                "services_with_provider_service_loading": provider,
+                "provider_service_loading_coverage": round(provider / observed, 4) if observed else None,
+                "provider_expected_services": len(service_expected_groups[operator]),
+                "provider_typical_services": len(service_typical_groups[operator]),
+                "provider_service_loading_records": int(service_record_groups[operator]),
             }
 
         observed = len(self.services_seen)
-        loaded = len(self.loading_services)
-        coach_loaded = len(self.coach_loading_services)
+        formation = len(self.formation_loading_services)
+        provider = len(self.service_loading_services)
+        any_loaded = len(self.formation_loading_services | self.service_loading_services)
+        coach = len(self.formation_coach_services)
         return {
             "schema_version": SCHEMA_VERSION,
             "probe": "darwin-passenger-loading-coverage",
@@ -308,19 +350,33 @@ class ProbeState:
                 "top_element_names": dict(self.element_types.most_common(20)),
             },
             "loading": {
-                "messages_with_loading": self.loading_messages,
-                "loading_records": self.loading_records,
-                "coach_loading_records": self.coach_loading_records,
-                "whole_train_loading_records": self.whole_train_loading_records,
-                "numeric_loading_records": self.numeric_loading_records,
-                "numeric_values_seen": self.numeric_values_seen,
                 "services_observed": observed,
-                "services_with_loading": loaded,
-                "sampled_service_loading_coverage": round(loaded / observed, 4) if observed else None,
-                "services_with_coach_loading": coach_loaded,
-                "coach_share_of_loaded_services": round(coach_loaded / loaded, 4) if loaded else None,
-                "denominator_note": "Coverage is distinct service RIDs observed in this sample window, not every train running on the network.",
+                "services_with_any_loading": any_loaded,
+                "services_with_loading": any_loaded,
+                "sampled_service_loading_coverage": round(any_loaded / observed, 4) if observed else None,
+                "services_with_coach_loading": coach,
                 "operators": operators,
+                "formation_loading": {
+                    "meaning": "real-time estimated percentage loading per coach for a specific service, formation and location",
+                    "messages": self.formation_loading_messages,
+                    "records": self.formation_loading_records,
+                    "numeric_coach_values": self.formation_numeric_values,
+                    "services": formation,
+                    "coverage": round(formation / observed, 4) if observed else None,
+                    "services_with_coach_values": coach,
+                },
+                "service_loading": {
+                    "meaning": "provider-supplied typical/expected whole-service loading; not live occupancy",
+                    "messages": self.service_loading_messages,
+                    "records": self.service_loading_records,
+                    "percentage_records": self.service_loading_percentage_records,
+                    "category_records": self.service_loading_category_records,
+                    "services": provider,
+                    "coverage": round(provider / observed, 4) if observed else None,
+                    "expected_services": len(self.service_loading_expected_services),
+                    "typical_services": len(self.service_loading_typical_services),
+                },
+                "denominator_note": "Coverage is distinct service RIDs observed in this sample window, not every train running on the network.",
             },
         }
 
@@ -393,16 +449,27 @@ def run_probe(seconds: int, output: Path) -> dict[str, Any]:
 
 def print_summary(report: dict[str, Any]) -> None:
     loading = report["loading"]
+    formation = loading["formation_loading"]
+    service = loading["service_loading"]
     print(f"Darwin loading probe: {report['messages']['kafka_messages']} Kafka messages")
     print(f"Services observed: {loading['services_observed']}")
-    print(f"Services with loading: {loading['services_with_loading']}")
-    print(f"Coach-level services: {loading['services_with_coach_loading']}")
-    print(f"Sampled loading coverage: {loading['sampled_service_loading_coverage']}")
+    print(
+        "Real-time formation loading: "
+        f"{formation['services']} services; coach-values={formation['services_with_coach_values']}; "
+        f"coverage={formation['coverage']}"
+    )
+    print(
+        "Provider service loading (not live occupancy): "
+        f"{service['services']} services; expected={service['expected_services']}; "
+        f"typical={service['typical_services']}; coverage={service['coverage']}"
+    )
     for operator, row in sorted(loading["operators"].items()):
-        print(
-            f"  {operator}: {row['services_with_loading']}/{row['services_observed']} loaded; "
-            f"coach={row['services_with_coach_loading']}"
-        )
+        if row["services_with_realtime_formation_loading"] or row["services_with_provider_service_loading"]:
+            print(
+                f"  {operator}: observed={row['services_observed']}; "
+                f"realtime={row['services_with_realtime_formation_loading']}; "
+                f"provider={row['services_with_provider_service_loading']}"
+            )
 
 
 def main() -> int:

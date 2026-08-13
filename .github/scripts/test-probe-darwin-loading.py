@@ -18,54 +18,89 @@ SPEC.loader.exec_module(probe)
 
 
 class DarwinLoadingProbeTests(unittest.TestCase):
-    def test_coach_loading_is_counted_by_operator_without_persisting_identity(self):
+    def test_formation_loading_is_realtime_coach_evidence_without_persisting_identity(self):
         xml = """<Pport xmlns='urn:test'>
           <uR>
             <TS rid='RID-A' toc='XC'/>
             <TS rid='RID-B' toc='VT'/>
-            <Loading rid='RID-A'>
-              <coach coachNumber='A' loading='71'/>
-              <coach coachNumber='B' loading='43'/>
-            </Loading>
+            <formationLoading rid='RID-A' tpl='GTWK'>
+              <loading coachNumber='A'>71</loading>
+              <loading coachNumber='B'>43</loading>
+            </formationLoading>
           </uR>
         </Pport>"""
         state = probe.ProbeState()
         state.observe_payload(xml)
         report = state.report(started_at="2026-08-13T00:00:00Z", finished_at="2026-08-13T00:08:00Z", sample_seconds=480)
         loading = report["loading"]
+        realtime = loading["formation_loading"]
+        provider = loading["service_loading"]
         self.assertEqual(loading["services_observed"], 2)
-        self.assertEqual(loading["services_with_loading"], 1)
-        self.assertEqual(loading["services_with_coach_loading"], 1)
-        self.assertEqual(loading["coach_loading_records"], 1)
-        self.assertEqual(loading["numeric_values_seen"], 2)
-        self.assertEqual(loading["operators"]["XC"]["services_with_loading"], 1)
-        self.assertEqual(loading["operators"]["VT"]["services_with_loading"], 0)
+        self.assertEqual(realtime["services"], 1)
+        self.assertEqual(realtime["services_with_coach_values"], 1)
+        self.assertEqual(realtime["numeric_coach_values"], 2)
+        self.assertEqual(provider["services"], 0)
+        self.assertEqual(loading["operators"]["XC"]["services_with_realtime_formation_loading"], 1)
+        self.assertEqual(loading["operators"]["XC"]["services_with_provider_service_loading"], 0)
+        self.assertEqual(loading["operators"]["VT"]["services_with_realtime_formation_loading"], 0)
         serialised = json.dumps(report)
         self.assertNotIn("RID-A", serialised)
         self.assertNotIn("RID-B", serialised)
         self.assertNotIn("71", serialised)
+        self.assertNotIn("43", serialised)
         self.assertFalse(report["privacy"]["raw_payloads_stored"])
         self.assertFalse(report["privacy"]["service_identifiers_stored"])
+        self.assertFalse(report["privacy"]["per_service_loading_values_stored"])
 
-    def test_whole_train_loading_and_unknown_operator_are_kept_as_aggregate(self):
-        xml = "<Pport><uR><TS rid='RID-C'/><Loading rid='RID-C' value='0.64'/></uR></Pport>"
+    def test_service_loading_is_provider_evidence_not_realtime(self):
+        xml = """<Pport>
+          <uR>
+            <TS rid='RID-C' toc='SE'/>
+            <serviceLoading rid='RID-C' tpl='CHX'>
+              <loadingPercentage type='Typical'>64</loadingPercentage>
+              <loadingCategory type='Expected'>Busy</loadingCategory>
+            </serviceLoading>
+          </uR>
+        </Pport>"""
         state = probe.ProbeState()
         state.observe_payload(xml.encode("utf-8"))
         report = state.report(started_at="a", finished_at="b", sample_seconds=60)
         loading = report["loading"]
-        self.assertEqual(loading["whole_train_loading_records"], 1)
-        self.assertEqual(loading["services_with_coach_loading"], 0)
-        self.assertEqual(loading["operators"][probe.UNKNOWN_OPERATOR]["services_with_loading"], 1)
+        realtime = loading["formation_loading"]
+        provider = loading["service_loading"]
+        self.assertEqual(realtime["services"], 0)
+        self.assertEqual(realtime["services_with_coach_values"], 0)
+        self.assertEqual(provider["services"], 1)
+        self.assertEqual(provider["percentage_records"], 1)
+        self.assertEqual(provider["category_records"], 1)
+        self.assertEqual(provider["expected_services"], 1)
+        self.assertEqual(provider["typical_services"], 1)
+        row = loading["operators"]["SE"]
+        self.assertEqual(row["services_with_realtime_formation_loading"], 0)
+        self.assertEqual(row["services_with_provider_service_loading"], 1)
+        serialised = json.dumps(report)
+        self.assertNotIn("RID-C", serialised)
+        self.assertNotIn("64", serialised)
 
-    def test_json_base64_gzip_envelope_is_unwrapped(self):
-        xml = b"<Pport><uR><TS rid='RID-D' toc='GR'/><Loading rid='RID-D'><coach id='1' loading='55'/></Loading></uR></Pport>"
+    def test_json_base64_gzip_envelope_is_unwrapped_for_formation_loading(self):
+        xml = b"<Pport><uR><TS rid='RID-D' toc='GR'/><formationLoading rid='RID-D' tpl='KGX'><loading coachNumber='1'>55</loading></formationLoading></uR></Pport>"
         packed = base64.b64encode(gzip.compress(xml)).decode("ascii")
         payload = json.dumps({"message": {"data": packed}}).encode("utf-8")
         state = probe.ProbeState()
         state.observe_payload(payload)
         report = state.report(started_at="a", finished_at="b", sample_seconds=60)
         self.assertEqual(report["messages"]["decode_failures"], 0)
-        self.assertEqual(report["loading"]["operators"]["GR"]["services_with_coach_loading"], 1)
+        self.assertEqual(report["loading"]["formation_loading"]["services"], 1)
+        self.assertEqual(report["loading"]["operators"]["GR"]["services_with_realtime_coach_loading"], 1)
+
+    def test_generic_loading_element_is_not_misclassified(self):
+        xml = "<Pport><uR><TS rid='RID-E' toc='GW'/><Loading rid='RID-E' value='72'/></uR></Pport>"
+        state = probe.ProbeState()
+        state.observe_payload(xml)
+        report = state.report(started_at="a", finished_at="b", sample_seconds=60)
+        self.assertEqual(report["loading"]["formation_loading"]["services"], 0)
+        self.assertEqual(report["loading"]["service_loading"]["services"], 0)
+        self.assertEqual(report["loading"]["services_with_any_loading"], 0)
 
     def test_non_xml_message_counts_as_decode_failure_without_crashing(self):
         state = probe.ProbeState()
@@ -73,7 +108,8 @@ class DarwinLoadingProbeTests(unittest.TestCase):
         report = state.report(started_at="a", finished_at="b", sample_seconds=60)
         self.assertEqual(report["messages"]["kafka_messages"], 1)
         self.assertEqual(report["messages"]["decode_failures"], 1)
-        self.assertEqual(report["loading"]["services_with_loading"], 0)
+        self.assertEqual(report["loading"]["formation_loading"]["services"], 0)
+        self.assertEqual(report["loading"]["service_loading"]["services"], 0)
 
 
 if __name__ == "__main__":
