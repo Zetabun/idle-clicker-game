@@ -1081,7 +1081,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.8.8';
+const APP_VERSION = '0.8.9';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -4858,6 +4858,65 @@ function uniqueOriginTrips(rows,identity){
   if(refs.length!==1) return {items:[],ref:'',ambiguous:true};
   return {items:matches,ref:refs[0],ambiguous:false};
 }
+/* Some national timetable feeds contain two trip ids for what is, at the
+   selected stand, the same physical working: same origin departure, same route
+   pattern, same call time, direction and destination. Exact trip identity is
+   still ambiguous, but that does not have to hide a uniquely identified live
+   bus. This helper deliberately accepts only that narrow case. Every candidate
+   must prove the exact selected ATCO stop and share one ordered pattern, and
+   there must be exactly one physical live vehicle matching the origin working.
+   It never chooses one of the duplicate trip ids. */
+function equivalentAmbiguousOriginMatch(rows,identity,dest,line,now=Date.now()){
+  if(!authoritativePatternStopRequired()||!identity||!S.stop) return null;
+  const liveDest=String(dest||'').trim();
+  if(!liveDest||!Number.isFinite(Number(identity.aimedOriginAt))) return null;
+  const matches=(Array.isArray(rows)?rows:[]).filter(row=>row&&row.trip&&originTimeMatches(row,identity));
+  const refs=[...new Set(matches.map(row=>String(row.trip||'')).filter(Boolean))];
+  if(refs.length<2||!matches.length) return null;
+  const first=matches[0],patternId=String(first.pattern||'').trim(),firstHead=String(first.head||'').trim();
+  const firstAt=Number(first.at),firstDirection=String(first.direction||'').trim();
+  const firstRoute=routeIdentityToken(first.routeId),firstOperator=routeIdentityToken(first.operator);
+  const firstServiceDate=String(first.serviceDate||''),firstSequence=Number(first.stopSequence);
+  if(!patternId||!firstHead||!Number.isFinite(firstAt)||destinationSimilarity(liveDest,firstHead)<.34) return null;
+  for(const row of matches){
+    if(String(row.pattern||'').trim()!==patternId) return null;
+    if(!Number.isFinite(Number(row.at))||Math.abs(Number(row.at)-firstAt)>60*1000) return null;
+    const head=String(row.head||'').trim();
+    if(!head||destinationSimilarity(liveDest,head)<.34||destinationSimilarity(firstHead,head)<.75) return null;
+    const direction=String(row.direction||'').trim();
+    if(firstDirection&&direction&&direction!==firstDirection) return null;
+    const route=routeIdentityToken(row.routeId);
+    if(firstRoute&&route&&route!==firstRoute) return null;
+    const operator=routeIdentityToken(row.operator);
+    if(comparableIdentity(firstOperator,operator,OPAQUE_AGENCY_ID)&&operator!==firstOperator) return null;
+    const serviceDate=String(row.serviceDate||'');
+    if(firstServiceDate&&serviceDate&&serviceDate!==firstServiceDate) return null;
+    const sequence=Number(row.stopSequence);
+    if(Number.isFinite(firstSequence)&&Number.isFinite(sequence)&&sequence!==firstSequence) return null;
+    const exact=exactTripSelectedStopEvidence(row.trip,row.pattern,S.stop,row.stopSequence);
+    if(!exact.authoritative||!exact.known||!exact.serves) return null;
+  }
+  const liveKeys=new Set();
+  for(const candidate of S.vehicles.values()){
+    if(!candidate||now-Number(candidate.ts)>MAX_AGE_MS) continue;
+    if(Number.isFinite(Number(candidate.validUntilAt))&&now>Number(candidate.validUntilAt)) continue;
+    if(String(candidate.line)!==String(line)) continue;
+    if(!originTimeMatches(first,candidate)) continue;
+    if(routeIdentityAgreement(first,candidate)<0) continue;
+    if(candidate.dest&&destinationSimilarity(candidate.dest,firstHead)<.34) continue;
+    const key=physicalVehicleKey(candidate)||String(candidate.id||'');
+    if(key) liveKeys.add(key);
+  }
+  const currentKey=physicalVehicleKey(identity)||String(identity.id||'');
+  if(!currentKey||liveKeys.size!==1||!liveKeys.has(currentKey)) return null;
+  return {items:matches,refs,patternId,at:firstAt,originAt:Number(first.originAt)};
+}
+function equivalentOriginSchedulesForVehicle(v,now=Date.now()){
+  if(!v) return [];
+  const line=String(v.line||''),identityInfo=timetableIdentityRows(timetableRowsForLine(line,new Date(now)),v);
+  const match=equivalentAmbiguousOriginMatch(identityInfo.rows,v,v.dest,line,now);
+  return match?match.items:[];
+}
 function journeyDestinationAgreement(rows,dest){
   const live=String(dest||'').trim();
   const heads=[...new Set((Array.isArray(rows)?rows:[]).map(row=>String(row&&row.head||'').trim()).filter(Boolean))];
@@ -4962,6 +5021,15 @@ function routeEvidence(line,dest,journey,identity){
       };
     }
     journeyDestinationConflict=true; conflictingTrip=String(originMatch.ref||conflictingTrip||'');
+  }
+  const equivalentOrigin=originMatch.ambiguous?equivalentAmbiguousOriginMatch(ttRows,identity,dest,l):null;
+  if(equivalentOrigin){
+    return {
+      score:4,label:'origin departure matches duplicate-equivalent timetable journeys',
+      journeyMatch:false,pathMatch:false,matchStrength:0,matchedTrip:'',originMatch:true,
+      originEquivalentAmbiguous:true,patternId:equivalentOrigin.patternId,
+      routeIdentityMatch:identityInfo.strong,timetableVerified:true
+    };
   }
   const tt=timetableRouteSet();
   if(tt.has(l)){
@@ -5098,7 +5166,11 @@ function estimate(v, stop, evidenceOverride, geometryOverride){
   const evidence=evidenceOverride||routeEvidence(v.line,v.dest,baseJourneyRef,v);
   const journeyRef=evidence&&evidence.journeyDestinationConflict?'':(evidence.matchedTrip||baseJourneyRef);
   const strength=approachStrength(v,stop);
-  const scheduleLookup=scheduledMatches(v.line,v.dest,spatial,journeyRef);
+  const equivalentSchedules=evidence&&evidence.originEquivalentAmbiguous?equivalentOriginSchedulesForVehicle(v):[];
+  const scheduleTarget=Date.now()+Math.max(0,Number(spatial)||0)*1000;
+  const scheduleLookup=equivalentSchedules.length
+    ? {items:[...equivalentSchedules].sort((a,b)=>Math.abs(Number(a.at)-scheduleTarget)-Math.abs(Number(b.at)-scheduleTarget)),tripMatched:false}
+    : scheduledMatches(v.line,v.dest,spatial,journeyRef);
   const schedules=scheduleLookup.items;
   /* Two separate questions. matchedSchedule: is this the same departure as that
      timetable row? Journey identity answers that, and the answer holds however
@@ -5744,9 +5816,17 @@ function relevant(){
 }
 function setVehicleProgressIdentity(v,evidence,inference,matchedRow){
   if(!v) return;
+  const equivalentPattern=String(evidence&&evidence.originEquivalentAmbiguous&&evidence.patternId||'');
   const inferredPattern=String(inference&&inference.patternId||'');
   const conflict=!!(evidence&&evidence.journeyDestinationConflict&&!evidence.matchedRealtime);
-  v.progressIdentityBlocked=conflict&&!inferredPattern;
+  v.progressIdentityBlocked=conflict&&!inferredPattern&&!equivalentPattern;
+  if(equivalentPattern){
+    v.progressIdentityBlocked=false;
+    v.progressTrip='';
+    v.progressPattern=equivalentPattern;
+    v.progressStopSequence=null;
+    return;
+  }
   if(inferredPattern){
     v.progressTrip='';
     v.progressPattern=inferredPattern;
@@ -5778,7 +5858,7 @@ function collect(gate,diagnostics){
     const d=dist(v.lat,v.lon,S.stop.lat,S.stop.lon), far=d>MAX_VEH_DIST;
     const journeyRef=vehicleJourneyRef(v);
     let evidence=routeEvidence(v.line,v.dest,journeyRef,v);
-    const inference=!evidence.journeyMatch?inferVehicleJourneyPattern(v,S.stop,now):null;
+    const inference=!evidence.journeyMatch&&!evidence.originEquivalentAmbiguous?inferVehicleJourneyPattern(v,S.stop,now):null;
     evidence=inferredRouteEvidence(evidence,inference);
     let matchedRows=evidence.matchedTrip?matchedServiceInstanceRows(
       timetableRowsForLine(v.line,new Date()).filter(row=>String(row.trip)===String(evidence.matchedTrip)),v
@@ -5896,7 +5976,7 @@ function collect(gate,diagnostics){
     const recovered=!!(continuityBacked || ((trustedJourney || scheduleBacked) && (strength<0 || directionDisagreed || est.confidence==='low')));
     if(recovered && diagnostics) diagnostics.recovered++;
     const match=geometry?(evidence.inferredJourney?'GPS route inference':'journey path'):evidence.matchedRealtime?'BODS matched journey':evidence.journeyMatch?(evidence.matchStrength===4?'exact journey':'unique journey alias'):scheduleBacked?'timetable linked':'route evidence';
-    if(est.schedule&&!v.progressIdentityBlocked){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
+    if(est.schedule&&!v.progressIdentityBlocked&&!evidence.originEquivalentAmbiguous){ v.progressTrip=est.schedule.trip||v.progressTrip; v.progressPattern=String(est.schedule.pattern||v.progressPattern||''); }
     const shownDir=gpsMoveDir!=='unknown'?gpsMoveDir:scheduledDir!=='unknown'?scheduledDir:dir;
     /* Where a bus is going is its own destination, not the town it happens to
        be leaving. Calling a Halesowen service "out of Birmingham" names the
@@ -6209,16 +6289,22 @@ function exactIdentityScheduleClaim(row){
 // Identity claims the timetable row, not timing. A live bus running well off
 // its scheduled time is still that departure and must not also be listed as a
 // separate scheduled row.
-function claimedScheduleFor(row){
-  if(!row) return null;
-  if(row.gpsLost&&!row.scheduleFallback) return null;
-  return row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;
+function claimedSchedulesFor(row){
+  if(!row) return [];
+  if(row.gpsLost&&!row.scheduleFallback) return [];
+  if(row.evidence&&row.evidence.originEquivalentAmbiguous&&row.v){
+    const equivalent=equivalentOriginSchedulesForVehicle(row.v);
+    if(equivalent.length) return equivalent;
+  }
+  const claimed=row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;
+  return claimed?[claimed]:[];
 }
-function scheduleClaimedByLive(row){ return !!claimedScheduleFor(row); }
+function claimedScheduleFor(row){ return claimedSchedulesFor(row)[0]||null; }
+function scheduleClaimedByLive(row){ return claimedSchedulesFor(row).length>0; }
 function scheduledBoardRows(liveRows){
   if(!S.ttStop){ S.scheduledHidden=0; return []; }
   const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set(), evidenceCache=new Map();
-  liveRows.forEach(r=>{ const s=claimedScheduleFor(r); if(s) claimed.add(scheduleKey(s)); });
+  liveRows.forEach(r=>{ for(const s of claimedSchedulesFor(r)) claimed.add(scheduleKey(s)); });
   const eligible=timetableRows(new Date(now)).filter(r=>{
     if(r.at<now || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
