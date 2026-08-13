@@ -1,0 +1,79 @@
+name: Apply Kerbside 0.8.7 live loading
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - .github/scripts/apply-kerbside-0.8.7-live-loading.py
+      - .github/workflows/apply-kerbside-0.8.7-live-loading.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-0.8.7-live-loading-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out staging branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply guarded patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/scripts/apply-kerbside-0.8.7-live-loading.py
+          python3 .github/scripts/apply-kerbside-0.8.7-live-loading.py
+          python3 .github/scripts/sync-version.py --check
+          git diff --check
+
+      - name: Run focused loading regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check kerbside-train-loading.js
+          node --check kerbside-trains.js
+          node --check kerbside-train-timetable.js
+          node --test kerbside-backend/test/train-live-loading.test.mjs
+          node .github/scripts/test-probe-darwin-loading.py >/dev/null 2>&1 || python3 .github/scripts/test-probe-darwin-loading.py
+          python3 .github/scripts/test-summarize-darwin-loading.py
+
+      - name: Validate backend unit suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+          rm -rf kerbside-backend/node_modules
+          git diff --check
+
+      - name: Publish staged application commit
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION bus.html kerbside-trains.js kerbside-train-timetable.js kerbside-trains.css kerbside-backend
+          if git diff --cached --quiet; then
+            echo 'Application patch is already staged on this branch.'
+            exit 0
+          fi
+          git commit -m 'Stage Kerbside 0.8.7 live train loading'
+          git push origin "HEAD:$BRANCH"
