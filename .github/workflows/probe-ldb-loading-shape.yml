@@ -1,0 +1,55 @@
+name: Probe LDB loading shape
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/probe-ldb-loading-shape.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public Kerbside rail response shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, subprocess
+
+          stations = ['CHX','MYB','LBG','VIC','LST','BHM','EUS','KGX','PAD']
+          summaries = []
+          for crs in stations:
+              url = f'https://kerbside-rail.adambullas.workers.dev/departures/{crs}/9?expand=true&shape=1'
+              try:
+                  body = subprocess.check_output(['curl','--fail','--silent','--show-error','--max-time','20',url], text=True)
+                  data = json.loads(body)
+              except Exception as exc:
+                  summaries.append({'crs': crs, 'error': type(exc).__name__})
+                  continue
+              services = data.get('trainServices') or []
+              matches = []
+              def walk(value, path=''):
+                  if isinstance(value, dict):
+                      for key, child in value.items():
+                          child_path = f'{path}.{key}' if path else key
+                          low = str(key).lower()
+                          if 'formation' in low or 'loading' in low or 'coach' in low:
+                              matches.append((child_path, type(child).__name__))
+                          walk(child, child_path)
+                  elif isinstance(value, list):
+                      for child in value[:20]:
+                          walk(child, path + '[]')
+              for service in services:
+                  walk(service)
+              summaries.append({
+                  'crs': crs,
+                  'services': len(services),
+                  'loading_shape_paths': sorted(set(matches)),
+              })
+          print(json.dumps(summaries, indent=2))
+          PY
