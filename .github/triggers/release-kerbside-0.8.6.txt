@@ -1,0 +1,10 @@
+Kerbside 0.8.6 Trusted Connections
+
+Guarded release objectives:
+- preserve the 0.8.5 timetable/live-overlay/Forecast v4 architecture;
+- accept authoritative station minimum-connection data only when explicitly supplied with provenance;
+- keep conservative Kerbside topology minima as the honest default;
+- distinguish connection-time provenance from live evidence on both trains;
+- make a recovery service actionable with Use this backup;
+- add on-device Journey Watch that follows an adopted recovery while Kerbside is open;
+- pass existing unit, WebKit and Chromium regression gates before main.
