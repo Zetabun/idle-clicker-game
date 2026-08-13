@@ -1,3 +1,0 @@
-Kerbside 0.8.6 Trusted Connections regression follow-up.
-
-Replace the one stale browser assertion that still expects the pre-0.8.6 connection-evidence wording. This is test-only; runtime behaviour and VERSION remain unchanged.
