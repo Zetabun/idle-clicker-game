@@ -9,6 +9,7 @@ on:
       - .github/scripts/probe-darwin-loading.py
       - .github/scripts/test-probe-darwin-loading.py
       - .github/scripts/summarize-darwin-loading.py
+      - .github/scripts/test-summarize-darwin-loading.py
       - docs/darwin-loading-probe.md
   push:
     branches:
@@ -18,6 +19,7 @@ on:
       - .github/scripts/probe-darwin-loading.py
       - .github/scripts/test-probe-darwin-loading.py
       - .github/scripts/summarize-darwin-loading.py
+      - .github/scripts/test-summarize-darwin-loading.py
       - docs/darwin-loading-probe.md
   schedule:
     # Offset from the top of the hour because GitHub's scheduled queue is
@@ -56,9 +58,12 @@ jobs:
         run: |
           set -euo pipefail
           python .github/scripts/test-probe-darwin-loading.py
+          python .github/scripts/test-summarize-darwin-loading.py
           python -m py_compile \
             .github/scripts/probe-darwin-loading.py \
-            .github/scripts/summarize-darwin-loading.py
+            .github/scripts/summarize-darwin-loading.py \
+            .github/scripts/test-probe-darwin-loading.py \
+            .github/scripts/test-summarize-darwin-loading.py
 
   live-probe:
     if: github.event_name != 'pull_request'
