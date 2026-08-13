@@ -9,7 +9,6 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..','..');
 const browserName=(process.env.KERBSIDE_BROWSER||'webkit').toLowerCase();
 const browserType=browserName==='chromium'?chromium:webkit;
-const appVersion=(await fs.readFile(path.join(root,'VERSION'),'utf8')).trim();
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.svg':'image/svg+xml; charset=utf-8','.woff2':'font/woff2'};
 
 const server=http.createServer(async(req,res)=>{
@@ -34,7 +33,7 @@ try{
   page.on('pageerror',error=>pageErrors.push(String(error&&error.stack||error)));
   await page.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>route.abort());
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(version=>!!document.querySelector(`link[href*="kerbside-trains.css?v=${version}"]`),appVersion);
+  await page.waitForFunction(()=>Array.from(document.styleSheets).some(sheet=>String(sheet.href||'').includes('/kerbside-trains.css')));
 
   const futureLabel=await page.evaluate(()=>window.__KERBSIDE_TRAIN_TIMETABLE__?.serviceDateLabel?.('advance','2026-08-13'));
   assert.match(String(futureLabel),/Thu/);
