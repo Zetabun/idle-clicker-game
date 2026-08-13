@@ -49,7 +49,7 @@ jobs:
           node --check kerbside-trains.js
           node --check kerbside-train-timetable.js
           node --test kerbside-backend/test/train-live-loading.test.mjs
-          node .github/scripts/test-probe-darwin-loading.py >/dev/null 2>&1 || python3 .github/scripts/test-probe-darwin-loading.py
+          python3 .github/scripts/test-probe-darwin-loading.py
           python3 .github/scripts/test-summarize-darwin-loading.py
 
       - name: Validate backend unit suite
