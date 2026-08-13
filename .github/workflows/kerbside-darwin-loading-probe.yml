@@ -137,7 +137,8 @@ jobs:
             darwin-loading-report.json --markdown >> "$GITHUB_STEP_SUMMARY"
           {
             echo
-            echo '> Coverage is the proportion of distinct service RIDs observed in this sample that also emitted loading evidence. It is not the proportion of every train running on the network.'
+            echo '> `formationLoading` is real-time per-coach Darwin evidence. `serviceLoading` is provider typical/expected evidence and is not live occupancy.'
+            echo '> Coverage is the proportion of distinct service RIDs observed in this sample. Missing loading never means a train is quiet.'
             echo '> No raw Darwin messages, RIDs, train IDs, station IDs or per-service loading values are stored in the artifact.'
           } >> "$GITHUB_STEP_SUMMARY"
 
