@@ -12,7 +12,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Inspect public Kerbside rail response shape
         shell: bash
@@ -21,35 +21,67 @@ jobs:
           python - <<'PY'
           import json, subprocess
 
-          stations = ['CHX','MYB','LBG','VIC','LST','BHM','EUS','KGX','PAD']
-          summaries = []
+          stations = [
+              'CHX','MYB','LBG','VIC','LST','BHM','EUS','KGX','PAD','WAT',
+              'MAN','LDS','BRI','CDF','GLC','EDB','NCL','RDG','CLJ','GTW','CBG','NOT'
+          ]
+          totals = {'boards': 0, 'services': 0, 'formations': 0, 'coaches': 0, 'loading_specified_true': 0}
+          formation_keys, coach_keys, true_loading_keys = set(), set(), set()
+          board_rows = []
+
+          def inspect_formation(formation):
+              if not isinstance(formation, dict):
+                  return
+              totals['formations'] += 1
+              formation_keys.update(map(str, formation.keys()))
+              coaches = formation.get('coaches') or []
+              if not isinstance(coaches, list):
+                  return
+              for coach in coaches:
+                  if not isinstance(coach, dict):
+                      continue
+                  totals['coaches'] += 1
+                  coach_keys.update(map(str, coach.keys()))
+                  if coach.get('loadingSpecified') is True:
+                      totals['loading_specified_true'] += 1
+                      true_loading_keys.update(map(str, coach.keys()))
+
           for crs in stations:
-              url = f'https://kerbside-rail.adambullas.workers.dev/departures/{crs}/9?expand=true&shape=1'
+              url = f'https://kerbside-rail.adambullas.workers.dev/departures/{crs}/9?expand=true&shape=2'
               try:
                   body = subprocess.check_output(['curl','--fail','--silent','--show-error','--max-time','20',url], text=True)
                   data = json.loads(body)
               except Exception as exc:
-                  summaries.append({'crs': crs, 'error': type(exc).__name__})
+                  board_rows.append({'crs': crs, 'error': type(exc).__name__})
                   continue
+              totals['boards'] += 1
               services = data.get('trainServices') or []
-              matches = []
-              def walk(value, path=''):
-                  if isinstance(value, dict):
-                      for key, child in value.items():
-                          child_path = f'{path}.{key}' if path else key
-                          low = str(key).lower()
-                          if 'formation' in low or 'loading' in low or 'coach' in low:
-                              matches.append((child_path, type(child).__name__))
-                          walk(child, child_path)
-                  elif isinstance(value, list):
-                      for child in value[:20]:
-                          walk(child, path + '[]')
+              totals['services'] += len(services)
+              before_formations = totals['formations']
+              before_true = totals['loading_specified_true']
               for service in services:
-                  walk(service)
-              summaries.append({
+                  if not isinstance(service, dict):
+                      continue
+                  inspect_formation(service.get('formation'))
+                  for group_name in ('previousCallingPoints','subsequentCallingPoints'):
+                      for group in service.get(group_name) or []:
+                          if not isinstance(group, dict):
+                              continue
+                          for point in group.get('callingPoint') or []:
+                              if isinstance(point, dict):
+                                  inspect_formation(point.get('formation'))
+              board_rows.append({
                   'crs': crs,
                   'services': len(services),
-                  'loading_shape_paths': sorted(set(matches)),
+                  'formations': totals['formations'] - before_formations,
+                  'coaches_with_loading_specified_true': totals['loading_specified_true'] - before_true,
               })
-          print(json.dumps(summaries, indent=2))
+
+          print(json.dumps({
+              'totals': totals,
+              'formation_keys': sorted(formation_keys),
+              'coach_keys': sorted(coach_keys),
+              'keys_when_loading_specified_true': sorted(true_loading_keys),
+              'boards': board_rows,
+          }, indent=2))
           PY
