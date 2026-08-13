@@ -328,12 +328,33 @@ function forecast(service,index,services,context={}){
 
   let score=Number(base.score);if(!Number.isFinite(score))score=1.8;
   score=clamp(score+calendar.amount+events.amount+displacement.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount+routeFlow.amount+operatorCrowding.amount+peakCapacity.amount+pattern.amount,.25,5);
-  const reasons=unique([
-    ...(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),
-    ...shape.reasons,...events.reasons,...displacement.reasons,...live.reasons,...formation.reasons,
-    ...operatorCrowding.reasons,...peakCapacity.reasons,...routeFlow.reasons,...pattern.reasons,
-    ...serviceClass.reasons,...school.reasons,...offpeak.reasons,...shapeCal.reasons,...calendar.reasons,...scale.reasons
-  ]).slice(0,6);
+  /* Each signal already knows which way it pushed the score, so a reason can
+     carry its own direction instead of the reader inferring it from wording.
+     Tagged at the one place the signals are merged: the sign of the owning
+     signal's amount is the direction, and the first source to mention a reason
+     owns it. base.reasons describe the profile itself rather than a push in
+     either direction, so they stay neutral. */
+  const reasonSources=[
+    [(base.reasons||[]).filter(r=>!/passenger feedback|local feedback|reported crowding/i.test(r)),0],
+    [shape.reasons,shape.amount],[events.reasons,events.amount],[displacement.reasons,displacement.amount],
+    [live.reasons,live.amount],[formation.reasons,formation.amount],
+    [operatorCrowding.reasons,operatorCrowding.amount],[peakCapacity.reasons,peakCapacity.amount],
+    [routeFlow.reasons,routeFlow.amount],[pattern.reasons,pattern.amount],
+    [serviceClass.reasons,serviceClass.amount],[school.reasons,school.amount],[offpeak.reasons,offpeak.amount],
+    [shapeCal.reasons,shapeCal.amount],[calendar.reasons,calendar.amount],[scale.reasons,scale.amount]
+  ];
+  const reasonDetail=[],reasonSeen=new Set();
+  reasonSources.forEach(pair=>{
+    const list=Array.isArray(pair[0])?pair[0]:[];
+    list.forEach(entry=>{
+      const text=String(entry==null?'':entry).trim();
+      if(!text||reasonSeen.has(text))return;
+      reasonSeen.add(text);
+      reasonDetail.push({text,direction:reasonDirection(pair[1])});
+    });
+  });
+  reasonDetail.length=Math.min(reasonDetail.length,6);
+  const reasons=reasonDetail.map(item=>item.text);
   const calibrated=!!(scale.reasons.length&&calibration()&&calibration().profileFor&&calibration().profileFor(station));
   const historySamples=Math.max(Number(base.historySamples)||0,Number(historical.samples)||0);
   const historyEvidence=historySamples>=3?1:(historySamples?0.5:0);
@@ -342,18 +363,38 @@ function forecast(service,index,services,context={}){
   const cal=calibration();
   let calibrationNote='';
   if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,minute,date)||'';}catch(error){calibrationNote='';}}
-  return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,accuracyBucket,empiricalAccuracy:confidenceInfo.local};
+  return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],reasonDetail:reasonDetail.length?reasonDetail:[{text:'service time and route demand baseline',direction:'flat'}],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,accuracyBucket,empiricalAccuracy:confidenceInfo.local};
 }
 /* options.mode overrides the Planning / Live-adjusted badge and options.note
    appends a sentence to the method line, so the scheduled timetable board can
    render this exact card with its own framing instead of maintaining a second
    copy that drifts out of step. */
-function detailMarkup(result,date,options={}){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted'),meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v4 · ${mode}`;const items=reasons.map(reason=>`<li>${esc(reason)}</li>`).join('');const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const method=options.note?`${base} ${options.note}`:base;const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';
+/* .15 is the smallest amount any signal contributes, so anything below it is
+   rounding rather than a real push either way. */
+function reasonDirection(amount){
+  const value=Number(amount)||0;
+  if(value>=.15)return 'up';
+  if(value<=-.15)return 'down';
+  return 'flat';
+}
+function detailMarkup(result,date,options={}){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted'),meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v4 · ${mode}`;const detailReasons=Array.isArray(result.reasonDetail)&&result.reasonDetail.length?result.reasonDetail:(result.reasons||[]).map(text=>({text,direction:'flat'}));const flagLabel={up:'Busier',down:'Quieter',flat:'Context'};const items=detailReasons.map(entry=>{const text=sentence(entry&&entry.text);if(!text)return '';const direction=entry&&flagLabel[entry.direction]?entry.direction:'flat';return `<li class="reason-${direction}"><span class="train-forecast-flag">${flagLabel[direction]}</span><span class="train-forecast-reason-text">${esc(text)}</span></li>`;}).filter(Boolean).join('');const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const method=options.note?`${base} ${options.note}`:base;const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';
 /* The measured anchor. Without it "Busy" is a vibe; with it the user can see
    what the counted network actually looks like at this time of day. */
 const calibrationMarkup=result.calibrationNote
   ?`<div class="train-forecast-calibration"><span>Measured baseline</span><b>${esc(result.calibrationNote)}</b>${result.calibrationSource?`<i>${esc(result.calibrationSource)}</i>`:''}</div>`
-  :'';const p=result.probabilities||null,probabilityMarkup=p?`<div class="train-forecast-probabilities"><span>Probability</span><b>${[['Quiet',p.quiet],['Moderate',p.moderate],['Busy',p.busy],['Very busy',p.veryBusy]].map(([label,value])=>`${label} ${Math.round((Number(value)||0)*100)}%`).join(' · ')}</b></div>`:'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><div class="train-forecast-method">${esc(method)}</div>${calibrationMarkup}${probabilityMarkup}${historyMarkup}`;}
+  :'';/* Four numbers that exist to be compared against each other read badly as a
+   sentence. Drawn as one bar they are a shape you can take in at a glance,
+   and the crowd-* classes already carry the band colour in both themes. */
+const p=result.probabilities||null;
+const bands=p?[['quiet','Quiet',p.quiet],['moderate','Moderate',p.moderate],['busy','Busy',p.busy],['very-busy','Very busy',p.veryBusy]].map(([key,label,value])=>({key,label,percent:Math.round((Number(value)||0)*100)})):[];
+const probabilityMarkup=bands.length
+  ?`<div class="train-forecast-probabilities"><span>Probability</span>`
+    +`<div class="train-forecast-bar" role="img" aria-label="${esc(bands.map(band=>`${band.label} ${band.percent}%`).join(', '))}">`
+    +bands.filter(band=>band.percent>0).map(band=>`<span class="crowd-${band.key}" style="flex:${band.percent} 1 0"><i></i></span>`).join('')
+    +`</div><div class="train-forecast-legend">`
+    +bands.map(band=>`<span class="crowd-${band.key}"><i></i>${esc(band.label)} <b>${band.percent}%</b></span>`).join('')
+    +`</div></div>`
+  :'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><details class="train-forecast-method"><summary>How this is worked out</summary><p>${esc(method)}</p></details>${calibrationMarkup}${probabilityMarkup}${historyMarkup}`;}
 /* Every write below is compared first. The board is watched by a
    MutationObserver that calls back into apply(), and re-assigning identical
    text or innerHTML still counts as a mutation - so unguarded writes kept a
