@@ -866,9 +866,9 @@ function renderAlerts(messages){
 
 function forecastFor(service,index){
   const context={station:state.station,referenceDate:referenceDateFromBoard(),messages:state.board&&state.board.nrccMessages};
-  const v4=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__;
-  if(v4&&typeof v4.forecast==='function')return v4.forecast(service,index,state.services,context);
-  return crowdingForecast(service,index,state.services,context);
+  const v4=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__,loading=window.__KERBSIDE_TRAIN_LOADING__;
+  const base=v4&&typeof v4.forecast==='function'?v4.forecast(service,index,state.services,context):crowdingForecast(service,index,state.services,context);
+  return loading&&typeof loading.applyToForecast==='function'?loading.applyToForecast(base,service):base;
 }
 
 function renderBoard(){
@@ -914,7 +914,7 @@ function renderBoard(){
       <button class="train-service-summary" type="button" data-service-toggle="${esc(key)}" aria-expanded="${detailOpen?'true':'false'}">
         <span class="train-time"><b>${esc(service.std || '—')}</b><small>${esc(status.label)}</small></span>
         <span class="train-route"><strong>${esc(destinationText(service))}</strong><small>${esc(service.operator || 'Operator unavailable')} · ${platform}</small></span>
-        <span class="train-crowding crowd-${esc(forecast.level)}" title="${esc(reasonTitle)}"><i></i><b>${esc(forecast.label)}</b><small>${esc(forecast.confidence)} confidence</small></span>
+        <span class="train-crowding crowd-${esc(forecast.level)}" title="${esc(reasonTitle)}"><i></i><b>${esc(forecast.label)}</b><small>${esc(forecast.evidenceLabel||`${forecast.confidence} confidence`)}</small></span>
         <span class="train-formation"><b>${esc(coachText)}</b><small>train length</small></span>
         <span class="train-chevron" aria-hidden="true">⌄</span>
       </button>
@@ -977,6 +977,9 @@ function renderServiceDetail(service,index,forecast,detail){
   const accuracy=forecastAccuracySummary();
   const accuracyText=accuracy.total?`Local Forecast v4 validation: ${Math.round(accuracy.exact*100)}% exact · ${Math.round(accuracy.withinOne*100)}% within one band · ${accuracy.total} report${accuracy.total===1?'':'s'}.`:'Local Forecast v4 validation starts after you record actual crowding.';
   const modelLabel=Number(forecast.modelVersion)>=4?'Forecast v4':Number(forecast.modelVersion)>=3?'Forecast v3':`model v${MODEL_VERSION}`;
+  const loadingApi=window.__KERBSIDE_TRAIN_LOADING__,liveLoading=forecast&&forecast.liveLoading;
+  const evidenceMeta=liveLoading?(forecast.evidenceLabel||'Live train-loading evidence'):`${forecast.confidence} confidence · ${modelLabel}`;
+  const methodText=liveLoading?'Darwin operator-supplied estimated coach loading is available for this train, so it takes priority over Forecast v4 for the displayed crowding band. It is not a physical passenger count or ticket-sales figure.':'Kerbside does not use ticket sales, seat reservations or live carriage occupancy, so it deliberately avoids an exact percentage.';
   const feedbackButtons = Object.keys(FEEDBACK_LABEL).map(level=>
     `<button type="button" data-crowd-feedback="${esc(level)}" data-service-id="${esc(key)}"${recorded?' disabled':''}>${esc(FEEDBACK_LABEL[level])}</button>`
   ).join('');
@@ -987,10 +990,11 @@ function renderServiceDetail(service,index,forecast,detail){
       <div><span>Formation</span><b>${length ? `${length} coaches` : 'Not reported'}</b></div>
     </div>
     <div class="train-crowding-explain crowd-${esc(forecast.level)}">
-      <div><i></i><strong>${esc(forecast.label)}</strong><span>${esc(forecast.confidence)} confidence · ${esc(modelLabel)}</span></div>
-      <p>Why: ${esc(forecast.reasons.join(', '))}. Kerbside does not use ticket sales, seat reservations or live carriage occupancy, so it deliberately avoids an exact percentage.</p>
+      <div><i></i><strong>${esc(forecast.label)}</strong><span>${esc(evidenceMeta)}</span></div>
+      <p>Why: ${esc(forecast.reasons.join(', '))}. ${esc(methodText)}</p>
       <p>${esc(learningText)}</p>
     </div>
+    ${liveLoading&&loadingApi&&typeof loadingApi.coachMarkup==='function'?loadingApi.coachMarkup(forecast):''}
     <div class="train-model-card">
       <span class="train-model-label">Record actual crowding</span>
       <strong>What was the train actually like?</strong>
