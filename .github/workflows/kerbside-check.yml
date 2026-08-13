@@ -212,7 +212,7 @@ jobs:
           ]
           missing = [block.splitlines()[0] for block in required if block not in source]
           if missing:
-            raise SystemExit(f'Missing immutable timetable cache policies: {missing}')
+              raise SystemExit(f'Missing immutable timetable cache policies: {missing}')
           print('Validated versioned departure and pattern cache policies.')
           PY
 
