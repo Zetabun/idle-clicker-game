@@ -1,4 +1,4 @@
-name: Diagnose Kerbside 0.8.8 WebKit
+name: Validate Kerbside
 
 on:
   pull_request:
@@ -7,79 +7,237 @@ on:
     paths:
       - VERSION
       - bus.html
-      - kerbside-train-loading-guidance.js
+      - kerbside-trains.js
+      - kerbside-trains.css
+      - kerbside-train-routes.js
+      - build-timetable.js
       - kerbside-backend/**
+      - .github/scripts/sync-version.py
+      - .github/scripts/build-disruptions.py
+      - .github/workflows/build-kerbside-national.yml
+      - .github/workflows/deploy-kerbside-worker.yml
+      - .github/workflows/deploy-kerbside-accuracy-hardening.yml
+      - .github/workflows/deploy-kerbside-stop-side-hardening.yml
+      - .github/workflows/deploy-kerbside-journey-identity-hardening.yml
+      - .github/workflows/deploy-kerbside-reliability-hardening.yml
+      - .github/workflows/kerbside-disruptions.yml
       - .github/workflows/kerbside-check.yml
+      - .github/workflows/kerbside-release.yml
+      - .github/workflows/verify-kerbside-production.yml
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
+      - bus.html
+      - kerbside-trains.js
+      - kerbside-trains.css
+      - kerbside-train-routes.js
+      - build-timetable.js
+      - kerbside-backend/**
+      - .github/scripts/sync-version.py
+      - .github/scripts/build-disruptions.py
+      - .github/workflows/build-kerbside-national.yml
+      - .github/workflows/deploy-kerbside-worker.yml
+      - .github/workflows/deploy-kerbside-accuracy-hardening.yml
+      - .github/workflows/deploy-kerbside-stop-side-hardening.yml
+      - .github/workflows/deploy-kerbside-journey-identity-hardening.yml
+      - .github/workflows/deploy-kerbside-reliability-hardening.yml
+      - .github/workflows/kerbside-disruptions.yml
+      - .github/workflows/kerbside-check.yml
+      - .github/workflows/kerbside-release.yml
+      - .github/workflows/verify-kerbside-production.yml
 
 permissions:
   contents: read
 
 concurrency:
-  group: kerbside-088-diagnose-${{ github.event.pull_request.number }}
+  group: kerbside-check-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  diagnose:
+  check:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '24'
 
-      - name: Install browser dependencies
+      - name: Install browser test dependencies
         shell: bash
         run: |
           set -euo pipefail
           npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
           npm run vendor:leaflet --prefix kerbside-backend
+          if git ls-files --error-unmatch kerbside-backend/vendor/leaflet/leaflet.js >/dev/null 2>&1; then
+            git diff --exit-code -- kerbside-backend/vendor/leaflet
+          fi
           cd kerbside-backend
-          npx playwright install --with-deps webkit
+          npx playwright install --with-deps webkit chromium
 
-      - name: WebKit browser
-        continue-on-error: true
-        run: npm run test:browser --prefix kerbside-backend
+      - name: Check the version is consistent everywhere
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync-version.py --check
 
-      - name: WebKit train
-        continue-on-error: true
-        run: npm run test:train --prefix kerbside-backend
+      # Consistency across files is not the same as advancing. The served app
+      # includes the bus shell plus isolated rail assets, so any of those must
+      # advance VERSION together to keep production verification meaningful.
+      - name: Require a version bump when the app changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+          else
+            base_sha="${{ github.event.before }}"
+            head_sha="${{ github.sha }}"
+          fi
+          if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
+            base_sha="$(git rev-list --max-parents=0 "$head_sha" | tail -n 1)"
+          fi
+          if git diff --quiet "$base_sha" "$head_sha" -- bus.html kerbside-trains.js kerbside-trains.css kerbside-train-routes.js; then
+            echo 'Served app unchanged; no bump required.'
+            exit 0
+          fi
+          if git diff --quiet "$base_sha" "$head_sha" -- VERSION; then
+            echo "::error::Served app changed between $base_sha and $head_sha but VERSION did not."
+            exit 1
+          fi
+          echo "Served app changed across the full event range and VERSION advanced to $(cat VERSION)."
 
-      - name: WebKit train route
-        continue-on-error: true
-        run: npm run test:train-route --prefix kerbside-backend
+      - name: Validate browser JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check kerbside-trains.js
+          node --check kerbside-train-routes.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
 
-      - name: WebKit identity
-        continue-on-error: true
-        run: npm run test:identity --prefix kerbside-backend
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          print(f'Validated {len(scripts)} inline browser script(s) plus isolated train modules.')
+          PY
 
-      - name: WebKit multi vehicle
-        continue-on-error: true
-        run: npm run test:multi-vehicle --prefix kerbside-backend
+      - name: Validate timetable builders, reliability tooling and Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check build-timetable.js
+          node --check kerbside-backend/scripts/apply-stop-side-hardening-build.mjs
+          node --check kerbside-backend/scripts/apply-journey-identity-hardening-build.mjs
+          node --check kerbside-backend/scripts/apply-reliability-hardening-build.mjs
+          node --check kerbside-backend/tests/train-regression.mjs
+          node --check kerbside-backend/tests/train-route-filter-regression.mjs
+          node --check kerbside-backend/tests/stop-side-regression.mjs
+          node --check kerbside-backend/tests/journey-identity-regression.mjs
+          node --check kerbside-backend/tests/disruption-regression.mjs
+          node --check kerbside-backend/tests/listing-reliability-regression.mjs
+          python3 -m py_compile .github/scripts/build-disruptions.py kerbside-backend/tests/disruption-build-regression.py
+          python3 kerbside-backend/tests/disruption-build-regression.py
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
 
-      - name: WebKit audit
-        continue-on-error: true
-        run: npm run test:audit --prefix kerbside-backend
+      # The identity, train and multi-vehicle suites live in tests/, which
+      # node --test does not discover automatically. Run them explicitly.
+      - name: Run WebKit mobile regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:train --prefix kerbside-backend
+          npm run test:train-route --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+          npm run test:stop-side --prefix kerbside-backend --if-present
+          npm run test:journey-identity --prefix kerbside-backend --if-present
+          npm run test:disruptions --prefix kerbside-backend --if-present
+          npm run test:listing-reliability --prefix kerbside-backend --if-present
 
-      - name: WebKit accuracy hardening
-        continue-on-error: true
-        run: npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+      # Same suite, same phone-sized viewport, different engine. WebKit alone
+      # cannot catch a Chromium-only layout, Cache API or input difference,
+      # and Chromium is what most Android users run.
+      - name: Run Chromium mobile regression checks
+        shell: bash
+        env:
+          KERBSIDE_BROWSER: chromium
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:train --prefix kerbside-backend
+          npm run test:train-route --prefix kerbside-backend
+          npm run test:identity --prefix kerbside-backend
+          npm run test:multi-vehicle --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+          npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+          npm run test:stop-side --prefix kerbside-backend --if-present
+          npm run test:journey-identity --prefix kerbside-backend --if-present
+          npm run test:disruptions --prefix kerbside-backend --if-present
+          npm run test:listing-reliability --prefix kerbside-backend --if-present
 
-      - name: WebKit stop side
-        continue-on-error: true
-        run: npm run test:stop-side --prefix kerbside-backend --if-present
+      - name: Validate timetable cache policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
 
-      - name: WebKit journey identity
-        continue-on-error: true
-        run: npm run test:journey-identity --prefix kerbside-backend --if-present
+          source = Path('.github/workflows/build-kerbside-national.yml').read_text(encoding='utf-8')
+          required = [
+              "/regions/*/departures/*\n            Cache-Control: public, max-age=86400, s-maxage=604800, immutable",
+              "/regions/*/patterns/*\n            Cache-Control: public, max-age=86400, s-maxage=604800, immutable",
+          ]
+          missing = [block.splitlines()[0] for block in required if block not in source]
+          if missing:
+            raise SystemExit(f'Missing immutable timetable cache policies: {missing}')
+          print('Validated versioned departure and pattern cache policies.')
+          PY
 
-      - name: WebKit disruptions
-        continue-on-error: true
-        run: npm run test:disruptions --prefix kerbside-backend --if-present
+      - name: Parse Kerbside workflow YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e "require 'yaml'; ARGV.each { |file| YAML.parse_file(file) or abort(file) }" \
+            .github/workflows/build-kerbside-national.yml \
+            .github/workflows/deploy-kerbside-worker.yml \
+            .github/workflows/deploy-kerbside-accuracy-hardening.yml \
+            .github/workflows/deploy-kerbside-stop-side-hardening.yml \
+            .github/workflows/deploy-kerbside-journey-identity-hardening.yml \
+            .github/workflows/deploy-kerbside-reliability-hardening.yml \
+            .github/workflows/kerbside-disruptions.yml \
+            .github/workflows/kerbside-check.yml \
+            .github/workflows/kerbside-release.yml \
+            .github/workflows/verify-kerbside-production.yml
 
-      - name: WebKit listing reliability
-        continue-on-error: true
-        run: npm run test:listing-reliability --prefix kerbside-backend --if-present
+      - name: Check whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git diff --check HEAD^ HEAD
+          fi
