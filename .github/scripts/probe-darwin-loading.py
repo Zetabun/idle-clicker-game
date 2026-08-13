@@ -14,6 +14,12 @@ not be conflated:
 * serviceLoading: provider-supplied typical/expected loading for the whole
   service at a location. It is useful evidence, but it is not live occupancy.
 
+Operator attribution is also privacy-safe. A TOC seen directly on any Darwin
+message for a RID wins. If Darwin does not repeat the TOC during the short sample,
+the probe can use Kerbside's current compact Darwin timetable shard as a
+RID-to-TOC fallback. Both maps exist only in runner memory and only aggregate
+operator counts are written.
+
 Runtime credentials are supplied by GitHub Actions secrets for the Rail Data
 Marketplace Darwin Real Time Train Information PubSub product.
 """
@@ -33,8 +39,9 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 UNKNOWN_OPERATOR = "__unknown__"
 XML_KEYS = ("payload", "body", "value", "message", "data", "content")
 RID_KEYS = ("rid", "RID", "serviceRid", "serviceRID")
@@ -43,6 +50,13 @@ TOC_KEYS = ("toc", "tocCode", "operatorCode", "atoc", "trainOperator")
 
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def gb_date_stamp(moment: dt.datetime | None = None) -> str:
+    value = moment or dt.datetime.now(dt.timezone.utc)
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt.timezone.utc)
+    return value.astimezone(ZoneInfo("Europe/London")).date().isoformat()
 
 
 def local_name(tag: str) -> str:
@@ -145,8 +159,40 @@ def child_nodes(element: ET.Element, name: str) -> list[ET.Element]:
     return [item for item in element.iter() if item is not element and local_name(item.tag).lower() == target]
 
 
+def load_timetable_operator_map(path: Path | None) -> dict[str, str]:
+    """Load only RID -> TOC from a compact Kerbside timetable shard.
+
+    The returned identifiers are deliberately kept in memory only. Missing or
+    unreadable shards are treated as an unavailable fallback rather than a
+    failure of the live Kafka probe.
+    """
+    if path is None or not path.is_file():
+        return {}
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            rows = json.load(handle)
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    result: dict[str, str] = {}
+    if not isinstance(rows, list):
+        return result
+    for row in rows:
+        if not isinstance(row, list) or len(row) < 4:
+            continue
+        rid = str(row[0] or "").strip()
+        toc = safe_operator(str(row[3] or ""))
+        if rid and toc != UNKNOWN_OPERATOR:
+            result[rid] = toc
+    return result
+
+
+def default_timetable_path() -> Path:
+    return Path("kerbside-rail-timetable") / f"{gb_date_stamp()}.json.gz"
+
+
 @dataclass
 class ProbeState:
+    timetable_rid_to_toc: dict[str, str] = field(default_factory=dict)
     messages: int = 0
     kafka_errors: int = 0
     decode_failures: int = 0
@@ -273,6 +319,23 @@ class ProbeState:
             toc = self.rid_to_toc.get(rid, "")
         return rid, safe_operator(toc) if toc else ""
 
+    def operator_for_rid(self, rid: str) -> tuple[str, str]:
+        direct = self.rid_to_toc.get(rid, "")
+        if direct and direct != UNKNOWN_OPERATOR:
+            return direct, "live_message"
+        timetable = self.timetable_rid_to_toc.get(rid, "")
+        if timetable and timetable != UNKNOWN_OPERATOR:
+            return timetable, "timetable_snapshot"
+        return UNKNOWN_OPERATOR, "unknown"
+
+    def _attribution_counts(self, rids: Iterable[str]) -> dict[str, int]:
+        counts = collections.Counter(self.operator_for_rid(rid)[1] for rid in rids)
+        return {
+            "live_message": int(counts["live_message"]),
+            "timetable_snapshot": int(counts["timetable_snapshot"]),
+            "unknown": int(counts["unknown"]),
+        }
+
     def report(self, *, started_at: str, finished_at: str, sample_seconds: int) -> dict[str, Any]:
         service_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
         formation_groups: collections.defaultdict[str, set[str]] = collections.defaultdict(set)
@@ -285,22 +348,26 @@ class ProbeState:
         service_record_groups: collections.Counter[str] = collections.Counter()
 
         for rid in self.services_seen:
-            service_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+            operator, _source = self.operator_for_rid(rid)
+            service_groups[operator].add(rid)
         for rid in self.formation_loading_services:
-            operator = self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)
+            operator, _source = self.operator_for_rid(rid)
             formation_groups[operator].add(rid)
             formation_record_groups[operator] += self.formation_records_by_rid[rid]
             formation_value_groups[operator] += self.formation_values_by_rid[rid]
         for rid in self.formation_coach_services:
-            formation_coach_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+            operator, _source = self.operator_for_rid(rid)
+            formation_coach_groups[operator].add(rid)
         for rid in self.service_loading_services:
-            operator = self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)
+            operator, _source = self.operator_for_rid(rid)
             service_loading_groups[operator].add(rid)
             service_record_groups[operator] += self.service_records_by_rid[rid]
         for rid in self.service_loading_expected_services:
-            service_expected_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+            operator, _source = self.operator_for_rid(rid)
+            service_expected_groups[operator].add(rid)
         for rid in self.service_loading_typical_services:
-            service_typical_groups[self.rid_to_toc.get(rid, UNKNOWN_OPERATOR)].add(rid)
+            operator, _source = self.operator_for_rid(rid)
+            service_typical_groups[operator].add(rid)
 
         operators: dict[str, Any] = {}
         all_operators = set(service_groups) | set(formation_groups) | set(service_loading_groups)
@@ -329,6 +396,10 @@ class ProbeState:
         provider = len(self.service_loading_services)
         any_loaded = len(self.formation_loading_services | self.service_loading_services)
         coach = len(self.formation_coach_services)
+        attribution = self._attribution_counts(self.services_seen)
+        formation_attribution = self._attribution_counts(self.formation_loading_services)
+        attributed = observed - attribution["unknown"]
+        formation_attributed = formation - formation_attribution["unknown"]
         return {
             "schema_version": SCHEMA_VERSION,
             "probe": "darwin-passenger-loading-coverage",
@@ -340,6 +411,7 @@ class ProbeState:
                 "service_identifiers_stored": False,
                 "station_identifiers_stored": False,
                 "per_service_loading_values_stored": False,
+                "timetable_service_identifiers_stored": False,
             },
             "messages": {
                 "kafka_messages": self.messages,
@@ -355,6 +427,19 @@ class ProbeState:
                 "services_with_loading": any_loaded,
                 "sampled_service_loading_coverage": round(any_loaded / observed, 4) if observed else None,
                 "services_with_coach_loading": coach,
+                "operator_attribution": {
+                    "meaning": "TOC from a live Darwin message for the RID, then current compact Darwin timetable RID-to-TOC fallback; identifiers remain memory-only",
+                    "timetable_snapshot_available": bool(self.timetable_rid_to_toc),
+                    "timetable_services_indexed": len(self.timetable_rid_to_toc),
+                    "services_attributed": attributed,
+                    "services_unattributed": attribution["unknown"],
+                    "coverage": round(attributed / observed, 4) if observed else None,
+                    "sources": attribution,
+                    "realtime_formation_services_attributed": formation_attributed,
+                    "realtime_formation_services_unattributed": formation_attribution["unknown"],
+                    "realtime_formation_coverage": round(formation_attributed / formation, 4) if formation else None,
+                    "realtime_formation_sources": formation_attribution,
+                },
                 "operators": operators,
                 "formation_loading": {
                     "meaning": "real-time estimated percentage loading per coach for a specific service, formation and location",
@@ -414,7 +499,7 @@ def config_from_env() -> dict[str, str]:
     return {"topic": topic, **config}
 
 
-def run_probe(seconds: int, output: Path) -> dict[str, Any]:
+def run_probe(seconds: int, output: Path, timetable: Path | None = None) -> dict[str, Any]:
     try:
         from confluent_kafka import Consumer  # type: ignore
     except Exception as exc:
@@ -422,7 +507,8 @@ def run_probe(seconds: int, output: Path) -> dict[str, Any]:
 
     settings = config_from_env()
     topic = settings.pop("topic")
-    state = ProbeState()
+    timetable_map = load_timetable_operator_map(timetable)
+    state = ProbeState(timetable_rid_to_toc=timetable_map)
     consumer = Consumer(settings)
     started_at = utc_now()
     deadline = time.monotonic() + seconds
@@ -451,12 +537,23 @@ def print_summary(report: dict[str, Any]) -> None:
     loading = report["loading"]
     formation = loading["formation_loading"]
     service = loading["service_loading"]
+    attribution = loading.get("operator_attribution") or {}
+    sources = attribution.get("sources") or {}
+    formation_sources = attribution.get("realtime_formation_sources") or {}
     print(f"Darwin loading probe: {report['messages']['kafka_messages']} Kafka messages")
     print(f"Services observed: {loading['services_observed']}")
     print(
+        "Operator attribution: "
+        f"{attribution.get('services_attributed', 0)}/{loading['services_observed']} "
+        f"({attribution.get('coverage')}); live={sources.get('live_message', 0)}; "
+        f"timetable={sources.get('timetable_snapshot', 0)}; unknown={sources.get('unknown', 0)}"
+    )
+    print(
         "Real-time formation loading: "
         f"{formation['services']} services; coach-values={formation['services_with_coach_values']}; "
-        f"coverage={formation['coverage']}"
+        f"coverage={formation['coverage']}; operator-attributed={attribution.get('realtime_formation_services_attributed', 0)}; "
+        f"live-map={formation_sources.get('live_message', 0)}; timetable-map={formation_sources.get('timetable_snapshot', 0)}; "
+        f"unknown={formation_sources.get('unknown', 0)}"
     )
     print(
         "Provider service loading (not live occupancy): "
@@ -476,11 +573,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--seconds", type=int, default=480, help="Live sample duration in seconds")
     parser.add_argument("--output", type=Path, default=Path("darwin-loading-report.json"))
+    parser.add_argument(
+        "--timetable",
+        type=Path,
+        default=default_timetable_path(),
+        help="Optional compact Kerbside timetable shard used only for in-memory RID-to-TOC attribution",
+    )
     args = parser.parse_args()
     if not 30 <= args.seconds <= 1800:
         parser.error("--seconds must be between 30 and 1800")
     try:
-        report = run_probe(args.seconds, args.output)
+        report = run_probe(args.seconds, args.output, args.timetable)
     except Exception as exc:
         print(f"probe failed: {exc}", file=sys.stderr)
         return 1

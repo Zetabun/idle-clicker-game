@@ -7,6 +7,7 @@ import importlib.util
 import json
 import pathlib
 import sys
+import tempfile
 import unittest
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -51,6 +52,60 @@ class DarwinLoadingProbeTests(unittest.TestCase):
         self.assertFalse(report["privacy"]["raw_payloads_stored"])
         self.assertFalse(report["privacy"]["service_identifiers_stored"])
         self.assertFalse(report["privacy"]["per_service_loading_values_stored"])
+
+    def test_timetable_fallback_attributes_operator_without_persisting_identity(self):
+        xml = """<Pport><uR>
+          <formationLoading rid='RID-FALLBACK' tpl='PADTLL'>
+            <loading coachNumber='A'>52</loading>
+            <loading coachNumber='B'>68</loading>
+          </formationLoading>
+        </uR></Pport>"""
+        state = probe.ProbeState(timetable_rid_to_toc={"RID-FALLBACK": "GW"})
+        state.observe_payload(xml)
+        report = state.report(started_at="a", finished_at="b", sample_seconds=60)
+        loading = report["loading"]
+        self.assertEqual(loading["operators"]["GW"]["services_with_realtime_formation_loading"], 1)
+        attribution = loading["operator_attribution"]
+        self.assertEqual(attribution["realtime_formation_services_attributed"], 1)
+        self.assertEqual(attribution["realtime_formation_services_unattributed"], 0)
+        self.assertEqual(attribution["realtime_formation_sources"]["timetable_snapshot"], 1)
+        self.assertEqual(attribution["realtime_formation_sources"]["live_message"], 0)
+        self.assertNotIn("__unknown__", loading["operators"])
+        serialised = json.dumps(report)
+        self.assertNotIn("RID-FALLBACK", serialised)
+        self.assertNotIn("52", serialised)
+        self.assertNotIn("68", serialised)
+        self.assertFalse(report["privacy"]["timetable_service_identifiers_stored"])
+
+    def test_live_operator_wins_over_timetable_fallback(self):
+        xml = """<Pport><uR>
+          <TS rid='RID-DIRECT' toc='SE'/>
+          <formationLoading rid='RID-DIRECT'>
+            <loading coachNumber='1'>48</loading>
+          </formationLoading>
+        </uR></Pport>"""
+        state = probe.ProbeState(timetable_rid_to_toc={"RID-DIRECT": "GW"})
+        state.observe_payload(xml)
+        report = state.report(started_at="a", finished_at="b", sample_seconds=60)
+        loading = report["loading"]
+        self.assertEqual(loading["operators"]["SE"]["services_with_realtime_formation_loading"], 1)
+        self.assertNotIn("GW", loading["operators"])
+        attribution = loading["operator_attribution"]
+        self.assertEqual(attribution["realtime_formation_sources"]["live_message"], 1)
+        self.assertEqual(attribution["realtime_formation_sources"]["timetable_snapshot"], 0)
+
+    def test_compact_timetable_loader_reads_only_rid_to_toc(self):
+        rows = [
+            ["RID-ONE", "UID-ONE", "1A01", "XC", "2026-08-13", []],
+            ["RID-TWO", "UID-TWO", "1A02", "GW", "2026-08-13", []],
+            ["RID-BAD", "UID-BAD", "1A03", "", "2026-08-13", []],
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / "today.json.gz"
+            with gzip.open(path, "wt", encoding="utf-8") as handle:
+                json.dump(rows, handle)
+            result = probe.load_timetable_operator_map(path)
+        self.assertEqual(result, {"RID-ONE": "XC", "RID-TWO": "GW"})
 
     def test_service_loading_is_provider_evidence_not_realtime(self):
         xml = """<Pport>
