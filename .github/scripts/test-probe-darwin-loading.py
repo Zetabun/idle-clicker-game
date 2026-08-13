@@ -6,12 +6,14 @@ import gzip
 import importlib.util
 import json
 import pathlib
+import sys
 import unittest
 
 HERE = pathlib.Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("darwin_loading_probe", HERE / "probe-darwin-loading.py")
 assert SPEC and SPEC.loader
 probe = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = probe
 SPEC.loader.exec_module(probe)
 
 
