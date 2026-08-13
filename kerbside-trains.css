@@ -394,3 +394,200 @@ body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 
 .train-loading-tip{margin:9px 0 0;font-size:11px;color:var(--live-soft)}.train-loading-note{margin:8px 0 0;font-size:10.5px;line-height:1.5;color:var(--text-dim)}
 .train-connection-itinerary .train-live-loading{margin:0 0 8px 96px}
 @media(max-width:520px){.train-loading-summary{align-items:flex-start;flex-direction:column}.train-loading-summary span{text-align:left}.train-connection-itinerary .train-live-loading{margin-left:0}}
+
+/* ------------------------------------------------------------------
+   Kerbside 0.9.0 — journey sheet.
+
+   On a phone the expanded row becomes a full-screen surface: the detail
+   node is promoted out of flow, a fixed header carries the journey
+   identity and the close control, and the cards inside are re-ordered so
+   the thing that changes your plans - a cancellation, a broken
+   connection - is read first and the provenance notes are read last.
+
+   Every colour, radius and blur below is a theme token, so Crystal picks
+   up its own 16px radii, translucency and system blue without a second
+   copy of the layout.
+------------------------------------------------------------------ */
+.kerbside-sheet-chrome{
+  position:fixed;top:0;left:0;right:0;z-index:1810;
+  padding:calc(env(safe-area-inset-top) + 11px) 14px 11px;
+  border-bottom:1px solid var(--rule);
+  background:rgb(var(--ink-2-rgb) / .97);
+  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  box-shadow:0 8px 22px rgb(var(--shadow-rgb) / .2);
+}
+.kerbside-sheet-chrome[hidden]{display:none}
+.kerbside-sheet-bar{display:flex;align-items:flex-start;gap:12px}
+.kerbside-sheet-id{flex:1;min-width:0}
+.kerbside-sheet-kicker{
+  display:block;color:var(--text-mute);font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:8.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
+}
+.kerbside-sheet-clock{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 9px;margin-top:5px;min-width:0}
+.kerbside-sheet-clock b{
+  font-family:'Martian Mono',ui-monospace,monospace;font-size:21px;letter-spacing:-.055em;color:var(--text);
+}
+.kerbside-sheet-clock em{font-style:normal;color:var(--text-mute);font-size:10px;white-space:nowrap}
+.kerbside-sheet-arrow{
+  position:relative;flex:0 0 auto;align-self:center;width:24px;height:1px;background:var(--rule);
+}
+.kerbside-sheet-arrow:after{
+  content:'';position:absolute;right:0;top:-2.5px;width:6px;height:6px;
+  border-top:1px solid var(--rule);border-right:1px solid var(--rule);transform:rotate(45deg);
+}
+.kerbside-sheet-route{margin-top:4px;color:var(--text-dim);font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.kerbside-sheet-hop{margin:0 5px;color:var(--text-mute)}
+.kerbside-sheet-close{
+  flex:0 0 auto;display:grid;place-items:center;width:38px;height:38px;
+  border:1px solid var(--rule);border-radius:999px;background:var(--ink);color:var(--text-dim);
+  transition:background .12s,color .12s,border-color .12s;
+}
+.kerbside-sheet-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.kerbside-sheet-close:hover,.kerbside-sheet-close:active{border-color:var(--led-dim);color:var(--led);background:var(--ink-3)}
+.kerbside-sheet-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.kerbside-sheet-chips[hidden]{display:none}
+.kerbside-sheet-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;
+  border:1px solid var(--rule);border-radius:999px;background:var(--ink);
+  color:var(--text-dim);font-size:9.5px;font-weight:800;letter-spacing:.03em;line-height:1.4;
+}
+.kerbside-sheet-chip>i{flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--text-mute)}
+
+/* The promoted detail. inset:0 rather than a transform so the sheet keeps
+   its own scroll container and never becomes a containing block for the
+   header sitting above it. */
+body .train-service.is-sheet>.train-service-detail{
+  position:fixed;inset:0;z-index:1800;
+  display:flex;flex-direction:column;
+  margin:0;padding:calc(var(--kerbside-sheet-head,104px) + 14px) 14px calc(30px + env(safe-area-inset-bottom));
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  background:var(--ink);
+  animation:kerbside-sheet-rise .2s cubic-bezier(.22,.8,.3,1);
+}
+body .train-service.is-sheet>.train-service-detail>*{flex:0 0 auto}
+@keyframes kerbside-sheet-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  body .train-service.is-sheet>.train-service-detail{animation:none}
+}
+
+/* Reading order, which the markup order does not give us: the verdict, the
+   plan, the way out, the reasoning, the stops, then the provenance. */
+.train-service.is-sheet .train-detail-loading{order:0}
+.train-service.is-sheet .train-detail-grid{order:2}
+.train-service.is-sheet .train-connection-itinerary{order:3}
+.train-service.is-sheet .train-recovery-card{order:4}
+.train-service.is-sheet .train-crowding-explain{order:5}
+.train-service.is-sheet .train-live-loading{order:6}
+.train-service.is-sheet .train-calling{order:7}
+.train-service.is-sheet .train-model-card{order:8}
+.train-service.is-sheet .train-watch-card{order:9}
+.train-service.is-sheet .train-detail-note{order:10}
+.train-service.is-sheet .train-detail-warn{order:1}
+
+/* A one-change journey already states depart / change / arrive on the
+   timeline below, and the sheet header states it a third time. Keep the
+   facts grid for direct trains, where it carries origin, operator and
+   platform that appear nowhere else. */
+.train-service.is-sheet.train-connection-service .train-detail-grid{display:none}
+
+.train-service.is-sheet .train-detail-title{margin:0 0 10px;color:var(--text-mute);font-size:9px;letter-spacing:.1em}
+.train-service.is-sheet .train-detail-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 12px;padding:13px;
+  border:1px solid var(--rule);border-radius:var(--radius-lg);background:var(--ink-2);
+}
+.train-service.is-sheet .train-detail-grid span{font-size:9px}
+.train-service.is-sheet .train-detail-grid b{white-space:normal;font-size:12.5px;line-height:1.35}
+.train-service.is-sheet .train-detail-warn{
+  margin:0 0 12px;padding:11px 12px;border:1px solid rgb(var(--warn-rgb) / .34);border-radius:var(--radius);
+  background:rgb(var(--warn-rgb) / .06);font-size:11.5px;line-height:1.5;
+}
+.train-service.is-sheet .train-detail-note{
+  margin:3px 0 0;padding:0;color:var(--text-mute);font-size:10px;line-height:1.55;
+}
+.train-service.is-sheet .train-crowding-explain{
+  margin:0 0 12px;padding:14px;border-radius:var(--radius-lg);border-left-width:4px;font-size:11px;
+}
+.train-service.is-sheet .train-forecast-status strong{font-size:15px}
+.train-service.is-sheet .train-forecast-reasons li{font-size:11.5px;line-height:1.5}
+.train-service.is-sheet .train-calling{
+  margin:0 0 12px;padding:13px;border:1px solid var(--rule);border-radius:var(--radius-lg);background:var(--ink-2);
+}
+.train-service.is-sheet .train-call b{font-size:12px}
+.train-service.is-sheet .train-call>i{box-shadow:0 0 0 3px var(--ink-2)}
+.train-service.is-sheet .train-model-card{margin:0 0 12px;border-radius:var(--radius-lg)}
+.train-service.is-sheet .train-recovery-card,
+.train-service.is-sheet .train-watch-card{margin:0 0 12px;padding:13px 14px;border-radius:var(--radius-lg)}
+.train-service.is-sheet .train-watch-card{grid-template-columns:minmax(0,1fr)}
+.train-service.is-sheet .train-recovery-actions{flex-direction:column;align-items:stretch;gap:8px;margin-top:11px}
+.train-service.is-sheet .train-recovery-use,
+.train-service.is-sheet .train-watch-action{
+  width:100%;min-height:44px;justify-self:stretch;margin-top:2px;
+  border-radius:var(--radius);font-size:11.5px;text-align:center;
+}
+
+/* ---- Journey plan: legs as cards, the interchange as the gap between
+   them. The old version indented one grey box inside another and left the
+   change floating with no relationship to either leg. ---- */
+.train-connection-itinerary{gap:0;padding:13px;border-radius:var(--radius-lg)}
+.train-connection-leg{
+  display:grid;grid-template-columns:58px minmax(0,1fr);gap:2px 12px;align-items:start;
+  padding:11px 12px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--ink-2);
+}
+.train-connection-time{grid-column:1;grid-row:1 / span 2}
+.train-connection-time b{font-size:13px}
+.train-connection-time small{margin-top:3px}
+.train-connection-route{grid-column:2;grid-row:1}
+.train-connection-route b{white-space:normal;overflow:visible;font-size:12.5px;line-height:1.35}
+.train-connection-crowd{
+  grid-column:2;grid-row:2;flex-direction:row;flex-wrap:wrap;align-items:center;
+  gap:3px 7px;margin-top:6px;padding-left:0;
+}
+.train-connection-crowd>i{position:static;top:auto;flex:0 0 auto}
+.train-connection-crowd small{margin-top:0}
+.train-connection-change{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:center;
+  margin:0 0 0 24px;padding:12px 0 12px 15px;
+  border:0;border-left:2px dashed var(--rule);background:none;
+}
+.train-connection-change span{font-size:10.5px}
+.train-connection-change b{
+  justify-self:end;padding:3px 9px;border:1px solid var(--rule);border-radius:999px;
+  background:var(--ink-2);font-size:10px;
+}
+.train-connection-change small{color:var(--text-mute)}
+.train-connection-change.connection-risk-tight,
+.train-connection-change.connection-risk-at-risk,
+.train-connection-change.connection-risk-onward-cancelled,
+.train-connection-change.connection-risk-first-cancelled{border-left-color:var(--warn)}
+.train-connection-change.connection-risk-onward-cancelled span,
+.train-connection-change.connection-risk-first-cancelled span,
+.train-connection-change.connection-risk-at-risk span{color:var(--warn-soft)}
+.train-connection-change.connection-risk-onward-cancelled b,
+.train-connection-change.connection-risk-first-cancelled b,
+.train-connection-change.connection-risk-at-risk b{
+  border-color:rgb(var(--warn-rgb) / .4);background:rgb(var(--warn-rgb) / .08);color:var(--warn-soft);
+}
+.train-connection-itinerary .train-live-loading{margin:9px 0 0}
+
+/* Crystal wants layered white cards with hairlines and a shadow rather
+   than the dark theme's drawn borders. */
+body.theme-crystal .train-service.is-sheet>.train-service-detail{background:var(--ink)}
+body.theme-crystal .kerbside-sheet-close{border-color:transparent;background:var(--ink-3)}
+body.theme-crystal .kerbside-sheet-chip{border-color:transparent;background:var(--ink-3)}
+body.theme-crystal .train-connection-leg,
+body.theme-crystal .train-service.is-sheet .train-detail-grid,
+body.theme-crystal .train-service.is-sheet .train-calling,
+body.theme-crystal .train-service.is-sheet .train-model-card{
+  border-color:transparent;box-shadow:0 1px 3px rgb(var(--shadow-rgb) / .1);
+}
+body.theme-crystal .train-service.is-sheet .train-crowding-explain{
+  background:var(--ink-2);box-shadow:0 1px 3px rgb(var(--shadow-rgb) / .1);
+}
+body.theme-crystal .train-service.is-sheet .train-recovery-use,
+body.theme-crystal .train-service.is-sheet .train-watch-action{border-radius:999px}
+
+@media (max-width:430px){
+  .kerbside-sheet-clock b{font-size:19px}
+  .train-connection-leg{grid-template-columns:52px minmax(0,1fr);gap:2px 10px;padding:10px}
+  .train-connection-change{margin-left:20px;padding-left:13px}
+}
