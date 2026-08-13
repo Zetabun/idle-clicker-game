@@ -33,12 +33,12 @@ function responseFor(input){
   return new Response('not found',{status:404});
 }
 
-function loadProvider(date='2026-08-12',departAfter='09:00'){
+function loadProvider(date='2026-08-12',departAfter='09:00',officialConnectionTimes=null){
   const context={
     console,URL,Date,Intl,setTimeout,clearTimeout,setInterval(){return 0;},Blob,Response,TextDecoder,DecompressionStream,
     fetch:async input=>responseFor(input),
     document:{readyState:'loading',addEventListener(){},getElementById(id){return id==='trainDepartAfter'?{value:departAfter}:null;}},
-    window:{__KERBSIDE_TRAIN_DATE__:{state:{date},isToday(){return false;}}}
+    window:{__KERBSIDE_TRAIN_DATE__:{state:{date},isToday(){return false;}},__KERBSIDE_OFFICIAL_CONNECTION_TIMES__:officialConnectionTimes||undefined}
   };
   vm.createContext(context);
   vm.runInContext(timetableSource,context);
@@ -92,10 +92,16 @@ test('connection buffer status distinguishes safe, tight and at-risk changes',()
   const provider=loadProvider();
   assert.equal(provider.connectionMinimum('CNM'),10);
   assert.equal(provider.connectionMinimum('BHM'),15);
-  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:10,source:'kerbside-topology'});
+  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:10,source:'kerbside-topology',authority:'',dataset:'',asOf:''});
   assert.equal(provider.connectionRiskFor(18,10),'good');
   assert.equal(provider.connectionRiskFor(12,10),'tight');
   assert.equal(provider.connectionRiskFor(8,10),'at-risk');
+});
+
+test('authoritative station minima can be supplied with provenance without changing the fallback dataset',()=>{
+  const provider=loadProvider('2026-08-12','09:00',{CNM:{minutes:8,authority:'Licensed MCT fixture',dataset:'station-mct',asOf:'2026-08-12'}});
+  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:8,source:'official',authority:'Licensed MCT fixture',dataset:'station-mct',asOf:'2026-08-12'});
+  assert.deepEqual({...provider.connectionMinimumInfo('BHM')},{minutes:15,source:'kerbside-topology',authority:'',dataset:'',asOf:''});
 });
 
 test('out-of-snapshot dates fail closed',async()=>{

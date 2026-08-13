@@ -269,7 +269,8 @@ try{
   await connectionDetail.waitFor({state:'visible'});
   assert.match(await connectionDetail.textContent(),/Journey plan/);
   assert.match(await connectionDetail.textContent(),/Great Western Railway/);
-  assert.match(await connectionDetail.textContent(),/Kerbside fallback minimum: 10 min/);
+  assert.match(await connectionDetail.textContent(),/Kerbside conservative minimum: 10 min/);
+  assert.match(await connectionDetail.textContent(),/both trains live-checked/i);
   assert.match(await connectionDetail.textContent(),/10-minute planning buffer/);
   assert.match(await connectionDetail.textContent(),/live evidence on both legs/i);
   assert.match(await connectionDetail.textContent(),/Backup if missed/);
@@ -281,6 +282,37 @@ try{
   assert.match(await recoveryForecast.textContent(),/(Quiet|Moderate|Busy|Very busy)/);
   assert.match(await recoveryForecast.getAttribute('title'),/missed-connection passengers/i);
   assert.doesNotMatch(await connectionDetail.textContent(),/10:52/);
+
+  // Trusted Connections: pin the affected journey, then explicitly adopt the
+  // suggested backup. The selected watch must follow the replacement onward
+  // leg and Forecast v4 must remain attached to the replanned itinerary.
+  const watchButton=connectionDetail.getByRole('button',{name:'Watch journey'});
+  await watchButton.click();
+  await connectionDetail.getByRole('button',{name:'Stop watching'}).waitFor();
+  assert.match(await connectionDetail.textContent(),/Journey Watch/i);
+  assert.match(await connectionDetail.textContent(),/Connection at risk/i);
+  const watchedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));
+  assert.equal(watchedBefore?.onwardID,`rid-change-b-${TODAY}`);
+
+  const useBackup=connectionDetail.getByRole('button',{name:'Use this backup'});
+  await useBackup.click();
+  await page.waitForFunction(today=>{
+    const service=window.__KERBSIDE_TRAIN_TIMETABLE__.state.services.find(item=>item.journeyType==='connection');
+    return service?.legs?.[1]?.serviceID===`rid-change-recovery-${today}`&&service?.connectionRisk==='good'&&service?.liveConnectionMinutes===27;
+  },TODAY,{timeout:10000});
+  assert.match(await connection.textContent(),/Replanned/);
+  assert.match(await connection.textContent(),/live 27m change/);
+  assert.doesNotMatch(await connection.textContent(),/Connection at risk/);
+  assert.match(await connectionDetail.textContent(),/11:20/);
+  assert.match(await connectionDetail.textContent(),/11:52/);
+  assert.match(await connectionDetail.textContent(),/both trains live-checked/i);
+  assert.match(await connectionDetail.textContent(),/Forecast v4|Why this forecast/i);
+  assert.equal(await connectionDetail.getByRole('button',{name:'Use this backup'}).count(),0);
+  assert.equal(await connectionDetail.getByRole('button',{name:'Stop watching'}).count(),1);
+  const watchedAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));
+  assert.equal(watchedAfter?.onwardID,`rid-change-recovery-${TODAY}`,'Journey Watch must follow the adopted backup leg');
+  await connectionDetail.getByRole('button',{name:'Stop watching'}).click();
+  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.journey-watch.v1')),null);
   await page.evaluate(()=>{
     const api=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;
     if(window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__)api.liveWindowFor=window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__;
