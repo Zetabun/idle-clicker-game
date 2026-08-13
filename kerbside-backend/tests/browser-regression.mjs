@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.8\.8'/);
+assert.match(busSource, /const APP_VERSION = '0\.8\.9'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -229,7 +229,7 @@ assert.match(busSource, /function rememberRouteScanVehicle\(v,now=Date\.now\(\)\
 assert.match(busSource, /const stationaryFix=/);
 assert.match(busSource, /const routeAhead=/);
 assert.match(busSource, /confirmedVehicle,stops,nextIndex/);
-assert.match(busSource, /const inference=!evidence\.journeyMatch\?inferVehicleJourneyPattern/);
+assert.match(busSource, /const inference=!evidence\.journeyMatch&&!evidence\.originEquivalentAmbiguous\?inferVehicleJourneyPattern/);
 // collect() already resolved the journey geometry; estimate() must reuse it
 // rather than projecting every vehicle onto its whole pattern a second time.
 assert.match(busSource, /const est=estimate\(v,S\.stop,evidence,geometry\)/);
@@ -474,7 +474,8 @@ assert.doesNotMatch(busSource, /String\(hit\.v\.journey\|\|hit\.v\.id\)/);
 // twelve minutes off its time is still that departure and must not also appear
 // as a schedule-only row beside itself.
 assert.match(busSource, /const matchedSchedule=scheduleLookup\.tripMatched&&schedules\.length\?schedules\[0\]:null;/);
-assert.match(busSource, /function claimedScheduleFor\(row\)\{[\s\S]{0,180}if\(row\.gpsLost&&!row\.scheduleFallback\) return null;[\s\S]{0,180}return row\.schedule\|\|row\.matchedSchedule\|\|exactIdentityScheduleClaim\(row\)\|\|null;/);
+assert.match(busSource, /function claimedSchedulesFor\(row\)\{[\s\S]{0,360}originEquivalentAmbiguous[\s\S]{0,360}exactIdentityScheduleClaim\(row\)\|\|null;/);
+assert.match(busSource, /function claimedScheduleFor\(row\)\{ return claimedSchedulesFor\(row\)\[0\]\|\|null; \}/);
 assert.match(busSource, /const claimedBy=usedSlots\.get\(slot\);/);
 assert.match(busSource, /if\(sharesPayload\) continue;/);
 assert.match(busSource, /const usedAnonymous=new Map\(\),identityByRecord=new Map\(\);/);
@@ -1371,7 +1372,8 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.ok(busSource.includes("rejectLive(diagnostics,'exactStop',v); continue;"));
   assert.ok(busSource.includes("identityAge>matchedIdentityFreshnessMs(v)"));
   assert.ok(busSource.includes("observationAge>matchedIdentityFreshnessMs(v)"));
-  assert.ok(busSource.includes("return row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;"));
+  assert.ok(busSource.includes("const claimed=row.schedule||row.matchedSchedule||exactIdentityScheduleClaim(row)||null;"));
+  assert.ok(busSource.includes("return claimed?[claimed]:[];"));
   assert.ok(busSource.indexOf("const stopContradiction=exactStopContradiction(v,evidence,matchedRow);") < busSource.indexOf("setVehicleProgressIdentity(v,evidence,inference,matchedRow);"));
   assert.ok(busSource.includes("function passedStopLockApplies(v,geometry,now=Date.now())"));
   assert.ok(busSource.includes("if(passedStopLockApplies(v,geometry,now)){"));
@@ -1815,7 +1817,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.8.8'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.8.9'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);
