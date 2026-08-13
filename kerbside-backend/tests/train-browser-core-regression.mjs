@@ -152,7 +152,17 @@ async function waitRoute(page,from,to){
       && String(routes?.state?.destination?.crs||'').toUpperCase()===to;
   },{from,to},{timeout:10000});
 }
+/* 0.9.0 promotes an open row to a full-screen journey sheet on mobile
+   viewports, so anything that drives the planner afterwards has to dismiss
+   it first - exactly as a traveller would. */
+async function closeJourneySheet(page){
+  const close=page.locator('#kerbsideJourneySheet .kerbside-sheet-close');
+  if(!await close.count()||!await close.isVisible())return;
+  await close.click();
+  await page.waitForFunction(()=>!document.querySelector('.train-service.is-sheet'),null,{timeout:10000});
+}
 async function findJourney(page,from,to){
+  await closeJourneySheet(page);
   await page.fill('#trainStationQuery',from);
   await page.fill('#trainDestinationQuery',to);
   await page.click('#trainJourneyGo');
@@ -202,6 +212,8 @@ try{
   const detail=page.locator('#trainScheduledBoard .train-service-detail').first();
   await detail.waitFor({state:'visible'});
   assert.match(await detail.textContent(),/Forecast v4|Why this forecast/i);
+  assert.equal(await page.locator('#kerbsideJourneySheet').isVisible(),true,'mobile detail should open as a journey sheet');
+  await closeJourneySheet(page);
 
   // Swap and swap back through the visible mobile control. The route must stay
   // internally complete after each transition, which protects the 0.7.43 fix.
@@ -313,6 +325,7 @@ try{
   assert.equal(watchedAfter?.onwardID,`rid-change-recovery-${TODAY}`,'Journey Watch must follow the adopted backup leg');
   await connectionDetail.getByRole('button',{name:'Stop watching'}).click();
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.journey-watch.v1')),null);
+  await closeJourneySheet(page);
   await page.evaluate(()=>{
     const api=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;
     if(window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__)api.liveWindowFor=window.__KERBSIDE_TEST_LIVE_WINDOW_FOR__;
@@ -326,6 +339,7 @@ try{
   // Tomorrow uses the same timetable spine, does not need a live board request,
   // and every future row carries the selected date added in 0.7.45.
   const liveBefore=diagnostics.railRequests.filter(value=>value.startsWith('/departures/')).length;
+  await closeJourneySheet(page);
   await page.locator('#trainTravelDate').fill(TOMORROW);
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode==='planning');
