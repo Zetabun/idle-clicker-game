@@ -385,3 +385,12 @@ body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 
 .train-forecast-probabilities{display:grid;gap:3px;margin-top:9px;padding:8px 9px;border:1px solid var(--rule);border-radius:7px;background:var(--ink-2)}
 .train-forecast-probabilities>span{font-family:'Martian Mono',ui-monospace,monospace;font-size:8px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--text-mute)}
 .train-forecast-probabilities>b{font-size:10px;line-height:1.45;color:var(--text-dim);font-weight:600}
+
+
+/* Kerbside 0.8.7 — direct Darwin coach-loading evidence. */
+.train-live-loading{margin:12px 0;padding:11px;border:1px solid var(--rule);border-radius:var(--radius);background:rgb(var(--ink-rgb) / .22)}
+.train-loading-summary{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:6px 0 9px}.train-loading-summary strong{font-family:'Martian Mono',monospace;color:var(--led);font-size:13px}.train-loading-summary span{font-size:11px;color:var(--text-dim);text-align:right}
+.train-loading-coaches{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:6px}.train-loading-coach{display:flex;flex-direction:column;gap:2px;padding:7px;border:1px solid var(--rule);border-radius:6px;background:var(--ink-2)}.train-loading-coach b{font-size:11px}.train-loading-coach small{font-size:10px;color:var(--text-dim)}
+.train-loading-tip{margin:9px 0 0;font-size:11px;color:var(--live-soft)}.train-loading-note{margin:8px 0 0;font-size:10.5px;line-height:1.5;color:var(--text-dim)}
+.train-connection-itinerary .train-live-loading{margin:0 0 8px 96px}
+@media(max-width:520px){.train-loading-summary{align-items:flex-start;flex-direction:column}.train-loading-summary span{text-align:left}.train-connection-itinerary .train-live-loading{margin-left:0}}

@@ -469,12 +469,18 @@ function liveMessages(){
   if(!overlay||!overlayMatchesRoute(overlay)||overlay.state.status!=='ready')return [];
   return typeof overlay.messages==='function'?overlay.messages():[];
 }
-function forecastOne(service,index,services,station=route().from,messages=liveMessages(),extraContext={}){const v3=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,date=new Date(`${route().date}T12:00:00`),context={station,referenceDate:date,messages,...(extraContext||{})};if(v3&&typeof v3.forecast==='function')return v3.forecast(service,index,services,context);if(api&&typeof api.crowdingForecast==='function')return api.crowdingForecast(service,index,services,context);return {label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};}
+function serviceForLoading(service){
+  if(!service||service.formation)return service;
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,evidence=overlay&&typeof overlay.evidenceFor==='function'?overlay.evidenceFor(service):null,formation=evidence&&evidence.service&&evidence.service.formation;
+  return formation?{...service,formation}:service;
+}
+function crowdSourceText(result,peak=false){const loading=window.__KERBSIDE_TRAIN_LOADING__;return loading&&typeof loading.sourceText==='function'?loading.sourceText(result,{peak}):`${result&&result.confidence||'Low'} confidence${peak?' · peak leg':''}`;}
+function forecastOne(service,index,services,station=route().from,messages=liveMessages(),extraContext={}){const v3=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__,api=window.__KERBSIDE_TRAINS__,loading=window.__KERBSIDE_TRAIN_LOADING__,date=new Date(`${route().date}T12:00:00`),context={station,referenceDate:date,messages,...(extraContext||{})};let base;if(v3&&typeof v3.forecast==='function')base=v3.forecast(service,index,services,context);else if(api&&typeof api.crowdingForecast==='function')base=api.crowdingForecast(service,index,services,context);else base={label:'Moderate',level:'moderate',confidence:'Low',reasons:['service time and route demand baseline']};const candidate=serviceForLoading(service);return loading&&typeof loading.applyToForecast==='function'?loading.applyToForecast(base,candidate):base;}
 function confidenceFloor(results){const rank={Low:0,Medium:1,'Medium-high':2,High:3};let best=3;for(const result of results){const value=rank[result&&result.confidence];if(Number.isFinite(value))best=Math.min(best,value);}return Object.keys(rank).find(key=>rank[key]===best)||'Low';}
 function forecastIdentity(service){return String(service&&(service.serviceID||service.serviceIdGuid||service.serviceIdGuId||service.rid||service.uid||((service.trainId||service.trainid)&&service.std?`${service.trainId||service.trainid}|${service.std}`:''))||'').toUpperCase();}
 function forecastBoardContext(service,board,fallback=[]){
   const rows=(Array.isArray(board)&&board.length?board:fallback).filter(Boolean).slice(),wanted=forecastIdentity(service);let index=wanted?rows.findIndex(item=>forecastIdentity(item)===wanted):-1;
-  if(index>=0)rows[index]=service;else{rows.push(service);rows.sort((a,b)=>(parseMinutes(a&&a.std)??9999)-(parseMinutes(b&&b.std)??9999));index=rows.indexOf(service);}
+  if(index>=0){const liveRow=rows[index];if(!service.formation&&liveRow&&liveRow.formation)service.formation=liveRow.formation;rows[index]=service;}else{rows.push(service);rows.sort((a,b)=>(parseMinutes(a&&a.std)??9999)-(parseMinutes(b&&b.std)??9999));index=rows.indexOf(service);}
   return {services:rows,index:Math.max(0,index)};
 }
 function legEventJourney(leg){return {origin:displayName(leg&&leg.from,'Departure'),destination:displayName(leg&&leg.to,'Destination'),destinationCrs:leg&&leg.to&&leg.to.crs||''};}
@@ -599,7 +605,7 @@ function recoveryMarkup(service,key){
   const choice=service.recoveryChoice;
   if(!choice)return `<div class="train-recovery-card train-recovery-none"><span>Recovery</span><strong>No later workable onward train found</strong><small>Kerbside checked the loaded timetable recovery window. Refresh as live information changes.</small></div>`;
   const platform=choice.platform?` · Plat ${choice.platform}`:'',live=choice.live?'Live Darwin evidence':'Scheduled timetable',prediction=forecastRecovery(service),reason=prediction&&prediction.reasons&&prediction.reasons[0]||'';
-  const forecastMarkup=prediction?`<div class="train-recovery-forecast crowd-${esc(prediction.level||'unknown')}" title="${esc((prediction.reasons||[]).join(', '))}"><i></i><b>${esc(prediction.label||'Forecast pending')}</b><small>${esc(`${prediction.confidence||'Low'} confidence${reason?` · ${reason}`:''}`)}</small></div>`:'';
+  const forecastMarkup=prediction?`<div class="train-recovery-forecast crowd-${esc(prediction.level||'unknown')}" title="${esc((prediction.reasons||[]).join(', '))}"><i></i><b>${esc(prediction.label||'Forecast pending')}</b><small>${esc(`${crowdSourceText(prediction)}${reason?` · ${reason}`:''}`)}</small></div>`:'';
   return `<div class="train-recovery-card"><span>Backup if missed</span><strong>${esc(`${choice.departure||choice.std||'—'} → ${choice.arrival||'—'}`)}</strong><small>${esc(`${choice.operator||'Onward service'}${platform} · ${live}`)}</small>${forecastMarkup}<div class="train-recovery-actions"><button type="button" class="train-recovery-use" data-use-recovery="${esc(key)}">Use this backup</button><small>Replace the onward leg in this Kerbside journey.</small></div></div>`;
 }
 function connectionItineraryMarkup(service,result){
@@ -610,7 +616,8 @@ function connectionItineraryMarkup(service,result){
     const from=displayName(leg.from,'Departure'),to=displayName(leg.to,'Destination'),live=!!leg.liveEvidence;
     const depart=live&&/^\d{1,2}:\d{2}$/.test(String(leg.etd||''))?leg.etd:leg.std,arrive=leg.liveArrival||leg.arrival;
     const platform=leg.platform?`Plat ${leg.platform}`:'Plat TBC',train=leg.trainId?` · ${leg.trainId}`:'';
-    return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(depart||'—')}</b><small>${esc(arrive||'—')}${live?' · live':''}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform} · ${live?'live':'scheduled'}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}" title="${esc((crowd.reasons||[]).join(', '))}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(`${crowd.confidence||'Low'} confidence`)}</small></span></div>`;
+    const loading=window.__KERBSIDE_TRAIN_LOADING__,coachDetail=crowd&&crowd.liveLoading&&loading&&typeof loading.coachMarkup==='function'?loading.coachMarkup(crowd):'';
+    return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(depart||'—')}</b><small>${esc(arrive||'—')}${live?' · live':''}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform} · ${live?'live':'scheduled'}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}" title="${esc((crowd.reasons||[]).join(', '))}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(crowdSourceText(crowd))}</small></span></div>${coachDetail}`;
   });
   const change=service.interchange||{},minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,minimum=Number(service.minimumConnectionMinutes)||10,risk=service.connectionRisk||change.quality||'scheduled';
   const quality=service.connectionRisk==='at-risk'?'At risk':service.connectionRisk==='tight'?'Tight':service.connectionRisk==='onward-cancelled'?'Onward cancelled':service.connectionRisk==='first-cancelled'?'First train cancelled':String(change.quality||'comfortable').replace(/^./,c=>c.toUpperCase());
@@ -627,7 +634,7 @@ function connectionItineraryMarkup(service,result){
    formation and calling points.
 ------------------------------------------------------------------ */
 function resetLegLive(leg){
-  if(!leg)return;leg.etd='';leg.platform=leg.scheduledPlatform||leg.platform;leg.isCancelled=false;leg.length=0;leg.liveEvidence=false;leg.liveVia='';leg.liveArrival='';leg.cancelReason='';leg.delayReason='';leg.previousCallingPoints=null;leg.subsequentCallingPoints=null;
+  if(!leg)return;leg.etd='';leg.platform=leg.scheduledPlatform||leg.platform;leg.isCancelled=false;leg.length=0;leg.formation=null;leg.liveEvidence=false;leg.liveVia='';leg.liveArrival='';leg.cancelReason='';leg.delayReason='';leg.previousCallingPoints=null;leg.subsequentCallingPoints=null;
 }
 function clearConnectionLive(service){
   if(!service||service.journeyType!=='connection')return false;
@@ -637,7 +644,7 @@ function clearConnectionLive(service){
   return had;
 }
 function applyEvidence(target,evidence){
-  target.etd=evidence.etd;if(evidence.platform)target.platform=evidence.platform;target.isCancelled=evidence.isCancelled;target.length=evidence.length;
+  target.etd=evidence.etd;if(evidence.platform)target.platform=evidence.platform;target.isCancelled=evidence.isCancelled;target.length=evidence.length;target.formation=evidence&&evidence.service&&evidence.service.formation||null;
   target.cancelReason=evidence.cancelReason;target.delayReason=evidence.delayReason;target.serviceIdUrlSafe=evidence.serviceIdUrlSafe;target.serviceIdGuid=evidence.serviceIdGuid;
   if(evidence.serviceID)target.liveServiceID=evidence.serviceID;if(evidence.previousCallingPoints)target.previousCallingPoints=evidence.previousCallingPoints;if(evidence.subsequentCallingPoints)target.subsequentCallingPoints=evidence.subsequentCallingPoints;
   target.liveEvidence=true;target.liveVia=evidence.via;
@@ -763,6 +770,7 @@ function modeNote(mode){
    for the same card the live board shows rather than keeping a second,
    drifting copy. The fallback only matters if v3 has not loaded yet. */
 function explainMarkup(result,mode){
+  const loading=window.__KERBSIDE_TRAIN_LOADING__;if(result&&result.liveLoading&&loading&&typeof loading.explainMarkup==='function')return loading.explainMarkup(result);
   const v3=window.__KERBSIDE_FORECAST_V3__,date=new Date(`${state.sourceDate||route().date}T12:00:00`);
   if(v3&&typeof v3.detailMarkup==='function')return v3.detailMarkup(result,date,{mode:modeLabel(mode),note:modeNote(mode)});
   const items=(result.reasons||[]).map(reason=>`<li>${esc(reason)}</li>`).join('');
@@ -821,7 +829,7 @@ function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,ex
   const shownChange=connection&&Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:service.connectionMinutes;
   const rightLabel=connection?`${shownChange}m`:(formation?`${formation} coach${formation===1?'':'es'}`:(duration||'—'));
   const rightNote=connection?(Number.isFinite(service.liveConnectionMinutes)?'live change':'scheduled change'):(formation?'formation':(duration?'journey time':'duration unknown'));
-  const crowdNote=service.isCancelled?'service cancelled':connection?`${forecastResult.confidence} confidence · peak leg`:`${forecastResult.confidence} confidence`;
+  const crowdNote=service.isCancelled?'service cancelled':connection?crowdSourceText(forecastResult,true):crowdSourceText(forecastResult);
   const detailGrid=connection
     ?`<div class="train-detail-grid"><div><span>Depart</span><b>${esc(`${service.std||'—'} · ${displayName(service.legs&&service.legs[0]&&service.legs[0].from,'Departure')}`)}</b></div><div><span>Change</span><b>${esc(displayName(service.interchange,'Interchange'))}</b></div><div><span>Connection</span><b>${esc(connectionChangeText(service))}</b></div><div><span>Arrive</span><b>${esc(`${service.arrival||'—'} · ${destinationFallback}`)}</b></div></div>`
     :`<div class="train-detail-grid"><div><span>From</span><b>${esc(originText(service))}</b></div><div><span>Operator</span><b>${esc(service.operator||'Unknown')}</b></div><div><span>Platform</span><b>${esc(service.platform||'TBC')}</b></div><div><span>${esc(arrivesLabel)}</span><b>${esc(service.arrival||'Not timetabled')}</b></div></div>`;
@@ -899,7 +907,7 @@ function refreshForecasts(){
     const crowd=article.querySelector('.train-crowding');
     if(crowd){
       const cls=`train-crowding crowd-${result.level}`,title=(result.reasons||[]).join(', ');
-      const conf=service.isCancelled?'service cancelled':service.journeyType==='connection'?`${result.confidence} confidence · peak leg`:`${result.confidence} confidence`;
+      const conf=service.isCancelled?'service cancelled':service.journeyType==='connection'?crowdSourceText(result,true):crowdSourceText(result);
       const b=crowd.querySelector('b'),small=crowd.querySelector('small');
       if(crowd.className!==cls){crowd.className=cls;changed=true;}
       if(b&&b.textContent!==result.label){b.textContent=result.label;changed=true;}
@@ -912,12 +920,12 @@ function refreshForecasts(){
         const cls=`train-connection-crowd crowd-${legResult.level||'unknown'}`,b=legEl.querySelector('b'),small=legEl.querySelector('small');
         if(legEl.className!==cls){legEl.className=cls;changed=true;}
         if(b&&b.textContent!==legResult.label){b.textContent=legResult.label;changed=true;}
-        const note=`${legResult.confidence||'Low'} confidence`;if(small&&small.textContent!==note){small.textContent=note;changed=true;}
+        const note=crowdSourceText(legResult);if(small&&small.textContent!==note){small.textContent=note;changed=true;}
         const legTitle=(legResult.reasons||[]).join(', ');if(legEl.title!==legTitle){legEl.title=legTitle;changed=true;}
       });
       const recoveryEl=article.querySelector('.train-recovery-forecast'),recoveryResult=forecastRecovery(service);
       if(recoveryEl&&recoveryResult){
-        const cls=`train-recovery-forecast crowd-${recoveryResult.level||'unknown'}`,b=recoveryEl.querySelector('b'),small=recoveryEl.querySelector('small'),reason=recoveryResult.reasons&&recoveryResult.reasons[0]||'',note=`${recoveryResult.confidence||'Low'} confidence${reason?` · ${reason}`:''}`,title=(recoveryResult.reasons||[]).join(', ');
+        const cls=`train-recovery-forecast crowd-${recoveryResult.level||'unknown'}`,b=recoveryEl.querySelector('b'),small=recoveryEl.querySelector('small'),reason=recoveryResult.reasons&&recoveryResult.reasons[0]||'',note=`${crowdSourceText(recoveryResult)}${reason?` · ${reason}`:''}`,title=(recoveryResult.reasons||[]).join(', ');
         if(recoveryEl.className!==cls){recoveryEl.className=cls;changed=true;}if(b&&b.textContent!==recoveryResult.label){b.textContent=recoveryResult.label;changed=true;}if(small&&small.textContent!==note){small.textContent=note;changed=true;}if(recoveryEl.title!==title){recoveryEl.title=title;changed=true;}
       }
     }
