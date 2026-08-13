@@ -72,13 +72,26 @@ function explainMarkup(result){
   const items=(result.reasons||[]).map(reason=>`<li>${esc(reason)}</li>`).join(''),range=live.spread?` · ${live.spread.minimum}–${live.spread.maximum}% range`:'';
   return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(result.evidenceLabel||'Live train-loading evidence')} · ${esc(`${live.average}% estimated${range}`)}</span></div><div class="train-forecast-reasons"><span>Why this crowding level</span><ul>${items}</ul></div>${coachMarkup(result)}<div class="train-forecast-method">Direct Darwin coach-loading evidence takes priority for this train only. Relative coach guidance appears only when reported loading forms meaningfully separated groups. If direct evidence disappears, Kerbside falls back to Forecast v4 rather than assuming the train is quiet.</div>`;
 }
+function serviceHasLiveLoading(service){
+  if(!service)return false;
+  if(evidenceFor(service))return true;
+  return Array.isArray(service.legs)&&service.legs.some(leg=>!!evidenceFor(leg));
+}
+function serviceForArticle(article){
+  const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,services=timetable&&timetable.state&&Array.isArray(timetable.state.services)?timetable.state.services:null;
+  if(!services||!article||typeof article.getAttribute!=='function')return null;
+  const id=String(article.getAttribute('data-service-id')||'');
+  if(!id)return null;
+  if(typeof timetable.serviceKey==='function')return services.find((service,index)=>String(timetable.serviceKey(service,index))===id)||null;
+  return services.find(service=>String(service&&(service.serviceID||service.uid||service.trainId)||'')===id)||null;
+}
 function syncLiveBadges(root){
   const scope=root||(typeof document!=='undefined'?document:null);
   if(!scope||typeof scope.querySelectorAll!=='function')return 0;
   let changed=0;
   scope.querySelectorAll('.train-scheduled-service').forEach(article=>{
     const route=article.querySelector('.train-route');if(!route)return;
-    const hasLoading=!!article.querySelector('.train-live-loading');
+    const service=serviceForArticle(article),hasLoading=service?serviceHasLiveLoading(service):!!article.querySelector('.train-live-loading');
     let badges=Array.from(route.children||[]).find(child=>child&&child.classList&&child.classList.contains('train-journey-badges'))||null;
     let badge=badges&&badges.querySelector('.train-journey-live');
     if(hasLoading){
@@ -103,5 +116,5 @@ if(typeof document!=='undefined'){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queueLiveBadgeSync,{once:true});else queueLiveBadgeSync();
 }
 
-window.__KERBSIDE_TRAIN_LOADING__={...base,VERSION,MULTI_COACH_GAP,TWO_COACH_GAP,LIVE_BADGE_TEXT,spreadFor,fromFormation,evidenceFor,applyToForecast,coachMarkup,explainMarkup,syncLiveBadges};
+window.__KERBSIDE_TRAIN_LOADING__={...base,VERSION,MULTI_COACH_GAP,TWO_COACH_GAP,LIVE_BADGE_TEXT,spreadFor,fromFormation,evidenceFor,applyToForecast,coachMarkup,explainMarkup,serviceHasLiveLoading,syncLiveBadges};
 })();
