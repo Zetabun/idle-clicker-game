@@ -18,7 +18,7 @@
     "test:journey-identity": "node tests/journey-identity-regression.mjs || (echo \"::error title=KERBSIDE_SUITE::test:journey-identity failed\" && exit 1)",
     "test:disruptions": "node tests/disruption-regression.mjs || (echo \"::error title=KERBSIDE_SUITE::test:disruptions failed\" && exit 1)",
     "test:listing-reliability": "node tests/listing-reliability-regression.mjs || (echo \"::error title=KERBSIDE_SUITE::test:listing-reliability failed\" && exit 1)",
-    "test:train-route": "(node tests/train-browser-core-regression.mjs && node tests/train-provider-timeout-regression.mjs && node tests/train-mobile-layout-regression.mjs) || (echo \"::error title=KERBSIDE_SUITE::test:train-route failed\" && exit 1)"
+    "test:train-route": "(node tests/train-browser-core-regression.mjs || (echo \"::error title=KERBSIDE_ROUTE::browser-core failed\" && exit 1)) && (node tests/train-provider-timeout-regression.mjs || (echo \"::error title=KERBSIDE_ROUTE::provider-timeout failed\" && exit 1)) && (node tests/train-mobile-layout-regression.mjs || (echo \"::error title=KERBSIDE_ROUTE::mobile-layout failed\" && exit 1))"
   },
   "devDependencies": {
     "leaflet": "1.9.4",
