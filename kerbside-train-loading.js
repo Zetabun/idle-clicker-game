@@ -25,6 +25,8 @@ const LEVELS=[
 const QUIETER_GAP=15;
 
 function number(value){
+  if(value==null)return null;
+  if(typeof value==='string'&&!value.trim())return null;
   const n=Number(value);
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
