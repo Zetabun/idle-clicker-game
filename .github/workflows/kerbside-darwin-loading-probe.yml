@@ -1,0 +1,151 @@
+name: Probe Darwin passenger loading
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/kerbside-darwin-loading-probe.yml
+      - .github/scripts/probe-darwin-loading.py
+      - .github/scripts/test-probe-darwin-loading.py
+      - .github/scripts/summarize-darwin-loading.py
+      - docs/darwin-loading-probe.md
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/kerbside-darwin-loading-probe.yml
+      - .github/scripts/probe-darwin-loading.py
+      - .github/scripts/test-probe-darwin-loading.py
+      - .github/scripts/summarize-darwin-loading.py
+      - docs/darwin-loading-probe.md
+  schedule:
+    # Offset from the top of the hour because GitHub's scheduled queue is
+    # busiest at :00. Eight minutes per hour gives a useful multi-day sample
+    # without attempting to archive the full Darwin stream.
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Live sample duration in seconds (30-1800)
+        required: false
+        default: '480'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-darwin-loading-probe
+  cancel-in-progress: false
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Test privacy-safe Darwin loading parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/test-probe-darwin-loading.py
+          python -m py_compile \
+            .github/scripts/probe-darwin-loading.py \
+            .github/scripts/summarize-darwin-loading.py
+
+  live-probe:
+    if: github.event_name != 'pull_request'
+    needs: self-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROBE_SECONDS: ${{ github.event_name == 'workflow_dispatch' && inputs.seconds || '480' }}
+      RDM_DARWIN_KAFKA_BOOTSTRAP: ${{ secrets.RDM_DARWIN_KAFKA_BOOTSTRAP }}
+      RDM_DARWIN_KAFKA_GROUP_ID: ${{ secrets.RDM_DARWIN_KAFKA_GROUP_ID }}
+      RDM_DARWIN_KAFKA_USERNAME: ${{ secrets.RDM_DARWIN_KAFKA_USERNAME }}
+      RDM_DARWIN_KAFKA_PASSWORD: ${{ secrets.RDM_DARWIN_KAFKA_PASSWORD }}
+      RDM_DARWIN_KAFKA_TOPIC: ${{ secrets.RDM_DARWIN_KAFKA_TOPIC }}
+      RDM_DARWIN_KAFKA_CA_LOCATION: ${{ secrets.RDM_DARWIN_KAFKA_CA_LOCATION }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Check RDM Darwin PubSub configuration
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in \
+            RDM_DARWIN_KAFKA_BOOTSTRAP \
+            RDM_DARWIN_KAFKA_GROUP_ID \
+            RDM_DARWIN_KAFKA_USERNAME \
+            RDM_DARWIN_KAFKA_PASSWORD \
+            RDM_DARWIN_KAFKA_TOPIC; do
+            if [[ -z "${!name:-}" ]]; then
+              missing+=("$name")
+            fi
+          done
+          if (( ${#missing[@]} )); then
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            {
+              echo '### Darwin loading probe is installed but not connected'
+              echo
+              echo 'Subscribe Kerbside to the RDM **Darwin Real Time Train Information PubSub** product and add these repository secrets:'
+              printf -- '- `%s`\n' "${missing[@]}"
+              echo
+              echo '`RDM_LDB_API_KEY` is the Live Departure Board credential and cannot substitute for these Kafka PubSub credentials.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo 'configured=true' >> "$GITHUB_OUTPUT"
+
+      - name: Install Kafka client
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input confluent-kafka certifi
+
+      - name: Sample the live edge only
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/probe-darwin-loading.py \
+            --seconds "$PROBE_SECONDS" \
+            --output darwin-loading-report.json
+
+      - name: Add aggregate result to workflow summary
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/summarize-darwin-loading.py \
+            darwin-loading-report.json --markdown >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo
+            echo '> Coverage is the proportion of distinct service RIDs observed in this sample that also emitted loading evidence. It is not the proportion of every train running on the network.'
+            echo '> No raw Darwin messages, RIDs, train IDs, station IDs or per-service loading values are stored in the artifact.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload aggregate sample
+        if: steps.config.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: darwin-loading-${{ github.run_id }}-${{ github.run_attempt }}
+          path: darwin-loading-report.json
+          if-no-files-found: error
+          retention-days: 7
