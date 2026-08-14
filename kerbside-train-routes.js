@@ -12,6 +12,7 @@ const routeState = {
   searchTimer:null,
   searchAbort:null,
   searchSeq:0,
+  suggestions:[],
   lastDirectRequest:''
 };
 
@@ -19,7 +20,7 @@ const nativeFetch = window.fetch.bind(window);
 const $ = id => document.getElementById(id);
 const esc = value => String(value == null ? '' : value)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#39;');
 
 function readStoredRoute(){
   try{
@@ -154,6 +155,7 @@ window.fetch = function kerbsideRouteAwareFetch(input,init){
 function closeSuggestions(){
   clearTimeout(routeState.searchTimer);
   routeState.searchTimer = null;
+  routeState.suggestions = [];
   if(routeState.searchAbort){
     routeState.searchAbort.abort();
     routeState.searchAbort = null;
@@ -190,18 +192,81 @@ function stationResults(json){
 function renderSuggestions(items){
   const suggest = $('trainDestinationSuggest');
   if(!suggest) return;
-  if(!items.length){
+  routeState.suggestions = items.slice(0,8);
+  if(!routeState.suggestions.length){
     suggest.innerHTML = '<div class="train-suggest-empty">No matching destination stations found.</div>';
     suggest.hidden = false;
     return;
   }
-  suggest.innerHTML = items.slice(0,8).map((item,index)=>
+  suggest.innerHTML = routeState.suggestions.map((item,index)=>
     `<button type="button" role="option" data-destination-index="${index}"><span>${esc(item.name)}</span><b>${esc(item.crs)}</b></button>`
   ).join('');
   suggest.hidden = false;
-  [...suggest.querySelectorAll('[data-destination-index]')].forEach((button,index)=>{
-    button.addEventListener('click',()=>selectDestination(items[index]));
-  });
+}
+
+function stationFromSuggestionButton(button){
+  if(!button) return null;
+  const ownIndexAttr = button.getAttribute('data-destination-index');
+  if(ownIndexAttr !== null){
+    const ownIndex = Number(ownIndexAttr);
+    if(Number.isInteger(ownIndex) && ownIndex >= 0 && routeState.suggestions[ownIndex]){
+      return routeState.suggestions[ownIndex];
+    }
+  }
+  const name = String(button.querySelector('span')?.textContent || '').trim();
+  const crs = String(button.querySelector('b')?.textContent || '').trim().toUpperCase();
+  return name && /^[A-Z0-9]{3}$/.test(crs) ? {name,crs} : null;
+}
+
+function suggestionButtonFromEvent(event,suggest){
+  const target = event && event.target;
+  if(!target || !target.closest) return null;
+  const button = target.closest('[data-destination-index],[data-k-to]');
+  return button && suggest.contains(button) ? button : null;
+}
+
+function destinationMatchesInput(){
+  const destination = routeState.destination;
+  const input = $('trainDestinationQuery');
+  if(!destination || !input) return false;
+  const value = String(input.value || '').trim().toLowerCase();
+  return value === String(destination.name || '').trim().toLowerCase()
+    || value.toUpperCase() === String(destination.crs || '').trim().toUpperCase();
+}
+
+function installSuggestionHandlers(){
+  const suggest = $('trainDestinationSuggest');
+  if(!suggest || suggest.dataset.kerbsideRouteDelegated === '1') return;
+  suggest.dataset.kerbsideRouteDelegated = '1';
+
+  const commit = event=>{
+    const button = suggestionButtonFromEvent(event,suggest);
+    if(!button) return;
+    const station = stationFromSuggestionButton(button);
+    if(!station) return;
+    event.preventDefault();
+    event.stopPropagation();
+    selectDestination(station);
+  };
+
+  // Commit on pointerdown so an iOS predictive-text input event or a late
+  // autocomplete response cannot replace the tapped button before click fires.
+  suggest.addEventListener('pointerdown',commit);
+  // Capture click as the keyboard/accessibility fallback and to suppress the
+  // per-render click listeners installed by the journey-planner module.
+  suggest.addEventListener('click',commit,true);
+
+  if(typeof MutationObserver !== 'undefined'){
+    new MutationObserver(()=>{
+      // The journey planner owns a second async station lookup. If that older
+      // request resolves after a destination was committed, discard its stale
+      // repaint instead of letting the suggestions reappear over the selection.
+      if(routeState.destination && destinationMatchesInput() && suggest.childNodes.length){
+        suggest.hidden = true;
+        suggest.innerHTML = '';
+      }
+    }).observe(suggest,{childList:true});
+  }
 }
 
 async function searchDestinations(query){
@@ -242,10 +307,8 @@ function selectDestination(station,{reload=true}={}){
   if(input) input.value = routeState.destination.name;
   saveRoute();
   updateSummary();
-  setTimeout(()=>{
-    closeSuggestions();
-    if(reload) reloadBoard();
-  },0);
+  closeSuggestions();
+  if(reload) deferReload();
   return true;
 }
 
@@ -300,7 +363,7 @@ function installStyles(){
 }
 
 function installUi(){
-  if($('trainDestinationQuery')) return true;
+  if($('trainDestinationQuery')){ installSuggestionHandlers(); return true; }
   const fromInput = $('trainStationQuery');
   const fromWrap = fromInput && fromInput.closest('.train-search-wrap');
   const stationMeta = $('trainStationMeta');
@@ -343,6 +406,7 @@ function installUi(){
   });
   $('trainDestinationGo').addEventListener('click',submitDestination);
   $('trainDestinationClear').addEventListener('click',()=>clearDestination({reload:true}));
+  installSuggestionHandlers();
 
   fromInput.addEventListener('input',()=>{
     if(!routeState.destination) return;
@@ -358,7 +422,10 @@ function installUi(){
   });
 
   document.addEventListener('click',event=>{
-    const inside = event.target && event.target.closest ? event.target.closest('.train-destination-wrap') : null;
+    const destinationWrap = $('trainDestinationQuery')?.closest('.train-destination-wrap') || document.querySelector('.train-destination-wrap');
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const inside = !!(destinationWrap && (path.includes(destinationWrap)
+      || (event.target && destinationWrap.contains(event.target))));
     if(!inside) closeSuggestions();
   });
 
