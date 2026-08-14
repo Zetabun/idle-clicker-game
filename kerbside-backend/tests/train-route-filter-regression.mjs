@@ -282,6 +282,7 @@ async function runMobile(browser){
       rowSpread:Math.max(...centres)-Math.min(...centres),
       ordered:brand.right<=mode.left+2&&mode.right<=settings.left+2,
       within:brand.left>=-0.5&&settings.right<=innerWidth+0.5,
+      viewportHeight:innerHeight,
       plannerHeight:planner.height,
       overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
     };
@@ -289,7 +290,7 @@ async function runMobile(browser){
   assert.ok(mobileLayout.topHeight<105,`train header should stay compact: ${JSON.stringify(mobileLayout)}`);
   assert.ok(mobileLayout.rowSpread<=12,`brand, mode and settings should share a row: ${JSON.stringify(mobileLayout)}`);
   assert.ok(mobileLayout.ordered&&mobileLayout.within,`train header controls should not overlap: ${JSON.stringify(mobileLayout)}`);
-  assert.ok(mobileLayout.plannerHeight<440,`journey planner should not dominate the phone viewport: ${JSON.stringify(mobileLayout)}`);
+  assert.ok(mobileLayout.plannerHeight<=mobileLayout.viewportHeight*0.55,`journey planner should stay within 55% of the phone viewport: ${JSON.stringify(mobileLayout)}`);
   assert.ok(mobileLayout.overflow<=1,`mobile route filter should not overflow: ${JSON.stringify(mobileLayout)}`);
 
   const liveRequestsBeforeFuture = departureRequestCount(diagnostics);
