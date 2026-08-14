@@ -1,0 +1,3 @@
+Kerbside 0.9.13 crowding calibration patch.
+
+Use measured DfT RAI0202/RAI0203 time-band seat utilisation as the ordinal prior where available, remove duplicate load-factor score pressure, keep off-peak school-holiday demand neutral without measured evidence, and use a neutral probability prior where no empirical utilisation prior exists.
