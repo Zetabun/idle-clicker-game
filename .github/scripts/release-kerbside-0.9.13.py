@@ -141,7 +141,7 @@ sub_once(
   const c=load(),cal=c.window.__KERBSIDE_CALIBRATION__,station={name:'Birmingham New Street',crs:'BHM'},service={operator:'CrossCountry',operatorCode:'XC'},date=new FixedDate('2026-08-12T12:00:00Z');
   const operator=cal.operatorCrowdingSignal(service,station,8*60),capacity=cal.peakCapacitySignal(station,8*60),peakPrior=cal.utilisationPrior(service,station,8*60,date),middayPrior=cal.utilisationPrior(service,station,13*60,date),latePrior=cal.utilisationPrior(service,station,21*60,date);
   assert.equal(operator.measured,true,operator);assert.ok(operator.reasons.some(r=>/DfT 2025 measured/.test(r)),operator);
-  assert.equal(capacity.measured,true,capacity);assert.equal(peakPrior.group,'timeBand');assert.match(peakPrior.source,/RAI0202\/RAI0203/);assert.ok(Math.abs(peakPrior.probabilities.reduce((a,b)=>a+b,0)-1)<1e-5);
+  assert.equal(capacity.measured,true,capacity);assert.equal(peakPrior.group,'timeBand');assert.match(peakPrior.source,/RAI0202[/]RAI0203/);assert.ok(Math.abs(peakPrior.probabilities.reduce((a,b)=>a+b,0)-1)<1e-5);
   assert.equal(middayPrior.group,'timeBand');assert.equal(latePrior.band,'21:00-21:59');assert.ok(Math.abs(latePrior.loadFactor-(2995/10729))<1e-12,latePrior);assert.ok(latePrior.probabilities[0]>latePrior.probabilities[1],latePrior);
 });
 
@@ -179,6 +179,14 @@ test('measured load factor is not double-counted inside the demand-shape score',
 });
 """
 timebands_test.write_text(timebands_text, encoding='utf-8')
+
+# The reliability suite should follow the repository release version rather
+# than hard-coding the version that first introduced this regression check.
+replace_once(
+    'kerbside-backend/tests/reliability-regression.mjs',
+    "  assert.match(source('kerbside-status.js'),/const VERSION='0\\.9\\.12';/);",
+    "  const releaseVersion=source('VERSION').trim();\n  assert.ok(source('kerbside-status.js').includes(`const VERSION='${releaseVersion}';`),releaseVersion);",
+)
 
 Path('VERSION').write_text('0.9.13\n', encoding='utf-8')
 replace_once('kerbside-status.js', "const VERSION='0.9.12';", "const VERSION='0.9.13';")
