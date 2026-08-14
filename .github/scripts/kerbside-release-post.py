@@ -94,9 +94,28 @@ route,count=re.subn(
     today_section,route,count=1,flags=re.S)
 if count != 1: raise SystemExit(f'route test: today section replacements={count}')
 
+clear_diagnostic="""  await page.waitForTimeout(1500);
+  const clearState=await page.evaluate(()=>({
+    services:document.querySelectorAll('.train-service').length,
+    liveHidden:document.getElementById('trainBoard')?.hidden,
+    scheduledHidden:document.getElementById('trainScheduledBoard')?.hidden,
+    timetableMode:window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.mode,
+    destination:window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination||null,
+    station:window.__KERBSIDE_TRAINS__?.state?.station?.crs||'',
+    refreshDisabled:document.getElementById('trainRefresh')?.disabled,
+    refreshText:document.getElementById('trainRefresh')?.textContent||'',
+    boardSeq:window.__KERBSIDE_TRAINS__?.state?.boardSeq||0,
+    boardCrs:window.__KERBSIDE_TRAINS__?.state?.board?.crs||'',
+    boardServices:Array.isArray(window.__KERBSIDE_TRAINS__?.state?.services)?window.__KERBSIDE_TRAINS__.state.services.length:-1,
+    plannerMessage:document.getElementById('trainPlannerMessage')?.textContent||''
+  }));
+  assert.equal(clearState.services,2,`destination clear state ${JSON.stringify(clearState)}; requests=${JSON.stringify(diagnostics.requests)}`);
+  assert.equal(await page.locator('#trainBoard').isHidden(),false);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),true);
+  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);"""
 route=route.replace(
 "  await waitForServiceCount(page,2);\n  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);",
-"  await waitForServiceCount(page,2);\n  assert.equal(await page.locator('#trainBoard').isHidden(),false);\n  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),true);\n  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);",
+clear_diagnostic,
 1)
 route_path.write_text(route,encoding='utf-8')
-print('Applied release compatibility and current rail regression contracts.')
+print('Applied release compatibility, destination-clear ownership fix and rail regression diagnostics.')
