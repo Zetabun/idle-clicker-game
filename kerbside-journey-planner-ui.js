@@ -14,6 +14,7 @@
    are never intercepted here. */
 const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.2';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.2';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
   'https://hux.azurewebsites.net'
@@ -25,6 +26,10 @@ const stationState={source:'idle',count:0,searches:0,fallbacks:0,error:''};
 let stationRows=null;
 let stationRowsPromise=null;
 
+function notifyStationState(){
+  if(typeof document==='undefined'||typeof CustomEvent!=='function')return;
+  document.dispatchEvent(new CustomEvent('kerbside:station-data',{detail:{...stationState}}));
+}
 function requestUrl(input){
   try{
     const raw=typeof input==='string'||input instanceof URL?String(input):input&&input.url;
@@ -81,7 +86,7 @@ function throwIfAborted(init){if(init&&init.signal&&init.signal.aborted)throw ab
 function loadStations(){
   if(stationRows)return Promise.resolve(stationRows);
   if(stationRowsPromise)return stationRowsPromise;
-  stationState.source='loading';stationState.error='';
+  stationState.source='loading';stationState.error='';notifyStationState();
   stationRowsPromise=upstreamFetch(LOCAL_STATIONS_URL,{headers:{Accept:'application/json'}})
     .then(response=>{
       if(!response||!response.ok)throw new Error(`Local station data returned ${response?response.status:'no response'}`);
@@ -90,11 +95,11 @@ function loadStations(){
     .then(json=>{
       const rows=parseLocations(json);
       if(!rows.length)throw new Error('Local station data contained no National Rail stations');
-      stationRows=rows;stationState.source='local';stationState.count=rows.length;stationState.error='';
+      stationRows=rows;stationState.source='local';stationState.count=rows.length;stationState.error='';notifyStationState();
       return rows;
     })
     .catch(error=>{
-      stationRowsPromise=null;stationState.source='fallback';stationState.error=error&&error.message?error.message:'unavailable';
+      stationRowsPromise=null;stationState.source='fallback';stationState.error=error&&error.message?error.message:'unavailable';notifyStationState();
       throw error;
     });
   return stationRowsPromise;
@@ -106,14 +111,14 @@ async function stationDataFetch(input,init){
     throwIfAborted(init);
     const rows=await loadStations();
     throwIfAborted(init);
-    stationState.source='local';stationState.searches++;stationState.error='';
+    stationState.source='local';stationState.searches++;stationState.error='';notifyStationState();
     return new Response(JSON.stringify(search(rows,query)),{
       status:200,
       headers:{'Content-Type':'application/json; charset=utf-8','X-Kerbside-Station-Source':'darwin-local'}
     });
   }catch(error){
     if(error&&error.name==='AbortError')throw error;
-    stationState.source='fallback';stationState.fallbacks++;stationState.error=error&&error.message?error.message:'unavailable';
+    stationState.source='fallback';stationState.fallbacks++;stationState.error=error&&error.message?error.message:'unavailable';notifyStationState();
     return upstreamFetch(input,init);
   }
 }
@@ -128,7 +133,15 @@ loadStations().catch(()=>{});
 const core=document.createElement('script');
 core.src=PLANNER_CORE_URL;
 core.async=false;
-core.onerror=()=>{stationState.error='Journey planner core failed to load';};
+core.onerror=()=>{stationState.error='Journey planner core failed to load';notifyStationState();};
 (document.head||document.documentElement).appendChild(core);
+
+/* Rail health is deliberately separate from the planner. Loading it here keeps
+   bus.html stable while still making the runtime health object available to
+   the Status tab and to diagnostics in the console. */
+const health=document.createElement('script');
+health.src=RAIL_HEALTH_URL;
+health.async=false;
+(document.head||document.documentElement).appendChild(health);
 
 })();
