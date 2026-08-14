@@ -200,27 +200,30 @@ function stationMatchesOrigin(service,station){
     return (crs&&originCrs===crs)||(name&&originName===name);
   });
 }
-function journeyShapeSignal(service,station){
+function journeyShapeSignal(service,station,options={}){
   const before=callingPoints(service&&service.previousCallingPoints);
   const after=callingPoints(service&&service.subsequentCallingPoints);
-  const startsHere=stationMatchesOrigin(service,station);
+  const startsHere=stationMatchesOrigin(service,station),measuredLoad=options&&options.measuredLoad===true;
   let amount=0;const reasons=[];
-  if(before.length>=12){amount+=.7;reasons.push('long run before this stop, so the train arrives already loaded');}
-  else if(before.length>=6){amount+=.45;reasons.push('several stops already made, so passengers have accumulated');}
-  else if(before.length>=2){amount+=.2;reasons.push('a few stops already made');}
-  else if(startsHere===true){amount-=.25;reasons.push('train starts at this station');}
-  else if(startsHere===false){amount+=.25;reasons.push('through train may already carry passengers');}
-  /* Expanded Darwin calling points replace the binary starts-here proxy when
-     they arrive. That improves the same row instead of adding a second copy
-     of through-train loading on top of the timetable estimate. */
-  if(before.some(p=>(STATION_TIER[String(p.crs||'').toUpperCase()]||1)>=3)){
-    amount+=.35;reasons.push('has already called at a major hub');
+  /* Once ORR route-load evidence exists, do not also add the old "number of
+     previous stops" proxy. That would count the same accumulation twice. */
+  if(!measuredLoad){
+    if(before.length>=12){amount+=.7;reasons.push('long run before this stop, so the train arrives already loaded');}
+    else if(before.length>=6){amount+=.45;reasons.push('several stops already made, so passengers have accumulated');}
+    else if(before.length>=2){amount+=.2;reasons.push('a few stops already made');}
+    else if(startsHere===true){amount-=.25;reasons.push('train starts at this station');}
+    else if(startsHere===false){amount+=.25;reasons.push('through train may already carry passengers');}
+    if(before.some(p=>(STATION_TIER[String(p.crs||'').toUpperCase()]||1)>=3)){
+      amount+=.35;reasons.push('has already called at a major hub');
+    }
+  }else if(startsHere===true){
+    amount-=.15;reasons.push('train starts at this station, so there is no carried load from earlier calls');
   }
   if(after.length&&after.length<=3&&after.some(p=>(STATION_TIER[String(p.crs||'').toUpperCase()]||1)>=3)){
-    amount+=.3;reasons.push('fast service to a major destination');
+    amount+=measuredLoad?.15:.3;reasons.push('fast service to a major destination');
   }
   const evidence=(before.length||after.length)?1:(startsHere==null?0:.5);
-  return {amount,reasons,evidence};
+  return {amount,reasons,evidence,measuredLoad};
 }
 
 /* School holidays. Half-term and the summer break move demand off the
@@ -314,20 +317,20 @@ function forecast(service,index,services,context={}){
   const displacement=connectionDisplacementSignal(context);
   const live=future?{amount:0,reasons:[]}:liveSignal(service,index,services);
   const formation=future?{amount:0,reasons:[]}:formationSignal(api,service,services,date,station);
-  const shape=journeyShapeSignal(service,station);
+  const calV4=calibration(),destination=destinationForModel(service,context);
+  const routeLoad=calV4&&typeof calV4.routeLoadSignal==='function'?calV4.routeLoadSignal(service,station):(calV4&&typeof calV4.routeFlowSignal==='function'?calV4.routeFlowSignal(station,destination):{amount:0,reasons:[],measured:false,source:'none'});
+  const shape=journeyShapeSignal(service,station,{measuredLoad:routeLoad.measured===true});
   const scale=stationScaleSignal(station);
   const school=schoolHolidaySignal(date,minute);
   const offpeak=offPeakSignal(date,minute);
   const shapeCal=calibratedDemandSignal(station,minute,date);
   const serviceClass=serviceClassSignal(service,station,minute,date);
-  const calV4=calibration(),destination=destinationForModel(service,context);
-  const routeFlow=calV4&&typeof calV4.routeFlowSignal==='function'?calV4.routeFlowSignal(station,destination):{amount:0,reasons:[],measured:false};
   const operatorCrowding=calV4&&typeof calV4.operatorCrowdingSignal==='function'?calV4.operatorCrowdingSignal(service,station,minute):{amount:0,reasons:[],measured:false};
   const peakCapacity=calV4&&typeof calV4.peakCapacitySignal==='function'?calV4.peakCapacitySignal(station,minute):{amount:0,reasons:[],measured:false};
   const pattern=servicePatternSignal(api,service,date,station);
 
   let score=Number(base.score);if(!Number.isFinite(score))score=1.8;
-  score=clamp(score+calendar.amount+events.amount+displacement.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount+routeFlow.amount+operatorCrowding.amount+peakCapacity.amount+pattern.amount,.25,5);
+  score=clamp(score+calendar.amount+events.amount+displacement.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount+routeLoad.amount+operatorCrowding.amount+peakCapacity.amount+pattern.amount,.25,5);
   /* Each signal already knows which way it pushed the score, so a reason can
      carry its own direction instead of the reader inferring it from wording.
      Tagged at the one place the signals are merged: the sign of the owning
@@ -339,7 +342,7 @@ function forecast(service,index,services,context={}){
     [shape.reasons,shape.amount],[events.reasons,events.amount],[displacement.reasons,displacement.amount],
     [live.reasons,live.amount],[formation.reasons,formation.amount],
     [operatorCrowding.reasons,operatorCrowding.amount],[peakCapacity.reasons,peakCapacity.amount],
-    [routeFlow.reasons,routeFlow.amount],[pattern.reasons,pattern.amount],
+    [routeLoad.reasons,routeLoad.amount],[pattern.reasons,pattern.amount],
     [serviceClass.reasons,serviceClass.amount],[school.reasons,school.amount],[offpeak.reasons,offpeak.amount],
     [shapeCal.reasons,shapeCal.amount],[calendar.reasons,calendar.amount],[scale.reasons,scale.amount]
   ];
@@ -358,13 +361,24 @@ function forecast(service,index,services,context={}){
   const calibrated=!!(scale.reasons.length&&calibration()&&calibration().profileFor&&calibration().profileFor(station));
   const historySamples=Math.max(Number(base.historySamples)||0,Number(historical.samples)||0);
   const historyEvidence=historySamples>=3?1:(historySamples?0.5:0);
-  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(displacement.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0)+(routeFlow.measured?.5:0)+(operatorCrowding.measured?1:0)+(peakCapacity.measured?1:0)+(pattern.samples>=3?1:0);
+  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(displacement.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0)+(routeLoad.measured?.5:0)+(operatorCrowding.measured?1:0)+(peakCapacity.measured?1:0)+(pattern.samples>=3?1:0);
   const probabilityModel=ordinalProbabilities(score,service,station,evidence,date),accuracyBucket=accuracyBucketFor({future,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,formation,events,context}),confidenceInfo=probabilityConfidence(probabilityModel,evidence,accuracyBucket),confidence=confidenceInfo.label;
   const cal=calibration();
+  const measuredBenchmark=cal&&typeof cal.benchmarkForecast==='function'?cal.benchmarkForecast(station,minute,date,probabilityModel.level):null;
   let calibrationNote='';
   if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,minute,date)||'';}catch(error){calibrationNote='';}}
-  return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],reasonDetail:reasonDetail.length?reasonDetail:[{text:'service time and route demand baseline',direction:'flat'}],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,accuracyBucket,empiricalAccuracy:confidenceInfo.local};
+  return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],reasonDetail:reasonDetail.length?reasonDetail:[{text:'service time and route demand baseline',direction:'flat'}],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,routeLoad,measuredBenchmark,accuracyBucket,empiricalAccuracy:confidenceInfo.local};
 }
+function benchmarkServices(services,station,date){
+  const list=Array.isArray(services)?services:[],when=date instanceof Date?date:new Date(date||Date.now());
+  let count=0,exact=0,withinOne=0,totalError=0;
+  list.forEach((service,index)=>{
+    const result=forecast(service,index,list,{station,referenceDate:when}),benchmark=result&&result.measuredBenchmark;
+    if(!benchmark)return;count++;if(benchmark.exact)exact++;if(benchmark.withinOne)withinOne++;totalError+=Number(benchmark.bandError)||0;
+  });
+  return {count,exact:count?exact/count:0,withinOne:count?withinOne/count:0,meanBandError:count?totalError/count:0,source:'DfT aggregate time-band benchmark',aggregateOnly:true};
+}
+
 /* options.mode overrides the Planning / Live-adjusted badge and options.note
    appends a sentence to the method line, so the scheduled timetable board can
    render this exact card with its own framing instead of maintaining a second
@@ -430,6 +444,6 @@ function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimat
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal};
+window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices};
 window.__KERBSIDE_FORECAST_V3__=window.__KERBSIDE_FORECAST_V4__;
 })();

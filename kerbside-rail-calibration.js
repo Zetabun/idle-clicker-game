@@ -341,6 +341,80 @@ function routeFlowSignal(station,destination){
   const source=direct?from:to,base=Math.max(1,Number(source.usage)||0),share=Math.min(1,(Number(source.mainJourneys)||0)/base),amount=clamp(.12+share*.8,.12,.42);
   return {amount,reasons:[`ORR station estimates identify ${source.mainName} as ${source.name}'s largest origin/destination flow`],measured:true,share};
 }
+/* Route-load model.
+   The bundled ORR station-usage table contains each station's strongest
+   origin/destination flow. That is not a full ODM, so Kerbside uses it only as
+   a directional route-load proxy: does measured demand from this station, or
+   from stations already served, continue along the train's remaining calls?
+
+   A future full ORR Origin Destination Matrix can be injected through
+   window.__KERBSIDE_ORR_ODM__. It is trusted only when the host explicitly
+   declares commercial reuse and licence provenance. Until then no scraped or
+   ambiguous journey-planner data enters this path. */
+function routeCallCrs(groups){
+  const out=[];
+  (Array.isArray(groups)?groups:[]).forEach(group=>{
+    const points=Array.isArray(group&&group.callingPoint)?group.callingPoint:Array.isArray(group&&group.callingPoints)?group.callingPoints:Array.isArray(group)?group:[];
+    points.forEach(point=>{const code=String(point&&(point.crs||point.crsCode)||'').toUpperCase();if(/^[A-Z0-9]{3}$/.test(code)&&!out.includes(code))out.push(code);});
+  });
+  return out;
+}
+function orrOdmDataset(){
+  const raw=window.__KERBSIDE_ORR_ODM__;
+  if(!raw||typeof raw!=='object'||raw.commercialUse!==true)return null;
+  const authority=String(raw.authority||raw.publisher||'').trim(),licence=String(raw.licence||raw.license||'').trim(),period=String(raw.period||raw.asOf||'').trim();
+  const usable=typeof raw.flow==='function'||(raw.flows&&typeof raw.flows==='object');
+  if(!authority||!licence||!period||!usable)return null;
+  return raw;
+}
+function odmFlow(feed,from,to){
+  if(!feed)return null;
+  const a=String(from||'').toUpperCase(),b=String(to||'').toUpperCase();
+  if(!a||!b||a===b)return 0;
+  let raw;
+  try{if(typeof feed.flow==='function')raw=feed.flow(a,b);else{const direct=feed.flows&&feed.flows[`${a}|${b}`],nested=feed.flows&&feed.flows[a]&&feed.flows[a][b];raw=direct!=null?direct:nested;}}catch(error){return null;}
+  const value=Number(raw);
+  return Number.isFinite(value)&&value>=0?value:null;
+}
+function flowShareToTargets(from,targets,feed){
+  const code=String(from||'').toUpperCase(),row=stationUsageRecord({crs:code}),usage=Number(row&&row.usage)||0;
+  if(!row||usage<=0||!targets||!targets.size)return null;
+  if(feed){
+    let journeys=0,known=0;
+    targets.forEach(to=>{const value=odmFlow(feed,code,to);if(value!=null){journeys+=value;known++;}});
+    if(known||feed.completeMatrix===true)return {share:clamp(journeys/usage,0,.8),journeys,exact:true,row};
+  }
+  const main=String(row.mainCrs||'').toUpperCase(),journeys=Number(row.mainJourneys)||0;
+  if(main&&targets.has(main)&&journeys>0)return {share:clamp(journeys/usage,0,.8),journeys,exact:false,row};
+  return null;
+}
+function routeLoadSignal(service,station){
+  const current=crsOf(station),before=routeCallCrs(service&&service.previousCallingPoints),after=routeCallCrs(service&&service.subsequentCallingPoints);
+  const destination=destinationCrs(service);if(destination&&!after.includes(destination))after.push(destination);
+  if(!current||!after.length)return {amount:0,reasons:[],measured:false,source:'none'};
+  const downstream=new Set(after.filter(code=>code&&code!==current)),feed=orrOdmDataset(),board=flowShareToTargets(current,downstream,feed);
+  let retained=0,alighting=0,retainedStations=0,alightingStations=0,exactEvidence=!!(board&&board.exact);
+  before.slice(-10).forEach(code=>{
+    const onward=flowShareToTargets(code,downstream,feed);if(onward){retained+=onward.share;if(onward.share>=.015)retainedStations++;exactEvidence=exactEvidence||onward.exact;}
+    const here=flowShareToTargets(code,new Set([current]),feed);if(here){alighting+=here.share;if(here.share>=.015)alightingStations++;exactEvidence=exactEvidence||here.exact;}
+  });
+  const boardShare=Number(board&&board.share)||0,matched=boardShare>0||retained>0||alighting>0;
+  if(!matched&&!exactEvidence)return {amount:0,reasons:[],measured:false,source:'none'};
+  let amount=0;const reasons=[];
+  if(boardShare>0){amount+=clamp(.08+boardShare*1.2,.08,.35);reasons.push(feed?'ORR origin-destination demand from this station continues along this train':'ORR identifies this train direction as this station’s strongest measured origin/destination flow');}
+  if(retained>0){amount+=clamp(retained*.7,.05,.45);reasons.push(feed?`ORR origin-destination demand from ${retainedStations||1} earlier call${retainedStations===1?'':'s'} continues beyond this station`:`ORR strongest-flow evidence from ${retainedStations||1} earlier call${retainedStations===1?'':'s'} points further along this train`);}
+  if(alighting>0){amount-=clamp(alighting*.35,.03,.18);reasons.push(feed?`ORR origin-destination demand indicates alighting pressure at this station`:`ORR strongest-flow evidence suggests some accumulated demand leaves the train here`);}
+  return {amount:clamp(amount,-.2,.7),reasons,measured:true,source:feed?'orr-odm':'orr-main-flow-proxy',boardShare,retainedPressure:retained,alightingPressure:alighting,licence:feed?String(feed.licence||feed.license||''):'Open Government Licence v3.0 station-usage aggregate'};
+}
+const CROWD_RANK={quiet:0,moderate:1,busy:2,'very-busy':3};
+function benchmarkForecast(station,minute,date,predictedLevel){
+  if(!isWeekday(date))return null;
+  const measured=measuredBand(station,minute,'departures'),measuredLevel=measured&&measuredCrowdingBand(measured.loadFactor),predicted=String(predictedLevel||'');
+  if(!measuredLevel||CROWD_RANK[predicted]==null)return null;
+  const bandError=Math.abs(CROWD_RANK[predicted]-CROWD_RANK[measuredLevel]);
+  return {source:'DfT RAI0202/RAI0203 2025 aggregate benchmark',aggregateOnly:true,band:measured.label,loadFactor:measured.loadFactor,measuredLevel,predictedLevel:predicted,bandError,exact:bandError===0,withinOne:bandError<=1};
+}
+
 const OPERATOR_ALIASES={XC:['crosscountry'],GW:['great western'],VT:['avanti west coast'],GR:['london north eastern','lner'],EM:['east midlands'],LM:['west midlands','london northwestern'],NT:['northern'],TP:['transpennine'],CH:['chiltern'],AW:['transport for wales','arriva trains wales'],SE:['southeastern'],SN:['southern'],TL:['thameslink','govia thameslink'],GN:['great northern','govia thameslink'],SW:['south western'],CC:['c2c'],LE:['greater anglia'],LO:['london overground']};
 function operatorKeys(service){const data=v4Data(),normalise=data&&data.norm?data.norm:(v=>String(v||'').toLowerCase()),full=normalise(service&&(service.operator||'')),code=String(service&&(service.operatorCode||'')).toUpperCase();return [full,...(OPERATOR_ALIASES[code]||[])].filter(Boolean);}
 function findOperator(area,service){if(!area||!area.operators)return null;const keys=operatorKeys(service),data=v4Data(),normalise=data&&data.norm?data.norm:(v=>String(v||'').toLowerCase());for(const key of keys){if(area.operators[key])return area.operators[key];for(const [name,row] of Object.entries(area.operators)){if(name==='_total')continue;const n=normalise(name);if(n.includes(key)||key.includes(n))return row;}}return null;}
@@ -370,7 +444,7 @@ function utilisationPrior(service,station,minute,date){
 window.__KERBSIDE_CALIBRATION__={
   source:SOURCE,released:RELEASED,countPeriod:COUNT_PERIOD,
   scaleSignal,demandShape,serviceClassSignal,contextNote,measuredBand,measuredCrowdingBand,scoreThresholds,
-  stationUsageRecord,stationUsageSignal,routeFlowSignal,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,
+  stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,
   profileFor,operatorClass,isWeekday,
   NETWORK,GEOGRAPHY,OPERATOR_CLASS,LONDON_TERMINALS,CITIES,TIME_BANDS,SCORE_THRESHOLDS,LOAD_FACTOR_BANDS,AM_PEAK,PM_PEAK
 };
