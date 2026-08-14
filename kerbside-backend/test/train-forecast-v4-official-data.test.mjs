@@ -6,8 +6,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..','..');
-const [trainsSource,demandSource,calibrationSource,forecastSource]=await Promise.all([
+const [trainsSource,timebandsSource,demandSource,calibrationSource,forecastSource]=await Promise.all([
   fs.readFile(path.join(root,'kerbside-trains.js'),'utf8'),
+  fs.readFile(path.join(root,'kerbside-rail-timebands.js'),'utf8'),
   fs.readFile(path.join(root,'kerbside-rail-demand-v4.js'),'utf8'),
   fs.readFile(path.join(root,'kerbside-rail-calibration.js'),'utf8'),
   fs.readFile(path.join(root,'kerbside-train-forecast-v4.js'),'utf8')
@@ -18,7 +19,7 @@ const document={readyState:'loading',addEventListener(){},getElementById(){retur
 function load(){
   const window={addEventListener(){},dispatchEvent(){},__KERBSIDE_TRAIN_OVERLAY__:{state:{services:[]}}};
   const context={window,document,Date:FixedDate,Intl,console,localStorage:storage(),setTimeout,clearTimeout,setInterval,clearInterval,AbortController,Blob,Response,TextDecoder,DecompressionStream,requestAnimationFrame(){return 1;},MutationObserver:class{observe(){}disconnect(){}}};
-  vm.createContext(context);vm.runInContext(trainsSource,context);vm.runInContext(demandSource,context);vm.runInContext(calibrationSource,context);vm.runInContext(forecastSource,context);
+  vm.createContext(context);vm.runInContext(trainsSource,context);vm.runInContext(timebandsSource,context);vm.runInContext(demandSource,context);vm.runInContext(calibrationSource,context);vm.runInContext(forecastSource,context);
   return context;
 }
 
@@ -58,4 +59,36 @@ test('empirical confidence reads only non-identifying accuracy buckets',()=>{
   const c=load(),trains=c.window.__KERBSIDE_TRAINS__,v4=c.window.__KERBSIDE_FORECAST_V4__,bucket='live|measured|single|formation|no-event';
   trains.state.forecastAccuracy={version:2,total:10,exact:7,withinOne:10,absoluteError:3,buckets:{[bucket]:{total:10,exact:7,withinOne:10,absoluteError:3}},recent:[]};
   const result=v4.probabilityConfidence({probabilities:[.05,.12,.72,.11]},6,bucket);assert.equal(result.local.total,10);assert.equal(result.local.withinOne,1);assert.ok(['Medium-high','High'].includes(result.label),result);
+});
+
+
+test('route-load model uses ORR strongest-flow evidence along the actual calling pattern',()=>{
+  const c=load(),data=c.window.__KERBSIDE_RAIL_DEMAND_V4__,cal=c.window.__KERBSIDE_CALIBRATION__;
+  const pair=Object.entries(data.stations).find(([,row])=>row.mainCrs&&row.mainJourneys>1000);assert.ok(pair);
+  const [from,row]=pair,service={destination:[{crs:row.mainCrs}],subsequentCallingPoints:[{callingPoint:[{crs:row.mainCrs}]}],previousCallingPoints:[]};
+  const result=cal.routeLoadSignal(service,{crs:from});assert.equal(result.measured,true,result);assert.equal(result.source,'orr-main-flow-proxy');assert.ok(result.amount>0,result);assert.ok(result.boardShare>0,result);
+});
+
+test('full ODM adapter rejects unclear commercial rights and accepts explicit licensed fixtures',()=>{
+  const c=load(),cal=c.window.__KERBSIDE_CALIBRATION__;
+  c.window.__KERBSIDE_ORR_ODM__={authority:'Fixture',period:'2024-25',licence:'research-only',commercialUse:false,flows:{'BHM|BRI':100000}};
+  assert.equal(cal.orrOdmDataset(),null);
+  c.window.__KERBSIDE_ORR_ODM__={authority:'Licensed fixture',period:'2024-25',licence:'commercial-test',commercialUse:true,completeMatrix:true,flows:{'BHM|BRI':100000}};
+  assert.ok(cal.orrOdmDataset());
+  const result=cal.routeLoadSignal({destination:[{crs:'BRI'}],subsequentCallingPoints:[{callingPoint:[{crs:'BRI'}]}],previousCallingPoints:[]},{crs:'BHM'});
+  assert.equal(result.source,'orr-odm');assert.equal(result.measured,true);assert.ok(result.amount>0,result);
+});
+
+test('measured route-load evidence suppresses the old previous-stop accumulation proxy',()=>{
+  const c=load(),v4=c.window.__KERBSIDE_FORECAST_V4__;
+  const service={origin:[{crs:'AAA'}],previousCallingPoints:[{callingPoint:Array.from({length:8},(_,i)=>({crs:`A${i}A`}))}],subsequentCallingPoints:[{callingPoint:[{crs:'BHM'}]}]};
+  const legacy=v4.journeyShapeSignal(service,{crs:'ZZZ'}),measured=v4.journeyShapeSignal(service,{crs:'ZZZ'},{measuredLoad:true});
+  assert.ok(legacy.amount>measured.amount,{legacy,measured});assert.equal(measured.measuredLoad,true);
+});
+
+test('DfT aggregate benchmark can backtest forecast bands without user feedback',()=>{
+  const c=load(),cal=c.window.__KERBSIDE_CALIBRATION__,v4=c.window.__KERBSIDE_FORECAST_V4__,station={name:'Birmingham New Street',crs:'BHM'},date=new FixedDate('2026-08-12T12:00:00Z');
+  const benchmark=cal.benchmarkForecast(station,8*60+15,date,'busy');assert.ok(benchmark,benchmark);assert.equal(benchmark.aggregateOnly,true);assert.match(benchmark.source,/DfT/);assert.ok(['quiet','moderate','busy','very-busy'].includes(benchmark.measuredLevel));
+  const service={std:'08:15',operator:'CrossCountry',operatorCode:'XC',isCancelled:false,scheduledOnly:true,origin:[{crs:'BHM'}],destination:[{crs:'BRI'}],displayDestination:{crs:'BRI'},subsequentCallingPoints:[{callingPoint:[{crs:'BRI'}]}],previousCallingPoints:[]};
+  const summary=v4.benchmarkServices([service],station,date);assert.equal(summary.count,1,summary);assert.equal(summary.aggregateOnly,true);assert.ok(summary.withinOne>=0&&summary.withinOne<=1,summary);
 });
