@@ -3,7 +3,7 @@ import argparse, base64, csv, hashlib, json
 from collections import defaultdict
 from pathlib import Path
 
-DEFAULT_THRESHOLD=25
+DEFAULT_THRESHOLD=100
 DEFAULT_TOP_N=5
 
 def put_varint(buf,n):
