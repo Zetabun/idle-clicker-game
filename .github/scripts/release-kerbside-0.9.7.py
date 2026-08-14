@@ -9,7 +9,7 @@ ASSET_SHA='9e7e47ffcf446e6d089d4d2db4a270512ef34af684081718585b3d5f583d4ae8'
 ASSET_BYTES=462_527
 SOURCE_SHA='07d41e44884911c48929e844ee51f0c5ef66f861842d36564bb89a3b29bdfd79'
 STAGING=sorted((ROOT/'.github/scripts').glob('odm-release-data-*.txt'))
-ASSET_STAGE=[p for p in STAGING if int(p.stem.rsplit('-',1)[1])<28]
+ASSET_STAGE=[p for p in STAGING if int(p.stem.rsplit('-',1)[1])<16]
 
 def read(p): return (ROOT/p).read_text(encoding='utf-8')
 def write(p,s): (ROOT/p).write_text(s,encoding='utf-8')
@@ -26,7 +26,7 @@ def bump(p):
     if '0.9.6' in s: write(p,s.replace('0.9.6','0.9.7'))
 
 def build_asset():
-    names=[f'odm-release-data-{i:03d}.txt' for i in range(28)]
+    names=[f'odm-release-data-{i:03d}.txt' for i in range(16)]
     if [p.name for p in ASSET_STAGE]!=names: raise SystemExit('ORR ODM staging set mismatch')
     packed=''.join(p.read_text(encoding='ascii').strip() for p in ASSET_STAGE)
     try: payload=lzma.decompress(base64.b64decode(packed,validate=True))
@@ -44,6 +44,7 @@ for p in ['bus.html','kerbside-journey-planner-ui.js','kerbside-status.js','kerb
     bump(p)
 one('bus.html','<script src="kerbside-rail-demand-v4.js?v=0.9.7"></script>\n<script src="kerbside-rail-calibration.js?v=0.9.7"></script>','<script src="kerbside-rail-demand-v4.js?v=0.9.7"></script>\n<script src="kerbside-orr-odm-2024-25.js?v=0.9.7"></script>\n<script src="kerbside-rail-calibration.js?v=0.9.7"></script>')
 
+# Full licensed ODM route-load adapter. Sparse omissions stay unknown, never zero.
 rx('kerbside-rail-calibration.js',r"function odmFlow\(feed,from,to\)\{.*?\n\}\nfunction flowShareToTargets",'''function odmFlow(feed,from,to){
   if(!feed)return null;const a=String(from||'').toUpperCase(),b=String(to||'').toUpperCase();if(!a||!b||a===b)return 0;let raw;
   try{if(typeof feed.flow==='function')raw=feed.flow(a,b);else{const direct=feed.flows&&feed.flows[`${a}|${b}`],nested=feed.flows&&feed.flows[a]&&feed.flows[a][b];raw=direct!=null?direct:nested;}}catch(error){return null;}
@@ -70,6 +71,7 @@ rx('kerbside-rail-calibration.js',r"function routeLoadSignal\(service,station\)\
 }
 const CROWD_RANK''')
 
+# DfT observations are weekday/non-bank-holiday evidence; keep omitted-date compatibility for direct callers.
 one('kerbside-rail-calibration.js',"  return day!=='Sat'&&day!=='Sun';\n}\n","  return day!=='Sat'&&day!=='Sun';\n}\nfunction isDftReferenceDay(date,isBankHoliday=false){return !isBankHoliday&&(date==null||isWeekday(date));}\n")
 one('kerbside-rail-calibration.js','function demandShape(station,minute,date){\n  if(minute==null||!isWeekday(date))return {amount:0,reasons:[]};','function demandShape(station,minute,date,isBankHoliday=false){\n  if(minute==null||!isDftReferenceDay(date,isBankHoliday))return {amount:0,reasons:[]};')
 one('kerbside-rail-calibration.js','function serviceClassSignal(service,station,minute,date){\n  if(!isWeekday(date))return {amount:0,reasons:[]};','function serviceClassSignal(service,station,minute,date,isBankHoliday=false){\n  if(!isDftReferenceDay(date,isBankHoliday))return {amount:0,reasons:[]};')
@@ -82,6 +84,7 @@ one('kerbside-rail-calibration.js','function utilisationPrior(service,station,mi
 one('kerbside-rail-calibration.js','stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,','stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,odmFlow,flowShareToTargets,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,')
 one('kerbside-rail-calibration.js','profileFor,operatorClass,isWeekday,','profileFor,operatorClass,isWeekday,isDftReferenceDay,')
 
+# DfT time-sensitive layers use expected live time when a plausible delay crosses a band; planning stays scheduled.
 one('kerbside-train-forecast-v4.js',"function isFuture(date){return stamp(date)>stamp(new Date());}function normalise(v){","function isFuture(date){return stamp(date)>stamp(new Date());}\nfunction isBankHoliday(date){return state.bankHolidays.has(stamp(date));}\nfunction dftMinuteForService(service,date){const scheduled=parseMinutes(service&&service.std);if(scheduled==null||isFuture(date))return scheduled;const expected=parseMinutes(service&&service.etd);if(expected==null)return scheduled;let delay=expected-scheduled;if(delay<-720)delay+=1440;if(delay>720)delay-=1440;return Math.abs(delay)<=180?(scheduled+delay+1440)%1440:scheduled;}\nfunction normalise(v){")
 one('kerbside-train-forecast-v4.js','function ordinalProbabilities(score,service,station,evidence,date){\n  const cal=calibration(),minute=parseMinutes(service&&service.std),prior=cal&&typeof cal.utilisationPrior===\'function\'?cal.utilisationPrior(service,station,minute,date):null,base=prior&&Array.isArray(prior.probabilities)?prior.probabilities:[.18,.34,.36,.12],temperature=clamp(1.22-Math.min(8,Number(evidence)||0)*.065,.62,1.18);','function ordinalProbabilities(score,service,station,evidence,date,minuteOverride=null,bankHoliday=false){\n  const cal=calibration(),minute=minuteOverride==null?parseMinutes(service&&service.std):minuteOverride,prior=cal&&typeof cal.utilisationPrior===\'function\'?cal.utilisationPrior(service,station,minute,date,bankHoliday):null,base=prior&&Array.isArray(prior.probabilities)?prior.probabilities:[.18,.34,.36,.12],temperature=clamp(1.22-Math.min(8,Number(evidence)||0)*.065,.62,1.18);')
 one('kerbside-train-forecast-v4.js','  const minute=parseMinutes(service&&service.std),future=isFuture(date);','  const minute=parseMinutes(service&&service.std),future=isFuture(date),dftMinute=dftMinuteForService(service,date),bankHoliday=isBankHoliday(date);')
@@ -96,6 +99,7 @@ one('kerbside-train-forecast-v4.js','cal.benchmarkForecast(station,minute,date,p
 one('kerbside-train-forecast-v4.js','cal.contextNote(station,minute,date)||\'\'','cal.contextNote(station,dftMinute,date,bankHoliday)||\'\'')
 one('kerbside-train-forecast-v4.js','benchmarkServices};','benchmarkServices,dftMinuteForService,isBankHoliday};')
 
+# Ensure browser regression explicitly protects data-before-calibration ordering.
 p='kerbside-backend/tests/browser-regression.mjs'; s=read(p)
 if 'kerbside-orr-odm-2024-25.js?v=0.9.7' not in s:
     s+="\n// 0.9.7: measured ODM must execute before calibration consumes it.\nassert.ok(html.indexOf('kerbside-orr-odm-2024-25.js?v=0.9.7')>html.indexOf('kerbside-rail-demand-v4.js?v=0.9.7'));\nassert.ok(html.indexOf('kerbside-orr-odm-2024-25.js?v=0.9.7')<html.indexOf('kerbside-rail-calibration.js?v=0.9.7'));\n"
