@@ -288,7 +288,7 @@ function ensureStatusPanel(){
   if(note)switchboard.insertBefore(card,note);else if(overview&&overview.nextSibling)switchboard.insertBefore(card,overview.nextSibling);else switchboard.appendChild(card);
   return card;
 }
-function setPanelText(card,selector,value){const node=card&&card.querySelector(selector);if(node)node.textContent=value||'';}
+function setPanelText(card,selector,value){const node=card&&card.querySelector(selector),next=String(value||'');if(node&&node.textContent!==next)node.textContent=next;}
 function renderStatusPanel(snapshot=state.current){
   const card=ensureStatusPanel();if(!card||!snapshot)return false;
   card.dataset.state=snapshot.status;
