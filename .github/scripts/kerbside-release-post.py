@@ -20,21 +20,26 @@ replace_once('kerbside-backend/tests/browser-regression.mjs',
 "assert.match(busSource, /DATA_MANIFEST_SOURCE='stored'/);",
 "assert.match(busSource, /const fallbackSource=memoryFallback\\?'memory-stale':'stored'/);\nassert.match(busSource, /DATA_MANIFEST_SOURCE=fallbackSource/);")
 
-# Clearing a destination changes the timetable owner synchronously, but the
-# old route module waited for the timetable's periodic sync before relinquishing
-# the scheduled journey board. Make that ownership transition explicit before
-# reloading the station-wide live board.
+# Clearing a destination changes the timetable owner synchronously. Relinquish
+# the scheduled journey board before reloading the station-wide live board.
 replace_once('kerbside-train-routes.js',
 "  updateSummary();\n  if(reload) deferReload();\n}",
 "  updateSummary();\n  if(reload){\n    const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;\n    if(timetable&&typeof timetable.sync==='function')timetable.sync();\n    deferReload();\n  }\n}")
 
 # This formerly dormant regression predates the unified timetable + live-
 # evidence journey board and used today+4 despite a rolling ~48h snapshot.
-# Preserve its important route/date invariants but test the current UI contract.
+# Preserve its route/date invariants while testing the current UI contract.
 route_path=Path('kerbside-backend/tests/train-route-filter-regression.mjs')
 route=route_path.read_text(encoding='utf-8')
 route,count=re.subn(r"const FUTURE_DATE=addCalendarDays\(TODAY,4\);","const FUTURE_DATE=TOMORROW;",route,count=1)
 if count != 1: raise SystemExit(f'route test: future-date constant replacements={count}')
+
+# The scheduled board deliberately retains hidden timetable rows when the live
+# board is restored. Count only live-board rows when a test expects live trains.
+old_helper="await page.waitForFunction(expected=>document.querySelectorAll('.train-service').length === expected,count,{timeout:10000});"
+new_helper="await page.waitForFunction(expected=>document.querySelectorAll('#trainBoard .train-service').length === expected,count,{timeout:10000});"
+if route.count(old_helper)!=1: raise SystemExit(f'route test: live service helper replacements={route.count(old_helper)}')
+route=route.replace(old_helper,new_helper,1)
 
 future_section="""  await page.waitForFunction(()=>{
     const scheduled=document.getElementById('trainScheduledBoard');
@@ -94,28 +99,9 @@ route,count=re.subn(
     today_section,route,count=1,flags=re.S)
 if count != 1: raise SystemExit(f'route test: today section replacements={count}')
 
-clear_diagnostic="""  await page.waitForTimeout(1500);
-  const clearState=await page.evaluate(()=>({
-    services:document.querySelectorAll('.train-service').length,
-    liveHidden:document.getElementById('trainBoard')?.hidden,
-    scheduledHidden:document.getElementById('trainScheduledBoard')?.hidden,
-    timetableMode:window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.mode,
-    destination:window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination||null,
-    station:window.__KERBSIDE_TRAINS__?.state?.station?.crs||'',
-    refreshDisabled:document.getElementById('trainRefresh')?.disabled,
-    refreshText:document.getElementById('trainRefresh')?.textContent||'',
-    boardSeq:window.__KERBSIDE_TRAINS__?.state?.boardSeq||0,
-    boardCrs:window.__KERBSIDE_TRAINS__?.state?.board?.crs||'',
-    boardServices:Array.isArray(window.__KERBSIDE_TRAINS__?.state?.services)?window.__KERBSIDE_TRAINS__.state.services.length:-1,
-    plannerMessage:document.getElementById('trainPlannerMessage')?.textContent||''
-  }));
-  assert.equal(clearState.services,2,`destination clear state ${JSON.stringify(clearState)}; requests=${JSON.stringify(diagnostics.requests)}`);
-  assert.equal(await page.locator('#trainBoard').isHidden(),false);
-  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),true);
-  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);"""
 route=route.replace(
 "  await waitForServiceCount(page,2);\n  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);",
-clear_diagnostic,
+"  await waitForServiceCount(page,2);\n  assert.equal(await page.locator('#trainBoard').isHidden(),false);\n  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),true);\n  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);",
 1)
 route_path.write_text(route,encoding='utf-8')
-print('Applied release compatibility, destination-clear ownership fix and rail regression diagnostics.')
+print('Applied release compatibility, destination-clear ownership fix and current rail regression contracts.')
