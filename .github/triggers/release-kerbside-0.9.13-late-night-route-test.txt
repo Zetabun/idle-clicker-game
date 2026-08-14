@@ -1,0 +1,3 @@
+Kerbside 0.9.13 late-night route regression fix.
+
+Keep the Today timetable ownership and route-persistence checks, but allow a truthful zero-remaining-journeys state late at night instead of requiring at least one future service.
