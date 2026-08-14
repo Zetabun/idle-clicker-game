@@ -55,5 +55,6 @@ test('train dependency retries are bounded and status version follows release',(
     const text=source(name);assert.doesNotMatch(text,/setTimeout\(init,0\)/,name);
     assert.match(text,/INIT_RETRY_MAX/,name);
   }
-  assert.match(source('kerbside-status.js'),/const VERSION='0\.9\.12';/);
+  const releaseVersion=source('VERSION').trim();
+  assert.ok(source('kerbside-status.js').includes(`const VERSION='${releaseVersion}';`),releaseVersion);
 });

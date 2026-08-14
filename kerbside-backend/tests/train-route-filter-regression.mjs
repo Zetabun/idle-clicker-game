@@ -202,7 +202,7 @@ async function runDesktop(browser){
   assert.equal(await page.locator('#trainBoard').isHidden(),true);
   assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
   assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
-  assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Schedule');
+  assert.equal(await page.locator('#trainTravelDateMeta').getAttribute('data-mode'),'planning');
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),FUTURE_DATE);
   assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
     `selecting a future date must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
