@@ -271,7 +271,7 @@ try{
     throw error;
   }
   assert.match(await connection.textContent(),/Connection at risk/);
-  assert.match(await connection.textContent(),/live 7m change/);
+  assert.match(await connection.textContent(),/live 7m wait/);
   assert.ok(diagnostics.railRequests.some(value=>/^\/departures\/BHM\/to\/CNM\/9\?/.test(value)),'connection overlay should request a BHM → CNM first-leg board');
   assert.ok(diagnostics.railRequests.some(value=>/^\/departures\/CNM\/to\/GLO\/9\?/.test(value)),'connection overlay should request a CNM → GLO onward board');
   const connectionState=await page.evaluate(()=>window.__KERBSIDE_TRAIN_TIMETABLE__.state.services.find(service=>service.journeyType==='connection'));
@@ -283,9 +283,12 @@ try{
   await connectionDetail.waitFor({state:'visible'});
   assert.match(await connectionDetail.textContent(),/Journey plan/);
   assert.match(await connectionDetail.textContent(),/Great Western Railway/);
-  assert.match(await connectionDetail.textContent(),/Kerbside conservative minimum: 10 min/);
+  assert.match(await connectionDetail.textContent(),/Kerbside planning buffer: 10 min/);
+  assert.match(await connectionDetail.textContent(),/Scheduled wait 15 min/);
+  assert.match(await connectionDetail.textContent(),/Live-adjusted wait 7 min/);
+  assert.match(await connectionDetail.textContent(),/3 min short/);
   assert.match(await connectionDetail.textContent(),/both trains live-checked/i);
-  assert.match(await connectionDetail.textContent(),/10-minute planning buffer/);
+  assert.match(await connectionDetail.textContent(),/10-minute Kerbside planning buffer/);
   assert.match(await connectionDetail.textContent(),/Both legs are timetabled from the National Rail Darwin Timetable Files; both trains live-checked/i);
   assert.match(await connectionDetail.textContent(),/Backup if missed/);
   assert.match(await connectionDetail.textContent(),/11:20 → 11:52/);
@@ -315,7 +318,7 @@ try{
     return service?.legs?.[1]?.serviceID===`rid-change-recovery-${today}`&&service?.connectionRisk==='good'&&service?.liveConnectionMinutes===27;
   },TODAY,{timeout:10000});
   assert.match(await connection.textContent(),/Replanned/);
-  assert.match(await connection.textContent(),/live 27m change/);
+  assert.match(await connection.textContent(),/live 27m wait/);
   assert.doesNotMatch(await connection.textContent(),/Connection at risk/);
   assert.match(await connectionDetail.textContent(),/11:20/);
   assert.match(await connectionDetail.textContent(),/11:52/);
