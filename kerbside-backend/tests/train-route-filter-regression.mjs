@@ -89,6 +89,13 @@ function attachDiagnostics(page){
 }
 
 async function mockExternal(page,diagnostics){
+  const corsHeaders = {'access-control-allow-origin':'*'};
+  const json = (route,status,body)=>route.fulfill({
+    status,
+    contentType:'application/json',
+    headers:corsHeaders,
+    body:JSON.stringify(body)
+  });
   const handle = async route=>{
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
@@ -98,22 +105,31 @@ async function mockExternal(page,diagnostics){
       const results = stationResults.filter(item=>
         item.stationName.toLowerCase().includes(query) || item.crsCode.toLowerCase() === query
       );
-      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(results.length ? results : stationResults)});
+      await json(route,200,results.length ? results : stationResults);
       return;
     }
-    if(pathname === '/departures/BHM/9'){
-      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(allBoard)});
+    if(pathname === '/departures/BHM/9' || pathname === '/departures/BHM/20'){
+      await json(route,200,allBoard);
       return;
     }
-    if(pathname === '/departures/BHM/to/BRI/9'){
-      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(directBoard)});
+    if(pathname === '/departures/BHM/to/BRI/9' || pathname === '/departures/BHM/to/BRI/20'){
+      await json(route,200,directBoard);
+      return;
+    }
+    const departure = pathname.match(/^\/departures\/([A-Z0-9]{3})(?:\/to\/([A-Z0-9]{3}))?\/(?:9|20)$/i);
+    if(departure){
+      const crs=departure[1].toUpperCase(),filter=String(departure[2]||'').toUpperCase();
+      await json(route,200,{
+        generatedAt:'2026-08-10T13:20:00Z',locationName:crs,crs,nrccMessages:[],
+        ...(filter?{filterLocationName:filter,filtercrs:filter}:{}),trainServices:[]
+      });
       return;
     }
     if(pathname.startsWith('/service/')){
-      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({})});
+      await json(route,200,{});
       return;
     }
-    await route.fulfill({status:404,contentType:'application/json',body:'{}'});
+    await json(route,404,{});
   };
   await page.route('**://huxley2.azurewebsites.net/**', handle);
   await page.route('**://hux.azurewebsites.net/**', handle);
