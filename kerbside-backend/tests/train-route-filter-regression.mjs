@@ -101,11 +101,11 @@ async function mockExternal(page,diagnostics){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(results.length ? results : stationResults)});
       return;
     }
-    if(pathname === '/departures/BHM/20'){
+    if(pathname === '/departures/BHM/9'){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(allBoard)});
       return;
     }
-    if(pathname === '/departures/BHM/to/BRI/20'){
+    if(pathname === '/departures/BHM/to/BRI/9'){
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(directBoard)});
       return;
     }
@@ -139,7 +139,7 @@ async function selectBristol(page,diagnostics){
   assert.match(await page.locator('#trainDestinationSuggest').textContent(),/Bristol Temple Meads/);
   await page.locator('#trainDestinationSuggest button').filter({hasText:'Bristol Temple Meads'}).click();
   await waitForServiceCount(page,1);
-  assert.ok(diagnostics.requests.includes('/departures/BHM/to/BRI/20'),
+  assert.ok(diagnostics.requests.includes('/departures/BHM/to/BRI/9'),
     `expected direct Huxley request, got ${JSON.stringify(diagnostics.requests)}`);
 }
 
@@ -162,7 +162,7 @@ async function runDesktop(browser){
   assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false);
   assert.equal(await page.locator('label[for="trainTravelDate"]').textContent(),'Travel date');
   assert.equal(await page.locator('#trainTravelDate').inputValue(),TODAY);
-  const visibleFindActions = await page.locator('.train-route-planner button').evaluateAll(buttons=>buttons.filter(button=>{
+  const visibleFindActions = await page.locator('.train-planner button').evaluateAll(buttons=>buttons.filter(button=>{
     const style=getComputedStyle(button),box=button.getBoundingClientRect();
     return /find/i.test(button.textContent||'') && style.display!=='none' && Number(style.opacity)>0 && box.width>2 && box.height>2;
   }).map(button=>(button.textContent||'').trim()));
@@ -178,11 +178,11 @@ async function runDesktop(browser){
   await page.locator('#trainTravelDate').fill(FUTURE_DATE);
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'planning');
-  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/advance journey.*scheduled services/i);
+  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/advance journey.*timetabled services/i);
   await page.waitForSelector('#trainBoard .train-future-date');
   assert.equal(await page.locator('.train-service').count(),0);
   assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
-  assert.match(await page.locator('#trainStationMeta').textContent(),/BHM → BRI.*scheduled services/i);
+  assert.match(await page.locator('#trainStationMeta').textContent(),/BHM → BRI.*timetabled services/i);
   assert.equal(await page.locator('#trainRefresh').isDisabled(),true);
   assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Advance');
   assert.match(await page.locator('#trainBoard').textContent(),/Advance timetable/);
@@ -211,12 +211,12 @@ async function runDesktop(browser){
   const stored = await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.route.v1') || 'null'));
   assert.deepEqual(stored,{fromCrs:'BHM',destination:{name:'Bristol Temple Meads',crs:'BRI'}});
 
-  const directRequestsBeforeReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/20').length;
+  const directRequestsBeforeReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/9').length;
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForSelector('#trainDestinationQuery');
   await waitForServiceCount(page,1);
   await page.waitForFunction(()=>document.getElementById('trainDestinationQuery')?.value === 'Bristol Temple Meads');
-  const directRequestsAfterReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/20').length;
+  const directRequestsAfterReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/9').length;
   assert.ok(directRequestsAfterReload > directRequestsBeforeReload,'saved route should restore the direct board after reload');
   assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
 
@@ -252,7 +252,7 @@ async function runMobile(browser){
     const brand=document.querySelector('#topbar .brand').getBoundingClientRect();
     const mode=document.querySelector('#topbar .transport-switch').getBoundingClientRect();
     const settings=document.getElementById('setBtn').getBoundingClientRect();
-    const planner=document.querySelector('.train-route-planner').getBoundingClientRect();
+    const planner=document.querySelector('.train-planner').getBoundingClientRect();
     const centres=[brand,mode,settings].map(rect=>rect.top+rect.height/2);
     return {
       topHeight:top.height,

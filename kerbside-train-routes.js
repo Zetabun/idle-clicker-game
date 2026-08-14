@@ -180,7 +180,10 @@ function closeSuggestions(){
   if(suggest){ suggest.hidden = true; suggest.innerHTML = ''; }
 }
 
-function fetchWithTimeout(url,signal){
+/* The body has to be read while the timer is still armed. fetch settles on the
+   response headers, so clearing the timeout there left a stalled body
+   downloading untimed and the destination search waiting on it for good. */
+async function fetchWithTimeout(url,signal){
   const controller = new AbortController();
   const timeout = setTimeout(()=>controller.abort(),REQUEST_TIMEOUT_MS);
   let detach = null;
@@ -192,8 +195,15 @@ function fetchWithTimeout(url,signal){
       detach = ()=>signal.removeEventListener('abort',abort);
     }
   }
-  return nativeFetch(url,{signal:controller.signal,headers:{Accept:'application/json'}})
-    .finally(()=>{ clearTimeout(timeout); if(detach) detach(); });
+  try{
+    const response = await nativeFetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
+    const body = await response.arrayBuffer();
+    const empty = response.status===204 || response.status===205 || response.status===304;
+    return new Response(empty?null:body,{status:response.status,statusText:response.statusText,headers:response.headers});
+  } finally {
+    clearTimeout(timeout);
+    if(detach) detach();
+  }
 }
 
 function stationResults(json){

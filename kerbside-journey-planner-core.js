@@ -49,7 +49,16 @@ async function fetchAttempt(url,init){
     else{outer.addEventListener('abort',abort,{once:true});detach=()=>outer.removeEventListener('abort',abort);}
   }
   try{
-    return await previousFetch(url,{...(init||{}),signal:controller.signal});
+    const response=await previousFetch(url,{...(init||{}),signal:controller.signal});
+    /* Settling on the headers is what the provider-fallback logic below reads,
+       but the body is downloaded after this function has already disarmed its
+       timer. A provider that answers and then stalls mid-JSON therefore never
+       times out and never fails over to the backup — the one thing this layer
+       exists to do. Read it here instead and rebuild an equivalent response;
+       status, statusText and headers are all the callers consult. */
+    const body=await response.arrayBuffer();
+    const empty=response.status===204||response.status===205||response.status===304;
+    return new Response(empty?null:body,{status:response.status,statusText:response.statusText,headers:response.headers});
   }finally{
     clearTimeout(timeout);
     if(detach) detach();

@@ -76,8 +76,8 @@ try{
       const result=stations.filter(item=>item.stationName.toLowerCase().includes(query)||item.crsCode.toLowerCase()===query);
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(result.length?result:stations)});
     }
-    if(pathname==='/departures/BHM/20')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(allBoard)});
-    if(pathname==='/departures/BHM/to/BRI/20')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(directBoard)});
+    if(pathname==='/departures/BHM/9')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(allBoard)});
+    if(pathname==='/departures/BHM/to/BRI/9')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(directBoard)});
     if(pathname.startsWith('/service/'))return route.fulfill({status:200,contentType:'application/json',body:'{}'});
     return route.fulfill({status:404,contentType:'application/json',body:'{}'});
   });
@@ -92,7 +92,7 @@ try{
   await page.waitForSelector('#trainJourneyGo');
 
   assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false,'destination should be available as part of the same journey form');
-  const findButtons=await page.locator('.train-route-planner button').evaluateAll(buttons=>buttons.filter(button=>{
+  const findButtons=await page.locator('.train-planner button').evaluateAll(buttons=>buttons.filter(button=>{
     const style=getComputedStyle(button),box=button.getBoundingClientRect();
     return /find/i.test(button.textContent||'')&&style.display!=='none'&&Number(style.opacity)>0&&box.width>2&&box.height>2;
   }).map(button=>(button.textContent||'').trim()));
@@ -109,7 +109,7 @@ try{
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Live train data unavailable/);
   assert.match(await page.locator('#trainJourneySummary').textContent(),/BHM → BRI/);
   assert.ok(diagnostics.primary.length>0,'primary Huxley endpoint should have been attempted');
-  assert.ok(diagnostics.fallback.includes('/departures/BHM/to/BRI/20'),`fallback direct request missing: ${JSON.stringify(diagnostics)}`);
+  assert.ok(diagnostics.fallback.includes('/departures/BHM/to/BRI/9'),`fallback direct request missing: ${JSON.stringify(diagnostics)}`);
   assert.ok(diagnostics.events.length>0,'same-day event source should be queried after a complete journey is selected');
 
   const provider=await page.evaluate(()=>window.__KERBSIDE_RAIL_PROVIDER__&&({active:window.__KERBSIDE_RAIL_PROVIDER__.state.active,fallbacks:window.__KERBSIDE_RAIL_PROVIDER__.state.fallbacks,providers:window.__KERBSIDE_RAIL_PROVIDER__.providers}));

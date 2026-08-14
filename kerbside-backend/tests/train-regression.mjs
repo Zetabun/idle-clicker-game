@@ -33,6 +33,7 @@ const server = http.createServer(async (req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const {port} = server.address();
 
+let nrccProbeRequests = 0;
 const stationResults = [
   {stationName:'Bristol Temple Meads', crsCode:'BRI'},
   {stationName:'Bristol Parkway', crsCode:'BPW'}
@@ -41,7 +42,11 @@ const board = {
   generatedAt:'2026-08-10T11:50:00Z',
   locationName:'Bristol Temple Meads',
   crs:'BRI',
-  nrccMessages:[{value:'<b>Test disruption</b> affecting one route.'}],
+  /* National Rail publishes NRCC messages as HTML and the rail provider is a
+     community-hosted proxy, so this text is untrusted. Extracting it by
+     assigning innerHTML to a detached div was not inert — the handler ran and
+     the image was fetched from a node never added to the document. */
+  nrccMessages:[{value:'<b>Test disruption</b> affecting one route.<img src="/__nrcc_probe.png" onerror="window.__NRCC_HANDLER_RAN=1">'}],
   trainServices:[
     {
       origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
@@ -71,6 +76,7 @@ const serviceDetail = {
 };
 
 async function mockExternal(page, diagnostics){
+  await page.route('**/__nrcc_probe.png', route=>{ nrccProbeRequests++; return route.fulfill({status:404,body:''}); });
   await page.route('**://huxley2.azurewebsites.net/**', async route=>{
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
@@ -191,6 +197,26 @@ async function assertCrowdingBaselineModel(page){
     `learned forecast should explain historical calibration: ${JSON.stringify(result.learnedForecast)}`);
 }
 
+/* Read the body while the request timer is still armed. fetch settles on the
+   response headers, so clearing the timeout there left every body downloading
+   untimed: a provider that answered and then stalled mid-JSON hung the caller
+   for good — measured still hanging four seconds after a one-second timeout. */
+{
+  const trains = await fs.readFile(path.join(repoRoot,'kerbside-trains.js'),'utf8');
+  const routes = await fs.readFile(path.join(repoRoot,'kerbside-train-routes.js'),'utf8');
+  const planner = await fs.readFile(path.join(repoRoot,'kerbside-journey-planner-core.js'),'utf8');
+  for(const [name,source] of [['kerbside-trains.js',trains],['kerbside-train-routes.js',routes],['kerbside-journey-planner-core.js',planner]]){
+    assert.match(source, /const body\s*=\s*await response\.arrayBuffer\(\);/, `${name} must read the body inside the timeout`);
+    assert.match(source, /new Response\(empty\?null:body/, `${name} must hand back an equivalent response`);
+    assert.doesNotMatch(source, /\.finally\(\(\)=>\{ clearTimeout\(timeout\); if\(detach\) detach\(\); \}\)/,
+      `${name} must not disarm its timer on the response headers`);
+  }
+  assert.match(trains, /const HTML_TEXT_PARSER = typeof DOMParser === 'function'/);
+  assert.match(trains, /HTML_TEXT_PARSER\.parseFromString\(raw,'text\/html'\)/);
+  assert.doesNotMatch(trains, /div\.innerHTML = String\(value \|\| ''\);/,
+    'NRCC text must not be parsed by assigning innerHTML to a detached div');
+}
+
 async function runDesktop(browser){
   const page = await browser.newPage({viewport:{width:1280,height:800}});
   const diagnostics = attachDiagnostics(page);
@@ -213,6 +239,22 @@ async function runDesktop(browser){
   await page.evaluate(()=>document.getElementById('trainStationGo').click());
   await waitForServices(page, diagnostics);
   assert.equal(await page.locator('#trainStationName').textContent(),'Bristol Temple Meads');
+
+  /* The provider's NRCC message still reads correctly, but nothing inside it
+     may execute or fetch on the way to becoming text. */
+  const nrcc = await page.evaluate(async ()=>{
+    await new Promise(resolve=>setTimeout(resolve,400));
+    const alerts=document.getElementById('trainAlerts');
+    return {
+      text:(alerts?alerts.textContent:'').replace(/\s+/g,' ').trim(),
+      html:alerts?alerts.innerHTML:'',
+      handlerRan:!!window.__NRCC_HANDLER_RAN
+    };
+  });
+  assert.equal(nrcc.handlerRan,false,'NRCC message markup must never execute a handler');
+  assert.equal(nrccProbeRequests,0,`NRCC message markup must never issue a request, saw ${nrccProbeRequests}`);
+  assert.match(nrcc.text,/Test disruption affecting one route\./,'the message must still read as plain text');
+  assert.doesNotMatch(nrcc.html,/<img/i,'the alert must not re-emit provider markup');
   const firstServiceText = await page.locator('.train-service').first().textContent();
   assert.match(firstServiceText,/Cardiff Central/);
   assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);

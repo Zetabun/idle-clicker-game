@@ -155,7 +155,7 @@ function recordForecastAccuracy(service,index,reportedLevel,date){
   data.recent=(Array.isArray(data.recent)?data.recent:[]).concat([{ts,predicted:predictedLevel,actual:reportedLevel,error,bucket}]).slice(-ACCURACY_RECENT_MAX);saveForecastAccuracy();return true;
 }
 
-function fetchWithTimeout(url, options={}){
+async function fetchWithTimeout(url, options={}){
   const controller = new AbortController();
   const timeout = setTimeout(()=>controller.abort(), REQUEST_TIMEOUT_MS);
   const outerSignal = options.signal;
@@ -168,14 +168,43 @@ function fetchWithTimeout(url, options={}){
       detach = ()=>outerSignal.removeEventListener('abort', abort);
     }
   }
-  return fetch(url, {...options, signal:controller.signal, headers:{Accept:'application/json', ...(options.headers||{})}})
-    .finally(()=>{ clearTimeout(timeout); if(detach) detach(); });
+  try{
+    const response = await fetch(url, {...options, signal:controller.signal, headers:{Accept:'application/json', ...(options.headers||{})}});
+    /* fetch settles when the response headers arrive, not when its body has, so
+       clearing the timer at that point left every body downloading untimed. A
+       provider that answered and then stalled part-way through the JSON hung
+       the awaiting caller for good — measured still hanging four seconds after
+       a one-second timeout, against 1001ms once the body is read inside it.
+       That is a live board stuck on "loading", a station search whose
+       suggestions never arrive, and an expanded service that stays blank.
+       Read the body while the timer is still armed, then hand back a response
+       the callers read exactly as before. */
+    const body = await response.arrayBuffer();
+    const empty = response.status===204 || response.status===205 || response.status===304;
+    return new Response(empty?null:body, {status:response.status, statusText:response.statusText, headers:response.headers});
+  } finally {
+    clearTimeout(timeout);
+    if(detach) detach();
+  }
 }
 
+/* National Rail publishes NRCC messages as HTML, so the text has to be pulled
+   out of them before it is shown or pattern-matched. Doing that by assigning
+   innerHTML to a detached <div> is not inert: the browser still builds the
+   elements, still fetches every src inside them, and still runs an onload or
+   onerror handler. Measured in Chromium, a handler fired and a network request
+   was issued from a div that was never attached to the document — so a
+   "sanitiser" was handing script execution to whatever the rail provider
+   returned, and that provider is a community-hosted proxy rather than National
+   Rail itself. A DOMParser document has no browsing context: same text out,
+   nothing fetched, nothing executed. */
+const HTML_TEXT_PARSER = typeof DOMParser === 'function' ? new DOMParser() : null;
 function stripHtml(value){
-  const div = document.createElement('div');
-  div.innerHTML = String(value || '');
-  return (div.textContent || '').replace(/\s+/g,' ').trim();
+  const raw = String(value || '');
+  if(!raw) return '';
+  if(!HTML_TEXT_PARSER) return raw.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  const parsed = HTML_TEXT_PARSER.parseFromString(raw,'text/html');
+  return ((parsed && parsed.body && parsed.body.textContent) || '').replace(/\s+/g,' ').trim();
 }
 
 function normaliseToken(value){

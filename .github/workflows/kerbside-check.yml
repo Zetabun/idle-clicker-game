@@ -98,7 +98,10 @@ jobs:
           if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
             base_sha="$(git rev-list --max-parents=0 "$head_sha" | tail -n 1)"
           fi
-          if git diff --quiet "$base_sha" "$head_sha" -- bus.html kerbside-trains.js kerbside-trains.css kerbside-train-routes.js; then
+          # Every file the browser loads with a ?v=VERSION token. Only four of
+          # them were listed, so a change to any of the other fifteen shipped
+          # without advancing the token that makes a returning browser fetch it.
+          if git diff --quiet "$base_sha" "$head_sha" -- bus.html kerbside-trains.css kerbside-trains.js kerbside-train-routes.js kerbside-train-date.js kerbside-train-timetable.js kerbside-train-live-window.js kerbside-train-live-overlay.js kerbside-train-events.js kerbside-train-loading.js kerbside-train-loading-guidance.js kerbside-train-forecast-v4.js kerbside-rail-timebands.js kerbside-rail-demand-v4.js kerbside-rail-calibration.js kerbside-rail-health.js kerbside-journey-planner-ui.js kerbside-journey-planner-core.js kerbside-journey-sheet.js kerbside-status.js; then
             echo 'Served app unchanged; no bump required.'
             exit 0
           fi
