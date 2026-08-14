@@ -68,7 +68,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.9.3',
+    version: '0.9.4',
     bods: Boolean(env.BODS_KEY),
     matchedGtfsRt: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
