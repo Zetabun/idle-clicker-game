@@ -22,6 +22,7 @@ const CONNECTION_HUB_MINUTES={
   GLQ:12,NCL:12,YRK:12,SHF:12,RDG:12,BRI:12,CDF:12,CHX:12,MYB:12
 };
 const MANIFEST_CACHE_MS=5*60*1000;
+const TIMETABLE_REQUEST_TIMEOUT_MS=12000;
 const EDGE_MANIFEST_RECHECK_MS=2*60*1000;
 const WATCH_STORE_KEY='kerbside.rail.journey-watch.v1';
 const state={loading:false,request:0,services:[],signature:'',mode:'live',manifest:null,lastError:'',sourceDate:'',openId:'',edgeRefreshAt:0,watch:null};
@@ -134,11 +135,21 @@ function setScheduledVisibility(active){
   if(scheduled)scheduled.hidden=!active;
 }
 
-async function fetchJson(path){const response=await fetch(path,{cache:'no-cache',headers:{Accept:'application/json'}});if(!response.ok)throw new Error(`Timetable data returned ${response.status}`);return response.json();}
+async function fetchTimetableBytes(path,options={}){
+  const controller=typeof AbortController==='function'?new AbortController():null,timer=controller?setTimeout(()=>controller.abort(),TIMETABLE_REQUEST_TIMEOUT_MS):null;
+  try{
+    const response=await fetch(path,controller?{...options,signal:controller.signal}:options);
+    if(!response.ok)throw new Error(`Timetable data returned ${response.status}`);
+    const bytes=new Uint8Array(await response.arrayBuffer());
+    return bytes;
+  }catch(error){
+    if(error&&error.name==='AbortError')throw new Error('Timetable data timed out. Please retry.');
+    throw error;
+  }finally{if(timer)clearTimeout(timer);}
+}
+async function fetchJson(path){const bytes=await fetchTimetableBytes(path,{cache:'no-cache',headers:{Accept:'application/json'}});return JSON.parse(new TextDecoder().decode(bytes));}
 async function fetchGzipJson(path){
-  const response=await fetch(path,{cache:'no-cache'});
-  if(!response.ok)throw new Error(`Timetable data returned ${response.status}`);
-  const bytes=new Uint8Array(await response.arrayBuffer());
+  const bytes=await fetchTimetableBytes(path,{cache:'no-cache'});
   let text='';
   if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
     if(typeof DecompressionStream!=='function')throw new Error('This browser cannot decompress the Darwin timetable file.');
@@ -986,7 +997,10 @@ async function load(options={}){
   }catch(e){
     if(id===state.request){
       state.lastError=e&&e.message||String(e);
-      setLiveMode();
+      if(mode==='advance'||(dateApi()&&typeof dateApi().isToday==='function'&&!dateApi().isToday())){
+        setScheduledVisibility(true);
+        renderUnavailable(`Timetable temporarily unavailable. ${state.lastError} Retry this journey in a moment.`,{mode,manifest:state.manifest});
+      }else setLiveMode();
     }
     return false;
   }finally{if(id===state.request)state.loading=false;}

@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.9\.11'/);
+assert.match(busSource, /const APP_VERSION = '0\.9\.12'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -601,7 +601,8 @@ assert.doesNotMatch(busSource, /stop&&stop\.code\]\n    \.map/);
 assert.match(busSource, /const DATA_MANIFEST_MAX_AGE = 14\*24\*3600\*1000/);
 assert.match(busSource, /function validDataManifest\(data\)/);
 assert.match(busSource, /Object\.keys\(regions\)\.length!==REQUIRED_DATA_REGIONS\.length/);
-assert.match(busSource, /DATA_MANIFEST_SOURCE='stored'/);
+assert.match(busSource, /const fallbackSource=memoryFallback\?'memory-stale':'stored'/);
+assert.match(busSource, /DATA_MANIFEST_SOURCE=fallbackSource/);
 assert.match(busSource, /cache:force\?'reload':'no-cache'/);
 assert.doesNotMatch(busSource, /cache:force\?'reload':'force-cache'/);
 assert.match(busSource, /if\(journey\) return owner\+'\|journey\|'\+journey/);
@@ -1883,7 +1884,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.11'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.12'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

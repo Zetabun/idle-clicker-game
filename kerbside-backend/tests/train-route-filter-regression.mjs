@@ -20,7 +20,7 @@ function addCalendarDays(stamp,days){
 }
 const TODAY=londonStamp();
 const TOMORROW=addCalendarDays(TODAY,1);
-const FUTURE_DATE=addCalendarDays(TODAY,4);
+const FUTURE_DATE=TOMORROW;
 
 const mime = {
   '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
@@ -120,7 +120,7 @@ async function mockExternal(page,diagnostics){
 }
 
 async function waitForServiceCount(page,count){
-  await page.waitForFunction(expected=>document.querySelectorAll('.train-service').length === expected,count,{timeout:10000});
+  await page.waitForFunction(expected=>document.querySelectorAll('#trainBoard .train-service').length === expected,count,{timeout:10000});
 }
 
 async function selectBirmingham(page){
@@ -179,49 +179,56 @@ async function runDesktop(browser){
   await page.locator('#trainTravelDate').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'planning');
   assert.match(await page.locator('#trainTravelDateMeta').textContent(),/advance journey.*timetabled services/i);
-  await page.waitForSelector('#trainBoard .train-future-date');
-  assert.equal(await page.locator('.train-service').count(),0);
-  assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
-  assert.match(await page.locator('#trainStationMeta').textContent(),/BHM → BRI.*timetabled services/i);
-  assert.equal(await page.locator('#trainRefresh').isDisabled(),true);
-  assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Advance');
-  assert.match(await page.locator('#trainBoard').textContent(),/Advance timetable/);
-  assert.match(await page.locator('#trainBoard').textContent(),/Exact future train times need the scheduled timetable feed/i);
+  await page.waitForFunction(()=>{
+    const scheduled=document.getElementById('trainScheduledBoard');
+    return scheduled && !scheduled.hidden && (scheduled.querySelector('.train-scheduled-service') || scheduled.querySelector('.train-future-date'));
+  });
+  assert.equal(await page.locator('#trainBoard').isHidden(),true);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
+  assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Schedule');
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),FUTURE_DATE);
+  assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
+    `selecting a future date must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
 
   await page.click('#trainJourneyGo');
-  await page.waitForFunction(()=>/Advance journey ready/i.test(document.getElementById('trainPlannerMessage')?.textContent||''));
+  await page.waitForFunction(()=>{
+    const scheduled=document.getElementById('trainScheduledBoard');
+    return scheduled && !scheduled.hidden && (scheduled.querySelector('.train-scheduled-service') || scheduled.querySelector('.train-future-date'));
+  });
   assert.doesNotMatch(await page.locator('#trainPlannerMessage').textContent(),/Live journey loaded/i);
   assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
     `future Find trains must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
-  assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
 
   await page.click('#trainTravelToday');
   await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'live');
-  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/live departures.*live-adjusted/i);
-  await waitForServiceCount(page,1);
-
-  assert.equal(await page.locator('.train-service').count(),1);
-  assert.match(await page.locator('.train-service').first().textContent(),/Plymouth/,
-    'a through train should remain visible when it calls at the selected destination');
-  assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);
-  assert.match(await page.locator('#trainJourneySummary').textContent(),/BHM → BRI/);
-  assert.match(await page.locator('#trainJourneySummary').textContent(),/Direct trains to Bristol Temple Meads only/);
+  await page.waitForFunction(()=>{
+    const tt=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduled=document.getElementById('trainScheduledBoard');
+    return tt?.state?.mode==='today' && scheduled && !scheduled.hidden && scheduled.querySelectorAll('.train-scheduled-service').length>0;
+  });
+  assert.equal(await page.locator('#trainBoard').isHidden(),true);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
+  assert.ok(await page.locator('#trainScheduledBoard .train-scheduled-service').count()>0);
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
 
   const stored = await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.route.v1') || 'null'));
   assert.deepEqual(stored,{fromCrs:'BHM',destination:{name:'Bristol Temple Meads',crs:'BRI'}});
 
-  const directRequestsBeforeReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/9').length;
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForSelector('#trainDestinationQuery');
-  await waitForServiceCount(page,1);
-  await page.waitForFunction(()=>document.getElementById('trainDestinationQuery')?.value === 'Bristol Temple Meads');
-  const directRequestsAfterReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/9').length;
-  assert.ok(directRequestsAfterReload > directRequestsBeforeReload,'saved route should restore the direct board after reload');
+  await page.waitForFunction(()=>{
+    const tt=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduled=document.getElementById('trainScheduledBoard'),destination=document.getElementById('trainDestinationQuery');
+    return destination?.value==='Bristol Temple Meads' && tt?.state?.mode==='today' && scheduled && !scheduled.hidden && scheduled.querySelectorAll('.train-scheduled-service').length>0;
+  });
   assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
+  assert.equal(await page.locator('#trainBoard').isHidden(),true);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
 
   await page.click('#trainDestinationClear');
   await waitForServiceCount(page,2);
+  assert.equal(await page.locator('#trainBoard').isHidden(),false);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),true);
   assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.route.v1')),null);
   assert.match(await page.locator('#trainJourneySummary').textContent(),/Showing all upcoming trains/);

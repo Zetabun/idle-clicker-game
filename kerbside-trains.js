@@ -1136,6 +1136,27 @@ async function hydrateDetail(service, index){
   }
 }
 
+
+function liveBoardIdentity(service){
+  if(!service)return'';
+  const id=String(service.serviceIdGuid||service.serviceIdUrlSafe||service.serviceID||service.uid||service.serviceUid||'').trim();
+  if(id)return id;
+  const train=String(service.trainid||service.trainId||'').trim(),std=String(service.std||'').trim();
+  return [train,std,operatorIdentity(service),destinationIdentity(service)].join('|');
+}
+function mergeLiveBoards(detailed,plain){
+  if(!detailed)return plain||{};
+  if(!plain)return detailed||{};
+  const services=[],seen=new Set();
+  for(const source of [detailed,plain])for(const service of (Array.isArray(source&&source.trainServices)?source.trainServices:[])){
+    const key=liveBoardIdentity(service);if(key&&seen.has(key))continue;if(key)seen.add(key);services.push(service);
+  }
+  const messages=[];for(const source of [detailed,plain])for(const message of (Array.isArray(source&&source.nrccMessages)?source.nrccMessages:[])){
+    const key=JSON.stringify(message);if(!messages.some(item=>JSON.stringify(item)===key))messages.push(message);
+  }
+  return {...plain,...detailed,trainServices:services,nrccMessages:messages};
+}
+
 async function loadBoard(station, {silent=false}={}){
   if(!station || !station.crs) return;
   if(state.boardAbort) state.boardAbort.abort();
@@ -1160,18 +1181,19 @@ async function loadBoard(station, {silent=false}={}){
        calling points. resilientRailFetch throws once every provider has
        failed, so the detailed attempt can fail by exception as well as by
        status; both paths land on the fallback. */
-    let response = null;
-    try{
-      response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/9?expand=true`, {signal:controller.signal});
-    }catch(expandError){
-      if(controller.signal.aborted) return;
-      response = null;
-    }
-    if((!response || !response.ok) && !controller.signal.aborted){
-      response = await fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20`, {signal:controller.signal});
-    }
-    if(!response || !response.ok) throw new Error(`Departure board returned ${response?response.status:'no response'}`);
-    const json = await response.json();
+    const [detailedAttempt,plainAttempt]=await Promise.allSettled([
+      fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/9?expand=true`, {signal:controller.signal}),
+      fetchWithTimeout(`${PROVIDER_BASE}/departures/${encodeURIComponent(station.crs)}/20`, {signal:controller.signal})
+    ]);
+    if(controller.signal.aborted)return;
+    const detailedResponse=detailedAttempt.status==='fulfilled'&&detailedAttempt.value&&detailedAttempt.value.ok?detailedAttempt.value:null;
+    const plainResponse=plainAttempt.status==='fulfilled'&&plainAttempt.value&&plainAttempt.value.ok?plainAttempt.value:null;
+    if(!detailedResponse&&!plainResponse)throw new Error('Departure board returned no usable response');
+    const [detailedJson,plainJson]=await Promise.all([
+      detailedResponse?detailedResponse.json():Promise.resolve(null),
+      plainResponse?plainResponse.json():Promise.resolve(null)
+    ]);
+    const json=mergeLiveBoards(detailedJson,plainJson);
     if(controller.signal.aborted || seq !== state.boardSeq) return;
     state.board = json || {};
     state.services = Array.isArray(json && json.trainServices) ? json.trainServices : [];
