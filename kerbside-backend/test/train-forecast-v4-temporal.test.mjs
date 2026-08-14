@@ -84,3 +84,13 @@ test('same route keeps the route prior while final context changes with journey 
   const a=v4.forecast(morning,0,[morning],{station,referenceDate:new FixedDate('2026-08-12T08:00:00Z')}),b=v4.forecast(midday,0,[midday],{station,referenceDate:new FixedDate('2026-08-12T08:00:00Z')});
   assert.notEqual(a.score,b.score,{a:a.score,b:b.score});
 });
+
+
+test('summer holidays stay neutral off peak and unmeasured probability fallback is neutral',()=>{
+  const c=load(),v4=c.window.__KERBSIDE_FORECAST_V4__,date=new FixedDate('2026-08-14T12:00:00Z');
+  assert.equal(v4.schoolHolidaySignal(date,13*60).amount,0);
+  assert.equal(v4.schoolHolidaySignal(date,21*60).amount,0);
+  const unmeasured={name:'Fixture station',crs:'ZZZ'},fixture={...service,std:'21:00',operator:'Fixture Rail',operatorCode:'ZZ'};
+  const model=v4.ordinalProbabilities(2.625,fixture,unmeasured,4,date,21*60,false);
+  assert.equal(model.prior,null);assert.ok(Math.abs(model.probabilities[1]-model.probabilities[2])<1e-12,model.probabilities);
+});

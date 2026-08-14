@@ -261,12 +261,9 @@ function demandShape(station,minute,date,isBankHoliday=false){
   if(measured&&Number.isFinite(measured.share)){
     const ratio=measured.flatShare>0?measured.share/measured.flatShare:1;
     const shapeAmount=clamp(Math.log2(Math.max(.25,ratio))*.22,-.35,.45);
-    const load=measured.loadFactor;
-    const capacityAmount=!Number.isFinite(load)?0:load>=1?.25:load>=.8?.15:load>=.6?.08:load<=.25?-.08:0;
-    const amount=clamp(shapeAmount+capacityAmount,-.4,.6),reasons=[];
+    const amount=shapeAmount,reasons=[];
     const where=measured.scope==='station'?measured.name:(profile.city||profile.name);
     if(Math.abs(shapeAmount)>=.04)reasons.push(`DfT 2025 measured ${where} departures are ${ratio>=1?'above':'below'} its all-day time-normalised average in this band`);
-    if(Number.isFinite(load)&&load>=.6)reasons.push(`DfT measured about ${Math.round(load*100)} passengers per 100 seats in this ${measured.label} aggregate`);
     return {amount,reasons,measured};
   }
   /* Suppressed/missing cells fail back to the older coarse peak correction. */
@@ -419,8 +416,32 @@ function peakCapacitySignal(station,minute,date,isBankHoliday=false){
   if(Number.isFinite(seatLoad)){amount+=clamp((seatLoad-.7)*.55,-.2,.4);if(seatLoad>=.9)reasons.push(`DfT peak critical load is about ${Math.round(seatLoad*100)} passengers per 100 seats in this area`);}if(Number.isFinite(overall)&&overall>=.9){amount+=clamp((overall-.9)*.7,0,.18);reasons.push('DfT peak loads run close to the published total capacity here');}
   return {amount:clamp(amount,-.2,.5),reasons,measured:true,row,seatLoad,overall};
 }
+function loadFactorPrior(loadFactor){
+  const value=Number(loadFactor);if(!Number.isFinite(value)||value<0)return null;
+  const centres=[
+    LOAD_FACTOR_BANDS.moderate/2,
+    (LOAD_FACTOR_BANDS.moderate+LOAD_FACTOR_BANDS.busy)/2,
+    (LOAD_FACTOR_BANDS.busy+LOAD_FACTOR_BANDS.veryBusy)/2,
+    LOAD_FACTOR_BANDS.veryBusy+(LOAD_FACTOR_BANDS.veryBusy-LOAD_FACTOR_BANDS.busy)/2
+  ];
+  const probabilities=[0,0,0,0];
+  if(value<=centres[0]){probabilities[0]=1;return probabilities;}
+  for(let i=0;i<centres.length-1;i++){
+    if(value<=centres[i+1]){
+      const span=centres[i+1]-centres[i],share=span>0?clamp((value-centres[i])/span,0,1):0;
+      probabilities[i]=1-share;probabilities[i+1]=share;return probabilities;
+    }
+  }
+  probabilities[3]=1;return probabilities;
+}
 function utilisationPrior(service,station,minute,date,isBankHoliday=false){
-  const data=v4Data(),u=data&&data.utilisation;if(!u||!u.priors||!isDftReferenceDay(date,isBankHoliday)||!peakDirection(minute))return null;const code=String(service&&(service.operatorCode||'')).toUpperCase(),name=String(service&&(service.operator||'')).toLowerCase(),profile=profileFor(station),usage=stationUsageRecord(station);
+  if(!isDftReferenceDay(date,isBankHoliday))return null;
+  const measured=measuredBand(station,minute,'departures'),measuredProbabilities=measured&&loadFactorPrior(measured.loadFactor);
+  if(measuredProbabilities){
+    return {group:'timeBand',probabilities:measuredProbabilities,mean:Number(measured.loadFactor),loadFactor:Number(measured.loadFactor),band:measured.label,scope:measured.scope,source:'DfT RAI0202/RAI0203 2025 measured time-band seat utilisation',aggregateOnly:true};
+  }
+  const data=v4Data(),u=data&&data.utilisation;if(!u||!u.priors||!peakDirection(minute))return null;
+  const code=String(service&&(service.operatorCode||'')).toUpperCase(),name=String(service&&(service.operator||'')).toLowerCase(),profile=profileFor(station),usage=stationUsageRecord(station);
   const longDistance=['XC','VT','GR'].includes(code)||/crosscountry|avanti|lner|london north eastern/.test(name),group=longDistance?'longDistance':(profile&&profile.area==='london')||(usage&&String(usage.region).toLowerCase()==='london')?'london':'regional';
   const probabilities=u.priors[group]||u.priors.all,mean=u.means&&u.means[group];return {group,probabilities:Array.isArray(probabilities)?probabilities.slice():null,mean:Number(mean),source:'DfT RAI0216 2025 empirical peak utilisation'};
 }
@@ -428,7 +449,7 @@ function utilisationPrior(service,station,minute,date,isBankHoliday=false){
 window.__KERBSIDE_CALIBRATION__={
   source:SOURCE,released:RELEASED,countPeriod:COUNT_PERIOD,
   scaleSignal,demandShape,serviceClassSignal,contextNote,measuredBand,measuredCrowdingBand,scoreThresholds,
-  stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,odmFlow,flowShareToTargets,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,
+  stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,odmFlow,flowShareToTargets,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,loadFactorPrior,utilisationPrior,
   profileFor,operatorClass,isWeekday,isDftReferenceDay,
   NETWORK,GEOGRAPHY,OPERATOR_CLASS,LONDON_TERMINALS,CITIES,TIME_BANDS,SCORE_THRESHOLDS,LOAD_FACTOR_BANDS,AM_PEAK,PM_PEAK
 };

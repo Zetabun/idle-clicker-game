@@ -12,3 +12,10 @@ test('DfT importer preserves the exact 2025 table coverage and edge bands',()=>{
 test('measured Birmingham evening demand is stronger than midday',()=>{const {cal}=load(),date=new Date('2026-08-12T12:00:00Z'),station={crs:'BHM'};const noon=cal.measuredBand(station,12*60),evening=cal.measuredBand(station,17*60);assert.equal(noon.scope,'city');assert.equal(evening.passengers,15923);assert.ok(evening.share>noon.share);assert.ok(cal.demandShape(station,17*60,date).amount>cal.demandShape(station,12*60,date).amount);});
 test('London stations prefer RAI0203 station data over the London city aggregate',()=>{const {cal}=load();const euston=cal.measuredBand({crs:'EUS'},17*60);assert.equal(euston.scope,'station');assert.equal(euston.name,'Euston');assert.equal(euston.passengers,10038);});
 test('Kerbside score bands are explicitly anchored to measured seat utilisation',()=>{const {cal}=load(),t=cal.scoreThresholds();assert.deepEqual({...t},{moderate:1.5,busy:2.65,veryBusy:3.85});assert.equal(cal.measuredCrowdingBand(.2),'quiet');assert.equal(cal.measuredCrowdingBand(.5),'moderate');assert.equal(cal.measuredCrowdingBand(.8),'busy');assert.equal(cal.measuredCrowdingBand(1.02),'very-busy');});
+
+
+test('measured load factor is not double-counted inside the demand-shape score',()=>{
+  const {cal}=load(),date=new Date('2026-08-12T12:00:00Z'),station={crs:'BHM'},measured=cal.measuredBand(station,21*60),shape=cal.demandShape(station,21*60,date);
+  const ratio=measured.share/measured.flatShare,expected=Math.max(-.35,Math.min(.45,Math.log2(Math.max(.25,ratio))*.22));
+  assert.ok(Math.abs(shape.amount-expected)<1e-12,{shape,measured,expected});
+});

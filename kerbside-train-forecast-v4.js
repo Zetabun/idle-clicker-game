@@ -291,12 +291,10 @@ function schoolHolidaySignal(date,minute){
     if(gap>=-14&&gap<=10)holiday='Easter holidays';
   }
   if(!holiday)return {amount:0,reasons:[]};
-  /* Off the peak, holidays add leisure demand. On the peak they remove
-     commuters and school traffic, so the net effect is downward. */
   const weekday=day(date)!=='Sat'&&day(date)!=='Sun';
   const peak=minute!=null&&weekday&&((minute>=420&&minute<540)||(minute>=990&&minute<1110));
   if(peak)return {amount:-.4,reasons:[`${holiday} reduce commuter and school demand`]};
-  return {amount:.3,reasons:[`${holiday} increase daytime leisure demand`]};
+  return {amount:0,reasons:[]};
 }
 
 /* The first off-peak departure. A well-known and entirely predictable GB
@@ -323,7 +321,7 @@ function destinationForModel(service,context={}){const override=context&&context
 const PROB_LEVELS=['quiet','moderate','busy','very-busy'],PROB_LABELS=['Quiet','Moderate','Busy','Very busy'],PROB_CENTRES=[.75,2,3.25,4.45];
 function normaliseProbabilities(values){const safe=values.map(v=>Number.isFinite(v)&&v>0?v:0),total=safe.reduce((a,b)=>a+b,0)||1;return safe.map(v=>v/total);}
 function ordinalProbabilities(score,service,station,evidence,date,minuteOverride=null,bankHoliday=false){
-  const cal=calibration(),minute=minuteOverride==null?parseMinutes(service&&service.std):minuteOverride,prior=cal&&typeof cal.utilisationPrior==='function'?cal.utilisationPrior(service,station,minute,date,bankHoliday):null,base=prior&&Array.isArray(prior.probabilities)?prior.probabilities:[.18,.34,.36,.12],temperature=clamp(1.22-Math.min(8,Number(evidence)||0)*.065,.62,1.18);
+  const cal=calibration(),minute=minuteOverride==null?parseMinutes(service&&service.std):minuteOverride,prior=cal&&typeof cal.utilisationPrior==='function'?cal.utilisationPrior(service,station,minute,date,bankHoliday):null,base=prior&&Array.isArray(prior.probabilities)?prior.probabilities:[.25,.25,.25,.25],temperature=clamp(1.22-Math.min(8,Number(evidence)||0)*.065,.62,1.18);
   const logits=PROB_CENTRES.map((centre,i)=>Math.log(Math.max(.015,Number(base[i])||.015))-Math.pow(score-centre,2)/(2*temperature*temperature)),max=Math.max(...logits),probabilities=normaliseProbabilities(logits.map(v=>Math.exp(v-max))),index=probabilities.indexOf(Math.max(...probabilities));
   return {probabilities,index,level:PROB_LEVELS[index],label:PROB_LABELS[index],prior,temperature,top:probabilities[index]};
 }
