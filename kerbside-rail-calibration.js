@@ -178,6 +178,7 @@ function isWeekday(date){
   const day=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short'}).format(date||new Date());
   return day!=='Sat'&&day!=='Sun';
 }
+function isDftReferenceDay(date,isBankHoliday=false){return !isBankHoliday&&(date==null||isWeekday(date));}
 
 /* Returns the measured profile for a station, or null when DfT did not count
    it - which is most of the network, and is the normal case. */
@@ -253,8 +254,8 @@ function measuredCrowdingBand(loadFactor){
   return'quiet';
 }
 function scoreThresholds(){return {...SCORE_THRESHOLDS};}
-function demandShape(station,minute,date){
-  if(minute==null||!isWeekday(date))return {amount:0,reasons:[]};
+function demandShape(station,minute,date,isBankHoliday=false){
+  if(minute==null||!isDftReferenceDay(date,isBankHoliday))return {amount:0,reasons:[]};
   const profile=profileFor(station);if(!profile)return {amount:0,reasons:[]};
   const measured=measuredBand(station,minute,'departures');
   if(measured&&Number.isFinite(measured.share)){
@@ -279,8 +280,8 @@ function demandShape(station,minute,date){
 }
 
 /* Service class. The correction the model was missing entirely. */
-function serviceClassSignal(service,station,minute,date){
-  if(!isWeekday(date))return {amount:0,reasons:[]};
+function serviceClassSignal(service,station,minute,date,isBankHoliday=false){
+  if(!isDftReferenceDay(date,isBankHoliday))return {amount:0,reasons:[]};
   const info=operatorClass(service&&(service.operatorCode||service.toc),station);
   const peak=inBand(minute,AM_PEAK)||inBand(minute,PM_PEAK);
   /* The long-distance finding is a network-wide property of the operator
@@ -305,10 +306,10 @@ function serviceClassSignal(service,station,minute,date){
 /* A plain-English anchor for the explain card. Not a score input - it tells
    the user what the measured network actually looks like, so "Busy" means
    something concrete rather than a vibe. */
-function contextNote(station,minute,date){
-  const profile=profileFor(station),measured=isWeekday(date)?measuredBand(station,minute,'departures'):null;
+function contextNote(station,minute,date,isBankHoliday=false){
+  const reference=isDftReferenceDay(date,isBankHoliday),profile=profileFor(station),measured=reference?measuredBand(station,minute,'departures'):null;
   const peak=inBand(minute,AM_PEAK)||inBand(minute,PM_PEAK);
-  if(!isWeekday(date))return '';
+  if(!reference)return '';
   if(measured){
     const where=measured.scope==='station'?measured.name:(profile&&profile.city)||'this city';
     const share=Number.isFinite(measured.share)?Math.round(measured.share*1000)/10:null;
@@ -368,47 +369,30 @@ function orrOdmDataset(){
   return raw;
 }
 function odmFlow(feed,from,to){
-  if(!feed)return null;
-  const a=String(from||'').toUpperCase(),b=String(to||'').toUpperCase();
-  if(!a||!b||a===b)return 0;
-  let raw;
+  if(!feed)return null;const a=String(from||'').toUpperCase(),b=String(to||'').toUpperCase();if(!a||!b||a===b)return 0;let raw;
   try{if(typeof feed.flow==='function')raw=feed.flow(a,b);else{const direct=feed.flows&&feed.flows[`${a}|${b}`],nested=feed.flows&&feed.flows[a]&&feed.flows[a][b];raw=direct!=null?direct:nested;}}catch(error){return null;}
-  const value=Number(raw);
-  return Number.isFinite(value)&&value>=0?value:null;
+  if(raw==null)return null;const value=Number(raw);return Number.isFinite(value)&&value>=0?value:null;
 }
 function flowShareToTargets(from,targets,feed){
-  const code=String(from||'').toUpperCase(),row=stationUsageRecord({crs:code}),usage=Number(row&&row.usage)||0;
-  if(!row||usage<=0||!targets||!targets.size)return null;
-  if(feed){
-    let journeys=0,known=0;
-    targets.forEach(to=>{const value=odmFlow(feed,code,to);if(value!=null){journeys+=value;known++;}});
-    if(known||feed.completeMatrix===true)return {share:clamp(journeys/usage,0,.8),journeys,exact:true,row};
-  }
-  const main=String(row.mainCrs||'').toUpperCase(),journeys=Number(row.mainJourneys)||0;
-  if(main&&targets.has(main)&&journeys>0)return {share:clamp(journeys/usage,0,.8),journeys,exact:false,row};
-  return null;
+  const code=String(from||'').toUpperCase(),row=stationUsageRecord({crs:code}),usage=Number(row&&row.usage)||0;if(!row||!targets||!targets.size)return null;
+  let feedTotal=NaN;if(feed&&typeof feed.stationTotal==='function'){try{feedTotal=Number(feed.stationTotal(code));}catch(error){feedTotal=NaN;}}
+  const denominator=Number.isFinite(feedTotal)&&feedTotal>0?feedTotal:usage;
+  if(feed&&denominator>0){let journeys=0,known=0;targets.forEach(to=>{const value=odmFlow(feed,code,to);if(value!=null){journeys+=value;known++;}});if(known||feed.completeMatrix===true)return {share:clamp(journeys/denominator,0,.8),journeys,exact:true,row,known,total:denominator};}
+  if(usage<=0)return null;const main=String(row.mainCrs||'').toUpperCase(),journeys=Number(row.mainJourneys)||0;if(main&&targets.has(main)&&journeys>0)return {share:clamp(journeys/usage,0,.8),journeys,exact:false,row,known:1,total:usage};return null;
 }
 function routeLoadSignal(service,station){
-  const current=crsOf(station),before=routeCallCrs(service&&service.previousCallingPoints),after=routeCallCrs(service&&service.subsequentCallingPoints);
-  const destination=destinationCrs(service);if(destination&&!after.includes(destination))after.push(destination);
-  if(!current||!after.length)return {amount:0,reasons:[],measured:false,source:'none'};
-  const downstream=new Set(after.filter(code=>code&&code!==current)),feed=orrOdmDataset(),board=flowShareToTargets(current,downstream,feed);
-  let retained=0,alighting=0,retainedStations=0,alightingStations=0,exactEvidence=!!(board&&board.exact);
-  before.slice(-10).forEach(code=>{
-    const onward=flowShareToTargets(code,downstream,feed);if(onward){retained+=onward.share;if(onward.share>=.015)retainedStations++;exactEvidence=exactEvidence||onward.exact;}
-    const here=flowShareToTargets(code,new Set([current]),feed);if(here){alighting+=here.share;if(here.share>=.015)alightingStations++;exactEvidence=exactEvidence||here.exact;}
-  });
-  const boardShare=Number(board&&board.share)||0,matched=boardShare>0||retained>0||alighting>0;
-  if(!matched&&!exactEvidence)return {amount:0,reasons:[],measured:false,source:'none'};
-  let amount=0;const reasons=[];
-  if(boardShare>0){amount+=clamp(.08+boardShare*1.2,.08,.35);reasons.push(feed?'ORR origin-destination demand from this station continues along this train':'ORR identifies this train direction as this station’s strongest measured origin/destination flow');}
-  if(retained>0){amount+=clamp(retained*.7,.05,.45);reasons.push(feed?`ORR origin-destination demand from ${retainedStations||1} earlier call${retainedStations===1?'':'s'} continues beyond this station`:`ORR strongest-flow evidence from ${retainedStations||1} earlier call${retainedStations===1?'':'s'} points further along this train`);}
-  if(alighting>0){amount-=clamp(alighting*.35,.03,.18);reasons.push(feed?`ORR origin-destination demand indicates alighting pressure at this station`:`ORR strongest-flow evidence suggests some accumulated demand leaves the train here`);}
-  return {amount:clamp(amount,-.2,.7),reasons,measured:true,source:feed?'orr-odm':'orr-main-flow-proxy',boardShare,retainedPressure:retained,alightingPressure:alighting,licence:feed?String(feed.licence||feed.license||''):'Open Government Licence v3.0 station-usage aggregate'};
+  const current=crsOf(station),before=routeCallCrs(service&&service.previousCallingPoints),after=routeCallCrs(service&&service.subsequentCallingPoints),destination=destinationCrs(service);if(destination&&!after.includes(destination))after.push(destination);if(!current||!after.length)return {amount:0,reasons:[],measured:false,source:'none'};
+  const downstream=new Set(after.filter(code=>code&&code!==current)),feed=orrOdmDataset(),board=flowShareToTargets(current,downstream,feed);let retained=0,alighting=0,retainedStations=0,exactEvidence=!!(board&&board.exact);
+  before.slice(feed?-24:-10).forEach(code=>{const onward=flowShareToTargets(code,downstream,feed);if(onward){retained+=onward.share;if(onward.share>=.015)retainedStations++;exactEvidence=exactEvidence||onward.exact;}const here=flowShareToTargets(code,new Set([current]),feed);if(here){alighting+=here.share;exactEvidence=exactEvidence||here.exact;}});
+  const boardShare=Number(board&&board.share)||0,matched=boardShare>0||retained>0||alighting>0;if(!matched&&!exactEvidence)return {amount:0,reasons:[],measured:false,source:'none'};let amount=0;const reasons=[];
+  if(boardShare>0){amount+=clamp(.08+boardShare*1.2,.08,.35);reasons.push(feed?`ORR 2024-25 station-pair demand from this stop matches this train's remaining calling pattern`:`ORR identifies this train direction as this station’s strongest measured origin/destination flow`);}
+  if(retained>0){amount+=clamp(retained*.7,.05,.45);reasons.push(feed?`ORR 2024-25 station-pair demand from ${retainedStations||1} earlier call${retainedStations===1?'':'s'} also matches stops beyond here`:`ORR strongest-flow evidence from ${retainedStations||1} earlier call${retainedStations===1?'':'s'} points further along this train`);}
+  if(alighting>0){amount-=clamp(alighting*.35,.03,.18);reasons.push(feed?'ORR 2024-25 station-pair demand suggests some route demand finishes at this stop':'ORR strongest-flow evidence suggests some accumulated demand leaves the train here');}
+  return {amount:clamp(amount,-.2,.7),reasons,measured:true,source:feed?'orr-odm':'orr-main-flow-proxy',boardShare,retainedPressure:retained,alightingPressure:alighting,licence:feed?String(feed.licence||feed.license||''):'Open Government Licence v3.0 station-usage aggregate',coverageJourneyShare:feed?Number(feed.coverageJourneyShare)||null:null,directionality:feed?String(feed.directionality||''):''};
 }
 const CROWD_RANK={quiet:0,moderate:1,busy:2,'very-busy':3};
-function benchmarkForecast(station,minute,date,predictedLevel){
-  if(!isWeekday(date))return null;
+function benchmarkForecast(station,minute,date,predictedLevel,isBankHoliday=false){
+  if(!isDftReferenceDay(date,isBankHoliday))return null;
   const measured=measuredBand(station,minute,'departures'),measuredLevel=measured&&measuredCrowdingBand(measured.loadFactor),predicted=String(predictedLevel||'');
   if(!measuredLevel||CROWD_RANK[predicted]==null)return null;
   const bandError=Math.abs(CROWD_RANK[predicted]-CROWD_RANK[measuredLevel]);
@@ -419,8 +403,8 @@ const OPERATOR_ALIASES={XC:['crosscountry'],GW:['great western'],VT:['avanti wes
 function operatorKeys(service){const data=v4Data(),normalise=data&&data.norm?data.norm:(v=>String(v||'').toLowerCase()),full=normalise(service&&(service.operator||'')),code=String(service&&(service.operatorCode||'')).toUpperCase();return [full,...(OPERATOR_ALIASES[code]||[])].filter(Boolean);}
 function findOperator(area,service){if(!area||!area.operators)return null;const keys=operatorKeys(service),data=v4Data(),normalise=data&&data.norm?data.norm:(v=>String(v||'').toLowerCase());for(const key of keys){if(area.operators[key])return area.operators[key];for(const [name,row] of Object.entries(area.operators)){if(name==='_total')continue;const n=normalise(name);if(n.includes(key)||key.includes(n))return row;}}return null;}
 function peakDirection(minute){return inBand(minute,AM_PEAK)?'am':inBand(minute,PM_PEAK)?'pm':'';}
-function operatorCrowdingSignal(service,station,minute){
-  const dir=peakDirection(minute),data=v4Data(),profile=profileFor(station);if(!dir||!data||!profile)return {amount:0,reasons:[],measured:false};
+function operatorCrowdingSignal(service,station,minute,date,isBankHoliday=false){
+  const dir=peakDirection(minute),data=v4Data(),profile=profileFor(station);if(!isDftReferenceDay(date,isBankHoliday)||!dir||!data||!profile)return {amount:0,reasons:[],measured:false};
   const area=(typeof data.stationOperator==='function'&&data.stationOperator(crsOf(station)))||(typeof data.cityOperator==='function'&&data.cityOperator(profile.city||''));if(!area)return {amount:0,reasons:[],measured:false};
   const row=findOperator(area,service),total=area.operators&&area.operators._total;if(!row||!row[dir])return {amount:0,reasons:[],measured:false};
   const r=row[dir],t=total&&total[dir]||{},stand=Number(r.standing),pixc=Number(r.pixc),baseStand=Number(t.standing),basePixc=Number(t.pixc);
@@ -428,15 +412,15 @@ function operatorCrowdingSignal(service,station,minute){
   if(Number.isFinite(stand))reasons.push(`DfT 2025 measured ${Math.round(stand*100)}% standing passengers for ${row.name} in this ${dir.toUpperCase()} peak area`);if(Number.isFinite(pixc)&&pixc>=.01)reasons.push(`DfT measured ${Math.round(pixc*1000)/10}% of ${row.name} passengers in excess of capacity here`);
   return {amount,reasons,measured:true,row};
 }
-function peakCapacitySignal(station,minute){
-  const dir=peakDirection(minute),data=v4Data(),profile=profileFor(station);if(!dir||!data||!profile)return {amount:0,reasons:[],measured:false};
+function peakCapacitySignal(station,minute,date,isBankHoliday=false){
+  const dir=peakDirection(minute),data=v4Data(),profile=profileFor(station);if(!isDftReferenceDay(date,isBankHoliday)||!dir||!data||!profile)return {amount:0,reasons:[],measured:false};
   const area=(typeof data.stationPeak==='function'&&data.stationPeak(crsOf(station)))||(typeof data.cityPeak==='function'&&data.cityPeak(profile.city||'')),row=area&&area[dir];if(!row)return {amount:0,reasons:[],measured:false};
   const critical=Number(row.critical),seats=Number(row.seats),capacity=Number(row.capacity),seatLoad=critical>0&&seats>0?critical/seats:null,overall=critical>0&&capacity>0?critical/capacity:null;let amount=0;const reasons=[];
   if(Number.isFinite(seatLoad)){amount+=clamp((seatLoad-.7)*.55,-.2,.4);if(seatLoad>=.9)reasons.push(`DfT peak critical load is about ${Math.round(seatLoad*100)} passengers per 100 seats in this area`);}if(Number.isFinite(overall)&&overall>=.9){amount+=clamp((overall-.9)*.7,0,.18);reasons.push('DfT peak loads run close to the published total capacity here');}
   return {amount:clamp(amount,-.2,.5),reasons,measured:true,row,seatLoad,overall};
 }
-function utilisationPrior(service,station,minute,date){
-  const data=v4Data(),u=data&&data.utilisation;if(!u||!u.priors||!isWeekday(date)||!peakDirection(minute))return null;const code=String(service&&(service.operatorCode||'')).toUpperCase(),name=String(service&&(service.operator||'')).toLowerCase(),profile=profileFor(station),usage=stationUsageRecord(station);
+function utilisationPrior(service,station,minute,date,isBankHoliday=false){
+  const data=v4Data(),u=data&&data.utilisation;if(!u||!u.priors||!isDftReferenceDay(date,isBankHoliday)||!peakDirection(minute))return null;const code=String(service&&(service.operatorCode||'')).toUpperCase(),name=String(service&&(service.operator||'')).toLowerCase(),profile=profileFor(station),usage=stationUsageRecord(station);
   const longDistance=['XC','VT','GR'].includes(code)||/crosscountry|avanti|lner|london north eastern/.test(name),group=longDistance?'longDistance':(profile&&profile.area==='london')||(usage&&String(usage.region).toLowerCase()==='london')?'london':'regional';
   const probabilities=u.priors[group]||u.priors.all,mean=u.means&&u.means[group];return {group,probabilities:Array.isArray(probabilities)?probabilities.slice():null,mean:Number(mean),source:'DfT RAI0216 2025 empirical peak utilisation'};
 }
@@ -444,8 +428,8 @@ function utilisationPrior(service,station,minute,date){
 window.__KERBSIDE_CALIBRATION__={
   source:SOURCE,released:RELEASED,countPeriod:COUNT_PERIOD,
   scaleSignal,demandShape,serviceClassSignal,contextNote,measuredBand,measuredCrowdingBand,scoreThresholds,
-  stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,
-  profileFor,operatorClass,isWeekday,
+  stationUsageRecord,stationUsageSignal,routeFlowSignal,routeLoadSignal,orrOdmDataset,odmFlow,flowShareToTargets,benchmarkForecast,operatorCrowdingSignal,peakCapacitySignal,utilisationPrior,
+  profileFor,operatorClass,isWeekday,isDftReferenceDay,
   NETWORK,GEOGRAPHY,OPERATOR_CLASS,LONDON_TERMINALS,CITIES,TIME_BANDS,SCORE_THRESHOLDS,LOAD_FACTOR_BANDS,AM_PEAK,PM_PEAK
 };
 })();
