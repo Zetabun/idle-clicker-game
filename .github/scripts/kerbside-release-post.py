@@ -20,6 +20,14 @@ replace_once('kerbside-backend/tests/browser-regression.mjs',
 "assert.match(busSource, /DATA_MANIFEST_SOURCE='stored'/);",
 "assert.match(busSource, /const fallbackSource=memoryFallback\\?'memory-stale':'stored'/);\nassert.match(busSource, /DATA_MANIFEST_SOURCE=fallbackSource/);")
 
+# Clearing a destination changes the timetable owner synchronously, but the
+# old route module waited for the timetable's periodic sync before relinquishing
+# the scheduled journey board. Make that ownership transition explicit before
+# reloading the station-wide live board.
+replace_once('kerbside-train-routes.js',
+"  updateSummary();\n  if(reload) deferReload();\n}",
+"  updateSummary();\n  if(reload){\n    const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;\n    if(timetable&&typeof timetable.sync==='function')timetable.sync();\n    deferReload();\n  }\n}")
+
 # This formerly dormant regression predates the unified timetable + live-
 # evidence journey board and used today+4 despite a rolling ~48h snapshot.
 # Preserve its important route/date invariants but test the current UI contract.
@@ -85,5 +93,10 @@ route,count=re.subn(
     r"  await page\.click\('#trainTravelToday'\);.*?(?=  await page\.click\('#trainDestinationClear'\);)",
     today_section,route,count=1,flags=re.S)
 if count != 1: raise SystemExit(f'route test: today section replacements={count}')
+
+route=route.replace(
+"  await waitForServiceCount(page,2);\n  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);",
+"  await waitForServiceCount(page,2);\n  assert.equal(await page.locator('#trainBoard').isHidden(),false);\n  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),true);\n  assert.match(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);",
+1)
 route_path.write_text(route,encoding='utf-8')
 print('Applied release compatibility and current rail regression contracts.')
