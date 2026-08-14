@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.9\.8'/);
+assert.match(busSource, /const APP_VERSION = '0\.9\.9'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -102,7 +102,14 @@ assert.doesNotMatch(busSource, /naptan\.api\.dft\.gov\.uk/);
 // duplicated in the heading or passenger-facing facts line.
 assert.match(busSource, /function stopFactsHtml\(stop\)/);
 assert.ok(busSource.includes("$('stopName').textContent=s.name; updateStopMeta();"));
-assert.ok(busSource.includes("if(indicator) details.push('Stop <b>'+esc(indicator)+'</b>');"));
+/* NaPTAN publishes "adj", "opp", "SW-bound", "Stop A" and "Stand 3" as
+   indicators, so roughly half already carry their own noun. Prefixing every one
+   of them rendered "Stop Stop A" in the picker, the suggestion list, the map
+   tooltip and this panel. The label is now decided once, in one place. */
+assert.ok(busSource.includes("if(indicator) details.push('<b>'+esc(stopIndicatorLabel(indicator))+'</b>');"));
+assert.match(busSource, /function stopIndicatorLabel\(value\)/);
+assert.doesNotMatch(busSource, /'Stop '\+s\.ind/);
+assert.doesNotMatch(busSource, /'Stop '\+esc\(s\.ind\)/);
 assert.ok(busSource.includes("details.push(displayCode?'Stop reference <b>'+esc(displayCode)+'</b>':'No stop reference published');"));
 assert.doesNotMatch(busSource, /const label=indicator\?'Stop '\+indicator:'Exact stop';/);
 assert.match(busSource, /el\.hidden=!html;/);
@@ -227,6 +234,34 @@ assert.match(busSource, /\.eta small\{[^}]*white-space:nowrap\}/);
 /* The picker is absolutely positioned inside #board, which is display:none in
    the mobile map view, so opening it from there hid the question entirely. */
 assert.match(busSource, /function openStopPicker\(message\)\{[\s\S]{0,600}\n  setAppView\('times'\);/);
+/* Being asked which of two identically named stands you are at is not a
+   question a stop name can answer. The picker now carries the pole label, the
+   street and the way a bus faces, from the NaPTAN register already downloaded
+   for the selected stop — and the sub-line is a block, having previously run
+   inline against the name as "Market PlaceStop A". */
+assert.match(busSource, /function stopStandDescription\(stop\)/);
+assert.match(busSource, /function ensureStopPickerAttributes\(\)/);
+assert.match(busSource, /const stand = stopStandDescription\(s\);/);
+assert.match(busSource, /\.stopitem \.sub\{display:block;/);
+/* Coverage is a boundary, not a fault: the national build is English regions,
+   and the live feed is Great Britain. Neither should reach the passenger as an
+   internal error string or the Worker's bbox validation message. */
+assert.match(busSource, /function nationalCoverageIncludes\(stop\)/);
+assert.match(busSource, /S\.ttOutsideCoverage=nationalCoverageIncludes\(stop\)===false;/);
+assert.match(busSource, /No scheduled times here yet/);
+assert.match(busSource, /function liveCoverageIncludes\(point\)/);
+assert.match(busSource, /outsideCoverage:true,msg:'Kerbside covers Great Britain\./);
+assert.match(busSource, /e&&e\.outsideCoverage\?'Outside Kerbside coverage'/);
+// The search field drives a listbox, so it has to be a combobox that says
+// whether it is open and which option is current.
+assert.match(busSource, /role="combobox" aria-expanded="false" aria-controls="suggest"/);
+assert.match(busSource, /function setSuggestActive\(index\)/);
+assert.match(busSource, /field\.setAttribute\('aria-activedescendant',suggestOptionId\(index\)\)/);
+assert.match(busSource, /<button id="vTimes" role="tab" aria-selected="true" aria-controls="board">/);
+assert.match(busSource, /<button id="vMap" role="tab" aria-selected="false" aria-controls="map">/);
+assert.match(busSource, /<div id="map" role="region" aria-label="Map of nearby buses and stops"><\/div>/);
+// aria-expanded has to name what it expands, and only while it exists.
+assert.match(busSource, /\(expanded\?' aria-controls="'\+detailId\+'"':''\)/);
 // Every sub-resource must carry the current release's cache-busting token;
 // kerbside-trains.css sat on 0.9.2 while fifteen siblings were on 0.9.7.
 // Compared against bus.html's own APP_VERSION rather than a literal, so this
@@ -1848,7 +1883,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.8'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.9'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

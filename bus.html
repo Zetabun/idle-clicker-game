@@ -501,7 +501,7 @@ button{cursor:pointer;border:0;background:none}
 }
 .stopitem .hasroutes + .dist{margin-left:9px}
 .stopitem .nm{font-size:14px;font-weight:500}
-.stopitem .sub{font-size:11px;color:var(--text-dim)}
+.stopitem .sub{display:block;margin-top:2px;font-size:11px;line-height:1.35;color:var(--text-dim)}
 
 /* ---------- vehicle markers ---------- */
 .veh{position:relative;width:34px;height:34px}
@@ -822,7 +822,7 @@ body.theme-crystal .leaflet-bar a{
 }
 body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 </style>
-<link rel="stylesheet" href="kerbside-trains.css?v=0.9.8">
+<link rel="stylesheet" href="kerbside-trains.css?v=0.9.9">
 </head>
 <body>
 <div id="app">
@@ -834,7 +834,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
       <span class="pin">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       </span>
-      <input id="q" type="text" placeholder="search" autocomplete="off" spellcheck="false" aria-label="Search for a location">
+      <input id="q" type="text" placeholder="search" autocomplete="off" spellcheck="false" aria-label="Search for a location" role="combobox" aria-expanded="false" aria-controls="suggest" aria-haspopup="listbox" aria-autocomplete="list">
       <button class="go" id="goBtn">Find</button>
       <button class="locate" id="locBtn" title="Use my location" aria-label="Use my location">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
@@ -854,7 +854,7 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
   </div>
 
   <div id="main">
-    <div id="map"></div>
+    <div id="map" role="region" aria-label="Map of nearby buses and stops"></div>
 
     <section id="board" aria-label="Departure board">
 
@@ -905,11 +905,11 @@ body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
   </div>
 
   <nav id="viewbar" role="tablist" aria-label="View">
-    <button id="vTimes" role="tab" aria-selected="true">
+    <button id="vTimes" role="tab" aria-selected="true" aria-controls="board">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       Times
     </button>
-    <button id="vMap" role="tab" aria-selected="false">
+    <button id="vMap" role="tab" aria-selected="false" aria-controls="map">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 4-6 3v13l6-3 6 3 6-3V4l-6 3Z"/><path d="M9 4v13M15 7v13"/></svg>
       Map
     </button>
@@ -1093,7 +1093,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.9.8';
+const APP_VERSION = '0.9.9';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1178,7 +1178,7 @@ const S = {
   timer:null, tick:null, motionTimer:null, busy:false, feedRefreshing:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null, scheduledHidden:0,
-  timetable:null, fallbackTimetable:null, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableUnknownServices:0, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
+  timetable:null, fallbackTimetable:null, ttOutsideCoverage:false, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableUnknownServices:0, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
   routeScanBusy:false, routeScanAbort:null, lastRouteScan:0, routeScanHistory:new Map(),
   routeScanBoxes:0, routeScanPatterns:0, routeScanVehicles:0, routeScanError:''
@@ -1638,12 +1638,16 @@ $('q').addEventListener('keydown', e=>{
   } else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
     if(!sugItems.length) return;
     e.preventDefault();
-    sugIdx = e.key==='ArrowDown' ? Math.min(sugIdx+1,sugItems.length-1) : Math.max(sugIdx-1,0);
-    [...$('suggest').children].forEach((b,i)=>b.classList.toggle('sel',i===sugIdx));
+    setSuggestActive(e.key==='ArrowDown' ? Math.min(sugIdx+1,sugItems.length-1) : Math.max(sugIdx-1,0));
   } else if(e.key==='Escape'){ cancelGeocode(); hideSuggest(); }
 });
 document.addEventListener('click', e=>{ if(!e.target.closest('.searchwrap')){ cancelGeocode(); hideSuggest(); } });
-function hideSuggest(){ $('suggest').style.display='none'; sugItems=[]; sugIdx=-1; }
+function hideSuggest(){
+  $('suggest').style.display='none'; sugItems=[]; sugIdx=-1;
+  setSuggestExpanded(false);
+  const field=$('q');
+  if(field) field.removeAttribute('aria-activedescendant');
+}
 
 async function geocode(q, asSuggest){
   const run=++geocodeRun;
@@ -1687,16 +1691,39 @@ function renderSuggest(feats,query=''){
   sugItems=[...local,...places]; sugIdx=-1;
   const box=$('suggest');
   if(!sugItems.length){ hideSuggest(); return; }
-  box.innerHTML = sugItems.map(item=>{
+  box.innerHTML = sugItems.map((item,index)=>{
     if(item.kind==='stop'){
-      const s=item.stop, detail=['Nearby stop',s.ind?'Stop '+s.ind:'',fmtDist(s.d)].filter(Boolean).join(' · ');
-      return '<button type="button" role="option"><span>'+esc(s.name)+'</span><span class="sub">'+esc(detail)+'</span></button>';
+      const s=item.stop, detail=['Nearby stop',stopIndicatorLabel(s.ind),fmtDist(s.d)].filter(Boolean).join(' · ');
+      return '<button type="button" role="option" id="'+suggestOptionId(index)+'" aria-selected="false"><span>'+esc(s.name)+'</span><span class="sub">'+esc(detail)+'</span></button>';
     }
     const l=placeLabel(item.feature);
-    return '<button type="button" role="option">'+esc(l.main)+'<span class="sub">'+esc(l.sub)+'</span></button>';
+    return '<button type="button" role="option" id="'+suggestOptionId(index)+'" aria-selected="false">'+esc(l.main)+'<span class="sub">'+esc(l.sub)+'</span></button>';
   }).join('');
   [...box.children].forEach((b,i)=>b.addEventListener('click',()=>pickSuggestion(sugItems[i])));
   box.style.display='block';
+  setSuggestExpanded(true);
+  setSuggestActive(-1);
+}
+function suggestOptionId(index){ return 'suggest-option-'+index; }
+function setSuggestExpanded(open){
+  const field=$('q');
+  if(field) field.setAttribute('aria-expanded',String(!!open));
+}
+/* Moving the highlight is a visual act and an announced one. Without
+   aria-activedescendant the arrow keys moved a class nothing could read, so a
+   screen-reader user got a listbox they could open but not navigate. */
+function setSuggestActive(index){
+  sugIdx=index;
+  const options=[...$('suggest').children];
+  options.forEach((option,i)=>{
+    const active=i===index;
+    option.classList.toggle('sel',active);
+    option.setAttribute('aria-selected',String(active));
+  });
+  const field=$('q');
+  if(!field) return;
+  if(index>=0&&options[index]) field.setAttribute('aria-activedescendant',suggestOptionId(index));
+  else field.removeAttribute('aria-activedescendant');
 }
 function pickSuggestion(item){
   if(item&&item.kind==='stop'){
@@ -1971,7 +1998,7 @@ function versionedDataUrl(path,built){
 }
 function dataUrl(path){ return versionedDataUrl(path,DATA_MANIFEST&&DATA_MANIFEST.built); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionFeedAgeMs,disruptionFeedDelayed,disruptionState,disruptionActive,disruptionRelevant,disruptionAppliesToService,boardPatternRecords,disruptionMatches,disruptionReasonLabel,disruptionTimingText,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,bearingWords,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,directionAnchor,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',at:0,value:null};}};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),versionedDataUrl,validDataManifest,readStoredDataManifest,loadDataManifest,resetDataManifestForTest,dataManifestSource:()=>DATA_MANIFEST_SOURCE,validDataTile,loadDataTile,resetDataTileForTest,expireDataTileNegativeForTest,dataTileSource:(region,tile)=>DATA_TILE_SOURCE.get(tileLogicalKey(region,tile))||'',validDataDeparture,loadDataDeparture,resetDataDepartureForTest,dataDepartureSource:(region,shard)=>DATA_DEPARTURE_SOURCE.get(departureLogicalKey(region,shard))||'',validDataPatternShard,loadDataPatternShard,resetDataPatternForTest,queuePattern,timetablePatternRecord,dataPatternSource:(region,prefix)=>DATA_PATTERN_SOURCE.get(patternLogicalKey(region,prefix))||'',validDisruptionFeed,disruptionFeedAgeMs,disruptionFeedDelayed,disruptionState,disruptionActive,disruptionRelevant,disruptionAppliesToService,boardPatternRecords,disruptionMatches,disruptionReasonLabel,disruptionTimingText,loadDisruptions,setDisruptionFeedForTest:(feed)=>{DISRUPTIONS=feed||null;DISRUPTIONS_INDEX=feed&&feed.byStop?new Map(Object.entries(feed.byStop).map(([code,positions])=>[String(code).trim().toLowerCase(),positions])):null;DISRUPTIONS_AT=Date.now();DISRUPTIONS_ERROR='';},validNaptanShard,naptanCodesFor,stopAttributes,stopFactsHtml,stopStandDescription,stopIndicatorLabel,bearingWords,liveCoverageIncludes,nationalCoverageIncludes,paintStopPicker,loadNaptanShard,resetStopAttributesForTest:()=>{NAPTAN_SHARDS.clear();NAPTAN_PENDING.clear();NAPTAN_FAILED.clear();},setStopAttributesForTest:(area,stops)=>{NAPTAN_SHARDS.set(String(area),stops||{});},anchorServedByRoutes,boardAnchorName,directionAnchor,resetAnchorRelevanceForTest:()=>{ANCHOR_RELEVANCE={key:'',at:0,value:null};}};
 }
 function dataTileKey(lat,lon){
   const size=(DATA_MANIFEST&&Number(DATA_MANIFEST.tileSize))||.05;
@@ -2412,6 +2439,19 @@ function authoritativeDiscoveredStopId(stop){
   }
   return '';
 }
+/* NaPTAN indicators are not bare stand letters. The register publishes "adj",
+   "opp", "o/s", "SW-bound", "Stop A", "Stand 3" and "Bay 12", and roughly half
+   of those already carry their own noun or preposition. Prefixing every one of
+   them produced "Stop Stop A" and "Stop adj" wherever a stand was named. Only
+   a bare label needs the word putting in front of it. */
+const STOP_INDICATOR_NAMED = /^(stop|stand|bay|stance|gate|platform|pier|arrival|departure)\b/i;
+const STOP_INDICATOR_PLACED = /^(adj|opp|o\/s|os|nr|near|outside|inside|behind|before|after|by|at|cnr|corner|entrance)\b/i;
+function stopIndicatorLabel(value){
+  const text=String(value||'').trim();
+  if(!text) return '';
+  if(STOP_INDICATOR_NAMED.test(text)||STOP_INDICATOR_PLACED.test(text)||/bound\b/i.test(text)) return text;
+  return 'Stop '+text;
+}
 function stopIndicatorDirection(value){
   const text=String(value||'').trim().toLowerCase();
   if(!text) return '';
@@ -2638,14 +2678,14 @@ function drawStops(){
         // Anchored on the tip of the pin, which is the point that marks the stop.
         iconSize:sel?[19,25]:[13,17], iconAnchor:sel?[9.5,25]:[6.5,17]}),
       zIndexOffset: sel?500:0,
-      title:'Select '+s.name+(s.ind?' (Stop '+s.ind+')':''),
-      alt:'Select bus stop '+s.name+(s.ind?', stop '+s.ind:''),
+      title:'Select '+s.name+(s.ind?' ('+stopIndicatorLabel(s.ind)+')':''),
+      alt:'Select bus stop '+s.name+(s.ind?', '+stopIndicatorLabel(s.ind):''),
       keyboard:true
     }).addTo(stopLayer);
     m.on('click',()=>selectStopFromMap(s));
     // The pin rises from its anchor, so the label has to clear its full height
     // rather than the 8px a centred dot needed.
-    m.bindTooltip(s.name+(s.ind?' ('+s.ind+')':''),{direction:'top',offset:[0,sel?-25:-17],className:'stoptip'});
+    m.bindTooltip(s.name+(s.ind?' ('+stopIndicatorLabel(s.ind)+')':''),{direction:'top',offset:[0,sel?-25:-17],className:'stoptip'});
   });
 }
 
@@ -2867,9 +2907,19 @@ if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostn
   window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),fallbackCoverageFrom,fallbackTimetableCovers,rememberFallbackCoverage,loadTimetable,
     resetFallbackTimetableForTest:()=>{S.fallbackTimetable=null;FALLBACK_TIMETABLE_PROMISE=null;FALLBACK_TIMETABLE_FAILED_AT=0;FALLBACK_TIMETABLE_COVERAGE=null;try{localStorage.removeItem(FALLBACK_COVERAGE_KEY);}catch(e){}}};
 }
+/* The national build declares each region's bounds, so "is there any scheduled
+   data for this place?" is a question the manifest answers, not something to
+   infer from an error string. The build is nine English regions, so Scotland,
+   Wales and Northern Ireland have no scheduled departures at all — and telling
+   somebody standing in Cardiff that the timetable is "unavailable" describes a
+   fault, when what they have hit is the edge of the map. */
+function nationalCoverageIncludes(stop){
+  if(!DATA_MANIFEST||!stop||!isFinite(stop.lat)||!isFinite(stop.lon)) return null;
+  return dataRegionsFor(stop.lat,stop.lon,0,DATA_MANIFEST,false).length>0;
+}
 async function loadStopTimetable(stop){
   const run=++S.timetableRun;
-  S.ttError=null;
+  S.ttError=null; S.ttOutsideCoverage=false;
   // The national stop/departure shards are the primary path and are tiny. Do
   // not download and parse the 50 MB regional fallback during every startup;
   // it is loaded only if the national path actually fails for this stop.
@@ -2887,6 +2937,7 @@ async function loadStopTimetable(stop){
   }catch(e){
     if(run!==S.timetableRun) return;
     const nationalError=String((e&&e.message)||'national timetable unavailable');
+    S.ttOutsideCoverage=nationalCoverageIncludes(stop)===false;
     try{
       if(!fallbackTimetableCovers(stop)) throw new Error('pack does not cover this stop');
       const fallback=await loadTimetable();
@@ -3598,6 +3649,7 @@ function updateStopMeta(){
   const indicator=String(s.ind||S.ttStop&&S.ttStop.ind||'').trim();
   let tt=' · checking timetable';
   if(S.ttStop) tt=S.timetableSource==='national'?(S.timetableFallback?' · last-known timetable'+(timetableBuildLabel()?' · built '+timetableBuildLabel():''):' · official timetable stop'):S.ttStop.match==='code'?' · regional timetable stop':' · nearby timetable match';
+  else if(S.ttOutsideCoverage) tt=' · outside timetable coverage';
   else if(S.ttError) tt=' · timetable unavailable'; else if(S.timetable) tt=' · live only';
   /* How far away the stop is belongs in the heading; the stop indicator,
      reference code and timetable match are provenance. Keep those behind the
@@ -3606,7 +3658,7 @@ function updateStopMeta(){
   const source=$('stopSource');
   if(source){
     const details=[];
-    if(indicator) details.push('Stop <b>'+esc(indicator)+'</b>');
+    if(indicator) details.push('<b>'+esc(stopIndicatorLabel(indicator))+'</b>');
     details.push(displayCode?'Stop reference <b>'+esc(displayCode)+'</b>':'No stop reference published');
     source.innerHTML=details.join(' · ')+tt;
   }
@@ -3644,19 +3696,36 @@ function openStopPicker(message){
      correct stop" where nobody could see it. Bring the board forward with the
      question, exactly as tapping a stop marker already does in reverse. */
   setAppView('times');
+  paintStopPicker();
+  $('stopPicker').classList.add('show');
+  ensureStopPickerAttributes();
+  if(message) toast(message);
+}
+const STOP_PICKER_LIMIT = 60;
+function paintStopPicker(){
   const box=$('stopItems');
-  box.innerHTML = S.stops.slice(0,60).map((s,i)=>{
+  if(!box) return;
+  box.innerHTML = S.stops.slice(0,STOP_PICKER_LIMIT).map((s,i)=>{
     const m = MAPPED[String(s.id)];
     const badge = m && m.routes.length
       ? '<span class="hasroutes">'+m.routes.length+' routes</span>' : '';
+    const stand = stopStandDescription(s);
     return '<button class="stopitem" data-i="'+i+'"><span class="flagicon" style="width:12px;height:14px"></span>'+
       '<span style="min-width:0"><span class="nm">'+esc(s.name)+'</span>'+
-      (s.ind?'<span class="sub">Stop '+esc(s.ind)+'</span>':'')+'</span>'+
+      (stand?'<span class="sub">'+esc(stand)+'</span>':'')+'</span>'+
       badge+'<span class="dist">'+fmtDist(s.d)+'</span></button>';
   }).join('');
   [...box.children].forEach(b=>b.addEventListener('click',()=>selectStop(S.stops[+b.dataset.i],true)));
-  $('stopPicker').classList.add('show');
-  if(message) toast(message);
+}
+/* The register shards by ATCO administrative area, so every stand on offer is
+   almost always one file — usually the one the selected stop has already
+   pulled. Repaint when it lands rather than holding the list up for it, and
+   only while the picker is still the thing on screen. */
+function ensureStopPickerAttributes(){
+  const shown=S.stops.slice(0,STOP_PICKER_LIMIT);
+  if(!shown.length) return;
+  Promise.all(shown.map(stop=>ensureStopAttributes(stop).catch(()=>null)))
+    .then(()=>{ if($('stopPicker').classList.contains('show')) paintStopPicker(); });
 }
 $('changeStop').addEventListener('click', ()=>openStopPicker());
 $('closePicker').addEventListener('click', closePicker);
@@ -3680,6 +3749,18 @@ $('dAll').addEventListener('click',()=>setDir('all'));
 /* ============================================================
    Live feed — BODS SIRI-VM
    ============================================================ */
+/* The same box the geocoder searches and the Worker enforces. Outside it the
+   clamps below collapse to a degenerate box, the Worker answers 400, and its
+   validation message — "a valid bbox=minLon,minLat,maxLon,maxLat query is
+   required" — was surfaced to the passenger as a toast. Say what actually
+   happened instead, and do not spend the request finding out. */
+const LIVE_COVERAGE = {minLon:-9,minLat:49,maxLon:3,maxLat:61};
+function liveCoverageIncludes(point){
+  const lat=Number(point&&point.lat), lon=Number(point&&point.lon);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)) return false;
+  return lon>=LIVE_COVERAGE.minLon&&lon<=LIVE_COVERAGE.maxLon
+      &&lat>=LIVE_COVERAGE.minLat&&lat<=LIVE_COVERAGE.maxLat;
+}
 function boxAround(c,metres){
   const maxHalf=.17, latPad=Math.min(metres/111320,maxHalf);
   const lonPad=Math.min(metres/(111320*Math.max(.2,Math.cos(rad(c.lat)))),maxHalf);
@@ -4273,6 +4354,9 @@ async function fetchLiveBatch(wide,signal){
 }
 async function fetchLive(signal){
   S.feedFallback=false; S.feedEmptyReason=''; S.feedPartial=false;
+  if(!liveCoverageIncludes(S.stop||S.origin)){
+    throw {soft:true,outsideCoverage:true,msg:'Kerbside covers Great Britain. There are no live buses to show for this location.'};
+  }
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
   if(wide) S.lastWideFetch=Date.now();
   const matchedPromise=fetchMatchedBatch(signal).catch(()=>[]);
@@ -5617,6 +5701,8 @@ function renderServingNote(){
   }
   if(routes.length){
     el.innerHTML='<b>Confirmed from observed arrivals:</b> '+esc(routes.join(', '))+'. A route needs repeated stop evidence before it is trusted.';
+  }else if(S.ttOutsideCoverage){
+    el.innerHTML='<b>No scheduled times here yet.</b> Kerbside\'s national timetable covers the English regions, so this stop has no scheduled departures to show. Live buses still appear wherever their operator publishes positions.';
   }else if(S.ttError){
     el.innerHTML='<b>Timetable unavailable.</b> '+esc(S.ttError)+'. Live GPS remains available while Kerbside retries on the next page load.';
   }else if(S.timetable){
@@ -6236,7 +6322,7 @@ function journeyProgressHtml(v){
     +'<button class="route-map-btn" data-route-map="'+esc(v.id)+'">'+(progress.pattern.shape?'View accurate route on map':roadDrawn?'View road route on map':'View route through stops on map')+'</button>'
     +stopList+'</div>';
 }
-function lineDetail(r){
+function lineDetail(r,detailId){
   const v=r.v;
   const progressHtml=r.gpsLost
     ? '<div class="journey-progress journey-progress-unavailable"><b>Journey progress paused.</b> Kerbside is holding the last confirmed position until fresh GPS returns.</div>'
@@ -6259,7 +6345,7 @@ function lineDetail(r){
     : 'ETA is calculated from the fresh vehicle position, movement towards this stop, locally observed speed and '
       +(r.geometry?'the matched journey geometry':'route factor')
       +(r.schedule?', then checked against the timetable':'')+'. It is an estimate, not an operator prediction.';
-  return '<div class="detail">'+progressHtml+times
+  return '<div class="detail"'+(detailId?' id="'+esc(detailId)+'"':'')+'>'+progressHtml+times
     +'<div class="dfacts">'+facts.map(([k,val])=>'<div><span class="dk">'+esc(k)+'</span><span class="dv">'+esc(val)+'</span></div>').join('')+'</div>'
     +'<div class="dnote">'+note
     +(v.origin?' Running '+esc(v.origin)+' to '+esc(v.dest||'?')+(v.operator?' · '+esc(v.operator):'')+'.':'')+'</div></div>';
@@ -6624,6 +6710,28 @@ function stopFactsHtml(stop){
   if(type) parts.push('<span class="stopflag">'+esc(type.label)+'</span> <span class="stopflag-note">'+esc(type.note)+'</span>');
   return parts.join(' ');
 }
+/* The one line that makes a stand choice answerable.
+   Being asked "which of these two High Streets are you at?" is not a question
+   a stop name can answer — both stands carry the same name, which is the whole
+   reason the choice is being offered. The discriminating facts are the label on
+   the pole, the street, and the way a bus faces when it calls here, and all
+   three are in the national NaPTAN register the app already downloads for the
+   selected stop. Destinations are deliberately not used: they would need each
+   candidate's own timetable, which is a download per stand for a list the
+   passenger is looking at for a couple of seconds. */
+function stopStandDescription(stop){
+  const record=stopAttributes(stop)||{};
+  const parts=[];
+  const indicator=stopIndicatorLabel(stop&&stop.ind);
+  if(indicator) parts.push(indicator);
+  const street=String(record.s||'').trim();
+  if(street) parts.push(street);
+  const facing=bearingWords(record.b);
+  if(facing) parts.push('buses face '+facing);
+  const type=NAPTAN_STOP_TYPES[String(record.t||'').trim().toUpperCase()];
+  if(type) parts.push(type.label.toLowerCase());
+  return parts.join(' · ');
+}
 function renderStopFacts(){
   const el=$('stopFacts');
   if(!el) return;
@@ -6927,7 +7035,7 @@ function render(){
     // the reader was — both down the departure list and inside the expanded
     // journey's own scrolling stop list. Put them back after the swap.
     const scrollState=captureBoardScroll();
-    deps.innerHTML=rows.map(r=>{
+    deps.innerHTML=rows.map((r,index)=>{
       if(r.kind==='scheduled') return renderScheduledRow(r);
       const mins=Math.max(0,Math.round(r.secs/60));
       const now=Date.now(), age=now-r.v.ts, gpsLost=!!r.gpsLost, gpsQuality=etaGpsQuality(r.v,now), gpsLive=!gpsLost&&gpsLiveDisplayFresh(r.v,now), etaFresh=!gpsLost&&gpsQuality.fresh, gpsAge=formatPositionAge(age);
@@ -6944,8 +7052,9 @@ function render(){
       const gpsLabel=gpsLost?(r.scheduleFallback?'GPS lost · schedule':'GPS signal lost'):gpsLive?'live GPS':'GPS delayed';
       const gpsHelp=gpsLost?(r.scheduleFallback?'Fresh GPS stopped for this matched departure; its row is temporarily using the timetable instead of creating a duplicate scheduled bus.':'The operator feed stopped reporting this previously verified bus. Kerbside is holding the row briefly without a live countdown.'):gpsLive?(etaFresh?'Live vehicle position from BODS; current for this bus\'s reporting cadence.':'Live vehicle position from BODS; still under two minutes old, but older than this bus\'s normal reporting cadence so its ETA is estimated.'):'Last confirmed BODS position was '+gpsAge+'; the position is over two minutes old and ETA confidence is reduced.';
       const etaText=gpsLost?(r.scheduleFallback?(scheduleDue?'due':'~'+mins):'—'):due?'due':((!etaFresh||r.confidence==='low')?'~':'')+mins;
+      const expanded=S.selected===r.v.id, detailId='depDetail-'+index;
       return '<div class="depwrap"><div class="depmain">'
-        +'<button class="dep'+(S.selected===r.v.id?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'" aria-expanded="'+(S.selected===r.v.id)+'">'
+        +'<button class="dep'+(expanded?' active':'')+(tight?' unreachable':'')+'" data-id="'+esc(r.v.id)+'" aria-expanded="'+expanded+'"'+(expanded?' aria-controls="'+detailId+'"':'')+'>'
         +'<span class="route'+(!gpsLive?' stale':'')+'">'+esc(r.v.line)+'</span>'
         +'<span style="min-width:0"><span class="dest">'+esc(r.v.dest||'Destination unknown')+'</span><span class="deprow2">'
         +'<span class="chip direction-gps'+(!S.destFilter&&r.dir==='in'?' in':'')+'">'+esc(dirChip)+'</span>'
@@ -6960,7 +7069,7 @@ function render(){
         +'</span></span><span class="eta'+(due?' due':'')+'">'+etaText+'<small>'+(gpsLost?(r.scheduleFallback?(scheduleDue?'scheduled':'min'):'last seen'):due?'arriving':(!etaFresh||r.confidence==='low')?'est':'min')+'</small></span></button>'
         +'<button class="bell'+(hasAlarm(r.v.line,r.v.dest)?' on':'')+'" data-bell="'+esc(r.v.id)+'" title="Alert me when to leave" aria-label="Alert me when to leave for the '+esc(r.v.line)+'">'
         +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button></div>'
-        +(S.selected===r.v.id?lineDetail(r):'')+'</div>';
+        +(expanded?lineDetail(r,detailId):'')+'</div>';
     }).join('');
     [...deps.querySelectorAll('.dep[data-id]')].forEach(b=>b.addEventListener('click',()=>focusVehicle(b.dataset.id)));
     [...deps.querySelectorAll('[data-bell]')].forEach(b=>b.addEventListener('click',()=>{
@@ -7431,7 +7540,7 @@ async function poll(force){
       const msg=e&&e.msg?e.msg:'The live feed could not be reached.';
       const scheduled=S.ttStop&&timetableRows(new Date()).some(row=>row.at>Date.now()-60000&&row.at<Date.now()+3*3600000);
       const retained=[...S.vehicles.values()].some(v=>Date.now()-v.ts<=MAX_AGE_MS+GPS_RESULT_GRACE_MS);
-      setStatus(scheduled?'Live unavailable · scheduled times shown':retained?'Live feed delayed · last GPS retained':'Live feed unavailable · retrying','err');
+      setStatus(e&&e.outsideCoverage?'Outside Kerbside coverage':scheduled?'Live unavailable · scheduled times shown':retained?'Live feed delayed · last GPS retained':'Live feed unavailable · retrying','err');
       if(Date.now()-S.lastOk>25000) toast(msg,true);
       S.feedRefreshing=false;
       render();
@@ -7783,20 +7892,20 @@ if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='man
 window.addEventListener('resize',()=>map.invalidateSize());
 })();
 </script>
-<script src="kerbside-trains.js?v=0.9.8"></script>
-<script src="kerbside-train-routes.js?v=0.9.8"></script>
-<script src="kerbside-train-date.js?v=0.9.8"></script>
-<script src="kerbside-journey-planner-ui.js?v=0.9.8"></script>
-<script src="kerbside-train-live-window.js?v=0.9.8"></script>
-<script src="kerbside-train-live-overlay.js?v=0.9.8"></script>
-<script src="kerbside-rail-timebands.js?v=0.9.8"></script>
-<script src="kerbside-rail-demand-v4.js?v=0.9.8"></script>
-<script src="kerbside-rail-calibration.js?v=0.9.8"></script>
-<script src="kerbside-train-events.js?v=0.9.8"></script>
-<script src="kerbside-train-loading.js?v=0.9.8"></script>
-<script src="kerbside-train-loading-guidance.js?v=0.9.8"></script>
-<script src="kerbside-train-forecast-v4.js?v=0.9.8"></script>
-<script src="kerbside-journey-sheet.js?v=0.9.8"></script>
-<script src="kerbside-status.js?v=0.9.8"></script>
+<script src="kerbside-trains.js?v=0.9.9"></script>
+<script src="kerbside-train-routes.js?v=0.9.9"></script>
+<script src="kerbside-train-date.js?v=0.9.9"></script>
+<script src="kerbside-journey-planner-ui.js?v=0.9.9"></script>
+<script src="kerbside-train-live-window.js?v=0.9.9"></script>
+<script src="kerbside-train-live-overlay.js?v=0.9.9"></script>
+<script src="kerbside-rail-timebands.js?v=0.9.9"></script>
+<script src="kerbside-rail-demand-v4.js?v=0.9.9"></script>
+<script src="kerbside-rail-calibration.js?v=0.9.9"></script>
+<script src="kerbside-train-events.js?v=0.9.9"></script>
+<script src="kerbside-train-loading.js?v=0.9.9"></script>
+<script src="kerbside-train-loading-guidance.js?v=0.9.9"></script>
+<script src="kerbside-train-forecast-v4.js?v=0.9.9"></script>
+<script src="kerbside-journey-sheet.js?v=0.9.9"></script>
+<script src="kerbside-status.js?v=0.9.9"></script>
 </body>
 </html>

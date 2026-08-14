@@ -302,7 +302,31 @@ try {
       const fallbackCoversAberdeen = api.fallbackTimetableCovers({ lat: 57.1497, lon: -2.0943 });
       api.resetFallbackTimetableForTest();
 
+      /* NaPTAN indicators are half bare stand labels and half already-worded
+         values, so the prefix has to be decided per value, not applied to all. */
+      const indicatorLabels = ['A', 'B1', 'Stop A', 'Stand 3', 'Bay 12', 'adj', 'opp', 'o/s', 'SW-bound', '']
+        .map(value => api.stopIndicatorLabel(value));
+
+      /* What makes a two-stand choice answerable: the same name on both, so the
+         pole label, street and the way a bus faces are the discriminators. */
+      api.setStopAttributesForTest('430', {
+        '43000012301': { s: 'Market Place', b: 'SW', t: '' },
+        '43000012302': { s: 'Market Place', b: 'NE', t: 'H' }
+      });
+      const standA = api.stopStandDescription({ atco: '43000012301', ind: 'A', name: 'Market Place' });
+      const standB = api.stopStandDescription({ atco: '43000012302', ind: 'B', name: 'Market Place' });
+      const standUnknown = api.stopStandDescription({ atco: '43099999999', ind: 'Stop C', name: 'Market Place' });
+
+      const liveCoverage = {
+        dudley: api.liveCoverageIncludes({ lat: 52.5, lon: -2.1 }),
+        shetland: api.liveCoverageIncludes({ lat: 60.5, lon: -1.2 }),
+        scilly: api.liveCoverageIncludes({ lat: 49.93, lon: -6.32 }),
+        paris: api.liveCoverageIncludes({ lat: 48.85, lon: 2.35 }),
+        nowhere: api.liveCoverageIncludes(null)
+      };
+
       return {
+        indicatorLabels, standA, standB, standUnknown, liveCoverage,
         fallbackUnknownCoverage, fallbackRadius,
         fallbackCoversCentre, fallbackCoversNeighbour, fallbackCoversAberdeen,
         opaqueAgreement,
@@ -434,6 +458,16 @@ try {
   assert.equal(result.fallbackCoversCentre, true);
   assert.equal(result.fallbackCoversNeighbour, true, 'a stop inside the tracked area stays eligible for the pack');
   assert.equal(result.fallbackCoversAberdeen, false, 'a stop the pack cannot serve must not trigger a 50 MB download');
+  assert.deepEqual(result.indicatorLabels,
+    ['Stop A', 'Stop B1', 'Stop A', 'Stand 3', 'Bay 12', 'adj', 'opp', 'o/s', 'SW-bound', ''],
+    'only a bare stand label takes the word "Stop"; an indicator that already reads as one must not be doubled');
+  assert.equal(result.standA, 'Stop A · Market Place · buses face south-west');
+  assert.equal(result.standB, 'Stop B · Market Place · buses face north-east · hail and ride',
+    'a hail-and-ride stand must say so where the choice is being made');
+  assert.equal(result.standUnknown, 'Stop C', 'with no register entry the pole label still stands alone');
+  assert.deepEqual(result.liveCoverage,
+    { dudley: true, shetland: true, scilly: true, paris: false, nowhere: false },
+    'live coverage must span Great Britain end to end and stop at its edge');
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside audit regressions passed.');
 } finally {
