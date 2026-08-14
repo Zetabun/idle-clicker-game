@@ -1,4 +1,4 @@
-name: Generate Kerbside release bootstrap
+name: Validate and apply Kerbside release
 
 on:
   pull_request:
@@ -11,20 +11,19 @@ on:
     paths:
       - .github/scripts/release-kerbside-*.py
       - .github/triggers/release-kerbside-*.txt
-      - .github/scripts/kerbside-release-post.py
 
 permissions:
   contents: write
 
 concurrency:
-  group: kerbside-release-bootstrap-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: kerbside-release-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
-  generate:
+  release:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 40
 
     steps:
       - name: Check out release branch
@@ -32,6 +31,11 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
 
       - name: Locate release patch
         shell: bash
@@ -45,7 +49,7 @@ jobs:
           fi
           echo "RELEASE_SCRIPT=${SCRIPTS[0]}" >> "$GITHUB_ENV"
 
-      - name: Generate release tree
+      - name: Apply browser release
         shell: bash
         run: |
           set -euo pipefail
@@ -56,6 +60,41 @@ jobs:
             python3 .github/scripts/kerbside-release-post.py
           fi
           git diff --check
+
+      - name: Install browser test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+
+      - name: Validate backend and existing builders
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check build-timetable.js
+          if [[ -f .github/scripts/build-orr-odm.py ]]; then
+            python3 - <<'PY'
+          from pathlib import Path
+          path=Path('.github/scripts/build-orr-odm.py')
+          compile(path.read_text(encoding='utf-8'),str(path),'exec')
+          PY
+          fi
+          npm run check --prefix kerbside-backend
+          npm test --prefix kerbside-backend
+
+      - name: Run browser regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser --prefix kerbside-backend
+          npm run test:train-route --prefix kerbside-backend
+          npm run test:audit --prefix kerbside-backend
+          npm run test:journey-identity --prefix kerbside-backend
+          npm run test:disruptions --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:train-route --prefix kerbside-backend
 
       - name: Prepare repository-safe release commit
         shell: bash
@@ -69,15 +108,18 @@ jobs:
           trigger_path="${RELEASE_SCRIPT/.github\/scripts\//.github/triggers/}"
           trigger_path="${trigger_path%.py}.txt"
           rm -f "$RELEASE_SCRIPT" "$trigger_path" .github/scripts/kerbside-release-post.py
+
+          # Dependencies are validation-only. Remove npm's generated tree before
+          # release-file discovery so it can never be included in a publish.
           rm -rf kerbside-backend/node_modules
 
-          # Keep workflow files byte-for-byte as committed on the branch. The
-          # connected app restores the normal validated release workflow after
-          # this bootstrap has materialised the generated app tree.
+          # The GITHUB_TOKEN cannot update protected workflow files. A release
+          # patch must not smuggle workflow changes into the generated commit;
+          # connected GitHub tooling applies reviewed workflow edits separately.
           git restore --source=HEAD --worktree -- .github/workflows
           git diff --check
 
-      - name: Publish generated release atomically
+      - name: Publish validated release atomically
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -88,7 +130,7 @@ jobs:
           CHECKED_OUT_SHA="$(git rev-parse HEAD)"
           BASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$RELEASE_BRANCH" --jq '.object.sha')"
           if [[ "$BASE_SHA" != "$CHECKED_OUT_SHA" ]]; then
-            echo "::error::Release branch moved during generation: checked out $CHECKED_OUT_SHA but remote is $BASE_SHA."
+            echo "::error::Release branch moved during validation: checked out $CHECKED_OUT_SHA but remote is $BASE_SHA."
             exit 1
           fi
 
@@ -104,7 +146,7 @@ jobs:
             } | sort -zu
           )
           if [[ "${#CHANGED[@]}" -eq 0 ]]; then
-            echo "::error::Generated release produced no repository changes."
+            echo "::error::Validated release produced no repository changes."
             exit 1
           fi
 
@@ -121,15 +163,23 @@ jobs:
             mode="$(git ls-files -s -- "$path" | awk 'NR==1 {print $1}')"
             mode="${mode:-100644}"
             if [[ -f "$path" ]]; then
-              blob_sha="$(base64 -w 0 -- "$path" | jq -Rs '{content: ., encoding: "base64"}' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
-              TREE="$(jq --arg path "$path" --arg mode "$mode" --arg sha "$blob_sha" '. + [{path: $path, mode: $mode, type: "blob", sha: $sha}]' <<<"$TREE")"
+              blob_sha="$(base64 -w 0 -- "$path" | jq -Rs '{content: ., encoding: "base64"}' | \
+                gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq '.sha')"
+              TREE="$(jq --arg path "$path" --arg mode "$mode" --arg sha "$blob_sha" \
+                '. + [{path: $path, mode: $mode, type: "blob", sha: $sha}]' <<<"$TREE")"
             else
-              TREE="$(jq --arg path "$path" --arg mode "$mode" '. + [{path: $path, mode: $mode, type: "blob", sha: null}]' <<<"$TREE")"
+              TREE="$(jq --arg path "$path" --arg mode "$mode" \
+                '. + [{path: $path, mode: $mode, type: "blob", sha: null}]' <<<"$TREE")"
             fi
           done
 
-          TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" '{base_tree: $base_tree, tree: $tree}' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq '.sha')"
-          COMMIT_SHA="$(jq -n --arg message 'Release Kerbside 0.9.12 generated tree' --arg tree "$TREE_SHA" --arg parent "$BASE_SHA" '{message: $message, tree: $tree, parents: [$parent]}' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq '.sha')"
-          jq -n --arg sha "$COMMIT_SHA" '{sha: $sha, force: false}' | gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$RELEASE_BRANCH" --input - >/dev/null
+          TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --argjson tree "$TREE" \
+            '{base_tree: $base_tree, tree: $tree}' | \
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq '.sha')"
+          COMMIT_SHA="$(jq -n --arg message 'Release Kerbside browser update' --arg tree "$TREE_SHA" --arg parent "$BASE_SHA" \
+            '{message: $message, tree: $tree, parents: [$parent]}' | \
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq '.sha')"
+          jq -n --arg sha "$COMMIT_SHA" '{sha: $sha, force: false}' | \
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$RELEASE_BRANCH" --input - >/dev/null
 
-          echo "Published generated release commit $COMMIT_SHA to $RELEASE_BRANCH"
+          echo "Published validated release commit $COMMIT_SHA to $RELEASE_BRANCH"
