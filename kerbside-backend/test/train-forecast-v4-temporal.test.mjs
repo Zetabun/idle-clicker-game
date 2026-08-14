@@ -1,9 +1,4 @@
-#!/usr/bin/env python3
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[2]
-TEST = ROOT / 'kerbside-backend' / 'test' / 'train-forecast-v4-temporal.test.mjs'
-TEST.write_text(r'''import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs/promises';
@@ -89,5 +84,3 @@ test('same route keeps the route prior while final context changes with journey 
   const a=v4.forecast(morning,0,[morning],{station,referenceDate:new FixedDate('2026-08-12T08:00:00Z')}),b=v4.forecast(midday,0,[midday],{station,referenceDate:new FixedDate('2026-08-12T08:00:00Z')});
   assert.notEqual(a.score,b.score,{a:a.score,b:b.score});
 });
-''',encoding='utf-8')
-print('Corrected temporal regression test written')

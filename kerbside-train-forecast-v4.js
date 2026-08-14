@@ -15,7 +15,42 @@ function parseMinutes(value){const m=String(value||'').match(/^(\d{1,2}):(\d{2})
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}function unique(v){return [...new Set(v.filter(Boolean))];}function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}function sentence(v){const text=String(v||'').trim().replace(/[.]+$/,'');return text?text.charAt(0).toUpperCase()+text.slice(1):'';}
 function scoreThresholds(){const cal=calibration();if(cal&&typeof cal.scoreThresholds==='function'){try{return cal.scoreThresholds();}catch(error){}}return {moderate:1.55,busy:2.75,veryBusy:4};}
 function labelFor(s){const t=scoreThresholds();return s>=t.veryBusy?'Very busy':s>=t.busy?'Busy':s>=t.moderate?'Moderate':'Quiet';}function levelFor(s){const t=scoreThresholds();return s>=t.veryBusy?'very-busy':s>=t.busy?'busy':s>=t.moderate?'moderate':'quiet';}
-function isFuture(date){return stamp(date)>stamp(new Date());}function normalise(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function isFuture(date){return stamp(date)>stamp(new Date());}
+function dftLondonYmd(date){
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date instanceof Date?date:new Date(date));
+  const out={};parts.forEach(part=>{if(part.type!=='literal')out[part.type]=Number(part.value);});return {year:out.year,month:out.month,day:out.day};
+}
+function dftYmdKey(year,month,day){return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
+function dftUtcYmd(date){return {year:date.getUTCFullYear(),month:date.getUTCMonth()+1,day:date.getUTCDate()};}
+function dftHolidayAdd(set,year,month,day,substitute=false){
+  const actual=new Date(Date.UTC(year,month-1,day)),p=dftUtcYmd(actual),key=dftYmdKey(p.year,p.month,p.day),collision=set.has(key),weekend=actual.getUTCDay()===0||actual.getUTCDay()===6;set.add(key);
+  if(!substitute||(!weekend&&!collision))return;
+  const observed=new Date(actual);observed.setUTCDate(observed.getUTCDate()+1);
+  while(observed.getUTCDay()===0||observed.getUTCDay()===6||set.has(dftYmdKey(observed.getUTCFullYear(),observed.getUTCMonth()+1,observed.getUTCDate())))observed.setUTCDate(observed.getUTCDate()+1);
+  const q=dftUtcYmd(observed);set.add(dftYmdKey(q.year,q.month,q.day));
+}
+function dftNthMonday(year,month,n){const d=new Date(Date.UTC(year,month-1,1)),offset=(8-d.getUTCDay())%7;return 1+offset+(n-1)*7;}
+function dftLastMonday(year,month){const d=new Date(Date.UTC(year,month,0)),back=(d.getUTCDay()+6)%7;return d.getUTCDate()-back;}
+function dftEasterSunday(year){
+  const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  return new Date(Date.UTC(year,month-1,day));
+}
+const DFT_BANK_HOLIDAY_CACHE=new Map();
+function dftBankHolidayKeys(year){
+  if(DFT_BANK_HOLIDAY_CACHE.has(year))return DFT_BANK_HOLIDAY_CACHE.get(year);
+  const set=new Set();
+  dftHolidayAdd(set,year,1,1,true);dftHolidayAdd(set,year,1,2,true);
+  const easter=dftEasterSunday(year),goodFriday=new Date(easter),easterMonday=new Date(easter);goodFriday.setUTCDate(goodFriday.getUTCDate()-2);easterMonday.setUTCDate(easterMonday.getUTCDate()+1);
+  for(const date of [goodFriday,easterMonday]){const p=dftUtcYmd(date);dftHolidayAdd(set,p.year,p.month,p.day,false);}
+  dftHolidayAdd(set,year,5,dftNthMonday(year,5,1),false);dftHolidayAdd(set,year,5,dftLastMonday(year,5),false);
+  dftHolidayAdd(set,year,8,dftNthMonday(year,8,1),false);dftHolidayAdd(set,year,8,dftLastMonday(year,8),false);
+  dftHolidayAdd(set,year,11,30,true);
+  dftHolidayAdd(set,year,12,25,true);dftHolidayAdd(set,year,12,26,true);
+  DFT_BANK_HOLIDAY_CACHE.set(year,set);return set;
+}
+function isBankHoliday(date){const p=dftLondonYmd(date);return dftBankHolidayKeys(p.year).has(dftYmdKey(p.year,p.month,p.day));}
+function dftMinuteForService(service,date){const scheduled=parseMinutes(service&&service.std);if(scheduled==null||isFuture(date))return scheduled;const expected=parseMinutes(service&&service.etd);if(expected==null)return scheduled;let delay=expected-scheduled;if(delay<-720)delay+=1440;if(delay>720)delay-=1440;return Math.abs(delay)<=180?(scheduled+delay+1440)%1440:scheduled;}
+function normalise(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ');}
 function destinationIdentity(service){const item=Array.isArray(service&&service.destination)?service.destination.find(Boolean):null;return normalise(item&&(item.crs||item.locationName)||'unknown');}
 function profileDestinationIdentity(service){const display=service&&service.displayDestination;return normalise((display&&(display.crs||display.name||display.locationName))||destinationIdentity(service)||'unknown');}
 function operatorIdentity(service){return normalise(service&&(service.operatorCode||service.operator)||'unknown');}
@@ -163,15 +198,15 @@ function stationScaleSignal(station){
 }
 /* Two signals that exist only when the calibration module is loaded. Both
    return a flat zero otherwise, so scores are unchanged without it. */
-function calibratedDemandSignal(station,minute,date){
+function calibratedDemandSignal(station,minute,date,bankHoliday=false){
   const cal=calibration();
   if(!cal||typeof cal.demandShape!=='function')return {amount:0,reasons:[]};
-  try{return cal.demandShape(station,minute,date)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
+  try{return cal.demandShape(station,minute,date,bankHoliday)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
 }
-function serviceClassSignal(service,station,minute,date){
+function serviceClassSignal(service,station,minute,date,bankHoliday=false){
   const cal=calibration();
   if(!cal||typeof cal.serviceClassSignal!=='function')return {amount:0,reasons:[]};
-  try{return cal.serviceClassSignal(service,station,minute,date)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
+  try{return cal.serviceClassSignal(service,station,minute,date,bankHoliday)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
 }
 
 /* Journey shape. Two facts that only became reachable once the board was
@@ -287,8 +322,8 @@ function servicePatternSignal(api,service,date,station){
 function destinationForModel(service,context={}){const override=context&&context.eventJourney;if(override&&(override.destinationCrs||override.destination))return {crs:String(override.destinationCrs||'').toUpperCase(),name:String(override.destination||override.destinationCrs||'')};const d=service&&(service.routeDestination||service.displayDestination);if(d)return {crs:String(d.crs||'').toUpperCase(),name:String(d.name||d.locationName||d.crs||'')};const item=Array.isArray(service&&service.destination)?service.destination.find(Boolean):null;return {crs:String(item&&item.crs||'').toUpperCase(),name:String(item&&(item.locationName||item.crs)||'')};}
 const PROB_LEVELS=['quiet','moderate','busy','very-busy'],PROB_LABELS=['Quiet','Moderate','Busy','Very busy'],PROB_CENTRES=[.75,2,3.25,4.45];
 function normaliseProbabilities(values){const safe=values.map(v=>Number.isFinite(v)&&v>0?v:0),total=safe.reduce((a,b)=>a+b,0)||1;return safe.map(v=>v/total);}
-function ordinalProbabilities(score,service,station,evidence,date){
-  const cal=calibration(),minute=parseMinutes(service&&service.std),prior=cal&&typeof cal.utilisationPrior==='function'?cal.utilisationPrior(service,station,minute,date):null,base=prior&&Array.isArray(prior.probabilities)?prior.probabilities:[.18,.34,.36,.12],temperature=clamp(1.22-Math.min(8,Number(evidence)||0)*.065,.62,1.18);
+function ordinalProbabilities(score,service,station,evidence,date,minuteOverride=null,bankHoliday=false){
+  const cal=calibration(),minute=minuteOverride==null?parseMinutes(service&&service.std):minuteOverride,prior=cal&&typeof cal.utilisationPrior==='function'?cal.utilisationPrior(service,station,minute,date,bankHoliday):null,base=prior&&Array.isArray(prior.probabilities)?prior.probabilities:[.18,.34,.36,.12],temperature=clamp(1.22-Math.min(8,Number(evidence)||0)*.065,.62,1.18);
   const logits=PROB_CENTRES.map((centre,i)=>Math.log(Math.max(.015,Number(base[i])||.015))-Math.pow(score-centre,2)/(2*temperature*temperature)),max=Math.max(...logits),probabilities=normaliseProbabilities(logits.map(v=>Math.exp(v-max))),index=probabilities.indexOf(Math.max(...probabilities));
   return {probabilities,index,level:PROB_LEVELS[index],label:PROB_LABELS[index],prior,temperature,top:probabilities[index]};
 }
@@ -310,7 +345,7 @@ function forecast(service,index,services,context={}){
     :{score:1.8,reasons:[],confidence:'Low'};
   if(service&&service.isCancelled)return {score:null,level:base.level||'unknown',label:base.label||'Not applicable',confidence:base.confidence||'—',reasons:base.reasons&&base.reasons.length?base.reasons:['This service is cancelled.'],modelVersion:VERSION,eventPressure:0,historySamples:Number(base.historySamples)||0,cancelled:true};
 
-  const minute=parseMinutes(service&&service.std),future=isFuture(date);
+  const minute=parseMinutes(service&&service.std),future=isFuture(date),dftMinute=dftMinuteForService(service,date),bankHoliday=isBankHoliday(date);
   const calendar=calendarSignal(date,minute);
   const historical=historicalSignal(api,service,date,station);
   const events=eventSignal(service,date,context);
@@ -323,10 +358,10 @@ function forecast(service,index,services,context={}){
   const scale=stationScaleSignal(station);
   const school=schoolHolidaySignal(date,minute);
   const offpeak=offPeakSignal(date,minute);
-  const shapeCal=calibratedDemandSignal(station,minute,date);
-  const serviceClass=serviceClassSignal(service,station,minute,date);
-  const operatorCrowding=calV4&&typeof calV4.operatorCrowdingSignal==='function'?calV4.operatorCrowdingSignal(service,station,minute):{amount:0,reasons:[],measured:false};
-  const peakCapacity=calV4&&typeof calV4.peakCapacitySignal==='function'?calV4.peakCapacitySignal(station,minute):{amount:0,reasons:[],measured:false};
+  const shapeCal=calibratedDemandSignal(station,dftMinute,date,bankHoliday);
+  const serviceClass=serviceClassSignal(service,station,dftMinute,date,bankHoliday);
+  const operatorCrowding=calV4&&typeof calV4.operatorCrowdingSignal==='function'?calV4.operatorCrowdingSignal(service,station,dftMinute,date,bankHoliday):{amount:0,reasons:[],measured:false};
+  const peakCapacity=calV4&&typeof calV4.peakCapacitySignal==='function'?calV4.peakCapacitySignal(station,dftMinute,date,bankHoliday):{amount:0,reasons:[],measured:false};
   const pattern=servicePatternSignal(api,service,date,station);
 
   let score=Number(base.score);if(!Number.isFinite(score))score=1.8;
@@ -361,12 +396,12 @@ function forecast(service,index,services,context={}){
   const calibrated=!!(scale.reasons.length&&calibration()&&calibration().profileFor&&calibration().profileFor(station));
   const historySamples=Math.max(Number(base.historySamples)||0,Number(historical.samples)||0);
   const historyEvidence=historySamples>=3?1:(historySamples?0.5:0);
-  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(displacement.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0)+(routeLoad.measured?.5:0)+(operatorCrowding.measured?1:0)+(peakCapacity.measured?1:0)+(pattern.samples>=3?1:0);
-  const probabilityModel=ordinalProbabilities(score,service,station,evidence,date),accuracyBucket=accuracyBucketFor({future,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,formation,events,context}),confidenceInfo=probabilityConfidence(probabilityModel,evidence,accuracyBucket),confidence=confidenceInfo.label;
+  const evidence=2+historyEvidence+(calendar.reasons.length?1:0)+(events.reasons.length?1:0)+(displacement.reasons.length?1:0)+(live.reasons.length?2:0)+(formation.reasons.length?1:0)+(shape.evidence?1:0)+(school.reasons.length?.5:0)+(calibrated?1:0)+(serviceClass.reasons.length?.5:0)+(routeLoad.source==='orr-odm'?1:(routeLoad.measured?.5:0))+(operatorCrowding.measured?1:0)+(peakCapacity.measured?1:0)+(pattern.samples>=3?1:0);
+  const probabilityModel=ordinalProbabilities(score,service,station,evidence,date,dftMinute,bankHoliday),accuracyBucket=accuracyBucketFor({future,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,formation,events,context}),confidenceInfo=probabilityConfidence(probabilityModel,evidence,accuracyBucket),confidence=confidenceInfo.label;
   const cal=calibration();
-  const measuredBenchmark=cal&&typeof cal.benchmarkForecast==='function'?cal.benchmarkForecast(station,minute,date,probabilityModel.level):null;
+  const measuredBenchmark=cal&&typeof cal.benchmarkForecast==='function'?cal.benchmarkForecast(station,dftMinute,date,probabilityModel.level,bankHoliday):null;
   let calibrationNote='';
-  if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,minute,date)||'';}catch(error){calibrationNote='';}}
+  if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,dftMinute,date,bankHoliday)||'';}catch(error){calibrationNote='';}}
   return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],reasonDetail:reasonDetail.length?reasonDetail:[{text:'service time and route demand baseline',direction:'flat'}],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,routeLoad,measuredBenchmark,accuracyBucket,empiricalAccuracy:confidenceInfo.local};
 }
 function benchmarkServices(services,station,date){
@@ -444,6 +479,6 @@ function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimat
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices};
+window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices,dftMinuteForService,isBankHoliday};
 window.__KERBSIDE_FORECAST_V3__=window.__KERBSIDE_FORECAST_V4__;
 })();
