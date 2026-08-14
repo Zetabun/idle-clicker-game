@@ -92,16 +92,18 @@ test('connection buffer status distinguishes safe, tight and at-risk changes',()
   const provider=loadProvider();
   assert.equal(provider.connectionMinimum('CNM'),10);
   assert.equal(provider.connectionMinimum('BHM'),15);
-  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:10,source:'kerbside-topology',authority:'',dataset:'',asOf:''});
+  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:10,source:'kerbside-planning-buffer',authority:'',dataset:'',asOf:'',licence:'',commercialUse:false});
   assert.equal(provider.connectionRiskFor(18,10),'good');
   assert.equal(provider.connectionRiskFor(12,10),'tight');
   assert.equal(provider.connectionRiskFor(8,10),'at-risk');
 });
 
-test('authoritative station minima can be supplied with provenance without changing the fallback dataset',()=>{
-  const provider=loadProvider('2026-08-12','09:00',{CNM:{minutes:8,authority:'Licensed MCT fixture',dataset:'station-mct',asOf:'2026-08-12'}});
-  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:8,source:'official',authority:'Licensed MCT fixture',dataset:'station-mct',asOf:'2026-08-12'});
-  assert.deepEqual({...provider.connectionMinimumInfo('BHM')},{minutes:15,source:'kerbside-topology',authority:'',dataset:'',asOf:''});
+test('station minima require explicit commercial-use licence provenance',()=>{
+  const rejected=loadProvider('2026-08-12','09:00',{CNM:{minutes:8,authority:'Restricted fixture',dataset:'station-mct',asOf:'2026-08-12',licence:'research-only',commercialUse:false}});
+  assert.deepEqual({...rejected.connectionMinimumInfo('CNM')},{minutes:10,source:'kerbside-planning-buffer',authority:'',dataset:'',asOf:'',licence:'',commercialUse:false});
+  const provider=loadProvider('2026-08-12','09:00',{CNM:{minutes:8,authority:'Licensed MCT fixture',dataset:'station-mct',asOf:'2026-08-12',licence:'commercial-fixture-v1',commercialUse:true}});
+  assert.deepEqual({...provider.connectionMinimumInfo('CNM')},{minutes:8,source:'licensed',authority:'Licensed MCT fixture',dataset:'station-mct',asOf:'2026-08-12',licence:'commercial-fixture-v1',commercialUse:true});
+  assert.deepEqual({...provider.connectionMinimumInfo('BHM')},{minutes:15,source:'kerbside-planning-buffer',authority:'',dataset:'',asOf:'',licence:'',commercialUse:false});
 });
 
 test('out-of-snapshot dates fail closed',async()=>{

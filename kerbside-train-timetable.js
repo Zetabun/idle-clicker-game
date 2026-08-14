@@ -158,21 +158,25 @@ function operatorName(manifest,code){return manifest&&manifest.tocNames&&manifes
 
 function officialConnectionMinimumFor(crs){
   const code=String(crs||'').toUpperCase(),map=window.__KERBSIDE_OFFICIAL_CONNECTION_TIMES__||{},raw=map&&map[code];
-  const structured=raw&&typeof raw==='object'&&!Array.isArray(raw),minutes=Number(structured?raw.minutes:raw);
-  if(!Number.isFinite(minutes)||minutes<1||minutes>60)return null;
-  return {minutes,source:'official',authority:String(structured&&raw.authority||'').trim(),dataset:String(structured&&raw.dataset||'').trim(),asOf:String(structured&&raw.asOf||'').trim()};
+  const structured=raw&&typeof raw==='object'&&!Array.isArray(raw);
+  if(!structured)return null;
+  const minutes=Number(raw.minutes),authority=String(raw.authority||'').trim(),dataset=String(raw.dataset||'').trim(),asOf=String(raw.asOf||'').trim(),licence=String(raw.licence||raw.license||'').trim();
+  /* Kerbside may become a paid product, so an injected interchange dataset is
+     trusted only when its own metadata explicitly permits commercial use and
+     identifies both the publisher and licence. A bare number, scraped value or
+     ambiguous feed can never silently become an "official" planning rule. */
+  if(!Number.isFinite(minutes)||minutes<1||minutes>60||raw.commercialUse!==true||!authority||!dataset||!licence)return null;
+  return {minutes,source:'licensed',authority,dataset,asOf,licence,commercialUse:true};
 }
 function connectionMinimumInfo(crs,graph=null){
   const code=String(crs||'').toUpperCase(),official=officialConnectionMinimumFor(code);
-  /* National Rail's CTI feed identifies connecting trains; it is not a
-     substitute for the station minimum interchange times used by the Journey
-     Planner. Until a licensed/machine-readable MCT source is loaded, Kerbside
-     keeps an explicit conservative fallback instead of presenting guesses as
-     official data. The structured adapter above is intentionally dormant
-     unless an authorised dataset is supplied by the host application. */
+  /* The Darwin timetable gives Kerbside factual train times, but it does not
+     currently provide a commercially-cleared station minimum-change dataset.
+     Until one is explicitly supplied through the guarded adapter above, this
+     value remains a Kerbside planning buffer and is labelled as such in the UI. */
   if(official)return official;
   const fixed=CONNECTION_HUB_MINUTES[code]||10,degree=graph&&graph.get(code)?graph.get(code).size:0,topology=degree>=12?15:degree>=7?12:10;
-  return {minutes:Math.max(fixed,topology),source:'kerbside-topology',authority:'',dataset:'',asOf:''};
+  return {minutes:Math.max(fixed,topology),source:'kerbside-planning-buffer',authority:'',dataset:'',asOf:'',licence:'',commercialUse:false};
 }
 function connectionMinimum(crs,graph=null){return connectionMinimumInfo(crs,graph).minutes;}
 function callMinute(baseDate,row,call,value){
@@ -324,7 +328,7 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
           origin:firstLeg.origin,destination:[{locationName:secondLeg.routeDestination.name,crs:secondLeg.routeDestination.crs}],
           routeDestination:secondLeg.routeDestination,serviceTerminus:secondLeg.routeDestination,
           departureMinute:candidate.departureMinute,arrivalMinute:secondLeg.arrivalMinute,totalMinutes,
-          connectionMinutes,minimumConnectionMinutes:minimum,minimumConnectionSource:minimumInfo.source,minimumConnectionAuthority:minimumInfo.authority||'',minimumConnectionDataset:minimumInfo.dataset||'',minimumConnectionAsOf:minimumInfo.asOf||'',recoveryOptions,
+          connectionMinutes,minimumConnectionMinutes:minimum,minimumConnectionSource:minimumInfo.source,minimumConnectionAuthority:minimumInfo.authority||'',minimumConnectionDataset:minimumInfo.dataset||'',minimumConnectionAsOf:minimumInfo.asOf||'',minimumConnectionLicence:minimumInfo.licence||'',minimumConnectionCommercialUse:minimumInfo.commercialUse===true,recoveryOptions,
           interchange:{...interchange,arrival:firstLeg.arrival,departure:secondLeg.std,minutes:connectionMinutes,minimum,margin,quality:connectionQuality(connectionMinutes,minimum),routeQuality},
           legs:[firstLeg,secondLeg],rankScore:secondLeg.arrivalMinute+14+tightPenalty+longPenalty+routePenalty,
           scheduledOnly:true,isCancelled:false,length:0
@@ -416,7 +420,7 @@ function normalise(item){
     connectionMinutes:Number(item.connectionMinutes)||0,minimumConnectionMinutes:Number(item.minimumConnectionMinutes)||0,totalMinutes:Number(item.totalMinutes)||0,
     departureMinute:Number(item.departureMinute),arrivalMinute:Number(item.arrivalMinute),rankScore:Number(item.rankScore)||0,
     liveConnectionMinutes:null,liveInterchangeArrival:'',connectionRisk:'scheduled',secondLiveEvidence:false,onwardCancelled:false,
-    recoveryOptions:connection?(item.recoveryOptions||[]).map(normaliseLeg):[],recoveryChoice:null,minimumConnectionSource:item.minimumConnectionSource||'kerbside-topology',minimumConnectionAuthority:item.minimumConnectionAuthority||'',minimumConnectionDataset:item.minimumConnectionDataset||'',minimumConnectionAsOf:item.minimumConnectionAsOf||'',journeyLabels:Array.isArray(item.journeyLabels)?item.journeyLabels.slice():[],
+    recoveryOptions:connection?(item.recoveryOptions||[]).map(normaliseLeg):[],recoveryChoice:null,minimumConnectionSource:item.minimumConnectionSource||'kerbside-planning-buffer',minimumConnectionAuthority:item.minimumConnectionAuthority||'',minimumConnectionDataset:item.minimumConnectionDataset||'',minimumConnectionAsOf:item.minimumConnectionAsOf||'',minimumConnectionLicence:item.minimumConnectionLicence||'',minimumConnectionCommercialUse:item.minimumConnectionCommercialUse===true,journeyLabels:Array.isArray(item.journeyLabels)?item.journeyLabels.slice():[],
     scheduledOnly:true,liveEvidence:false,liveVia:'',cancelReason:'',delayReason:''
   };
 }
@@ -546,11 +550,11 @@ function journeyWatchPayload(service){
 function updateWatchedJourney(service){if(watchMatches(service))persistJourneyWatch(journeyWatchPayload(service));}
 function connectionMinimumProvenance(service){
   const minimum=Number(service&&service.minimumConnectionMinutes)||10;
-  if(service&&service.minimumConnectionSource==='official'){
-    const authority=String(service.minimumConnectionAuthority||'').trim(),asOf=String(service.minimumConnectionAsOf||'').trim();
-    return `${authority?`${authority} · `:''}official station minimum: ${minimum} min${asOf?` · ${asOf}`:''}`;
+  if(service&&service.minimumConnectionSource==='licensed'&&service.minimumConnectionCommercialUse===true){
+    const authority=String(service.minimumConnectionAuthority||'').trim(),dataset=String(service.minimumConnectionDataset||'').trim(),licence=String(service.minimumConnectionLicence||'').trim(),asOf=String(service.minimumConnectionAsOf||'').trim();
+    return `${authority?`${authority} · `:''}licensed station minimum: ${minimum} min${dataset?` · ${dataset}`:''}${licence?` · ${licence}`:''}${asOf?` · ${asOf}`:''}`;
   }
-  return `Kerbside conservative minimum: ${minimum} min`;
+  return `Kerbside planning buffer: ${minimum} min`;
 }
 function connectionEvidenceProvenance(service){
   const first=service&&service.legs&&service.legs[0],second=service&&service.legs&&service.legs[1];
@@ -588,16 +592,26 @@ function modeLabel(mode){if(mode!=='today')return'Advance timetable';return live
 function serviceDateLabel(mode,date=state.sourceDate||route().date){return mode==='advance'&&date?dateLabel(date,{short:true}).replace(/,/g,''):'';}
 function connectionBufferMinutes(arrival,departure){const a=parseMinutes(arrival),d=parseMinutes(departure);if(a==null||d==null)return null;let span=d-a;while(span<0)span+=1440;return span;}
 function liveConnectionRiskFor(minutes,minimum){return timetableProvider.connectionRiskFor(minutes,minimum);}
-function connectionChangeText(service){const live=Number.isFinite(service&&service.liveConnectionMinutes)?service.liveConnectionMinutes:null,value=live==null?Number(service&&service.connectionMinutes)||0:live;return `${live==null?'': 'live '}${value}m change`;}
+function connectionTimingInfo(service){
+  const scheduled=Number(service&&service.connectionMinutes)||0,live=Number.isFinite(service&&service.liveConnectionMinutes)?Number(service.liveConnectionMinutes):null,minimum=Number(service&&service.minimumConnectionMinutes)||10,available=live==null?scheduled:live;
+  return {scheduled,live,minimum,available,margin:available-minimum};
+}
+function connectionTimingText(service){
+  const timing=connectionTimingInfo(service),parts=[`Scheduled wait ${timing.scheduled} min`];
+  if(timing.live!=null)parts.push(`Live-adjusted wait ${timing.live} min`);
+  parts.push(timing.margin>=0?`${timing.margin} min spare`:`${Math.abs(timing.margin)} min short`);
+  return parts.join(' · ');
+}
+function connectionChangeText(service){const timing=connectionTimingInfo(service);return `${timing.live==null?'scheduled':'live'} ${timing.available}m wait`;}
 function journeyBadgesMarkup(service){const labels=Array.isArray(service&&service.journeyLabels)?service.journeyLabels:[];return labels.length?`<span class="train-journey-badges">${labels.map(label=>`<em>${esc(label)}</em>`).join('')}</span>`:'';}
 function recoverySummary(service){const choice=service&&service.recoveryChoice;if(!choice)return'';return `Backup ${choice.departure||choice.std||'—'} → ${choice.arrival||'—'}${choice.live?' · live':''}`;}
 function connectionWarning(service){
   if(!service||service.journeyType!=='connection')return'';
-  const change=displayName(service.interchange,'the interchange'),minimum=Number(service.minimumConnectionMinutes)||10,minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,arrival=service.liveInterchangeArrival?` at ${service.liveInterchangeArrival}`:'',backup=recoverySummary(service);
+  const change=displayName(service.interchange,'the interchange'),minimum=Number(service.minimumConnectionMinutes)||10,minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,arrival=service.liveInterchangeArrival?` at ${service.liveInterchangeArrival}`:'',backup=recoverySummary(service),minimumName=service.minimumConnectionSource==='licensed'&&service.minimumConnectionCommercialUse===true?'licensed station minimum':'Kerbside planning buffer';
   if(service.connectionRisk==='first-cancelled')return `The first train is cancelled, so Kerbside cannot assume you can reach ${change}. Re-plan from the origin rather than relying on the onward leg.`;
   if(service.connectionRisk==='onward-cancelled')return `The planned onward train from ${change} is cancelled.${backup?` ${backup} is the next workable timetable option Kerbside found.`:''}`;
-  if(service.connectionRisk==='at-risk')return `Live evidence reaches ${change}${arrival}, leaving ${minutes} minutes for the change — below the ${minimum}-minute planning buffer.${backup?` ${backup} is the next workable option if this connection is missed.`:''}`;
-  if(service.connectionRisk==='tight')return `Live evidence leaves ${minutes} minutes at ${change}, only ${minutes-minimum} minutes above the ${minimum}-minute planning buffer.`;
+  if(service.connectionRisk==='at-risk')return `Live evidence reaches ${change}${arrival}, leaving ${minutes} minutes for the change — below the ${minimum}-minute ${minimumName}.${backup?` ${backup} is the next workable option if this connection is missed.`:''}`;
+  if(service.connectionRisk==='tight')return `Live evidence leaves ${minutes} minutes at ${change}, only ${minutes-minimum} minutes above the ${minimum}-minute ${minimumName}.`;
   return'';
 }
 function recoveryMarkup(service,key){
@@ -619,10 +633,10 @@ function connectionItineraryMarkup(service,result){
     const loading=window.__KERBSIDE_TRAIN_LOADING__,coachDetail=crowd&&crowd.liveLoading&&loading&&typeof loading.coachMarkup==='function'?loading.coachMarkup(crowd):'';
     return `<div class="train-connection-leg"><span class="train-connection-time"><b>${esc(depart||'—')}</b><small>${esc(arrive||'—')}${live?' · live':''}</small></span><span class="train-connection-route"><b>${esc(`${from} → ${to}`)}</b><small>${esc(`${leg.operator||'Scheduled service'}${train} · ${platform} · ${live?'live':'scheduled'}`)}</small></span><span class="train-connection-crowd crowd-${esc(crowd.level||'unknown')}" title="${esc((crowd.reasons||[]).join(', '))}"><i></i><b>${esc(crowd.label||'Forecast pending')}</b><small>${esc(crowdSourceText(crowd))}</small></span></div>${coachDetail}`;
   });
-  const change=service.interchange||{},minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,minimum=Number(service.minimumConnectionMinutes)||10,risk=service.connectionRisk||change.quality||'scheduled';
+  const change=service.interchange||{},timing=connectionTimingInfo(service),risk=service.connectionRisk||change.quality||'scheduled';
   const quality=service.connectionRisk==='at-risk'?'At risk':service.connectionRisk==='tight'?'Tight':service.connectionRisk==='onward-cancelled'?'Onward cancelled':service.connectionRisk==='first-cancelled'?'First train cancelled':String(change.quality||'comfortable').replace(/^./,c=>c.toUpperCase());
-  const evidence=connectionEvidenceProvenance(service),source=connectionMinimumProvenance(service);
-  const changeRow=`<div class="train-connection-change connection-risk-${esc(risk)}"><span>Change at ${esc(displayName(change,'interchange'))}</span><b>${esc(`${minutes} min`)}</b><small>${esc(`${quality} connection · ${source} · ${evidence}`)}</small></div>`;
+  const evidence=connectionEvidenceProvenance(service),source=connectionMinimumProvenance(service),timingText=connectionTimingText(service);
+  const changeRow=`<div class="train-connection-change connection-risk-${esc(risk)}"><span>Change at ${esc(displayName(change,'interchange'))}</span><b>${esc(`${timing.available} min available`)}</b><small>${esc(`${quality} connection · ${timingText} · ${source} · ${evidence}`)}</small></div>`;
   return `<div class="train-connection-itinerary"><div class="train-detail-title">Journey plan</div>${legs[0]||''}${changeRow}${legs[1]||''}</div>`;
 }
 
