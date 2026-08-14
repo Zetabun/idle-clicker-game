@@ -80,5 +80,63 @@ new_block="""  await page.waitForFunction(()=>{
 """
 if route_text.count(old_block)!=1:
     raise SystemExit(f'train-route-filter-regression.mjs: expected obsolete future-date assertion block once, found {route_text.count(old_block)}')
-route_test.write_text(route_text.replace(old_block,new_block,1),encoding='utf-8')
-print('Updated dormant route-filter regression to use current Darwin snapshot coverage and state invariants.')
+route_text=route_text.replace(old_block,new_block,1)
+
+# A selected journey now uses the timetable spine on *today* as well, then
+# decorates those rows with live Darwin evidence. The old dormant regression
+# expected the pre-unified .train-service live board after pressing Today and
+# after reload, which contradicts the active train-browser-core regression.
+old_today="""  await page.click('#trainTravelToday');
+  await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'live');
+  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/live departures.*live-adjusted/i);
+  await waitForServiceCount(page,1);
+
+  assert.equal(await page.locator('.train-service').count(),1);
+  assert.match(await page.locator('.train-service').first().textContent(),/Plymouth/,
+    'a through train should remain visible when it calls at the selected destination');
+  assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Liverpool Lime Street/);
+  assert.match(await page.locator('#trainJourneySummary').textContent(),/BHM → BRI/);
+  assert.match(await page.locator('#trainJourneySummary').textContent(),/Direct trains to Bristol Temple Meads only/);
+
+  const stored = await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.route.v1') || 'null'));
+  assert.deepEqual(stored,{fromCrs:'BHM',destination:{name:'Bristol Temple Meads',crs:'BRI'}});
+
+  const directRequestsBeforeReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/9').length;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForSelector('#trainDestinationQuery');
+  await waitForServiceCount(page,1);
+  await page.waitForFunction(()=>document.getElementById('trainDestinationQuery')?.value === 'Bristol Temple Meads');
+  const directRequestsAfterReload = diagnostics.requests.filter(item=>item === '/departures/BHM/to/BRI/9').length;
+  assert.ok(directRequestsAfterReload > directRequestsBeforeReload,'saved route should restore the direct board after reload');
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
+"""
+new_today="""  await page.click('#trainTravelToday');
+  await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'live');
+  await page.waitForFunction(()=>{
+    const tt=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduled=document.getElementById('trainScheduledBoard');
+    return tt?.state?.mode==='today' && scheduled && !scheduled.hidden && scheduled.querySelectorAll('.train-scheduled-service').length>0;
+  });
+  assert.match(await page.locator('#trainTravelDateMeta').textContent(),/timetable \+ live evidence/i);
+  assert.equal(await page.locator('#trainBoard').isHidden(),true);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
+  assert.ok(await page.locator('#trainScheduledBoard .train-scheduled-service').count()>0);
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
+
+  const stored = await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.route.v1') || 'null'));
+  assert.deepEqual(stored,{fromCrs:'BHM',destination:{name:'Bristol Temple Meads',crs:'BRI'}});
+
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForSelector('#trainDestinationQuery');
+  await page.waitForFunction(()=>{
+    const tt=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduled=document.getElementById('trainScheduledBoard'),destination=document.getElementById('trainDestinationQuery');
+    return destination?.value==='Bristol Temple Meads' && tt?.state?.mode==='today' && scheduled && !scheduled.hidden && scheduled.querySelectorAll('.train-scheduled-service').length>0;
+  });
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
+  assert.equal(await page.locator('#trainBoard').isHidden(),true);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
+"""
+if route_text.count(old_today)!=1:
+    raise SystemExit(f'train-route-filter-regression.mjs: expected obsolete today-route block once, found {route_text.count(old_today)}')
+route_text=route_text.replace(old_today,new_today,1)
+route_test.write_text(route_text,encoding='utf-8')
+print('Updated dormant route-filter regression for the unified timetable + live-evidence journey board.')
