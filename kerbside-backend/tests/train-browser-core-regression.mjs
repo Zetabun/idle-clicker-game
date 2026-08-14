@@ -212,7 +212,9 @@ try{
   const detail=page.locator('#trainScheduledBoard .train-service-detail').first();
   await detail.waitFor({state:'visible'});
   assert.match(await detail.textContent(),/Forecast v4|Why this forecast/i);
-  assert.equal(await page.locator('#kerbsideJourneySheet').isVisible(),true,'mobile detail should open as a journey sheet');
+  const journeySheet=page.locator('#kerbsideJourneySheet');
+  await journeySheet.waitFor({state:'visible'});
+  assert.equal(await journeySheet.isVisible(),true,'mobile detail should open as a journey sheet');
   await closeJourneySheet(page);
 
   // Swap and swap back through the visible mobile control. The route must stay
