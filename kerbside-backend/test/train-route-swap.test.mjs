@@ -8,7 +8,8 @@ import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'..','..');
 const routeSource=await fs.readFile(path.join(root,'kerbside-train-routes.js'),'utf8');
-const plannerSource=await fs.readFile(path.join(root,'kerbside-journey-planner-ui.js'),'utf8');
+const plannerWrapperSource=await fs.readFile(path.join(root,'kerbside-journey-planner-ui.js'),'utf8');
+const plannerSource=await fs.readFile(path.join(root,'kerbside-journey-planner-core.js'),'utf8');
 const liveWindowSource=await fs.readFile(path.join(root,'kerbside-train-live-window.js'),'utf8');
 
 function classes(){return {toggle(){},add(){},remove(){},contains(){return false;}};}
@@ -41,6 +42,49 @@ test('route API can set a new origin and attach a destination without an automat
   assert.equal(api.state.fromCrs,'BRI');
   assert.equal(api.state.destination.crs,'BHM');
   assert.equal(runtime.refreshClicks,0);
+});
+
+function loadDestinationGuard(){
+  const listeners={};
+  const route={
+    state:{fromCrs:'',destination:null},
+    setFromCrs(crs){this.state.fromCrs=String(crs||'').toUpperCase();return true;}
+  };
+  const document={
+    readyState:'loading',
+    addEventListener(type,fn,capture){(listeners[type]||(listeners[type]=[])).push({fn,capture});},
+    dispatchEvent(){},
+    createElement(){return {src:'',async:true,onerror:null};},
+    head:{appendChild(){}},
+    documentElement:{appendChild(){}}
+  };
+  const window={
+    fetch:async()=>({ok:true,json:async()=>({BRI:['Bristol Temple Meads','BRI','GW']})}),
+    __KERBSIDE_TRAINS__:{state:{station:{name:'Bristol Temple Meads',crs:'BRI'}}},
+    __KERBSIDE_TRAIN_ROUTES__:route
+  };
+  class CustomEvent{constructor(type,options={}){this.type=type;this.detail=options.detail;}}
+  const context={window,document,console,URL,Response,DOMException,CustomEvent,location:{href:'https://zetabun.github.io/bus.html'}};
+  vm.createContext(context);vm.runInContext(plannerWrapperSource,context);
+  return {api:window.__KERBSIDE_STATION_DATA__,route,listeners};
+}
+
+test('destination autocomplete synchronises the selected origin before route selection',()=>{
+  const runtime=loadDestinationGuard();
+  assert.equal(runtime.route.state.fromCrs,'');
+  assert.equal(runtime.api.syncRouteOriginForDestination(),true);
+  assert.equal(runtime.route.state.fromCrs,'BRI');
+
+  const suggestion={closest(selector){return selector.includes('trainDestinationSuggest')?this:null;}};
+  runtime.route.state.fromCrs='';
+  runtime.listeners.pointerdown[0].fn({target:suggestion});
+  assert.equal(runtime.route.state.fromCrs,'BRI');
+  assert.equal(runtime.listeners.pointerdown[0].capture,true);
+
+  runtime.route.state.fromCrs='';
+  runtime.listeners.click[0].fn({target:suggestion});
+  assert.equal(runtime.route.state.fromCrs,'BRI');
+  assert.equal(runtime.listeners.click[0].capture,true);
 });
 
 function loadPlanner(){
