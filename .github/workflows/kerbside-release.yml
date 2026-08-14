@@ -145,7 +145,7 @@ jobs:
 
           for path in "${CHANGED[@]}"; do
             case "$path" in
-              VERSION|bus.html|kerbside-train-routes.js|kerbside-journey-planner-core.js|kerbside-journey-planner-ui.js|kerbside-train-timetable.js|kerbside-trains.css|kerbside-status.js|kerbside-rail-calibration.js|kerbside-train-forecast-v4.js|kerbside-orr-odm-2024-25.js|build-timetable.js|timetable.json|kerbside-backend/*|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
+              VERSION|bus.html|kerbside-train-routes.js|kerbside-journey-planner-core.js|kerbside-journey-planner-ui.js|kerbside-train-timetable.js|kerbside-trains.css|kerbside-status.js|kerbside-rail-calibration.js|kerbside-train-forecast-v4.js|kerbside-orr-odm-2024-25.js|build-timetable.js|timetable.json|kerbside-backend/*|.github/scripts/build-orr-odm.py|"$RELEASE_SCRIPT"|"$trigger_path"|.github/scripts/kerbside-release-post.py)
                 ;;
               *)
                 echo "::error::Unexpected release path: $path"
