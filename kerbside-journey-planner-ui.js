@@ -13,8 +13,9 @@
    through to the existing Huxley provider chain. Live departure/service calls
    are never intercepted here. */
 const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.11';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.11';
+const LOCAL_STATION_TIMEOUT_MS=10000;
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.12';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.12';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
   'https://hux.azurewebsites.net'
@@ -83,15 +84,23 @@ function abortError(){
   const error=new Error('Aborted');error.name='AbortError';return error;
 }
 function throwIfAborted(init){if(init&&init.signal&&init.signal.aborted)throw abortError();}
+async function fetchLocalStations(){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),LOCAL_STATION_TIMEOUT_MS);
+  try{
+    const response=await upstreamFetch(LOCAL_STATIONS_URL,{headers:{Accept:'application/json'},signal:controller.signal});
+    if(!response||!response.ok)throw new Error(`Local station data returned ${response?response.status:'no response'}`);
+    const bytes=await response.arrayBuffer();
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }catch(error){
+    if(error&&error.name==='AbortError')throw new Error('Local station data timed out');
+    throw error;
+  }finally{clearTimeout(timer);}
+}
 function loadStations(){
   if(stationRows)return Promise.resolve(stationRows);
   if(stationRowsPromise)return stationRowsPromise;
   stationState.source='loading';stationState.error='';notifyStationState();
-  stationRowsPromise=upstreamFetch(LOCAL_STATIONS_URL,{headers:{Accept:'application/json'}})
-    .then(response=>{
-      if(!response||!response.ok)throw new Error(`Local station data returned ${response?response.status:'no response'}`);
-      return response.json();
-    })
+  stationRowsPromise=fetchLocalStations()
     .then(json=>{
       const rows=parseLocations(json);
       if(!rows.length)throw new Error('Local station data contained no National Rail stations');

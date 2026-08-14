@@ -9,6 +9,9 @@ const PROVIDERS=[
 ];
 const REQUEST_TIMEOUT_MS=10000;
 const SEARCH_DELAY_MS=240;
+const INIT_RETRY_MS=50;
+const INIT_RETRY_MAX=120;
+let initAttempts=0;
 const previousFetch=window.fetch.bind(window);
 const providerState={active:PROVIDERS[0],lastFailure:'',fallbacks:0};
 let fromTimer=null,toTimer=null,fromAbort=null,toAbort=null,timeFloorTimer=null;
@@ -701,7 +704,7 @@ function install(){
   },0);
   return true;
 }
-function init(){if(!install())setTimeout(init,0)}
+function init(){if(!install()){if(++initAttempts<INIT_RETRY_MAX)setTimeout(init,INIT_RETRY_MS);else console.warn('Kerbside journey planner could not attach.');return;}initAttempts=0;}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,syncRouteOrigin,refreshJourneyBoard,syncDepartAfterForDate,railNow,get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
 })();

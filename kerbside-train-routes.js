@@ -5,6 +5,9 @@ const PROVIDER_ORIGIN = 'https://huxley2.azurewebsites.net';
 const STORE_KEY = 'kerbside.rail.route.v1';
 const SEARCH_DELAY_MS = 280;
 const REQUEST_TIMEOUT_MS = 10000;
+const INIT_RETRY_MS = 50;
+const INIT_RETRY_MAX = 120;
+let initAttempts = 0;
 
 const routeState = {
   fromCrs:'',
@@ -97,7 +100,11 @@ function clearDestination({reload=false,disable=false}={}){
   saveRoute();
   if(disable) setDestinationEnabled(false);
   updateSummary();
-  if(reload) deferReload();
+  if(reload){
+    const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
+    if(timetable&&typeof timetable.sync==='function')timetable.sync();
+    deferReload();
+  }
 }
 
 function setFromCrs(value){
@@ -490,9 +497,11 @@ function observeBoard(){
 function init(){
   installStyles();
   if(!installUi()){
-    setTimeout(init,0);
+    if(++initAttempts<INIT_RETRY_MAX) setTimeout(init,INIT_RETRY_MS);
+    else console.warn('Kerbside train route controls could not attach.');
     return;
   }
+  initAttempts=0;
   observeBoard();
 }
 

@@ -7,9 +7,8 @@ on:
     paths:
       - VERSION
       - bus.html
-      - kerbside-trains.js
+      - kerbside-*.js
       - kerbside-trains.css
-      - kerbside-train-routes.js
       - build-timetable.js
       - kerbside-backend/**
       - .github/scripts/sync-version.py
@@ -26,9 +25,8 @@ on:
     paths:
       - VERSION
       - bus.html
-      - kerbside-trains.js
+      - kerbside-*.js
       - kerbside-trains.css
-      - kerbside-train-routes.js
       - build-timetable.js
       - kerbside-backend/**
       - .github/scripts/sync-version.py
@@ -81,9 +79,10 @@ jobs:
           set -euo pipefail
           python3 .github/scripts/sync-version.py --check
 
-      # Consistency across files is not the same as advancing. The served app
-      # includes the bus shell plus isolated rail assets, so any of those must
-      # advance VERSION together to keep production verification meaningful.
+      # Consistency across files is not the same as advancing. Every root-level
+      # kerbside-*.js file is browser-served, so keep the version-bump scope in
+      # lockstep with the workflow path filters instead of maintaining a second
+      # hand-written module list that can drift.
       - name: Require a version bump when the app changes
         shell: bash
         run: |
@@ -98,10 +97,7 @@ jobs:
           if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
             base_sha="$(git rev-list --max-parents=0 "$head_sha" | tail -n 1)"
           fi
-          # Every file the browser loads with a ?v=VERSION token. Only four of
-          # them were listed, so a change to any of the other fifteen shipped
-          # without advancing the token that makes a returning browser fetch it.
-          if git diff --quiet "$base_sha" "$head_sha" -- bus.html kerbside-trains.css kerbside-trains.js kerbside-train-routes.js kerbside-train-date.js kerbside-train-timetable.js kerbside-train-live-window.js kerbside-train-live-overlay.js kerbside-train-events.js kerbside-train-loading.js kerbside-train-loading-guidance.js kerbside-train-forecast-v4.js kerbside-rail-timebands.js kerbside-rail-demand-v4.js kerbside-rail-calibration.js kerbside-rail-health.js kerbside-journey-planner-ui.js kerbside-journey-planner-core.js kerbside-journey-sheet.js kerbside-status.js; then
+          if git diff --quiet "$base_sha" "$head_sha" -- bus.html kerbside-trains.css 'kerbside-*.js'; then
             echo 'Served app unchanged; no bump required.'
             exit 0
           fi
@@ -115,8 +111,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --check kerbside-trains.js
-          node --check kerbside-train-routes.js
+          for file in kerbside-*.js; do
+            node --check "$file"
+          done
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -132,7 +129,7 @@ jobs:
                   filename = Path(directory) / f'inline-{index}.js'
                   filename.write_text(script, encoding='utf-8')
                   subprocess.run(['node', '--check', str(filename)], check=True)
-          print(f'Validated {len(scripts)} inline browser script(s) plus isolated train modules.')
+          print(f'Validated {len(scripts)} inline browser script(s) plus all root Kerbside JavaScript modules.')
           PY
 
       - name: Validate timetable builders, reliability tooling and Worker

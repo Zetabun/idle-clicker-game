@@ -198,24 +198,29 @@ async function refresh({crs,date,force=false,connectionTargets=state.connectionT
   const targets=[...new Set((Array.isArray(connectionTargets)?connectionTargets:[]).map(value=>upper(value)).filter(value=>/^[A-Z0-9]{3}$/.test(value)&&value!==code))].slice(0,4);
   const onward=normaliseOnwardTargets(onwardTargets),targetKey=targets.join(','),onwardKey=onward.map(item=>`${item.from}>${item.to}`).join(',');
   const wantsConnections=targets.length>0||onward.length>0;
-  const fresh=state.crs===code&&state.status==='ready'&&state.connectionTargets.join(',')===targetKey&&state.onwardTargets.map(item=>`${item.from}>${item.to}`).join(',')===onwardKey&&Date.now()-state.updatedAt<FRESH_MS;
+  const fresh=state.crs===code&&['ready','partial'].includes(state.status)&&state.connectionTargets.join(',')===targetKey&&state.onwardTargets.map(item=>`${item.from}>${item.to}`).join(',')===onwardKey&&Date.now()-state.updatedAt<FRESH_MS;
   if(fresh&&!force)return true;
   const seq=++state.seq;
   state.crs=code;state.date=String(date);state.includeConnections=wantsConnections;state.connectionTargets=targets;state.onwardTargets=onward;state.status='loading';
   try{
-    const originBoards=await Promise.all([requestBoard(code),...targets.map(target=>requestBoard(code,undefined,{target}))]);
-    const onwardBoards=await Promise.all(onward.map(item=>requestBoard(item.from,undefined,{target:item.to})));
+    const primary=await requestBoard(code);
+    const targetResults=await Promise.allSettled(targets.map(target=>requestBoard(code,undefined,{target})));
+    const onwardResults=await Promise.allSettled(onward.map(item=>requestBoard(item.from,undefined,{target:item.to})));
+    const originBoards=[primary,...targetResults.filter(result=>result.status==='fulfilled').map(result=>result.value)];
     const json=originBoards.slice(1).reduce((merged,board)=>mergeBoards(merged,board),originBoards[0]||{});
     if(seq!==state.seq)return false;
     state.services=Array.isArray(json&&json.trainServices)?json.trainServices:[];
     state.messages=Array.isArray(json&&json.nrccMessages)?json.nrccMessages:[];
     state.index=buildIndex(state.services);
-    state.onwardIndexes=new Map(onward.map((item,index)=>{
-      const board=onwardBoards[index],services=Array.isArray(board&&board.trainServices)?board.trainServices:[];
-      return [`${item.from}|${item.to}`,buildIndex(services)];
-    }));
-    state.updatedAt=Date.now();state.status='ready';state.error='';
-    document.dispatchEvent(new CustomEvent('kerbside:live-overlay',{detail:{crs:code,date:state.date,count:state.services.length,onwardBoards:state.onwardIndexes.size}}));
+    state.onwardIndexes=new Map();
+    onwardResults.forEach((result,index)=>{
+      if(result.status!=='fulfilled')return;
+      const item=onward[index],board=result.value,services=Array.isArray(board&&board.trainServices)?board.trainServices:[];
+      state.onwardIndexes.set(`${item.from}|${item.to}`,buildIndex(services));
+    });
+    const failures=targetResults.filter(result=>result.status==='rejected').length+onwardResults.filter(result=>result.status==='rejected').length;
+    state.updatedAt=Date.now();state.status=failures?'partial':'ready';state.error=failures?`${failures} connection live board${failures===1?'':'s'} unavailable`:'';
+    document.dispatchEvent(new CustomEvent('kerbside:live-overlay',{detail:{crs:code,date:state.date,count:state.services.length,onwardBoards:state.onwardIndexes.size,partial:failures>0,failures}}));
     return true;
   }catch(error){
     if(seq!==state.seq)return false;
@@ -227,7 +232,7 @@ async function refresh({crs,date,force=false,connectionTargets=state.connectionT
 
 /* The live disruption text for the station currently overlaid, or nothing
    when the overlay is stale or was never loaded. */
-function messages(){return state.status==='ready'&&Array.isArray(state.messages)?state.messages:[];}
+function messages(){return ['ready','partial'].includes(state.status)&&Array.isArray(state.messages)?state.messages:[];}
 function clear(){
   if(state.status==='idle'&&!state.services.length)return;
   state.seq++;
