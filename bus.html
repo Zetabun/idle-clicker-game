@@ -286,10 +286,14 @@ button{cursor:pointer;border:0;background:none}
 }
 .rdest{font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rsrc{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-top:7px}
-.dep.schedule-only{grid-template-columns:46px minmax(0,1fr) 82px;cursor:default;opacity:.82}
+/* Live and scheduled rows are interleaved in one list and sorted together, so
+   their countdowns have to share a column. That means the same tracks and the
+   same trailing reservation a live row gets from `.depwrap .dep` below — a
+   schedule-only row carries no bell, but it still has to leave the lane. */
+.dep.schedule-only{grid-template-columns:46px minmax(0,1fr) 56px;padding-right:52px;cursor:default;opacity:.82}
 .dep.schedule-only:hover{background:transparent}
 .dep.schedule-only .route{background:var(--ink-3);color:var(--led);border:1px solid var(--led-dim)}
-.eta.scheduled{min-width:82px;color:var(--text-dim);text-shadow:none}
+.eta.scheduled{color:var(--text-dim);text-shadow:none}
 .eta.scheduled small{color:var(--text-dim);opacity:.7;letter-spacing:.08em;white-space:nowrap}
 .chip.timing{border-color:rgb(var(--live-rgb) / .35);color:var(--live-soft)}
 .chip.live-gps{border-color:rgb(var(--live-rgb) / .6);background:rgb(var(--live-rgb) / .08);color:var(--live-soft)}
@@ -369,8 +373,13 @@ button{cursor:pointer;border:0;background:none}
 }
 .boardscroll::-webkit-scrollbar{width:8px}
 .boardscroll::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+/* Three tracks, not four. The bell is position:absolute inside .depmain and the
+   52px right padding below already reserves its lane, so the old trailing 26px
+   column was empty on every row — it only pushed the countdown 37px left of
+   where a schedule-only row put its own, and stole that width from the
+   destination. */
 .dep{
-  display:grid;grid-template-columns:46px minmax(0,1fr) 56px 26px;gap:11px;align-items:center;
+  display:grid;grid-template-columns:46px minmax(0,1fr) 56px;gap:11px;align-items:center;
   padding:12px 16px;border-bottom:1px solid var(--rule);width:100%;text-align:left;
   transition:background .12s;
 }
@@ -454,7 +463,11 @@ button{cursor:pointer;border:0;background:none}
   text-align:center;letter-spacing:-.06em;line-height:1;text-shadow:0 0 12px rgb(var(--led-rgb) / .28);
   min-width:52px;
 }
-.eta small{display:block;font-size:9px;font-weight:400;letter-spacing:.14em;color:var(--led-dim);margin-top:3px}
+/* nowrap: a live row's caption is not always "min". "last seen" broke onto two
+   lines inside the column and made that one row taller than its neighbours,
+   which is exactly the row a passenger is trying to read. Let the longest
+   captions overhang into the gap and the bell's padding instead. */
+.eta small{display:block;font-size:9px;font-weight:400;letter-spacing:.14em;color:var(--led-dim);margin-top:3px;white-space:nowrap}
 .eta.due{color:var(--live);text-shadow:0 0 12px rgb(var(--live-rgb) / .3)}
 .eta.due small{color:var(--live);opacity:.65}
 
@@ -678,9 +691,8 @@ body.mapmoving .leaflet-marker-icon.vehmark{transition:none}
   }
   #setBtn svg{width:20px;height:20px}
   .dep{grid-template-columns:42px minmax(0,1fr) 52px;gap:8px;padding:11px 13px}
-  .dep.schedule-only{grid-template-columns:42px minmax(0,1fr) 68px}
+  .dep.schedule-only{grid-template-columns:42px minmax(0,1fr) 52px;padding-right:52px}
   .eta{font-size:21px;min-width:0}
-  .eta.scheduled{min-width:68px;font-size:20px}
   .chip{font-size:9.5px;padding:2px 5px}
   .dfacts{grid-template-columns:repeat(2,1fr)}
   .region-stats{grid-template-columns:1fr}
@@ -810,7 +822,7 @@ body.theme-crystal .leaflet-bar a{
 }
 body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 </style>
-<link rel="stylesheet" href="kerbside-trains.css?v=0.9.2">
+<link rel="stylesheet" href="kerbside-trains.css?v=0.9.8">
 </head>
 <body>
 <div id="app">
@@ -1081,7 +1093,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.9.7';
+const APP_VERSION = '0.9.8';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -2464,6 +2476,12 @@ function mergeDiscoveredStops(primary,secondary,lat,lon){
 }
 const STOP_SIDE_DEVICE_FLOOR_METRES = 18;
 const STOP_SIDE_PAIR_MARGIN_METRES = 45;
+/* How far a device fix cannot tell two stands apart. Read by both functions
+   below so the candidate list and the prompt can never disagree about it. */
+function stopSelectionRadius(origin){
+  const accuracy=Number(origin&&origin.accuracy);
+  return Number.isFinite(accuracy)&&accuracy>0?Math.max(STOP_SIDE_DEVICE_FLOOR_METRES,accuracy):STOP_SIDE_DEVICE_FLOOR_METRES;
+}
 function stopSelectionCandidates(stops,origin){
   const list=(Array.isArray(stops)?stops:[])
     .filter(stop=>stop&&Number.isFinite(Number(stop.d)))
@@ -2471,12 +2489,17 @@ function stopSelectionCandidates(stops,origin){
   if(!list.length) return [];
   const kind=savedOriginSource(origin), nearest=list[0], chosen=[];
   const add=stop=>{ if(stop&&!chosen.some(item=>String(item.id)===String(stop.id))) chosen.push(stop); };
+  /* The nearest stand is always a candidate: it is what chooseDiscoveredStop()
+     falls back to. A device fix only *widens* that set to every stand the fix
+     cannot separate. Replacing it instead meant an accurate fix taken a normal
+     kerb's distance from both stands — nothing inside the accuracy radius —
+     produced a list that omitted the stop actually selected, so the
+     side-of-road prompt was skipped on exactly the platform that needs it, and
+     the opposite kerb's departures were shown without a word. */
+  add(nearest);
   if(kind==='device'){
-    const accuracy=Number(origin&&origin.accuracy);
-    const radius=Number.isFinite(accuracy)&&accuracy>0?Math.max(STOP_SIDE_DEVICE_FLOOR_METRES,accuracy):STOP_SIDE_DEVICE_FLOOR_METRES;
+    const radius=stopSelectionRadius(origin);
     list.filter(stop=>Number(stop.d)<=radius).forEach(add);
-  } else {
-    add(nearest);
   }
   for(const stop of list){
     if(stop===nearest) continue;
@@ -2488,8 +2511,7 @@ function stopSelectionNeedsChoice(stops,origin){
   const candidates=stopSelectionCandidates(stops,origin);
   if(candidates.length<2) return false;
   if(savedOriginSource(origin)==='device'){
-    const accuracy=Number(origin&&origin.accuracy);
-    const radius=Number.isFinite(accuracy)&&accuracy>0?Math.max(STOP_SIDE_DEVICE_FLOOR_METRES,accuracy):STOP_SIDE_DEVICE_FLOOR_METRES;
+    const radius=stopSelectionRadius(origin);
     if(candidates.filter(stop=>Number(stop.d)<=radius).length>=2) return true;
   }
   const first=candidates[0];
@@ -2774,10 +2796,54 @@ function activateTimetable(data,source,region,meta){
   const info=meta||{};S.timetable=data||null;S.timetableSource=source||'';S.timetableRegion=region||'';
   S.timetableBuilt=String(info.built||(data&&data.built)||'');S.timetableFallback=!!info.fallback;S.timetableUnknownServices=0;PATTERN_CACHE.clear();
 }
+/* timetable.json is one 50 MB regional pack built around a single centre, and
+   it declares that centre and radius in its own header. Nothing read them, so
+   every stop the national build could not answer reached for it: a stop in
+   Scotland or Wales — which the nine English regions never cover and this pack
+   could never serve — pulled 50 MB on every page load, and an attempt that
+   failed or timed out was retried on the very next stop selection. Stand off
+   after a failure and remember what the pack covers once it has been seen,
+   which is how the NaPTAN, tile and pattern shards already behave. */
+const FALLBACK_TIMETABLE_RETRY_MS = 10*60*1000;
+const FALLBACK_COVERAGE_KEY = 'kerbside.fallback.coverage.v1';
 let FALLBACK_TIMETABLE_PROMISE=null;
+let FALLBACK_TIMETABLE_FAILED_AT=0;
+let FALLBACK_TIMETABLE_COVERAGE=null;
+function fallbackCoverageFrom(data){
+  const centre=data&&data.centre, lat=Number(centre&&centre[0]), lon=Number(centre&&centre[1]);
+  // trackRadius is the wider area the pack follows vehicles across, so it is
+  // the outer bound of anything it can say something useful about.
+  const radius=Math.max(Number(data&&data.trackRadius)||0,Number(data&&data.radius)||0);
+  return Number.isFinite(lat)&&Number.isFinite(lon)&&radius>0?{lat,lon,radius}:null;
+}
+function readFallbackCoverage(){
+  if(FALLBACK_TIMETABLE_COVERAGE) return FALLBACK_TIMETABLE_COVERAGE;
+  if(!store.ok) return null;
+  try{
+    FALLBACK_TIMETABLE_COVERAGE=fallbackCoverageFrom(JSON.parse(localStorage.getItem(FALLBACK_COVERAGE_KEY)||'null'));
+    return FALLBACK_TIMETABLE_COVERAGE;
+  }catch(e){ return null; }
+}
+function rememberFallbackCoverage(data){
+  const coverage=fallbackCoverageFrom(data);
+  if(!coverage) return;
+  FALLBACK_TIMETABLE_COVERAGE=coverage;
+  if(!store.ok) return;
+  try{ localStorage.setItem(FALLBACK_COVERAGE_KEY,JSON.stringify({centre:[coverage.lat,coverage.lon],radius:coverage.radius})); }catch(e){}
+}
+/* Unknown coverage means the pack has never been seen on this device, so the
+   honest answer is "try once" rather than refusing a stop it might well serve. */
+function fallbackTimetableCovers(stop){
+  const coverage=readFallbackCoverage();
+  if(!coverage||!stop||!isFinite(stop.lat)||!isFinite(stop.lon)) return true;
+  return dist(stop.lat,stop.lon,coverage.lat,coverage.lon)<=coverage.radius;
+}
 async function loadTimetable(){
   if(S.fallbackTimetable) return S.fallbackTimetable;
   if(FALLBACK_TIMETABLE_PROMISE) return FALLBACK_TIMETABLE_PROMISE;
+  if(FALLBACK_TIMETABLE_FAILED_AT && Date.now()-FALLBACK_TIMETABLE_FAILED_AT<FALLBACK_TIMETABLE_RETRY_MS){
+    throw new Error('regional pack recently failed to load');
+  }
   FALLBACK_TIMETABLE_PROMISE=(async()=>{
     try{
       const r=await fetchTimed('timetable.json',{cache:'no-cache'},20000);
@@ -2786,13 +2852,20 @@ async function loadTimetable(){
       const data=JSON.parse(raw);
       if(!data||!data.stops||typeof data.stops!=='object'||!Object.keys(data.stops).length) throw new Error('no stop data');
       S.fallbackTimetable=data;
+      FALLBACK_TIMETABLE_FAILED_AT=0;
+      rememberFallbackCoverage(data);
       return data;
     }catch(e){
       S.fallbackTimetable=null;
+      FALLBACK_TIMETABLE_FAILED_AT=Date.now();
       throw e;
     }finally{ FALLBACK_TIMETABLE_PROMISE=null; }
   })();
   return FALLBACK_TIMETABLE_PROMISE;
+}
+if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),fallbackCoverageFrom,fallbackTimetableCovers,rememberFallbackCoverage,loadTimetable,
+    resetFallbackTimetableForTest:()=>{S.fallbackTimetable=null;FALLBACK_TIMETABLE_PROMISE=null;FALLBACK_TIMETABLE_FAILED_AT=0;FALLBACK_TIMETABLE_COVERAGE=null;try{localStorage.removeItem(FALLBACK_COVERAGE_KEY);}catch(e){}}};
 }
 async function loadStopTimetable(stop){
   const run=++S.timetableRun;
@@ -2815,6 +2888,7 @@ async function loadStopTimetable(stop){
     if(run!==S.timetableRun) return;
     const nationalError=String((e&&e.message)||'national timetable unavailable');
     try{
+      if(!fallbackTimetableCovers(stop)) throw new Error('pack does not cover this stop');
       const fallback=await loadTimetable();
       if(run!==S.timetableRun) return;
       activateTimetable(fallback,'regional','west_midlands',{fallback:true});
@@ -3562,6 +3636,14 @@ function selectStop(s,manual){
 /* stop picker */
 function openStopPicker(message){
   if(!S.stops.length){ toast('No stops loaded yet.'); return; }
+  /* The picker is absolutely positioned inside #board, and #board is
+     display:none in the mobile map view. Pressing "use my location" from the
+     map — the ordinary way to start — and landing on two plausible stands
+     therefore opened the choice behind a hidden panel: no stop was selected,
+     the only sign was a toast that faded, and the board sat on "Choose the
+     correct stop" where nobody could see it. Bring the board forward with the
+     question, exactly as tapping a stop marker already does in reverse. */
+  setAppView('times');
   const box=$('stopItems');
   box.innerHTML = S.stops.slice(0,60).map((s,i)=>{
     const m = MAPPED[String(s.id)];
@@ -7701,20 +7783,20 @@ if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='man
 window.addEventListener('resize',()=>map.invalidateSize());
 })();
 </script>
-<script src="kerbside-trains.js?v=0.9.7"></script>
-<script src="kerbside-train-routes.js?v=0.9.7"></script>
-<script src="kerbside-train-date.js?v=0.9.7"></script>
-<script src="kerbside-journey-planner-ui.js?v=0.9.7"></script>
-<script src="kerbside-train-live-window.js?v=0.9.7"></script>
-<script src="kerbside-train-live-overlay.js?v=0.9.7"></script>
-<script src="kerbside-rail-timebands.js?v=0.9.7"></script>
-<script src="kerbside-rail-demand-v4.js?v=0.9.7"></script>
-<script src="kerbside-rail-calibration.js?v=0.9.7"></script>
-<script src="kerbside-train-events.js?v=0.9.7"></script>
-<script src="kerbside-train-loading.js?v=0.9.7"></script>
-<script src="kerbside-train-loading-guidance.js?v=0.9.7"></script>
-<script src="kerbside-train-forecast-v4.js?v=0.9.7"></script>
-<script src="kerbside-journey-sheet.js?v=0.9.7"></script>
-<script src="kerbside-status.js?v=0.9.7"></script>
+<script src="kerbside-trains.js?v=0.9.8"></script>
+<script src="kerbside-train-routes.js?v=0.9.8"></script>
+<script src="kerbside-train-date.js?v=0.9.8"></script>
+<script src="kerbside-journey-planner-ui.js?v=0.9.8"></script>
+<script src="kerbside-train-live-window.js?v=0.9.8"></script>
+<script src="kerbside-train-live-overlay.js?v=0.9.8"></script>
+<script src="kerbside-rail-timebands.js?v=0.9.8"></script>
+<script src="kerbside-rail-demand-v4.js?v=0.9.8"></script>
+<script src="kerbside-rail-calibration.js?v=0.9.8"></script>
+<script src="kerbside-train-events.js?v=0.9.8"></script>
+<script src="kerbside-train-loading.js?v=0.9.8"></script>
+<script src="kerbside-train-loading-guidance.js?v=0.9.8"></script>
+<script src="kerbside-train-forecast-v4.js?v=0.9.8"></script>
+<script src="kerbside-journey-sheet.js?v=0.9.8"></script>
+<script src="kerbside-status.js?v=0.9.8"></script>
 </body>
 </html>

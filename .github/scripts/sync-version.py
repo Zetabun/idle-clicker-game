@@ -33,6 +33,17 @@ TARGETS = [
     ('kerbside-backend/tests/browser-regression.mjs', r"(includes\('app )(\d+\.\d+\.\d+)('\))"),
 ]
 
+# Every sub-resource bus.html pulls in carries ?v=<version> so a returning
+# browser cannot serve one release's stylesheet beside another release's
+# script. Nothing enforced that either, and it drifted: bus.html shipped
+# kerbside-trains.css?v=0.9.2 against fifteen siblings on 0.9.7, so the next
+# change to that stylesheet would have reached nobody who had already loaded
+# the app. These files may hold any number of tokens; all of them are rewritten.
+ASSET_TARGETS = [
+    ('bus.html', r'(\?v=)(\d+\.\d+\.\d+)'),
+    ('kerbside-journey-planner-ui.js', r'(\?v=)(\d+\.\d+\.\d+)'),
+]
+
 
 def read_version():
     if not VERSION_FILE.is_file():
@@ -76,13 +87,35 @@ def main():
         io.open(target, 'w', encoding='utf-8', newline='').write(text)
         changed.append(path)
 
+    for path, pattern in ASSET_TARGETS:
+        target = Path(path)
+        if not target.is_file():
+            problems.append('%s is missing' % path)
+            continue
+        text = io.open(target, encoding='utf-8', newline='').read()
+        matches = re.findall(pattern, text)
+        if not matches:
+            problems.append('%s: expected at least one ?v= asset version, found none' % path)
+            continue
+        stale = sorted({found for _, found in matches if found != version})
+        if not stale:
+            continue
+        if check:
+            problems.append('%s: asset versions %s disagree with VERSION %s'
+                            % (path, ', '.join(stale), version))
+            continue
+        text = re.sub(pattern, lambda m: m.group(1) + version, text)
+        io.open(target, 'w', encoding='utf-8', newline='').write(text)
+        changed.append(path)
+
     if problems:
         for problem in problems:
             print('::error::%s' % problem)
         raise SystemExit(1)
 
     if check:
-        print('Version %s is consistent across %d files.' % (version, len({path for path, _ in TARGETS})))
+        files = {path for path, _ in TARGETS} | {path for path, _ in ASSET_TARGETS}
+        print('Version %s is consistent across %d files.' % (version, len(files)))
     elif changed:
         print('Wrote %s into: %s' % (version, ', '.join(sorted(set(changed)))))
     else:

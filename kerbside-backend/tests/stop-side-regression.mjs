@@ -18,6 +18,10 @@ assert.match(busSource,/function authoritativeDiscoveredStopId\(stop\)/);
 assert.match(busSource,/function likelyOppositeStopPair\(a,b\)/);
 assert.match(busSource,/authoritativeA&&authoritativeB&&authoritativeA!==authoritativeB\) return false/);
 assert.match(busSource,/const STOP_SIDE_DEVICE_FLOOR_METRES = 18/);
+assert.match(busSource,/function stopSelectionRadius\(origin\)/);
+// The nearest stand is what chooseDiscoveredStop() falls back to, so it must
+// always be in the candidate list; a device fix only widens that set.
+assert.match(busSource,/  add\(nearest\);\n  if\(kind==='device'\)\{/);
 assert.match(busSource,/MORE THAN ONE PLAUSIBLE STAND/);
 assert.match(busSource,/if\(S\.timetableSource==='national'&&stop\.source==='official'\) return null/);
 assert.match(busSource,/if\(!hasSequence&&same\.length>1\)/);
@@ -81,6 +85,14 @@ try{
       const deviceChoice=api.stopSelectionNeedsChoice([officialA,officialB],deviceOrigin);
       const manualChoice=api.stopSelectionNeedsChoice([officialA,officialB],manualOrigin);
       const manualUnrelated=api.stopSelectionNeedsChoice([officialA,unrelated],manualOrigin);
+      /* Both stands a normal kerb's distance away, so neither falls inside an
+         optimistic accuracy radius. The device path used to seed its candidate
+         list only from that radius, so it returned the opposite stand alone —
+         a list that omitted the stop actually selected — and skipped the
+         prompt that the same geometry raises for a searched point. */
+      const farA={...officialA,d:30}, farB={...officialB,d:42};
+      const farDeviceCandidates=api.stopSelectionCandidates([farA,farB],deviceOrigin).map(stop=>String(stop.id));
+      const farDeviceChoice=api.stopSelectionNeedsChoice([farA,farB],deviceOrigin);
 
       state.timetable={
         stops:{
@@ -109,6 +121,7 @@ try{
 
       return {
         distinctOfficialMerged,officialOsmMerged,pairDetected,deviceCandidates,deviceChoice,manualChoice,manualUnrelated,
+        farDeviceCandidates,farDeviceChoice,
         ambiguousTimetable:ambiguousTimetable&&ambiguousTimetable.id,
         exactTimetable:exactTimetable&&exactTimetable.id,
         ambiguousPattern,sequencedPattern,exactStopFacts,exactStopInfo
@@ -125,6 +138,8 @@ try{
   assert.equal(result.deviceChoice,true,'optimistic device accuracy must not auto-pick one side of a plausible stop pair');
   assert.equal(result.manualChoice,true,'a searched/manual point between plausible paired stands must ask for the stand');
   assert.equal(result.manualUnrelated,false,'two nearby stops with unrelated names must not trigger a false side-choice prompt');
+  assert.deepEqual(result.farDeviceCandidates.sort(),['490012345','490012346'],'the nearest stand must stay a candidate when no stop falls inside the accuracy radius');
+  assert.equal(result.farDeviceChoice,true,'a device fix must still ask which stand when both are a normal kerb distance away');
   assert.equal(result.ambiguousTimetable,null,'nearby timetable fallback must refuse two comparable opposite stands');
   assert.equal(result.exactTimetable,'490012345','an exact authoritative timetable stop code must still win immediately');
   assert.equal(result.ambiguousPattern,-1,'pattern fallback must not choose between two comparable opposite calls by metres alone');

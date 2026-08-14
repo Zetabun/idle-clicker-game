@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.9\.7'/);
+assert.match(busSource, /const APP_VERSION = '0\.9\.8'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -212,6 +212,32 @@ assert.doesNotMatch(busSource, /age>Math\.max\(60,cadence\*2\.5\)/);
 // scrolling container, so the dot texture ran out partway down a long board.
 assert.match(busSource, /\.boardscroll\{[\s\S]{0,400}background-attachment:local;/);
 assert.doesNotMatch(busSource, /\.boardscroll::after\{/);
+/* Live and schedule-only rows are interleaved in one sorted list, so their
+   countdowns share a column. They did not: a live row carried an empty trailing
+   grid track plus the bell's 52px padding while a schedule-only row carried
+   neither, putting the two ETA centres 60px apart on desktop and 31px on a
+   phone. Same tracks, same trailing reservation, both breakpoints. */
+assert.match(busSource, /\.dep\{\n  display:grid;grid-template-columns:46px minmax\(0,1fr\) 56px;gap:11px/);
+assert.match(busSource, /\.dep\.schedule-only\{grid-template-columns:46px minmax\(0,1fr\) 56px;padding-right:52px;/);
+assert.match(busSource, /\.dep\.schedule-only\{grid-template-columns:42px minmax\(0,1fr\) 52px;padding-right:52px\}/);
+assert.doesNotMatch(busSource, /\.eta\.scheduled\{min-width:/);
+// "last seen" broke onto two lines inside the column and made that row taller
+// than its neighbours — the one row a passenger is trying to read.
+assert.match(busSource, /\.eta small\{[^}]*white-space:nowrap\}/);
+/* The picker is absolutely positioned inside #board, which is display:none in
+   the mobile map view, so opening it from there hid the question entirely. */
+assert.match(busSource, /function openStopPicker\(message\)\{[\s\S]{0,600}\n  setAppView\('times'\);/);
+// Every sub-resource must carry the current release's cache-busting token;
+// kerbside-trains.css sat on 0.9.2 while fifteen siblings were on 0.9.7.
+// Compared against bus.html's own APP_VERSION rather than a literal, so this
+// stays true across releases without becoming another copy to keep in step.
+{
+  const appVersion = (busSource.match(/const APP_VERSION = '(\d+\.\d+\.\d+)'/) || [])[1];
+  assert.ok(appVersion, 'bus.html must declare APP_VERSION');
+  const assetVersions = [...new Set([...busSource.matchAll(/\?v=(\d+\.\d+\.\d+)/g)].map(match => match[1]))];
+  assert.deepEqual(assetVersions, [appVersion],
+    `bus.html sub-resources disagree with APP_VERSION ${appVersion}: ${assetVersions.join(', ')}`);
+}
 // Rebuilding the board wholesale each refresh threw the reader back to the top.
 assert.match(busSource, /function captureBoardScroll\(\)/);
 assert.match(busSource, /function restoreBoardScroll\(state\)/);
@@ -729,6 +755,11 @@ try {
   assert.equal(await page.evaluate(() => window.L && window.L.version), '1.9.4');
   assert.equal(leafletCdnRequests, 0);
   assert.equal(localFallbackTimetableRequests, 0, 'the 50 MB regional fallback must not be fetched during startup');
+// …nor once per stop selection after it has already failed, nor at all for a
+// stop outside the single centre the pack declares in its own header.
+assert.match(busSource, /const FALLBACK_TIMETABLE_RETRY_MS = 10\*60\*1000/);
+assert.match(busSource, /FALLBACK_TIMETABLE_FAILED_AT && Date\.now\(\)-FALLBACK_TIMETABLE_FAILED_AT<FALLBACK_TIMETABLE_RETRY_MS/);
+assert.match(busSource, /if\(!fallbackTimetableCovers\(stop\)\) throw new Error\('pack does not cover this stop'\);/);
   assert.equal(await page.locator('#map.leaflet-container').count(), 1, pageErrors.join('\n'));
   await page.waitForFunction(() => window.__KERBSIDE_TEST__?.currentTileProvider?.() === 'OpenStreetMap');
   assert.ok(cartoTileRequests >= 4);
@@ -1817,7 +1848,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.7'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.8'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

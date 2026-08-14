@@ -289,7 +289,22 @@ try {
       const betterAccuracyChosen = api.betterLocationFix(wideFix, accurateFix).id;
       const newerEquivalentChosen = api.betterLocationFix(accurateFix, newerFix).id;
 
+      /* The 50 MB regional pack covers one centre and says so in its header.
+         Reaching for it on behalf of a stop it could never serve cost that
+         download on every page load outside the nine English regions. */
+      api.resetFallbackTimetableForTest();
+      const packHeader = { centre: [52.5089, -2.087], radius: 8000, trackRadius: 23000 };
+      const fallbackUnknownCoverage = api.fallbackTimetableCovers({ lat: 57.1497, lon: -2.0943 });
+      const fallbackRadius = api.fallbackCoverageFrom(packHeader).radius;
+      api.rememberFallbackCoverage(packHeader);
+      const fallbackCoversCentre = api.fallbackTimetableCovers({ lat: 52.5089, lon: -2.087 });
+      const fallbackCoversNeighbour = api.fallbackTimetableCovers({ lat: 52.5862, lon: -2.1288 });
+      const fallbackCoversAberdeen = api.fallbackTimetableCovers({ lat: 57.1497, lon: -2.0943 });
+      api.resetFallbackTimetableForTest();
+
       return {
+        fallbackUnknownCoverage, fallbackRadius,
+        fallbackCoversCentre, fallbackCoversNeighbour, fallbackCoversAberdeen,
         opaqueAgreement,
         opaqueRowsKept: opaqueIdentityRows.rows.length,
         opaqueConflict: opaqueIdentityRows.conflict,
@@ -414,6 +429,11 @@ try {
   assert.equal(result.scheduledHidden, 18, 'later rows beyond the explicit cap must be counted, not silently forgotten');
   assert.equal(result.betterAccuracyChosen, 'accurate', 'a materially more accurate phone fix must beat a newer wide fix');
   assert.equal(result.newerEquivalentChosen, 'newer', 'equally accurate fixes should prefer the newer observation');
+  assert.equal(result.fallbackUnknownCoverage, true, 'a pack never yet seen must still be tried once');
+  assert.equal(result.fallbackRadius, 23000, 'the wider track radius bounds what the pack can answer for');
+  assert.equal(result.fallbackCoversCentre, true);
+  assert.equal(result.fallbackCoversNeighbour, true, 'a stop inside the tracked area stays eligible for the pack');
+  assert.equal(result.fallbackCoversAberdeen, false, 'a stop the pack cannot serve must not trigger a 50 MB download');
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside audit regressions passed.');
 } finally {
