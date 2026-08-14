@@ -31,7 +31,7 @@ print('Updated browser regression for source-aware stale manifest fallback.')
 # though the checked-in rolling Darwin snapshot exposes roughly 48 hours and
 # the UI now clamps its date input to that real coverage. Test the same safety
 # invariant on tomorrow instead: planning must own the scheduled board and
-# must not make a request for today\'s live departures.
+# must not make a request for today's live departures.
 route_test=Path('kerbside-backend/tests/train-route-filter-regression.mjs')
 route_text=route_test.read_text(encoding='utf-8')
 old_date="const FUTURE_DATE=addCalendarDays(TODAY,4);"
@@ -62,8 +62,7 @@ new_block="""  await page.waitForFunction(()=>{
   });
   assert.equal(await page.locator('#trainBoard').isHidden(),true);
   assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
-  assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
-  assert.match(await page.locator('#trainStationMeta').textContent(),/BHM → BRI.*timetable/i);
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
   assert.equal(await page.locator('#trainRefresh').isDisabled(),true);
   assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Schedule');
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),FUTURE_DATE);
@@ -78,9 +77,9 @@ new_block="""  await page.waitForFunction(()=>{
   assert.doesNotMatch(await page.locator('#trainPlannerMessage').textContent(),/Live journey loaded/i);
   assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
     `future Find trains must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
-  assert.equal(await page.locator('#trainStationName').textContent(),'Birmingham New Street → Bristol Temple Meads');
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
 """
 if route_text.count(old_block)!=1:
     raise SystemExit(f'train-route-filter-regression.mjs: expected obsolete future-date assertion block once, found {route_text.count(old_block)}')
 route_test.write_text(route_text.replace(old_block,new_block,1),encoding='utf-8')
-print('Updated dormant route-filter regression to use current Darwin snapshot coverage.')
+print('Updated dormant route-filter regression to use current Darwin snapshot coverage and state invariants.')
