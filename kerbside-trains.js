@@ -14,7 +14,7 @@ const MODEL_PROFILE_MAX_AGE_MS = 120 * 24 * 60 * 60 * 1000;
 const MODEL_SEEN_MAX_AGE_MS = 21 * 24 * 60 * 60 * 1000;
 const MODEL_FEEDBACK_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
 const ACCURACY_KEY = 'kerbside.rail.forecast.accuracy.v1';
-const ACCURACY_VERSION = 2;
+const ACCURACY_VERSION = 3;
 const ACCURACY_RECENT_MAX = 120;
 const CROWD_LEVEL_RANK = {quiet:0,moderate:1,busy:2,'very-busy':3};
 
@@ -73,7 +73,7 @@ function savePrefs(){
 }
 
 function emptyCrowdingModel(){
-  return {version:MODEL_VERSION, profiles:{}, patternProfiles:{}, seen:{}, feedbackSeen:{}};
+  return {version:MODEL_VERSION, profiles:{}, patternProfiles:{}, seen:{}, feedbackSeen:{}, observedSeen:{}};
 }
 
 function safeReadCrowdingModel(){
@@ -88,6 +88,7 @@ function safeReadCrowdingModel(){
     if(!parsed.patternProfiles || typeof parsed.patternProfiles !== 'object') parsed.patternProfiles = {};
     if(!parsed.seen || typeof parsed.seen !== 'object') parsed.seen = {};
     if(!parsed.feedbackSeen || typeof parsed.feedbackSeen !== 'object') parsed.feedbackSeen = {};
+    if(!parsed.observedSeen || typeof parsed.observedSeen !== 'object') parsed.observedSeen = {};
     return parsed;
   }catch(e){ return emptyCrowdingModel(); }
 }
@@ -124,6 +125,7 @@ function pruneCrowdingModel(model){
   }
   pruneTimestampMap(model.seen, MODEL_SEEN_MAX_AGE_MS, MODEL_MAX_SEEN);
   pruneTimestampMap(model.feedbackSeen, MODEL_FEEDBACK_MAX_AGE_MS, MODEL_MAX_SEEN);
+  pruneTimestampMap(model.observedSeen, MODEL_SEEN_MAX_AGE_MS, MODEL_MAX_SEEN);
 }
 
 function saveCrowdingModel(){
@@ -135,14 +137,15 @@ function saveCrowdingModel(){
 }
 
 
-function emptyForecastAccuracy(){return {version:ACCURACY_VERSION,total:0,exact:0,withinOne:0,absoluteError:0,buckets:{},recent:[]};}
+function emptyForecastAccuracy(){return {version:ACCURACY_VERSION,total:0,exact:0,withinOne:0,absoluteError:0,buckets:{},sources:{},recent:[]};}
 function safeReadForecastAccuracy(){
-  try{const parsed=JSON.parse(localStorage.getItem(ACCURACY_KEY)||'null');if(!parsed)return emptyForecastAccuracy();if(parsed.version===1){parsed.version=ACCURACY_VERSION;parsed.buckets={};}if(parsed.version!==ACCURACY_VERSION)return emptyForecastAccuracy();if(!parsed.buckets||typeof parsed.buckets!=='object')parsed.buckets={};if(!Array.isArray(parsed.recent))parsed.recent=[];return parsed;}catch(error){return emptyForecastAccuracy();}
+  try{const parsed=JSON.parse(localStorage.getItem(ACCURACY_KEY)||'null');if(!parsed)return emptyForecastAccuracy();if(parsed.version===1){parsed.version=2;parsed.buckets={};}if(parsed.version===2){parsed.version=ACCURACY_VERSION;parsed.sources={feedback:{total:Number(parsed.total)||0,exact:Number(parsed.exact)||0,withinOne:Number(parsed.withinOne)||0,absoluteError:Number(parsed.absoluteError)||0}};if(Array.isArray(parsed.recent))parsed.recent.forEach(row=>{if(row&&!row.source)row.source='feedback';});}if(parsed.version!==ACCURACY_VERSION)return emptyForecastAccuracy();if(!parsed.buckets||typeof parsed.buckets!=='object')parsed.buckets={};if(!parsed.sources||typeof parsed.sources!=='object')parsed.sources={};if(!Array.isArray(parsed.recent))parsed.recent=[];return parsed;}catch(error){return emptyForecastAccuracy();}
 }
 function saveForecastAccuracy(){try{if(!state.forecastAccuracy)return;state.forecastAccuracy.recent=(state.forecastAccuracy.recent||[]).slice(-ACCURACY_RECENT_MAX);localStorage.setItem(ACCURACY_KEY,JSON.stringify(state.forecastAccuracy));}catch(error){}}
-function forecastAccuracySummary(){const data=state.forecastAccuracy||safeReadForecastAccuracy(),total=Number(data.total)||0;return {total,exact:total?Number(data.exact||0)/total:0,withinOne:total?Number(data.withinOne||0)/total:0,meanAbsoluteError:total?Number(data.absoluteError||0)/total:0,recent:Array.isArray(data.recent)?data.recent.length:0};}
+function forecastAccuracySummary(){const data=state.forecastAccuracy||safeReadForecastAccuracy(),total=Number(data.total)||0;return {total,exact:total?Number(data.exact||0)/total:0,withinOne:total?Number(data.withinOne||0)/total:0,meanAbsoluteError:total?Number(data.absoluteError||0)/total:0,recent:Array.isArray(data.recent)?data.recent.length:0,sources:{feedback:forecastAccuracyForSource('feedback'),observed:forecastAccuracyForSource('darwin-loading')}};}
+function forecastAccuracyForSource(source){const data=state.forecastAccuracy||safeReadForecastAccuracy(),row=data.sources&&data.sources[String(source||'')],total=Number(row&&row.total)||0;return {total,exact:total?Number(row.exact||0)/total:0,withinOne:total?Number(row.withinOne||0)/total:0,meanAbsoluteError:total?Number(row.absoluteError||0)/total:0};}
 function forecastAccuracyForBucket(bucket){const data=state.forecastAccuracy||safeReadForecastAccuracy(),row=data.buckets&&data.buckets[String(bucket||'')],total=Number(row&&row.total)||0;return {total,exact:total?Number(row.exact||0)/total:0,withinOne:total?Number(row.withinOne||0)/total:0,meanAbsoluteError:total?Number(row.absoluteError||0)/total:0};}
-function recordForecastAccuracy(service,index,reportedLevel,date){
+function recordForecastAccuracy(service,index,reportedLevel,date,source){
   const actual=CROWD_LEVEL_RANK[reportedLevel],api=window.__KERBSIDE_FORECAST_V4__||window.__KERBSIDE_FORECAST_V3__;
   if(actual==null||!api||typeof api.forecast!=='function'||!state.station)return false;
   let result;try{result=api.forecast(service,index,state.services,{station:state.station,referenceDate:date,messages:state.board&&state.board.nrccMessages||[]});}catch(error){return false;}
@@ -151,8 +154,16 @@ function recordForecastAccuracy(service,index,reportedLevel,date){
   const error=Math.abs(predicted-actual),data=state.forecastAccuracy,ts=Date.now(),bucket=String(result&&result.accuracyBucket||'legacy');
   data.total=(Number(data.total)||0)+1;if(error===0)data.exact=(Number(data.exact)||0)+1;if(error<=1)data.withinOne=(Number(data.withinOne)||0)+1;data.absoluteError=(Number(data.absoluteError)||0)+error;
   const row=data.buckets[bucket]||(data.buckets[bucket]={total:0,exact:0,withinOne:0,absoluteError:0});row.total++;if(error===0)row.exact++;if(error<=1)row.withinOne++;row.absoluteError+=error;
+  /* Which population this sample came from. Feedback is self-selected — a
+     passenger presses it when the forecast feels wrong — so it cannot be
+     averaged together with objective Darwin loading and still describe the
+     model. Kept apart so each can be read on its own. */
+  const origin=source==='darwin-loading'?'darwin-loading':'feedback';
+  if(!data.sources||typeof data.sources!=='object')data.sources={};
+  const originRow=data.sources[origin]||(data.sources[origin]={total:0,exact:0,withinOne:0,absoluteError:0});
+  originRow.total++;if(error===0)originRow.exact++;if(error<=1)originRow.withinOne++;originRow.absoluteError+=error;
   /* Only evidence bucket + predicted/actual band/error are retained. No station, service, route, train ID or user identifier. */
-  data.recent=(Array.isArray(data.recent)?data.recent:[]).concat([{ts,predicted:predictedLevel,actual:reportedLevel,error,bucket}]).slice(-ACCURACY_RECENT_MAX);saveForecastAccuracy();return true;
+  data.recent=(Array.isArray(data.recent)?data.recent:[]).concat([{ts,predicted:predictedLevel,actual:reportedLevel,error,bucket,source:origin}]).slice(-ACCURACY_RECENT_MAX);saveForecastAccuracy();return true;
 }
 
 async function fetchWithTimeout(url, options={}){
@@ -477,6 +488,55 @@ function updateAverage(profile,valueField,countField,value){
 
 function observationId(service,index,station,date){
   return [gbDateStamp(date),String(station && station.crs || '').toUpperCase(),serviceKey(service,index),service.std || ''].join('|');
+}
+
+/* Scoring the forecast against something that did not choose to be asked.
+
+   recordForecastAccuracy() was reachable from exactly one place: the crowding
+   feedback control. A passenger presses that when the forecast feels wrong, so
+   the only measurement the model had of itself was drawn from a sample selected
+   for disagreeing with it — and every attempt to improve the model was being
+   judged by it.
+
+   Darwin already supplies an objective outcome, free, whenever a service
+   carries explicit coach loading, and kerbside-train-loading.js reduces it to
+   the same four bands the forecast predicts in. Pair them at the moment both
+   are in hand.
+
+   The prediction being scored is the unblended Forecast v4 answer:
+   recordForecastAccuracy calls api.forecast directly, while the live loading is
+   layered on afterwards by forecastFor(). The evidence supplying the outcome is
+   therefore never folded into the prediction it is judging.
+
+   Probe rule 3 holds throughout — absent loading is not evidence of a quiet
+   train, so a service without explicit loading is simply not sampled. */
+function liveLoadingEvidence(service){
+  const loading = window.__KERBSIDE_TRAIN_LOADING__;
+  if(!loading || typeof loading.evidenceFor !== 'function') return null;
+  let live = null;
+  try{ live = loading.evidenceFor(service); }catch(error){ return null; }
+  return live && live.available && CROWD_LEVEL_RANK[live.level] != null ? live : null;
+}
+function recordObservedAccuracy(){
+  if(!state.station || !state.services.length) return 0;
+  if(!state.crowdingModel) state.crowdingModel = safeReadCrowdingModel();
+  const date = referenceDateFromBoard();
+  let recorded = 0;
+  state.services.forEach((service,index)=>{
+    const live = liveLoadingEvidence(service);
+    if(!live) return;
+    /* The board refreshes every thirty seconds and a train keeps its loading
+       between refreshes, so the same report must not be counted repeatedly.
+       Keying on the reported average means a genuinely changed loading value
+       for the same service scores again, which is a real second observation. */
+    const id = observationId(service,index,state.station,date)+'|loading|'+live.average;
+    if(state.crowdingModel.observedSeen[id]) return;
+    if(!recordForecastAccuracy(service,index,live.level,date,'darwin-loading')) return;
+    state.crowdingModel.observedSeen[id] = Date.now();
+    recorded++;
+  });
+  if(recorded) saveCrowdingModel();
+  return recorded;
 }
 
 function recordBoardObservations(){
@@ -1004,7 +1064,16 @@ function renderServiceDetail(service,index,forecast,detail){
   const historySamples=Number(forecast.historySamples)||0;
   const learningText=`${historySamples} local service observation${historySamples===1?'':'s'} available`;
   const accuracy=forecastAccuracySummary();
-  const accuracyText=accuracy.total?`Local Forecast v4 validation: ${Math.round(accuracy.exact*100)}% exact · ${Math.round(accuracy.withinOne*100)}% within one band · ${accuracy.total} report${accuracy.total===1?'':'s'}.`:'Local Forecast v4 validation starts after you record actual crowding.';
+  /* "reports" described a population that was entirely user taps. Most samples
+     are now Darwin's own coach loading, checked automatically, so say which is
+     which rather than counting them all as something the passenger did. */
+  const observedSamples=Number(accuracy.sources&&accuracy.sources.observed&&accuracy.sources.observed.total)||0;
+  const feedbackSamples=Number(accuracy.sources&&accuracy.sources.feedback&&accuracy.sources.feedback.total)||0;
+  const sampleParts=[
+    observedSamples?`${observedSamples} checked against reported train loading`:'',
+    feedbackSamples?`${feedbackSamples} from your own report${feedbackSamples===1?'':'s'}`:''
+  ].filter(Boolean).join(' · ');
+  const accuracyText=accuracy.total?`Local Forecast v4 validation: ${Math.round(accuracy.exact*100)}% exact · ${Math.round(accuracy.withinOne*100)}% within one band${sampleParts?` · ${sampleParts}`:''}.`:'Local Forecast v4 validation starts once this train reports its loading, or you record actual crowding.';
   const modelLabel=Number(forecast.modelVersion)>=4?'Forecast v4':Number(forecast.modelVersion)>=3?'Forecast v3':`model v${MODEL_VERSION}`;
   const loadingApi=window.__KERBSIDE_TRAIN_LOADING__,liveLoading=forecast&&forecast.liveLoading;
   const evidenceMeta=liveLoading?(forecast.evidenceLabel||'Live train-loading evidence'):`${forecast.confidence} confidence · ${modelLabel}`;
@@ -1108,6 +1177,7 @@ async function loadBoard(station, {silent=false}={}){
     state.services = Array.isArray(json && json.trainServices) ? json.trainServices : [];
     if(json && json.locationName) state.station.name = json.locationName;
     recordBoardObservations();
+    recordObservedAccuracy();
     renderBoard();
     savePrefs();
   }catch(error){
@@ -1198,6 +1268,9 @@ window.__KERBSIDE_TRAINS__ = {
   recordForecastAccuracy,
   forecastAccuracySummary,
   forecastAccuracyForBucket,
+  forecastAccuracyForSource,
+  recordObservedAccuracy,
+  liveLoadingEvidence,
   servicePatternProfile,
   delayMinutes,
   statusFor,

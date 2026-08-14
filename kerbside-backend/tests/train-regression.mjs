@@ -53,14 +53,27 @@ const board = {
       destination:[{locationName:'Cardiff Central',crs:'CDF'}],
       serviceIdUrlSafe:'SVC1', std:'12:10', etd:'12:18', platform:'5',
       operator:'Great Western Railway', operatorCode:'GW', length:3,
-      isCancelled:false
+      isCancelled:false,
+      /* Explicit Darwin coach loading — the objective outcome the forecast is
+         scored against. */
+      formation:{coaches:[
+        {coachNumber:'A',number:'A',loading:88,loadingSpecified:true,coachClass:'Standard'},
+        {coachNumber:'B',number:'B',loading:92,loadingSpecified:true,coachClass:'Standard'},
+        {coachNumber:'C',number:'C',loading:90,loadingSpecified:true,coachClass:'Standard'}
+      ]}
     },
     {
       origin:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
       destination:[{locationName:'London Paddington',crs:'PAD'}],
       serviceIdUrlSafe:'SVC2', std:'12:20', etd:'On time', platform:'13',
       operator:'Great Western Railway', operatorCode:'GW', length:9,
-      isCancelled:false
+      isCancelled:false,
+      /* A formation with nothing specified. Missing loading is not evidence of
+         a quiet train, so this service must never produce a sample. */
+      formation:{coaches:[
+        {coachNumber:'A',number:'A',loading:null,loadingSpecified:false},
+        {coachNumber:'B',number:'B',loading:null,loadingSpecified:false}
+      ]}
     }
   ]
 };
@@ -211,6 +224,16 @@ async function assertCrowdingBaselineModel(page){
     assert.doesNotMatch(source, /\.finally\(\(\)=>\{ clearTimeout\(timeout\); if\(detach\) detach\(\); \}\)/,
       `${name} must not disarm its timer on the response headers`);
   }
+  /* The forecast must not consume the evidence it is scored against. v4 knows
+     nothing about loading; forecastFor() layers it on afterwards; and the
+     accuracy sampler scores api.forecast directly, not forecastFor(). */
+  const forecastV4 = await fs.readFile(path.join(repoRoot,'kerbside-train-forecast-v4.js'),'utf8');
+  assert.doesNotMatch(forecastV4, /__KERBSIDE_TRAIN_LOADING__/,
+    'Forecast v4 must stay independent of live loading, or accuracy scoring becomes circular');
+  assert.match(trains, /result=api\.forecast\(service,index,state\.services/,
+    'the scored prediction must be the unblended forecast');
+  assert.match(trains, /function recordObservedAccuracy\(\)/);
+  assert.match(trains, /recordForecastAccuracy\(service,index,live\.level,date,'darwin-loading'\)/);
   assert.match(trains, /const HTML_TEXT_PARSER = typeof DOMParser === 'function'/);
   assert.match(trains, /HTML_TEXT_PARSER\.parseFromString\(raw,'text\/html'\)/);
   assert.doesNotMatch(trains, /div\.innerHTML = String\(value \|\| ''\);/,
@@ -260,6 +283,36 @@ async function runDesktop(browser){
   assert.match(firstServiceText,/Quiet|Moderate|Busy|Very busy/);
   assert.match(firstServiceText,/forecast v4/i);
   assert.equal(await page.evaluate(()=>window.__KERBSIDE_FORECAST_V4__?.version),4);
+
+  /* Objective accuracy sampling: the forecast is now scored against Darwin's
+     own coach loading rather than only against passengers who chose to press
+     the feedback control. */
+  const observed = await page.evaluate(()=>{
+    const api=window.__KERBSIDE_TRAINS__;
+    const summary=api.forecastAccuracySummary();
+    const before=summary.total;
+    api.recordObservedAccuracy();          // a refresh with unchanged loading
+    api.recordObservedAccuracy();
+    const after=api.forecastAccuracySummary();
+    return {
+      total:before, totalAfterRepeat:after.total,
+      observedTotal:after.sources.observed.total,
+      feedbackTotal:after.sources.feedback.total,
+      evidence:api.state.services.map(service=>{
+        const live=api.liveLoadingEvidence(service);
+        return live?live.level:null;
+      }),
+      recentSources:[...new Set((api.state.forecastAccuracy.recent||[]).map(row=>row.source))]
+    };
+  });
+  assert.equal(observed.evidence[0],'very-busy','explicit coach loading must yield an objective level');
+  assert.equal(observed.evidence[1],null,'a formation with no loading specified must not yield evidence');
+  assert.equal(observed.total,1,'the loaded board should contribute exactly one objective sample');
+  assert.equal(observed.totalAfterRepeat,1,'repeat sampling of unchanged loading must not double-count');
+  assert.equal(observed.observedTotal,1,'the sample must be attributed to Darwin loading');
+  assert.equal(observed.feedbackTotal,0,'no feedback was given, so that population must stay empty');
+  assert.deepEqual(observed.recentSources,['darwin-loading'],'every sample must carry its provenance');
+
   const providerNote = await page.locator('.train-provider-note').textContent();
   assert.match(providerNote,/official National Rail Darwin data via Rail Data Marketplace/i);
   assert.match(providerNote,/Huxley community services as a resilience fallback/i);
@@ -269,6 +322,13 @@ async function runDesktop(browser){
   await page.locator('.train-service-summary').first().click();
   await page.waitForSelector('.train-call');
   const detailText = await page.locator('.train-service-detail').first().textContent();
+  /* The validation line described every sample as a passenger "report". Most are
+     now automatic checks against the train's own reported loading, so it has to
+     say which. */
+  assert.match(detailText,/checked against reported train loading/,
+    'the validation line must attribute automatic samples to train loading, not to the passenger');
+  assert.doesNotMatch(detailText,/·\s*1 report\b/,
+    'an automatic observation must not be presented as a passenger report');
   assert.match(detailText,/Bath Spa/);
   assert.match(detailText,/Passenger-submitted crowding reports do not affect the score/i);
   assert.match(detailText,/Record actual crowding/i);
