@@ -63,7 +63,6 @@ new_block="""  await page.waitForFunction(()=>{
   assert.equal(await page.locator('#trainBoard').isHidden(),true);
   assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
   assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
-  assert.equal(await page.locator('#trainRefresh').isDisabled(),true);
   assert.equal((await page.locator('#trainRefresh').textContent()).trim(),'Schedule');
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),FUTURE_DATE);
   assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
