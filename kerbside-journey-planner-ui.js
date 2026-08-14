@@ -13,8 +13,8 @@
    through to the existing Huxley provider chain. Live departure/service calls
    are never intercepted here. */
 const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.3';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.3';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.4';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.4';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
   'https://hux.azurewebsites.net'
@@ -123,40 +123,8 @@ async function stationDataFetch(input,init){
   }
 }
 
-/* The planner can know the selected From station before train-routes.js has
-   observed a provider request and copied that CRS into its own route state.
-   Destination suggestions are still valid in that window, but the route
-   module rejects their selection while fromCrs is blank. Capture destination
-   activation before the route's delegated handler and synchronise the origin
-   from the actual selected station first. This also covers keyboard-generated
-   clicks, not just pointer/touch selection. */
-function syncRouteOriginForDestination(){
-  const route=window.__KERBSIDE_TRAIN_ROUTES__,trains=window.__KERBSIDE_TRAINS__;
-  const selected=trains&&trains.state&&trains.state.station;
-  const crs=String(selected&&(selected.crs||selected.crsCode)||'').trim().toUpperCase();
-  if(!route||!/^[A-Z0-9]{3}$/.test(crs))return false;
-  const current=String(route.state&&route.state.fromCrs||'').trim().toUpperCase();
-  if(current===crs)return true;
-  if(typeof route.setFromCrs==='function')return route.setFromCrs(crs)!==false;
-  if(route.state){route.state.fromCrs=crs;return true;}
-  return false;
-}
-function isDestinationSuggestionEvent(event){
-  const target=event&&event.target;
-  if(!target||typeof target.closest!=='function')return false;
-  return !!target.closest('#trainDestinationSuggest [data-destination-index],#trainDestinationSuggest [data-k-to]');
-}
-function installDestinationOriginGuard(){
-  if(typeof document==='undefined'||document.__kerbsideDestinationOriginGuard)return;
-  document.__kerbsideDestinationOriginGuard=true;
-  const sync=event=>{if(isDestinationSuggestionEvent(event))syncRouteOriginForDestination();};
-  document.addEventListener('pointerdown',sync,true);
-  document.addEventListener('click',sync,true);
-}
-
 window.fetch=stationDataFetch;
-window.__KERBSIDE_STATION_DATA__={state:stationState,load:loadStations,search,parseLocations,syncRouteOriginForDestination};
-installDestinationOriginGuard();
+window.__KERBSIDE_STATION_DATA__={state:stationState,load:loadStations,search,parseLocations};
 loadStations().catch(()=>{});
 
 /* Keep the established planner implementation byte-for-byte in a separate

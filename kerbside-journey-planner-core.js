@@ -337,9 +337,10 @@ function selectOrigin(item){
   if(!item)return;
   const input=$('trainStationQuery'),go=$('trainStationGo');
   if(!input||!go)return;
+  syncRouteOrigin(item);
   input.value=item.crs;
   go.click();
-  setTimeout(()=>{if(input)input.value=item.name;const el=$('trainSuggest');if(el){el.hidden=true;el.innerHTML='';}if(isFutureJourney())dateApi()?.applyForecasts?.();},0);
+  setTimeout(()=>{const selected=window.__KERBSIDE_TRAINS__?.state?.station;syncRouteOrigin(selected||item);if(input)input.value=item.name;const el=$('trainSuggest');if(el){el.hidden=true;el.innerHTML='';}if(isFutureJourney())dateApi()?.applyForecasts?.();},0);
 }
 function syncRouteOrigin(station){
   const route=window.__KERBSIDE_TRAIN_ROUTES__;

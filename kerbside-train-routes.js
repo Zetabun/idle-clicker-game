@@ -116,6 +116,22 @@ function setFromCrs(value){
   return true;
 }
 
+function selectedOriginCrs(){
+  const api = window.__KERBSIDE_TRAINS__;
+  const selected = api && api.state && api.state.station;
+  const crs = String(selected && (selected.crs || selected.crsCode) || '').trim().toUpperCase();
+  return /^[A-Z0-9]{3}$/.test(crs) ? crs : '';
+}
+
+function ensureFromCrs(){
+  const selected = selectedOriginCrs();
+  if(selected){
+    if(routeState.fromCrs === selected) return true;
+    return setFromCrs(selected);
+  }
+  return /^[A-Z0-9]{3}$/.test(String(routeState.fromCrs || '').trim().toUpperCase());
+}
+
 function departureRequest(url){
   if(url.origin !== PROVIDER_ORIGIN) return null;
   const match = decodeURIComponent(url.pathname).match(/^\/departures\/([A-Za-z0-9]{3})\/(\d+)\/?$/i);
@@ -270,7 +286,7 @@ function installSuggestionHandlers(){
 }
 
 async function searchDestinations(query){
-  if(!routeState.fromCrs) return [];
+  if(!ensureFromCrs()) return [];
   const q = String(query || '').trim();
   if(q.length < 2){ closeSuggestions(); return []; }
   if(routeState.searchAbort) routeState.searchAbort.abort();
@@ -298,7 +314,7 @@ function scheduleSearch(){
 }
 
 function selectDestination(station,{reload=true}={}){
-  if(!routeState.fromCrs || !station) return false;
+  if(!station || !ensureFromCrs()) return false;
   const crs = String(station.crs || '').trim().toUpperCase();
   if(!/^[A-Z0-9]{3}$/.test(crs) || crs === routeState.fromCrs) return false;
   routeState.destination = {name:String(station.name || crs),crs};
@@ -314,7 +330,7 @@ function selectDestination(station,{reload=true}={}){
 
 async function submitDestination(){
   const input = $('trainDestinationQuery');
-  if(!input || !routeState.fromCrs) return;
+  if(!input || !ensureFromCrs()) return;
   const q = input.value.trim();
   if(q.length < 2) return;
   const items = await searchDestinations(q);
@@ -477,6 +493,8 @@ window.__KERBSIDE_TRAIN_ROUTES__ = {
   state:routeState,
   clearDestination,
   setFromCrs,
+  ensureFromCrs,
+  selectedOriginCrs,
   selectDestination,
   reloadBoard,
   rewrittenDepartureUrl
