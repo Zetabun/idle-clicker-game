@@ -68,7 +68,7 @@ jobs:
           npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
           npm run vendor:leaflet --prefix kerbside-backend
           cd kerbside-backend
-          npx playwright install --with-deps webkit
+          npx playwright install --with-deps webkit chromium
 
       - name: Validate backend and existing builders
         shell: bash
@@ -78,14 +78,16 @@ jobs:
           npm run check --prefix kerbside-backend
           npm test --prefix kerbside-backend
 
-      - name: Run WebKit browser regression checks
+      - name: Run browser regression checks
         shell: bash
         run: |
           set -euo pipefail
           npm run test:browser --prefix kerbside-backend
+          npm run test:train-route --prefix kerbside-backend
           npm run test:audit --prefix kerbside-backend
           npm run test:journey-identity --prefix kerbside-backend
           npm run test:disruptions --prefix kerbside-backend
+          KERBSIDE_BROWSER=chromium npm run test:train-route --prefix kerbside-backend
 
       - name: Prepare repository-safe release commit
         shell: bash
