@@ -102,6 +102,17 @@ function isBankHoliday(date){const p=dftLondonYmd(date);return dftBankHolidayKey
 forecast = forecast[:start] + bank_holiday_helpers + forecast[end:]
 write(forecast_path, forecast)
 
+# The browser regression intentionally pins the build number. The generic
+# release bump cannot see the escaped dots inside its regex literal, so update
+# this one assertion explicitly when the browser app moves to 0.9.7.
+browser_test_path = 'kerbside-backend/tests/browser-regression.mjs'
+browser_test = read(browser_test_path)
+old_version_assertion = "assert.match(busSource, /const APP_VERSION = '0\\.9\\.6'/);"
+new_version_assertion = "assert.match(busSource, /const APP_VERSION = '0\\.9\\.7'/);"
+if browser_test.count(old_version_assertion) != 1:
+    raise SystemExit('browser regression: expected exactly one 0.9.6 APP_VERSION assertion')
+write(browser_test_path, browser_test.replace(old_version_assertion, new_version_assertion, 1))
+
 for path in ['bus.html', 'kerbside-train-forecast-v4.js', 'kerbside-rail-calibration.js']:
     if 'kerbside-orr-odm-2024-25.js' in read(path):
         raise SystemExit(f'{path}: temporal release unexpectedly references unpublished ODM asset')
