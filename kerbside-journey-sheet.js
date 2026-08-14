@@ -55,6 +55,39 @@ function spanLabel(from,to){
 }
 function tokenFrom(node,pattern){var match=pattern.exec(String(node&&node.className||''));return match?match[1]:'';}
 
+/* The journey spine.
+
+   Both boards build their own rows, so the origin/destination pair was
+   previously restated as a four-cell facts grid in each of them. This is
+   the one markup tree they now share: a dotted rail, the two stops with
+   their times, and the journey's tags between them. Callers normalise
+   their own service shape into {from,to,tags} and nothing about the
+   presentation lives here - every difference between the dot-matrix and
+   Crystal readings is a token or a body.theme-crystal override in
+   kerbside-trains.css. */
+function spineMarkup(journey){
+  if(!journey)return '';
+  var from=journey.from||{},to=journey.to||{};
+  if(!from.name&&!to.name)return '';
+  var tags=(journey.tags||[]).filter(Boolean).map(function(tag){
+    var label=typeof tag==='string'?tag:tag&&tag.label;
+    if(!label)return '';
+    var accent=typeof tag==='object'&&tag&&tag.accent?' is-accent':'';
+    return '<span class="train-spine-tag'+accent+'">'+esc(label)+'</span>';
+  }).filter(Boolean).join('');
+  return '<section class="train-spine">'
+    +'<div class="train-spine-leg">'
+    +'<span class="train-spine-rail" aria-hidden="true"><i class="train-spine-dot is-start"></i><i class="train-spine-dot is-end"></i></span>'
+    +'<div class="train-spine-stop"><h4>'+esc(from.name||'Origin unavailable')+'</h4>'
+    +(from.note?'<p>'+esc(from.note)+'</p>':'')+'</div>'
+    +'<div class="train-spine-time">'+esc(from.time||'\u2014')+'</div>'
+    +'<div class="train-spine-tags">'+tags+'</div>'
+    +'<div class="train-spine-stop"><h4>'+esc(to.name||'Destination unavailable')+'</h4>'
+    +(to.note?'<p>'+esc(to.note)+'</p>':'')+'</div>'
+    +'<div class="train-spine-time">'+esc(to.time||'\u2014')+'</div>'
+    +'</div></section>';
+}
+
 /* One header for the whole app rather than one per row: the sheet is
    modal, so only one journey can ever own it. */
 function ensureChrome(){
@@ -289,8 +322,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else schedule();
 
 window.__KERBSIDE_JOURNEY_SHEET__={
-  version:'0.9.0',
+  version:'0.9.7',
   sync:sync,
+  spine:spineMarkup,
   close:requestClose,
   active:function(){return !!current;},
   element:function(){return chrome;}

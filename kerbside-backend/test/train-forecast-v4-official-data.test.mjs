@@ -46,7 +46,7 @@ test('Forecast v4 returns an empirical ordinal probability distribution',()=>{
   const c=load(),trains=c.window.__KERBSIDE_TRAINS__,v4=c.window.__KERBSIDE_FORECAST_V4__,station={name:'Birmingham New Street',crs:'BHM'};trains.state.station=station;
   const service={std:'08:15',etd:'',operator:'CrossCountry',operatorCode:'XC',length:0,isCancelled:false,scheduledOnly:true,origin:[{locationName:'Birmingham New Street',crs:'BHM'}],destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}],displayDestination:{name:'Bristol Temple Meads',crs:'BRI'}};
   const result=v4.forecast(service,0,[service],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z')});
-  assert.equal(v4.version,4);assert.equal(result.modelVersion,4);const values=Object.values(result.probabilities);assert.equal(values.length,4);assert.ok(Math.abs(values.reduce((a,b)=>a+b,0)-1)<1e-9,result.probabilities);assert.ok(result.topProbability===Math.max(...values));assert.match(v4.detailMarkup(result,new FixedDate('2026-08-12T12:00:00Z')),/Probability/);assert.match(v4.detailMarkup(result,new FixedDate('2026-08-12T12:00:00Z')),/Forecast v4/);
+  assert.equal(v4.version,4);assert.equal(result.modelVersion,4);const values=Object.values(result.probabilities);assert.equal(values.length,4);assert.ok(Math.abs(values.reduce((a,b)=>a+b,0)-1)<1e-9,result.probabilities);assert.ok(result.topProbability===Math.max(...values));assert.match(v4.detailMarkup(result,new FixedDate('2026-08-12T12:00:00Z')),/train-forecast-bar/);assert.match(v4.detailMarkup(result,new FixedDate('2026-08-12T12:00:00Z')),/Forecast v4/);
 });
 
 test('service-pattern history can influence reliability without passenger identity',()=>{

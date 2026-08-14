@@ -174,6 +174,69 @@ function serviceClassSignal(service,station,minute,date){
   try{return cal.serviceClassSignal(service,station,minute,date)||{amount:0,reasons:[]};}catch(error){return {amount:0,reasons:[]};}
 }
 
+/* ------------------------------------------------------------------
+   Seat load. The score answers "how busy", but the meter has to answer
+   "how busy against what", and that needs three numbers the model never
+   had to name: the counted baseline in passengers per 100 seats, the
+   point where every seat is taken, and the point where over capacity
+   actually begins.
+
+   The third is the only one that varies. DfT permits a standing
+   allowance solely on journeys of 20 minutes or less, so a
+   long-distance service has none at all and its seating capacity IS
+   its total capacity - which is exactly why long-distance services
+   exceed total capacity more often than commuter ones in the counts.
+   Where a peak capacity row is published, the allowance is measured
+   as total capacity over seats. Anywhere else it stays null and the
+   meter draws no over-capacity zone at all, rather than inventing a
+   headroom figure the data does not support.
+
+   Returns null whenever there is no counted baseline - a weekend, an
+   unprofiled station, a suppressed cell - so the card can drop the
+   meter instead of showing a fabricated one.
+------------------------------------------------------------------ */
+const SEAT_LOAD_CEILING=100;   // the unit is passengers per 100 seats
+function seatLoadFor(service,station,minute,date){
+  const cal=calibration();
+  if(!cal||typeof cal.measuredBand!=='function')return null;
+  if(typeof cal.isWeekday==='function'&&!cal.isWeekday(date))return null;
+  let measured=null;
+  try{measured=cal.measuredBand(station,minute,'departures');}catch(error){return null;}
+  /* Number(null) is 0, not NaN, so an absent band has to be rejected on its
+     own before the load factor is read - otherwise an unprofiled station
+     reports a fabricated zero rather than no measurement. */
+  if(!measured)return null;
+  const loadFactor=Number(measured.loadFactor);
+  if(!Number.isFinite(loadFactor))return null;
+  let info=null;
+  if(typeof cal.operatorClass==='function'){
+    try{info=cal.operatorClass(service&&(service.operatorCode||service.toc),station);}catch(error){info=null;}
+  }
+  const serviceClass=info&&info.key||'';
+  let standingAllowance=null;
+  if(serviceClass==='longDistance')standingAllowance=0;
+  else if(typeof cal.peakCapacitySignal==='function'){
+    let peak=null;
+    try{peak=cal.peakCapacitySignal(station,minute);}catch(error){peak=null;}
+    const seats=Number(peak&&peak.row&&peak.row.seats),capacity=Number(peak&&peak.row&&peak.row.capacity);
+    if(peak&&peak.measured===true&&seats>0&&capacity>0){
+      standingAllowance=Math.max(0,Math.round((capacity/seats-1)*SEAT_LOAD_CEILING));
+    }
+  }
+  return {
+    value:Math.round(loadFactor*SEAT_LOAD_CEILING),
+    ceiling:SEAT_LOAD_CEILING,
+    standingAllowance,
+    overCapacityAt:standingAllowance==null?null:SEAT_LOAD_CEILING+standingAllowance,
+    serviceClass,
+    serviceClassLabel:info&&info.label||'',
+    band:String(measured.label||''),
+    share:Number.isFinite(measured.share)?Math.round(measured.share*1000)/10:null,
+    where:String(measured.name||''),
+    source:cal.source||''
+  };
+}
+
 /* Journey shape. Two facts that only became reachable once the board was
    requested with expand=true:
      - how many stops the train has already made, which is a direct proxy
@@ -308,7 +371,7 @@ function forecast(service,index,services,context={}){
   const base=api&&typeof api.crowdingForecast==='function'
     ?api.crowdingForecast(service,index,services,baseContext)
     :{score:1.8,reasons:[],confidence:'Low'};
-  if(service&&service.isCancelled)return {score:null,level:base.level||'unknown',label:base.label||'Not applicable',confidence:base.confidence||'—',reasons:base.reasons&&base.reasons.length?base.reasons:['This service is cancelled.'],modelVersion:VERSION,eventPressure:0,historySamples:Number(base.historySamples)||0,cancelled:true};
+  if(service&&service.isCancelled)return {score:null,level:base.level||'unknown',label:base.label||'Not applicable',confidence:base.confidence||'—',reasons:base.reasons&&base.reasons.length?base.reasons:['This service is cancelled.'],modelVersion:VERSION,eventPressure:0,historySamples:Number(base.historySamples)||0,cancelled:true,seatLoad:null};
 
   const minute=parseMinutes(service&&service.std),future=isFuture(date);
   const calendar=calendarSignal(date,minute);
@@ -328,6 +391,7 @@ function forecast(service,index,services,context={}){
   const operatorCrowding=calV4&&typeof calV4.operatorCrowdingSignal==='function'?calV4.operatorCrowdingSignal(service,station,minute):{amount:0,reasons:[],measured:false};
   const peakCapacity=calV4&&typeof calV4.peakCapacitySignal==='function'?calV4.peakCapacitySignal(station,minute):{amount:0,reasons:[],measured:false};
   const pattern=servicePatternSignal(api,service,date,station);
+  const seatLoad=seatLoadFor(service,station,minute,date);
 
   let score=Number(base.score);if(!Number.isFinite(score))score=1.8;
   score=clamp(score+calendar.amount+events.amount+displacement.amount+live.amount+formation.amount+shape.amount+scale.amount+school.amount+offpeak.amount+shapeCal.amount+serviceClass.amount+routeLoad.amount+operatorCrowding.amount+peakCapacity.amount+pattern.amount,.25,5);
@@ -367,7 +431,7 @@ function forecast(service,index,services,context={}){
   const measuredBenchmark=cal&&typeof cal.benchmarkForecast==='function'?cal.benchmarkForecast(station,minute,date,probabilityModel.level):null;
   let calibrationNote='';
   if(cal&&typeof cal.contextNote==='function'){try{calibrationNote=cal.contextNote(station,minute,date)||'';}catch(error){calibrationNote='';}}
-  return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],reasonDetail:reasonDetail.length?reasonDetail:[{text:'service time and route demand baseline',direction:'flat'}],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,routeLoad,measuredBenchmark,accuracyBucket,empiricalAccuracy:confidenceInfo.local};
+  return {score,level:probabilityModel.level,label:probabilityModel.label,confidence,reasons:reasons.length?reasons:['service time and route demand baseline'],reasonDetail:reasonDetail.length?reasonDetail:[{text:'service time and route demand baseline',direction:'flat'}],modelVersion:VERSION,eventPressure:events.amount,historySamples,calibrated:calibrated||operatorCrowding.measured||peakCapacity.measured,calibrationNote,calibrationSource:cal?cal.source:'',probabilities:{quiet:probabilityModel.probabilities[0],moderate:probabilityModel.probabilities[1],busy:probabilityModel.probabilities[2],veryBusy:probabilityModel.probabilities[3]},topProbability:probabilityModel.top,utilisationPrior:probabilityModel.prior,routeLoad,measuredBenchmark,accuracyBucket,empiricalAccuracy:confidenceInfo.local,seatLoad};
 }
 function benchmarkServices(services,station,date){
   const list=Array.isArray(services)?services:[],when=date instanceof Date?date:new Date(date||Date.now());
@@ -391,24 +455,157 @@ function reasonDirection(amount){
   if(value<=-.15)return 'down';
   return 'flat';
 }
-function detailMarkup(result,date,options={}){const reasons=(result.reasons||[]).map(sentence).filter(Boolean),history=Number(result.historySamples)||0,mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted'),meta=result.cancelled?'Service cancelled':`${result.confidence} confidence · Forecast v4 · ${mode}`;const detailReasons=Array.isArray(result.reasonDetail)&&result.reasonDetail.length?result.reasonDetail:(result.reasons||[]).map(text=>({text,direction:'flat'}));const flagLabel={up:'Busier',down:'Quieter',flat:'Context'};const items=detailReasons.map(entry=>{const text=sentence(entry&&entry.text);if(!text)return '';const direction=entry&&flagLabel[entry.direction]?entry.direction:'flat';return `<li class="reason-${direction}"><span class="train-forecast-flag">${flagLabel[direction]}</span><span class="train-forecast-reason-text">${esc(text)}</span></li>`;}).filter(Boolean).join('');const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';const method=options.note?`${base} ${options.note}`:base;const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';
+/* ------------------------------------------------------------------
+   The seat-load meter.
+
+   PER_SEG and SCALE_FLOOR are presentation constants, not data: the
+   meter needs headroom above the ceiling for an over-capacity reading
+   to be visible at all, and a 4-per-segment step puts the 100 ceiling
+   on a segment boundary. Everything positional - the segment count,
+   how many are lit, the fill width, where the ceiling hairline sits
+   and where the over-capacity tint begins - is derived from seatLoad.
+
+   Both materials ship in one tree. The segments are the dot-matrix
+   bargraph, the fill is the Crystal capsule, and CSS shows whichever
+   the active theme calls for; the segments quantise to the 4-unit
+   step by design, while the capsule stays continuous.
+------------------------------------------------------------------ */
+const PER_SEG=4,SCALE_FLOOR=140;
+function seatLoadGeometry(seatLoad){
+  if(!seatLoad)return null;
+  const value=Number(seatLoad.value),ceiling=Number(seatLoad.ceiling);
+  if(!Number.isFinite(value)||!Number.isFinite(ceiling)||ceiling<=0)return null;
+  /* Round the scale up to a whole segment so the ceiling and the last
+     segment both land on a boundary, and grow it if a value ever runs
+     past the default headroom. */
+  const scaleMax=Math.max(SCALE_FLOOR,Math.ceil(value/PER_SEG)*PER_SEG);
+  const segments=Math.round(scaleMax/PER_SEG);
+  /* null and undefined both coerce through Number() to 0, which would turn
+     "no allowance is published" into "the allowance is zero" - a different
+     and much stronger claim. Reject the absent case before coercing. */
+  const rawOver=seatLoad.overCapacityAt,rawAllowance=seatLoad.standingAllowance;
+  const over=rawOver==null?null:Number(rawOver);
+  const allowance=rawAllowance==null?null:Number(rawAllowance);
+  const hasOver=over!=null&&Number.isFinite(over);
+  return {
+    value,ceiling,scaleMax,segments,
+    onCount:clamp(Math.round(value/PER_SEG),0,segments),
+    limitIndex:Math.round(ceiling/PER_SEG),
+    fillPercent:clamp(value/scaleMax*100,0,100),
+    ceilingPercent:clamp(ceiling/scaleMax*100,0,100),
+    overPercent:hasOver?clamp(over/scaleMax*100,0,100):null,
+    overCapacityAt:hasOver?over:null,
+    standingAllowance:allowance!=null&&Number.isFinite(allowance)?allowance:null
+  };
+}
+function seatLoadLabel(geometry,seatLoad){
+  const parts=[`${geometry.value} passengers per 100 seats.`,`Every seat is taken at ${geometry.ceiling}.`];
+  if(geometry.standingAllowance===0)parts.push('This service has no standing allowance beyond that.');
+  else if(geometry.standingAllowance>0)parts.push(`It has a standing allowance of ${geometry.standingAllowance}, so it is over capacity beyond ${geometry.overCapacityAt}.`);
+  else parts.push('No standing allowance is published for this service, so no over-capacity point is shown.');
+  if(seatLoad&&seatLoad.band)parts.push(`Measured baseline for the ${seatLoad.band} time band.`);
+  return parts.join(' ');
+}
+function seatLoadNote(seatLoad,geometry){
+  if(!seatLoad)return '';
+  const where=seatLoad.where?esc(seatLoad.where):'this station',band=seatLoad.band?esc(seatLoad.band):'this time band';
+  const opening=`The measured ${band} baseline out of ${where}.`;
+  if(geometry.standingAllowance===0){
+    const kind=seatLoad.serviceClassLabel?`a ${esc(seatLoad.serviceClassLabel)} service`:'this service';
+    return `${opening} There's <b>no standing allowance</b> on ${kind}, so anything past that line is over capacity.`;
+  }
+  if(geometry.standingAllowance>0)return `${opening} A measured standing allowance of <b>${geometry.standingAllowance} per 100 seats</b> applies, so this service is over capacity beyond ${geometry.overCapacityAt}.`;
+  return `${opening} No standing allowance is published for this service, so the line marks every seat taken rather than a capacity limit.`;
+}
+function seatLoadMarkup(result){
+  const seatLoad=result&&result.seatLoad,geometry=seatLoadGeometry(seatLoad);
+  if(!geometry)return '';
+  const level=String(result.level||'').trim()||'unknown';
+  const overIndex=geometry.overCapacityAt==null?null:Math.min(Math.floor(geometry.overCapacityAt/PER_SEG),geometry.segments-1);
+  const segments=[];
+  for(let i=0;i<geometry.segments;i++){
+    const classes=['train-seatload-seg'];
+    /* A segment spans [i*PER_SEG, (i+1)*PER_SEG), so the first one carrying
+       any over-capacity territory is the one whose top edge crosses the line -
+       Math.floor, not Math.round. Rounding lost the zone entirely whenever the
+       allowance put the boundary inside the final segment. */
+    if(overIndex!=null&&i>=overIndex)classes.push('is-over');
+    if(overIndex!=null&&i===overIndex)classes.push('is-limit');
+    if(i<geometry.onCount)classes.push('is-on');
+    segments.push(`<span class="${classes.join(' ')}" style="--seg:${i}"></span>`);
+  }
+  const zone=geometry.overPercent==null?'':`<span class="train-seatload-zone" style="left:${round2(geometry.overPercent)}%"></span>`;
+  return `<div class="train-seatload crowd-${esc(level)}">`
+    +`<div class="train-seatload-track" role="img" aria-label="${esc(seatLoadLabel(geometry,seatLoad))}" style="--ceiling:${round2(geometry.ceilingPercent)}%">`
+    +zone
+    +`<span class="train-seatload-fill" style="width:${round2(geometry.fillPercent)}%"></span>`
+    +segments.join('')
+    +`<span class="train-seatload-limit"></span>`
+    +`</div>`
+    +`<div class="train-seatload-axis"><span>Every seat taken</span></div>`
+    +`<p class="train-seatload-note">${seatLoadNote(seatLoad,geometry)}</p>`
+    +`</div>`;
+}
+function round2(value){return Math.round(Number(value)*100)/100;}
+const CONFIDENCE_RANK={'Low':1,'Medium':2,'Medium-high':3,'High':4};
+function confidenceMarkup(result){
+  const label=String(result&&result.confidence||'').trim();
+  const rank=CONFIDENCE_RANK[label];
+  if(!rank)return '';
+  let pips='';
+  for(let i=1;i<=4;i++)pips+=`<b${i<=rank?' class="is-on"':''}></b>`;
+  return `<div class="train-forecast-confidence"><span class="train-forecast-pips" aria-hidden="true">${pips}</span>${esc(label)} confidence</div>`;
+}
+const REASON_MARK={up:'▲',down:'▼',flat:'•'},REASON_NAME={up:'Busier',down:'Quieter',flat:'Context'};
+function detailMarkup(result,date,options={}){
+  const history=Number(result.historySamples)||0;
+  const mode=options.mode||(isFuture(date)?'Planning':'Live-adjusted');
+  const meta=result.cancelled?'Service cancelled':`Forecast v4 · ${mode}`;
+  const detailReasons=Array.isArray(result.reasonDetail)&&result.reasonDetail.length?result.reasonDetail:(result.reasons||[]).map(text=>({text,direction:'flat'}));
+  const items=detailReasons.map(entry=>{
+    const text=sentence(entry&&entry.text);
+    if(!text)return '';
+    const direction=entry&&REASON_MARK[entry.direction]?entry.direction:'flat';
+    return `<li class="reason-${direction}"><span class="train-forecast-flag" role="img" aria-label="${REASON_NAME[direction]}">${REASON_MARK[direction]}</span><span class="train-forecast-reason-text">${esc(text)}</span></li>`;
+  }).filter(Boolean).join('');
+  /* The key explains the arrows, so it is only worth its height when an arrow
+     is actually on screen - a cancelled service has context rows and nothing
+     else, and a legend for two absent glyphs is noise. */
+  const hasDirection=detailReasons.some(entry=>entry&&(entry.direction==='up'||entry.direction==='down'));
+  const reasonsKey=items&&hasDirection?`<div class="train-forecast-reasons-key" aria-hidden="true">`
+    +`<span><span class="train-forecast-flag reason-up">${REASON_MARK.up}</span>busier</span>`
+    +`<span><span class="train-forecast-flag reason-down">${REASON_MARK.down}</span>quieter</span>`
+    +`<span><span class="train-forecast-flag reason-flat">${REASON_MARK.flat}</span>context</span>`
+    +`</div>`:'';
+  const base=result.cancelled?'No crowding forecast is produced for a cancelled service. Its knock-on effect is still included in nearby trains.':'Forecast estimate only — no ticket sales, seat reservations or live carriage occupancy. Passenger-submitted crowding reports do not affect the score.';
+  const method=options.note?`${base} ${options.note}`:base;
+  const historyMarkup=history?`<div class="train-forecast-history"><span>Local history</span><b>${history} service observation${history===1?'':'s'} so far</b></div>`:'';
 /* The measured anchor. Without it "Busy" is a vibe; with it the user can see
    what the counted network actually looks like at this time of day. */
-const calibrationMarkup=result.calibrationNote
-  ?`<div class="train-forecast-calibration"><span>Measured baseline</span><b>${esc(result.calibrationNote)}</b>${result.calibrationSource?`<i>${esc(result.calibrationSource)}</i>`:''}</div>`
-  :'';/* Four numbers that exist to be compared against each other read badly as a
+const calibrationMarkup=result.calibrationNote?`<div class="train-forecast-calibration"><span>Measured baseline</span><b>${esc(result.calibrationNote)}</b>${result.calibrationSource?`<i>${esc(result.calibrationSource)}</i>`:''}</div>`:'';
+/* Four numbers that exist to be compared against each other read badly as a
    sentence. Drawn as one bar they are a shape you can take in at a glance,
    and the crowd-* classes already carry the band colour in both themes. */
-const p=result.probabilities||null;
-const bands=p?[['quiet','Quiet',p.quiet],['moderate','Moderate',p.moderate],['busy','Busy',p.busy],['very-busy','Very busy',p.veryBusy]].map(([key,label,value])=>({key,label,percent:Math.round((Number(value)||0)*100)})):[];
-const probabilityMarkup=bands.length
-  ?`<div class="train-forecast-probabilities"><span>Probability</span>`
-    +`<div class="train-forecast-bar" role="img" aria-label="${esc(bands.map(band=>`${band.label} ${band.percent}%`).join(', '))}">`
-    +bands.filter(band=>band.percent>0).map(band=>`<span class="crowd-${band.key}" style="flex:${band.percent} 1 0"><i></i></span>`).join('')
-    +`</div><div class="train-forecast-legend">`
-    +bands.map(band=>`<span class="crowd-${band.key}"><i></i>${esc(band.label)} <b>${band.percent}%</b></span>`).join('')
-    +`</div></div>`
-  :'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><details class="train-forecast-method"><summary>How this is worked out</summary><p>${esc(method)}</p></details>${calibrationMarkup}${probabilityMarkup}${historyMarkup}`;}
+  const p=result.probabilities||null;
+  const bands=p?[['quiet','Quiet',p.quiet],['moderate','Moderate',p.moderate],['busy','Busy',p.busy],['very-busy','Very busy',p.veryBusy]].map(([key,label,value])=>({key,label,percent:Math.round((Number(value)||0)*100)})):[];
+  const probabilityMarkup=bands.length
+    ?`<div class="train-forecast-probabilities"><span>Today's forecast</span>`
+      +`<div class="train-forecast-bar" role="img" aria-label="${esc(bands.map(band=>`${band.label} ${band.percent}%`).join(', '))}">`
+      +bands.filter(band=>band.percent>0).map(band=>`<span class="crowd-${band.key}" style="flex:${band.percent} 1 0"><i></i></span>`).join('')
+      +`</div><div class="train-forecast-legend">`
+      +bands.map(band=>`<span class="crowd-${band.key}${band.percent?'':' is-zero'}"><i></i>${esc(band.label)} <b>${band.percent}%</b></span>`).join('')
+      +`</div>${confidenceMarkup(result)}</div>`
+    :'';
+  const figure=result.seatLoad&&Number.isFinite(Number(result.seatLoad.value))
+    ?`<span class="train-seatload-figure"><b>${Math.round(Number(result.seatLoad.value))}</b><span>of every 100 seats</span></span>`
+    :'';
+  return `<div class="train-forecast-head">${figure}<span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div>`
+    +seatLoadMarkup(result)
+    +probabilityMarkup
+    +`<div class="train-forecast-reasons"><span>What's pushing it</span><ul>${items}</ul>${reasonsKey}</div>`
+    +`<details class="train-forecast-method"><summary>How this is worked out</summary><p>${esc(method)}</p>${calibrationMarkup}</details>`
+    +historyMarkup;
+}
 /* Every write below is compared first. The board is watched by a
    MutationObserver that calls back into apply(), and re-assigning identical
    text or innerHTML still counts as a mutation - so unguarded writes kept a
@@ -444,6 +641,6 @@ function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimat
 async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices};
+window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices,seatLoadFor,SEAT_LOAD_CEILING,seatLoadGeometry,seatLoadMarkup,confidenceMarkup,PER_SEG,SCALE_FLOOR};
 window.__KERBSIDE_FORECAST_V3__=window.__KERBSIDE_FORECAST_V4__;
 })();

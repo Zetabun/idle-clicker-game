@@ -102,10 +102,15 @@
 .train-legend span{display:flex;align-items:center;gap:5px}
 .train-legend b{margin-left:auto;color:var(--text-mute);font-weight:600}
 .crowd-dot,.train-crowding>i,.train-crowding-explain i{display:inline-block;width:7px;height:7px;border-radius:50%}
-.crowd-dot.quiet,.crowd-quiet>i{background:var(--live)}
-.crowd-dot.moderate,.crowd-moderate>i{background:var(--led)}
-.crowd-dot.busy,.crowd-busy>i{background:#FF8C42}
-.crowd-dot.very-busy,.crowd-very-busy>i{background:var(--warn)}
+/* Every band colour is a token now. The -fill variants are for shapes that
+   carry no text - dots, bar segments, meter segments - and the base variants
+   are for text and borders, which is the split Crystal needs to stay readable
+   on white. In the dot-matrix theme the two resolve to the same colour, so
+   nothing here changes visually. */
+.crowd-dot.quiet,.crowd-quiet>i{background:var(--crowd-quiet-fill)}
+.crowd-dot.moderate,.crowd-moderate>i{background:var(--crowd-moderate-fill)}
+.crowd-dot.busy,.crowd-busy>i{background:var(--crowd-busy-fill)}
+.crowd-dot.very-busy,.crowd-very-busy>i{background:var(--crowd-very-fill)}
 .crowd-unknown>i{background:var(--text-mute)}
 
 .train-board{flex:1;min-height:0;overflow-y:auto;padding:8px 14px 18px;overscroll-behavior:contain}
@@ -144,18 +149,18 @@
   padding:13px 13px 12px;margin-bottom:12px;border:1px solid var(--rule);border-left-width:3px;border-radius:10px;
   background:var(--ink);color:var(--text-dim);font-size:10.5px;line-height:1.5;
 }
-.train-crowding-explain.crowd-quiet{border-left-color:var(--live)}
-.train-crowding-explain.crowd-moderate{border-left-color:var(--led)}
-.train-crowding-explain.crowd-busy{border-left-color:#FF8C42}
-.train-crowding-explain.crowd-very-busy{border-left-color:var(--warn)}
+.train-crowding-explain.crowd-quiet{border-left-color:var(--crowd-quiet)}
+.train-crowding-explain.crowd-moderate{border-left-color:var(--crowd-moderate)}
+.train-crowding-explain.crowd-busy{border-left-color:var(--crowd-busy)}
+.train-crowding-explain.crowd-very-busy{border-left-color:var(--crowd-very)}
 .train-crowding-explain.crowd-unknown{border-left-color:var(--text-mute)}
 .train-forecast-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
 .train-forecast-status{display:flex;align-items:center;gap:8px;min-width:0}
 .train-forecast-status i{flex:0 0 auto;width:9px;height:9px}
-.train-crowding-explain.crowd-quiet .train-forecast-status i{background:var(--live)}
-.train-crowding-explain.crowd-moderate .train-forecast-status i{background:var(--led)}
-.train-crowding-explain.crowd-busy .train-forecast-status i{background:#FF8C42}
-.train-crowding-explain.crowd-very-busy .train-forecast-status i{background:var(--warn)}
+.train-crowding-explain.crowd-quiet .train-forecast-status i{background:var(--crowd-quiet-fill)}
+.train-crowding-explain.crowd-moderate .train-forecast-status i{background:var(--crowd-moderate-fill)}
+.train-crowding-explain.crowd-busy .train-forecast-status i{background:var(--crowd-busy-fill)}
+.train-crowding-explain.crowd-very-busy .train-forecast-status i{background:var(--crowd-very-fill)}
 .train-crowding-explain.crowd-unknown .train-forecast-status i{background:var(--text-mute)}
 .train-forecast-status strong{color:var(--text);font-size:13px;letter-spacing:-.01em}
 .train-forecast-meta{flex:0 1 auto;padding:4px 7px;border:1px solid var(--rule);border-radius:999px;background:var(--ink-2);color:var(--text-mute);font-size:9px;line-height:1.2;text-align:right}
@@ -616,13 +621,16 @@ body.theme-crystal .train-service.is-sheet .train-watch-action{border-radius:999
 .train-forecast-status strong{font-size:16px;letter-spacing:-.02em}
 .train-forecast-meta{
   padding:0;border:0;border-radius:0;background:none;
-  color:var(--text-mute);font-size:10px;font-weight:600;letter-spacing:.01em;
+  color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.01em;
 }
+/* --text-mute measures 3.21:1 on --ink-2 and 2.92:1 on --ink in the
+   dot-matrix theme, so every micro-label on this card was below 4.5:1.
+   --text-dim clears it on all three card grounds in both themes. */
 .train-forecast-reasons>span,
 .train-forecast-calibration>span,
 .train-forecast-probabilities>span,
 .train-forecast-history>span{
-  display:block;color:var(--text-mute);font-family:'Martian Mono',ui-monospace,monospace;
+  display:block;color:var(--text-dim);font-family:'Martian Mono',ui-monospace,monospace;
   font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
 }
 .train-forecast-reasons ul{display:grid;gap:7px;margin:9px 0 0;padding:0;list-style:none}
@@ -646,7 +654,7 @@ body.theme-crystal .train-service.is-sheet .train-watch-action{border-radius:999
   display:block;margin-top:6px;color:var(--text-dim);font-size:11px;font-weight:600;line-height:1.45;
 }
 .train-forecast-calibration i{
-  display:block;margin-top:5px;color:var(--text-mute);font-size:9.5px;font-style:normal;line-height:1.4;
+  display:block;margin-top:5px;color:var(--text-dim);font-size:9.5px;font-style:normal;line-height:1.4;
 }
 .train-forecast-history b{display:block;margin-top:6px;color:var(--text-dim);font-size:11px;font-weight:600}
 
@@ -659,15 +667,15 @@ body.theme-crystal .train-service.is-sheet .train-watch-action{border-radius:999
 .train-forecast-bar>span>i{display:block;width:100%;height:100%;border-radius:0;box-shadow:none}
 .train-forecast-legend{display:flex;flex-wrap:wrap;gap:5px 13px;margin-top:10px}
 .train-forecast-legend>span{
-  display:inline-flex;align-items:center;gap:5px;color:var(--text-mute);font-size:10px;line-height:1.4;
+  display:inline-flex;align-items:center;gap:5px;color:var(--text-dim);font-size:10px;line-height:1.4;
 }
 .train-forecast-legend>span>i{width:6px;height:6px;flex:0 0 auto;border-radius:50%;box-shadow:none}
 .train-forecast-legend b{color:var(--text-dim);font-size:10px;font-weight:700}
 
 /* Provenance matters but should not be the tallest thing on screen. */
-.train-forecast-method{color:var(--text-mute)}
+.train-forecast-method{color:var(--text-dim)}
 .train-forecast-method>summary{
-  display:block;position:relative;padding:0 20px 0 0;color:var(--text-mute);
+  display:block;position:relative;padding:0 20px 0 0;color:var(--text-dim);
   font-family:'Martian Mono',ui-monospace,monospace;font-size:8.5px;font-weight:700;
   letter-spacing:.1em;text-transform:uppercase;cursor:pointer;list-style:none;
 }
@@ -699,23 +707,298 @@ body.theme-crystal .train-service.is-sheet .train-crowding-explain{box-shadow:0 
 }
 .train-forecast-reasons li:before{display:none}
 .train-forecast-reason-text{min-width:0}
+/* 0.9.7 turns the direction pill into a single mark. Three words repeated
+   down the list ("Busier", "Busier", "Quieter") cost more width than they
+   earned and pushed the reason text into a narrow column; the glyph carries
+   the same distinction in 18px and keeps its name for assistive tech through
+   role="img" and aria-label rather than visible text. */
 .train-forecast-flag{
-  display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:2px 7px;
-  border:1px solid var(--rule);border-radius:999px;background:var(--ink-3);color:var(--text-mute);
-  font-family:'Martian Mono',ui-monospace,monospace;font-size:8px;font-weight:700;
-  letter-spacing:.06em;text-transform:uppercase;line-height:1.5;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;min-width:0;padding:0;
+  border:0;border-radius:0;background:none;color:var(--text-dim);
+  font-family:'Martian Mono',ui-monospace,monospace;font-size:12px;font-weight:700;
+  letter-spacing:0;text-transform:none;line-height:1.55;white-space:nowrap;
 }
-.train-forecast-reasons li.reason-up .train-forecast-flag{
-  border-color:rgb(var(--warn-rgb) / .4);background:rgb(var(--warn-rgb) / .1);color:var(--warn);
-}
-.train-forecast-reasons li.reason-down .train-forecast-flag{
-  border-color:rgb(var(--live-rgb) / .42);background:rgb(var(--live-rgb) / .12);color:var(--live);
-}
+.train-forecast-reasons li.reason-up .train-forecast-flag,.train-forecast-flag.reason-up{color:var(--crowd-busy)}
+.train-forecast-reasons li.reason-down .train-forecast-flag,.train-forecast-flag.reason-down{color:var(--crowd-quiet)}
+.train-forecast-reasons li.reason-flat .train-forecast-flag,.train-forecast-flag.reason-flat{color:var(--text-dim)}
 .train-forecast-reasons li.reason-up .train-forecast-reason-text{color:var(--text)}
-body.theme-crystal .train-forecast-flag{border-color:transparent}
-body.theme-crystal .train-forecast-reasons li.reason-up .train-forecast-flag{background:rgb(var(--warn-rgb) / .12)}
-body.theme-crystal .train-forecast-reasons li.reason-down .train-forecast-flag{background:rgb(var(--live-rgb) / .14)}
+.train-forecast-reasons-key{
+  display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:11px;padding-top:10px;
+  border-top:1px solid var(--rule);color:var(--text-dim);font-size:10px;line-height:1.4;
+}
+.train-forecast-reasons-key>span{display:inline-flex;align-items:center;gap:4px}
+.train-forecast-reasons-key .train-forecast-flag{width:auto}
+
+/* ------------------------------------------------------------------
+   Kerbside 0.9.7 — service detail screen.
+
+   The forecast card led with a word ("Moderate") and buried the number
+   it came from in a paragraph of provenance. This puts the measured
+   figure first, gives it a meter to sit against, and keeps everything
+   below it in the order a traveller actually asks: how busy, against
+   what, on what evidence, and how it was worked out.
+
+   Every band colour reaches its component through two custom properties
+   set once on the card - --band for shapes and --band-text for text.
+   That is what lets the meter, the badge and the figure all be
+   band-coloured without a rule per band per component, and what lets
+   Crystal rebind the whole ramp by changing eight tokens.
+------------------------------------------------------------------ */
+.train-crowding-explain.crowd-quiet{--band:var(--crowd-quiet-fill);--band-text:var(--crowd-quiet)}
+.train-crowding-explain.crowd-moderate{--band:var(--crowd-moderate-fill);--band-text:var(--crowd-moderate)}
+.train-crowding-explain.crowd-busy{--band:var(--crowd-busy-fill);--band-text:var(--crowd-busy)}
+.train-crowding-explain.crowd-very-busy{--band:var(--crowd-very-fill);--band-text:var(--crowd-very)}
+.train-crowding-explain.crowd-unknown{--band:var(--text-mute);--band-text:var(--text-dim)}
+
+/* ---- Head: the figure leads, the band is a badge ---- */
+/* Grid rather than a wrapping flex row: the figure and the badge belong on
+   one line, and the column that must give way when they do not fit is the
+   figure's unit text, not the badge's position. A flex row wrapped the badge
+   onto a line of its own instead of letting "of every 100 seats" break. */
+.train-crowding-explain .train-forecast-head{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;margin:0 0 6px;
+}
+.train-crowding-explain .train-forecast-meta{grid-column:1 / -1}
+.train-seatload-figure{display:flex;align-items:baseline;gap:8px;min-width:0}
+.train-seatload-figure>b{
+  font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:34px;font-weight:700;line-height:.92;letter-spacing:-.07em;
+  font-variant-numeric:tabular-nums;color:var(--led);
+  text-shadow:0 0 22px rgb(var(--led-rgb) / .32);
+}
+.train-seatload-figure>span{color:var(--text-dim);font-size:12.5px;font-weight:500;letter-spacing:-.01em}
+.train-crowding-explain .train-forecast-status{
+  flex:0 0 auto;align-items:center;justify-self:end;gap:7px;padding:5px 11px 5px 9px;
+  border:1px solid var(--rule);border-radius:999px;background:var(--ink-3);
+}
+.train-crowding-explain .train-forecast-status strong{
+  color:var(--band-text);font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+}
+
+/* 6% is the strongest band tint that still leaves every band's text above
+   4.5:1 on the resulting fill, in both themes - 8% already drops Crystal's
+   quiet band to 4.48. The border carries no text, so it can be stronger. */
+@supports (background:color-mix(in srgb,red 10%,white)){
+  .train-crowding-explain .train-forecast-status{
+    border-color:color-mix(in srgb,var(--band) 34%,transparent);
+    background:color-mix(in srgb,var(--band) 6%,var(--ink-3));
+  }
+}
+
+/* ---- The seat-load meter ----
+   One tree, two materials. The segments are the dot-matrix bargraph and
+   the fill is the Crystal capsule; each theme hides the other's. The
+   segments quantise to a 4-per-segment step by design - that is what a
+   bargraph is - while the capsule stays continuous. */
+.train-seatload{margin:16px 0 0}
+.train-seatload-track{
+  position:relative;display:flex;gap:3px;height:18px;padding:3px;
+  border:1px solid var(--rule);border-radius:var(--radius);background:var(--ink);
+}
+.train-seatload-fill,.train-seatload-zone{display:none}
+.train-seatload-seg{
+  flex:1 1 0;min-width:0;border-radius:1px;background:rgb(var(--rule-rgb) / .85);
+}
+.train-seatload-seg.is-over{background:rgb(var(--warn-rgb) / .16)}
+/* The capacity ceiling is a real break in the run, not just a line over it. */
+.train-seatload-seg.is-limit{margin-left:6px;box-shadow:inset 1px 0 0 rgb(var(--warn-rgb) / .45)}
+.train-seatload-seg.is-on{
+  background:var(--band);box-shadow:0 0 7px var(--band);
+  animation:kerbside-seatload-seg .18s linear both;
+  animation-delay:calc(var(--seg,0) * 45ms + 90ms);
+}
+@supports (color:color-mix(in srgb,red 50%,transparent)){
+  .train-seatload-seg.is-on{box-shadow:0 0 7px color-mix(in srgb,var(--band) 55%,transparent)}
+}
+/* A from-only keyframe takes its end state from the element, so the lit
+   appearance stays in one place and the stagger is presentation only.
+   Nothing is written to the DOM after render, which is what keeps the
+   forecast MutationObserver from seeing a mutation it caused itself. */
+@keyframes kerbside-seatload-seg{
+  from{background:rgb(var(--rule-rgb) / .85);box-shadow:none}
+}
+.train-seatload-limit{
+  position:absolute;top:-1px;bottom:-1px;left:var(--ceiling,71.43%);width:1px;
+  background:rgb(var(--warn-rgb) / .5);
+}
+.train-seatload-axis{position:relative;height:15px;margin-top:7px}
+.train-seatload-axis>span{
+  position:absolute;left:var(--ceiling,71.43%);transform:translateX(-50%);
+  font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-dim);white-space:nowrap;
+}
+.train-seatload-note{margin:14px 0 0;color:var(--text-dim);font-size:11.5px;line-height:1.5}
+.train-seatload-note b{color:var(--text);font-weight:600}
+
+/* ---- Confidence, drawn ---- */
+.train-forecast-confidence{
+  display:flex;align-items:center;gap:9px;margin-top:14px;color:var(--text-dim);font-size:11px;
+}
+.train-forecast-pips{display:flex;flex:0 0 auto;gap:3px}
+.train-forecast-pips>b{display:block;width:15px;height:3px;border-radius:1px;background:var(--rule)}
+.train-forecast-pips>b.is-on{background:var(--text-dim)}
+.train-forecast-legend>span.is-zero{opacity:.45}
+
+/* ---- Journey spine ----
+   Replaces the four-cell facts grid. The rail is the journey, the two
+   stops are its ends, and the tags sit in the gap between them rather
+   than in a row of their own. */
+.train-spine{
+  margin:0 0 12px;padding:14px 14px 4px;
+  border:1px solid var(--rule);border-radius:var(--radius-lg);background:var(--ink-2);
+}
+.train-spine-leg{display:grid;grid-template-columns:14px minmax(0,1fr) auto;column-gap:14px}
+.train-spine-rail{position:relative;grid-row:1 / span 4}
+.train-spine-rail:before{
+  content:'';position:absolute;left:6px;top:9px;bottom:9px;border-left:2px dotted var(--rule);
+}
+.train-spine-dot{
+  position:absolute;left:0;width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--text-mute);background:var(--ink-2);
+}
+.train-spine-dot.is-start{top:3px}
+.train-spine-dot.is-end{bottom:3px;background:var(--text);border-color:var(--text)}
+.train-spine-stop{min-width:0}
+.train-spine-stop h4{margin:0;font-size:17px;font-weight:600;letter-spacing:-.02em;line-height:1.15;color:var(--text)}
+.train-spine-stop p{margin:3px 0 0;color:var(--text-dim);font-size:12px;line-height:1.35}
+.train-spine-time{
+  align-self:start;padding-top:2px;
+  font-family:'Martian Mono',ui-monospace,monospace;
+  font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.04em;
+  color:var(--led);text-shadow:0 0 14px rgb(var(--led-rgb) / .28);
+}
+.train-spine-tags{
+  grid-column:2 / span 2;display:flex;flex-wrap:wrap;gap:6px;padding:13px 0 15px;
+}
+.train-spine-tag{
+  padding:4px 9px;border:1px solid var(--rule);border-radius:999px;
+  color:var(--text-dim);font-size:10px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
+}
+.train-spine-tag.is-accent{
+  border-color:var(--led-dim);background:rgb(var(--led-rgb) / .07);color:var(--led);
+}
+
+/* ---- Watch switch ---- */
+.train-visually-hidden{
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}
+/* The control is a switch rather than a labelled button now, so the row keeps
+   two columns at every width instead of stacking a full-width button under the
+   text, and the button itself is only the padding around a 27-31px track -
+   held at 44px so the tap target survives the shrink. Both selectors are
+   listed because the sheet's own rules are more specific than a bare class. */
+.train-watch-card,
+.train-service.is-sheet .train-watch-card{grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.train-watch-action,
+.train-service.is-sheet .train-watch-action{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:auto;min-width:44px;min-height:44px;margin-top:0;padding:0;
+  justify-self:end;border:0;border-radius:99px;background:none;
+}
+.train-watch-action:hover{background:none}
+.train-watch-switch{
+  display:block;position:relative;width:46px;height:27px;flex:0 0 46px;
+  border:1px solid var(--rule);border-radius:99px;background:var(--ink-3);
+  transition:background .2s ease,border-color .2s ease;
+}
+.train-watch-switch:after{
+  content:'';position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;
+  background:var(--text-dim);transition:transform .2s ease,background .2s ease;
+}
+.train-watch-action[aria-pressed="true"] .train-watch-switch{
+  border-color:var(--live);background:rgb(var(--live-rgb) / .18);
+}
+.train-watch-action[aria-pressed="true"] .train-watch-switch:after{
+  transform:translateX(19px);background:var(--live);
+}
+
+/* ------------------------------------------------------------------
+   Crystal. Only the material changes: the meter becomes a capsule with
+   one specular pass, the spine loses its drawn borders for a shadow,
+   the switch takes iOS proportions and the sheet title centres. No
+   markup differs between the two themes.
+------------------------------------------------------------------ */
+body.theme-crystal .train-seatload-figure>b{color:var(--text);text-shadow:none;font-size:38px;letter-spacing:-.05em}
+body.theme-crystal .train-crowding-explain .train-forecast-status{border-color:transparent}
+body.theme-crystal .train-crowding-explain .train-forecast-status strong{
+  font-family:inherit;font-size:13px;font-weight:600;letter-spacing:-.01em;text-transform:none;
+}
+body.theme-crystal .train-seatload-track{
+  display:block;gap:0;height:18px;padding:0;border:0;border-radius:999px;overflow:hidden;
+  background:rgb(var(--rule-rgb) / .55);
+  box-shadow:inset 0 1px 2.5px rgb(var(--shadow-rgb) / .1),inset 0 0 0 .5px rgb(var(--shadow-rgb) / .07);
+}
+body.theme-crystal .train-seatload-seg{display:none}
+body.theme-crystal .train-seatload-zone{
+  display:block;position:absolute;top:0;bottom:0;right:0;background:rgb(var(--warn-rgb) / .13);
+}
+body.theme-crystal .train-seatload-fill{
+  display:block;position:absolute;top:0;bottom:0;left:0;border-radius:999px;background:var(--band);
+  animation:kerbside-seatload-fill .8s cubic-bezier(.32,.72,0,1);
+}
+/* One specular pass, kept on the control rather than on the data. */
+body.theme-crystal .train-seatload-fill:after{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgb(255 255 255 / .34),rgb(255 255 255 / 0) 58%);
+}
+@keyframes kerbside-seatload-fill{from{clip-path:inset(0 100% 0 0)}}
+body.theme-crystal .train-seatload-limit{top:0;bottom:0;width:1.5px;background:rgb(var(--shadow-rgb) / .3)}
+body.theme-crystal .train-seatload-axis>span{
+  font-family:inherit;font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;
+}
+body.theme-crystal .train-spine{border-color:transparent;box-shadow:0 1px 2px rgb(var(--shadow-rgb) / .07)}
+body.theme-crystal .train-spine-dot{border-color:var(--text-dim)}
+body.theme-crystal .train-spine-time{color:var(--text);text-shadow:none}
+body.theme-crystal .train-spine-tag{
+  border-color:transparent;background:var(--ink-3);color:var(--text-dim);
+  font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;
+}
+body.theme-crystal .train-spine-tag.is-accent{background:rgb(var(--led-rgb) / .1);color:var(--led);font-weight:600}
+body.theme-crystal .train-forecast-method>summary{
+  font-family:inherit;font-size:14px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--led);
+}
+body.theme-crystal .train-watch-switch{width:51px;height:31px;flex:0 0 51px;border-color:transparent;background:var(--rule)}
+body.theme-crystal .train-watch-switch:after{
+  width:27px;height:27px;background:#fff;box-shadow:0 2px 5px rgb(var(--shadow-rgb) / .28);
+}
+body.theme-crystal .train-watch-action[aria-pressed="true"] .train-watch-switch{background:var(--live)}
+body.theme-crystal .train-watch-action[aria-pressed="true"] .train-watch-switch:after{transform:translateX(20px);background:#fff}
+/* iOS centres a navigation title; the dot-matrix board left-aligns its
+   identity like a departure board. Same nodes, different alignment. */
+body.theme-crystal .kerbside-sheet-id{text-align:center}
+body.theme-crystal .kerbside-sheet-clock{justify-content:center}
+body.theme-crystal .kerbside-sheet-close{border-color:transparent;background:var(--ink-3);color:var(--led)}
+
+/* ---- Motion and transparency preferences ---- */
+@media (prefers-reduced-motion:reduce){
+  .train-seatload-seg.is-on{animation:none}
+  body.theme-crystal .train-seatload-fill{animation:none}
+  .train-watch-switch,.train-watch-switch:after{transition:none}
+}
+/* iOS 27 lets people dial transparency down; honour the same setting. */
+@media (prefers-reduced-transparency:reduce){
+  body.theme-crystal .train-seatload-fill:after{display:none}
+  body.theme-crystal .kerbside-sheet-chrome{
+    background:var(--ink-2);backdrop-filter:none;-webkit-backdrop-filter:none;
+  }
+}
+
+/* ---- Narrow phones ----
+   35 segments and a 3px gap stop fitting somewhere under 360px, so the
+   gap closes before the segments do. */
 @media (max-width:380px){
-  .train-forecast-reasons li{grid-template-columns:minmax(0,1fr);gap:4px}
-  .train-forecast-flag{justify-self:start}
+  .train-seatload-track{gap:2px}
+  .train-seatload-figure>b{font-size:30px}
+  body.theme-crystal .train-seatload-figure>b{font-size:33px}
+  .train-spine-stop h4{font-size:15.5px}
+  .train-spine{padding:12px 12px 4px}
+}
+@media (max-width:340px){
+  .train-seatload-track{gap:1px;padding:2px}
+  .train-forecast-reasons-key{gap:4px 12px}
 }

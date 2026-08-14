@@ -964,6 +964,49 @@ function normaliseCallingPointGroups(detail){
   return groups;
 }
 
+/* The last onward calling point is where the journey actually ends, and it
+   carries the only arrival time the departure board ever sees. */
+function finalCallingPoint(detail){
+  const groups = detail && detail.subsequentCallingPoints;
+  const points = [];
+  (Array.isArray(groups) ? groups : []).forEach(group=>{
+    const list = Array.isArray(group && group.callingPoint) ? group.callingPoint
+      : Array.isArray(group && group.callingPoints) ? group.callingPoints
+      : Array.isArray(group) ? group : [];
+    list.forEach(point=>{ if(point) points.push(point); });
+  });
+  return points.length ? points[points.length-1] : null;
+}
+function journeySpine(service,detail){
+  const sheet = window.__KERBSIDE_JOURNEY_SHEET__;
+  if(!sheet || typeof sheet.spine !== 'function') return '';
+  const last = finalCallingPoint(detail);
+  const departs = service.etd && service.etd !== 'On time' ? service.etd : service.std;
+  const arrives = last ? (last.et && last.et !== 'On time' ? last.et : last.st) : '';
+  const span = forwardGap(parseMinutes(service.std), parseMinutes(last && last.st));
+  const stops = (detail && detail.subsequentCallingPoints) ? countCallingPoints(detail.subsequentCallingPoints) : 0;
+  const tags = [
+    {label: service.platform ? `Platform ${service.platform}` : 'Platform TBC', accent: !!service.platform},
+    span != null && span > 0 ? {label: span >= 60 ? `${Math.floor(span/60)}h ${String(span%60).padStart(2,'0')}m` : `${span}m`} : null,
+    stops > 1 ? {label: `${stops - 1} stop${stops - 1 === 1 ? '' : 's'}`} : (stops === 1 ? {label:'Direct'} : null),
+    service.isCancelled ? {label:'Cancelled'} : (service.etd && service.etd !== 'On time' ? {label:'Delayed'} : {label:'On time'})
+  ];
+  return sheet.spine({
+    from:{name: state.station && state.station.name ? state.station.name : originText(service), note: service.operator || '', time: departs || service.std || ''},
+    to:{name: primaryDestination(service).name, note: service.isCancelled ? 'Service cancelled' : (last && last.et && last.et !== 'On time' ? `Expected ${last.et}` : 'Arrives on time'), time: arrives || ''},
+    tags
+  });
+}
+function countCallingPoints(groups){
+  let total = 0;
+  (Array.isArray(groups) ? groups : []).forEach(group=>{
+    const list = Array.isArray(group && group.callingPoint) ? group.callingPoint
+      : Array.isArray(group && group.callingPoints) ? group.callingPoints
+      : Array.isArray(group) ? group : [];
+    total += list.filter(Boolean).length;
+  });
+  return total;
+}
 function renderServiceDetail(service,index,forecast,detail){
   const points = normaliseCallingPointGroups(detail);
   const calling = points.length ? `<div class="train-calling"><div class="train-detail-title">Calling points</div>${points.map(point=>
@@ -983,10 +1026,9 @@ function renderServiceDetail(service,index,forecast,detail){
   const feedbackButtons = Object.keys(FEEDBACK_LABEL).map(level=>
     `<button type="button" data-crowd-feedback="${esc(level)}" data-service-id="${esc(key)}"${recorded?' disabled':''}>${esc(FEEDBACK_LABEL[level])}</button>`
   ).join('');
-  return `<div class="train-detail-grid">
-      <div><span>From</span><b>${esc(originText(service))}</b></div>
+  return `${journeySpine(service,detail)}
+    <div class="train-detail-grid">
       <div><span>Operator</span><b>${esc(service.operator || 'Unknown')}</b></div>
-      <div><span>Platform</span><b>${esc(service.platform || 'TBC')}</b></div>
       <div><span>Formation</span><b>${length ? `${length} coaches` : 'Not reported'}</b></div>
     </div>
     <div class="train-crowding-explain crowd-${esc(forecast.level)}">

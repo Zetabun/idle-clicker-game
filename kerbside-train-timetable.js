@@ -577,7 +577,11 @@ function journeyWatchStatus(service){
 function journeyWatchMarkup(service,key){
   const active=watchMatches(service),status=journeyWatchStatus(service),cls=`train-watch-card${active?' is-active':''}${active&&status.warn?' is-warn':''}`;
   const label=active?status.label:'Keep this journey together',note=active?`${status.note} Kerbside refreshes this watch while the app is open.`:'Pin this journey so its live status, connection margin and recovery option stay together while Kerbside is open.';
-  return `<div class="${cls}"><div><span>Journey Watch</span><strong>${esc(label)}</strong><small>${esc(note)}</small></div><button type="button" class="train-watch-action" data-watch-journey="${esc(key)}" aria-pressed="${active?'true':'false'}">${active?'Stop watching':'Watch journey'}</button></div>`;
+  /* The control is a switch in both themes now, so its label moves off screen
+     rather than out of the accessibility tree - aria-pressed still carries the
+     state, and the visible track is decorative. */
+  const action=active?'Stop watching':'Watch journey';
+  return `<div class="${cls}"><div><span>Journey Watch</span><strong>${esc(label)}</strong><small>${esc(note)}</small></div><button type="button" class="train-watch-action" data-watch-journey="${esc(key)}" aria-pressed="${active?'true':'false'}"><span class="train-visually-hidden">${esc(action)}</span><span class="train-watch-switch" aria-hidden="true"></span></button></div>`;
 }
 function toggleJourneyWatchByKey(key){
   const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const service=state.services[index];
@@ -816,6 +820,27 @@ function sourceNote(service){
   if(service.liveEvidence)return `Timetabled from the National Rail Darwin Timetable Files, matched to live Darwin data by ${service.liveVia==='rid'?'service ID':service.liveVia==='uid'?'schedule UID':service.liveVia==='headcode'?'headcode':'departure time'}.`;
   return 'Timetabled from the National Rail Darwin Timetable Files. Live expected times, platform changes, cancellations and formation are added automatically once this service enters the live Darwin window.';
 }
+/* Normalises a scheduled row into the shared spine shape. Returns '' when the
+   sheet module has not loaded, so the caller keeps its facts grid rather than
+   rendering nothing. */
+function journeySpineMarkup(service,{terminus,duration,status}){
+  const sheet=window.__KERBSIDE_JOURNEY_SHEET__;
+  if(!sheet||typeof sheet.spine!=='function')return '';
+  const from=displayName(service.from,'')||originText(service);
+  if(!from&&!terminus)return '';
+  const stops=Number(service.intermediateStops);
+  const tags=[
+    {label:service.platform?`Platform ${service.platform}`:'Platform TBC',accent:!!service.platform},
+    duration?{label:duration}:null,
+    Number.isFinite(stops)&&stops>0?{label:`${stops} stop${stops===1?'':'s'}`}:{label:'Direct'},
+    {label:status&&status.label?status.label:'Timetabled'}
+  ];
+  return sheet.spine({
+    from:{name:from,note:service.operator||'',time:service.etd&&service.etd!==service.std?service.etd:service.std||''},
+    to:{name:terminus||'',note:service.isCancelled?'Service cancelled':(service.arrival?'Scheduled arrival':'Arrival not timetabled'),time:service.arrival||''},
+    tags
+  });
+}
 function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,explains}){
   const key=serviceKey(service,index),open=!!state.openId&&state.openId===key,connection=service.journeyType==='connection';
   const explain=explainMarkup(forecastResult,mode);
@@ -844,9 +869,13 @@ function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,ex
   const rightLabel=connection?`${shownChange}m`:(formation?`${formation} coach${formation===1?'':'es'}`:(duration||'—'));
   const rightNote=connection?(Number.isFinite(service.liveConnectionMinutes)?'live change':'scheduled change'):(formation?'formation':(duration?'journey time':'duration unknown'));
   const crowdNote=service.isCancelled?'service cancelled':connection?crowdSourceText(forecastResult,true):crowdSourceText(forecastResult);
+  /* A direct service is a two-stop journey, which is exactly what the spine
+     draws - so it replaces the facts grid that used to restate the same pair
+     as four labelled cells. A connection has legs of its own below, and the
+     spine is not a multi-leg component, so that case keeps its grid. */
   const detailGrid=connection
     ?`<div class="train-detail-grid"><div><span>Depart</span><b>${esc(`${service.std||'—'} · ${displayName(service.legs&&service.legs[0]&&service.legs[0].from,'Departure')}`)}</b></div><div><span>Change</span><b>${esc(displayName(service.interchange,'Interchange'))}</b></div><div><span>Connection</span><b>${esc(connectionChangeText(service))}</b></div><div><span>Arrive</span><b>${esc(`${service.arrival||'—'} · ${destinationFallback}`)}</b></div></div>`
-    :`<div class="train-detail-grid"><div><span>From</span><b>${esc(originText(service))}</b></div><div><span>Operator</span><b>${esc(service.operator||'Unknown')}</b></div><div><span>Platform</span><b>${esc(service.platform||'TBC')}</b></div><div><span>${esc(arrivesLabel)}</span><b>${esc(service.arrival||'Not timetabled')}</b></div></div>`;
+    :journeySpineMarkup(service,{terminus,duration,status})||`<div class="train-detail-grid"><div><span>From</span><b>${esc(originText(service))}</b></div><div><span>Operator</span><b>${esc(service.operator||'Unknown')}</b></div><div><span>${esc(arrivesLabel)}</span><b>${esc(service.arrival||'Not timetabled')}</b></div></div>`;
   return `<article class="train-service train-scheduled-service${connection?' train-connection-service':''}${open?' open':''}" data-service-id="${esc(key)}">
       <button class="train-service-summary" type="button" data-scheduled-toggle="${esc(key)}" aria-expanded="${open?'true':'false'}" aria-controls="train-scheduled-detail-${esc(key)}">
         <span class="train-time"><b>${esc(service.std||'—')}</b><small class="train-status train-status-${esc(status.cls)}">${esc(status.label)}</small>${serviceDate?`<small class="train-service-date">${esc(serviceDate)}</small>`:''}</span>
