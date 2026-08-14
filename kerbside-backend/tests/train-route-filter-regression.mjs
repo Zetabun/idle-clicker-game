@@ -295,12 +295,26 @@ async function runMobile(browser){
   const liveRequestsBeforeFuture = departureRequestCount(diagnostics);
   await page.locator('#trainTravelDate').fill(TOMORROW);
   await page.locator('#trainTravelDate').dispatchEvent('change');
-  await page.waitForSelector('#trainBoard .train-future-card');
+  await page.waitForFunction(()=>document.getElementById('trainTravelDateMeta')?.dataset.mode === 'planning');
+  await page.waitForFunction(()=>{
+    const scheduled=document.getElementById('trainScheduledBoard');
+    return scheduled && !scheduled.hidden && (scheduled.querySelector('.train-scheduled-service') || scheduled.querySelector('.train-future-date'));
+  });
+  assert.equal(await page.locator('#trainBoard').isHidden(),true);
+  assert.equal(await page.locator('#trainScheduledBoard').isHidden(),false);
+  assert.equal(await page.locator('#trainDestinationQuery').inputValue(),'Bristol Temple Meads');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.travel-date.v1')),TOMORROW);
+  assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
+    `mobile future date must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
+
   await page.click('#trainJourneyGo');
-  await page.waitForFunction(()=>/Advance journey ready/i.test(document.getElementById('trainPlannerMessage')?.textContent||''));
-  assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture);
-  assert.match(await page.locator('#trainStationName').textContent(),/Birmingham New Street → Bristol Temple Meads/);
-  assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Choose a station/);
+  await page.waitForFunction(()=>{
+    const scheduled=document.getElementById('trainScheduledBoard');
+    return scheduled && !scheduled.hidden && (scheduled.querySelector('.train-scheduled-service') || scheduled.querySelector('.train-future-date'));
+  });
+  assert.doesNotMatch(await page.locator('#trainPlannerMessage').textContent(),/Live journey loaded/i);
+  assert.equal(departureRequestCount(diagnostics),liveRequestsBeforeFuture,
+    `mobile future Find trains must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
 
   assert.deepEqual(diagnostics.pageErrors,[],`Unexpected mobile page errors: ${diagnostics.pageErrors.join('\n')}`);
   await page.close();
