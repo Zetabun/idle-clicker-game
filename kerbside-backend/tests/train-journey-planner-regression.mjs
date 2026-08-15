@@ -102,8 +102,8 @@ try{
   assert.equal(await page.locator('#trainDestinationQuery').isDisabled(),false,'typing an origin must not disable destination entry');
   await page.fill('#trainDestinationQuery','Bristol Temple Meads');
   await page.click('#trainJourneyGo');
-  await page.waitForFunction(()=>document.querySelectorAll('.train-service').length===1,{timeout:10000});
-  await page.waitForFunction(()=>window.__KERBSIDE_EVENTS__?.state?.status==='ready'&&window.__KERBSIDE_EVENTS__.state.events.length===1,{timeout:10000});
+  await page.waitForFunction(()=>document.querySelectorAll('#trainBoard .train-service').length===1,undefined,{timeout:10000});
+  await page.waitForFunction(()=>window.__KERBSIDE_EVENTS__?.state?.status==='ready'&&window.__KERBSIDE_EVENTS__.state.events.length===1,undefined,{timeout:10000});
 
   assert.match(await page.locator('#trainBoard').textContent(),/Bristol Temple Meads/);
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Live train data unavailable/);

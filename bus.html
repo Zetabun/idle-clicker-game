@@ -822,7 +822,7 @@ body.theme-crystal .leaflet-bar a{
 }
 body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 </style>
-<link rel="stylesheet" href="kerbside-trains.css?v=0.9.14">
+<link rel="stylesheet" href="kerbside-trains.css?v=0.9.15">
 </head>
 <body>
 <div id="app">
@@ -1093,7 +1093,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.9.14';
+const APP_VERSION = '0.9.15';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1182,7 +1182,7 @@ const S = {
   feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null, scheduledHidden:0,
   timetable:null, fallbackTimetable:null, ttOutsideCoverage:false, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableUnknownServices:0, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
   lastWideFetch:0,
-  routeScanBusy:false, routeScanAbort:null, lastRouteScan:0, routeScanHistory:new Map(),
+  routeScanBusy:false, routeScanPending:false, routeScanAbort:null, lastRouteScan:0, routeScanHistory:new Map(),
   routeScanBoxes:0, routeScanPatterns:0, routeScanVehicles:0, routeScanError:''
 };
 
@@ -1194,6 +1194,9 @@ const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but n
 const LIVE_FUTURE_SKEW_MS = 2*60*1000; // tolerate producer clock skew, but never let it advance the app clock
 const LIVE_DUE_SECONDS = 45;
 const SCHEDULE_DUE_SECONDS = 45;
+// An untracked late bus must not disappear exactly as its scheduled minute
+// passes. Retain it briefly, explicitly as an overdue schedule rather than GPS.
+const SCHEDULE_UNVERIFIED_PAST_MS = 15*60*1000;
 // Operators normally begin publishing a journey at or just after its first
 // scheduled departure. Refresh once in that handover window so a newly started
 // service does not have to wait for the next general polling tick.
@@ -3135,15 +3138,18 @@ async function queuePattern(patternId){
   const prefix=String(patternId).toLowerCase().replace(/[^a-f0-9]/g,'').slice(0,2); if(prefix.length!==2) return;
   const region=S.timetableRegion, requestKey=patternLogicalKey(region,prefix), expectedBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
   if(Date.now()<(DATA_PATTERN_RETRY.get(requestKey)||0)||S.patternPending.has(requestKey)) return;
-  S.patternPending.add(requestKey);
+  S.patternPending.add(requestKey);let loaded=false;
   try{
     const data=await loadDataPatternShard(region,prefix);
     const currentBuild=String(DATA_MANIFEST&&DATA_MANIFEST.regions&&DATA_MANIFEST.regions[region]&&DATA_MANIFEST.regions[region].built||'');
     if(!S.timetable||S.timetableRegion!==region||!data||currentBuild!==expectedBuild) return;
     Object.assign(S.timetable.patterns||(S.timetable.patterns={}),data.patterns);
-    DATA_PATTERN_RETRY.delete(requestKey); PATTERN_CACHE.clear(); render();
+    DATA_PATTERN_RETRY.delete(requestKey); PATTERN_CACHE.clear(); loaded=true; render();
   }catch(e){ DATA_PATTERN_RETRY.set(requestKey,Date.now()+DATA_PATTERN_RETRY_MS); }
-  finally{S.patternPending.delete(requestKey);if(boardRefreshCanRender()) render();}
+  finally{
+    S.patternPending.delete(requestKey);if(boardRefreshCanRender()) render();
+    if(loaded) requestRouteScanAfterPatternLoad();
+  }
 }
 function timetablePatternId(journey,preferredPatternId){
   const tt=S.timetable;if(!tt||!tt.tripPatterns) return '';
@@ -3678,7 +3684,7 @@ function selectStop(s,manual){
   const changed=!S.stop||String(S.stop.id)!==String(s.id); S.stop=s;
   if(changed){
     if(S.routeScanAbort) S.routeScanAbort.abort();
-    S.routeScanAbort=null; S.routeScanBusy=false; S.lastRouteScan=0;
+    S.routeScanAbort=null; S.routeScanBusy=false; S.routeScanPending=false; S.lastRouteScan=0;
     S.routeScanBoxes=0; S.routeScanPatterns=0; S.routeScanVehicles=0; S.routeScanError=''; S.routeScanHistory.clear();
     for(const vehicle of S.vehicles.values()){ delete vehicle.lastShownSnapshot; delete vehicle.lastShownStopId; delete vehicle.lastShownAt; delete vehicle.lastShownArrivalAt; delete vehicle.lastShownBoardDir; delete vehicle.lastShownDestFilter; delete vehicle.corridorTrip; delete vehicle.corridorRemaining; delete vehicle.corridorConfirmedAt; delete vehicle.inferredJourney; delete vehicle.inferredTrip; delete vehicle.inferredPattern; delete vehicle.inferredAt; delete vehicle.inferenceStopId; delete vehicle.inferenceGpsTs; delete vehicle.progressIdentityBlocked; clearRouteContinuity(vehicle); vehicle.corridorTracked=false; }
     S.destFilter=null; S.selected=null; S.manualStop=manual===true;
@@ -3943,6 +3949,16 @@ function applyMatchedIdentities(vehicles,matches,now=Date.now()){
     applied++;
   }
   return applied;
+}
+function applyMatchedIdentitiesToCurrentVehicles(observed,matches,now=Date.now()){
+  const current=[];
+  for(const source of Array.isArray(observed)?observed:[]){
+    const stored=source&&S.vehicles.get(source.id);
+    // A late identity belongs only to the SIRI observation that requested it.
+    // Never attach it to a newer report or a vehicle reused for another trip.
+    if(stored&&Number(stored.ts)===Number(source.ts)) current.push(stored);
+  }
+  return applyMatchedIdentities(current,matches,now);
 }
 function routeScanMatchKey(item){
   return String(item&&item.trip||'')+'|'+String(item&&item.stopSequence==null?'':item.stopSequence);
@@ -4326,7 +4342,7 @@ function parseLivePayloads(items,now){
   return {vehicles:[...byId.values()],stale,unknownAge,malformed,identityCollisions};
 }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,physicalVehicleKey,parseLivePayloads,fetchTimed,fetchLive,fetchMatchedBatch,matchedIdentityWithinBudget,applyMatchedIdentities,retainMatchedIdentity,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),liveVehicleIdentity,physicalVehicleKey,parseLivePayloads,fetchTimed,fetchLive,fetchMatchedBatch,matchedIdentityWithinBudget,applyMatchedIdentities,applyMatchedIdentitiesToCurrentVehicles,retainMatchedIdentity,ingest,relevant,liveState:S,pointAlongPattern,vehicleJourneyRef,routeScanPlans,requestRouteScanAfterPatternLoad,runPendingRouteScan,rememberRouteScanVehicle,inferredRouteScanMatch,matchRouteScanVehicle,pollRouteCorridor,journeyProgress,journeyProgressHtml,timetablePatternLoadState,nationalStopRegionPlan,recentMovementPoints,movementTrend,gpsMovementDirection,inferDirection,approachStrength,mapVehicleVisible,boardRefreshCanRender,ignoreMapContextMenu,routePatternMovementFit,chooseInferredJourneyCandidate,inferVehicleJourneyPattern,inferredRouteEvidence,visualRoutePosition,visualVehiclePosition,journeyRouteContext,shouldClearJourneyRoute,renderSelectedJourney,clearJourneyRoute,journeyRouteLayerSize:()=>routeLayer.getLayers().length,
     journeyRouteLinesForTest:()=>routeLayer.getLayers().filter(l=>typeof l.getLatLngs==='function')
       .map(l=>({points:l.getLatLngs().length,weight:l.options.weight,dash:l.options.dashArray||null,colour:l.options.color}))};
 }
@@ -4369,7 +4385,9 @@ async function fetchLive(signal){
   }
   const wide=Date.now()-S.lastWideFetch>=FAR_FETCH_INTERVAL_MS;
   if(wide) S.lastWideFetch=Date.now();
-  const matchedPromise=fetchMatchedBatch(signal).catch(()=>[]);
+  const matchedLocationRun=S.locationRun, matchedStopId=String(S.stop&&S.stop.id||'');
+  let matchedSettled=false;
+  const matchedPromise=fetchMatchedBatch(signal).catch(()=>[]).then(matches=>{matchedSettled=true;return matches;});
   let batch=await fetchLiveBatch(wide,signal);
   // Expanded scans are optional discovery work. Any missing split box is
   // supplemented with the ordinary nearby box, retaining successful distant
@@ -4411,18 +4429,43 @@ async function fetchLive(signal){
   }
   const matched=await matchedIdentityWithinBudget(matchedPromise);
   applyMatchedIdentities(out,matched,Date.now());
+  // The auxiliary identity endpoint can be slower than SIRI on a cold cache.
+  // Keep the fast board deadline, but consume a useful late result instead of
+  // throwing it away and making the passenger wait for the next 15-second poll.
+  if(!matchedSettled){
+    void matchedPromise.then(late=>{
+      if(!late.length||(signal&&signal.aborted)||S.locationRun!==matchedLocationRun
+        ||String(S.stop&&S.stop.id||'')!==matchedStopId) return;
+      const applied=applyMatchedIdentitiesToCurrentVehicles(out,late,Date.now());
+      if(!applied) return;
+      learnDests();learnServing();
+      if(boardRefreshCanRender()) render(); else renderLiveDiagnostics();
+    }).catch(()=>{});
+  }
   return out;
 }
 
+function runPendingRouteScan(){
+  if(!S.routeScanPending||S.routeScanBusy||S.demo||!S.origin||!S.stop||!S.ttStop) return;
+  S.routeScanPending=false;S.lastRouteScan=0;void pollRouteCorridor();
+}
+function requestRouteScanAfterPatternLoad(){
+  if(S.demo||!S.origin||!S.stop||!S.ttStop) return false;
+  S.routeScanPending=true;S.lastRouteScan=0;
+  setTimeout(runPendingRouteScan,0);
+  return true;
+}
 async function pollRouteCorridor(){
   if(S.demo||!S.origin||!S.stop||!S.ttStop||S.routeScanBusy||Date.now()-S.lastRouteScan<ROUTE_SCAN_INTERVAL_MS) return [];
   const started=Date.now(), stopId=String(S.stop.id), timetableRun=S.timetableRun;
-  S.lastRouteScan=started;
   const plans=routeScanPlans(started);
   S.routeScanBoxes=plans.length;
   S.routeScanPatterns=new Set(plans.flatMap(plan=>plan.matches.map(match=>match.pattern.id))).size;
   S.routeScanVehicles=0; S.routeScanError='';
-  if(!plans.length){ renderLiveDiagnostics(); return []; }
+  // Missing pattern shards are queued by routeScanPlans(). Do not consume the
+  // one-minute scan interval before those shards have supplied any work.
+  if(!plans.length){ S.lastRouteScan=0;renderLiveDiagnostics();return []; }
+  S.lastRouteScan=started;
   const urls=feedUrlsForBoxes(plans.map(plan=>plan.bbox));
   if(urls.length!==plans.length){ S.routeScanError='Upstream route scan is not configured'; renderLiveDiagnostics(); return []; }
   const ctl=new AbortController(); S.routeScanAbort=ctl; S.routeScanBusy=true; renderLiveDiagnostics();
@@ -4457,6 +4500,7 @@ async function pollRouteCorridor(){
   }finally{
     if(S.routeScanAbort===ctl) S.routeScanAbort=null;
     S.routeScanBusy=false; renderLiveDiagnostics();
+    if(S.routeScanPending) setTimeout(runPendingRouteScan,0);
   }
 }
 
@@ -5725,7 +5769,7 @@ function newLiveDiagnostics(gate){
   return {
     gate:!!gate,received:S.vehicles.size,recent:0,nearby:0,route:0,direction:0,
     approaching:0,confidence:0,recovered:0,shown:0,
-    rejected:{stale:0,range:0,passed:0,route:0,exactStop:0,destination:0,direction:0,away:0,confidence:0,limit:0},
+    rejected:{stale:0,range:0,passed:0,route:0,stopProof:0,exactStop:0,destination:0,direction:0,away:0,confidence:0,limit:0},
     vehicleRejections:new Map()
   };
 }
@@ -6058,13 +6102,13 @@ function collect(gate,diagnostics){
     }
     if(exactProof.required&&!exactProof.serves&&!retainedExactProof){
       clearRouteContinuity(v);
-      rejectLive(diagnostics,'exactStop',v); continue;
+      rejectLive(diagnostics,exactProof.known?'exactStop':'stopProof',v); continue;
     }
     if(evidence.score>=2) rememberRouteContinuity(v,evidence,now,exactProof);
     else evidence=routeEvidenceWithContinuity(v,evidence,now);
     if(evidence.routeContinuity&&!hasExactStopRetentionProof(v,evidence,inference,now)){
       clearRouteContinuity(v);
-      rejectLive(diagnostics,'exactStop',v); continue;
+      rejectLive(diagnostics,'stopProof',v); continue;
     }
     // An exact timetable journey that is due to call here outranks a
     // single compass bearing or town-centre movement inference. Measured
@@ -6199,7 +6243,7 @@ function renderLiveDiagnostics(){
     ['route evidence',d.route],['direction',d.direction],['approaching',d.approaching],
     ['confidence',d.confidence],['retained',d.recovered],['shown',d.shown]
   ];
-  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',exactStop:'other stop side',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
+  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',stopProof:'exact stop unverified',exactStop:'other stop side',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
   const rejected=Object.entries(d.rejected||{}).filter(([,value])=>value>0)
     .map(([reason,value])=>value+' '+(rejectionLabels[reason]||reason)).join(' · ');
   const upstreamHidden=(Number(S.feedStale)||0)+(Number(S.feedUnknownAge)||0);
@@ -6407,6 +6451,7 @@ function scheduleCandidateReason(v,now){
     range:'matching GPS is outside tracking range',
     passed:'matching bus has already passed this stop',
     route:'matching GPS route could not be verified',
+    stopProof:'matching GPS is awaiting exact-stop verification',
     exactStop:'matching live journey serves the other stop side',
     destination:'matching GPS destination was filtered',
     direction:'matching GPS is for the other direction',
@@ -6531,7 +6576,7 @@ function scheduledBoardRows(liveRows){
   const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set(), evidenceCache=new Map();
   liveRows.forEach(r=>{ for(const s of claimedSchedulesFor(r)) claimed.add(scheduleKey(s)); });
   const eligible=timetableRows(new Date(now)).filter(r=>{
-    if(r.at<now || r.at>end) return false;
+    if(r.at<now-SCHEDULE_UNVERIFIED_PAST_MS || r.at>end) return false;
     if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
     const rowDir=scheduledJourneyDirection(r);
     if(S.dir!=='all' && rowDir!=='unknown' && rowDir!==S.dir) return false;
@@ -6540,8 +6585,11 @@ function scheduledBoardRows(liveRows){
     seen.add(key); return true;
   }).sort((a,b)=>a.at-b.at);
   S.scheduledHidden=Math.max(0,eligible.length-MAX_SCHEDULED_ROWS);
-  return eligible.slice(0,MAX_SCHEDULED_ROWS)
-    .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule,liveRows,evidenceCache)}));
+  return eligible.slice(0,MAX_SCHEDULED_ROWS).map(schedule=>{
+    const overdue=schedule.at<now, reason=scheduleLiveReason(schedule,liveRows,evidenceCache);
+    return {kind:'scheduled',schedule,overdue,secs:Math.max(0,(schedule.at-now)/1000),
+      liveReason:overdue?'scheduled time passed · '+reason:reason};
+  });
 }
 function dueWithin(seconds,limit){
   const value=Number(seconds);
@@ -6556,13 +6604,13 @@ function liveTimingLabel(r){
   return diffSecs>0?mins+' min late':mins+' min early';
 }
 function renderScheduledRow(r){
-  const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), due=dueWithin(r.secs,SCHEDULE_DUE_SECONDS), source=timetableSourceLabel();
+  const s=r.schedule, mins=Math.max(0,Math.round(r.secs/60)), overdue=!!r.overdue, due=!overdue&&dueWithin(r.secs,SCHEDULE_DUE_SECONDS), source=timetableSourceLabel();
   const reason=r.liveReason||'no fresh GPS match';
   return '<div class="dep schedule-only" aria-label="Scheduled '+esc(s.line)+' to '+esc(s.head||'destination unknown')+' · '+esc(reason)+'">'
     +'<span class="route">'+esc(s.line)+'</span>'
     +'<span style="min-width:0"><span class="dest">'+esc(s.head||'Destination unknown')+'</span><span class="deprow2">'
     +'<span class="chip schedule-source">'+esc(source)+'</span><span class="chip">'+esc(reason)+'</span><span class="chip">'+esc(formatClock(s.at))+'</span></span></span>'
-    +'<span class="eta scheduled">'+(due?'due':mins)+'<small>'+(due?'scheduled':'min')+'</small></span></div>';
+    +'<span class="eta scheduled">'+(overdue?'past':due?'due':mins)+'<small>'+(overdue||due?'scheduled':'min')+'</small></span></div>';
 }
 
 
@@ -7557,6 +7605,7 @@ function stopPolling(){
   clearServiceStartRefresh();
   if(S.pollAbort) S.pollAbort.abort(); if(S.routeScanAbort) S.routeScanAbort.abort();
   S.timer=S.tick=S.motionTimer=null;S.pollAbort=null;S.routeScanAbort=null;S.routeScanBusy=false;S.feedRefreshing=false;
+  S.routeScanPending=false;
 }
 function boardRefreshCanRender(){return !S.feedRefreshing;}
 let lastPoll=Date.now();
@@ -7956,20 +8005,20 @@ if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='man
 window.addEventListener('resize',()=>map.invalidateSize());
 })();
 </script>
-<script src="kerbside-trains.js?v=0.9.14"></script>
-<script src="kerbside-train-routes.js?v=0.9.14"></script>
-<script src="kerbside-train-date.js?v=0.9.14"></script>
-<script src="kerbside-journey-planner-ui.js?v=0.9.14"></script>
-<script src="kerbside-train-live-window.js?v=0.9.14"></script>
-<script src="kerbside-train-live-overlay.js?v=0.9.14"></script>
-<script src="kerbside-rail-timebands.js?v=0.9.14"></script>
-<script src="kerbside-rail-demand-v4.js?v=0.9.14"></script>
-<script src="kerbside-rail-calibration.js?v=0.9.14"></script>
-<script src="kerbside-train-events.js?v=0.9.14"></script>
-<script src="kerbside-train-loading.js?v=0.9.14"></script>
-<script src="kerbside-train-loading-guidance.js?v=0.9.14"></script>
-<script src="kerbside-train-forecast-v4.js?v=0.9.14"></script>
-<script src="kerbside-journey-sheet.js?v=0.9.14"></script>
-<script src="kerbside-status.js?v=0.9.14"></script>
+<script src="kerbside-trains.js?v=0.9.15"></script>
+<script src="kerbside-train-routes.js?v=0.9.15"></script>
+<script src="kerbside-train-date.js?v=0.9.15"></script>
+<script src="kerbside-journey-planner-ui.js?v=0.9.15"></script>
+<script src="kerbside-train-live-window.js?v=0.9.15"></script>
+<script src="kerbside-train-live-overlay.js?v=0.9.15"></script>
+<script src="kerbside-rail-timebands.js?v=0.9.15"></script>
+<script src="kerbside-rail-demand-v4.js?v=0.9.15"></script>
+<script src="kerbside-rail-calibration.js?v=0.9.15"></script>
+<script src="kerbside-train-events.js?v=0.9.15"></script>
+<script src="kerbside-train-loading.js?v=0.9.15"></script>
+<script src="kerbside-train-loading-guidance.js?v=0.9.15"></script>
+<script src="kerbside-train-forecast-v4.js?v=0.9.15"></script>
+<script src="kerbside-journey-sheet.js?v=0.9.15"></script>
+<script src="kerbside-status.js?v=0.9.15"></script>
 </body>
 </html>

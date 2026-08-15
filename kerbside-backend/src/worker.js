@@ -68,7 +68,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.9.14',
+    version: '0.9.15',
     bods: Boolean(env.BODS_KEY),
     matchedGtfsRt: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
@@ -269,18 +269,16 @@ async function matchedFeed(request, env, ctx) {
   }
 
   const refreshPromise = sharedRefreshMatchedCache(request, env, bbox, cache, cacheKey);
-  if (cached) {
-    const refreshed = await Promise.race([
-      refreshPromise,
-      sleep(configuredCacheWaitMs(env)).then(() => null)
-    ]);
-    if (refreshed && refreshed.response) return refreshed.response;
-    if (!refreshed) ctx.waitUntil(refreshPromise.catch(() => {}));
-    if (cacheAge <= MATCHED_STALE_CACHE_MS) return cachedMatchedResponse(cached, request, env, true, cacheAge);
-  } else {
-    const refreshed = await refreshPromise;
-    if (refreshed.response) return refreshed.response;
+  // Matched data is an identity aid, not a position source. A still-bounded
+  // cached identity is more useful immediately than a fresher identity that
+  // arrives after the browser's matching deadline, so refresh it in the
+  // background and return it without the live-feed cache wait.
+  if (cached && cacheAge <= MATCHED_STALE_CACHE_MS) {
+    ctx.waitUntil(refreshPromise.catch(() => {}));
+    return cachedMatchedResponse(cached, request, env, true, cacheAge);
   }
+  const refreshed = await refreshPromise;
+  if (refreshed.response) return refreshed.response;
 
   return json({ error: 'Matched BODS GTFS-RT feed is temporarily unavailable', retryable: true }, 502, request, env, {
     'Retry-After': '15',

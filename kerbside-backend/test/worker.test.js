@@ -20,6 +20,16 @@ function cachedResponse(body, ageMs) {
   });
 }
 
+function cachedMatchedResponse(body, ageMs) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Kerbside-Cached-At': String(Date.now() - ageMs)
+    }
+  });
+}
+
 function installRuntime(cached, upstream) {
   const originalFetch = globalThis.fetch;
   const originalCaches = globalThis.caches;
@@ -123,6 +133,48 @@ test('matched endpoint exposes compact GTFS trip identity without replacing SIRI
   }
 });
 
+test('matched endpoint returns bounded stale identity immediately while refreshing', async () => {
+  resetWorkerStateForTests();
+  const FeedMessage = GtfsRealtimeBindings.transit_realtime.FeedMessage;
+  const encoded = FeedMessage.encode(FeedMessage.create({
+    header: { gtfsRealtimeVersion: '2.0' }, entity: []
+  })).finish();
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const runtime = installRuntime(cachedMatchedResponse({ vehicles: [{
+    entityId: 'cached-entity', vehicleId: 'BUS-CACHED', tripId: 'CACHED-TRIP',
+    routeId: 'R-CACHED', lat: 52.5, lon: -2.1, timestamp: Date.now()
+  }] }, 30000), async () => {
+    await gate;
+    return new Response(encoded, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } });
+  });
+  const waits = [];
+  try {
+    const pending = routeRequest(
+      new Request(`https://example.test/matched?bbox=${encodeURIComponent(BBOX)}`),
+      { BODS_KEY: 'present' },
+      { waitUntil(promise) { waits.push(promise); } }
+    );
+    const response = await Promise.race([
+      pending,
+      new Promise(resolve => setTimeout(() => resolve('timed-out'), 250))
+    ]);
+    assert.notEqual(response, 'timed-out', 'bounded cached identity waited for the upstream refresh');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Kerbside-Cache'), 'stale');
+    assert.equal((await response.json()).vehicles[0].tripId, 'CACHED-TRIP');
+    assert.equal(waits.length, 1);
+    release();
+    await waits[0];
+    assert.equal(runtime.state.fetches, 1);
+    assert.equal(runtime.state.puts.length, 1);
+  } finally {
+    release();
+    runtime.restore();
+    resetWorkerStateForTests();
+  }
+});
+
 test('compact matched feed refuses stale identities', () => {
   const staleSeconds = Math.floor((Date.now() - 6 * 60 * 1000) / 1000);
   const feed = { entity: [{ vehicle: {
@@ -146,7 +198,7 @@ test('health describes the bounded cache-first Worker', async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.role, 'live-only');
-  assert.equal(body.version, '0.9.14');
+  assert.equal(body.version, '0.9.15');
   assert.equal(body.bods, true);
   assert.equal(body.upstreamTimeoutMs, 4000);
   assert.equal(body.upstreamAttempts, 2);

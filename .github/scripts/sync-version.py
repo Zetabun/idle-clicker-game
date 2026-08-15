@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Propagate the Kerbside version from VERSION into every file that repeats it.
 
-The version lives in five places that must agree: the app constant, the Worker's
-health payload, the backend package manifest, the Worker health test and two
-assertions in the browser regression. Nothing enforced that, and it drifted more
+The version lives in the app, status module, Worker, package manifest and their
+release assertions. Nothing enforced all of them, and it drifted more
 than once — 0.6.70 shipped with the Worker still answering 0.6.69, and before
 that the Worker sat on 0.6.60 while the app had reached 0.6.67. Production
 verification compares the two, so each drift failed the smoke test after release
@@ -26,6 +25,7 @@ VERSION_FILE = Path('VERSION')
 # version-like string elsewhere in the file is never rewritten by accident.
 TARGETS = [
     ('bus.html', r"(const APP_VERSION = ')(\d+\.\d+\.\d+)(';)"),
+    ('kerbside-status.js', r"(const VERSION=')(\d+\.\d+\.\d+)(';)"),
     ('kerbside-backend/src/worker.js', r"(    version: ')(\d+\.\d+\.\d+)(',)"),
     ('kerbside-backend/package.json', r'(  "version": ")(\d+\.\d+\.\d+)(",)'),
     ('kerbside-backend/test/worker.test.js', r"(assert\.equal\(body\.version, ')(\d+\.\d+\.\d+)('\);)"),

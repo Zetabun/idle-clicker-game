@@ -181,7 +181,7 @@ try{
       };
       state.vehicles=new Map([[routeOnlyVehicle.id,routeOnlyVehicle]]);
       const routeOnlyShown=api.relevant().some(row=>row.v&&row.v.id===routeOnlyVehicle.id);
-      const routeOnlyExactStopRejected=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.exactStop||0);
+      const routeOnlyStopProofRejected=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.stopProof||0);
 
       // An exact realtime trip must not be shown before its route-pattern shard
       // proves the selected kerb. If the shard then proves only the nearby
@@ -204,6 +204,7 @@ try{
       };
       state.vehicles=new Map([[flickerVehicle.id,flickerVehicle]]);
       const flickerBefore=api.relevant().some(row=>row.v&&row.v.id===flickerVehicle.id);
+      const flickerBeforeUnverified=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.stopProof||0);
       state.timetable.patterns[flickerPatternId]={
         p:[[52.4600,-1.9600],[52.4520,-1.9600],[52.4480,-1.9600],[52.4440,-1.9600]],
         s:[
@@ -214,6 +215,7 @@ try{
       };
       const flickerAfter=api.relevant().some(row=>row.v&&row.v.id===flickerVehicle.id);
       const flickerPassed=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.passed||0);
+      const flickerAfterWrongSide=Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.exactStop||0);
 
       // Exact national stop identity outranks a stale/incorrect realtime trip.
       // The candidate pattern contains only the opposite Brightstone kerb and
@@ -290,6 +292,18 @@ try{
       const budgetResult=await api.matchedIdentityWithinBudget(new Promise(()=>{}),20);
       const budgetElapsed=performance.now()-budgetStarted;
 
+      // A matched response that misses the initial display budget must still be
+      // allowed to enrich the exact SIRI observation already stored. It must
+      // never be copied onto a newer observation of the same vehicle.
+      const lateStored={...baseVehicle,id:'late-identity',vehicleRef:'BUS-LATE',vehicleUniqueId:'',journey:'OPAQUE',matchedTrip:'',sourceTs:now-1000,ts:now-1000,cadence:20};
+      const lateObserved={...lateStored};
+      const lateMatch={entityId:'entity-late',vehicleId:'BUS-LATE',tripId:'OUTBOUND',routeId:'R61',lat:lateStored.lat,lon:lateStored.lon,timestamp:now-1000};
+      state.vehicles=new Map([[lateStored.id,lateStored]]);
+      const lateApplied=api.applyMatchedIdentitiesToCurrentVehicles([lateObserved],[lateMatch],now);
+      const lateTrip=String(state.vehicles.get(lateStored.id).matchedTrip||'');
+      state.vehicles.set(lateStored.id,{...lateStored,matchedTrip:'',ts:now,sourceTs:now});
+      const supersededLateApplied=api.applyMatchedIdentitiesToCurrentVehicles([lateObserved],[lateMatch],now);
+
       const blockedVehicle={journey:'OUTBOUND',corridorTrip:''};
       api.setVehicleProgressIdentity(blockedVehicle,{journeyDestinationConflict:true,matchedTrip:''},null,null);
       const blockedProgress={blocked:blockedVehicle.progressIdentityBlocked,trip:blockedVehicle.progressTrip,pattern:blockedVehicle.progressPattern};
@@ -341,8 +355,8 @@ try{
           inferred:!!aliasScanInference,patternOnly:!!(aliasScanInference&&aliasScanInference.patternOnly),
           corridorTrip:String(aliasScanVehicle&&aliasScanVehicle.corridorTrip||'')
         },
-        routeOnly:{shown:routeOnlyShown,exactStopRejected:routeOnlyExactStopRejected},
-        patternLoadFlicker:{before:flickerBefore,after:flickerAfter,passed:flickerPassed},
+        routeOnly:{shown:routeOnlyShown,stopProofRejected:routeOnlyStopProofRejected},
+        patternLoadFlicker:{before:flickerBefore,beforeUnverified:flickerBeforeUnverified,after:flickerAfter,afterWrongSide:flickerAfterWrongSide,passed:flickerPassed},
         wrongSide,
         exactStopCheck:{authoritative:!!exactStopCheck.authoritative,known:!!exactStopCheck.known,serves:!!exactStopCheck.serves,index:Number(exactStopCheck.index)},
         retentionProof,
@@ -351,6 +365,7 @@ try{
         sticky:{retained:stickyRetained,trip:stickyIncoming.matchedTrip,sticky:!!stickyIncoming.matchedSticky,lag:Number(stickyIncoming.matchedLagMs),expired:stickyExpired,expiredTrip:String(expiredIncoming.matchedTrip||'')},
         uniquePhysicalKey,
         budget:{empty:Array.isArray(budgetResult)&&budgetResult.length===0,elapsed:budgetElapsed},
+        lateIdentity:{applied:lateApplied,trip:lateTrip,supersededApplied:supersededLateApplied},
         blockedProgress,
         inferredProgress,
         matchedProgress,
@@ -389,8 +404,8 @@ try{
     inferred:true,patternOnly:true,patternId:'brightstone-61-inbound',score:4,journeyMatch:false,matchedTrip:''
   },'GPS movement on the ordered 61 pattern must recover a Digbeth versus Moor St Queensway naming mismatch without inventing a scheduled trip identity');
   assert.deepEqual(result.routeScanAlias,{inferred:true,patternOnly:true,corridorTrip:'BRIGHTSTONE-INBOUND'},'the upstream route scan must apply the same destination-alias rule when the exact selected stop is present in the ordered pattern');
-  assert.deepEqual(result.routeOnly,{shown:false,exactStopRejected:1},'same-route GPS without exact trip/pattern proof must not choose a side of the road');
-  assert.deepEqual(result.patternLoadFlicker,{before:false,after:false,passed:0},'an authoritative board must wait for exact selected-stop proof and keep an opposite-kerb trip excluded');
+  assert.deepEqual(result.routeOnly,{shown:false,stopProofRejected:1},'same-route GPS without exact trip/pattern proof must be withheld as unverified, not misreported as the other side');
+  assert.deepEqual(result.patternLoadFlicker,{before:false,beforeUnverified:1,after:false,afterWrongSide:1,passed:0},'a loading pattern must be labelled unverified before a loaded opposite-kerb pattern becomes a confirmed other-side rejection');
   assert.deepEqual(result.wrongSide,{shown:false,exactStopRejected:1,retained:0},'an exact opposite-kerb contradiction must hard-drop the live bus and must not be rescued by MATCH RETAINED');
   assert.deepEqual(result.exactStopCheck,{authoritative:true,known:true,serves:false,index:-1},'authoritative exact-stop evidence must distinguish the opposite Brightstone Road ATCO code');
   assert.deepEqual(result.retentionProof,{wrongSideServes:false,wrongSideSeed:false,wrongSideHas:false,rightSideServes:true,rightSideSeed:true,rightSideHas:true,nextServiceHas:false},'retention may be seeded only by proof for the exact stop and same service instance');
@@ -400,6 +415,7 @@ try{
   assert.equal(result.uniquePhysicalKey,'OPTEST|vehicle-unique|UNIQUE-9','VehicleUniqueId must identify a physical bus when VehicleRef is absent');
   assert.equal(result.budget.empty,true,'a slow matched feed should degrade to no auxiliary identities');
   assert.ok(result.budget.elapsed<500,'the matched-feed wait helper should respect its bounded deadline');
+  assert.deepEqual(result.lateIdentity,{applied:1,trip:'OUTBOUND',supersededApplied:0},'a late identity must enrich only the exact stored SIRI observation that requested it');
 
   assert.deepEqual(result.blockedProgress,{blocked:true,trip:'',pattern:''},'conflicting identity with no safe geometry must withhold journey progress');
   assert.deepEqual(result.inferredProgress,{blocked:false,trip:'',pattern:'SAFE-INBOUND-PATTERN'},'movement-inferred pattern may restore progress without manufacturing a trip identity');

@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.9\.14'/);
+assert.match(busSource, /const APP_VERSION = '0\.9\.15'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -142,6 +142,8 @@ assert.match(busSource, /const MATCHED_IDENTITY_WAIT_MS = 1200/);
 assert.match(busSource, /const MATCHED_HANDOVER_MAX_LAG_MS = 45\*1000/);
 assert.match(busSource, /function matchedIdentityWithinBudget\(promise,waitMs=MATCHED_IDENTITY_WAIT_MS\)/);
 assert.match(busSource, /function applyMatchedIdentities\(vehicles,matches,now=Date\.now\(\)\)/);
+assert.match(busSource, /function applyMatchedIdentitiesToCurrentVehicles\(observed,matches,now=Date\.now\(\)\)/);
+assert.match(busSource, /if\(!matchedSettled\)\{/);
 assert.match(busSource, /function retainMatchedIdentity\(prev,v,now=Date\.now\(\)\)/);
 assert.match(busSource, /evidence\.matchedRealtime\?'BODS matched journey'/);
 assert.match(busSource, /const GPS_LIVE_DISPLAY_SECONDS = 120/);
@@ -152,7 +154,8 @@ assert.ok(busSource.includes("return 'no matching live bus yet';"));
 assert.doesNotMatch(busSource, /no bus is working this departure yet/);
 assert.match(busSource, /const LIVE_DUE_SECONDS = 45/);
 assert.match(busSource, /const SCHEDULE_DUE_SECONDS = 45/);
-assert.match(busSource, /if\(r\.at<now \|\| r\.at>end\) return false;/);
+assert.match(busSource, /const SCHEDULE_UNVERIFIED_PAST_MS = 15\*60\*1000/);
+assert.match(busSource, /if\(r\.at<now-SCHEDULE_UNVERIFIED_PAST_MS \|\| r\.at>end\) return false;/);
 assert.match(busSource, /sourceTs,ts,timestampKnown:true/);
 assert.match(busSource, /const ts=Math\.min\(sourceTs,observedAt\)/);
 assert.match(busSource, /feedRefreshing:false/);
@@ -350,7 +353,8 @@ assert.match(busSource, /no matching live bus yet/);
    listed against other departures, or a route running normally reports a
    matching failure on every later row. */
 assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
-assert.match(busSource, /liveReason:scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
+assert.match(busSource, /reason=scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
+assert.match(busSource, /liveReason:overdue\?'scheduled time passed/);
 assert.match(busSource, /function journeyRefComparable\(ref\)/);
 assert.match(busSource, /already listed/);
 assert.match(busSource, /match retained/);
@@ -607,7 +611,7 @@ assert.match(busSource, /cache:force\?'reload':'no-cache'/);
 assert.doesNotMatch(busSource, /cache:force\?'reload':'force-cache'/);
 assert.match(busSource, /if\(journey\) return owner\+'\|journey\|'\+journey/);
 assert.match(busSource, /if\(vehicle\) return owner\+'\|vehicle\|'\+vehicle/);
-assert.match(busSource, /fetchLive,fetchMatchedBatch,matchedIdentityWithinBudget,applyMatchedIdentities,retainMatchedIdentity,ingest,relevant,liveState:S/);
+assert.match(busSource, /fetchLive,fetchMatchedBatch,matchedIdentityWithinBudget,applyMatchedIdentities,applyMatchedIdentitiesToCurrentVehicles,retainMatchedIdentity,ingest,relevant,liveState:S/);
 assert.doesNotMatch(busSource, /if\(vehicle\) return \(operator\?operator\+'\|':''\)\+'vehicle\|'\+vehicle;\n  if\(journey\)/);
 assert.match(busSource, /const DATA_SNAPSHOT_CACHE = 'kerbside-timetable-snapshots-v1'/);
 assert.match(busSource, /function validDataDeparture\(data,region,shard,expectedBuild\)/);
@@ -631,6 +635,8 @@ assert.match(busSource, /const ROUTE_SCAN_INTERVAL_MS = 60\*1000/);
 assert.match(busSource, /const ROUTE_SCAN_MAX_BOXES = 3/);
 assert.match(busSource, /const ROUTE_SCAN_MAX_ROUTE_METRES = 55000/);
 assert.match(busSource, /function routeScanPlans\(now=Date\.now\(\)\)/);
+assert.match(busSource, /function requestRouteScanAfterPatternLoad\(\)/);
+assert.match(busSource, /if\(!plans\.length\)\{ S\.lastRouteScan=0;/);
 assert.match(busSource, /function matchRouteScanVehicle\(plan,v\)/);
 assert.match(busSource, /const compatible=\(plan\.matches\|\|\[\]\)\.filter/);
 assert.match(busSource, /uniqueCompatibleTrips\(compatible,v\.journey,item=>item\.trip\)/);
@@ -1137,14 +1143,14 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
     lines:['9']
   });
 
-  const corridorBoard = await page.evaluate(() => {
+  const corridorBoard = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now();
     const saved={
       stop:state.stop,origin:state.origin,anchor:state.anchor,dir:state.dir,onlyServing:state.onlyServing,
       hideAway:state.hideAway,destFilter:state.destFilter,demo:state.demo,vehicles:state.vehicles,
       ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun,
       timetableSource:state.timetableSource,timetableRegion:state.timetableRegion,
-      lastRouteScan:state.lastRouteScan,routeScanBoxes:state.routeScanBoxes,
+      lastRouteScan:state.lastRouteScan,routeScanPending:state.routeScanPending,routeScanBoxes:state.routeScanBoxes,
       routeScanPatterns:state.routeScanPatterns,routeScanVehicles:state.routeScanVehicles,
       routeScanError:state.routeScanError
     };
@@ -1161,8 +1167,19 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       patterns:{[patternId]:{p:[[51.95,-2.1],[52.1,-2.1],[52.25,-2.1],[52.4,-2.1],[52.54,-2.1],[52.62,-2.1]],s:[['route-start','Route start',51.95,-2.1],['corridor-stop','Corridor stop',52.54,-2.1],['route-end','Route end',52.62,-2.1]],g:1}}
     };
     state.timetableSource='national';state.timetableRegion='west_midlands';state.timetableRun=Number(state.timetableRun||0)+1;
-    state.lastRouteScan=0;state.routeScanBoxes=0;state.routeScanPatterns=0;state.routeScanVehicles=0;state.routeScanError='';
+    state.lastRouteScan=0;state.routeScanPending=false;state.routeScanBoxes=0;state.routeScanPatterns=0;state.routeScanVehicles=0;state.routeScanError='';
     try{
+      const loadedTimetable=state.timetable,loadedStop=state.ttStop;
+      state.ttStop={id:'corridor-stop',d:[[base,'9','Town Centre','daily','', 'cold-trip','ff00missingpattern']]};
+      state.timetable={services:loadedTimetable.services,tripPatterns:{'cold-trip':'ff00missingpattern'},patterns:{}};
+      state.timetableSource='regional';state.timetableRun++;
+      const coldResult=await api.pollRouteCorridor();
+      const coldNoLock={rows:coldResult.length,lastRouteScan:state.lastRouteScan};
+      state.ttStop=loadedStop;state.timetable=loadedTimetable;state.timetableSource='national';state.timetableRun++;
+      state.lastRouteScan=now;state.routeScanPending=false;
+      const retryQueued=api.requestRouteScanAfterPatternLoad();
+      const patternRetry={queued:retryQueued,pending:state.routeScanPending,lastRouteScan:state.lastRouteScan};
+      state.routeScanPending=false;
       const plans=api.routeScanPlans(now);
       const positions=[52.08,52.13,52.18,52.23,52.28];
       const accepted=trips.map((trip,index)=>{
@@ -1181,7 +1198,8 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
         matches:plans[0]?.matches.length||0,accepted:accepted.length,stored:state.vehicles.size,shown:rows.length,
         shownIds:rows.map(row=>row.v.id).sort(),allTagged:rows.every(row=>row.v.corridorTracked),
         minStraight:Math.min(...rows.map(row=>row.metres)),maxRoute:Math.max(...rows.map(row=>row.routeMetres||0)),
-        spansSafe:spans.every(([lon,lat])=>lon<=0.34001&&lat<=0.34001),wrongRejected,passedRejected
+        spansSafe:spans.every(([lon,lat])=>lon<=0.34001&&lat<=0.34001),wrongRejected,passedRejected,
+        coldNoLock,patternRetry
       };
     }finally{Object.assign(state,saved);}
   });
@@ -1198,6 +1216,8 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   assert.equal(corridorBoard.spansSafe,true);
   assert.equal(corridorBoard.wrongRejected,true);
   assert.equal(corridorBoard.passedRejected,true);
+  assert.deepEqual(corridorBoard.coldNoLock,{rows:0,lastRouteScan:0},'an empty cold-start plan must not consume the route-scan interval');
+  assert.deepEqual(corridorBoard.patternRetry,{queued:true,pending:true,lastRouteScan:0},'a loaded pattern shard must invalidate the scan interval and request an immediate retry');
 
   const gpsFixes = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState,now=Date.now(),saved={stop:state.stop,origin:state.origin,anchor:state.anchor,dir:state.dir,onlyServing:state.onlyServing,hideAway:state.hideAway,destFilter:state.destFilter,demo:state.demo,vehicles:state.vehicles,ttStop:state.ttStop,timetable:state.timetable,timetableRun:state.timetableRun,timetableSource:state.timetableSource,timetableRegion:state.timetableRegion};
@@ -1293,21 +1313,37 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
 
   const duplicateDeparture = await page.evaluate(() => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
-    const saved={ttStop:state.ttStop,dir:state.dir,destFilter:state.destFilter,timetable:state.timetable};
+    const saved={ttStop:state.ttStop,dir:state.dir,destFilter:state.destFilter,timetable:state.timetable,vehicles:state.vehicles};
     try{
-      const now=new Date(),mins=now.getHours()*60+now.getMinutes()+30;
-      state.dir='all';state.destFilter=null;
-      state.ttStop={d:[[mins,'61','Halesowen','','0','T1','P1']]};
+      const now=new Date(),clock=api.ukDateTimeParts(now),minute=clock.hour*60+clock.minute;
+      const shifted=offset=>(minute+offset+1440)%1440;
+      state.dir='all';state.destFilter=null;state.vehicles=new Map();
+      state.ttStop={d:[
+        [shifted(30),'61','Halesowen','','0','T1','P1'],
+        [shifted(-5),'62','Late destination','','0','T2','P2'],
+        [shifted(-20),'63','Expired destination','','0','T3','P3']
+      ]};
       state.timetable={patterns:{},tripPatterns:{}};
-      const bare=api.scheduledBoardRows([]),row=bare[0]&&bare[0].schedule;
+      const bare=api.scheduledBoardRows([]),row=bare.find(item=>item.schedule.line==='61')?.schedule;
+      const overdue=bare.find(item=>item.schedule.line==='62')||null;
+      const expired=bare.find(item=>item.schedule.line==='63')||null;
       const matchedOnly=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,schedule:null,gpsLost:false,secs:600}]);
       const identityOnly=api.scheduledBoardRows([{v:{id:'V1',line:'61',progressTrip:'T1'},evidence:{matchedTrip:'T1'},matchedSchedule:null,schedule:null,gpsLost:false,secs:600}]);
       const blended=api.scheduledBoardRows([{v:{id:'V1',line:'61'},schedule:row,gpsLost:false,secs:600}]);
       const lost=api.scheduledBoardRows([{v:{id:'V1',line:'61'},matchedSchedule:row,gpsLost:true,secs:600}]);
-      return {bare:bare.length,matchedOnly:matchedOnly.length,identityOnly:identityOnly.length,blended:blended.length,lost:lost.length};
+      return {
+        future:bare.filter(item=>item.schedule.line==='61').length,
+        overdue:!!overdue,overdueFlag:!!(overdue&&overdue.overdue),
+        overdueReason:String(overdue&&overdue.liveReason||''),expired:!!expired,
+        matchedOnly:matchedOnly.filter(item=>item.schedule.line==='61').length,
+        identityOnly:identityOnly.filter(item=>item.schedule.line==='61').length,
+        blended:blended.filter(item=>item.schedule.line==='61').length,
+        lost:lost.filter(item=>item.schedule.line==='61').length
+      };
     }finally{Object.assign(state,saved);}
   });
-  assert.deepEqual(duplicateDeparture,{bare:1,matchedOnly:0,identityOnly:0,blended:0,lost:1});
+  assert.deepEqual({...duplicateDeparture,overdueReason:undefined},{future:1,overdue:true,overdueFlag:true,expired:false,matchedOnly:0,identityOnly:0,blended:0,lost:1,overdueReason:undefined});
+  assert.match(duplicateDeparture.overdueReason,/^scheduled time passed · /,'a recently overdue unmatched departure must remain explicitly schedule-only');
 
   const malformedCoverage = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
@@ -1884,7 +1920,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.14'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.15'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

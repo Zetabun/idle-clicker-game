@@ -132,7 +132,7 @@ try{
       state.vehicles=new Map([[twoA.id,twoA],[twoB.id,twoB]]);
       const twoEvidence=api.routeEvidence('X4',twoA.dest,'',twoA);
       const twoRows=api.relevant();
-      const twoBus={flag:!!twoEvidence.originEquivalentAmbiguous,shown:twoRows.length,exactStopRejected:Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.exactStop||0)};
+      const twoBus={flag:!!twoEvidence.originEquivalentAmbiguous,shown:twoRows.length,stopProofRejected:Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.stopProof||0)};
 
       // Same origin minute but different branches must not be treated as
       // duplicate-equivalent, even if a single live bus is present.
@@ -171,7 +171,7 @@ try{
       state.vehicles=new Map([[wrongVehicle.id,wrongVehicle]]);
       const wrongEvidence=api.routeEvidence('X4',wrongVehicle.dest,'',wrongVehicle);
       const wrongRows=api.relevant();
-      const wrongSide={flag:!!wrongEvidence.originEquivalentAmbiguous,shown:wrongRows.length,exactStopRejected:Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.exactStop||0)};
+      const wrongSide={flag:!!wrongEvidence.originEquivalentAmbiguous,shown:wrongRows.length,stopProofRejected:Number(state.liveDiag&&state.liveDiag.rejected&&state.liveDiag.rejected.stopProof||0)};
 
       // Even in the valid duplicate case, the common route pattern must still
       // reject a bus whose confirmed position is already beyond this stop.
@@ -202,7 +202,7 @@ try{
 
   assert.equal(result.twoBus.flag,false,'two physical live buses must keep origin identity ambiguous');
   assert.equal(result.twoBus.shown,0,'two ambiguous physical buses must not gain live admission from this fix');
-  assert.ok(result.twoBus.exactStopRejected>=2,'both ambiguous buses should fail the exact-stop admission path');
+  assert.ok(result.twoBus.stopProofRejected>=2,'both ambiguous buses should remain withheld while their exact stop is unverified');
 
   assert.equal(result.differentBranch.flag,false,'different destinations/branches must not be collapsed');
   assert.equal(result.differentBranch.shown,0,'a branch conflict must remain scheduled-only without stronger evidence');
@@ -211,7 +211,7 @@ try{
 
   assert.equal(result.wrongSide.flag,false,'an opposite-kerb pattern must never qualify as duplicate-equivalent proof');
   assert.equal(result.wrongSide.shown,0,'opposite-kerb live GPS must remain excluded');
-  assert.ok(result.wrongSide.exactStopRejected>=1,'opposite-kerb exclusion should remain an exact-stop rejection');
+  assert.ok(result.wrongSide.stopProofRejected>=1,'an unbound bus near an opposite-kerb duplicate must remain withheld as exact-stop unverified');
 
   assert.equal(result.passed.flag,true,'the passed-stop control should first establish the safe duplicate-equivalent group');
   assert.equal(result.passed.shown,0,'a bus already beyond the selected stop must remain excluded');
