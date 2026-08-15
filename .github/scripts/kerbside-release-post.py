@@ -6,7 +6,14 @@ old = "provider.getCoverage=async options=>(await loadCoverage({force:!!options.
 new = "provider.getCoverage=async(options={})=>(await loadCoverage({force:!!options.force})).combined;"
 if source.count(old) != 1:
     raise SystemExit(f'Expected one dual-source coverage wrapper, found {source.count(old)}')
-path.write_text(source.replace(old, new, 1), encoding='utf-8')
+source = source.replace(old, new, 1)
+
+old_source_name = "function timetableSourceName(){return state.scheduleSource==='network-rail'?'Network Rail Open Data SCHEDULE':'National Rail Darwin Timetable Files';}"
+new_source_name = "function timetableSourceName(){return state.scheduleSource==='network-rail'?'Network Rail Open Data SCHEDULE':'the National Rail Darwin Timetable Files';}"
+if source.count(old_source_name) != 1:
+    raise SystemExit(f'Expected one timetable source-name helper, found {source.count(old_source_name)}')
+source = source.replace(old_source_name, new_source_name, 1)
+path.write_text(source, encoding='utf-8')
 
 test_path = Path('kerbside-backend/test/train-timetable-provider.test.js')
 test_source = test_path.read_text(encoding='utf-8')
