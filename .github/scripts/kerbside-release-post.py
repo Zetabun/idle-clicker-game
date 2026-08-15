@@ -7,3 +7,11 @@ new = "provider.getCoverage=async(options={})=>(await loadCoverage({force:!!opti
 if source.count(old) != 1:
     raise SystemExit(f'Expected one dual-source coverage wrapper, found {source.count(old)}')
 path.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+test_path = Path('kerbside-backend/test/train-timetable-provider.test.js')
+test_source = test_path.read_text(encoding='utf-8')
+old_test = """test('Darwin timetable provider exposes snapshot coverage',async()=>{\n  const provider=loadProvider();\n  const value=await provider.getCoverage();\n  assert.equal(value.source,'National Rail Darwin Timetable Files');\n  assert.equal(value.timetableId,'20260811020500');\n  assert.deepEqual({...value.coverage['2026-08-12']},{from:'00:01',partial:false,to:'23:59'});\n});"""
+new_test = """test('combined timetable provider preserves Darwin snapshot coverage',async()=>{\n  const provider=loadProvider();\n  const value=await provider.getCoverage();\n  assert.equal(value.source,'Kerbside combined rail timetable');\n  assert.equal(value.timetableId,'20260811020500');\n  assert.equal(value.sources.darwin.source,'National Rail Darwin Timetable Files');\n  assert.deepEqual({...value.coverage['2026-08-12']},{from:'00:01',partial:false,to:'23:59'});\n});"""
+if test_source.count(old_test) != 1:
+    raise SystemExit(f'Expected one legacy Darwin coverage regression, found {test_source.count(old_test)}')
+test_path.write_text(test_source.replace(old_test, new_test, 1), encoding='utf-8')
