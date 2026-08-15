@@ -34,6 +34,7 @@ try{
   await page.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>route.abort());
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>Array.from(document.styleSheets).some(sheet=>String(sheet.href||'').includes('/kerbside-trains.css')));
+  await page.waitForFunction(()=>typeof window.__KERBSIDE_TRAIN_TIMETABLE__?.serviceDateLabel==='function');
 
   const futureLabel=await page.evaluate(()=>window.__KERBSIDE_TRAIN_TIMETABLE__?.serviceDateLabel?.('advance','2026-08-13'));
   assert.match(String(futureLabel),/Thu/);

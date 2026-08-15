@@ -190,6 +190,26 @@ try{
   await page.waitForSelector('#transportTrain');
   await page.click('#transportTrain');
   await page.waitForSelector('#trainPlanner');
+  assert.equal(await page.title(),'Kerbside — live trains near you');
+  assert.equal((await page.locator('#brandModeLabel').textContent()).trim(),'live trains');
+  assert.equal((await page.locator('.train-model-label').textContent()).trim(),'Forecast v4');
+  assert.equal(await page.locator('#trainSourceNote').getAttribute('hidden'),null);
+
+  // Darwin can omit RID, UID and headcode. In that fallback, a journey to an
+  // intermediate station must match by the train's actual terminus rather
+  // than being appended as a duplicate "extra service".
+  const terminusFallback=await page.evaluate(()=>{
+    const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
+    const index=overlay.buildIndex([{
+      std:'18:12',operatorCode:'XC',destination:[{locationName:'Plymouth',crs:'PLY'}]
+    }]);
+    const match=overlay.matchEntryIn({
+      std:'18:12',operatorCode:'XC',destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}],
+      displayDestination:{name:'Plymouth',crs:'PLY'}
+    },index);
+    return match?{via:match.via,index:match.entry.index}:null;
+  });
+  assert.deepEqual(terminusFallback,{via:'time',index:0},'an intermediate-stop timetable row must match the live train by its terminus');
   const railNow=await page.evaluate(()=>window.__KERBSIDE_TRAIN_LIVE_WINDOW__.currentRailTime());
   assert.equal(await page.locator('#trainDepartAfter').inputValue(),railNow,'Today should clamp a stale saved departure time to the current UK railway minute');
 
@@ -372,6 +392,10 @@ try{
   assert.ok(layout.overflow<=1,`core train flow must not create horizontal overflow: ${JSON.stringify(layout)}`);
   assert.ok(layout.planner>0&&layout.planner<520,`combined planner should remain usable on mobile: ${JSON.stringify(layout)}`);
   assert.ok(layout.top<110,`train header should stay compact: ${JSON.stringify(layout)}`);
+  await page.click('#transportBus');
+  assert.equal(await page.title(),'Kerbside — live buses near you');
+  assert.equal((await page.locator('#brandModeLabel').textContent()).trim(),'live buses');
+  assert.equal(await page.locator('#trainSourceNote').getAttribute('hidden'),'');
   assert.deepEqual(diagnostics.pageErrors,[],`unexpected page errors: ${diagnostics.pageErrors.join('\n')}`);
 
   console.log(`Kerbside dual-timetable core browser regression passed in ${browserName}.`);

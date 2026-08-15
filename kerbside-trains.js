@@ -760,7 +760,7 @@ function crowdingForecast(service,index,allServices,options={}){
 }
 
 function providerNotice(){
-  return "Live running evidence comes from National Rail Darwin with the app's configured fallbacks. Forecast v3 combines timetable demand, service spacing, events, calendar effects, DfT calibration and live Darwin evidence when available. Passenger-submitted crowding reports do not alter the Forecast v4 score. It is not ticket-sales data and not live occupancy.";
+  return "Live running evidence comes from National Rail Darwin with the app's configured fallbacks. Forecast v4 combines timetable demand, service spacing, events, calendar effects, DfT calibration and live Darwin evidence when available. Passenger-submitted crowding reports do not alter the Forecast v4 score. It is not ticket-sales data and not live occupancy.";
 }
 
 function installMarkup(){
@@ -798,7 +798,7 @@ function installMarkup(){
           <div id="trainSuggest" class="train-suggest" role="listbox" hidden></div>
         </div>
         <div class="train-model-card">
-          <span class="train-model-label">Forecast v3</span>
+          <span class="train-model-label">Forecast v4</span>
           <strong>Timetable + live prediction</strong>
           <p>Kerbside combines timetable demand, service spacing, events, calendar effects and measured DfT calibration, then adds Darwin delays, cancellations, formation and route-loading evidence when those live fields become available. Passenger crowding reports are stored locally for accuracy checks, not score calibration.</p>
         </div>
@@ -834,6 +834,11 @@ function applyMode(mode, {persist=true}={}){
   state.mode = mode === 'train' ? 'train' : 'bus';
   document.body.dataset.transport = state.mode;
   const train = state.mode === 'train';
+  document.title = train ? 'Kerbside — live trains near you' : 'Kerbside — live buses near you';
+  const brandModeLabel = $('brandModeLabel');
+  if(brandModeLabel) brandModeLabel.textContent = train ? 'live trains' : 'live buses';
+  const trainSourceNote = $('trainSourceNote');
+  if(trainSourceNote) trainSourceNote.hidden = !train;
   const trainMain = $('trainMain');
   if(trainMain) trainMain.setAttribute('aria-hidden', train ? 'false' : 'true');
   const busBtn = $('transportBus');

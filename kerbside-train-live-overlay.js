@@ -58,7 +58,7 @@ function departureOf(service){return timeOf(service&&(service.std||service.depar
 /* ------------------------------------------------------------------
    Calling points. Needed for two jobs: proving a live-only service
    actually reaches the chosen destination before it is added to a
-   journey list, and feeding Forecast v3's journeyShapeSignal, which
+   journey list, and feeding Forecast v4's journeyShapeSignal, which
    scores how loaded a through train already is when it reaches you.
 ------------------------------------------------------------------ */
 function flattenCallingPoints(groups){
@@ -82,8 +82,15 @@ function servesDestination(service,toCrs){
   return ahead.some(point=>upper(point&&point.crs)===target);
 }
 function destinationCrsOf(service){
+  /* A timetable journey to an intermediate stop keeps the selected stop in
+     destination, but displayDestination is the train's real terminus. Darwin
+     boards identify that same train by the real terminus, so use it for the
+     time/operator fallback or the live train is mistaken for an extra one. */
+  const displayed=service&&service.displayDestination;
+  const displayedCrs=upper(displayed&&(displayed.crs||displayed.crsCode));
+  if(displayedCrs)return displayedCrs;
   const item=Array.isArray(service&&service.destination)?service.destination.find(Boolean):null;
-  return upper(item&&item.crs);
+  return upper(item&&(item.crs||item.crsCode));
 }
 
 function buildIndex(services){
