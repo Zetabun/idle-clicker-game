@@ -133,6 +133,9 @@ async function mockExternal(page,diagnostics){
   };
   await page.route('**://huxley2.azurewebsites.net/**', handle);
   await page.route('**://hux.azurewebsites.net/**', handle);
+  await page.route('https://raw.githubusercontent.com/openfootball/football.json/**', route=>
+    json(route,200,{matches:[]})
+  );
 }
 
 async function waitForServiceCount(page,count){
