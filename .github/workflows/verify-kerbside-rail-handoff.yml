@@ -1,0 +1,175 @@
+name: Verify Kerbside rail handoff
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - kerbside-train-timetable.js
+      - .github/workflows/verify-kerbside-rail-handoff.yml
+      - .github/workflows/refresh-networkrail-schedule.yml
+      - .github/scripts/build-networkrail-schedule.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-rail-handoff-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install WebKit smoke dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+
+      - name: Verify live Darwin to Network Rail handoff
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { webkit } from 'playwright';
+
+          const appUrl = process.env.APP_URL;
+          const browser = await webkit.launch({ headless: true });
+          const context = await browser.newContext({ timezoneId: 'Europe/London' });
+          const page = await context.newPage();
+          const pageErrors = [];
+          const railResponses = [];
+
+          page.on('pageerror', error => pageErrors.push(error.message));
+          page.on('response', response => {
+            const url = response.url();
+            if (url.includes('kerbside-rail-data-zetabun.pages.dev')) {
+              railResponses.push({ url, status: response.status() });
+            }
+          });
+
+          try {
+            const target = `${appUrl}?rail-handoff-smoke=${Date.now()}`;
+            await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.waitForFunction(() => Boolean(
+              window.__KERBSIDE_TIMETABLE_PROVIDER__?.getCoverage &&
+              window.__KERBSIDE_TRAIN_TIMETABLE__ &&
+              window.__KERBSIDE_LONG_RANGE_TIMETABLE__
+            ), null, { timeout: 30000 });
+
+            const result = await page.evaluate(async () => {
+              const provider = window.__KERBSIDE_TIMETABLE_PROVIDER__;
+              const api = window.__KERBSIDE_TRAIN_TIMETABLE__;
+              const coverage = await provider.getCoverage({ force: true });
+              const darwin = coverage?.sources?.darwin;
+              const networkRail = coverage?.sources?.networkRail;
+              if (!darwin || !networkRail) {
+                throw new Error('Both Darwin and Network Rail timetable manifests must be available.');
+              }
+
+              const daysBetween = (from, to) => Math.round(
+                (new Date(`${to}T12:00:00Z`) - new Date(`${from}T12:00:00Z`)) / 86400000
+              );
+              const londonToday = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit'
+              }).format(new Date());
+
+              const darwinDates = Array.isArray(darwin.dates) ? darwin.dates : [];
+              const networkRailDates = Array.isArray(networkRail.dates) ? networkRail.dates : [];
+              const darwinDate = darwinDates.find(date => darwin.coverage?.[date]?.partial === false) || darwinDates[0];
+              if (!darwinDate) throw new Error('Darwin manifest contains no usable date.');
+
+              let darwinDepartAfter = '06:00';
+              const darwinCoverage = darwin.coverage?.[darwinDate];
+              if (darwinCoverage?.partial && darwinCoverage.from) darwinDepartAfter = darwinCoverage.from;
+
+              const darwinServices = await provider.getServices({
+                from: 'BHM', to: 'LOB', date: darwinDate, departAfter: darwinDepartAfter
+              });
+              const darwinSource = api.state.scheduleSource;
+              const darwinSourceName = api.state.sourceManifest?.source || '';
+
+              const farDate = networkRailDates.find(date =>
+                !darwinDates.includes(date) && daysBetween(londonToday, date) >= 49
+              ) || networkRailDates.slice().reverse().find(date => !darwinDates.includes(date));
+              if (!farDate) throw new Error('Network Rail manifest contains no date beyond Darwin coverage.');
+
+              const futureServices = await provider.getServices({
+                from: 'BHM', to: 'BRI', date: farDate, departAfter: '06:00'
+              });
+              const futureSource = api.state.scheduleSource;
+              const futureSourceName = api.state.sourceManifest?.source || '';
+
+              return {
+                londonToday,
+                darwinDate,
+                darwinDepartAfter,
+                darwinCount: darwinServices.length,
+                darwinSource,
+                darwinSourceName,
+                darwinFirst: darwinServices[0] ? {
+                  departure: darwinServices[0].std,
+                  arrival: darwinServices[0].arrival,
+                  operator: darwinServices[0].operator
+                } : null,
+                futureDate: farDate,
+                futureDaysAway: daysBetween(londonToday, farDate),
+                futureCount: futureServices.length,
+                futureSource,
+                futureSourceName,
+                futureFirst: futureServices[0] ? {
+                  departure: futureServices[0].std,
+                  arrival: futureServices[0].arrival,
+                  operator: futureServices[0].operator,
+                  changes: futureServices[0].changes
+                } : null,
+                networkRailWindow: [networkRailDates[0], networkRailDates.at(-1)]
+              };
+            });
+
+            assert.equal(result.darwinSource, 'darwin', 'near-term journey did not prefer Darwin');
+            assert.match(result.darwinSourceName, /Darwin/i);
+            assert.ok(result.darwinCount > 0, 'near-term BHM to LOB returned no timetable services');
+
+            assert.equal(result.futureSource, 'network-rail', 'long-range journey did not switch to Network Rail');
+            assert.match(result.futureSourceName, /Network Rail Open Data SCHEDULE/i);
+            assert.ok(result.futureDaysAway >= 49, `future smoke date is only ${result.futureDaysAway} days away`);
+            assert.ok(result.futureCount > 0, 'long-range BHM to BRI returned no timetable services');
+
+            assert.ok(
+              railResponses.some(item => item.status >= 200 && item.status < 300 && item.url.endsWith('/manifest.json')),
+              'browser did not successfully fetch the live Network Rail manifest'
+            );
+            assert.ok(
+              railResponses.some(item => item.status >= 200 && item.status < 300 && item.url.includes(`/${result.futureDate}.json.gz`)),
+              'browser did not successfully fetch the selected long-range timetable day'
+            );
+            assert.deepEqual(pageErrors, []);
+
+            console.log(JSON.stringify({ ...result, railResponses }, null, 2));
+            console.log(
+              `Live rail handoff passed: Darwin ${result.darwinDate} (${result.darwinCount} options) -> ` +
+              `Network Rail ${result.futureDate}, ${result.futureDaysAway} days away (${result.futureCount} options).`
+            );
+          } finally {
+            await browser.close();
+          }
+          NODE
