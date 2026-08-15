@@ -152,7 +152,7 @@ async function fetchGzipJson(path){
   const bytes=await fetchTimetableBytes(path,{cache:'no-cache'});
   let text='';
   if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
-    if(typeof DecompressionStream!=='function')throw new Error('This browser cannot decompress the Darwin timetable file.');
+    if(typeof DecompressionStream!=='function')throw new Error('This browser cannot decompress the timetable file.');
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     text=await new Response(stream).text();
   }else text=new TextDecoder().decode(bytes);
@@ -460,7 +460,7 @@ function normaliseLive(service,toCrs){
 }
 function setHeader(mode,manifest){
   const r=route(),name=$('trainStationName'),meta=$('trainStationMeta'),refresh=$('trainRefresh'),main=$('trainMain');
-  const from=displayName(r.from,'Departure station'),to=displayName(r.to,'destination'),snap=timetableIdLabel(manifest&&manifest.timetableId);
+  const from=displayName(r.from,'Departure station'),to=displayName(r.to,'destination'),sourceManifest=state.sourceManifest||manifest,snap=timetableIdLabel(sourceManifest&&sourceManifest.timetableId);
   if(main)main.dataset.railView='scheduled';
   setScheduledVisibility(true);
   if(name)name.textContent=r.from&&r.to?`${from} → ${to}`:'Scheduled journey';
@@ -816,16 +816,17 @@ function callingMarkup(service){
   }).join('');
   return `<div class="train-calling"><div class="train-detail-title">First-leg calling points</div>${rows}</div>`;
 }
+function timetableSourceName(){return state.scheduleSource==='network-rail'?'Network Rail Open Data SCHEDULE':'the National Rail Darwin Timetable Files';}
 function sourceNote(service){
   if(service.liveOnly)return 'Added by National Rail Darwin after this timetable snapshot was published. Live evidence only.';
   if(service.journeyType==='connection'){
     const minimumText=connectionMinimumProvenance(service),evidence=connectionEvidenceProvenance(service);
-    if(service.secondLiveEvidence)return `Both legs are timetabled from the National Rail Darwin Timetable Files; ${evidence}. The connection uses ${minimumText}.`;
-    if(service.liveEvidence)return `Both legs are timetabled from the National Rail Darwin Timetable Files; ${evidence}. The connection uses ${minimumText}.`;
-    return `Both legs are timetabled from the National Rail Darwin Timetable Files; ${evidence}. The connection uses ${minimumText}; Kerbside does not treat the Connecting Train Identifiers feed as a station minimum-time source.`;
+    if(service.secondLiveEvidence)return `Both legs are timetabled from ${timetableSourceName()}; ${evidence}. The connection uses ${minimumText}.`;
+    if(service.liveEvidence)return `Both legs are timetabled from ${timetableSourceName()}; ${evidence}. The connection uses ${minimumText}.`;
+    return `Both legs are timetabled from ${timetableSourceName()}; ${evidence}. The connection uses ${minimumText}; Kerbside does not treat the Connecting Train Identifiers feed as a station minimum-time source.`;
   }
-  if(service.liveEvidence)return `Timetabled from the National Rail Darwin Timetable Files, matched to live Darwin data by ${service.liveVia==='rid'?'service ID':service.liveVia==='uid'?'schedule UID':service.liveVia==='headcode'?'headcode':'departure time'}.`;
-  return 'Timetabled from the National Rail Darwin Timetable Files. Live expected times, platform changes, cancellations and formation are added automatically once this service enters the live Darwin window.';
+  if(service.liveEvidence)return `Timetabled from ${timetableSourceName()}, matched to live Darwin data by ${service.liveVia==='rid'?'service ID':service.liveVia==='uid'?'schedule UID':service.liveVia==='headcode'?'headcode':'departure time'}.`;
+  return `Timetabled from ${timetableSourceName()}. Live expected times, platform changes, cancellations and formation are added automatically once this service enters the live Darwin window.`;
 }
 function serviceMarkup(service,index,forecastResult,{mode,destinationFallback,explains}){
   const key=serviceKey(service,index),open=!!state.openId&&state.openId===key,connection=service.journeyType==='connection';
@@ -897,10 +898,10 @@ function renderRows(rows,{mode,manifest}){
   const r=route(),coverage=coverageNote(manifest,r.date);
   const keys=new Set(state.services.map((s,i)=>serviceKey(s,i)));
   if(state.openId&&!keys.has(state.openId))state.openId='';
-  if(!state.services.length){board.innerHTML=`<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Darwin timetable</span><strong>No suitable direct or one-change journeys found</strong><span>${esc(coverage||'The timetable snapshot returned no matching journeys for this date and departure time.')}</span></div>`;return;}
+  if(!state.services.length){board.innerHTML=`<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Official timetable</span><strong>No suitable direct or one-change journeys found</strong><span>${esc(coverage||'The timetable snapshot returned no matching journeys for this date and departure time.')}</span></div>`;return;}
   const destinationFallback=displayName(r.to,'Destination'),explains=[];
   board.innerHTML=state.services.map((s,i)=>serviceMarkup(s,i,forecast(s,i,state.services),{mode,destinationFallback,explains})).join('')
-    +`<div class="train-empty train-future-date train-future-card train-scheduled-foot"><span class="train-future-badge">Official timetable</span><span class="train-future-note">${esc(coverage)} Scheduled journey options come from National Rail Darwin Timetable Files. Where an authoritative station minimum is not loaded, one-change results use an explicit conservative Kerbside fallback; CTI is not treated as a minimum-time feed. Live Darwin evidence can update both legs and recovery options.</span></div>`;
+    +`<div class="train-empty train-future-date train-future-card train-scheduled-foot"><span class="train-future-badge">Official timetable</span><span class="train-future-note">${esc(coverage)} Scheduled journey options come from ${esc(timetableSourceName())}. Where an authoritative station minimum is not loaded, one-change results use an explicit conservative Kerbside fallback; CTI is not treated as a minimum-time feed. Live Darwin evidence can update both legs and recovery options.</span></div>`;
   /* Prime the markup cache refreshForecasts() compares against, so the first
      Forecast v4 pass after render is a genuine no-op rather than a rewrite. */
   board.querySelectorAll('.train-scheduled-service .train-crowding-explain').forEach((el,i)=>{el.__kerbsideMarkup=explains[i];});
@@ -963,14 +964,14 @@ function refreshForecasts(){
   });
   return changed;
 }
-function renderUnavailable(message,{mode='future',manifest=null}={}){const board=scheduledBoard();if(!board)return;setHeader(mode,manifest);state.services=[];state.mode=mode;const r=route(),from=displayName(r.from,'Departure station'),to=displayName(r.to,'destination'),complete=!!(r.from&&r.to);board.innerHTML=`<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Darwin timetable</span><strong>${esc(complete?dateLabel(r.date):'Choose your journey')}</strong><span class="train-future-route">${esc(complete?`${from} → ${to}`:'Select both From and To stations')}</span><span class="train-future-note">${esc(message||'Scheduled services are not available for this date in the current timetable snapshot.')}</span></div>`;}
+function renderUnavailable(message,{mode='future',manifest=null}={}){const board=scheduledBoard();if(!board)return;setHeader(mode,manifest);state.services=[];state.mode=mode;const r=route(),from=displayName(r.from,'Departure station'),to=displayName(r.to,'destination'),complete=!!(r.from&&r.to);board.innerHTML=`<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Official timetable</span><strong>${esc(complete?dateLabel(r.date):'Choose your journey')}</strong><span class="train-future-route">${esc(complete?`${from} → ${to}`:'Select both From and To stations')}</span><span class="train-future-note">${esc(message||'Scheduled services are not available for this date in the current timetable snapshot.')}</span></div>`;}
 async function load(options={}){
   const mode=options.mode||journeyMode();
   if(!mode){setLiveMode();return false;}
   const r=route();state.signature=routeSignature();
-  if(!r.from||!r.to){renderUnavailable('Select both stations, then use Find trains to search the Darwin timetable.',{mode});return true;}
+  if(!r.from||!r.to){renderUnavailable('Select both stations, then use Find trains to search the official timetable.',{mode});return true;}
   const id=++state.request;state.loading=true;state.lastError='';
-  const board=scheduledBoard();setScheduledVisibility(true);if(board)board.innerHTML='<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Darwin timetable</span><strong>Loading scheduled services…</strong><span>Reading the official timetable snapshot and preparing Forecast v4.</span></div>';
+  const board=scheduledBoard();setScheduledVisibility(true);if(board)board.innerHTML='<div class="train-empty train-future-date train-future-card"><span class="train-future-badge">Official timetable</span><strong>Loading scheduled services…</strong><span>Reading the official timetable snapshot and preparing Forecast v4.</span></div>';
   try{
     const manifest=await timetableProvider.getCoverage();
     if(id!==state.request)return true;
@@ -981,7 +982,7 @@ async function load(options={}){
          back to. */
       if(dateApi()&&dateApi().isToday()){state.mode='live';setLiveMode();maybeReturnToLive('today');return false;}
       const range=manifest.dates.length?`${dateLabel(manifest.dates[0],{short:true})} to ${dateLabel(manifest.dates[manifest.dates.length-1],{short:true})}`:'the current snapshot';
-      renderUnavailable(`This Darwin snapshot covers ${range}. Choose a date inside that range.`,{mode,manifest});return true;
+      renderUnavailable(`The available timetable covers ${range}. Choose a date inside that range.`,{mode,manifest});return true;
     }
     const requestedTime=options.departAfter||r.departAfter||'00:00';
     const edgeCoverage=coverageFor(manifest,r.date);
@@ -1014,9 +1015,9 @@ function loadSameDay({departAfter=currentTime()}={}){return load({mode:'today',d
    fired for the retired 'same-day' mode, so clearing a destination left the
    user staring at a hidden board. */
 function maybeReturnToLive(previousMode){if(!previousMode||previousMode==='live')return;const live=window.__KERBSIDE_TRAIN_LIVE_WINDOW__;if(live&&typeof live.handleJourneyChange==='function')setTimeout(()=>live.handleJourneyChange(),0);}
-/* The date picker offers 90 days but the snapshot holds about 48 hours, so
-   most reachable dates used to land on a coverage error. Clamp to what the
-   published manifest can actually answer. */
+/* Clamp the date picker to the combined published timetable coverage. Darwin
+   normally owns the near term while Network Rail SCHEDULE extends the same
+   journey planner across the rolling long-range window. */
 function clampDatePicker(manifest){
   const input=$('trainTravelDate'),dates=manifest&&Array.isArray(manifest.dates)?manifest.dates:[];
   if(!input||!dates.length)return;
@@ -1047,7 +1048,7 @@ function handleOverlay(){
      keeps the open row and reuses the same forecast pipeline. */
   renderRows(state.services,{mode:state.mode,manifest:state.manifest});
 }
-async function refreshEdgeManifest(){const r=route(),manifest=state.manifest;if(state.loading||!r.date||!manifest||!Array.isArray(manifest.dates)||!manifest.dates.length)return false;const coverage=coverageFor(manifest,r.date),last=manifest.dates[manifest.dates.length-1],needs=r.date===last&&coverage&&coverage.partial&&!coverageIncludesTime(coverage,r.departAfter||'00:00');if(!needs)return false;if(state.edgeRefreshAt&&Date.now()-state.edgeRefreshAt<EDGE_MANIFEST_RECHECK_MS)return false;state.edgeRefreshAt=Date.now();const before=String(manifest.timetableId||'');try{const next=await timetableProvider.refreshCoverage();if(!next||String(next.timetableId||'')===before)return false;state.signature='';await load({mode:journeyMode()||(dateApi()&&dateApi().isToday()?'today':'advance')});return true;}catch(error){return false;}}
+async function refreshEdgeManifest(){const r=route(),manifest=state.darwinManifest||state.manifest;if(state.loading||!r.date||!manifest||!Array.isArray(manifest.dates)||!manifest.dates.length)return false;const coverage=coverageFor(manifest,r.date),last=manifest.dates[manifest.dates.length-1],needs=r.date===last&&coverage&&coverage.partial&&!coverageIncludesTime(coverage,r.departAfter||'00:00');if(!needs)return false;if(state.edgeRefreshAt&&Date.now()-state.edgeRefreshAt<EDGE_MANIFEST_RECHECK_MS)return false;state.edgeRefreshAt=Date.now();const before=String(manifest.timetableId||'');try{const next=await timetableProvider.refreshCoverage(),nextDarwin=state.darwinManifest||next;if(!nextDarwin||String(nextDarwin.timetableId||'')===before)return false;state.signature='';await load({mode:journeyMode()||(dateApi()&&dateApi().isToday()?'today':'advance')});return true;}catch(error){return false;}}
 function sync(){
   const sig=routeSignature();
   if(sig===state.signature){if(journeyMode()&&state.mode!=='live')setHeader(state.mode,state.manifest);return;}
@@ -1068,4 +1069,121 @@ function init(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,watchMatches,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
+})();
+
+
+/* ------------------------------------------------------------------
+   Long-range Network Rail SCHEDULE adapter.
+
+   The existing Darwin timetable provider remains the preferred near-term
+   source. This adapter adds the separately deployed Network Rail SCHEDULE
+   snapshot underneath it and only takes over when Darwin does not genuinely
+   cover the requested date/time. The returned row shape is identical, so the
+   established direct/connection planner and Forecast v4 stay single-source.
+------------------------------------------------------------------ */
+;(function(){
+'use strict';
+const api=window.__KERBSIDE_TRAIN_TIMETABLE__,provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
+if(!api||!provider||provider.__kerbsideDualSource)return;
+const NETWORK_RAIL_DATA_BASE='https://kerbside-rail-data-zetabun.pages.dev';
+const MANIFEST_CACHE_MS=5*60*1000,REQUEST_TIMEOUT_MS=12000;
+const original={
+  getCoverage:provider.getCoverage.bind(provider),
+  refreshCoverage:provider.refreshCoverage.bind(provider),
+  getServices:provider.getServices.bind(provider)
+};
+const nr={manifestPromise:null,manifest:null,checkedAt:0,locationsPromise:null,datePromises:new Map()};
+
+function addDays(stamp,days){const d=new Date(`${stamp}T12:00:00Z`);if(Number.isNaN(d.getTime()))return stamp;d.setUTCDate(d.getUTCDate()+Number(days||0));return d.toISOString().slice(0,10);}
+function parseMinutes(value){const m=String(value||'').match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;const h=Number(m[1]),n=Number(m[2]);return h>=0&&h<24&&n>=0&&n<60?h*60+n:null;}
+function coverageIncludes(coverage,value){
+  if(typeof api.coverageIncludesTime==='function')return api.coverageIncludesTime(coverage,value);
+  if(!coverage)return false;if(!coverage.partial)return true;
+  const minute=parseMinutes(value),from=parseMinutes(coverage.from),to=parseMinutes(coverage.to);if(minute==null)return true;
+  return (from==null||minute>=from)&&(to==null||minute<=to);
+}
+async function fetchBytes(url,{json=false}={}){
+  const controller=typeof AbortController==='function'?new AbortController():null,timer=controller?setTimeout(()=>controller.abort(),REQUEST_TIMEOUT_MS):null;
+  try{
+    const response=await fetch(url,{cache:json?'no-cache':'default',headers:json?{Accept:'application/json'}:undefined,...(controller?{signal:controller.signal}:{})});
+    if(!response.ok)throw new Error(`Long-range timetable returned ${response.status}`);
+    return new Uint8Array(await response.arrayBuffer());
+  }catch(error){
+    if(error&&error.name==='AbortError')throw new Error('Long-range timetable request timed out.');
+    throw error;
+  }finally{if(timer)clearTimeout(timer);}
+}
+async function fetchJson(url){const bytes=await fetchBytes(url,{json:true});return JSON.parse(new TextDecoder().decode(bytes));}
+async function fetchGzipJson(url){
+  const bytes=await fetchBytes(url);let text='';
+  if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
+    if(typeof DecompressionStream!=='function')throw new Error('This browser cannot decompress the long-range timetable file.');
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    text=await new Response(stream).text();
+  }else text=new TextDecoder().decode(bytes);
+  return JSON.parse(text);
+}
+function clearNetworkRailCaches(){nr.locationsPromise=null;nr.datePromises.clear();}
+function loadNetworkRailManifest({force=false}={}){
+  const expired=!nr.checkedAt||Date.now()-nr.checkedAt>=MANIFEST_CACHE_MS;
+  if(!nr.manifestPromise||force||expired){
+    const previousId=nr.manifest&&nr.manifest.timetableId||'';
+    nr.manifestPromise=fetchJson(`${NETWORK_RAIL_DATA_BASE}/manifest.json`).then(value=>{
+      const nextId=value&&value.timetableId||'';if(previousId&&nextId&&previousId!==nextId)clearNetworkRailCaches();
+      nr.manifest=value;nr.checkedAt=Date.now();return value;
+    }).catch(error=>{nr.manifestPromise=null;if(nr.manifest)return nr.manifest;throw error;});
+  }
+  return nr.manifestPromise;
+}
+function loadNetworkRailLocations(){if(!nr.locationsPromise)nr.locationsPromise=fetchJson(`${NETWORK_RAIL_DATA_BASE}/locations.json`).catch(error=>{nr.locationsPromise=null;throw error;});return nr.locationsPromise;}
+function loadNetworkRailDate(stamp){if(!nr.datePromises.has(stamp))nr.datePromises.set(stamp,fetchGzipJson(`${NETWORK_RAIL_DATA_BASE}/${encodeURIComponent(stamp)}.json.gz`).catch(error=>{nr.datePromises.delete(stamp);throw error;}));return nr.datePromises.get(stamp);}
+function unionCoverage(a,b){
+  if(!a)return b||null;if(!b)return a||null;
+  const from=[a.from,b.from].filter(Boolean).sort()[0]||'',to=[a.to,b.to].filter(Boolean).sort().slice(-1)[0]||'';
+  return {from,to,partial:!!a.partial&&!!b.partial};
+}
+function combinedManifest(darwin,networkRail){
+  const dateSet=new Set([...(darwin&&Array.isArray(darwin.dates)?darwin.dates:[]),...(networkRail&&Array.isArray(networkRail.dates)?networkRail.dates:[])]),dates=[...dateSet].sort(),coverage={};
+  for(const stamp of dates)coverage[stamp]=unionCoverage(darwin&&darwin.coverage&&darwin.coverage[stamp],networkRail&&networkRail.coverage&&networkRail.coverage[stamp]);
+  return {
+    schema:1,source:'Kerbside combined rail timetable',
+    timetableId:darwin&&darwin.timetableId||networkRail&&networkRail.timetableId||'',dates,coverage,
+    tocNames:{...(networkRail&&networkRail.tocNames||{}),...(darwin&&darwin.tocNames||{})},
+    sources:{darwin:darwin||null,networkRail:networkRail||null}
+  };
+}
+async function loadCoverage({force=false}={}){
+  const darwinPromise=force?original.refreshCoverage():original.getCoverage();
+  const [darwinResult,networkRailResult]=await Promise.allSettled([darwinPromise,loadNetworkRailManifest({force})]);
+  const darwin=darwinResult.status==='fulfilled'?darwinResult.value:null,networkRail=networkRailResult.status==='fulfilled'?networkRailResult.value:null;
+  if(!darwin&&!networkRail)throw (darwinResult.reason||networkRailResult.reason||new Error('No timetable source is available.'));
+  api.state.darwinManifest=darwin;api.state.networkRailManifest=networkRail;
+  const combined=combinedManifest(darwin,networkRail);api.state.manifest=combined;return {darwin,networkRail,combined};
+}
+function manifestCovers(manifest,stamp,time){return !!(manifest&&Array.isArray(manifest.dates)&&manifest.dates.includes(stamp)&&coverageIncludes(manifest.coverage&&manifest.coverage[stamp],time));}
+function selectSource(name,manifest){api.state.scheduleSource=name;api.state.sourceManifest=manifest||null;}
+async function networkRailServices(manifest,options){
+  const next=addDays(options.date,1),dates=[options.date,...(manifest.dates.includes(next)?[next]:[])];
+  const [locations,...sets]=await Promise.all([loadNetworkRailLocations(),...dates.map(loadNetworkRailDate)]),rows=[],seen=new Set();
+  for(const set of sets)for(const row of Array.isArray(set)?set:[]){const key=String(row&&((row[0]||row[1]||row[2]))||'');if(key&&seen.has(key))continue;if(key)seen.add(key);rows.push(row);}
+  return provider.journeysFromRows(rows,locations,manifest,options);
+}
+provider.getCoverage=async(options={})=>(await loadCoverage({force:!!options.force})).combined;
+provider.refreshCoverage=async()=>(await loadCoverage({force:true})).combined;
+provider.getServices=async options=>{
+  const coverage=await loadCoverage(),time=options.departAfter||'00:00';
+  if(manifestCovers(coverage.darwin,options.date,time)){
+    selectSource('darwin',coverage.darwin);
+    try{return await original.getServices(options);}catch(error){
+      if(!manifestCovers(coverage.networkRail,options.date,time))throw error;
+    }
+  }
+  if(manifestCovers(coverage.networkRail,options.date,time)){
+    selectSource('network-rail',coverage.networkRail);
+    return networkRailServices(coverage.networkRail,options);
+  }
+  selectSource('',null);return [];
+};
+provider.__kerbsideDualSource=true;
+window.__KERBSIDE_LONG_RANGE_TIMETABLE__={state:nr,base:NETWORK_RAIL_DATA_BASE,loadCoverage,manifestCovers};
 })();

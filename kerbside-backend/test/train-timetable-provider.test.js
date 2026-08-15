@@ -45,11 +45,12 @@ function loadProvider(date='2026-08-12',departAfter='09:00',officialConnectionTi
   return context.window.__KERBSIDE_TIMETABLE_PROVIDER__;
 }
 
-test('Darwin timetable provider exposes snapshot coverage',async()=>{
+test('combined timetable provider preserves Darwin snapshot coverage',async()=>{
   const provider=loadProvider();
   const value=await provider.getCoverage();
-  assert.equal(value.source,'National Rail Darwin Timetable Files');
+  assert.equal(value.source,'Kerbside combined rail timetable');
   assert.equal(value.timetableId,'20260811020500');
+  assert.equal(value.sources.darwin.source,'National Rail Darwin Timetable Files');
   assert.deepEqual({...value.coverage['2026-08-12']},{from:'00:01',partial:false,to:'23:59'});
 });
 
@@ -195,4 +196,53 @@ test('timetable topology adds extra transfer time at a highly connected hub',()=
   const provider=loadProvider(),rows=[];
   for(let i=0;i<12;i++)rows.push([`r${i}`,`u${i}`,`t${i}`,'XC','2026-08-12',[["HUB","","09:00","",0],[`X${String(i).padStart(2,'0')}`,"09:10","","",0]]]);
   const graph=provider.buildStationGraph(rows);assert.equal(graph.get('HUB').size,12);assert.equal(provider.connectionMinimum('HUB',graph),15);
+});
+
+
+function loadDualProvider({darwinPartial=false,departAfter='09:00'}={}){
+  const nrManifest={schema:1,source:'Network Rail Open Data SCHEDULE (CIF_ALL_FULL_DAILY JSON)',timetableId:'20260815003101',dates:['2026-08-12','2026-09-10'],coverage:{'2026-08-12':{from:'00:01',to:'23:59',partial:false},'2026-09-10':{from:'00:01',to:'23:59',partial:false}},tocNames:{XC:'CrossCountry'}};
+  const darwinManifest={...manifest,coverage:{'2026-08-12':darwinPartial?{from:'00:01',to:'07:30',partial:true}:{from:'00:01',to:'23:59',partial:false}}};
+  const nrRows=[['nr-future','nr-uid','1N10','XC','2026-09-10',[["BHM","","10:00","5",0],["BRI","11:25","","3",0]]],['nr-overlap','nr-overlap-uid','1N11','XC','2026-08-12',[["BHM","","09:30","5",0],["BRI","10:55","","3",0]]]];
+  const nrGz=gzipSync(Buffer.from(JSON.stringify(nrRows)));
+  const dualResponse=input=>{
+    const url=String(input),networkRail=url.startsWith('https://kerbside-rail-data-zetabun.pages.dev/');
+    if(networkRail&&url.endsWith('/manifest.json'))return new Response(JSON.stringify(nrManifest),{status:200});
+    if(networkRail&&url.endsWith('/locations.json'))return new Response(JSON.stringify(locations),{status:200});
+    if(networkRail&&/\/2026-(08-12|09-10)\.json\.gz$/.test(url))return new Response(nrGz,{status:200});
+    if(url.endsWith('/manifest.json'))return new Response(JSON.stringify(darwinManifest),{status:200});
+    if(url.endsWith('/locations.json'))return new Response(JSON.stringify(locations),{status:200});
+    if(url.endsWith('/2026-08-12.json.gz'))return new Response(gz,{status:200});
+    return new Response('not found',{status:404});
+  };
+  const context={console,URL,Date,Intl,setTimeout,clearTimeout,setInterval(){return 0;},Blob,Response,TextDecoder,DecompressionStream,AbortController,location:{hostname:'localhost'},fetch:async input=>dualResponse(input),document:{readyState:'loading',addEventListener(){},getElementById(id){return id==='trainDepartAfter'?{value:departAfter}:null;}},window:{__KERBSIDE_TRAIN_DATE__:{state:{date:'2026-08-12'},isToday(){return false;}}}};
+  vm.createContext(context);vm.runInContext(timetableSource,context);
+  return {provider:context.window.__KERBSIDE_TIMETABLE_PROVIDER__,api:context.window.__KERBSIDE_TRAIN_TIMETABLE__};
+}
+
+test('dual-source coverage extends beyond Darwin',async()=>{
+  const {provider,api}=loadDualProvider(),coverage=await provider.getCoverage();
+  assert.ok(coverage.dates.includes('2026-09-10'));
+  assert.equal(api.state.darwinManifest.source,'National Rail Darwin Timetable Files');
+  assert.match(api.state.networkRailManifest.source,/Network Rail Open Data SCHEDULE/);
+});
+
+test('Darwin remains preferred inside its genuine coverage',async()=>{
+  const {provider,api}=loadDualProvider();
+  const services=await provider.getServices({from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'09:00'});
+  assert.equal(services[0].serviceID,'rid-1');
+  assert.equal(api.state.scheduleSource,'darwin');
+});
+
+test('Network Rail SCHEDULE answers long-range journeys',async()=>{
+  const {provider,api}=loadDualProvider();
+  const services=await provider.getServices({from:'BHM',to:'BRI',date:'2026-09-10',departAfter:'09:00'});
+  assert.equal(services.length,1);assert.equal(services[0].std,'10:00');assert.equal(services[0].arrival,'11:25');
+  assert.equal(api.state.scheduleSource,'network-rail');
+});
+
+test('Network Rail fills the uncovered part of a partial Darwin edge date',async()=>{
+  const {provider,api}=loadDualProvider({darwinPartial:true});
+  const services=await provider.getServices({from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'09:00'});
+  assert.equal(services[0].serviceID,'nr-overlap');
+  assert.equal(api.state.scheduleSource,'network-rail');
 });
