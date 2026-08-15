@@ -15,3 +15,11 @@ new_test = """test('combined timetable provider preserves Darwin snapshot covera
 if test_source.count(old_test) != 1:
     raise SystemExit(f'Expected one legacy Darwin coverage regression, found {test_source.count(old_test)}')
 test_path.write_text(test_source.replace(old_test, new_test, 1), encoding='utf-8')
+
+status_path = Path('kerbside-status.js')
+status_source = status_path.read_text(encoding='utf-8')
+old_status_version = "const VERSION='0.9.16';"
+new_status_version = "const VERSION='0.9.17';"
+if status_source.count(old_status_version) != 1:
+    raise SystemExit(f'Expected one Kerbside status version marker, found {status_source.count(old_status_version)}')
+status_path.write_text(status_source.replace(old_status_version, new_status_version, 1), encoding='utf-8')
