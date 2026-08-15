@@ -180,9 +180,11 @@ try {
       const laterRow = { line: '61', head: 'City Centre', at: reasonNow + 35 * 60000, trip: gtfsTrip('b') };
       const reasonWhenListed = api.scheduleLiveReason(laterRow, [{ v: bus61, schedule: soonRow }]);
       const reasonWhenFree = api.scheduleLiveReason(laterRow, []);
-      /* Once the shard carries an origin time the reason stops talking about
-         journey codes: either a live bus is working this departure or none is. */
-      const reasonOriginNoBus = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow + 30 * 60000 }, []);
+      /* Before a journey begins, no vehicle is expected in BODS yet. The board
+         should say that instead of implying a failed live match. */
+      const originNoBusStartAt = reasonNow + 30 * 60000;
+      const reasonOriginNoBus = api.scheduleLiveReason({ ...laterRow, originAt: originNoBusStartAt }, []);
+      const expectedOriginNoBusReason = `service starts ${api.formatClock(originNoBusStartAt)} · GPS not expected yet`;
       const matchedSchedule = { ...tripARow };
       const matchedBus = {
         id: 'matched-origin', line: '1', lineRef: 'ROUTE-A', owner: 'OP-A', operator: 'OP-A',
@@ -203,7 +205,7 @@ try {
       const reasonOriginDelayed = api.scheduleLiveReason(matchedSchedule, []);
       state.vehicles = new Map([['noOrigin', { ...bus61, id: 'noOrigin', aimedOriginAt: NaN }]]);
       state.liveDiag = null;
-      const reasonNoOriginPublished = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow + 30 * 60000 }, []);
+      const reasonNoOriginPublished = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow - 15 * 60000 }, []);
       state.vehicles = new Map([[bus61.id, bus61]]);
       const reasonOtherRoute = api.scheduleLiveReason({ line: '99', head: 'Elsewhere', at: reasonNow + 600000, trip: gtfsTrip('c') }, []);
       const comparableBus = { ...bus61, id: 'comparable', journey: 'operator:trip-AB99999999' };
@@ -359,6 +361,7 @@ try {
         reasonWhenListed,
         reasonWhenFree,
         reasonOriginNoBus,
+        expectedOriginNoBusReason,
       reasonOriginFiltered,
       reasonOriginBoardLimit,
       reasonOriginDelayed,
@@ -424,7 +427,7 @@ try {
   assert.equal(result.sharedOriginItems, 0);
   assert.equal(result.bearingOverrideKept, true, 'an exact journey must survive a bearing-only away reading while route geometry loads');
   assert.equal(result.bearingOverrideRecovered, true, 'the kept row should disclose that stronger journey evidence recovered it');
-  assert.equal(result.reasonOriginNoBus, 'no matching live bus yet');
+  assert.equal(result.reasonOriginNoBus, result.expectedOriginNoBusReason);
   assert.equal(result.reasonOriginFiltered, 'matching GPS is for the other direction');
   assert.equal(result.reasonOriginBoardLimit, 'matching live bus is lower on the board');
   assert.equal(result.reasonOriginDelayed, 'matching GPS is delayed');

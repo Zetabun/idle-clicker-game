@@ -73,6 +73,17 @@ try {
         .filter(row => row.trip === trip)
         .reduce((best, row) => !best || Math.abs(row.at - departure.getTime()) < Math.abs(best.at - departure.getTime()) ? row : best, null);
       if (!schedule || Math.abs(schedule.at - departure.getTime()) > 60000) throw new Error('ETA regression timetable row did not resolve to the intended departure');
+      const startsSoon = { ...schedule, originAt: now + 4 * 60000 };
+      const startsLater = { ...schedule, originAt: now + 7 * 60000 };
+      const alreadyStarted = { ...schedule, originAt: now - 1000 };
+      const noStart = { ...schedule, originAt: null };
+      const malformedStart = { ...schedule, originAt: schedule.at + 1000 };
+      const nextStartRefresh = api.nextServiceStartRefresh([
+        { schedule: startsLater }, { schedule: startsSoon }, { schedule: alreadyStarted }, { schedule: malformedStart }
+      ], now);
+      const preStartReason = api.serviceStartReason(startsSoon, now);
+      const expectedPreStartReason = `service starts ${api.formatClock(startsSoon.originAt)} · GPS not expected yet`;
+      const preStartLiveReason = api.scheduleLiveReason(startsSoon, [], new Map());
       const snapshot = {
         v: null, dir: 'in', app: true, strength: 1, secs: 900, liveSecs: 900,
         metres: 1000, routeMetres: 1500, geometry: null, confidence: 'high', spread: 90,
@@ -130,6 +141,12 @@ try {
         scheduleClaimed, duplicateScheduledRows, plainLostClaims,
         pastScheduleFallback, pastScheduleClaimed,
         keptOutage: !!keptOutage,
+        preStartReason, preStartLiveReason, expectedPreStartReason,
+        startedReason: api.serviceStartReason(alreadyStarted, now),
+        noStart: api.scheduledServiceStartAt(noStart),
+        malformedStart: api.scheduledServiceStartAt(malformedStart),
+        nextStartRefresh,
+        nextStartIsJustStarted: nextStartRefresh.originAt === alreadyStarted.originAt,
         feedModel, sampledModel, averageModel
       };
     } finally {
@@ -151,6 +168,13 @@ try {
   assert.equal(result.pastScheduleFallback, false);
   assert.equal(result.pastScheduleClaimed, false);
   assert.equal(result.keptOutage, true);
+  assert.equal(result.preStartReason, result.expectedPreStartReason);
+  assert.equal(result.preStartLiveReason, result.expectedPreStartReason);
+  assert.equal(result.startedReason, '');
+  assert.equal(result.noStart, null);
+  assert.equal(result.malformedStart, null);
+  assert.equal(result.nextStartIsJustStarted, true);
+  assert.equal(result.nextStartRefresh.refreshAt - result.nextStartRefresh.originAt, 3000);
 
   assert.equal(result.feedModel.mode, 'feed-speed');
   assert.ok(result.feedModel.remainingStops >= 1);

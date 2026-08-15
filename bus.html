@@ -822,7 +822,7 @@ body.theme-crystal .leaflet-bar a{
 }
 body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 </style>
-<link rel="stylesheet" href="kerbside-trains.css?v=0.9.13">
+<link rel="stylesheet" href="kerbside-trains.css?v=0.9.14">
 </head>
 <body>
 <div id="app">
@@ -1093,7 +1093,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.9.13';
+const APP_VERSION = '0.9.14';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -1177,7 +1177,7 @@ const S = {
   vehicles:new Map(),       // id -> live vehicle state and short position history
   markers:new Map(),
   selected:null,
-  timer:null, tick:null, motionTimer:null, busy:false, feedRefreshing:false, pollAgain:false, lastOk:0, lastFeedAt:0,
+  timer:null, tick:null, motionTimer:null, serviceStartTimer:null, serviceStartKey:'', busy:false, feedRefreshing:false, pollAgain:false, lastOk:0, lastFeedAt:0,
   locationRun:0, pollAbort:null,
   feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null, scheduledHidden:0,
   timetable:null, fallbackTimetable:null, ttOutsideCoverage:false, timetableSource:'', timetableRegion:'', timetableBuilt:'', timetableFallback:false, timetableUnknownServices:0, timetableRun:0, patternPending:new Set(), ttStop:null, ttError:null, feedFallback:false,
@@ -1194,6 +1194,11 @@ const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but n
 const LIVE_FUTURE_SKEW_MS = 2*60*1000; // tolerate producer clock skew, but never let it advance the app clock
 const LIVE_DUE_SECONDS = 45;
 const SCHEDULE_DUE_SECONDS = 45;
+// Operators normally begin publishing a journey at or just after its first
+// scheduled departure. Refresh once in that handover window so a newly started
+// service does not have to wait for the next general polling tick.
+const SERVICE_START_REFRESH_GRACE_MS = 3000;
+const SERVICE_START_REFRESH_LOOKAHEAD_MS = 3*60*60*1000;
 const LOCATION_TARGET_ACCURACY_METRES = 60;
 const LOCATION_WARNING_ACCURACY_METRES = 150;
 const LOCATION_FIX_TIMEOUT_MS = 10000;
@@ -5388,7 +5393,7 @@ function retainFiredAlarm(alarm,now){
 }
 function alarmRowEligible(row){ return !!(row&&!row.gpsLost); }
 if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
-  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,liveFeedHealthyForRetention,retainedGpsGraceMs,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,scheduleLiveReason,journeyRefComparable,renderServingNote,updateStopMeta,stopDestinationNames};
+  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),retainFiredAlarm,alarmRowEligible,liveFeedHealthyForRetention,retainedGpsGraceMs,retainedSnapshotRow,scheduleClaimedByLive,scheduledBoardRows,scheduleLiveReason,scheduledServiceStartAt,serviceStartReason,nextServiceStartRefresh,journeyRefComparable,renderServingNote,updateStopMeta,stopDestinationNames};
 }
 function hasAlarm(line,dest){
   return S.stop && ALARMS.some(a=>a.k===alarmKey(S.stop.id,line,dest));
@@ -6194,9 +6199,9 @@ function renderLiveDiagnostics(){
     ['route evidence',d.route],['direction',d.direction],['approaching',d.approaching],
     ['confidence',d.confidence],['retained',d.recovered],['shown',d.shown]
   ];
-  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
+  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',exactStop:'other stop side',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
   const rejected=Object.entries(d.rejected||{}).filter(([,value])=>value>0)
-    .map(([reason,value])=>value+' '+rejectionLabels[reason]).join(' · ');
+    .map(([reason,value])=>value+' '+(rejectionLabels[reason]||reason)).join(' · ');
   const upstreamHidden=(Number(S.feedStale)||0)+(Number(S.feedUnknownAge)||0);
   const routeScanNote=!S.ttStop?'':S.routeScanBusy
     ? '<br><b>Upstream route scan:</b> checking '+S.routeScanBoxes+' timetable-guided area'+(S.routeScanBoxes===1?'':'s')+'.'
@@ -6411,10 +6416,57 @@ function scheduleCandidateReason(v,now){
   };
   return labels[rejection]||'matching GPS is awaiting route verification';
 }
+function scheduledServiceStartAt(schedule){
+  if(!schedule||schedule.originAt==null||schedule.originAt===''||schedule.at==null||schedule.at==='') return null;
+  const originAt=Number(schedule.originAt), callAt=Number(schedule.at);
+  if(!Number.isFinite(originAt)||!Number.isFinite(callAt)) return null;
+  // Ignore malformed timetable rows whose journey allegedly starts after this
+  // stop call. Older timetable shards legitimately have no originAt at all.
+  if(originAt>callAt) return null;
+  return originAt;
+}
+function serviceStartReason(schedule,now){
+  const current=Number.isFinite(Number(now))?Number(now):Date.now();
+  const originAt=scheduledServiceStartAt(schedule);
+  return originAt!==null&&current<originAt
+    ? 'service starts '+formatClock(originAt)+' · GPS not expected yet'
+    : '';
+}
+function nextServiceStartRefresh(rows,now){
+  const current=Number.isFinite(Number(now))?Number(now):Date.now();
+  let originAt=null;
+  for(const row of rows||[]){
+    const candidate=scheduledServiceStartAt(row&&row.schedule||row);
+    if(candidate===null) continue;
+    const refreshAt=candidate+SERVICE_START_REFRESH_GRACE_MS;
+    if(refreshAt<=current||refreshAt>current+SERVICE_START_REFRESH_LOOKAHEAD_MS) continue;
+    if(originAt===null||candidate<originAt) originAt=candidate;
+  }
+  return originAt===null?null:{originAt,refreshAt:originAt+SERVICE_START_REFRESH_GRACE_MS};
+}
+function clearServiceStartRefresh(){
+  if(S.serviceStartTimer) clearTimeout(S.serviceStartTimer);
+  S.serviceStartTimer=null; S.serviceStartKey='';
+}
+function scheduleServiceStartRefresh(rows){
+  const next=S.origin&&S.stop&&!S.demo?nextServiceStartRefresh(rows):null;
+  if(!next){ clearServiceStartRefresh(); return; }
+  const key=[S.locationRun,S.timetableRun,String(S.stop.id),next.originAt].join('|');
+  if(S.serviceStartTimer&&S.serviceStartKey===key) return;
+  clearServiceStartRefresh(); S.serviceStartKey=key;
+  const locationRun=S.locationRun, timetableRun=S.timetableRun, stopId=String(S.stop.id);
+  S.serviceStartTimer=setTimeout(()=>{
+    S.serviceStartTimer=null; S.serviceStartKey='';
+    if(document.hidden||locationRun!==S.locationRun||timetableRun!==S.timetableRun||!S.stop||String(S.stop.id)!==stopId) return;
+    poll(true);
+  },Math.max(0,next.refreshAt-Date.now()));
+}
 function scheduleLiveReason(schedule,liveRows,evidenceCache){
   if(S.demo) return 'simulator only';
   if(S.feedFallback) return 'live feed delayed';
   const now=Date.now();
+  const startReason=serviceStartReason(schedule,now);
+  if(startReason) return startReason;
   const recent=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
   if(!recent.length) return 'no recent GPS found nearby';
   const sameLineAll=recent.filter(v=>String(v.line)===String(schedule.line));
@@ -6434,7 +6486,7 @@ function scheduleLiveReason(schedule,liveRows,evidenceCache){
   const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
   if(liveTrip.ambiguous) return 'possible GPS journey match is ambiguous';
   if(liveTrip.items.length) return 'journey code match could not be verified';
-  if(Number.isFinite(Number(schedule.originAt))){
+  if(scheduledServiceStartAt(schedule)!==null){
     const originLive=sameBranch.filter(v=>originTimeMatches(schedule,v));
     if(originLive.length>1) return 'origin departure is shared by more than one bus';
     if(originLive.length===1) return 'origin departure is not unique in the timetable';
@@ -7006,6 +7058,7 @@ function renderDisruptions(){
 
 function render(){
   const liveRows=relevant(), scheduledRows=scheduledBoardRows(liveRows);
+  scheduleServiceStartRefresh(scheduledRows);
   const rows=[...liveRows.map(r=>({...r,kind:'live'})),...scheduledRows].sort((a,b)=>a.secs-b.secs);
   const deps=$('deps');
   if(!S.origin){
@@ -7501,6 +7554,7 @@ function startPolling(){
 }
 function stopPolling(){
   if(S.timer) clearInterval(S.timer);if(S.tick) clearInterval(S.tick);if(S.motionTimer) clearInterval(S.motionTimer);
+  clearServiceStartRefresh();
   if(S.pollAbort) S.pollAbort.abort(); if(S.routeScanAbort) S.routeScanAbort.abort();
   S.timer=S.tick=S.motionTimer=null;S.pollAbort=null;S.routeScanAbort=null;S.routeScanBusy=false;S.feedRefreshing=false;
 }
@@ -7902,20 +7956,20 @@ if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='man
 window.addEventListener('resize',()=>map.invalidateSize());
 })();
 </script>
-<script src="kerbside-trains.js?v=0.9.13"></script>
-<script src="kerbside-train-routes.js?v=0.9.13"></script>
-<script src="kerbside-train-date.js?v=0.9.13"></script>
-<script src="kerbside-journey-planner-ui.js?v=0.9.13"></script>
-<script src="kerbside-train-live-window.js?v=0.9.13"></script>
-<script src="kerbside-train-live-overlay.js?v=0.9.13"></script>
-<script src="kerbside-rail-timebands.js?v=0.9.13"></script>
-<script src="kerbside-rail-demand-v4.js?v=0.9.13"></script>
-<script src="kerbside-rail-calibration.js?v=0.9.13"></script>
-<script src="kerbside-train-events.js?v=0.9.13"></script>
-<script src="kerbside-train-loading.js?v=0.9.13"></script>
-<script src="kerbside-train-loading-guidance.js?v=0.9.13"></script>
-<script src="kerbside-train-forecast-v4.js?v=0.9.13"></script>
-<script src="kerbside-journey-sheet.js?v=0.9.13"></script>
-<script src="kerbside-status.js?v=0.9.13"></script>
+<script src="kerbside-trains.js?v=0.9.14"></script>
+<script src="kerbside-train-routes.js?v=0.9.14"></script>
+<script src="kerbside-train-date.js?v=0.9.14"></script>
+<script src="kerbside-journey-planner-ui.js?v=0.9.14"></script>
+<script src="kerbside-train-live-window.js?v=0.9.14"></script>
+<script src="kerbside-train-live-overlay.js?v=0.9.14"></script>
+<script src="kerbside-rail-timebands.js?v=0.9.14"></script>
+<script src="kerbside-rail-demand-v4.js?v=0.9.14"></script>
+<script src="kerbside-rail-calibration.js?v=0.9.14"></script>
+<script src="kerbside-train-events.js?v=0.9.14"></script>
+<script src="kerbside-train-loading.js?v=0.9.14"></script>
+<script src="kerbside-train-loading-guidance.js?v=0.9.14"></script>
+<script src="kerbside-train-forecast-v4.js?v=0.9.14"></script>
+<script src="kerbside-journey-sheet.js?v=0.9.14"></script>
+<script src="kerbside-status.js?v=0.9.14"></script>
 </body>
 </html>
