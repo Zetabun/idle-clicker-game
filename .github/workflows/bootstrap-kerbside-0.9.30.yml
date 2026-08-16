@@ -1,0 +1,103 @@
+name: Bootstrap Kerbside 0.9.30 movement
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.30-live-train-movement
+    paths:
+      - .github/tmp/kerbside-0.9.30-bundle-part-*
+      - .github/workflows/bootstrap-kerbside-0.9.30.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-kerbside-0.9.30
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/agent/kerbside-0.9.30-live-train-movement'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.30-live-train-movement
+          fetch-depth: 0
+
+      - name: Expand movement bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/tmp/kerbside-0.9.30-bundle-part-* | base64 -d > /tmp/kerbside-0.9.30.tgz
+          echo '9f7f1da6e12e9ff4add9f332df45332d3ee1977f99fa071d1f996c573cbd6c73  /tmp/kerbside-0.9.30.tgz' | sha256sum -c -
+          tar -xzf /tmp/kerbside-0.9.30.tgz -C .
+
+      - name: Integrate movement overlay and bump release
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          Path('VERSION').write_text('0.9.30\n', encoding='utf-8')
+
+          wrapper=Path('kerbside-journey-planner-ui.js')
+          text=wrapper.read_text(encoding='utf-8')
+          if "const TRAIN_MOVEMENT_URL=" not in text:
+              needle="const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.29';\n"
+              if needle not in text:
+                  raise SystemExit('Could not find rail health asset declaration')
+              text=text.replace(needle, needle+"const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.30';\n", 1)
+          old="polish.addEventListener('load',()=>setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0),{once:true});"
+          if old in text:
+              new="""polish.addEventListener('load',()=>{\n    setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0);\n    const movement=document.createElement('script');\n    movement.src=TRAIN_MOVEMENT_URL;\n    movement.async=false;\n    movement.onerror=()=>{console.warn('Network Rail movement overlay failed to load; timetable and Darwin remain available.');};\n    (document.head||document.documentElement).appendChild(movement);\n  },{once:true});"""
+              text=text.replace(old,new,1)
+          elif 'movement.src=TRAIN_MOVEMENT_URL' not in text:
+              raise SystemExit('Could not find Saved Journeys polish load hook')
+          wrapper.write_text(text,encoding='utf-8')
+
+          polish=Path('kerbside-saved-journeys-polish.js')
+          text=polish.read_text(encoding='utf-8')
+          if "const VERSION='0.9.29';" in text:
+              text=text.replace("const VERSION='0.9.29';","const VERSION='0.9.30';",1)
+          elif "const VERSION='0.9.30';" not in text:
+              raise SystemExit('Saved Journeys VERSION marker not found')
+          polish.write_text(text,encoding='utf-8')
+
+          package_path=Path('kerbside-backend/package.json')
+          package=json.loads(package_path.read_text(encoding='utf-8'))
+          scripts=package['scripts']
+          check='node --check tests/train-movement-browser-regression.mjs'
+          if check not in scripts['check']:
+              scripts['check'] += ' && ' + check
+          run='node tests/train-movement-browser-regression.mjs'
+          if run not in scripts['test:train-route']:
+              scripts['test:train-route'] += ' && ' + run
+          package_path.write_text(json.dumps(package,indent=2)+"\n",encoding='utf-8')
+          PY
+
+          python3 .github/scripts/sync-version.py
+          python3 .github/scripts/sync-version.py --check
+          node --check kerbside-train-movement.js
+          node --check kerbside-journey-planner-ui.js
+          node --check kerbside-train-movement-worker/worker.js
+          node --check kerbside-train-movement-worker/movement-core.js
+          node --check kerbside-backend/tests/train-movement-browser-regression.mjs
+          node --test kerbside-train-movement-worker/movement-core.test.mjs
+          node --test .github/scripts/networkrail-corpus.test.mjs
+
+      - name: Commit final movement feature
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/tmp/kerbside-0.9.30-bundle-part-* .github/workflows/bootstrap-kerbside-0.9.30.yml
+          git add -A
+          git commit -m 'Add live Network Rail train movement'
+          git push origin HEAD:agent/kerbside-0.9.30-live-train-movement
