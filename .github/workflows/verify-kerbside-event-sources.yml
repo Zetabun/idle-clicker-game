@@ -1,0 +1,121 @@
+name: Verify Kerbside external event sources
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 7 * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-kerbside-event-sources.yml
+  pull_request:
+    paths:
+      - .github/workflows/verify-kerbside-event-sources.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-kerbside-event-sources-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe GOV.UK bank holiday divisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          trap 'rm -f "$tmp"' EXIT
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 4 \
+            --connect-timeout 15 \
+            --max-time 45 \
+            https://www.gov.uk/bank-holidays.json \
+            --output "$tmp"
+          python3 - "$tmp" <<'PY'
+          import json
+          import re
+          import sys
+
+          path = sys.argv[1]
+          with open(path, encoding='utf-8') as handle:
+              payload = json.load(handle)
+
+          names = ('england-and-wales', 'scotland', 'northern-ireland')
+          missing = [name for name in names if name not in payload]
+          if missing:
+              raise SystemExit(f'Missing GOV.UK holiday divisions: {missing}')
+
+          dates = {}
+          for name in names:
+              events = payload[name].get('events') or []
+              values = {
+                  str(event.get('date') or '')
+                  for event in events
+                  if re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(event.get('date') or ''))
+              }
+              if not values:
+                  raise SystemExit(f'No dated bank-holiday events for {name}')
+              dates[name] = values
+
+          if dates['england-and-wales'] == dates['scotland']:
+              raise SystemExit('England/Wales and Scotland holiday calendars unexpectedly match exactly')
+          if dates['england-and-wales'] == dates['northern-ireland']:
+              raise SystemExit('England/Wales and Northern Ireland holiday calendars unexpectedly match exactly')
+
+          print('GOV.UK bank holiday source healthy')
+          for name in names:
+              print(f'  {name}: {len(dates[name])} dated events')
+          print('  Scotland-only sample:', sorted(dates['scotland'] - dates['england-and-wales'])[:3])
+          print('  England/Wales-only sample:', sorted(dates['england-and-wales'] - dates['scotland'])[:3])
+          PY
+
+      - name: Probe Wikidata Query Service
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          trap 'rm -f "$tmp"' EXIT
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --connect-timeout 15 \
+            --max-time 45 \
+            --header 'Accept: application/sparql-results+json' \
+            --header 'User-Agent: KerbsideRail-GitHubActions/1.0' \
+            --get \
+            --data-urlencode 'format=json' \
+            --data-urlencode 'query=PREFIX wd: <http://www.wikidata.org/entity/> SELECT ?item WHERE { VALUES ?item { wd:Q42 } } LIMIT 1' \
+            https://query.wikidata.org/sparql \
+            --output "$tmp"
+          python3 - "$tmp" <<'PY'
+          import json
+          import sys
+
+          path = sys.argv[1]
+          with open(path, encoding='utf-8') as handle:
+              payload = json.load(handle)
+          rows = payload.get('results', {}).get('bindings', [])
+          if len(rows) != 1:
+              raise SystemExit(f'Unexpected Wikidata result count: {len(rows)}')
+          value = rows[0].get('item', {}).get('value', '')
+          if value != 'http://www.wikidata.org/entity/Q42':
+              raise SystemExit(f'Unexpected Wikidata binding: {value!r}')
+          print('Wikidata Query Service healthy:', value)
+          PY
