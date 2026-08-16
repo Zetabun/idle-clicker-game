@@ -18,9 +18,9 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.28';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.28';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.28';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.29';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.29';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.29';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
