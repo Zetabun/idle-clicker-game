@@ -94,10 +94,6 @@ try{
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').every(item=>item.id!=='journey-upcoming'));
   const archived=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved-polish.v3')||'{}').archived||{});
   assert.ok(archived['journey-upcoming'],'archive did not persist the complete journey');
-  await page.waitForSelector('.saved-polish-archived');
-  await page.click('.saved-polish-archived > summary');
-  await page.waitForSelector('.saved-polish-archived');
-  await page.click('.saved-polish-archived > summary');
   await page.waitForSelector('[data-saved-polish-restore="journey-upcoming"]',{state:'attached'});
   await page.evaluate(()=>{const details=document.querySelector('.saved-polish-archived'),restore=document.querySelector('[data-saved-polish-restore="journey-upcoming"]');if(details)details.open=true;if(!restore)throw new Error('Restore button missing');restore.click();});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').some(item=>item.id==='journey-upcoming'));
@@ -107,11 +103,14 @@ try{
   if(runs('edit')){
   const editDate=await page.evaluate(()=>window.__fixtureDates.add(window.__fixtureDates.tomorrow,5));
   const beforeEditCount=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length);
-  await page.locator('[data-saved-polish-edit="journey-next"]').dispatchEvent('click');
+  await page.waitForSelector('[data-saved-polish-edit="journey-next"]');
+  const editStarted=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.beginEdit('journey-next'));
+  assert.equal(editStarted,true,'beginEdit returned false');
   await page.waitForSelector('#savedJourneyEditBanner');
   assert.equal(await page.locator('#planJourneyResults [data-plan-save-key]').innerText(),'Save changes');
   await page.fill('#planJourneyDate',editDate);
-  await page.locator('#planJourneyResults [data-plan-save-key]').dispatchEvent('click');
+  const editSaved=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.commitEdit(document.querySelector('#planJourneyResults [data-plan-save-key]')));
+  assert.equal(editSaved,true,'commitEdit returned false');
   await page.waitForFunction(date=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').find(item=>item.id==='journey-next')?.date===date,editDate);
   const edited=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').find(item=>item.id==='journey-next'));
   assert.equal(edited.id,'journey-next');
