@@ -1,0 +1,29 @@
+name: Apply Kerbside 0.9.31 Active Journey test isolation
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.31-movement-match-recovery
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.31-movement-match-recovery
+          fetch-depth: 0
+      - name: Patch Active Journey regression
+        run: |
+          python3 .github/scripts/isolate-movement-active-journey-test.py
+          node --check kerbside-backend/tests/train-active-journey-regression.mjs
+      - name: Commit test isolation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add kerbside-backend/tests/train-active-journey-regression.mjs
+          git commit -m 'Isolate movement Worker in Active Journey regression'
+          git push origin HEAD:agent/kerbside-0.9.31-movement-match-recovery
