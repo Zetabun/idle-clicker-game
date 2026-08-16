@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='0.9.25';
+const VERSION='0.9.26';
 const REFRESH_CACHE_MS=5*60*1000;
 const REQUEST_TIMEOUT_MS=7000;
 const HISTORY_KEY='kerbside.status.history.v1';

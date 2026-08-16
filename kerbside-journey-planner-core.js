@@ -920,7 +920,7 @@ function planJourneyDetailsMarkup(row){
 }
 function planResultMarkup(row,index,all){
   const forecast=row.forecast&&row.forecast.primary||{},level=planCrowdClass(forecast.level),changeText=Number(row.changes||0)===0?'Direct':`1 change at ${esc(row.interchange&&row.interchange.name||row.interchange&&row.interchange.crs||'interchange')}`,confidence=forecast.confidence?`${forecast.confidence} confidence`:'Forecast v4',key=planCandidateKey(row),saved=planSavedEntryForCandidate(row),focus=planState.savedFocus&&planState.savedFocus.candidateKey===key?planState.savedFocus:null;
-  const reasons=(forecast.reasons||[]).slice(0,2).map(reason=>`<li>${esc(reason)}</li>`).join('');
+  const reasons=(forecast.reasons||[]).slice(0,3).map(reason=>`<li>${esc(reason)}</li>`).join('');
   const focusText=focus?(focus.resolution==='closest'?'Closest current match · review before relying on it':'Saved journey · refreshed from current data'):'';
   return `<article class="plan-journey-result${index===0?' best':''}${focus?' is-saved-focus':''}" data-plan-rank="${index+1}" data-plan-key="${esc(key)}">
     <div class="plan-result-rank"><span>${index===0?'Best match':`#${index+1}`}</span><b>${esc(row.std||row.departure||'')} → ${esc(row.arrival||'')}</b></div>
@@ -958,14 +958,16 @@ async function loadPlanEvents(from,to,date,candidates){
   const api=window.__KERBSIDE_EVENTS__;if(!api)return null;
   const interchanges=[...new Set((candidates||[]).map(item=>planInterchangeStation(item)?.name).filter(Boolean))].slice(0,4);
   const journey={origin:from.name,originCrs:from.crs,destination:to.name,destinationCrs:to.crs,interchanges,date};
-  const work=Promise.allSettled([
-    typeof api.footballEventsFor==='function'?api.footballEventsFor(date):Promise.resolve([]),
-    typeof api.wikidataEventsForJourney==='function'?api.wikidataEventsForJourney(journey):Promise.resolve([])
-  ]).then(results=>{
-    const rows=[];for(const result of results)if(result.status==='fulfilled'&&Array.isArray(result.value))rows.push(...result.value);
-    const seen=new Set();return rows.filter(item=>{const key=`${String(item&&item.title||'').toLowerCase()}|${String(item&&item.startTime||'')}`;if(!key||seen.has(key))return false;seen.add(key);return true;});
-  });
-  return withTimeout(work,PLAN_EVENT_TIMEOUT_MS);
+  const source=async work=>{
+    try{const rows=await withTimeout(Promise.resolve().then(work),PLAN_EVENT_TIMEOUT_MS);return Array.isArray(rows)?rows:[];}
+    catch(error){return [];}
+  };
+  const [football,wikidata]=await Promise.all([
+    source(()=>typeof api.footballEventsFor==='function'?api.footballEventsFor(date):[]),
+    source(()=>typeof api.wikidataEventsForJourney==='function'?api.wikidataEventsForJourney(journey):[])
+  ]);
+  const rows=[...football,...wikidata],seen=new Set();
+  return rows.filter(item=>{const key=`${String(item&&item.title||'').toLowerCase()}|${String(item&&item.startTime||'')}`;if(!key||seen.has(key))return false;seen.add(key);return true;});
 }
 async function searchPlanJourneys(options={}){
   const button=$('planJourneySearch');if(button){button.disabled=true;button.textContent='Comparing…';}

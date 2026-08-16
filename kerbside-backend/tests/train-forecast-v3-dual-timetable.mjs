@@ -33,9 +33,9 @@ function loadPrediction({station={name:'Test Station',crs:'ZZZ'},model=null,over
   return {trains:context.window.__KERBSIDE_TRAINS__,v3:context.window.__KERBSIDE_FORECAST_V3__,station,context};
 }
 
-function loadEvents(){
+function loadEvents({fetchImpl=null,store=null}={}){
   const window={addEventListener(){},dispatchEvent(){},__KERBSIDE_FORECAST_V3__:{apply(){}}};
-  const context={window,document:documentStub,Date:FixedDate,Intl,console,localStorage:storage(),setTimeout,clearTimeout,AbortController,fetch:async()=>{throw new Error('network not expected');}};
+  const context={window,document:documentStub,Date:FixedDate,Intl,console,localStorage:store||storage(),setTimeout,clearTimeout,AbortController,fetch:fetchImpl||(async()=>{throw new Error('network not expected');})};
   vm.createContext(context);
   vm.runInContext(eventsSource,context);
   return context.window.__KERBSIDE_EVENTS__;
@@ -138,6 +138,59 @@ test('Forecast v4 explicitly requests the de-duplicated baseline',()=>{
   v3.forecast(row,0,[row],{station,referenceDate:new FixedDate('2026-08-12T12:00:00Z')});
   assert.equal(seen.modelLayer,'v3-baseline');
   assert.equal(seen.includeFeedback,false);
+});
+
+test('OpenFootball Football.TXT parser inherits kick-off times and season years',()=>{
+  const events=loadEvents();
+  const rows=events.parseFootballText(`= English Championship 2026/27
+  Sat Aug 29 2026
+    15:00  Norwich City FC         v Burnley FC
+           Bristol City FC         v Portsmouth FC
+  Fri Jan 1 2027
+    12:00  Bristol City FC         v West Ham United FC
+  Sat Jan 16
+    12:00  Bristol City FC         v Norwich City FC
+`,'2026-27');
+  const plain=JSON.parse(JSON.stringify(rows));
+  assert.deepEqual(plain,[
+    {date:'2026-08-29',time:'15:00',team1:'Norwich City FC',team2:'Burnley FC'},
+    {date:'2026-08-29',time:'15:00',team1:'Bristol City FC',team2:'Portsmouth FC'},
+    {date:'2027-01-01',time:'12:00',team1:'Bristol City FC',team2:'West Ham United FC'},
+    {date:'2027-01-16',time:'12:00',team1:'Bristol City FC',team2:'Norwich City FC'}
+  ]);
+});
+
+test('current-season Football.TXT supplies Bristol City when football.json has not rolled over',async()=>{
+  const calls=[];
+  const championship=`= English Championship 2026/27
+  Sat Aug 29 2026
+    15:00  Norwich City FC         v Burnley FC
+           Bristol City FC         v Portsmouth FC
+`;
+  const fetchImpl=async url=>{
+    calls.push(String(url));
+    if(String(url).endsWith('/2026-27/2-championship.txt'))return {ok:true,status:200,text:async()=>championship};
+    if(String(url).endsWith('/2026-27/1-premierleague.txt'))return {ok:true,status:200,text:async()=>'= English Premier League 2026/27\n'};
+    return {ok:false,status:404,json:async()=>({}),text:async()=>''};
+  };
+  const events=loadEvents({fetchImpl});
+  const rows=await events.footballEventsFor('2026-08-29');
+  const bristol=rows.find(item=>/Bristol City FC v Portsmouth FC/.test(item.title));
+  assert.ok(bristol,{rows,calls});
+  assert.equal(bristol.place,'Bristol');
+  assert.equal(bristol.startTime,'15:00');
+  assert.equal(bristol.type,'football');
+  assert.ok(!calls.some(url=>url.includes('/2025-26/')),{calls});
+});
+
+test('football pressure tapers through the first hour after kick-off but not deep into the match',()=>{
+  const events=loadEvents();
+  const fixture={title:'Bristol City FC v Portsmouth FC',place:'Bristol',start:15*60,end:17*60+30,attendance:22950,confidence:.9,type:'football'};
+  const journey={origin:'Birmingham New Street',destination:'Bristol Temple Meads',destinationCrs:'BRI'};
+  const lateFirstHalf=events.relevance(fixture,{std:'14:12',arrival:'15:36'},journey);
+  const deepIntoMatch=events.relevance(fixture,{std:'14:42',arrival:'16:07'},journey);
+  assert.ok(lateFirstHalf&&lateFirstHalf.amount>=.16,{lateFirstHalf});
+  assert.equal(deepIntoMatch,null);
 });
 
 test('scheduled destination arrival drives event pressure before live calling points exist',()=>{

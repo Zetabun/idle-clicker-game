@@ -23,11 +23,17 @@
 const MAX_EVENT_PRESSURE=0.8;
 const WIKIDATA_ENDPOINT='https://query.wikidata.org/sparql';
 const FOOTBALL_BASE='https://raw.githubusercontent.com/openfootball/football.json/master';
-const FOOTBALL_LEAGUES=['en.1','en.2'];
+const FOOTBALL_TEXT_BASE='https://raw.githubusercontent.com/openfootball/england/master';
+const FOOTBALL_LEAGUES=[
+  {json:'en.1',text:'1-premierleague.txt'},
+  {json:'en.2',text:'2-championship.txt'}
+];
 const FETCH_TIMEOUT_MS=7000;
 const MEMORY_CACHE_MS=30*60*1000;
 const FIXTURE_CACHE_MS=7*24*60*60*1000;
-const FIXTURE_STORE='kerbside.rail.fixtures.v1';
+/* v2 deliberately invalidates the old cache: v1 could contain the previous
+   season after the generated JSON mirror returned 404 for a new season. */
+const FIXTURE_STORE='kerbside.rail.fixtures.v2';
 
 const state={events:[],updatedAt:0,status:'idle',date:'',sources:[]};
 const cache=new Map();
@@ -233,6 +239,60 @@ async function fetchJson(url,signal){
     return await response.json();
   }finally{clearTimeout(timer);}
 }
+async function fetchText(url,signal){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),FETCH_TIMEOUT_MS);
+  if(signal){
+    if(signal.aborted)controller.abort();
+    else signal.addEventListener('abort',()=>controller.abort(),{once:true});
+  }
+  try{
+    const response=await fetch(url,{headers:{Accept:'text/plain'},signal:controller.signal});
+    if(!response.ok)throw new Error(`${url} returned ${response.status}`);
+    return await response.text();
+  }finally{clearTimeout(timer);}
+}
+const FOOTBALL_MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function parseFootballText(text,season){
+  const startYear=Number(String(season||'').slice(0,4));
+  if(!Number.isFinite(startYear))return [];
+  let year=startYear,lastMonth=0,date='',time='';
+  const matches=[];
+  for(const line of String(text||'').split(/\r?\n/)){
+    const day=line.match(/^\s*(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2})(?:\s+(\d{4}))?\s*$/);
+    if(day){
+      const month=FOOTBALL_MONTHS[String(day[1]||'').toLowerCase()];
+      if(!month){date='';time='';continue;}
+      if(day[3])year=Number(day[3]);
+      else if(lastMonth&&month<lastMonth)year+=1;
+      lastMonth=month;time='';
+      date=`${year}-${String(month).padStart(2,'0')}-${String(Number(day[2])).padStart(2,'0')}`;
+      continue;
+    }
+    if(!date)continue;
+    const row=line.match(/^\s*(?:(\d{1,2}:\d{2})\s+)?(.+?)\s+v\s+(.+?)\s*$/);
+    if(!row)continue;
+    if(row[1])time=row[1];
+    if(!time)continue;
+    const team1=String(row[2]||'').trim();
+    const team2=String(row[3]||'').replace(/\s+\d+\s*-\s*\d+(?:\s+\([^)]*\))?\s*$/,'').trim();
+    if(team1&&team2)matches.push({date,time,team1,team2});
+  }
+  return matches;
+}
+async function loadFootballLeague(season,league){
+  /* Football.TXT is the maintained source. football.json is an auto-generated
+     convenience mirror and has historically appeared later at season rollover. */
+  try{
+    const text=await fetchText(`${FOOTBALL_TEXT_BASE}/${season}/${league.text}`);
+    const matches=parseFootballText(text,season);
+    if(matches.length)return matches;
+  }catch(e){}
+  try{
+    const json=await fetchJson(`${FOOTBALL_BASE}/${season}/${league.json}.json`);
+    return Array.isArray(json&&json.matches)?json.matches:[];
+  }catch(e){return [];}
+}
 /* One fetch per season covers every fixture date for months, so this is
    cached in localStorage for a week rather than hit per journey. */
 async function loadFixtures(dateStamp){
@@ -244,23 +304,20 @@ async function loadFixtures(dateStamp){
     const byDate={};
     for(const season of seasonsFor(dateStamp)){
       let any=false;
-      for(const league of FOOTBALL_LEAGUES){
-        try{
-          const json=await fetchJson(`${FOOTBALL_BASE}/${season}/${league}.json`);
-          const matches=Array.isArray(json&&json.matches)?json.matches:[];
-          matches.forEach(match=>{
-            const club=clubFor(match&&match.team1);
-            if(!club||!match.date)return;
-            (byDate[match.date]=byDate[match.date]||[]).push({
-              title:`${match.team1} v ${match.team2}`,
-              place:club.city,
-              startTime:match.time||'15:00',
-              capacity:club.capacity,
-              type:'football'
-            });
+      const leagues=await Promise.all(FOOTBALL_LEAGUES.map(league=>loadFootballLeague(season,league)));
+      for(const matches of leagues){
+        matches.forEach(match=>{
+          const club=clubFor(match&&match.team1);
+          if(!club||!match.date)return;
+          (byDate[match.date]=byDate[match.date]||[]).push({
+            title:`${match.team1} v ${match.team2}`,
+            place:club.city,
+            startTime:match.time||'15:00',
+            capacity:club.capacity,
+            type:'football'
           });
-          any=any||matches.length>0;
-        }catch(e){}
+        });
+        any=any||matches.length>0;
       }
       if(any)break;
     }
@@ -371,7 +428,8 @@ function relevance(event,service,journey){
     phase='after';
     ideal=45;
   }
-  if(delta==null||delta<-30||delta>240)return null;
+  const earlyLimit=nearDest?-60:-30;
+  if(delta==null||delta<earlyLimit||delta>240)return null;
 
   const timing=clamp(1-Math.abs(delta-ideal)/180,.15,1);
   const size=event.attendance>=50000?1:event.attendance>=20000?.8:event.attendance>=8000?.6:event.attendance>=2500?.4:.25;
@@ -448,6 +506,6 @@ window.__KERBSIDE_EVENTS__={
   state,setEvents,refresh,pressureForJourney,MAX_EVENT_PRESSURE,
   normalise,relevance,locality,placeMatches,sparqlForJourney,rowsToEvents,
   wikidataEventsForJourney,footballEventsFor,loadFixtures,clubFor,
-  currentJourney,timetableInterchanges,journeyDate,serviceArrival,signedGap,seasonsFor
+  currentJourney,timetableInterchanges,journeyDate,serviceArrival,signedGap,seasonsFor,parseFootballText,loadFootballLeague
 };
 })();
