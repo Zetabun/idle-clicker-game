@@ -14,8 +14,9 @@
    are never intercepted here. */
 const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.27';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.27';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.28';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.28';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.28';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
   'https://hux.azurewebsites.net'
@@ -143,6 +144,13 @@ const core=document.createElement('script');
 core.src=PLANNER_CORE_URL;
 core.async=false;
 core.onerror=()=>{stationState.error='Journey planner core failed to load';notifyStationState();};
+core.addEventListener('load',()=>{
+  const polish=document.createElement('script');
+  polish.src=SAVED_POLISH_URL;
+  polish.async=false;
+  polish.onerror=()=>{stationState.error='Saved Journeys polish failed to load';notifyStationState();};
+  (document.head||document.documentElement).appendChild(polish);
+},{once:true});
 (document.head||document.documentElement).appendChild(core);
 
 /* Rail health is deliberately separate from the planner. Loading it here keeps
