@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.32';
+const VERSION='0.9.33';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -29,6 +29,9 @@ function selectedDate(){return text(window.__KERBSIDE_TRAIN_DATE__?.state?.date)
 function plannerDate(){return text(document.getElementById('planJourneyDate')?.value)||selectedDate();}
 function isToday(value){return text(value)===todayLondon();}
 function headcode(value){const raw=upper(value);return raw?raw.slice(0,4):'';}
+function movementTime(value){const m=text(value).match(/^(\d{1,2}):(\d{2})$/);if(!m)return'';const h=Number(m[1]),n=Number(m[2]);return h>=0&&h<24&&n>=0&&n<60?`${String(h).padStart(2,'0')}:${m[2]}`:'';}
+function originCrsFor(service){const direct=upper(service&&service.from&&(service.from.crs||service.from.crsCode));if(direct)return direct;const origin=Array.isArray(service&&service.origin)?service.origin.find(Boolean):service&&service.origin;const code=upper(origin&&(origin.crs||origin.crsCode));if(code)return code;if(service&&service.liveOnly)return upper(window.__KERBSIDE_TRAINS__?.state?.station?.crs);return'';}
+function originFallbackRef(service){const crs=originCrsFor(service),when=movementTime(service&&(service.std||service.departure||service.sta));return /^[A-Z0-9]{3}$/.test(crs)&&when?`origin:${crs}|${when}`:'';}
 function identityCandidates(service){
   const candidates=[];
   if(service&&typeof service==='object')candidates.push(service);
@@ -48,7 +51,9 @@ function refsFor(service){
     const uid=upper(candidate.uid||candidate.serviceUid||candidate.trainUid);if(uid)refs.push(`uid:${uid}`);
     const head=headcode(candidate.trainId||candidate.trainid||candidate.headcode);if(head)refs.push(`head:${head}`);
   }
-  return [...new Set(refs)];
+  const strong=[...new Set(refs)];if(strong.length)return strong;
+  const fallbacks=[service,...identityCandidates(service)].map(originFallbackRef).filter(Boolean);
+  return [...new Set(fallbacks)].slice(0,1);
 }
 function cacheKey(date,ref){return `${date}|${upper(ref)}`;}
 function cacheMovement(date,ref,value){state.cache.set(cacheKey(date,ref),value||null);}
@@ -165,13 +170,15 @@ function locationTokens(location){const values=[location&&location.crs,location&
 function rowPlace(row){return normalisePlace(row&&row.querySelector('b')&&row.querySelector('b').textContent);}
 function rowMatchesLocation(row,location){const key=rowPlace(row),tokens=locationTokens(location);if(!key||!tokens.length)return false;if(tokens.includes(key))return true;return tokens.some(token=>token.length>=4&&key.length>=4&&(token.includes(key)||key.includes(token)));}
 function firstLeg(service){return service&&service.journeyType==='connection'&&Array.isArray(service.legs)&&service.legs[0]?service.legs[0]:service;}
-function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'){const station=api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}return text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs));}
+function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'){const station=api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}const origin=Array.isArray(leg&&leg.origin)?leg.origin.find(Boolean):leg&&leg.origin;return text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||origin&&(origin.locationName||origin.name||origin.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs));}
 function serviceStartTime(service){const leg=firstLeg(service);return text(leg&&(leg.std||leg.departure));}
 function serviceEndName(service){const leg=firstLeg(service),destination=Array.isArray(leg&&leg.destination)&&leg.destination[0];return text(leg&&leg.to&&(leg.to.name||leg.to.locationName||leg.to.crs)||leg&&leg.routeDestination&&(leg.routeDestination.name||leg.routeDestination.locationName||leg.routeDestination.crs)||destination&&(destination.name||destination.locationName||destination.crs));}
 function serviceEndTime(service){const leg=firstLeg(service);return text(leg&&leg.arrival);}
 function timelineEventMeta(snapshot,event){const bits=[],actual=timeLabel(event&&event.actualTimestamp),variation=variationLabel(event),age=ageLabel(snapshot);if(actual)bits.push(`${event&&event.eventType==='ARRIVAL'?'Arrived':event&&event.eventType==='DEPARTURE'?'Departed':'Reported'} ${actual}`);if(variation)bits.push(variation);if(age)bits.push(`${snapshot&&snapshot.stale?'Last report':'Feed'} ${age}`);return bits.join(' · ');}
 function timelineSourceRows(calling){return [...calling.querySelectorAll('.train-call')].filter(row=>!row.hasAttribute('data-train-progress-marker')&&!row.hasAttribute('data-train-progress-origin'));}
-function timelineSignature(calling,snapshot,startName,startTime){const rows=timelineSourceRows(calling).map(row=>`${rowPlace(row)}|${text(row.querySelector('small')&&row.querySelector('small').textContent)}`).join('||'),event=snapshot&&snapshot.lastEvent,ageBucket=snapshot?Math.floor((ageSeconds(snapshot)||0)/15):0;return [rows,normalisePlace(startName),startTime,snapshot&&snapshot.status,snapshot&&snapshot.stale?'stale':'live',snapshot&&snapshot.updatedAt,event&&event.eventType,locationLabel(event&&event.location),locationLabel(event&&event.nextLocation),event&&event.actualTimestamp,ageBucket].join('|');}
+function londonNowMinutes(){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));let hour=Number(map.hour)||0;if(hour===24)hour=0;return hour*60+(Number(map.minute)||0);}
+function trackingFallbackState(startTime){const when=movementTime(startTime);if(!when)return'unavailable';const [h,m]=when.split(':').map(Number),scheduled=h*60+m,now=londonNowMinutes();let elapsed=now-scheduled;if(elapsed>720)elapsed-=1440;if(elapsed<-720)elapsed+=1440;return elapsed<=4?'awaiting':'unavailable';}
+function timelineSignature(calling,snapshot,startName,startTime){const rows=timelineSourceRows(calling).map(row=>`${rowPlace(row)}|${text(row.querySelector('small')&&row.querySelector('small').textContent)}`).join('||'),event=snapshot&&snapshot.lastEvent,ageBucket=snapshot?Math.floor((ageSeconds(snapshot)||0)/15):0;return [rows,normalisePlace(startName),startTime,snapshot&&snapshot.status,snapshot&&snapshot.stale?'stale':'live',snapshot&&snapshot.updatedAt,event&&event.eventType,locationLabel(event&&event.location),locationLabel(event&&event.nextLocation),event&&event.actualTimestamp,ageBucket,snapshot?'':trackingFallbackState(startTime)].join('|');}
 function setProgressClass(row,value){row.classList.remove('progress-complete','progress-current','progress-future');if(value)row.classList.add(value);}
 function makeProgressOrigin(name,time){const row=document.createElement('div');row.className='train-call progress-origin';row.setAttribute('data-train-progress-origin','');row.innerHTML=`<i></i><span><b>${esc(name)}</b><small>${time?`Scheduled ${esc(time)}`:'Journey start'}</small></span>`;return row;}
 function makeProgressMarker(snapshot,event){const tone=snapshot&&snapshot.stale?'stale':'live',where=locationLabel(event&&event.location),next=event&&event.nextLocation&&locationLabel(event.nextLocation),arrival=event&&event.eventType==='ARRIVAL',between=event&&event.eventType==='DEPARTURE'&&next,title=arrival?`At ${where}`:between?`Between ${where} and ${next}`:`Last confirmed at ${where}`,meta=[timelineEventMeta(snapshot,event),between?'Estimated between Network Rail reports · not GPS':''].filter(Boolean).join(' · '),row=document.createElement('div');row.className=`train-call train-progress-marker progress-current movement-${tone}`;row.setAttribute('data-train-progress-marker','');row.innerHTML=`<i class="train-progress-vehicle">${TRAIN_PROGRESS_ICON}</i><span><b>${esc(title)}</b><small>${esc(meta)}</small></span>`;return row;}
@@ -183,10 +190,11 @@ function decorateCallingTimeline(calling,service,snapshot,{startName='',startTim
   calling.querySelectorAll('[data-train-progress-marker],[data-train-progress-origin]').forEach(node=>node.remove());
   sourceRows.forEach(row=>{setProgressClass(row,row.classList.contains('passed')?'progress-complete':'progress-future');row.querySelectorAll('.train-progress-now').forEach(node=>node.remove());});
   let title=calling.querySelector('.train-detail-title');if(!title){title=document.createElement('div');title.className='train-detail-title';calling.prepend(title);}title.textContent=snapshot?'Live journey progress':'Journey progress';
-  const badge=document.createElement('span');badge.className=`train-progress-badge ${snapshot&&snapshot.stale?'is-stale':snapshot?'is-live':'is-idle'}`;badge.setAttribute('data-train-progress-badge','');badge.textContent=snapshot?(snapshot.stale?'NR last confirmed':'NR live'):'Live position unavailable';title.appendChild(badge);
+  const event=snapshot&&snapshot.lastEvent,fallbackState=!snapshot?trackingFallbackState(startTime):'',activated=!!(snapshot&&!event&&snapshot.status==='activated');
+  const badge=document.createElement('span');badge.className=`train-progress-badge ${snapshot&&snapshot.stale?'is-stale':snapshot||fallbackState==='awaiting'?'is-live':'is-idle'}`;badge.setAttribute('data-train-progress-badge','');badge.textContent=snapshot?(activated?'Train activated':snapshot.stale?'NR last confirmed':'NR live'):(fallbackState==='awaiting'?'Awaiting departure':'Live position unavailable');title.appendChild(badge);
   let origin=null;if(startName&&(!sourceRows[0]||normalisePlace(startName)!==rowPlace(sourceRows[0]))){origin=makeProgressOrigin(startName,startTime);title.insertAdjacentElement('afterend',origin);}
-  const rows=[...(origin?[origin]:[]),...sourceRows],event=snapshot&&snapshot.lastEvent;
-  if(!snapshot||!event){if(origin)setProgressClass(origin,'progress-future');return true;}
+  const rows=[...(origin?[origin]:[]),...sourceRows];
+  if(!snapshot||!event){if(origin){if(fallbackState==='awaiting'||activated){setProgressClass(origin,'progress-current');const now=document.createElement('em');now.className='train-progress-now';now.textContent=activated?'Network Rail has activated this service · awaiting first movement report':`Train starts here${startTime?` · scheduled ${startTime}`:''} · Live Network Rail tracking will begin when the train moves.`;origin.querySelector('span')?.appendChild(now);}else setProgressClass(origin,'progress-future');}return true;}
   const eventIndex=rows.findIndex(row=>rowMatchesLocation(row,event.location)),nextIndex=rows.findIndex(row=>rowMatchesLocation(row,event.nextLocation));
   if(eventIndex>=0){
     rows.forEach((row,index)=>setProgressClass(row,index<eventIndex?'progress-complete':index>eventIndex?'progress-future':''));

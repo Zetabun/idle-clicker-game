@@ -82,8 +82,20 @@ test('activation links UID and four-character signalling ID to service date', ()
     ['uid', '2026-08-16', 'C21373'],
     ['head', '2026-08-16', '5F25']
   ]);
+  assert.deepEqual(result.originIndexes.map(item => [item.kind, item.date, item.value]), [
+    ['origin', '2026-08-16', 'BHM|09:12']
+  ]);
   assert.equal(lookupIndexKey(normaliseLookupRef('uid:C21373'), '2026-08-16'), 'service:2026-08-16:C21373');
   assert.equal(lookupIndexKey(normaliseLookupRef('head:5f25'), '2026-08-16'), 'head:2026-08-16:5F25');
+  assert.equal(lookupIndexKey(normaliseLookupRef('origin:BHM|09:12'), '2026-08-16'), 'origin:2026-08-16:BHM|09:12');
+});
+
+test('origin fallback keeps duplicate origin/minute candidates separate for ambiguity checks', () => {
+  const secondActivation = message('0001', { ...activation.body, train_id: '775F26MP16', train_uid: 'C21374' });
+  const result = applyFeedMessages([activation, secondActivation], new Map(), corpus, now);
+  assert.equal(result.originIndexes.length, 2);
+  assert.equal(new Set(result.originIndexes.map(item => item.value)).size, 1);
+  assert.equal(new Set(result.originIndexes.map(item => item.trainId)).size, 2);
 });
 
 test('movement preserves activation identity and resolves current/next locations', () => {

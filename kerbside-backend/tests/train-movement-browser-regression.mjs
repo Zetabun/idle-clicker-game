@@ -46,7 +46,7 @@ try{
     const service={serviceID:'20260816C21373',std:'20:12',arrival:'21:33',operator:'CrossCountry',destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}]};
     const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,originalEvidenceFor=overlay&&overlay.evidenceFor;
     if(overlay)overlay.evidenceFor=row=>row===service?{service:{uid:'C21373',trainid:'5F25',serviceIdGuid:'20260816C21373'}}:(typeof originalEvidenceFor==='function'?originalEvidenceFor(row):null);
-    const trains=window.__KERBSIDE_TRAINS__,liveKey=trains.serviceKey(service,0);trains.state.services=[service];
+    const trains=window.__KERBSIDE_TRAINS__,liveKey=trains.serviceKey(service,0);trains.state.station={crs:'BHM',name:'Birmingham New Street'};trains.state.services=[service];
     document.getElementById('trainBoard').innerHTML=`<article class="train-service open" data-service-id="${liveKey}"><button class="train-service-summary"><span class="train-route"><strong>Bristol Temple Meads</strong><small>CrossCountry · Platform 11</small></span></button><div class="train-service-detail"><div class="train-calling"><div class="train-detail-title">Calling points</div><div class="train-call ahead"><i></i><span><b>University</b><small>20:20</small></span></div><div class="train-call ahead"><i></i><span><b>Selly Oak</b><small>20:24</small></span></div></div></div></article>`;
     const scheduled={...service,uid:'C21373',trainId:'5F25',serviceID:'20260816C21373',from:{crs:'BHM',name:'Birmingham New Street'},to:{crs:'BRI',name:'Bristol Temple Meads'}};
     const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduledKey=timetable.serviceKey(scheduled,0);timetable.state.services=[scheduled];
@@ -92,6 +92,25 @@ try{
   assert.equal(result.attached,'C21373');
   assert.deepEqual(result.resolvedRefs,['uid:C21373','head:5F25']);
   assert.ok(result.matches>=2,`expected movement matches, got ${result.matches}`);
+
+  const liveOnly=await page.evaluate(async()=>{
+    const api=window.__KERBSIDE_TRAIN_MOVEMENT__,timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,board=document.getElementById('trainScheduledBoard');
+    const service={serviceID:'darwin-vstp-2303',std:'23:03',arrival:'23:24',operator:'LNR & WMR',operatorCode:'LM',origin:[{locationName:'Birmingham New Street',crs:'BHM'}],destination:[{locationName:'Bromsgrove',crs:'BMV'}],displayDestination:{name:'Bromsgrove',crs:'BMV'},liveOnly:true,scheduledOnly:false,liveEvidence:true};
+    const key=timetable.serviceKey(service,0);timetable.state.services=[service];board.innerHTML=`<article class="train-service train-scheduled-service open" data-service-id="${key}"><button class="train-service-summary"><span class="train-route"><strong>Bromsgrove</strong><small>LNR & WMR</small></span></button><div class="train-service-detail"><div class="train-calling"><div class="train-detail-title">First-leg calling points</div><div class="train-call ahead"><i></i><span><b>Five Ways</b><small>23:07</small></span></div><div class="train-call ahead"><i></i><span><b>University</b><small>23:10</small></span></div></div></div></article>`;
+    await api.refresh({force:true});
+    return {refs:api.refsFor(service),timeline:board.querySelector('.train-live-progress')?.textContent||'',attached:service.networkRailMovement?.trainId||''};
+  });
+  assert.deepEqual(liveOnly.refs,['origin:BHM|23:03']);
+  assert.match(liveOnly.timeline,/Birmingham New Street/i);
+  assert.match(liveOnly.timeline,/Between Birmingham New Street and University/i);
+  assert.equal(liveOnly.attached,'775F25MP16');
+
+  const awaiting=await page.evaluate(()=>{
+    const api=window.__KERBSIDE_TRAIN_MOVEMENT__,wrap=document.createElement('div'),parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));let minute=(Number(map.hour==='24'?'0':map.hour)||0)*60+(Number(map.minute)||0)+2;minute%=1440;const start=`${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;wrap.className='train-calling';wrap.innerHTML='<div class="train-detail-title">Calling points</div><div class="train-call ahead"><i></i><span><b>Five Ways</b><small>Later</small></span></div>';document.body.appendChild(wrap);api.decorateCallingTimeline(wrap,{std:start},null,{startName:'Birmingham New Street',startTime:start});return {badge:wrap.querySelector('[data-train-progress-badge]')?.textContent||'',current:wrap.querySelector('.progress-current b')?.textContent||'',note:wrap.querySelector('.train-progress-now')?.textContent||''};
+  });
+  assert.match(awaiting.badge,/Awaiting departure/i);
+  assert.equal(awaiting.current,'Birmingham New Street');
+  assert.match(awaiting.note,/tracking will begin when the train moves/i);
 
   const atStation=await page.evaluate(()=>{
     const api=window.__KERBSIDE_TRAIN_MOVEMENT__,service=window.__KERBSIDE_TRAINS__.state.services[0],base=service.networkRailMovement,now=Date.now(),snapshot={...base,updatedAt:now-5_000,ageSeconds:5,stale:false,lastEvent:{...base.lastEvent,eventType:'ARRIVAL',location:{stanox:'16416',crs:'UNI',name:'University'},nextLocation:{stanox:'16418',name:'Selly Oak'},actualTimestamp:now-30_000,plannedTimestamp:now-30_000,variationMinutes:0,variationStatus:'ON TIME'}};
