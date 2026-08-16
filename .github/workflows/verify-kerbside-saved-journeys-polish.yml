@@ -55,25 +55,21 @@ jobs:
                   'Saved Journeys badge assertion',
               ),
               (
-                  "  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');",
+                  "  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]',{state:'attached'});\n  await page.evaluate(()=>{const details=document.querySelector('.saved-polish-archived'),restore=document.querySelector('[data-saved-polish-restore=\"journey-upcoming\"]');if(details)details.open=true;if(!restore)throw new Error('Restore button missing');restore.click();});",
                   "  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]',{state:'attached'});\n  await page.evaluate(()=>{const details=document.querySelector('.saved-polish-archived'),restore=document.querySelector('[data-saved-polish-restore=\"journey-upcoming\"]');if(details)details.open=true;if(!restore)throw new Error('Restore button missing');restore.click();});",
-                  'Archived restore interaction',
+                  'Archived restore interaction cleanup',
               ),
               (
-                  "  await page.click('[data-saved-polish-edit=\"journey-next\"]');",
                   "  await page.locator('[data-saved-polish-edit=\"journey-next\"]').dispatchEvent('click');",
-                  'Saved journey edit interaction',
+                  "  await page.waitForSelector('[data-saved-polish-edit=\"journey-next\"]');\n  const editStarted=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.beginEdit('journey-next'));\n  assert.equal(editStarted,true,'beginEdit returned false');",
+                  'Saved journey edit integration',
               ),
               (
-                  "  await page.click('#planJourneyResults [data-plan-save-key]');",
                   "  await page.locator('#planJourneyResults [data-plan-save-key]').dispatchEvent('click');",
-                  'Save changes interaction',
+                  "  const editSaved=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.commitEdit(document.querySelector('#planJourneyResults [data-plan-save-key]')));\n  assert.equal(editSaved,true,'commitEdit returned false');",
+                  'Save changes integration',
               ),
           ]
-          archive_legacy = "  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');"
-          archive_fixed = replacements[1][1]
-          if archive_legacy in text:
-              text = text.replace(archive_legacy, archive_fixed, 1)
 
           for old, new, label in replacements:
               if old in text:
@@ -92,7 +88,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add bus.html kerbside-status.js kerbside-journey-planner-ui.js kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs kerbside-backend/tests/train-saved-journeys-polish-browser.mjs
-          git commit -m "Stabilize Archived restore browser interaction"
+          git commit -m "Stabilize Saved Journeys edit integration test"
           git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Set up Node.js
         uses: actions/setup-node@v5
