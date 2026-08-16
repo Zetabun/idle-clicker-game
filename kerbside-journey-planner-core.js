@@ -954,20 +954,17 @@ function enrichPlanCandidates(candidates,from,to,date,events=null){
   finally{restore();}
 }
 async function withTimeout(promise,ms){let timer;try{return await Promise.race([promise,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),ms);})]);}finally{if(timer)clearTimeout(timer);}}
-async function loadPlanEvents(from,to,date,candidates){
-  const api=window.__KERBSIDE_EVENTS__;if(!api)return null;
-  const interchanges=[...new Set((candidates||[]).map(item=>planInterchangeStation(item)?.name).filter(Boolean))].slice(0,4);
-  const journey={origin:from.name,originCrs:from.crs,destination:to.name,destinationCrs:to.crs,interchanges,date};
-  const source=async work=>{
-    try{const rows=await withTimeout(Promise.resolve().then(work),PLAN_EVENT_TIMEOUT_MS);return Array.isArray(rows)?rows:[];}
-    catch(error){return [];}
-  };
-  const [football,wikidata]=await Promise.all([
-    source(()=>typeof api.footballEventsFor==='function'?api.footballEventsFor(date):[]),
-    source(()=>typeof api.wikidataEventsForJourney==='function'?api.wikidataEventsForJourney(journey):[])
-  ]);
-  const rows=[...football,...wikidata],seen=new Set();
-  return rows.filter(item=>{const key=`${String(item&&item.title||'').toLowerCase()}|${String(item&&item.startTime||'')}`;if(!key||seen.has(key))return false;seen.add(key);return true;});
+function planMergeEventRows(buckets){const rows=[...(buckets.football||[]),...(buckets.wikidata||[])],seen=new Set();return rows.filter(item=>{const key=`${String(item&&item.title||'').toLowerCase()}|${String(item&&item.startTime||'')}`;if(!key||seen.has(key))return false;seen.add(key);return true;});}
+function loadPlanEvents(from,to,date,candidates,{onUpdate}={}){
+  const api=window.__KERBSIDE_EVENTS__;if(!api)return Promise.resolve([]);
+  const interchanges=[...new Set((candidates||[]).map(item=>planInterchangeStation(item)?.name).filter(Boolean))].slice(0,4),journey={origin:from.name,originCrs:from.crs,destination:to.name,destinationCrs:to.crs,interchanges,date};
+  const buckets={football:[],wikidata:[]},status={football:'loading',wikidata:'loading'};
+  const emit=()=>{const events=planMergeEventRows(buckets),pending=Object.values(status).filter(value=>value==='loading').length;if(typeof onUpdate==='function')onUpdate(events,{...status,pending});return events;};
+  const run=async(kind,work)=>{try{const rows=await Promise.resolve().then(work);buckets[kind]=Array.isArray(rows)?rows:[];status[kind]='ready';}catch(error){buckets[kind]=[];status[kind]='error';}emit();};
+  return Promise.allSettled([
+    run('football',()=>typeof api.footballEventsFor==='function'?api.footballEventsFor(date):[]),
+    run('wikidata',()=>typeof api.wikidataEventsForJourney==='function'?api.wikidataEventsForJourney(journey):[])
+  ]).then(()=>emit());
 }
 async function searchPlanJourneys(options={}){
   const button=$('planJourneySearch');if(button){button.disabled=true;button.textContent='Comparing…';}
@@ -991,10 +988,9 @@ async function searchPlanJourneys(options={}){
     if(!eligibleCandidates.length){planState.results=[];renderPlanResults([]);planSetMessage(`No journeys in this window meet ${planConstraintLabel()}. Relax the constraints or widen the time window.`);return;}
     const enriched=enrichPlanCandidates(eligibleCandidates,from,to,date,null),ranked=planRankEnriched(enriched,planState.preference);planState.results=ranked;renderPlanResults(ranked);
     planSetMessage(planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{checking:true}));
-    const eventSeq=++planState.eventSeq,events=await loadPlanEvents(from,to,date,eligibleCandidates);
-    if(seq!==planState.searchSeq||eventSeq!==planState.eventSeq||!events)return;
-    const updated=planRankEnriched(enrichPlanCandidates(eligibleCandidates,from,to,date,events),planState.preference);planState.results=updated;planState.eventsReady=true;renderPlanResults(updated,{eventsReady:true});
-    planSetMessage(planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));
+    const eventSeq=++planState.eventSeq;
+    const applyEventRows=(events,status={})=>{if(seq!==planState.searchSeq||eventSeq!==planState.eventSeq)return;const updated=planRankEnriched(enrichPlanCandidates(eligibleCandidates,from,to,date,events),planState.preference);planState.results=updated;planState.eventsReady=true;renderPlanResults(updated,{eventsReady:true});const pending=Number(status.pending)||0;planSetMessage(pending?`${planComparisonMessage(windowCandidates.length,eligibleCandidates.length)} Using the latest available information while event sources still update…`:planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));};
+    loadPlanEvents(from,to,date,eligibleCandidates,{onUpdate:applyEventRows}).catch(()=>{});
   }catch(error){if(seq===planState.searchSeq)planSetMessage(error&&error.message?error.message:'Journey comparison is temporarily unavailable.',true);}
   finally{if(button){button.disabled=false;button.textContent='Compare journeys';}}
 }

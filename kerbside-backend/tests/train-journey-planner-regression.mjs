@@ -156,12 +156,12 @@ try{
     };
     const forecast=window.__KERBSIDE_FORECAST_V4__;
     forecast.forecast=service=>{
-      const id=String(service&&service.serviceID||'');
-      if(id==='PLAN-QUIET')return {score:.8,label:'Quiet',level:'quiet',confidence:'High',probabilities:{quiet:.75,moderate:.18,busy:.05,veryBusy:.02},reasons:['lower measured demand at this time']};
+      const id=String(service&&service.serviceID||''),lateEvent=window.__KERBSIDE_EVENTS__?.state?.events?.some(event=>/Bristol Arena Concert/.test(String(event&&event.title||'')));
+      if(id==='PLAN-QUIET')return lateEvent?{score:1.8,label:'Moderate',level:'moderate',confidence:'High',probabilities:{quiet:.25,moderate:.55,busy:.16,veryBusy:.04},reasons:['Bristol Arena Concert — general event context arrived after the first results']}:{score:.8,label:'Quiet',level:'quiet',confidence:'High',probabilities:{quiet:.75,moderate:.18,busy:.05,veryBusy:.02},reasons:['lower measured demand at this time']};
       if(id.startsWith('PLAN-CHANGE'))return {score:2.1,label:'Moderate',level:'moderate',confidence:'High',probabilities:{quiet:.24,moderate:.56,busy:.16,veryBusy:.04},reasons:['typical measured demand at this time']};
       return {score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
     };
-    const events=window.__KERBSIDE_EVENTS__;events.footballEventsFor=async()=>[];events.wikidataEventsForJourney=async()=>[];
+    const events=window.__KERBSIDE_EVENTS__;events.footballEventsFor=async()=>[];events.wikidataEventsForJourney=async()=>{await new Promise(resolve=>setTimeout(resolve,650));return [{title:'Bristol Arena Concert',place:'Bristol',startTime:'10:00',capacity:15000,confidence:.8,type:'event',source:'Wikidata (CC0)'}];};
     if(window.__KERBSIDE_TRAIN_TIMETABLE__)window.__KERBSIDE_TRAIN_TIMETABLE__.sync=()=>true;
   });
   await page.click('[data-train-view="plan"]');
@@ -178,6 +178,8 @@ try{
   const planCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
   assert.match(planCards[0],/Quiet Rail/,'Plan My Journey ranks the quiet Forecast v4 option first');
   assert.match(planCards[0],/Best match for Quieter/);
+  assert.equal(await page.locator('#planJourneySearch').isDisabled(),false,'initial ranked results must be usable before slow Wikidata settles');
+  await page.waitForFunction(()=>/Bristol Arena Concert/.test(document.querySelector('#planJourneyResults')?.textContent||''),undefined,{timeout:4000});
   assert.match(await page.locator('#planJourneyMeta').textContent(),/Network Rail SCHEDULE/);
   assert.match(await page.locator('#planJourneyMeta').textContent(),/Up to 1 change/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.plan.preference.v1')),'quieter');

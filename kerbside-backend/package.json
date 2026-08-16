@@ -1,7 +1,7 @@
 {
   "name": "kerbside-backend",
   "private": true,
-  "version": "0.9.26",
+  "version": "0.9.27",
   "type": "module",
   "scripts": {
     "check": "node --check src/worker.js && node --check scripts/build-region.js && node --check scripts/vendor-leaflet.js && node --check tests/browser-regression.mjs && node --check tests/train-regression.mjs && node --check tests/identity-regression.mjs && node --check tests/multi-vehicle-regression.mjs && node --check tests/audit-regression.mjs && node --check tests/accuracy-hardening-regression.mjs && node --check tests/stop-side-regression.mjs && node --check tests/journey-identity-regression.mjs && node --check tests/disruption-regression.mjs && node --check tests/listing-reliability-regression.mjs && node --check tests/train-route-filter-regression.mjs && node --check tests/train-journey-planner-regression.mjs && node --check tests/train-live-window-regression.mjs && node --check tests/train-provider-timeout-regression.mjs && node --check tests/train-mobile-layout-regression.mjs && node --check tests/train-browser-core-regression.mjs && node --check tests/duplicate-trip-identity-regression.mjs && node --check tests/train-active-journey-regression.mjs && node --check tests/train-forecast-v3-dual-timetable.mjs",

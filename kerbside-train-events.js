@@ -29,16 +29,26 @@ const FOOTBALL_LEAGUES=[
   {json:'en.2',text:'2-championship.txt'}
 ];
 const FETCH_TIMEOUT_MS=7000;
+const WIKIDATA_TIMEOUT_MS=15000;
 const MEMORY_CACHE_MS=30*60*1000;
+const WIKIDATA_CACHE_MS=6*60*60*1000;
+const WIKIDATA_STALE_MS=72*60*60*1000;
+const WIKIDATA_STORE='kerbside.rail.wikidata.v1';
+const WIKIDATA_MAX_ENTRIES=32;
 const FIXTURE_CACHE_MS=7*24*60*60*1000;
 /* v2 deliberately invalidates the old cache: v1 could contain the previous
    season after the generated JSON mirror returned 404 for a new season. */
 const FIXTURE_STORE='kerbside.rail.fixtures.v2';
 
-const state={events:[],updatedAt:0,status:'idle',date:'',sources:[]};
+const state={events:[],updatedAt:0,status:'idle',date:'',sources:[],sourceStatus:{football:{status:'idle',updatedAt:0},wikidata:{status:'idle',updatedAt:0}}};
 const cache=new Map();
 let fixtureIndex=null;
 let fixturePromise=null;
+function markSource(name,status,detail={}){state.sourceStatus[name]={status,updatedAt:Date.now(),...detail};return state.sourceStatus[name];}
+function readWikidataStore(){try{const raw=JSON.parse(localStorage.getItem(WIKIDATA_STORE)||'null');return raw&&raw.entries&&typeof raw.entries==='object'?raw:{entries:{}};}catch(error){return {entries:{}};}}
+function writeWikidataStore(store){try{const entries=Object.entries(store&&store.entries||{}).sort((a,b)=>Number(b[1]&&b[1].ts||0)-Number(a[1]&&a[1].ts||0)).slice(0,WIKIDATA_MAX_ENTRIES);localStorage.setItem(WIKIDATA_STORE,JSON.stringify({entries:Object.fromEntries(entries)}));}catch(error){}}
+function wikidataStoredEntry(key){const store=readWikidataStore(),entry=store.entries[key];return entry&&Array.isArray(entry.rows)&&Number(entry.ts)?{store,entry}:null;}
+function saveWikidataEntry(key,rows){const store=readWikidataStore();store.entries[key]={ts:Date.now(),rows:Array.isArray(rows)?rows:[]};writeWikidataStore(store);}
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const unique=a=>[...new Set(a.filter(Boolean))];
@@ -226,9 +236,9 @@ function readFixtureStore(){
 function writeFixtureStore(byDate){
   try{localStorage.setItem(FIXTURE_STORE,JSON.stringify({ts:Date.now(),byDate}));}catch(e){}
 }
-async function fetchJson(url,signal){
+async function fetchJson(url,signal,timeoutMs=FETCH_TIMEOUT_MS){
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),FETCH_TIMEOUT_MS);
+  const timer=setTimeout(()=>controller.abort(),timeoutMs);
   if(signal){
     if(signal.aborted)controller.abort();
     else signal.addEventListener('abort',()=>controller.abort(),{once:true});
@@ -328,20 +338,13 @@ async function loadFixtures(dateStamp){
   return fixturePromise;
 }
 async function footballEventsFor(dateStamp){
+  markSource('football','loading',{date:dateStamp});
   try{
-    const index=await loadFixtures(dateStamp);
-    return (index[dateStamp]||[]).map(match=>({
-      title:match.title,
-      place:match.place,
-      startTime:match.startTime,
-      /* Kick-off plus roughly two hours of play and egress. */
-      endTime:'',
-      attendance:Math.round(match.capacity*0.85),
-      confidence:0.9,
-      type:'football',
-      source:'openfootball (public domain)'
+    const index=await loadFixtures(dateStamp),rows=(index[dateStamp]||[]).map(match=>({
+      title:match.title,place:match.place,startTime:match.startTime,endTime:'',attendance:Math.round(match.capacity*0.85),confidence:0.9,type:'football',source:'openfootball (public domain)'
     }));
-  }catch(e){return [];}
+    markSource('football','ready',{date:dateStamp,count:rows.length});return rows;
+  }catch(error){markSource('football','error',{date:dateStamp,error:String(error&&error.message||error||'unavailable')});return [];}
 }
 
 /* --------------------------------------------------------------- */
@@ -390,16 +393,20 @@ function rowsToEvents(rows){
   }).filter(event=>event.title&&event.startTime);
 }
 async function wikidataEventsForJourney(journey){
-  const query=sparqlForJourney(journey);
-  if(!query)return [];
+  const query=sparqlForJourney(journey);if(!query)return [];
   const places=[locality(journey.origin),locality(journey.destination),...(Array.isArray(journey.interchanges)?journey.interchanges.map(locality):[])].filter(Boolean).sort().join('|');
-  const key=`wd|${journey.date}|${places}`.toLowerCase();
-  const stored=cache.get(key);
-  if(stored&&Date.now()-stored.ts<MEMORY_CACHE_MS)return stored.rows;
-  const json=await fetchJson(`${WIKIDATA_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`);
-  const rows=rowsToEvents(json&&json.results&&json.results.bindings);
-  cache.set(key,{ts:Date.now(),rows});
-  return rows;
+  const key=`wd|${journey.date}|${places}`.toLowerCase(),memory=cache.get(key);
+  if(memory&&Date.now()-memory.ts<MEMORY_CACHE_MS){markSource('wikidata','cached',{date:journey.date,count:memory.rows.length,ageMs:Date.now()-memory.ts});return memory.rows;}
+  const stored=wikidataStoredEntry(key),age=stored?Date.now()-stored.entry.ts:Infinity;
+  if(stored&&age<WIKIDATA_CACHE_MS){cache.set(key,stored.entry);markSource('wikidata','cached',{date:journey.date,count:stored.entry.rows.length,ageMs:age});return stored.entry.rows;}
+  markSource('wikidata','loading',{date:journey.date});
+  try{
+    const json=await fetchJson(`${WIKIDATA_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`,null,WIKIDATA_TIMEOUT_MS),rows=rowsToEvents(json&&json.results&&json.results.bindings);
+    const entry={ts:Date.now(),rows};cache.set(key,entry);saveWikidataEntry(key,rows);markSource('wikidata','ready',{date:journey.date,count:rows.length});return rows;
+  }catch(error){
+    if(stored&&age<WIKIDATA_STALE_MS){cache.set(key,stored.entry);markSource('wikidata','stale',{date:journey.date,count:stored.entry.rows.length,ageMs:age,error:String(error&&error.message||error||'unavailable')});return stored.entry.rows;}
+    markSource('wikidata','error',{date:journey.date,error:String(error&&error.message||error||'unavailable')});throw error;
+  }
 }
 if(!window.__KERBSIDE_EVENT_SOURCE__){
   window.__KERBSIDE_EVENT_SOURCE__={name:'Wikidata (CC0)',eventsForJourney:wikidataEventsForJourney};
@@ -467,8 +474,10 @@ async function refresh(){
   /* A destination is no longer required. A plain departure board still
      benefits from knowing a 60,000-seat fixture just finished up the road. */
   if(!journey.origin){state.status='waiting';return;}
-  state.status='loading';
   const date=journeyDate();
+  /* Keep already-resolved context usable while a same-date background refresh
+     checks for fresher source data. Per-source health still exposes loading. */
+  if(!(state.status==='ready'&&state.date===date))state.status='loading';
   try{
     const [football,wikidata]=await Promise.all([
       footballEventsFor(date),

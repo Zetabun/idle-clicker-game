@@ -3,10 +3,11 @@
 
 const VERSION = 4;
 const BANK_HOLIDAY_URL = 'https://www.gov.uk/bank-holidays.json';
-const CACHE_KEY = 'kerbside.rail.forecast.v3.calendar';
+const CACHE_KEY = 'kerbside.rail.forecast.v4.calendar.v2';
 const CACHE_MS = 24*60*60*1000;
+const CACHE_STALE_MS = 30*24*60*60*1000;
 const MAX_EVENT_PRESSURE = 0.8;
-const state = {bankHolidays:new Set(), calendarReady:false, observer:null, scheduled:false};
+const state = {bankHolidays:new Set(),bankHolidaysByDivision:{'england-and-wales':new Set(),scotland:new Set(),'northern-ireland':new Set()},bankHolidayYears:{'england-and-wales':new Set(),scotland:new Set(),'northern-ireland':new Set()},calendarReady:false,calendarStatus:'idle',calendarUpdatedAt:0,observer:null,scheduled:false};
 const $ = id => document.getElementById(id);
 function stamp(date){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date||new Date());const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));return `${map.year}-${map.month}-${map.day}`;}
 function day(date){return new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short'}).format(date||new Date());}
@@ -36,19 +37,21 @@ function dftEasterSunday(year){
   return new Date(Date.UTC(year,month-1,day));
 }
 const DFT_BANK_HOLIDAY_CACHE=new Map();
-function dftBankHolidayKeys(year){
-  if(DFT_BANK_HOLIDAY_CACHE.has(year))return DFT_BANK_HOLIDAY_CACHE.get(year);
-  const set=new Set();
-  dftHolidayAdd(set,year,1,1,true);dftHolidayAdd(set,year,1,2,true);
-  const easter=dftEasterSunday(year),goodFriday=new Date(easter),easterMonday=new Date(easter);goodFriday.setUTCDate(goodFriday.getUTCDate()-2);easterMonday.setUTCDate(easterMonday.getUTCDate()+1);
-  for(const date of [goodFriday,easterMonday]){const p=dftUtcYmd(date);dftHolidayAdd(set,p.year,p.month,p.day,false);}
+const SCOTTISH_CRS=new Set(['ABD','EDB','GLC','GLQ','DUN','INV','PER','STG','AYR','KLM','MTH','PAI','HYM','FTW','OBN','DUM','FAL','FKG','KIR','KDY','LIN','LIV','AIR']);
+const SCOTTISH_PLACE_RE=/\b(aberdeen|airdrie|arbroath|ayr|bathgate|cumbernauld|dumfries|dundee|dunfermline|edinburgh|elgin|falkirk|fort william|glasgow|gourock|greenock|hamilton|helensburgh|inverness|irvine|kilmarnock|kirkcaldy|lanark|largs|linlithgow|livingston|motherwell|oban|paisley|perth|pitlochry|prestwick|stirling|stranraer)\b/i;
+function bankHolidayDivision(station){const raw=String(station&&(station.region||station.country||station.nation)||'').toLowerCase(),name=String(station&&(station.name||station.locationName)||''),crs=String(station&&station.crs||'').toUpperCase();if(raw.includes('scot'))return'scotland';if(raw.includes('northern ireland'))return'northern-ireland';if(SCOTTISH_CRS.has(crs)||SCOTTISH_PLACE_RE.test(name))return'scotland';return'england-and-wales';}
+function dftBankHolidayKeys(year,division='england-and-wales'){
+  const cacheKey=`${division}|${year}`;if(DFT_BANK_HOLIDAY_CACHE.has(cacheKey))return DFT_BANK_HOLIDAY_CACHE.get(cacheKey);const set=new Set();
+  dftHolidayAdd(set,year,1,1,true);
+  if(division==='scotland')dftHolidayAdd(set,year,1,2,true);
+  if(division==='northern-ireland')dftHolidayAdd(set,year,3,17,true);
+  const easter=dftEasterSunday(year),goodFriday=new Date(easter),easterMonday=new Date(easter);goodFriday.setUTCDate(goodFriday.getUTCDate()-2);easterMonday.setUTCDate(easterMonday.getUTCDate()+1);let p=dftUtcYmd(goodFriday);dftHolidayAdd(set,p.year,p.month,p.day,false);if(division!=='scotland'){p=dftUtcYmd(easterMonday);dftHolidayAdd(set,p.year,p.month,p.day,false);}
   dftHolidayAdd(set,year,5,dftNthMonday(year,5,1),false);dftHolidayAdd(set,year,5,dftLastMonday(year,5),false);
-  dftHolidayAdd(set,year,8,dftNthMonday(year,8,1),false);dftHolidayAdd(set,year,8,dftLastMonday(year,8),false);
-  dftHolidayAdd(set,year,11,30,true);
-  dftHolidayAdd(set,year,12,25,true);dftHolidayAdd(set,year,12,26,true);
-  DFT_BANK_HOLIDAY_CACHE.set(year,set);return set;
+  dftHolidayAdd(set,year,8,division==='scotland'?dftNthMonday(year,8,1):dftLastMonday(year,8),false);
+  if(division==='scotland')dftHolidayAdd(set,year,11,30,true);if(division==='northern-ireland')dftHolidayAdd(set,year,7,12,true);
+  dftHolidayAdd(set,year,12,25,true);dftHolidayAdd(set,year,12,26,true);DFT_BANK_HOLIDAY_CACHE.set(cacheKey,set);return set;
 }
-function isBankHoliday(date){const p=dftLondonYmd(date);return dftBankHolidayKeys(p.year).has(dftYmdKey(p.year,p.month,p.day));}
+function isBankHoliday(date,station){const p=dftLondonYmd(date),key=dftYmdKey(p.year,p.month,p.day),division=bankHolidayDivision(station),years=state.bankHolidayYears[division],live=state.bankHolidaysByDivision[division];if(years&&years.has(p.year))return !!(live&&live.has(key));return dftBankHolidayKeys(p.year,division).has(key);}
 function dftMinuteForService(service,date){const scheduled=parseMinutes(service&&service.std);if(scheduled==null||isFuture(date))return scheduled;const expected=parseMinutes(service&&service.etd);if(expected==null)return scheduled;let delay=expected-scheduled;if(delay<-720)delay+=1440;if(delay>720)delay-=1440;return Math.abs(delay)<=180?(scheduled+delay+1440)%1440:scheduled;}
 function normalise(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ');}
 function destinationIdentity(service){const item=Array.isArray(service&&service.destination)?service.destination.find(Boolean):null;return normalise(item&&(item.crs||item.locationName)||'unknown');}
@@ -56,7 +59,7 @@ function profileDestinationIdentity(service){const display=service&&service.disp
 function operatorIdentity(service){return normalise(service&&(service.operatorCode||service.operator)||'unknown');}
 function profileKey(service,station,date){const stationCode=normalise(station&&(station.crs||station.name)||'unknown');const minute=parseMinutes(service&&service.std);const band=minute==null?'x':String(Math.floor(minute/120));return [stationCode,operatorIdentity(service),profileDestinationIdentity(service),dayClass(date),band].join('|');}
 function getProfile(api,service,date,station){const model=api&&api.state&&api.state.crowdingModel;if(!model||!model.profiles)return null;const at=station||(api&&api.state&&api.state.station);return model.profiles[profileKey(service,at,date)]||null;}
-function calendarSignal(date,minute){let amount=0;const reasons=[];const dateStamp=stamp(date);if(state.bankHolidays.has(dateStamp)){amount+=.55;reasons.push('bank-holiday travel pattern');}const month=Number(dateStamp.slice(5,7)),dom=Number(dateStamp.slice(8,10));if(month===12&&dom>=18&&dom<20){amount+=.45;reasons.push('pre-Christmas travel period');}return {amount,reasons};}
+function calendarSignal(date,minute,station){let amount=0;const reasons=[];const dateStamp=stamp(date);if(isBankHoliday(date,station)){amount+=.55;reasons.push('bank-holiday travel pattern');}const month=Number(dateStamp.slice(5,7)),dom=Number(dateStamp.slice(8,10));if(month===12&&dom>=18&&dom<20){amount+=.45;reasons.push('pre-Christmas travel period');}return {amount,reasons};}
 /* Cancellation knock-on.
    This used to be a plain backwards scan for ANY earlier cancelled service,
    worth a flat +0.75. That was safe while the board was Darwin's 9 rows over
@@ -343,8 +346,8 @@ function forecast(service,index,services,context={}){
     :{score:1.8,reasons:[],confidence:'Low'};
   if(service&&service.isCancelled)return {score:null,level:base.level||'unknown',label:base.label||'Not applicable',confidence:base.confidence||'—',reasons:base.reasons&&base.reasons.length?base.reasons:['This service is cancelled.'],modelVersion:VERSION,eventPressure:0,historySamples:Number(base.historySamples)||0,cancelled:true};
 
-  const minute=parseMinutes(service&&service.std),future=isFuture(date),dftMinute=dftMinuteForService(service,date),bankHoliday=isBankHoliday(date);
-  const calendar=calendarSignal(date,minute);
+  const minute=parseMinutes(service&&service.std),future=isFuture(date),dftMinute=dftMinuteForService(service,date),bankHoliday=isBankHoliday(date,station);
+  const calendar=calendarSignal(date,minute,station);
   const historical=historicalSignal(api,service,date,station);
   const events=eventSignal(service,date,context);
   const displacement=connectionDisplacementSignal(context);
@@ -474,9 +477,12 @@ function apply(){
   if(timetable&&typeof timetable.refreshForecasts==='function'){try{timetable.refreshForecasts();}catch(error){}}
 }
 function schedule(){if(state.scheduled)return;state.scheduled=true;requestAnimationFrame(()=>{state.scheduled=false;apply();});}
-async function loadCalendar(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(cached&&Date.now()-cached.ts<CACHE_MS&&Array.isArray(cached.dates)){state.bankHolidays=new Set(cached.dates);state.calendarReady=true;schedule();return;}}catch(error){}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('calendar');const json=await response.json(),dates=[];Object.values(json||{}).forEach(group=>(group&&group.events||[]).forEach(event=>event&&event.date&&dates.push(event.date)));state.bankHolidays=new Set(dates);state.calendarReady=true;try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),dates}));}catch(error){}schedule();}catch(error){state.calendarReady=true;}}
+function normaliseBankHolidayPayload(json){const divisions={'england-and-wales':[],scotland:[],'northern-ireland':[]};for(const name of Object.keys(divisions)){const group=json&&json[name],dates=[];(group&&Array.isArray(group.events)?group.events:[]).forEach(event=>{if(event&&/^\d{4}-\d{2}-\d{2}$/.test(String(event.date||'')))dates.push(String(event.date));});divisions[name]=unique(dates);}return divisions;}
+function applyBankHolidayDivisions(divisions,status='ready'){const next={},years={};for(const name of ['england-and-wales','scotland','northern-ireland']){const values=Array.isArray(divisions&&divisions[name])?divisions[name]:[];next[name]=new Set(values);years[name]=new Set(values.map(value=>Number(String(value).slice(0,4))).filter(Number.isFinite));}state.bankHolidaysByDivision=next;state.bankHolidayYears=years;state.bankHolidays=next['england-and-wales'];state.calendarReady=true;state.calendarStatus=status;state.calendarUpdatedAt=Date.now();schedule();}
+function readCalendarCache(){try{const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return cached&&Number(cached.ts)&&cached.divisions?cached:null;}catch(error){return null;}}
+async function loadCalendar(){const cached=readCalendarCache(),age=cached?Date.now()-cached.ts:Infinity;if(cached&&age<CACHE_MS){applyBankHolidayDivisions(cached.divisions,'cached');return;}try{const response=await fetch(BANK_HOLIDAY_URL,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error(`bank holiday calendar returned ${response.status}`);const divisions=normaliseBankHolidayPayload(await response.json());applyBankHolidayDivisions(divisions,'ready');try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),divisions}));}catch(error){}}catch(error){if(cached&&age<CACHE_STALE_MS)applyBankHolidayDivisions(cached.divisions,'stale');else{state.calendarReady=true;state.calendarStatus='fallback';state.calendarUpdatedAt=Date.now();schedule();}}}
 function init(){const board=$('trainBoard');if(board){state.observer=new MutationObserver(schedule);state.observer.observe(board,{childList:true,subtree:true});}loadCalendar();schedule();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices,dftMinuteForService,isBankHoliday};
+window.__KERBSIDE_FORECAST_V4__={version:VERSION,state,forecast,apply,detailMarkup,calendarSignal,isBankHoliday,bankHolidayDivision,dftBankHolidayKeys,normaliseBankHolidayPayload,applyBankHolidayDivisions,liveSignal,historicalSignal,formationSignal,eventSignal,connectionDisplacementSignal,journeyShapeSignal,stationMatchesOrigin,profileKey,profileDestinationIdentity,stationScaleSignal,schoolHolidaySignal,offPeakSignal,cancellationKnockOn,formationBaseline,calibratedDemandSignal,serviceClassSignal,calibration,scoreThresholds,easterSunday,removeLegacyFeedback,STATION_TIER,MAX_EVENT_PRESSURE,ordinalProbabilities,probabilityConfidence,servicePatternSignal,benchmarkServices,dftMinuteForService,isBankHoliday};
 window.__KERBSIDE_FORECAST_V3__=window.__KERBSIDE_FORECAST_V4__;
 })();
