@@ -1,0 +1,106 @@
+name: Verify Kerbside football events
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-kerbside-football-events.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-kerbside-football-events.yml
+  workflow_run:
+    workflows:
+      - Verify Kerbside production
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-football-event-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out expected production source
+        uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Install WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+      - name: Verify live football event source and timing
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFile} from 'node:fs/promises';
+          import {webkit} from 'playwright';
+
+          const expectedVersion=(await readFile('../VERSION','utf8')).trim();
+          const browser=await webkit.launch({headless:true});
+          const context=await browser.newContext({timezoneId:'Europe/London',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const page=await context.newPage();
+          const errors=[];
+          const footballResponses=[];
+          page.on('pageerror',error=>errors.push(String(error&&error.stack||error)));
+          page.on('response',response=>{
+            if(response.url().includes('raw.githubusercontent.com/openfootball/england/'))footballResponses.push({url:response.url(),status:response.status()});
+          });
+          await page.route('https://query.wikidata.org/**',route=>route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify({head:{vars:[]},results:{bindings:[]}})}));
+          await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>route.fulfill({status:404,contentType:'application/json',body:'{}'}));
+
+          try{
+            await page.goto(`${process.env.APP_URL}?football-event-smoke=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>Boolean(window.__KERBSIDE_EVENTS__?.footballEventsFor&&window.__KERBSIDE_EVENTS__?.relevance&&window.__KERBSIDE_EVENTS__?.pressureForJourney),null,{timeout:30000});
+            const liveVersion=await page.evaluate(async()=>{const response=await fetch(`VERSION?football-event-smoke=${Date.now()}`,{cache:'no-store'});return (await response.text()).trim();});
+            assert.equal(liveVersion,expectedVersion,'live Pages version does not match main');
+
+            const result=await page.evaluate(async()=>{
+              localStorage.removeItem('kerbside.rail.fixtures.v2');
+              const events=window.__KERBSIDE_EVENTS__;
+              const rows=await events.footballEventsFor('2026-08-29');
+              const match=rows.find(item=>/Bristol City FC\s+v\s+Portsmouth FC/i.test(String(item&&item.title||'')));
+              if(!match)return {rows:rows.map(item=>({title:item.title,place:item.place,startTime:item.startTime,type:item.type}))};
+              const fixture=events.normalise(match);
+              const journey={origin:'Birmingham New Street',originCrs:'BHM',destination:'Bristol Temple Meads',destinationCrs:'BRI'};
+              const late=events.relevance(fixture,{std:'14:12',arrival:'15:36'},journey);
+              const deep=events.relevance(fixture,{std:'14:42',arrival:'16:07'},journey);
+              events.setEvents([match],{date:'2026-08-29',sources:['football']});
+              const pressure=events.pressureForJourney({std:'14:12',arrival:'15:36'},journey);
+              return {match,late,deep,pressure};
+            });
+
+            assert.ok(result.match,`Bristol City v Portsmouth missing from deployed football source: ${JSON.stringify(result.rows||[])}`);
+            assert.equal(result.match.place,'Bristol');
+            assert.equal(result.match.startTime,'15:00');
+            assert.equal(result.match.type,'football');
+            assert.ok(result.late&&result.late.amount>=0.16,`15:36 arrival should retain tapered football pressure: ${JSON.stringify(result)}`);
+            assert.equal(result.late.phase,'late');
+            assert.equal(result.deep,null,'16:07 arrival should not inherit match pressure');
+            assert.ok(result.pressure.amount>=0.16,`deployed event pressure missing for 15:36 arrival: ${JSON.stringify(result.pressure)}`);
+            assert.match(result.pressure.reasons[0]||'',/Bristol City FC\s+v\s+Portsmouth FC/i);
+            assert.match(result.pressure.reasons[0]||'',/arriving soon after kick-off/i);
+            assert.ok(footballResponses.some(item=>item.status>=200&&item.status<300&&item.url.endsWith('/2026-27/2-championship.txt')),`deployed app did not successfully fetch the 2026/27 Championship Football.TXT source: ${JSON.stringify(footballResponses)}`);
+            assert.deepEqual(errors,[]);
+            console.log('Live football event smoke passed: Bristol City v Portsmouth 2026-08-29 15:00 is present; 15:36 is tapered and 16:07 is excluded.');
+          }finally{await browser.close();}
+          NODE
