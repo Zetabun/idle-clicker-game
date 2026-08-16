@@ -36,18 +36,18 @@ if count!=1:
     raise SystemExit(f'{plan_test}: expected one constraint-helper anchor, found {count}')
 plan_test.write_text(plan_text.replace(old,new,1),encoding='utf-8')
 
-# This regression specifically tests the live-board fallback. Since the app
-# now legitimately lets today's scheduled timetable own a covered journey,
-# make the fixture declare that neither scheduled source covers any date.
-# Production live/scheduled integration is covered separately by the live
-# production smoke workflows; this browser regression remains fully local.
+# This regression specifically tests the live-board fallback. Keep every
+# scheduled/live provider local: both timetable manifests report no coverage,
+# and the official Darwin Worker plus Huxley fallbacks all use the same empty
+# departure fixture. Real production integrations are covered by live smokes.
 test_path=Path('kerbside-backend/tests/train-live-window-regression.mjs')
 test_text=test_path.read_text(encoding='utf-8')
 old="""  await page.route('**://huxley2.azurewebsites.net/**',handle);
   await page.route('**://hux.azurewebsites.net/**',handle);
 }
 """
-new="""  await page.route('**://huxley2.azurewebsites.net/**',handle);
+new="""  await page.route('https://kerbside-rail.adambullas.workers.dev/**',handle);
+  await page.route('**://huxley2.azurewebsites.net/**',handle);
   await page.route('**://hux.azurewebsites.net/**',handle);
   const emptyManifest={schema:1,source:'Kerbside live-window test',timetableId:'TEST-EMPTY',dates:[],coverage:{},tocNames:{}};
   const emptyManifestResponse=route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(emptyManifest)});
@@ -59,4 +59,4 @@ count=test_text.count(old)
 if count!=1:
     raise SystemExit(f'{test_path}: expected one external-mock anchor, found {count}')
 test_path.write_text(test_text.replace(old,new,1),encoding='utf-8')
-print('Corrected Plan defaults/wording and isolated the live-window timetable fixture.')
+print('Corrected Plan defaults/wording and fully isolated the live-window providers.')
