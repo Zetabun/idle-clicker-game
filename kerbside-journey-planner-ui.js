@@ -14,8 +14,8 @@
    are never intercepted here. */
 const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.24';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.24';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.25';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.25';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
   'https://hux.azurewebsites.net'

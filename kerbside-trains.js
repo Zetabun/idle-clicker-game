@@ -926,8 +926,8 @@ function submitStationSearch(){
   searchStations(q);
 }
 
-function selectStation(station){
-  if(!station || !station.crs) return;
+function selectStation(station,{load=true}={}){
+  if(!station || !station.crs) return false;
   state.station = {name:station.name || station.crs, crs:String(station.crs).toUpperCase()};
   state.board = null;
   state.selectedServiceId = '';
@@ -935,7 +935,8 @@ function selectStation(station){
   const input = $('trainStationQuery');
   if(input) input.value = state.station.name;
   savePrefs();
-  loadBoard(state.station, {silent:false});
+  if(load) loadBoard(state.station, {silent:false});
+  return true;
 }
 
 function setBoardLoading(silent){
@@ -1303,6 +1304,7 @@ window.__KERBSIDE_TRAINS__ = {
   statusFor,
   destinationText,
   routeContext,
+  selectStation,
   state
 };
 
