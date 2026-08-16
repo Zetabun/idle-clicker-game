@@ -9,7 +9,15 @@ if text.count(old)!=1:
     raise SystemExit(f'Expected one old public-holiday test, found {text.count(old)}')
 path.write_text(text.replace(old,new,1),encoding='utf-8')
 
+planner=Path('kerbside-journey-planner-core.js')
+planner_text=planner.read_text(encoding='utf-8')
+old_message="planSetMessage(pending?`${planComparisonMessage(windowCandidates.length,eligibleCandidates.length)} Event sources still updating…`:planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));"
+new_message="planSetMessage(pending?`${planComparisonMessage(windowCandidates.length,eligibleCandidates.length)} Using the latest available information while event sources still update…`:planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));"
+if planner_text.count(old_message)!=1:
+    raise SystemExit(f'Expected one progressive event message anchor, found {planner_text.count(old_message)}')
+planner.write_text(planner_text.replace(old_message,new_message,1),encoding='utf-8')
+
 # These files are staging-only and must not survive the repository-safe release.
 Path('.github/scripts/kerbside-0.9.27-body.py').unlink(missing_ok=True)
 Path('.github/release-trigger-0.9.27.txt').unlink(missing_ok=True)
-print('Updated regional holiday regression and removed 0.9.27 staging-only files.')
+print('Updated regional holiday regression, progressive event wording and removed 0.9.27 staging-only files.')
