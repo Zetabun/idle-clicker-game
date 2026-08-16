@@ -17,14 +17,35 @@ for old,new in replacements.items():
     text=text.replace(old,new,1)
 path.write_text(text,encoding='utf-8')
 
-# The live-window regression is meant to exercise the live-board fallback that
-# renders a truthful "Later today" state when Darwin's live horizon is too
-# short. Today's scheduled timetable can legitimately own the board during a
-# CI run, in which case renderSameDayPlanning() must stand down. Put only this
-# isolated assertion into live-fallback mode so the test no longer depends on
-# the runner clock or whether today's published snapshot currently covers it.
+# This regression is specifically about the live-board fallback. Today's
+# scheduled timetable can legitimately own the same journey during CI, so
+# after the destination is committed let any scheduled load settle, then hand
+# the isolated assertion back to the live module and trigger its normal refresh.
 test_path=Path('kerbside-backend/tests/train-live-window-regression.mjs')
 test_text=test_path.read_text(encoding='utf-8')
+route_old="""  await page.locator('#trainDestinationSuggest button').filter({hasText:'Bristol Parkway'}).click();
+  await page.waitForFunction(()=>window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination?.crs==='BPW');
+
+  // Empty live data must preserve the complete journey identity. Wait for the
+"""
+route_new="""  await page.locator('#trainDestinationSuggest button').filter({hasText:'Bristol Parkway'}).click();
+  await page.waitForFunction(()=>window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination?.crs==='BPW');
+  await page.waitForFunction(()=>window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.loading===false);
+  await page.evaluate(()=>{
+    const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__;
+    if(timetable?.state)timetable.state.mode='live';
+    window.__KERBSIDE_TRAIN_LIVE_WINDOW__.handleJourneyChange();
+  });
+
+  // Empty live data must preserve the complete journey identity. Wait for the
+"""
+count=test_text.count(route_old)
+if count!=1:
+    raise SystemExit(f'{test_path}: expected one live ownership anchor, found {count}')
+test_text=test_text.replace(route_old,route_new,1)
+
+# The later-today assertion must likewise exercise the live fallback rather
+# than stand down just because the scheduled board owns today's journey.
 old="""  const departuresBefore=requests.filter(value=>value.startsWith('/departures/')).length;
   await page.evaluate(()=>{
     const input=document.getElementById('trainDepartAfter');
@@ -54,4 +75,4 @@ count=test_text.count(old)
 if count!=1:
     raise SystemExit(f'{test_path}: expected one live-window fallback anchor, found {count}')
 test_path.write_text(test_text.replace(old,new,1),encoding='utf-8')
-print('Corrected Plan My Journey wording and deterministic live-window regression.')
+print('Corrected Plan My Journey wording and isolated live-window regression ownership.')
