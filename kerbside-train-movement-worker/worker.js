@@ -13,7 +13,7 @@ import {
   trainIdOf
 } from './movement-core.js';
 
-const VERSION = '0.9.31';
+const VERSION = '0.9.32';
 const STOMP_HOST = 'publicdatafeeds.networkrail.co.uk';
 const STOMP_PORT = 61618;
 const STOMP_TOPIC = '/topic/TRAIN_MVT_ALL_TOC';
