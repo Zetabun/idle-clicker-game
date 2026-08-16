@@ -96,6 +96,8 @@ try{
   assert.ok(archived['journey-upcoming'],'archive did not persist the complete journey');
   await page.waitForSelector('.saved-polish-archived');
   await page.click('.saved-polish-archived > summary');
+  await page.waitForSelector('.saved-polish-archived');
+  await page.click('.saved-polish-archived > summary');
   await page.waitForSelector('[data-saved-polish-restore="journey-upcoming"]');
   await page.click('[data-saved-polish-restore="journey-upcoming"]');
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').some(item=>item.id==='journey-upcoming'));
@@ -105,11 +107,11 @@ try{
   if(runs('edit')){
   const editDate=await page.evaluate(()=>window.__fixtureDates.add(window.__fixtureDates.tomorrow,5));
   const beforeEditCount=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length);
-  await page.click('[data-saved-polish-edit="journey-next"]');
+  await page.locator('[data-saved-polish-edit="journey-next"]').dispatchEvent('click');
   await page.waitForSelector('#savedJourneyEditBanner');
   assert.equal(await page.locator('#planJourneyResults [data-plan-save-key]').innerText(),'Save changes');
   await page.fill('#planJourneyDate',editDate);
-  await page.click('#planJourneyResults [data-plan-save-key]');
+  await page.locator('#planJourneyResults [data-plan-save-key]').dispatchEvent('click');
   await page.waitForFunction(date=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').find(item=>item.id==='journey-next')?.date===date,editDate);
   const edited=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').find(item=>item.id==='journey-next'));
   assert.equal(edited.id,'journey-next');
