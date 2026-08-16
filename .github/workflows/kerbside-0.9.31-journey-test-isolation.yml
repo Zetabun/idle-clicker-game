@@ -1,0 +1,29 @@
+name: Apply Kerbside 0.9.31 Journey Planner test isolation
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.31-movement-match-recovery
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.31-movement-match-recovery
+          fetch-depth: 0
+      - name: Patch Journey Planner regression
+        run: |
+          python3 .github/scripts/isolate-movement-journey-planner-test.py
+          node --check kerbside-backend/tests/train-journey-planner-regression.mjs
+      - name: Commit test isolation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add kerbside-backend/tests/train-journey-planner-regression.mjs
+          git commit -m 'Isolate movement Worker in Journey Planner regression'
+          git push origin HEAD:agent/kerbside-0.9.31-movement-match-recovery
