@@ -48,19 +48,33 @@ jobs:
           path = Path('kerbside-backend/tests/train-saved-journeys-polish-browser.mjs')
           text = path.read_text(encoding='utf-8')
 
-          badge_old = "if(runs('badge')) assert.equal(await page.locator('.saved-polish-next .saved-polish-next-badge').innerText(),'Next journey');"
-          badge_new = "if(runs('badge')) assert.equal((await page.locator('.saved-polish-next .saved-polish-next-badge').textContent())?.trim(),'Next journey');"
-          if badge_old in text:
-              text = text.replace(badge_old, badge_new, 1)
-          elif badge_new not in text:
-              raise SystemExit('Expected Saved Journeys badge assertion was not found')
-
-          archive_old = "  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');"
-          archive_new = "  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');"
-          if archive_old in text:
-              text = text.replace(archive_old, archive_new, 1)
-          elif archive_new not in text:
-              raise SystemExit('Expected Archived restore assertion was not found')
+          replacements = [
+              (
+                  "if(runs('badge')) assert.equal(await page.locator('.saved-polish-next .saved-polish-next-badge').innerText(),'Next journey');",
+                  "if(runs('badge')) assert.equal((await page.locator('.saved-polish-next .saved-polish-next-badge').textContent())?.trim(),'Next journey');",
+                  'Saved Journeys badge assertion',
+              ),
+              (
+                  "  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');",
+                  "  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');",
+                  'Archived restore interaction',
+              ),
+              (
+                  "  await page.click('[data-saved-polish-edit=\"journey-next\"]');",
+                  "  await page.locator('[data-saved-polish-edit=\"journey-next\"]').dispatchEvent('click');",
+                  'Saved journey edit interaction',
+              ),
+              (
+                  "  await page.click('#planJourneyResults [data-plan-save-key]');",
+                  "  await page.locator('#planJourneyResults [data-plan-save-key]').dispatchEvent('click');",
+                  'Save changes interaction',
+              ),
+          ]
+          for old, new, label in replacements:
+              if old in text:
+                  text = text.replace(old, new, 1)
+              elif new not in text:
+                  raise SystemExit(f'Expected {label} was not found')
 
           path.write_text(text, encoding='utf-8')
           PY
@@ -73,7 +87,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add bus.html kerbside-status.js kerbside-journey-planner-ui.js kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs kerbside-backend/tests/train-saved-journeys-polish-browser.mjs
-          git commit -m "Exercise Archived restore flow in browser test"
+          git commit -m "Stabilize Saved Journeys edit browser interactions"
           git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Set up Node.js
         uses: actions/setup-node@v5
