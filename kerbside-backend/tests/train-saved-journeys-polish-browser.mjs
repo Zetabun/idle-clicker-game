@@ -103,14 +103,11 @@ try{
   if(runs('edit')){
   const editDate=await page.evaluate(()=>window.__fixtureDates.add(window.__fixtureDates.tomorrow,5));
   const beforeEditCount=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length);
-  await page.waitForSelector('[data-saved-polish-edit="journey-next"]');
-  const editStarted=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.beginEdit('journey-next'));
-  assert.equal(editStarted,true,'beginEdit returned false');
+  await page.click('[data-saved-polish-edit="journey-next"]');
   await page.waitForSelector('#savedJourneyEditBanner');
   assert.equal(await page.locator('#planJourneyResults [data-plan-save-key]').innerText(),'Save changes');
   await page.fill('#planJourneyDate',editDate);
-  const editSaved=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.commitEdit(document.querySelector('#planJourneyResults [data-plan-save-key]')));
-  assert.equal(editSaved,true,'commitEdit returned false');
+  await page.click('#planJourneyResults [data-plan-save-key]');
   await page.waitForFunction(date=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').find(item=>item.id==='journey-next')?.date===date,editDate);
   const edited=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').find(item=>item.id==='journey-next'));
   assert.equal(edited.id,'journey-next');
