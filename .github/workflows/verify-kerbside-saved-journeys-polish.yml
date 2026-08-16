@@ -47,12 +47,22 @@ jobs:
 
           path = Path('kerbside-backend/tests/train-saved-journeys-polish-browser.mjs')
           text = path.read_text(encoding='utf-8')
-          old = "if(runs('badge')) assert.equal(await page.locator('.saved-polish-next .saved-polish-next-badge').innerText(),'Next journey');"
-          new = "if(runs('badge')) assert.equal((await page.locator('.saved-polish-next .saved-polish-next-badge').textContent())?.trim(),'Next journey');"
-          if old in text:
-              path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          elif new not in text:
+
+          badge_old = "if(runs('badge')) assert.equal(await page.locator('.saved-polish-next .saved-polish-next-badge').innerText(),'Next journey');"
+          badge_new = "if(runs('badge')) assert.equal((await page.locator('.saved-polish-next .saved-polish-next-badge').textContent())?.trim(),'Next journey');"
+          if badge_old in text:
+              text = text.replace(badge_old, badge_new, 1)
+          elif badge_new not in text:
               raise SystemExit('Expected Saved Journeys badge assertion was not found')
+
+          archive_old = "  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');"
+          archive_new = "  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]');\n  await page.click('[data-saved-polish-restore=\"journey-upcoming\"]');"
+          if archive_old in text:
+              text = text.replace(archive_old, archive_new, 1)
+          elif archive_new not in text:
+              raise SystemExit('Expected Archived restore assertion was not found')
+
+          path.write_text(text, encoding='utf-8')
           PY
           python3 .github/scripts/sync-version.py
           git diff --check
@@ -63,7 +73,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add bus.html kerbside-status.js kerbside-journey-planner-ui.js kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs kerbside-backend/tests/train-saved-journeys-polish-browser.mjs
-          git commit -m "Fix Kerbside 0.9.28 CI follow-up"
+          git commit -m "Exercise Archived restore flow in browser test"
           git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Set up Node.js
         uses: actions/setup-node@v5
