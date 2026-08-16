@@ -14,8 +14,12 @@ def replace_once(path, old, new):
 # carry-over on a real-shaped row whose first fixture supplies that day's time.
 replace_once(
     'kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs',
-    "  Sat Jan 16\\n           Bristol City FC         v Norwich City FC\\n`,'2026-27');",
-    "  Sat Jan 16\\n    12:00  Bristol City FC         v Norwich City FC\\n`,'2026-27');"
+    """  Sat Jan 16
+           Bristol City FC         v Norwich City FC
+`,'2026-27');""",
+    """  Sat Jan 16
+    12:00  Bristol City FC         v Norwich City FC
+`,'2026-27');"""
 )
 
 # This regression file predates the current explicit browser/test script list and
