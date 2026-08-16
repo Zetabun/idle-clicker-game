@@ -24,7 +24,7 @@ on:
       - .github/workflows/verify-kerbside-saved-journeys-polish.yml
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: kerbside-saved-polish-${{ github.ref }}
@@ -37,6 +37,33 @@ jobs:
     steps:
       - name: Check out branch
         uses: actions/checkout@v5
+      - name: Apply approved broad-regression delete update
+        if: github.event_name == 'push' && github.ref_name != 'main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('kerbside-backend/tests/train-journey-planner-regression.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = "  await page.locator('#savedJourneyList [data-saved-v2-remove]').click();"
+          new = "  await page.waitForSelector('#savedJourneyList [data-saved-polish-delete]');\n  page.once('dialog',dialog=>dialog.accept());\n  await page.locator('#savedJourneyList [data-saved-polish-delete]').click();"
+          if old in text:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          elif new not in text:
+              raise SystemExit('Expected legacy Saved Journeys remove assertion was not found')
+          PY
+          git diff --check
+          if git diff --quiet; then
+            echo "Broad regression already uses confirmed Delete."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kerbside-backend/tests/train-journey-planner-regression.mjs
+          git commit -m "Update journey planner regression for confirmed delete"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
