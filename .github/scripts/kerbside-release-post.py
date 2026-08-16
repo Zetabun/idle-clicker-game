@@ -1,8 +1,8 @@
-from pathlib import Path
 import gzip
-import runpy
+import subprocess
 
-BASE = Path('.github/scripts/kerbside-release-post-base.py')
+BASE_COMMIT = 'ef20c001baa76ece056e33d24cd6b811c6db4079'
+BASE_PATH = '.github/scripts/kerbside-release-post.py'
 OLD_HIDDEN = ".plan-journey-form[hidden],.plan-journey-surface[hidden]{display:none!important}"
 NEW_HIDDEN = ".train-sidebar>[hidden],.train-content>[hidden],.plan-journey-form[hidden],.plan-journey-surface[hidden]{display:none!important}"
 real_decompress = gzip.decompress
@@ -17,8 +17,10 @@ def patched_decompress(data):
     return text.replace(OLD_HIDDEN, NEW_HIDDEN, 1).encode('utf-8')
 
 
+base_source = subprocess.check_output(
+    ['git', 'show', f'{BASE_COMMIT}:{BASE_PATH}'],
+    text=True,
+)
 gzip.decompress = patched_decompress
-try:
-    runpy.run_path(str(BASE), run_name='__main__')
-finally:
-    BASE.unlink(missing_ok=True)
+namespace = {'__name__': '__main__', '__file__': BASE_PATH}
+exec(compile(base_source, BASE_PATH, 'exec'), namespace)
