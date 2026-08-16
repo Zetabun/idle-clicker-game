@@ -1,0 +1,196 @@
+name: Verify Kerbside Plan My Journey
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-kerbside-plan-journey.yml
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-kerbside-plan-journey.yml
+  workflow_run:
+    workflows:
+      - Verify Kerbside production
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-plan-my-journey-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install WebKit smoke dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+
+      - name: Verify live long-range Plan My Journey
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+          import { webkit } from 'playwright';
+
+          const expectedVersion=(await readFile('../VERSION','utf8')).trim();
+          const browser=await webkit.launch({headless:true});
+          const context=await browser.newContext({timezoneId:'Europe/London'});
+          const page=await context.newPage();
+          const pageErrors=[];
+          const railResponses=[];
+
+          page.on('pageerror',error=>pageErrors.push(error.message));
+          page.on('response',response=>{
+            const url=response.url();
+            if(url.includes('kerbside-rail-data-zetabun.pages.dev'))railResponses.push({url,status:response.status()});
+          });
+
+          // Event feeds are optional context for Forecast v4. Keep this production
+          // UI smoke independent of third-party CORS/availability while leaving
+          // the live Kerbside app, timetable provider and Forecast v4 untouched.
+          await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>
+            route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})})
+          );
+          await page.route('https://query.wikidata.org/sparql**',route=>
+            route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify({head:{vars:[]},results:{bindings:[]}})})
+          );
+
+          try{
+            await page.goto(`${process.env.APP_URL}?plan-smoke=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>Boolean(
+              window.__KERBSIDE_JOURNEY_PLANNER__?.searchPlanJourneys &&
+              window.__KERBSIDE_TIMETABLE_PROVIDER__?.getCoverage &&
+              window.__KERBSIDE_FORECAST_V4__?.forecast &&
+              document.querySelector('#planJourneyForm')
+            ),null,{timeout:30000});
+
+            const liveVersion=await page.evaluate(async()=>{
+              const response=await fetch(`VERSION?plan-smoke=${Date.now()}`,{cache:'no-store'});
+              if(!response.ok)throw new Error(`VERSION returned ${response.status}`);
+              return (await response.text()).trim();
+            });
+            assert.equal(liveVersion,expectedVersion,'live Pages version does not match main');
+
+            const setup=await page.evaluate(async()=>{
+              const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              const coverage=await provider.getCoverage({force:true});
+              const darwinDates=coverage?.sources?.darwin?.dates||[];
+              const networkRailDates=coverage?.sources?.networkRail?.dates||[];
+              const londonToday=new Intl.DateTimeFormat('en-CA',{
+                timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'
+              }).format(new Date());
+              const daysBetween=(from,to)=>Math.round(
+                (new Date(`${to}T12:00:00Z`)-new Date(`${from}T12:00:00Z`))/86400000
+              );
+              const futureDate=networkRailDates.find(date=>
+                !darwinDates.includes(date)&&daysBetween(londonToday,date)>=49
+              )||networkRailDates.slice().reverse().find(date=>!darwinDates.includes(date));
+              if(!futureDate)throw new Error('No long-range Network Rail date is available outside Darwin coverage.');
+
+              planner.installPlanJourney();
+              planner.setPlanView(true);
+              const state=planner.planState;
+              state.from={crs:'BHM',name:'Birmingham New Street'};
+              state.to={crs:'LOB',name:'Longbridge'};
+              const setValue=(id,value)=>{
+                const node=document.getElementById(id);
+                if(!node)throw new Error(`Missing Plan My Journey field ${id}`);
+                node.value=value;
+                node.dispatchEvent(new Event(node.tagName==='SELECT'?'change':'input',{bubbles:true}));
+              };
+              setValue('planJourneyFrom','Birmingham New Street');
+              setValue('planJourneyTo','Longbridge');
+              setValue('planJourneyDate',futureDate);
+              setValue('planJourneyStart','06:00');
+              setValue('planJourneyEnd','10:00');
+              setValue('planJourneyPreference','quieter');
+              await planner.searchPlanJourneys();
+              return {futureDate,daysAway:daysBetween(londonToday,futureDate)};
+            });
+
+            await page.waitForFunction(()=>{
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              return planner?.planState?.source==='network-rail' &&
+                planner.planState.results.length>1 &&
+                document.querySelectorAll('#planJourneyResults .plan-journey-result').length>1;
+            },null,{timeout:30000});
+
+            // Allow the optional event-context refresh to complete and re-rank.
+            await page.waitForTimeout(750);
+
+            const result=await page.evaluate(()=>{
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              const state=planner.planState;
+              const cards=[...document.querySelectorAll('#planJourneyResults .plan-journey-result')].map(node=>node.textContent.replace(/\s+/g,' ').trim());
+              return {
+                source:state.source,
+                resultCount:state.results.length,
+                visibleCards:cards.length,
+                firstCard:cards[0]||'',
+                meta:document.getElementById('planJourneyMeta')?.textContent||'',
+                preference:localStorage.getItem('kerbside.rail.plan.preference.v1'),
+                firstForecast:state.results[0]?.forecast||null,
+                firstScore:state.results[0]?.planScore,
+                normalPlannerHidden:document.getElementById('trainPlanner')?.hidden===true,
+                planFormHidden:document.getElementById('planJourneyForm')?.hidden===true
+              };
+            });
+
+            assert.ok(setup.daysAway>=49,`selected Plan date is only ${setup.daysAway} days away`);
+            assert.equal(result.source,'network-rail');
+            assert.ok(result.resultCount>1,'Plan My Journey returned fewer than two long-range options');
+            assert.ok(result.visibleCards>1,'Plan My Journey rendered fewer than two comparison cards');
+            assert.equal(result.preference,'quieter');
+            assert.equal(result.normalPlannerHidden,true,'normal train planner is not hidden in Plan mode');
+            assert.equal(result.planFormHidden,false,'Plan My Journey form is hidden in Plan mode');
+            assert.match(result.meta,/Network Rail SCHEDULE/i);
+            assert.match(result.firstCard,/Forecast v4/i);
+            assert.ok(result.firstForecast&&Number.isFinite(Number(result.firstForecast.score)),'first result has no Forecast v4 score');
+            assert.ok(Number.isFinite(Number(result.firstScore)),'first result has no preference ranking score');
+            assert.ok(
+              railResponses.some(item=>item.status>=200&&item.status<300&&item.url.endsWith('/manifest.json')),
+              'live browser did not successfully fetch the Network Rail manifest'
+            );
+            assert.ok(
+              railResponses.some(item=>item.status>=200&&item.status<300&&item.url.includes(`/${setup.futureDate}.json.gz`)),
+              'live browser did not successfully fetch the selected long-range timetable day'
+            );
+            assert.deepEqual(pageErrors,[]);
+
+            console.log(JSON.stringify({version:liveVersion,...setup,...result,railResponses},null,2));
+            console.log(`Live Plan My Journey passed: ${setup.futureDate} (${setup.daysAway} days away), ${result.resultCount} candidates, ${result.source}, preference ${result.preference}.`);
+          }finally{
+            await browser.close();
+          }
+          NODE
