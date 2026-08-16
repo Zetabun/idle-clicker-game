@@ -135,9 +135,43 @@ jobs:
               setValue('planJourneyStart','06:00',{event:false});
               setValue('planJourneyEnd','10:00',{event:false});
               setValue('planJourneyPreference','quieter');
+
+              const maxChanges=document.getElementById('planJourneyMaxChanges');
+              const connectionBuffer=document.getElementById('planJourneyConnectionBuffer');
+              if(!maxChanges||!connectionBuffer)throw new Error('Plan My Journey constraint controls are missing.');
+              const defaultConstraints={maxChanges:maxChanges.value,connectionBuffer:connectionBuffer.value,bufferDisabled:connectionBuffer.disabled};
+
+              setValue('planJourneyMaxChanges','0');
+              const directOnly={
+                bufferDisabled:connectionBuffer.disabled,
+                stored:JSON.parse(localStorage.getItem('kerbside.rail.plan.constraints.v1')||'null')
+              };
+
+              setValue('planJourneyMaxChanges','1');
+              setValue('planJourneyConnectionBuffer','5');
+              const buffered={
+                bufferDisabled:connectionBuffer.disabled,
+                stored:JSON.parse(localStorage.getItem('kerbside.rail.plan.constraints.v1')||'null'),
+                boundaryPass:planner.planCandidateMeetsConstraints({changes:1,connectionMinutes:12,minimumConnectionMinutes:7},{maxChanges:1,connectionBuffer:5}),
+                boundaryFail:planner.planCandidateMeetsConstraints({changes:1,connectionMinutes:11,minimumConnectionMinutes:7},{maxChanges:1,connectionBuffer:5})
+              };
+
+              // Restore the normal first-run constraints before exercising the
+              // real long-range route so this smoke keeps its historical result shape.
+              setValue('planJourneyConnectionBuffer','0');
+              const restored=JSON.parse(localStorage.getItem('kerbside.rail.plan.constraints.v1')||'null');
               await planner.searchPlanJourneys();
-              return {futureDate,daysAway:daysBetween(londonToday,futureDate)};
+              return {futureDate,daysAway:daysBetween(londonToday,futureDate),defaultConstraints,directOnly,buffered,restored};
             });
+
+            assert.deepEqual(setup.defaultConstraints,{maxChanges:'1',connectionBuffer:'0',bufferDisabled:false},'fresh Plan constraints are not the 0.9.20 defaults');
+            assert.equal(setup.directOnly.bufferDisabled,true,'Direct only did not disable the connection buffer');
+            assert.deepEqual(setup.directOnly.stored,{maxChanges:0,connectionBuffer:0},'Direct only constraints were not saved');
+            assert.equal(setup.buffered.bufferDisabled,false,'connection buffer stayed disabled after changes were re-enabled');
+            assert.deepEqual(setup.buffered.stored,{maxChanges:1,connectionBuffer:5},'+5 minute constraints were not saved');
+            assert.equal(setup.buffered.boundaryPass,true,'exact +5 minute connection boundary was rejected');
+            assert.equal(setup.buffered.boundaryFail,false,'connection below the +5 minute boundary was accepted');
+            assert.deepEqual(setup.restored,{maxChanges:1,connectionBuffer:0},'Plan constraints were not restored before the live journey');
 
             await page.waitForFunction(()=>{
               const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
@@ -160,6 +194,8 @@ jobs:
                 firstCard:cards[0]||'',
                 meta:document.getElementById('planJourneyMeta')?.textContent||'',
                 preference:localStorage.getItem('kerbside.rail.plan.preference.v1'),
+                storedConstraints:JSON.parse(localStorage.getItem('kerbside.rail.plan.constraints.v1')||'null'),
+                stateConstraints:state.constraints,
                 firstForecast:state.results[0]?.forecast||null,
                 firstScore:state.results[0]?.preferenceScore,
                 normalPlannerHidden:document.getElementById('trainPlanner')?.hidden===true,
@@ -172,9 +208,13 @@ jobs:
             assert.ok(result.resultCount>1,'Plan My Journey returned fewer than two long-range options');
             assert.ok(result.visibleCards>1,'Plan My Journey rendered fewer than two comparison cards');
             assert.equal(result.preference,'quieter');
+            assert.deepEqual(result.storedConstraints,{maxChanges:1,connectionBuffer:0});
+            assert.deepEqual(result.stateConstraints,{maxChanges:1,connectionBuffer:0});
             assert.equal(result.normalPlannerHidden,true,'normal train planner is not hidden in Plan mode');
             assert.equal(result.planFormHidden,false,'Plan My Journey form is hidden in Plan mode');
             assert.match(result.meta,/Network Rail SCHEDULE/i);
+            assert.match(result.meta,/Up to 1 change/i);
+            assert.match(result.meta,/base connection minimum/i);
             assert.match(result.meta,/Forecast v4/i);
             assert.match(result.firstCard,/Best match/i);
             assert.ok(result.firstForecast&&Number.isFinite(Number(result.firstForecast.score)),'first result has no Forecast v4 score');
