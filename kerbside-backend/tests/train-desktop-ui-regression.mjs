@@ -77,6 +77,7 @@ try{
   assert.ok(sticky.tabsTop>=sticky.sidebarTop-1&&sticky.tabsTop<sticky.sidebarTop+24,`tabs should stay at the top of the desktop sidebar: ${JSON.stringify(sticky)}`);
   assert.ok(sticky.tabsBottom<=sticky.sidebarBottom+1,`tabs should remain visible inside the sidebar: ${JSON.stringify(sticky)}`);
   assert.match(sticky.guardCss,/calendar-picker-indicator\{filter:invert\(1\)/,'dark-theme date inputs should force a visible calendar glyph');
+  assert.match(sticky.guardCss,/overflow-anchor:none/,'desktop train sidebar should opt out of browser scroll anchoring while views are restored');
 
   await page.click('#trainViewTabs [data-train-view="trains"]');
   await trainPlanner.waitFor({state:'visible'});
@@ -94,8 +95,9 @@ try{
   assert.equal(repaired,true,'the train view guard should repair a stale hidden-state snapshot');
   assert.equal(await trainPlanner.isVisible(),true,'normal train search/planner controls should be visible after repair');
 
+  await page.waitForFunction(()=>document.querySelector('.train-sidebar')?.scrollTop===0,null,{timeout:2000});
   const sidebarState=await page.evaluate(()=>({scrollTop:document.querySelector('.train-sidebar').scrollTop,selected:document.querySelector('#trainViewTabs [data-train-view="trains"]').getAttribute('aria-selected')}));
-  assert.equal(sidebarState.scrollTop,0,'switching train views should return the desktop sidebar to its navigation');
+  assert.equal(sidebarState.scrollTop,0,'switching train views should return the desktop sidebar to its navigation after layout settles');
   assert.equal(sidebarState.selected,'true');
   assert.deepEqual(pageErrors,[],`unexpected page errors: ${pageErrors.join('\n')}`);
 
