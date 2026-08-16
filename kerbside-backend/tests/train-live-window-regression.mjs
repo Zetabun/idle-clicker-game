@@ -126,16 +126,20 @@ async function run(browser){
   await page.locator('#trainDestinationSuggest button').filter({hasText:'Bristol Parkway'}).click();
   await page.waitForFunction(()=>window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination?.crs==='BPW');
 
-  // Empty live data must preserve the complete journey identity. Wait for the
-  // destination-aware state itself rather than matching the earlier origin-only
-  // empty board, which can still be on screen for one task while the direct
-  // request settles in Chromium.
-  await page.waitForFunction(()=>{
+  // Empty live data must preserve the complete journey identity. Both the route
+  // and live-window observers can react to the same empty-board repaint, so the
+  // final live-window wording must survive a full debounce interval before the
+  // regression asserts it. This keeps the semantic check strict without racing
+  // an intermediate route-specific empty state.
+  const waitForDirectEmptyState=()=>page.waitForFunction(()=>{
     const header=document.getElementById('trainStationName')?.textContent||'';
     const board=document.getElementById('trainBoard')?.textContent||'';
     return /Birmingham Moor Street\s*→\s*Bristol Parkway/.test(header)
       && /No direct live departures in this window/i.test(board);
   });
+  await waitForDirectEmptyState();
+  await page.waitForTimeout(160);
+  await waitForDirectEmptyState();
   assert.equal((await page.locator('#trainStationName').textContent()).trim(),'Birmingham Moor Street → Bristol Parkway');
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Choose a station/);
   assert.doesNotMatch(await page.locator('#trainBoard').textContent(),/Live train data unavailable/i);
