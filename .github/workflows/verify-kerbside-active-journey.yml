@@ -1,0 +1,155 @@
+name: Verify Kerbside Active Journey
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-kerbside-active-journey.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-kerbside-active-journey.yml
+  workflow_run:
+    workflows:
+      - Verify Kerbside production
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-active-journey-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Install WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+      - name: Verify live Active Journey
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+          import { webkit } from 'playwright';
+
+          const expectedVersion=(await readFile('../VERSION','utf8')).trim();
+          const browser=await webkit.launch({headless:true});
+          const context=await browser.newContext({timezoneId:'Europe/London'});
+          const page=await context.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const errors=[];
+          page.on('pageerror',error=>errors.push(String(error&&error.stack||error)));
+          await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})}));
+          await page.route('https://query.wikidata.org/sparql**',route=>route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify({head:{vars:[]},results:{bindings:[]}})}));
+
+          const minutes=value=>{const [h,m]=String(value||'00:00').split(':').map(Number);return h*60+m;};
+          const hhmm=value=>`${String(Math.floor(value/60)%24).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`;
+          try{
+            await page.goto(`${process.env.APP_URL}?active-journey-smoke=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.startByKey&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load),null,{timeout:30000});
+            await page.click('#transportTrain');
+            const liveVersion=await page.evaluate(async()=>{
+              const response=await fetch(`VERSION?active-journey-smoke=${Date.now()}`,{cache:'no-store'});
+              return (await response.text()).trim();
+            });
+            assert.equal(liveVersion,expectedVersion);
+
+            const setup=await page.evaluate(async()=>{
+              localStorage.removeItem('kerbside.rail.active-journey.v1');
+              localStorage.removeItem('kerbside.rail.journey-watch.v1');
+              const tt=window.__KERBSIDE_TRAIN_TIMETABLE__,trains=window.__KERBSIDE_TRAINS__,routes=window.__KERBSIDE_TRAIN_ROUTES__,dates=window.__KERBSIDE_TRAIN_DATE__;
+              const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+              const options=[
+                [{name:'Birmingham New Street',crs:'BHM'},{name:'Longbridge',crs:'LOB'}],
+                [{name:'Birmingham New Street',crs:'BHM'},{name:'Coventry',crs:'COV'}],
+                [{name:'Birmingham New Street',crs:'BHM'},{name:'Wolverhampton',crs:'WVH'}]
+              ];
+              dates.setDate(today,{persist:false});
+              for(const [from,to] of options){
+                trains.state.station=from;routes.state.fromCrs=from.crs;routes.state.destination=to;
+                document.getElementById('trainStationQuery').value=from.name;
+                document.getElementById('trainDestinationQuery').value=to.name;
+                await tt.load({mode:'today',departAfter:tt.railNowTime()});
+                if(tt.state.services.length)return {today,from,to,departAfter:tt.state.departAfter,count:tt.state.services.length,source:tt.state.scheduleSource};
+              }
+              throw new Error('No same-day reference journey was available for Active Journey smoke.');
+            });
+
+            await page.waitForFunction(()=>document.querySelector('#trainScheduledBoard .train-scheduled-service [data-scheduled-toggle]'),null,{timeout:30000});
+            const first=page.locator('#trainScheduledBoard .train-scheduled-service').first();
+            const toggle=first.locator('[data-scheduled-toggle]').first();
+            await toggle.click();
+            await page.waitForFunction(()=>window.__KERBSIDE_JOURNEY_SHEET__?.active?.()===true,null,{timeout:10000});
+            const start=first.locator('[data-active-start]');
+            await start.waitFor({state:'visible',timeout:10000});
+            const startKey=await start.getAttribute('data-active-start');
+            const scheduled=await first.locator('.train-scheduled-time').first().textContent().catch(()=>null);
+            await start.click();
+
+            await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active&&document.querySelector('#trainActiveJourney:not([hidden])')&&window.__KERBSIDE_JOURNEY_SHEET__?.active?.()===false),null,{timeout:15000});
+            const active=await page.evaluate(()=>({
+              stored:JSON.parse(localStorage.getItem('kerbside.rail.active-journey.v1')||'null'),
+              watch:window.__KERBSIDE_TRAIN_TIMETABLE__.state.watch,
+              panel:document.getElementById('trainActiveJourney')?.textContent?.replace(/\s+/g,' ').trim()||'',
+              box:document.getElementById('trainActiveJourney')?.getBoundingClientRect().toJSON(),
+              sheetActive:window.__KERBSIDE_JOURNEY_SHEET__?.active?.()===true
+            }));
+            assert.equal(active.stored.date,setup.today);
+            assert.equal(active.stored.from.crs,setup.from.crs);
+            assert.equal(active.stored.to.crs,setup.to.crs);
+            assert.ok(active.stored.service?.serviceID||active.stored.service?.uid||active.stored.service?.trainId||active.stored.service?.std);
+            assert.equal(active.stored.watchOwned,true);
+            assert.doesNotMatch(JSON.stringify(active.stored),/forecast|probabilities|reasons|liveEvidence|\"etd\"|platform/i);
+            assert.ok(active.watch,'Active Journey did not reuse Journey Watch');
+            assert.match(active.panel,/Active journey/i);
+            assert.match(active.panel,/Forecast v4/i);
+            assert.match(active.panel,/cannot detect whether you boarded/i);
+            assert.equal(active.sheetActive,false,'journey detail sheet stayed open over Active Journey');
+            assert.ok(active.box&&active.box.width<=390,'Active Journey panel overflows mobile viewport');
+
+            const pin=await page.evaluate(()=>{
+              const active=window.__KERBSIDE_ACTIVE_JOURNEY__,stored=active.state.active;
+              const [h,m]=stored.scheduledDeparture.split(':').map(Number);
+              const later=`${String((h+1)%24).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+              return {pin:active.pinnedDepartAfter({date:stored.date,from:stored.from,to:stored.to},later),scheduled:stored.scheduledDeparture,later};
+            });
+            assert.ok(pin.pin,'active journey did not pin its original timetable window');
+            assert.ok(minutes(pin.pin)<minutes(pin.scheduled),'pinned timetable time is not before the active departure');
+
+            const stop=page.locator('#trainActiveJourney [data-active-stop]');
+            await stop.waitFor({state:'visible',timeout:10000});
+            await stop.click();
+            await page.waitForFunction(()=>!window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active,null,{timeout:10000});
+            const stopped=await page.evaluate(()=>({stored:localStorage.getItem('kerbside.rail.active-journey.v1'),watch:window.__KERBSIDE_TRAIN_TIMETABLE__.state.watch,panelHidden:document.getElementById('trainActiveJourney')?.hidden}));
+            assert.equal(stopped.stored,null);
+            assert.equal(stopped.watch,null,'ending Active Journey did not clear the watch it owned');
+            assert.equal(stopped.panelHidden,true);
+            assert.deepEqual(errors,[]);
+            console.log(JSON.stringify({version:liveVersion,setup,startKey,scheduled,active,pin},null,2));
+            console.log(`Live Active Journey passed on ${setup.from.crs} -> ${setup.to.crs} with ${setup.count} scheduled options (${setup.source}).`);
+          }finally{
+            await browser.close();
+          }
+          NODE
