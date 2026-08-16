@@ -57,8 +57,13 @@ jobs:
 
           const expectedVersion=(await readFile('../VERSION','utf8')).trim();
           const browser=await webkit.launch({headless:true});
-          const context=await browser.newContext({timezoneId:'Europe/London'});
-          const page=await context.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const context=await browser.newContext({
+            timezoneId:'Europe/London',
+            viewport:{width:390,height:844},
+            isMobile:true,
+            hasTouch:true
+          });
+          const page=await context.newPage();
           const errors=[];
           page.on('pageerror',error=>errors.push(String(error&&error.stack||error)));
           await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})}));
