@@ -11,6 +11,10 @@ replacements=[
         "async function refreshAll({force=false,reason='auto',ids=null}={}){if(state.refreshAllPromise)return state.refreshAllPromise;syncSaved({render:false});const targets=(Array.isArray(ids)&&ids.length?ids:state.saved.map(item=>item.id)).filter(Boolean);",
         "async function refreshAll({force=false,reason='auto',ids=null}={}){if(state.refreshAllPromise)return state.refreshAllPromise;syncSaved({render:false});const targets=(Array.isArray(ids)&&ids.length?ids:state.saved.map(item=>item.id)).filter(Boolean);if(!targets.length)return false;",
     ),
+    (
+        "  if(!item.baseline)item.baseline=baselineFromSaved(saved,sourceHint);",
+        "  if(!item.baseline)item.baseline=baselineFromSaved(saved,sourceHint);else if(sourceHint&&!item.baseline.source)item.baseline.source=String(sourceHint);",
+    ),
 ]
 for old,new in replacements:
     count=source.count(old)
