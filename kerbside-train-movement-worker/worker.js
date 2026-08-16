@@ -6,6 +6,7 @@ import {
   applyFeedMessages,
   lookupIndexKey,
   normaliseLookupRef,
+  originIndexFromActivation,
   parseMovementBatch,
   publicSnapshot,
   stompAckFrame,
@@ -13,7 +14,7 @@ import {
   trainIdOf
 } from './movement-core.js';
 
-const VERSION = '0.9.32';
+const VERSION = '0.9.33';
 const STOMP_HOST = 'publicdatafeeds.networkrail.co.uk';
 const STOMP_PORT = 61618;
 const STOMP_TOPIC = '/topic/TRAIN_MVT_ALL_TOC';
@@ -43,6 +44,24 @@ function londonDate() {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
   const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
   return `${map.year}-${map.month}-${map.day}`;
+}
+function originLookupKeys(ref, date, windowMinutes = 2) {
+  const match = upper(ref && ref.value).match(/^([A-Z0-9]{3})\|(\d{2}):(\d{2})$/);
+  const stamp = text(date);
+  if (!match || !/^\d{4}-\d{2}-\d{2}$/.test(stamp)) return [];
+  const hour = Number(match[2]), minute = Number(match[3]);
+  if (hour > 23 || minute > 59) return [];
+  const base = new Date(`${stamp}T12:00:00Z`), out = [];
+  for (let delta = -windowMinutes; delta <= windowMinutes; delta += 1) {
+    let total = hour * 60 + minute + delta, dayShift = 0;
+    while (total < 0) { total += 1440; dayShift -= 1; }
+    while (total >= 1440) { total -= 1440; dayShift += 1; }
+    const day = new Date(base); day.setUTCDate(day.getUTCDate() + dayShift);
+    const dayStamp = day.toISOString().slice(0, 10);
+    const clock = `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    out.push(`origin:${dayStamp}:${match[1]}|${clock}`);
+  }
+  return out;
 }
 function configuredOrigins(env) {
   return text(env.ALLOWED_ORIGINS || 'https://zetabun.github.io')
@@ -173,11 +192,19 @@ export class TrainMovementHub extends DurableObject {
       PRIMARY KEY(key, train_id)
     )`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS head_fallback_updated ON head_fallback_index(updated_at)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS origin_fallback_index (
+      key TEXT NOT NULL,
+      train_id TEXT NOT NULL,
+      updated_at INTEGER NOT NULL,
+      PRIMARY KEY(key, train_id)
+    )`);
+    this.sql.exec(`CREATE INDEX IF NOT EXISTS origin_fallback_updated ON origin_fallback_index(updated_at)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     )`);
     this.restoreStatus();
+    this.backfillOriginIndexes();
   }
 
   restoreStatus() {
@@ -189,6 +216,24 @@ export class TrainMovementHub extends DurableObject {
 
   saveStatus() {
     this.sql.exec('INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)', 'status', JSON.stringify(this.status));
+  }
+
+  backfillOriginIndexes() {
+    try {
+      const marker = [...this.sql.exec('SELECT value FROM meta WHERE key = ?', 'origin-index-v1')];
+      if (marker[0] && marker[0].value) return;
+      const now = Date.now(), cutoff = now - SNAPSHOT_RETENTION_MS;
+      for (const row of this.sql.exec('SELECT train_id,payload,updated_at FROM snapshots WHERE updated_at >= ?', cutoff)) {
+        let snapshot;
+        try { snapshot = JSON.parse(row.payload); } catch { continue; }
+        const index = originIndexFromActivation(snapshot && snapshot.activation);
+        if (!index) continue;
+        const key = lookupIndexKey({ kind: 'origin', value: index.value }, index.date);
+        if (!key) continue;
+        this.sql.exec('INSERT OR REPLACE INTO origin_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId || row.train_id, Number(row.updated_at) || now);
+      }
+      this.sql.exec('INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)', 'origin-index-v1', String(now));
+    } catch {}
   }
 
   async fetch(request) {
@@ -266,6 +311,17 @@ export class TrainMovementHub extends DurableObject {
         if (!trainId && ref.kind === 'head' && key) {
           const fallbackRows = [...this.sql.exec('SELECT train_id FROM head_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', key)];
           if (fallbackRows.length === 1) trainId = fallbackRows[0].train_id || '';
+        }
+        if (!trainId && ref.kind === 'origin' && key) {
+          const candidates = new Set();
+          for (const candidateKey of originLookupKeys(ref, date)) {
+            for (const row of this.sql.exec('SELECT train_id FROM origin_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', candidateKey)) {
+              if (row && row.train_id) candidates.add(row.train_id);
+              if (candidates.size > 1) break;
+            }
+            if (candidates.size > 1) break;
+          }
+          if (candidates.size === 1) trainId = [...candidates][0];
         }
       }
       const snapshot = trainId ? this.snapshotByTrainId(trainId) : null;
@@ -419,6 +475,11 @@ export class TrainMovementHub extends DurableObject {
       if (!key) continue;
       this.sql.exec('INSERT OR REPLACE INTO head_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
     }
+    for (const index of applied.originIndexes || []) {
+      const key = lookupIndexKey({ kind: 'origin', value: index.value }, index.date);
+      if (!key) continue;
+      this.sql.exec('INSERT OR REPLACE INTO origin_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
+    }
     this.status.messages += messages.length;
     this.saveStatus();
   }
@@ -481,6 +542,7 @@ export class TrainMovementHub extends DurableObject {
     this.sql.exec('DELETE FROM snapshots WHERE updated_at < ?', cutoff);
     this.sql.exec('DELETE FROM service_index WHERE updated_at < ?', cutoff);
     this.sql.exec('DELETE FROM head_fallback_index WHERE updated_at < ?', cutoff);
+    this.sql.exec('DELETE FROM origin_fallback_index WHERE updated_at < ?', cutoff);
   }
 
   async alarm() {

@@ -41,6 +41,18 @@ export function londonDateStamp(value) {
   return `${map.year}-${map.month}-${map.day}`;
 }
 
+export function londonClockStamp(value) {
+  const stamp = epochMs(value);
+  if (stamp == null) return '';
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(new Date(stamp));
+  const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  const hour = map.hour === '24' ? '00' : text(map.hour);
+  const minute = text(map.minute);
+  return /^\d{2}$/.test(hour) && /^\d{2}$/.test(minute) ? `${hour}:${minute}` : '';
+}
+
 export function decodeStompHeader(value) {
   return String(value || '')
     .replace(/\\r/g, '\r')
@@ -328,6 +340,13 @@ function indexFromActivation(activation) {
   return refs;
 }
 
+export function originIndexFromActivation(activation) {
+  const crs = upper(activation && activation.origin && activation.origin.crs);
+  const departure = londonClockStamp(activation && activation.originDepartureTimestamp);
+  if (!activation || !activation.trainId || !activation.date || !/^[A-Z0-9]{3}$/.test(crs) || !/^\d{2}:\d{2}$/.test(departure)) return null;
+  return { kind: 'origin', date: activation.date, value: `${crs}|${departure}`, trainId: activation.trainId };
+}
+
 function fallbackIndexFromMovement(snapshot, movement) {
   const trainId = text(movement && movement.trainId || snapshot && snapshot.trainId);
   const headcode = upper(snapshot && snapshot.headcode || trustHeadcode(trainId));
@@ -340,6 +359,7 @@ export function applyFeedMessages(messages, existing = new Map(), corpus = {}, n
   const snapshots = new Map();
   const indexes = [];
   const fallbackIndexes = [];
+  const originIndexes = [];
   const counts = {};
   const touched = new Set();
 
@@ -359,6 +379,8 @@ export function applyFeedMessages(messages, existing = new Map(), corpus = {}, n
       snapshot.date = activation.date || snapshot.date || '';
       if (!snapshot.lastEvent && snapshot.status !== 'cancelled') snapshot.status = 'activated';
       indexes.push(...indexFromActivation(activation));
+      const originIndex = originIndexFromActivation(activation);
+      if (originIndex) originIndexes.push(originIndex);
     } else if (type === '0002') {
       snapshot.cancellation = normaliseCancellation(message, corpus, now);
       snapshot.status = 'cancelled';
@@ -391,7 +413,7 @@ export function applyFeedMessages(messages, existing = new Map(), corpus = {}, n
     touched.add(trainId);
   }
 
-  return { snapshots, indexes, fallbackIndexes, counts, touched: [...touched] };
+  return { snapshots, indexes, fallbackIndexes, originIndexes, counts, touched: [...touched] };
 }
 
 export function publicSnapshot(snapshot, now = Date.now()) {
@@ -411,7 +433,7 @@ export function normaliseLookupRef(value) {
   if (colon <= 0) return null;
   const kind = raw.slice(0, colon).toLowerCase();
   const item = raw.slice(colon + 1).trim();
-  if (!['uid', 'head', 'train'].includes(kind) || !item) return null;
+  if (!['uid', 'head', 'train', 'origin'].includes(kind) || !item) return null;
   return { raw, kind, value: kind === 'train' ? item : upper(item) };
 }
 
@@ -421,5 +443,6 @@ export function lookupIndexKey(ref, date) {
   if (parsed.kind === 'train') return `train:${parsed.value}`;
   const stamp = dateStamp(date);
   if (!stamp) return '';
+  if (parsed.kind === 'origin') return `origin:${stamp}:${parsed.value}`;
   return `${parsed.kind === 'uid' ? 'service' : 'head'}:${stamp}:${parsed.value}`;
 }
