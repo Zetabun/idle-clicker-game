@@ -56,7 +56,7 @@ try{
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#transportTrain');
   await page.click('#transportTrain');
-  await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.install&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load),null,{timeout:10000});
+  await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.install&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load&&window.__KERBSIDE_SAVED_JOURNEYS_V2__?.startActiveSavedJourney&&window.__KERBSIDE_TRAINS__?.selectStation),null,{timeout:10000});
 
   const setup=await page.evaluate(today=>{
     localStorage.removeItem('kerbside.rail.active-journey.v1');
@@ -82,7 +82,9 @@ try{
     };
     provider.getCoverage=async()=>manifest;
     provider.refreshCoverage=async()=>manifest;
-    provider.getServices=async options=>{window.__ACTIVE_PROVIDER_CALLS__.push({...options});return rows();};
+    const fetchRows=async options=>{window.__ACTIVE_PROVIDER_CALLS__.push({...options});return rows();};
+    provider.getServices=fetchRows;
+    provider.getJourneyOptions=fetchRows;
     active.state.active=null;
     return tt.load({mode:'today',departAfter:'09:40'}).then(()=>({today,manifest}));
   },londonStamp());
@@ -154,6 +156,48 @@ try{
   assert.equal(stopped.watch,null,'ending an Active Journey should clear the Journey Watch it owns');
   assert.equal(stopped.panelHidden,true);
   assert.equal(stopped.watchVisible,true);
+
+  const savedSetup=await page.evaluate(async today=>{
+    const id='saved-active-handoff';
+    const saved={v:1,id,savedAt:new Date().toISOString(),refreshedAt:'',date:today,from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'},journeyType:'direct',service:{serviceID:'ACTIVE-1',uid:'ACTIVE-UID',trainId:'1A10',std:'09:50'},first:{serviceID:'',uid:'',trainId:'',std:''},onward:{serviceID:'',uid:'',trainId:'',std:''},change:'',scheduledDeparture:'09:50',scheduledArrival:'10:30',searchStart:'09:00',searchEnd:'11:00',preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0}};
+    localStorage.setItem('kerbside.rail.plan.saved.v1',JSON.stringify([saved]));
+    localStorage.removeItem('kerbside.rail.plan.saved-meta.v2');
+    const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__,trains=window.__KERBSIDE_TRAINS__,routes=window.__KERBSIDE_TRAIN_ROUTES__;
+    savedApi.state.meta={entries:{},coverageKey:'',updatedAt:''};savedApi.state.live.clear();savedApi.state.actionMessages.clear();savedApi.syncSaved();
+    await savedApi.refreshSavedJourney(id,{force:true,reason:'regression'});
+    trains.state.station={name:'Manchester Piccadilly',crs:'MAN'};routes.state.fromCrs='MAN';routes.state.destination={name:'Leeds',crs:'LDS'};
+    document.getElementById('trainStationQuery').value='Manchester Piccadilly';document.getElementById('trainDestinationQuery').value='Leeds';
+    savedApi.enterSavedView();
+    return {id,resolution:savedApi.state.meta.entries[id].resolution,status:savedApi.state.meta.entries[id].status};
+  },setup.today);
+  assert.ok(['exact','identity'].includes(savedSetup.resolution),'saved service should strongly re-resolve before Active Journey is offered');
+  assert.ok(['today','delayed'].includes(savedSetup.status),'same-day saved service may be on time or delayed');
+  await page.waitForFunction(()=>!window.__KERBSIDE_SAVED_JOURNEYS_V2__.state.refreshing.size,null,{timeout:10000});
+  const savedStart=page.locator(`#savedJourneyList [data-saved-v2-active="${savedSetup.id}"]`);
+  await savedStart.waitFor({state:'visible',timeout:10000});
+  assert.equal(await savedStart.textContent(),'Start active journey');
+  await savedStart.click();
+  await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active&&document.querySelector('#trainActiveJourney:not([hidden])')),null,{timeout:10000});
+  const handoff=await page.evaluate(()=>({active:window.__KERBSIDE_ACTIVE_JOURNEY__.state.active,station:window.__KERBSIDE_TRAINS__.state.station,route:window.__KERBSIDE_TRAIN_ROUTES__.state.destination,date:window.__KERBSIDE_TRAIN_DATE__.state.date,savedHidden:document.getElementById('savedJourneySurface').hidden,panel:document.getElementById('trainActiveJourney').textContent.replace(/\s+/g,' ').trim()}));
+  assert.equal(handoff.station.crs,'BHM','saved handoff should restore the saved origin');
+  assert.equal(handoff.route.crs,'BRI','saved handoff should restore the saved destination');
+  assert.equal(handoff.date,setup.today);
+  assert.equal(handoff.active.service.uid,'ACTIVE-UID');
+  assert.equal(handoff.savedHidden,true,'successful handoff should return to the Trains view');
+  assert.match(handoff.panel,/Active journey/);
+  const firstStartedAt=handoff.active.startedAt;
+
+  await page.click('[data-train-view="saved"]');
+  await page.waitForFunction(()=>!window.__KERBSIDE_SAVED_JOURNEYS_V2__.state.refreshing.size,null,{timeout:10000});
+  const openActive=page.locator(`#savedJourneyList [data-saved-v2-active="${savedSetup.id}"]`);
+  await openActive.waitFor({state:'visible',timeout:10000});
+  assert.equal(await openActive.textContent(),'Open active journey');
+  await openActive.click();
+  await page.waitForFunction(()=>document.querySelector('#trainActiveJourney:not([hidden])'),null,{timeout:10000});
+  assert.equal(await page.evaluate(()=>window.__KERBSIDE_ACTIVE_JOURNEY__.state.active.startedAt),firstStartedAt,'opening the same active saved journey must not restart it');
+
+  await page.locator('#trainActiveJourney [data-active-stop]').click();
+  await page.waitForFunction(()=>!window.__KERBSIDE_ACTIVE_JOURNEY__.state.active,null,{timeout:10000});
 
   await page.evaluate(tomorrow=>{window.__KERBSIDE_TRAIN_DATE__.setDate(tomorrow,{persist:false});window.__KERBSIDE_ACTIVE_JOURNEY__.sync();},addDay(setup.today));
   await page.waitForFunction(()=>document.querySelectorAll('#trainScheduledBoard [data-active-start]').length===0,null,{timeout:10000});
