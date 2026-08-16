@@ -142,9 +142,9 @@ try{
     provider.getCoverage=async()=>({dates:['2026-08-12'],coverage:{'2026-08-12':{from:'00:01',to:'23:59',partial:false}}});
     provider.getJourneyOptions=async()=>{
       const rows=[
-        {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail'},
-        {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,recoveryOptions:[],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail'},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail'}]},
-        {serviceID:'PLAN-QUIET',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail'}
+        {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail',platform:'4',arrivalPlatform:'9',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
+        {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,minimumConnectionSource:'kerbside-planning-buffer',recoveryOptions:[{serviceID:'PLAN-RECOVERY',std:'09:55',arrival:'10:25',operator:'Recovery Rail',platform:'4',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail',platform:'5',arrivalPlatform:'1',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Cheltenham Spa',crs:'CNM'}},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail',platform:'3',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}]},
+        {serviceID:'PLAN-QUIET',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
       ];
       Object.defineProperty(rows,'kerbsideSource',{value:'network-rail'});return rows;
     };
@@ -177,6 +177,22 @@ try{
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.plan.preference.v1')),'quieter');
   assert.equal(await page.locator('#planJourneyMaxChanges').inputValue(),'1');
   assert.equal(await page.locator('#planJourneyConnectionBuffer').inputValue(),'0');
+  const changeCard=page.locator('#planJourneyResults .plan-journey-result').filter({hasText:'Change Rail'});
+  const journeyDetails=changeCard.locator('.plan-result-details');
+  assert.equal(await journeyDetails.count(),1,'connection option should expose journey details');
+  assert.equal(await journeyDetails.evaluate(node=>node.open),false,'journey details should start collapsed');
+  await journeyDetails.locator('summary').click();
+  assert.equal(await journeyDetails.evaluate(node=>node.open),true,'journey details should expand');
+  const journeyDetailText=await journeyDetails.textContent();
+  assert.match(journeyDetailText,/09:05 Birmingham New Street → 09:35 Cheltenham Spa/);
+  assert.match(journeyDetailText,/09:45 Cheltenham Spa → 10:12 Bristol Temple Meads/);
+  assert.match(journeyDetailText,/Scheduled platforms 5 → 1/);
+  assert.match(journeyDetailText,/Change at Cheltenham Spa · 10 min/);
+  assert.match(journeyDetailText,/Base minimum 7 min/);
+  assert.match(journeyDetailText,/3 min margin/);
+  assert.match(journeyDetailText,/Kerbside planning buffer/);
+  assert.match(journeyDetailText,/Next: 09:55 → 10:25 · Recovery Rail/);
+  assert.match(journeyDetailText,/Ticket validity for an alternative service depends on your ticket/);
   const pureConstraints=await page.evaluate(()=>{const planner=window.__KERBSIDE_JOURNEY_PLANNER__;return {defaults:planner.normalisePlanConstraints(null),direct:planner.planCandidateMeetsConstraints({changes:0},{maxChanges:0,connectionBuffer:15}),bufferPass:planner.planCandidateMeetsConstraints({changes:1,connectionMinutes:12,minimumConnectionMinutes:7},{maxChanges:1,connectionBuffer:5}),bufferFail:planner.planCandidateMeetsConstraints({changes:1,connectionMinutes:11,minimumConnectionMinutes:7},{maxChanges:1,connectionBuffer:5})};});
   assert.deepEqual(pureConstraints,{defaults:{maxChanges:1,connectionBuffer:0},direct:true,bufferPass:true,bufferFail:false});
 
