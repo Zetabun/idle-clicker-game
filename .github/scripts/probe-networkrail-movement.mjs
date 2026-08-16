@@ -4,7 +4,7 @@ import {
   StompFrameParser,
   parseMovementBatch,
   stompFrame
-} from '../kerbside-train-movement-worker/movement-core.js';
+} from '../../kerbside-train-movement-worker/movement-core.js';
 
 const HOST = 'publicdatafeeds.networkrail.co.uk';
 const PORT = 61618;
