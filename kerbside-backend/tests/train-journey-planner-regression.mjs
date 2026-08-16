@@ -327,7 +327,9 @@ try{
 
   await page.click('[data-train-view="saved"]');
   await page.waitForFunction(()=>document.querySelector('#savedJourneySurface:not([hidden])')&&document.querySelector('#savedJourneyList .saved-v2-card'),undefined,{timeout:10000});
-  await page.locator('#savedJourneyList [data-saved-v2-remove]').click();
+  await page.waitForSelector('#savedJourneyList [data-saved-polish-delete]');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#savedJourneyList [data-saved-polish-delete]').click();
   assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))),[]);
   assert.match(await page.locator('#savedJourneySurface').textContent(),/No saved journeys yet/);
 
