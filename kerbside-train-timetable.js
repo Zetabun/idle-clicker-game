@@ -996,14 +996,14 @@ async function load(options={}){
       const range=manifest.dates.length?`${dateLabel(manifest.dates[0],{short:true})} to ${dateLabel(manifest.dates[manifest.dates.length-1],{short:true})}`:'the current snapshot';
       renderUnavailable(`The available timetable covers ${range}. Choose a date inside that range.`,{mode,manifest});return true;
     }
-    const requestedTime=options.departAfter||r.departAfter||'00:00';
+    const requestedBase=options.departAfter||r.departAfter||'00:00',activeJourney=window.__KERBSIDE_ACTIVE_JOURNEY__,requestedTime=activeJourney&&typeof activeJourney.pinnedDepartAfter==='function'?activeJourney.pinnedDepartAfter(r,requestedBase):requestedBase;
     const edgeCoverage=coverageFor(manifest,r.date);
     if(edgeCoverage&&edgeCoverage.partial&&!coverageIncludesTime(edgeCoverage,requestedTime)){
       state.edgeRefreshAt=Date.now();
       renderUnavailable(`The current Darwin snapshot only covers ${edgeCoverage.from}–${edgeCoverage.to} on this edge date. ${requestedTime} is beyond that window. Kerbside is checking automatically for today's newer timetable snapshot; this is not being treated as proof that there are no trains.`,{mode,manifest});
       return true;
     }
-    const items=await timetableProvider.getServices({from:r.from.crs,to:r.to.crs,date:r.date,departAfter:requestedTime});
+    let items=await timetableProvider.getServices({from:r.from.crs,to:r.to.crs,date:r.date,departAfter:requestedTime});if(activeJourney&&typeof activeJourney.filterServices==='function')items=activeJourney.filterServices(items,r,requestedBase);
     if(id!==state.request)return true;
     renderServices(items,{mode,manifest});
     requestOverlay();
@@ -1080,7 +1080,7 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,watchMatches,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,forecast,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,watchMatches,journeyWatchStatus,journeyWatchPayload,persistJourneyWatch,stableServiceId,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
 })();
 
 
@@ -1240,4 +1240,136 @@ provider.getJourneyOptions=async options=>{
 };
 provider.__kerbsideDualSource=true;
 window.__KERBSIDE_LONG_RANGE_TIMETABLE__={state:nr,base:NETWORK_RAIL_DATA_BASE,loadCoverage,manifestCovers};
+})();
+/* ------------------------------------------------------------------
+   Active Journey v1.
+
+   One same-day journey can be promoted from Journey Watch into a focused
+   "I'm taking this" surface. The timetable remains the spine and the existing
+   Darwin overlay remains the only live polling path. This layer stores only a
+   small service locator and scheduled itinerary; live times, cancellation,
+   connection risk and Forecast v4 are always read from the current timetable
+   row when it renders.
+------------------------------------------------------------------ */
+;(function(){
+'use strict';
+if(window.__KERBSIDE_ACTIVE_JOURNEY__)return;
+const STORE_KEY='kerbside.rail.active-journey.v1';
+const VERSION=1;
+const PIN_LOOKBACK_MINUTES=30;
+const $=id=>document.getElementById(id);
+const state={active:null,installed:false,timer:null,lastMarkup:'',lastActionSignature:''};
+
+function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+function upper(value){return String(value||'').trim().toUpperCase();}
+function parseMinutes(value){const match=String(value||'').match(/^(\d{1,2}):(\d{2})$/);if(!match)return null;const hour=Number(match[1]),minute=Number(match[2]);return hour>=0&&hour<24&&minute>=0&&minute<60?hour*60+minute:null;}
+function hhmm(minutes){const value=Math.max(0,Math.min(1439,Math.round(Number(minutes)||0)));return `${String(Math.floor(value/60)).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`;}
+function londonStamp(date=new Date()){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));return `${map.year}-${map.month}-${map.day}`;}
+function today(){return londonStamp();}
+function station(value,fallback=''){const item=value&&typeof value==='object'?value:{};const crs=upper(item.crs||item.crsCode),name=String(item.name||item.locationName||item.stationName||fallback||crs).trim();return crs?{crs,name:name||crs}:null;}
+function selector(service){return {serviceID:String(service&&(service.serviceID||service.serviceId)||''),uid:String(service&&service.uid||''),trainId:String(service&&(service.trainId||service.trainid)||''),std:String(service&&(service.std||service.departure)||'')};}
+function normaliseSelector(value){const item=value&&typeof value==='object'?value:{};return {serviceID:String(item.serviceID||''),uid:String(item.uid||''),trainId:String(item.trainId||''),std:String(item.std||'')};}
+function selectorMatches(saved,service){const wanted=normaliseSelector(saved),current=selector(service);if(wanted.serviceID&&current.serviceID&&wanted.serviceID===current.serviceID)return true;if(wanted.uid&&current.uid&&upper(wanted.uid)===upper(current.uid))return true;if(wanted.trainId&&current.trainId&&upper(wanted.trainId)===upper(current.trainId)){const a=parseMinutes(wanted.std),b=parseMinutes(current.std);return a==null||b==null||Math.abs(a-b)<=30;}return !!(wanted.std&&current.std&&wanted.std===current.std&&!wanted.serviceID&&!wanted.uid&&!wanted.trainId);}
+function currentRoute(){const trains=window.__KERBSIDE_TRAINS__,routes=window.__KERBSIDE_TRAIN_ROUTES__,dates=window.__KERBSIDE_TRAIN_DATE__;return {from:station(trains&&trains.state&&trains.state.station),to:station(routes&&routes.state&&routes.state.destination),date:String(dates&&dates.state&&dates.state.date||'')};}
+function routeMatches(active=state.active,route=currentRoute()){return !!(active&&route&&active.from&&active.to&&String(active.date||'')===String(route.date||'')&&upper(active.from.crs)===upper(route.from&&route.from.crs)&&upper(active.to.crs)===upper(route.to&&route.to.crs));}
+function isTodayRoute(route=currentRoute()){const api=window.__KERBSIDE_TRAIN_DATE__;return String(route&&route.date||'')===today()&&(!api||typeof api.isToday!=='function'||api.isToday());}
+function normaliseActive(value){
+  if(!value||typeof value!=='object'||Number(value.v)!==VERSION)return null;const from=station(value.from),to=station(value.to),date=String(value.date||'');if(!from||!to||from.crs===to.crs||!/^\d{4}-\d{2}-\d{2}$/.test(date))return null;
+  return {v:VERSION,date,from,to,journeyType:value.journeyType==='connection'?'connection':'direct',service:normaliseSelector(value.service),first:normaliseSelector(value.first),onward:normaliseSelector(value.onward),change:station(value.change),scheduledDeparture:String(value.scheduledDeparture||''),scheduledArrival:String(value.scheduledArrival||''),startedAt:String(value.startedAt||''),updatedAt:String(value.updatedAt||''),watchOwned:value.watchOwned===true};
+}
+function read(){try{return normaliseActive(JSON.parse(localStorage.getItem(STORE_KEY)||'null'));}catch(error){return null;}}
+function write(value){const next=normaliseActive(value);state.active=next;try{if(next)localStorage.setItem(STORE_KEY,JSON.stringify(next));else localStorage.removeItem(STORE_KEY);}catch(error){}return next;}
+function clearExpired(){if(state.active&&state.active.date<today()){const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(state.active.watchOwned&&api&&api.state&&api.state.watch&&String(api.state.watch.date||'')===String(state.active.date||'')&&typeof api.persistJourneyWatch==='function')api.persistJourneyWatch(null);write(null);return true;}return false;}
+function serviceIdentityMatches(active,service){
+  if(!active||!service)return false;
+  if(active.journeyType!=='connection')return service.journeyType!=='connection'&&selectorMatches(active.service,service);
+  if(service.journeyType!=='connection')return false;
+  const first=service.legs&&service.legs[0],onward=service.legs&&service.legs[1],change=station(service.interchange);
+  if(!selectorMatches(active.first,first)||upper(active.change&&active.change.crs)!==upper(change&&change.crs))return false;
+  if(selectorMatches(active.onward,onward))return true;
+  const old=String(service.replannedFromServiceID||'');if(old&&[active.onward.serviceID,active.onward.uid,active.onward.trainId].filter(Boolean).includes(old))return true;
+  return (service.recoveryOptions||[]).some(option=>selectorMatches(active.onward,option));
+}
+function activeService(){const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(!api||!routeMatches())return null;return (api.state&&Array.isArray(api.state.services)?api.state.services:[]).find(service=>serviceIdentityMatches(state.active,service))||null;}
+function payloadFor(service,{watchOwned=false,startedAt=''}={}){
+  const route=currentRoute(),connection=service&&service.journeyType==='connection',first=connection&&service.legs&&service.legs[0],onward=connection&&service.legs&&service.legs[1],change=connection?station(service.interchange):null;
+  return normaliseActive({v:VERSION,date:route.date,from:route.from,to:route.to,journeyType:connection?'connection':'direct',service:connection?{}:selector(service),first:connection?selector(first):{},onward:connection?selector(onward):{},change,scheduledDeparture:String(connection?(first&&first.std||service&&service.std||''):(service&&service.std||'')),scheduledArrival:String(connection?(onward&&onward.arrival||service&&service.arrival||''):(service&&service.arrival||'')),startedAt:startedAt||new Date().toISOString(),updatedAt:new Date().toISOString(),watchOwned});
+}
+function updateLocator(service){if(!state.active||!service||!serviceIdentityMatches(state.active,service))return false;const next=payloadFor(service,{watchOwned:state.active.watchOwned,startedAt:state.active.startedAt}),before=JSON.stringify({...state.active,updatedAt:''}),after=JSON.stringify({...next,updatedAt:''});if(before===after)return false;write(next);return true;}
+function watchMatchesActive(watch=window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.watch,active=state.active){if(!watch||!active)return false;if(String(watch.date||'')!==active.date||upper(watch.from)!==upper(active.from.crs)||upper(watch.to)!==upper(active.to.crs))return false;if(active.journeyType==='connection')return String(watch.firstID||'')===String(active.first.serviceID||active.first.uid||active.first.trainId||'')&&upper(watch.change)===upper(active.change&&active.change.crs);return String(watch.serviceID||'')===String(active.service.serviceID||active.service.uid||active.service.trainId||'');}
+function ensureWatch(service){const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(!api||!service||!routeMatches())return false;if(typeof api.watchMatches==='function'&&api.watchMatches(service))return true;if(typeof api.journeyWatchPayload==='function'&&typeof api.persistJourneyWatch==='function'){api.persistJourneyWatch(api.journeyWatchPayload(service));return true;}return false;}
+function startByKey(key){
+  const api=window.__KERBSIDE_TRAIN_TIMETABLE__,route=currentRoute();if(!api||!isTodayRoute(route)||api.state.mode!=='today')return false;
+  const index=(api.state.services||[]).findIndex((service,i)=>String(api.serviceKey(service,i))===String(key||''));if(index<0)return false;const service=api.state.services[index];
+  if(state.active)stop({render:false});
+  const alreadyWatched=typeof api.watchMatches==='function'&&api.watchMatches(service);write(payloadFor(service,{watchOwned:!alreadyWatched}));if(!alreadyWatched)ensureWatch(service);const sheet=window.__KERBSIDE_JOURNEY_SHEET__;if(sheet&&typeof sheet.close==='function'&&(!sheet.active||sheet.active()))sheet.close();if(typeof api.requestOverlay==='function')api.requestOverlay();sync();return true;
+}
+function stop({render=true}={}){const api=window.__KERBSIDE_TRAIN_TIMETABLE__,active=state.active,service=activeService();if(active&&active.watchOwned&&api&&typeof api.persistJourneyWatch==='function'){const owns=service&&typeof api.watchMatches==='function'?api.watchMatches(service):watchMatchesActive(api.state&&api.state.watch,active);if(owns)api.persistJourneyWatch(null);}write(null);if(render)sync();return true;}
+function pinnedDepartAfter(route,requested){if(!state.active||!routeMatches(state.active,route)||state.active.date!==today())return requested;const planned=parseMinutes(state.active.scheduledDeparture),raw=parseMinutes(requested);if(planned==null||raw==null)return requested;return hhmm(Math.max(0,Math.min(raw,planned-PIN_LOOKBACK_MINUTES)));}
+function candidateMinute(candidate){const numeric=Number(candidate&&candidate.departureMinute);if(Number.isFinite(numeric))return numeric;return parseMinutes(candidate&&(candidate.std||candidate.departure));}
+function filterServices(items,route,requested){if(!state.active||!routeMatches(state.active,route)||state.active.date!==today())return items;const threshold=parseMinutes(requested),rows=Array.isArray(items)?items:[];if(threshold==null)return rows;return rows.filter(item=>serviceIdentityMatches(state.active,item)||(candidateMinute(item)!=null&&candidateMinute(item)>=threshold));}
+function liveTime(service){const value=String(service&&service.etd||'').trim();return /^\d{1,2}:\d{2}$/.test(value)?value:String(service&&service.std||'');}
+function targetLiveArrival(service,targetCrs){
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,groups=service&&service.subsequentCallingPoints;if(!overlay||typeof overlay.flattenCallingPoints!=='function'||!groups)return'';
+  const target=upper(targetCrs),point=overlay.flattenCallingPoints(groups).find(item=>upper(item&&item.crs)===target);return String(point&&(point.et||point.at||point.st)||'').trim();
+}
+function relativeMinute(value,base){let minute=parseMinutes(value);if(minute==null)return null;while(minute<base-720)minute+=1440;while(minute>base+1080)minute-=1440;return minute;}
+function guidanceFor(service,nowValue=window.__KERBSIDE_TRAIN_TIMETABLE__?.railNowTime?.()||'00:00'){
+  const active=state.active,route=currentRoute(),from=active&&active.from||route.from,to=active&&active.to||route.to,nowRaw=parseMinutes(nowValue);if(!service||nowRaw==null)return {phase:'loading',next:'Reconnecting to this journey',detail:'Waiting for the current timetable row.',warning:'',steps:[]};
+  if(service.journeyType!=='connection'){
+    const depText=liveTime(service)||service.std||active?.scheduledDeparture||'',dep=parseMinutes(depText)??0,now=relativeMinute(nowValue,dep)??dep,liveArr=targetLiveArrival(service,to&&to.crs),arrText=liveArr||service.arrival||active?.scheduledArrival||'',arr=relativeMinute(arrText,dep),platform=service.platform||'TBC',cancelled=!!service.isCancelled;
+    let phase='board',next=`Board at ${from&&from.name||from&&from.crs||'your departure station'}`,detail=`${depText||'Time TBC'} · Platform ${platform}`;
+    if(cancelled){phase='warning';next='Do not board — this service is cancelled';detail=service.cancelReason||'Use the timetable to choose another train.';}
+    else if(now>=dep&&(arr==null||now<arr)){phase='ride';next=`Get off at ${to&&to.name||to&&to.crs||'your destination'}`;detail=arrText?`Arrival ${arrText}${liveArr?' · live':''}`:'Arrival time unavailable';}
+    else if(arr!=null&&now>=arr){phase='complete';next='Journey should now be complete';detail=`You were due into ${to&&to.name||to&&to.crs||'your destination'} at ${arrText}.`;}
+    return {phase,next,detail,warning:'',steps:[{label:'Board',place:from&&from.name||from&&from.crs||'Departure',time:depText,platform},{label:'Get off',place:to&&to.name||to&&to.crs||'Destination',time:arrText,platform:service.arrivalPlatform||''}]};
+  }
+  const first=service.legs&&service.legs[0]||{},second=service.legs&&service.legs[1]||{},change=station(service.interchange,'Interchange')||active?.change||{crs:'',name:'Interchange'},depText=liveTime(first)||first.std||active?.scheduledDeparture||'',dep=parseMinutes(depText)??0,now=relativeMinute(nowValue,dep)??dep,changeArrText=first.liveArrival||service.liveInterchangeArrival||first.arrival||'',changeArr=relativeMinute(changeArrText,dep),secondDepText=liveTime(second)||second.std||'',secondDep=relativeMinute(secondDepText,dep),finalArrText=second.liveArrival||second.arrival||service.arrival||active?.scheduledArrival||'',finalArr=relativeMinute(finalArrText,dep),minutes=Number.isFinite(service.liveConnectionMinutes)?service.liveConnectionMinutes:Number(service.connectionMinutes)||0,minimum=Number(service.minimumConnectionMinutes)||10,margin=minutes-minimum,status=window.__KERBSIDE_TRAIN_TIMETABLE__?.journeyWatchStatus?.(service)||{label:'Active connection',note:'',warn:false};
+  let phase='board',next=`Board for ${change.name||change.crs}`,detail=`${depText||'Time TBC'} · Platform ${first.platform||'TBC'}`;
+  if(first.isCancelled||service.connectionRisk==='first-cancelled'){phase='warning';next='First train cancelled — re-plan from the origin';detail=status.note||'Do not rely on the onward leg.';}
+  else if(changeArr!=null&&now>=changeArr&&(secondDep==null||now<secondDep)){phase='change';next=`Change at ${change.name||change.crs}`;detail=`${minutes} min available · ${margin>=0?`${margin} min spare`:`${Math.abs(margin)} min short`} · onward platform ${second.platform||'TBC'}`;}
+  else if(secondDep!=null&&now>=secondDep&&(finalArr==null||now<finalArr)){phase='ride';next=`Get off at ${to&&to.name||to&&to.crs||'your destination'}`;detail=finalArrText?`Arrival ${finalArrText}${second.liveArrival?' · live':''}`:'Arrival time unavailable';}
+  else if(finalArr!=null&&now>=finalArr){phase='complete';next='Journey should now be complete';detail=`You were due into ${to&&to.name||to&&to.crs||'your destination'} at ${finalArrText}.`;}
+  else if(now>=dep){phase='ride-first';next=`Stay on until ${change.name||change.crs}`;detail=changeArrText?`Change arrival ${changeArrText}${first.liveArrival?' · live':''}`:'Change arrival time unavailable';}
+  if(service.connectionRisk==='onward-cancelled'&&phase!=='complete'){phase='warning';next=`Onward train cancelled at ${change.name||change.crs}`;detail=service.recoveryChoice?`Backup ${service.recoveryChoice.departure||service.recoveryChoice.std||'—'} → ${service.recoveryChoice.arrival||'—'} is available.`:status.note||'Re-plan the onward leg.';}
+  const warning=status.warn?`${status.label}${status.note?` · ${status.note}`:''}`:'';
+  return {phase,next,detail,warning,steps:[{label:'Board',place:from&&from.name||from&&from.crs||'Departure',time:depText,platform:first.platform||''},{label:'Change',place:change.name||change.crs,time:`${changeArrText||'—'} → ${secondDepText||'—'}`,platform:second.platform||''},{label:'Get off',place:to&&to.name||to&&to.crs||'Destination',time:finalArrText,platform:second.arrivalPlatform||''}]};
+}
+function forecastFor(service){const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(!api||typeof api.forecast!=='function')return null;const index=(api.state.services||[]).indexOf(service);try{return api.forecast(service,Math.max(0,index),api.state.services||[]);}catch(error){return null;}}
+function installStyles(){if($('kerbsideActiveJourneyStyles'))return;const style=document.createElement('style');style.id='kerbsideActiveJourneyStyles';style.textContent=`
+.train-active-journey{margin:12px 16px 8px;padding:15px;border:1px solid rgb(var(--live-rgb) / .45);border-radius:14px;background:linear-gradient(135deg,rgb(var(--live-rgb) / .09),var(--ink-2));box-shadow:0 8px 22px rgb(var(--shadow-rgb) / .12)}
+.train-active-journey[hidden],.train-active-action-card[hidden],.train-watch-card[hidden]{display:none!important}
+.train-active-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.train-active-kicker{color:var(--live);font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.train-active-head h3{margin:3px 0 0;font-size:17px}.train-active-status{margin-top:4px;color:var(--text-dim);font-size:10.5px;line-height:1.4}.train-active-next{margin-top:12px;padding:12px;border:1px solid var(--rule);border-radius:11px;background:var(--ink-3)}.train-active-next span{display:block;color:var(--text-dim);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-active-next strong{display:block;margin-top:4px;font-size:15px}.train-active-next small{display:block;margin-top:3px;color:var(--text-dim);line-height:1.4}.train-active-warning{margin-top:9px;padding:9px 10px;border:1px solid rgb(var(--warn-rgb) / .38);border-radius:9px;background:rgb(var(--warn-rgb) / .07);color:var(--warn);font-size:10.5px;line-height:1.45}.train-active-steps{display:grid;gap:5px;margin-top:10px}.train-active-step{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--rule)}.train-active-step span{color:var(--text-dim);font-size:9px;font-weight:800;text-transform:uppercase}.train-active-step b{font-size:11px}.train-active-step small{color:var(--text-dim);font-size:9.5px;text-align:right}.train-active-crowd{display:flex;align-items:center;gap:7px;margin-top:9px;color:var(--text-dim);font-size:10px}.train-active-crowd i{width:7px;height:7px;border-radius:50%;background:var(--led)}.train-active-crowd strong{color:var(--text)}.train-active-actions{display:flex;gap:8px;margin-top:11px}.train-active-actions button,.train-active-action-card button{min-height:38px;padding:8px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--ink-3);font-size:10.5px;font-weight:800}.train-active-actions button:hover,.train-active-action-card button:hover{border-color:var(--led);color:var(--led)}.train-active-actions .primary,.train-active-action-card .primary{border-color:var(--live);background:rgb(var(--live-rgb) / .10);color:var(--live)}.train-active-truth{display:block;margin-top:9px;color:var(--text-mute);font-size:9.5px;line-height:1.45}.train-active-action-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .25);border-radius:10px;background:rgb(var(--live-rgb) / .045)}.train-active-action-card>div{display:flex;flex-direction:column;min-width:0}.train-active-action-card span{color:var(--live);font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-active-action-card strong{margin-top:2px;font-size:11px}.train-active-action-card small{margin-top:2px;color:var(--text-dim);font-size:9.5px;line-height:1.35}
+@media(max-width:820px){.train-active-journey{margin:8px 9px 6px;padding:12px}.train-active-head h3{font-size:15px}.train-active-step{grid-template-columns:54px minmax(0,1fr)}.train-active-step small{grid-column:2;text-align:left}.train-active-action-card{align-items:flex-start;flex-direction:column}.train-active-action-card button{width:100%}}
+`;document.head.appendChild(style);}
+function ensurePanel(){const board=$('trainScheduledBoard');if(!board||!board.parentNode)return null;let panel=$('trainActiveJourney');if(!panel){panel=document.createElement('section');panel.id='trainActiveJourney';panel.className='train-active-journey';panel.hidden=true;board.parentNode.insertBefore(panel,board);}return panel;}
+function stepMarkup(step){const meta=[step.time,step.platform?`Plat ${step.platform}`:''].filter(Boolean).join(' · ');return `<div class="train-active-step"><span>${esc(step.label)}</span><b>${esc(step.place||'')}</b><small>${esc(meta||'Time TBC')}</small></div>`;}
+function renderPanel(service=activeService()){
+  const panel=ensurePanel();if(!panel)return false;const planner=window.__KERBSIDE_JOURNEY_PLANNER__;if(!state.active||planner&&planner.planState&&planner.planState.active){panel.hidden=true;return false;}panel.hidden=false;
+  const same=routeMatches(),route=`${state.active.from.name||state.active.from.crs} → ${state.active.to.name||state.active.to.crs}`;
+  if(!same){const markup=`<div class="train-active-head"><div><span class="train-active-kicker">Active journey</span><h3>${esc(route)}</h3><div class="train-active-status">${esc(state.active.scheduledDeparture||'Time TBC')} · active on this device</div></div></div><div class="train-active-next"><span>Guidance paused</span><strong>Return to this route to resume live guidance</strong><small>Kerbside keeps one active journey but does not silently change your current search.</small></div><div class="train-active-actions"><button type="button" data-active-stop>End active journey</button></div>`;if(panel.__kerbsideMarkup!==markup){panel.__kerbsideMarkup=markup;panel.innerHTML=markup;}return true;}
+  const guidance=guidanceFor(service),status=service&&window.__KERBSIDE_TRAIN_TIMETABLE__?.journeyWatchStatus?.(service),forecast=service?forecastFor(service):null,live=!!(service&&service.liveEvidence),source=live?'Darwin live evidence attached':'scheduled guidance';
+  const markup=`<div class="train-active-head"><div><span class="train-active-kicker">Active journey</span><h3>${esc(route)}</h3><div class="train-active-status">${esc(status&&status.label||'Tracking journey')} · ${esc(source)}</div></div></div><div class="train-active-next"><span>Next</span><strong>${esc(guidance.next)}</strong><small>${esc(guidance.detail)}</small></div>${guidance.warning?`<div class="train-active-warning">${esc(guidance.warning)}</div>`:''}<div class="train-active-steps">${(guidance.steps||[]).map(stepMarkup).join('')}</div>${forecast?`<div class="train-active-crowd crowd-${esc(forecast.level||'unknown')}"><i></i><strong>${esc(forecast.label||'Forecast pending')}</strong><span>${esc(`${forecast.confidence||'Low'} confidence · Forecast v4`)}</span></div>`:''}<div class="train-active-actions"><button type="button" class="primary" data-active-refresh>Refresh live</button><button type="button" data-active-stop>End active journey</button></div><small class="train-active-truth">Time-based guidance only. Kerbside cannot detect whether you boarded or which carriage you are in; live Darwin evidence is shown when the rail feed still exposes it.</small>`;
+  if(panel.__kerbsideMarkup!==markup){panel.__kerbsideMarkup=markup;panel.innerHTML=markup;}return true;
+}
+function actionMarkup(key,isActive){return `<div><span>Active journey</span><strong>${isActive?'This is your active journey':"I'm taking this"}</strong><small>${isActive?'Live status and connection guidance are pinned above.':'Pin this same-day journey for get-off and connection guidance.'}</small></div><button type="button" class="primary" ${isActive?'data-active-stop':'data-active-start'}${isActive?'':`="${esc(key)}"`}>${isActive?'End active journey':"I'm taking this"}</button>`;}
+function injectActions(){
+  const api=window.__KERBSIDE_TRAIN_TIMETABLE__,board=$('trainScheduledBoard');if(!api||!board)return false;const sameActive=!!state.active&&routeMatches(),canStart=api.state.mode==='today'&&isTodayRoute();
+  board.querySelectorAll('.train-scheduled-service').forEach((article,index)=>{
+    const key=article.getAttribute('data-service-id')||'',service=(api.state.services||[]).find((row,i)=>String(api.serviceKey(row,i))===key)||(api.state.services||[])[index],detail=article.querySelector('.train-service-detail'),watch=article.querySelector('.train-watch-card');if(watch)watch.hidden=sameActive;
+    let card=article.querySelector('.train-active-action-card');
+    if(!canStart){if(card)card.remove();return;}
+    const active=!!(state.active&&service&&serviceIdentityMatches(state.active,service));
+    if(!card){card=document.createElement('div');card.className='train-active-action-card';const explain=detail&&detail.querySelector('.train-crowding-explain');if(detail)detail.insertBefore(card,explain||detail.firstChild);}
+    const signature=`${key}|${active?'1':'0'}`;if(card.dataset.signature!==signature){card.dataset.signature=signature;card.innerHTML=actionMarkup(key,active);}
+  });
+  return true;
+}
+async function refresh(){const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(!api||!state.active)return false;if(routeMatches()&&typeof api.load==='function')await api.load({mode:'today'});if(typeof api.requestOverlay==='function')api.requestOverlay();sync();return true;}
+function sync(){clearExpired();installStyles();const service=activeService();if(service){updateLocator(service);ensureWatch(service);}injectActions();renderPanel(service);return true;}
+function handleClick(event){const target=event.target&&event.target.closest?event.target.closest('[data-active-start],[data-active-stop],[data-active-refresh]'):null;if(!target)return;if(target.hasAttribute('data-active-start')){event.preventDefault();startByKey(target.getAttribute('data-active-start'));return;}if(target.hasAttribute('data-active-stop')){event.preventDefault();stop();return;}if(target.hasAttribute('data-active-refresh')){event.preventDefault();refresh();}}
+function install(){if(state.installed)return true;const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(!api)return false;state.installed=true;state.active=read();clearExpired();document.addEventListener('click',handleClick);document.addEventListener('kerbside:live-overlay',()=>setTimeout(sync,0));document.addEventListener('kerbside:timetable-services-ready',()=>setTimeout(sync,0));document.addEventListener('kerbside:train-date-change',()=>setTimeout(sync,80));document.addEventListener('kerbside:train-route-change',()=>setTimeout(sync,80));window.addEventListener('kerbside:journey-planner-change',()=>setTimeout(sync,120));state.timer=setInterval(()=>{if(!document.hidden)sync();},1000);setTimeout(sync,0);return true;}
+function init(attempt=0){if(install())return;if(attempt<120)setTimeout(()=>init(attempt+1),50);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
+window.__KERBSIDE_ACTIVE_JOURNEY__={state,install,startByKey,stop,refresh,sync,pinnedDepartAfter,filterServices,guidanceFor,serviceIdentityMatches,routeMatches,activeService};
 })();
