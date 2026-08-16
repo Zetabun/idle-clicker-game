@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.30';
+const VERSION='0.9.31';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -29,11 +29,25 @@ function selectedDate(){return text(window.__KERBSIDE_TRAIN_DATE__?.state?.date)
 function plannerDate(){return text(document.getElementById('planJourneyDate')?.value)||selectedDate();}
 function isToday(value){return text(value)===todayLondon();}
 function headcode(value){const raw=upper(value);return raw?raw.slice(0,4):'';}
+function identityCandidates(service){
+  const candidates=[];
+  if(service&&typeof service==='object')candidates.push(service);
+  const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
+  if(service&&overlay&&typeof overlay.evidenceFor==='function'){
+    try{
+      const resolved=overlay.evidenceFor(service)?.service;
+      if(resolved&&typeof resolved==='object'&&!candidates.includes(resolved))candidates.push(resolved);
+    }catch(error){}
+  }
+  return candidates;
+}
 function refsFor(service){
   if(!service||typeof service!=='object')return[];
   const refs=[];
-  const uid=upper(service.uid||service.serviceUid||service.trainUid);if(uid)refs.push(`uid:${uid}`);
-  const head=headcode(service.trainId||service.trainid||service.headcode);if(head)refs.push(`head:${head}`);
+  for(const candidate of identityCandidates(service)){
+    const uid=upper(candidate.uid||candidate.serviceUid||candidate.trainUid);if(uid)refs.push(`uid:${uid}`);
+    const head=headcode(candidate.trainId||candidate.trainid||candidate.headcode);if(head)refs.push(`head:${head}`);
+  }
   return [...new Set(refs)];
 }
 function cacheKey(date,ref){return `${date}|${upper(ref)}`;}

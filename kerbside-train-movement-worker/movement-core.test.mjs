@@ -100,6 +100,17 @@ test('movement preserves activation identity and resolves current/next locations
   assert.equal(snapshot.history.length, 1);
 });
 
+test('movement-only cold start derives a safe headcode/date fallback index', () => {
+  const result = applyFeedMessages([departure], new Map(), corpus, now + 5000);
+  const snapshot = result.snapshots.get('775F25MP16');
+  assert.equal(snapshot.uid, '');
+  assert.equal(snapshot.headcode, '5F25');
+  assert.equal(snapshot.date, '2026-08-16');
+  assert.deepEqual(result.fallbackIndexes.map(item => [item.kind, item.date, item.value, item.trainId]), [
+    ['head', '2026-08-16', '5F25', '775F25MP16']
+  ]);
+});
+
 test('operational cancellation, reinstatement and change messages remain additive', () => {
   const existing = applyFeedMessages([activation, departure], new Map(), corpus, now).snapshots;
   const rows = [

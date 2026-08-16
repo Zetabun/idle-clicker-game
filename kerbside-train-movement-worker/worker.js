@@ -13,7 +13,7 @@ import {
   trainIdOf
 } from './movement-core.js';
 
-const VERSION = '0.9.30';
+const VERSION = '0.9.31';
 const STOMP_HOST = 'publicdatafeeds.networkrail.co.uk';
 const STOMP_PORT = 61618;
 const STOMP_TOPIC = '/topic/TRAIN_MVT_ALL_TOC';
@@ -166,6 +166,13 @@ export class TrainMovementHub extends DurableObject {
       updated_at INTEGER NOT NULL
     )`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS service_index_updated ON service_index(updated_at)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS head_fallback_index (
+      key TEXT NOT NULL,
+      train_id TEXT NOT NULL,
+      updated_at INTEGER NOT NULL,
+      PRIMARY KEY(key, train_id)
+    )`);
+    this.sql.exec(`CREATE INDEX IF NOT EXISTS head_fallback_updated ON head_fallback_index(updated_at)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -256,6 +263,10 @@ export class TrainMovementHub extends DurableObject {
         const key = lookupIndexKey(ref, date);
         const rows = key ? [...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?', key)] : [];
         trainId = rows[0] && rows[0].train_id || '';
+        if (!trainId && ref.kind === 'head' && key) {
+          const fallbackRows = [...this.sql.exec('SELECT train_id FROM head_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', key)];
+          if (fallbackRows.length === 1) trainId = fallbackRows[0].train_id || '';
+        }
       }
       const snapshot = trainId ? this.snapshotByTrainId(trainId) : null;
       results[ref.raw] = snapshot ? publicSnapshot(snapshot) : null;
@@ -403,6 +414,11 @@ export class TrainMovementHub extends DurableObject {
       if (!key) continue;
       this.sql.exec('INSERT OR REPLACE INTO service_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
     }
+    for (const index of applied.fallbackIndexes || []) {
+      const key = lookupIndexKey({ kind: index.kind, value: index.value }, index.date);
+      if (!key) continue;
+      this.sql.exec('INSERT OR REPLACE INTO head_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
+    }
     this.status.messages += messages.length;
     this.saveStatus();
   }
@@ -464,6 +480,7 @@ export class TrainMovementHub extends DurableObject {
     const cutoff = Date.now() - SNAPSHOT_RETENTION_MS;
     this.sql.exec('DELETE FROM snapshots WHERE updated_at < ?', cutoff);
     this.sql.exec('DELETE FROM service_index WHERE updated_at < ?', cutoff);
+    this.sql.exec('DELETE FROM head_fallback_index WHERE updated_at < ?', cutoff);
   }
 
   async alarm() {
