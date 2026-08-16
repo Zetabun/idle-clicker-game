@@ -1,4 +1,4 @@
 Kerbside 0.9.20 Plan My Journey constraints release.
 Use source-accurate base connection wording.
-Make the live-window fallback regression independent of current timetable ownership.
 Stub both scheduled timetable manifests to empty coverage so the live fallback fixture is fully self-contained.
+Default first-run constraints to Up to 1 change with no extra buffer and lock that behavior with a browser assertion.
