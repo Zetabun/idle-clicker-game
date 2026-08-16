@@ -89,6 +89,14 @@ const serviceDetail = {
 };
 
 async function mockExternal(page, diagnostics){
+  // This regression exercises the core train board and crowding model, not the
+  // Network Rail movement overlay. The dedicated movement regression validates
+  // that overlay in both WebKit and Chromium. When this fixture becomes same-day
+  // after a London date rollover, prevent the unrelated overlay from polling the
+  // production Worker and introducing a CORS/network dependency into this test.
+  await page.context().route('**/kerbside-train-movement.js*', route=>
+    route.fulfill({status:200,contentType:'text/javascript',body:'/* movement disabled in train regression */'})
+  );
   await page.route('**/__nrcc_probe.png', route=>{ nrccProbeRequests++; return route.fulfill({status:404,body:''}); });
   await page.route('**://huxley2.azurewebsites.net/**', async route=>{
     const url = new URL(route.request().url());

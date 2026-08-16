@@ -5,6 +5,7 @@ import {
   StompFrameParser,
   applyFeedMessages,
   lookupIndexKey,
+  messageType,
   normaliseLookupRef,
   originIndexFromActivation,
   parseMovementBatch,
@@ -13,8 +14,12 @@ import {
   stompFrame,
   trainIdOf
 } from './movement-core.js';
+import {
+  HOT_TRAIN_TTL_MS, INDEX_REBUILD_MS, LIVE_RETENTION_MS, MAX_LIVE_SNAPSHOTS, MAX_RECOVERED_SNAPSHOTS, MAX_RECOVERY_BUFFER, RECOVERY_CHUNK_SIZE, RECOVERY_FLUSH_MS, RECOVERY_LOAD_MAX_PAGES, RECOVERY_LOAD_PAGE_SIZE, RECOVERY_PREFIX, RECOVERY_RETENTION_MS,
+  compactLiveSnapshot, compactRecoverySnapshot, recoveryKey, recoveryKeyExpired, shouldQueueRecovery, splitRecoveryEntries
+} from './movement-storage-policy.js';
 
-const VERSION = '0.9.33';
+const VERSION = '0.9.34';
 const STOMP_HOST = 'publicdatafeeds.networkrail.co.uk';
 const STOMP_PORT = 61618;
 const STOMP_TOPIC = '/topic/TRAIN_MVT_ALL_TOC';
@@ -173,6 +178,11 @@ export class TrainMovementHub extends DurableObject {
       lastError: '', batches: 0, messages: 0, reconnects: 0, protocol: '', server: ''
     };
     this.sql = ctx.storage.sql;
+    this.liveSnapshots=new Map(); this.recoveredSnapshots=new Map();
+    this.memoryServiceIndex=new Map(); this.memoryHeadIndex=new Map(); this.memoryOriginIndex=new Map();
+    this.hotTrainUntil=new Map(); this.lastCheckpointAt=new Map(); this.recoveryBuffer=new Map();
+    this.lastRecoveryFlushAt=0; this.lastMemoryPruneAt=0; this.lastIndexRebuildAt=0; this.lastStorageCleanupAt=0; this.recoveryFlushPromise=null;
+    this.storageStats={mode:'memory-first',writes:0,writeFailures:0,recoveryDropped:0,lastFlushAt:0,lastWriteError:'',legacyRestored:0,recoveryRestored:0};
     this.sql.exec(`CREATE TABLE IF NOT EXISTS snapshots (
       train_id TEXT PRIMARY KEY,
       payload TEXT NOT NULL,
@@ -204,7 +214,7 @@ export class TrainMovementHub extends DurableObject {
       value TEXT NOT NULL
     )`);
     this.restoreStatus();
-    this.backfillOriginIndexes();
+    this.ctx.blockConcurrencyWhile(()=>this.restoreRecoveryState());
   }
 
   restoreStatus() {
@@ -215,26 +225,25 @@ export class TrainMovementHub extends DurableObject {
   }
 
   saveStatus() {
-    this.sql.exec('INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)', 'status', JSON.stringify(this.status));
+    // Health counters are deliberately memory-only. Persisting them for every
+    // TRUST batch was a major source of Durable Object rows_written.
   }
 
-  backfillOriginIndexes() {
-    try {
-      const marker = [...this.sql.exec('SELECT value FROM meta WHERE key = ?', 'origin-index-v1')];
-      if (marker[0] && marker[0].value) return;
-      const now = Date.now(), cutoff = now - SNAPSHOT_RETENTION_MS;
-      for (const row of this.sql.exec('SELECT train_id,payload,updated_at FROM snapshots WHERE updated_at >= ?', cutoff)) {
-        let snapshot;
-        try { snapshot = JSON.parse(row.payload); } catch { continue; }
-        const index = originIndexFromActivation(snapshot && snapshot.activation);
-        if (!index) continue;
-        const key = lookupIndexKey({ kind: 'origin', value: index.value }, index.date);
-        if (!key) continue;
-        this.sql.exec('INSERT OR REPLACE INTO origin_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId || row.train_id, Number(row.updated_at) || now);
-      }
-      this.sql.exec('INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)', 'origin-index-v1', String(now));
-    } catch {}
-  }
+  addMemoryIndex(map,key,trainId){if(!key||!trainId)return;if(!map.has(key))map.set(key,new Set());map.get(key).add(trainId);}
+  registerSnapshot(snapshot){if(!snapshot||!snapshot.trainId)return;const date=text(snapshot.date||snapshot.activation&&snapshot.activation.date),uid=upper(snapshot.uid||snapshot.activation&&snapshot.activation.uid),head=upper(snapshot.headcode||snapshot.activation&&snapshot.activation.headcode);if(uid&&date)this.addMemoryIndex(this.memoryServiceIndex,lookupIndexKey({kind:'uid',value:uid},date),snapshot.trainId);if(head&&date)this.addMemoryIndex(this.memoryHeadIndex,lookupIndexKey({kind:'head',value:head},date),snapshot.trainId);const origin=originIndexFromActivation(snapshot.activation);if(origin)this.addMemoryIndex(this.memoryOriginIndex,lookupIndexKey({kind:'origin',value:origin.value},origin.date),snapshot.trainId);}
+  rememberRecovered(snapshot,source='recovery'){const compact=compactRecoverySnapshot(snapshot);if(!compact)return;const prior=this.recoveredSnapshots.get(compact.trainId);if(!prior||Number(compact.updatedAt||0)>=Number(prior.updatedAt||0)){this.recoveredSnapshots.set(compact.trainId,compact);this.lastCheckpointAt.set(compact.trainId,Number(compact.updatedAt)||0);this.registerSnapshot(compact);if(source==='legacy')this.storageStats.legacyRestored+=1;else this.storageStats.recoveryRestored+=1;}}
+  async restoreRecoveryState(){const now=Date.now(),cutoff=now-RECOVERY_RETENTION_MS;try{for(const row of this.sql.exec('SELECT train_id,payload,updated_at FROM snapshots WHERE updated_at >= ? ORDER BY updated_at DESC LIMIT ?',cutoff,MAX_RECOVERED_SNAPSHOTS)){let snapshot;try{snapshot=JSON.parse(row.payload);}catch{continue;}if(snapshot&&!snapshot.trainId)snapshot.trainId=text(row.train_id);this.rememberRecovered(snapshot,'legacy');}}catch{}try{let end='';for(let page=0;page<RECOVERY_LOAD_MAX_PAGES;page+=1){const options={prefix:RECOVERY_PREFIX,reverse:true,limit:RECOVERY_LOAD_PAGE_SIZE,noCache:true};if(end)options.end=end;const rows=await this.ctx.storage.list(options);if(!rows.size)break;let oldest='';for(const[key,value]of rows){oldest=key;if(recoveryKeyExpired(key,now,RECOVERY_RETENTION_MS))continue;for(const snapshot of Array.isArray(value&&value.snapshots)?value.snapshots:[])this.rememberRecovered(snapshot);}this.pruneMemory(now,true);if(rows.size<RECOVERY_LOAD_PAGE_SIZE||!oldest)break;end=oldest;}}catch(error){this.storageStats.lastWriteError=`Recovery read: ${safeMessage(error)}`;}this.pruneMemory(now,true);}
+  uniqueMemory(map,key){const set=key&&map.get(key);return set&&set.size===1?[...set][0]:'';}
+  markHot(trainId,now=Date.now()){if(trainId)this.hotTrainUntil.set(trainId,now+HOT_TRAIN_TTL_MS);}
+  isHot(trainId,now=Date.now()){return Number(this.hotTrainUntil.get(trainId)||0)>now;}
+  responseSnapshot(trainId){const snapshot=this.snapshotByTrainId(trainId);if(!snapshot)return null;const live=this.liveSnapshots.has(trainId),response=publicSnapshot(snapshot);response.reacquiring=!live&&this.status.state==='connected'&&['activated','running'].includes(text(snapshot.status));response.storageSource=live?'memory-live':'recovery-checkpoint';return response;}
+  queueRecovery(snapshot,reason){const compact=compactRecoverySnapshot(snapshot);if(!compact)return;compact.recoveryReason=reason;if(!this.recoveryBuffer.has(compact.trainId)&&this.recoveryBuffer.size>=MAX_RECOVERY_BUFFER){const oldest=this.recoveryBuffer.keys().next().value;if(oldest){this.recoveryBuffer.delete(oldest);this.storageStats.recoveryDropped+=1;}}this.recoveryBuffer.set(compact.trainId,compact);}
+  async maybeFlushRecovery(force=false){const now=Date.now();if(!this.recoveryBuffer.size)return false;if(!force&&now-this.lastRecoveryFlushAt<RECOVERY_FLUSH_MS)return false;if(this.recoveryFlushPromise)return this.recoveryFlushPromise;this.recoveryFlushPromise=this.flushRecoveryBuffer(now).finally(()=>{this.recoveryFlushPromise=null;});return this.recoveryFlushPromise;}
+  async flushRecoveryBuffer(now=Date.now()){const captured=[...this.recoveryBuffer.entries()];if(!captured.length)return false;const chunks=splitRecoveryEntries(captured.map(([,s])=>s),RECOVERY_CHUNK_SIZE);try{for(let i=0;i<chunks.length;i++)await this.ctx.storage.put(recoveryKey(now,i),{createdAt:now,snapshots:chunks[i]});for(const[trainId,snapshot]of captured){const current=this.recoveryBuffer.get(trainId);if(current&&Number(current.updatedAt||0)<=Number(snapshot.updatedAt||0))this.recoveryBuffer.delete(trainId);this.rememberRecovered(snapshot);}this.lastRecoveryFlushAt=now;this.storageStats.writes+=chunks.length;this.storageStats.lastFlushAt=now;this.storageStats.lastWriteError='';return true;}catch(error){this.storageStats.writeFailures+=1;this.storageStats.lastWriteError=safeMessage(error);return false;}}
+  trimSnapshotMap(map,retention,max,now){for(const[trainId,snapshot]of map)if(now-Number(snapshot.updatedAt||0)>retention)map.delete(trainId);if(map.size>max){const oldest=[...map.entries()].sort((a,b)=>Number(a[1]&&a[1].updatedAt||0)-Number(b[1]&&b[1].updatedAt||0));for(let i=0;i<oldest.length-max;i+=1)map.delete(oldest[i][0]);}}
+  rebuildMemoryIndexes(now=Date.now()){this.memoryServiceIndex=new Map();this.memoryHeadIndex=new Map();this.memoryOriginIndex=new Map();for(const[trainId,snapshot]of this.recoveredSnapshots)if(!this.liveSnapshots.has(trainId))this.registerSnapshot(snapshot);for(const snapshot of this.liveSnapshots.values())this.registerSnapshot(snapshot);this.lastIndexRebuildAt=now;}
+  pruneMemory(now=Date.now(),force=false){if(!force&&now-this.lastMemoryPruneAt<60000)return;this.lastMemoryPruneAt=now;for(const[trainId,until]of this.hotTrainUntil)if(until<=now)this.hotTrainUntil.delete(trainId);this.trimSnapshotMap(this.liveSnapshots,LIVE_RETENTION_MS,MAX_LIVE_SNAPSHOTS,now);this.trimSnapshotMap(this.recoveredSnapshots,RECOVERY_RETENTION_MS,MAX_RECOVERED_SNAPSHOTS,now);for(const trainId of [...this.lastCheckpointAt.keys()])if(!this.liveSnapshots.has(trainId)&&!this.recoveredSnapshots.has(trainId))this.lastCheckpointAt.delete(trainId);if(force||now-this.lastIndexRebuildAt>=INDEX_REBUILD_MS)this.rebuildMemoryIndexes(now);}
+  async cleanupRecoveryStorage(now=Date.now()){if(now-this.lastStorageCleanupAt<6*60*60*1000)return;this.lastStorageCleanupAt=now;try{for(let page=0;page<8;page+=1){const rows=await this.ctx.storage.list({prefix:RECOVERY_PREFIX,limit:100,noCache:true});if(!rows.size)break;const expired=[];let sawFresh=false;for(const key of rows.keys()){if(recoveryKeyExpired(key,now,RECOVERY_RETENTION_MS))expired.push(key);else{sawFresh=true;break;}}if(expired.length)await this.ctx.storage.delete(expired);if(sawFresh||expired.length<100)break;}}catch(error){this.storageStats.lastWriteError=`Recovery cleanup: ${safeMessage(error)}`;}}
 
   async fetch(request) {
     const url = new URL(request.url);
@@ -284,57 +293,23 @@ export class TrainMovementHub extends DurableObject {
       reconnects: this.status.reconnects || 0,
       protocol: this.status.protocol || '',
       server: this.status.server || '',
+      storage: { ...this.storageStats, liveSnapshots:this.liveSnapshots.size, recoveredSnapshots:this.recoveredSnapshots.size, hotTrains:[...this.hotTrainUntil.values()].filter(until=>until>now).length, recoveryBuffered:this.recoveryBuffer.size, recoveryFlushSeconds:RECOVERY_FLUSH_MS/1000 },
       corpus: CORPUS_META,
       credentialsConfigured: Boolean(this.env.NETWORK_RAIL_USERNAME && this.env.NETWORK_RAIL_PASSWORD)
     };
   }
 
   snapshotByTrainId(trainId) {
-    const id = text(trainId);
-    if (!id) return null;
-    const rows = [...this.sql.exec('SELECT payload FROM snapshots WHERE train_id = ?', id)];
-    if (!rows[0] || !rows[0].payload) return null;
-    try { return JSON.parse(rows[0].payload); } catch { return null; }
+    const id=text(trainId);if(!id)return null;
+    const memory=this.liveSnapshots.get(id)||this.recoveredSnapshots.get(id);if(memory)return memory;
+    const rows=[...this.sql.exec('SELECT payload FROM snapshots WHERE train_id = ?',id)];if(!rows[0]||!rows[0].payload)return null;
+    try{const snapshot=JSON.parse(rows[0].payload);this.rememberRecovered(snapshot,'legacy');return snapshot;}catch{return null;}
   }
 
   lookup(url) {
-    const date = text(url.searchParams.get('date')) || londonDate();
-    const refs = url.searchParams.getAll('ref').map(normaliseLookupRef).filter(Boolean).slice(0, MAX_LOOKUP_REFS);
-    const results = {};
-    for (const ref of refs) {
-      let trainId = '';
-      if (ref.kind === 'train') trainId = ref.value;
-      else {
-        const key = lookupIndexKey(ref, date);
-        const rows = key ? [...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?', key)] : [];
-        trainId = rows[0] && rows[0].train_id || '';
-        if (!trainId && ref.kind === 'head' && key) {
-          const fallbackRows = [...this.sql.exec('SELECT train_id FROM head_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', key)];
-          if (fallbackRows.length === 1) trainId = fallbackRows[0].train_id || '';
-        }
-        if (!trainId && ref.kind === 'origin' && key) {
-          const candidates = new Set();
-          for (const candidateKey of originLookupKeys(ref, date)) {
-            for (const row of this.sql.exec('SELECT train_id FROM origin_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', candidateKey)) {
-              if (row && row.train_id) candidates.add(row.train_id);
-              if (candidates.size > 1) break;
-            }
-            if (candidates.size > 1) break;
-          }
-          if (candidates.size === 1) trainId = [...candidates][0];
-        }
-      }
-      const snapshot = trainId ? this.snapshotByTrainId(trainId) : null;
-      results[ref.raw] = snapshot ? publicSnapshot(snapshot) : null;
-    }
-    return json({
-      ok: true,
-      date,
-      generatedAt: Date.now(),
-      connected: this.status.state === 'connected',
-      lastMessageAt: this.status.lastMessageAt || null,
-      results
-    }, 200, { 'Cache-Control': 'no-store', 'X-Kerbside-Movement-Source': 'network-rail-trust' });
+    const date=text(url.searchParams.get('date'))||londonDate(),refs=url.searchParams.getAll('ref').map(normaliseLookupRef).filter(Boolean).slice(0,MAX_LOOKUP_REFS),results={};
+    for(const ref of refs){let trainId='';const key=ref.kind==='train'?'':lookupIndexKey(ref,date);if(ref.kind==='train')trainId=ref.value;else if(ref.kind==='uid'){trainId=this.uniqueMemory(this.memoryServiceIndex,key);if(!trainId){const rows=key?[...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?',key)]:[];trainId=rows[0]&&rows[0].train_id||'';}}else if(ref.kind==='head'){trainId=this.uniqueMemory(this.memoryHeadIndex,key);if(!trainId){const rows=key?[...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?',key)]:[];trainId=rows[0]&&rows[0].train_id||'';}if(!trainId&&key){const rows=[...this.sql.exec('SELECT train_id FROM head_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2',key)];if(rows.length===1)trainId=rows[0].train_id||'';}}else if(ref.kind==='origin'){const candidates=new Set();for(const candidateKey of originLookupKeys(ref,date)){for(const id of this.memoryOriginIndex.get(candidateKey)||[])candidates.add(id);if(candidates.size>1)break;if(!candidates.size){for(const row of this.sql.exec('SELECT train_id FROM origin_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2',candidateKey)){if(row&&row.train_id)candidates.add(row.train_id);if(candidates.size>1)break;}}if(candidates.size>1)break;}if(candidates.size===1)trainId=[...candidates][0];}if(trainId)this.markHot(trainId);results[ref.raw]=trainId?this.responseSnapshot(trainId):null;}
+    return json({ok:true,date,generatedAt:Date.now(),connected:this.status.state==='connected',lastMessageAt:this.status.lastMessageAt||null,storageMode:'memory-first',results},200,{'Cache-Control':'no-store','X-Kerbside-Movement-Source':'network-rail-trust'});
   }
 
   async ensureConnected() {
@@ -450,38 +425,7 @@ export class TrainMovementHub extends DurableObject {
   }
 
   async persistMovementBatch(body) {
-    let messages;
-    try { messages = parseMovementBatch(body); }
-    catch (error) { throw new Error(`Invalid Network Rail movement JSON: ${safeMessage(error)}`); }
-    this.status.batches += 1;
-    this.status.lastMessageAt = Date.now();
-    if (!messages.length) { this.saveStatus(); return; }
-    const now = Date.now();
-    const existing = this.existingSnapshotsFor(messages);
-    const applied = applyFeedMessages(messages, existing, CORPUS, now);
-    for (const [trainId, snapshot] of applied.snapshots) {
-      this.sql.exec(
-        'INSERT OR REPLACE INTO snapshots(train_id,payload,updated_at) VALUES(?,?,?)',
-        trainId, JSON.stringify(snapshot), now
-      );
-    }
-    for (const index of applied.indexes) {
-      const key = lookupIndexKey({ kind: index.kind, value: index.value }, index.date);
-      if (!key) continue;
-      this.sql.exec('INSERT OR REPLACE INTO service_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
-    }
-    for (const index of applied.fallbackIndexes || []) {
-      const key = lookupIndexKey({ kind: index.kind, value: index.value }, index.date);
-      if (!key) continue;
-      this.sql.exec('INSERT OR REPLACE INTO head_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
-    }
-    for (const index of applied.originIndexes || []) {
-      const key = lookupIndexKey({ kind: 'origin', value: index.value }, index.date);
-      if (!key) continue;
-      this.sql.exec('INSERT OR REPLACE INTO origin_fallback_index(key,train_id,updated_at) VALUES(?,?,?)', key, index.trainId, now);
-    }
-    this.status.messages += messages.length;
-    this.saveStatus();
+    let messages;try{messages=parseMovementBatch(body);}catch(error){throw new Error(`Invalid Network Rail movement JSON: ${safeMessage(error)}`);}const now=Date.now();this.status.batches+=1;this.status.lastMessageAt=now;if(!messages.length)return;const existing=this.existingSnapshotsFor(messages),applied=applyFeedMessages(messages,existing,CORPUS,now),typesByTrain=new Map();for(const message of messages){const trainId=trainIdOf(message),type=messageType(message);if(!trainId)continue;if(!typesByTrain.has(trainId))typesByTrain.set(trainId,new Set());typesByTrain.get(trainId).add(type);}for(const[trainId,snapshot]of applied.snapshots){const live=compactLiveSnapshot(snapshot,{historyLimit:this.isHot(trainId,now)?4:0});if(live){this.liveSnapshots.set(trainId,live);this.registerSnapshot(live);}const plan=shouldQueueRecovery({types:[...(typesByTrain.get(trainId)||[])],snapshot,hot:this.isHot(trainId,now),lastCheckpointAt:this.lastCheckpointAt.get(trainId)||0,now});if(plan.queue)this.queueRecovery(snapshot,plan.reason);}this.status.messages+=messages.length;this.pruneMemory(now);await this.maybeFlushRecovery(false);
   }
 
   startHeartbeat() {
@@ -537,16 +481,13 @@ export class TrainMovementHub extends DurableObject {
     await this.ctx.storage.setAlarm(Date.now() + delay);
   }
 
-  cleanup() {
-    const cutoff = Date.now() - SNAPSHOT_RETENTION_MS;
-    this.sql.exec('DELETE FROM snapshots WHERE updated_at < ?', cutoff);
-    this.sql.exec('DELETE FROM service_index WHERE updated_at < ?', cutoff);
-    this.sql.exec('DELETE FROM head_fallback_index WHERE updated_at < ?', cutoff);
-    this.sql.exec('DELETE FROM origin_fallback_index WHERE updated_at < ?', cutoff);
-  }
+  cleanup() { this.pruneMemory(Date.now()); }
 
   async alarm() {
+    const now=Date.now();
+    await this.maybeFlushRecovery(true);
     this.cleanup();
+    await this.cleanupRecoveryStorage(now);
     if (this.status.state === 'auth-error') return;
     const aged = this.connectionStartedAt && Date.now() - this.connectionStartedAt >= SOCKET_RENEW_MS;
     if (aged) await this.closeSocket(true);
