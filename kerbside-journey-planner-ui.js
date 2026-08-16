@@ -18,9 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.29';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.29';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.29';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.30';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.30';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.30';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.30';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -266,7 +267,14 @@ core.addEventListener('load',()=>{
   polish.src=SAVED_POLISH_URL;
   polish.async=false;
   polish.onerror=()=>{stationState.error='Saved Journeys polish failed to load';notifyStationState();};
-  polish.addEventListener('load',()=>setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0),{once:true});
+  polish.addEventListener('load',()=>{
+    setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0);
+    const movement=document.createElement('script');
+    movement.src=TRAIN_MOVEMENT_URL;
+    movement.async=false;
+    movement.onerror=()=>{console.warn('Network Rail movement overlay failed to load; timetable and Darwin remain available.');};
+    (document.head||document.documentElement).appendChild(movement);
+  },{once:true});
   (document.head||document.documentElement).appendChild(polish);
 },{once:true});
 (document.head||document.documentElement).appendChild(core);
