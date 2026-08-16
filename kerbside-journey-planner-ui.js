@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-/* Station autocomplete data layer.
+/* Station autocomplete and hosted rail bridge.
 
    The Darwin timetable refresh already publishes a compact locations.json
    beside the browser timetable. Use that same official reference data for
@@ -9,14 +9,19 @@
    every keystroke. The existing journey planner is loaded immediately after
    this wrapper, so it captures this fetch layer as its upstream transport.
 
-   If the local reference file cannot be loaded, /crs requests simply fall
-   through to the existing Huxley provider chain. Live departure/service calls
-   are never intercepted here. */
+   GitHub Pages cannot call the community Huxley endpoints directly because
+   they do not return CORS headers. On the hosted app, departure-board requests
+   are therefore kept on Kerbside's official Rail Data Marketplace Worker when
+   the selected date is today. Advance dates belong to the local timetable and
+   are rejected here before the browser can make a noisy, doomed Huxley call. */
 const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
+const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
+const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
 const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.28';
 const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.28';
 const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.28';
+const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
   'https://hux.azurewebsites.net'
@@ -24,7 +29,7 @@ const PROVIDERS=new Set([
 const NON_RAIL_SUFFIX=/\((?:bus|coach|ferry)\)\s*$/i;
 const NON_RAIL_TOC=new Set(['ZB','ZF']);
 const upstreamFetch=window.fetch.bind(window);
-const stationState={source:'idle',count:0,searches:0,fallbacks:0,error:''};
+const stationState={source:'idle',count:0,searches:0,fallbacks:0,error:'',hostedRailBridges:0,blockedFutureCalls:0};
 let stationRows=null;
 let stationRowsPromise=null;
 
@@ -43,6 +48,41 @@ function stationQuery(url){
   const match=decodeURIComponent(url.pathname).match(/^\/crs\/(.+?)\/?$/i);
   const value=match?String(match[1]||'').trim():'';
   return value.length>=2?value:'';
+}
+function departureRequest(url){
+  if(!url||!PROVIDERS.has(url.origin))return null;
+  const match=decodeURIComponent(url.pathname).match(/^\/departures\/([A-Za-z0-9]{3})(?:\/to\/([A-Za-z0-9]{3}))?\/(\d+)\/?$/i);
+  return match?{from:match[1].toUpperCase(),to:match[2]?match[2].toUpperCase():'',rows:match[3]}:null;
+}
+function hostedRailBridgeEnabled(hostname=typeof location==='undefined'?'':location.hostname){
+  return HOSTED_RAIL_HOSTS.has(String(hostname||'').toLowerCase());
+}
+function trainDateIsToday(){
+  const api=window.__KERBSIDE_TRAIN_DATE__;
+  return !api||typeof api.isToday!=='function'||api.isToday();
+}
+function hostedRailUrl(url){
+  const request=departureRequest(url);if(!request)return null;
+  const path=request.to&&request.to!==request.from
+    ? `/departures/${encodeURIComponent(request.from)}/to/${encodeURIComponent(request.to)}/${encodeURIComponent(request.rows)}`
+    : `/departures/${encodeURIComponent(request.from)}/${encodeURIComponent(request.rows)}`;
+  const official=new URL(path,OFFICIAL_RAIL_URL);
+  ['expand','timeOffset','timeWindow'].forEach(name=>{
+    if(url.searchParams.has(name))official.searchParams.set(name,url.searchParams.get(name));
+  });
+  return official;
+}
+function futureTimetableResponse(request){
+  stationState.blockedFutureCalls++;notifyStationState();
+  return new Response(JSON.stringify({
+    error:'Advance-date departures are supplied by Kerbside timetable data, not a live browser provider.',
+    from:request&&request.from||'',
+    to:request&&request.to||'',
+    retryable:false
+  }),{
+    status:409,
+    headers:{'Content-Type':'application/json; charset=utf-8','X-Kerbside-Rail-Source':'advance-timetable'}
+  });
 }
 function normalise(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ');}
 function parseLocations(json){
@@ -115,7 +155,14 @@ function loadStations(){
   return stationRowsPromise;
 }
 async function stationDataFetch(input,init){
-  const url=requestUrl(input),query=stationQuery(url);
+  const url=requestUrl(input),query=stationQuery(url),departure=departureRequest(url);
+  if(departure&&hostedRailBridgeEnabled()){
+    throwIfAborted(init);
+    if(!trainDateIsToday())return futureTimetableResponse(departure);
+    const official=hostedRailUrl(url);
+    stationState.hostedRailBridges++;notifyStationState();
+    return upstreamFetch(official.toString(),init);
+  }
   if(!query)return upstreamFetch(input,init);
   try{
     throwIfAborted(init);
@@ -133,8 +180,74 @@ async function stationDataFetch(input,init){
   }
 }
 
+function installUiGuardStyles(){
+  if(document.getElementById(UI_GUARD_STYLE_ID))return;
+  const style=document.createElement('style');
+  style.id=UI_GUARD_STYLE_ID;
+  style.textContent=`
+body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
+body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
+@media(min-width:821px){
+  body[data-transport="train"] .train-sidebar>.train-view-tabs{
+    position:sticky;top:0;z-index:1705;
+    box-shadow:0 8px 18px rgb(var(--shadow-rgb) / .14);
+  }
+}
+`;
+  (document.head||document.documentElement).appendChild(style);
+}
+function resetTrainSidebarScroll(){
+  const sidebar=document.querySelector('.train-sidebar');
+  if(sidebar&&window.innerWidth>820)sidebar.scrollTop=0;
+}
+function restoreBaseTrainView(){
+  const tabs=document.getElementById('trainViewTabs'),trainButton=tabs&&tabs.querySelector('[data-train-view="trains"]');
+  const plannerApi=window.__KERBSIDE_JOURNEY_PLANNER__,savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
+  if(!tabs||!trainButton||trainButton.getAttribute('aria-selected')!=='true')return false;
+  if(plannerApi&&plannerApi.planState&&plannerApi.planState.active)return false;
+  if(savedApi&&savedApi.state&&savedApi.state.active)return false;
+  const sidebar=document.querySelector('.train-sidebar');
+  if(!sidebar)return false;
+  for(const child of [...sidebar.children]){
+    if(child===tabs){child.hidden=false;continue;}
+    if(child.id==='planJourneyForm'||child.id==='savedJourneySidebar'){child.hidden=true;continue;}
+    child.hidden=false;
+  }
+  const content=document.querySelector('.train-content');
+  if(content){
+    const planSurface=document.getElementById('planJourneySurface'),savedSurface=document.getElementById('savedJourneySurface');
+    if(planSurface)planSurface.hidden=true;
+    if(savedSurface)savedSurface.hidden=true;
+    const head=content.querySelector(':scope > .train-board-head'),legend=content.querySelector(':scope > .train-legend');
+    if(head)head.hidden=false;
+    if(legend)legend.hidden=false;
+  }
+  const alerts=document.getElementById('trainAlerts');
+  if(alerts)alerts.hidden=!String(alerts.innerHTML||'').trim();
+  setTimeout(()=>window.__KERBSIDE_TRAIN_TIMETABLE__?.sync?.(),0);
+  return true;
+}
+function installUiGuards(){
+  installUiGuardStyles();
+  document.addEventListener('click',event=>{
+    const view=event.target&&event.target.closest&&event.target.closest('[data-train-view]');
+    if(!view)return;
+    setTimeout(()=>{
+      resetTrainSidebarScroll();
+      if(view.dataset.trainView==='trains')restoreBaseTrainView();
+    },0);
+  },true);
+  const settle=()=>setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',settle,{once:true});else settle();
+}
+
 window.fetch=stationDataFetch;
-window.__KERBSIDE_STATION_DATA__={state:stationState,load:loadStations,search,parseLocations};
+window.__KERBSIDE_STATION_DATA__={
+  state:stationState,load:loadStations,search,parseLocations,
+  hostedRailBridgeEnabled,departureRequest,hostedRailUrl,trainDateIsToday,
+  restoreBaseTrainView,resetTrainSidebarScroll
+};
+installUiGuards();
 loadStations().catch(()=>{});
 
 /* Keep the established planner implementation byte-for-byte in a separate
@@ -149,6 +262,7 @@ core.addEventListener('load',()=>{
   polish.src=SAVED_POLISH_URL;
   polish.async=false;
   polish.onerror=()=>{stationState.error='Saved Journeys polish failed to load';notifyStationState();};
+  polish.addEventListener('load',()=>setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0),{once:true});
   (document.head||document.documentElement).appendChild(polish);
 },{once:true});
 (document.head||document.documentElement).appendChild(core);
