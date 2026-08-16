@@ -132,6 +132,47 @@ try{
   assert.ok(eventForecast.eventPressure>0&&eventForecast.eventPressure<=0.8,`event pressure should be positive and bounded: ${JSON.stringify(eventForecast)}`);
   assert.ok(eventForecast.reasons.some(reason=>/Birmingham Arena Concert/.test(reason)),`forecast should name the contributing event: ${JSON.stringify(eventForecast)}`);
 
+
+  // Plan My Journey is a separate comparison view over the same timetable
+  // provider and Forecast v4. Keep the regression deterministic by replacing
+  // only the candidate/event responses used by this comparison.
+  await page.waitForSelector('#trainViewTabs');
+  await page.evaluate(()=>{
+    const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
+    provider.getCoverage=async()=>({dates:['2026-08-12'],coverage:{'2026-08-12':{from:'00:01',to:'23:59',partial:false}}});
+    provider.getJourneyOptions=async()=>{
+      const rows=[
+        {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail'},
+        {serviceID:'PLAN-QUIET',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail'}
+      ];
+      Object.defineProperty(rows,'kerbsideSource',{value:'network-rail'});return rows;
+    };
+    const forecast=window.__KERBSIDE_FORECAST_V4__;
+    forecast.forecast=service=>service.serviceID==='PLAN-QUIET'
+      ?{score:.8,label:'Quiet',level:'quiet',confidence:'High',probabilities:{quiet:.75,moderate:.18,busy:.05,veryBusy:.02},reasons:['lower measured demand at this time']}
+      :{score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
+    const events=window.__KERBSIDE_EVENTS__;events.footballEventsFor=async()=>[];events.wikidataEventsForJourney=async()=>[];
+    if(window.__KERBSIDE_TRAIN_TIMETABLE__)window.__KERBSIDE_TRAIN_TIMETABLE__.sync=()=>true;
+  });
+  await page.click('[data-train-view="plan"]');
+  assert.equal(await page.locator('#planJourneyForm').isVisible(),true);
+  assert.equal(await page.locator('#trainPlanner').isVisible(),false);
+  assert.match(await page.locator('#planJourneyFrom').inputValue(),/Birmingham New Street/);
+  assert.match(await page.locator('#planJourneyTo').inputValue(),/Bristol Temple Meads/);
+  await page.fill('#planJourneyDate','2026-08-12');
+  await page.fill('#planJourneyStart','09:00');
+  await page.fill('#planJourneyEnd','11:00');
+  await page.selectOption('#planJourneyPreference','quieter');
+  await page.click('#planJourneySearch');
+  await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===2,undefined,{timeout:10000});
+  const planCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
+  assert.match(planCards[0],/Quiet Rail/,'Plan My Journey ranks the quiet Forecast v4 option first');
+  assert.match(planCards[0],/Best match for Quieter/);
+  assert.match(await page.locator('#planJourneyMeta').textContent(),/Network Rail SCHEDULE/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.plan.preference.v1')),'quieter');
+  await page.click('[data-train-view="trains"]');
+  assert.equal(await page.locator('#trainPlanner').isVisible(),true,'normal train planner should be restored after leaving Plan My Journey');
+
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   assert.ok(overflow<=1,`combined train planner should not overflow mobile viewport; got ${overflow}px`);
   assert.deepEqual(diagnostics.pageErrors,[],`Unexpected page errors: ${diagnostics.pageErrors.join('\n')}`);

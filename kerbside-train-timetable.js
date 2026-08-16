@@ -229,8 +229,9 @@ function destinationIndexAfter(row,toCode,start){
   for(let i=start+1;i<calls.length;i++)if(calls[i]&&calls[i][0]===toCode)return i;
   return -1;
 }
-function servicesFromRows(rows,locations,manifest,{from,to,date,departAfter}){
-  const fromCode=String(from||'').toUpperCase(),toCode=String(to||'').toUpperCase(),after=parseMinutes(departAfter);
+function journeyResultLimit(value){return Math.max(1,Math.min(160,Number(value)||MAX_RESULTS));}
+function servicesFromRows(rows,locations,manifest,{from,to,date,departAfter,departBefore='',maxResults=MAX_RESULTS}){
+  const fromCode=String(from||'').toUpperCase(),toCode=String(to||'').toUpperCase(),after=parseMinutes(departAfter),before=parseMinutes(departBefore),limit=journeyResultLimit(maxResults);
   if(!/^[A-Z0-9]{3}$/.test(fromCode)||!/^[A-Z0-9]{3}$/.test(toCode)||fromCode===toCode)return[];
   const found=[];
   for(const row of Array.isArray(rows)?rows:[]){
@@ -238,10 +239,11 @@ function servicesFromRows(rows,locations,manifest,{from,to,date,departAfter}){
     const destinationIndex=destinationIndexAfter(row,toCode,originIndex);if(destinationIndex<0)continue;
     const leg=legFromRow(row,originIndex,destinationIndex,locations,manifest,date);if(!leg)continue;
     if(after!=null&&leg.departureMinute<after)continue;
+    if(before!=null&&leg.departureMinute>before)continue;
     found.push({...leg,journeyType:'direct',changes:0,totalMinutes:leg.arrivalMinute-leg.departureMinute,rankScore:leg.arrivalMinute});
   }
   found.sort((a,b)=>a.departureMinute-b.departureMinute||a.arrivalMinute-b.arrivalMinute);
-  return found.slice(0,MAX_RESULTS);
+  return found.slice(0,limit);
 }
 function departureIndexForRows(rows,date){
   const index=new Map();
@@ -285,8 +287,8 @@ function connectionRiskFor(minutes,minimum){
   return'good';
 }
 function connectionQuality(minutes,minimum){const margin=minutes-minimum;return margin<CONNECTION_COMFORT_MARGIN?'tight':minutes>CONNECTION_LONG_WAIT?'long':'comfortable';}
-function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter}){
-  const fromCode=String(from||'').toUpperCase(),toCode=String(to||'').toUpperCase(),after=parseMinutes(departAfter);
+function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter,departBefore='',maxResults=MAX_RESULTS}){
+  const fromCode=String(from||'').toUpperCase(),toCode=String(to||'').toUpperCase(),after=parseMinutes(departAfter),before=parseMinutes(departBefore),limit=journeyResultLimit(maxResults);
   if(!/^[A-Z0-9]{3}$/.test(fromCode)||!/^[A-Z0-9]{3}$/.test(toCode)||fromCode===toCode)return[];
   const graph=buildStationGraph(rows),shortest=shortestNetworkStops(graph,fromCode,toCode);
   const departures=departureIndexForRows(rows,date),first=[];
@@ -295,11 +297,12 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
     const calls=Array.isArray(row&&row[5])?row[5]:[],call=calls[originIndex],dep=call&&(call[2]||call[1])||'';
     const departureMinute=callMinute(date,row,call,dep);if(departureMinute==null)continue;
     if(after!=null&&departureMinute<after)continue;
+    if(before!=null&&departureMinute>before)continue;
     first.push({row,calls,originIndex,departureMinute});
   }
   first.sort((a,b)=>a.departureMinute-b.departureMinute);
   const found=[],seen=new Set();
-  for(const candidate of first.slice(0,CONNECTION_FIRST_LEGS)){
+  for(const candidate of first.slice(0,Math.max(CONNECTION_FIRST_LEGS,Math.min(160,limit*2)))){
     let choices=0;
     for(let changeIndex=candidate.originIndex+1;changeIndex<candidate.calls.length;changeIndex++){
       const changeCall=candidate.calls[changeIndex],changeCode=String(changeCall&&changeCall[0]||'').toUpperCase();
@@ -351,7 +354,7 @@ function connectionsFromRows(rows,locations,manifest,{from,to,date,departAfter})
     }
   }
   found.sort((a,b)=>a.rankScore-b.rankScore||a.departureMinute-b.departureMinute);
-  return found.slice(0,MAX_RESULTS);
+  return found.slice(0,limit);
 }
 function connectionDominated(connection,directs){
   return directs.some(direct=>{
@@ -378,12 +381,13 @@ function applyJourneyLabels(items){
   return list;
 }
 function journeysFromRows(rows,locations,manifest,options){
-  const direct=servicesFromRows(rows,locations,manifest,options);
-  const rawConnections=connectionsFromRows(rows,locations,manifest,options);
+  const limit=journeyResultLimit(options&&options.maxResults);
+  const direct=servicesFromRows(rows,locations,manifest,{...(options||{}),maxResults:limit});
+  const rawConnections=connectionsFromRows(rows,locations,manifest,{...(options||{}),maxResults:limit});
   const connections=rawConnections.filter(item=>!connectionVariantDominated(item,rawConnections)&&!connectionDominated(item,direct));
   const ranked=[...direct,...connections]
     .sort((a,b)=>a.departureMinute-b.departureMinute||a.changes-b.changes||a.rankScore-b.rankScore||a.arrivalMinute-b.arrivalMinute)
-    .slice(0,MAX_RESULTS);
+    .slice(0,limit);
   return applyJourneyLabels(ranked);
 }
 
@@ -397,7 +401,15 @@ const timetableProvider={
     const nextDate=addDays(date,1),dates=[date,...(manifest.dates.includes(nextDate)?[nextDate]:[])];
     const [locations,...sets]=await Promise.all([loadLocations(),...dates.map(loadDate)]);
     const rows=[],seen=new Set();for(const set of sets)for(const row of (Array.isArray(set)?set:[])){const key=rowIdentity(row);if(key&&seen.has(key))continue;if(key)seen.add(key);rows.push(row);}
-    return journeysFromRows(rows,locations,manifest,{from,to,date,departAfter});
+    return journeysFromRows(rows,locations,manifest,{from,to,date,departAfter,maxResults:MAX_RESULTS});
+  },
+  async getJourneyOptions({from,to,date,departAfter='00:00',departBefore='',maxResults=MAX_RESULTS}){
+    const manifest=await loadManifest();
+    if(!manifest||!Array.isArray(manifest.dates)||!manifest.dates.includes(date))return[];
+    const nextDate=addDays(date,1),dates=[date,...(manifest.dates.includes(nextDate)?[nextDate]:[])];
+    const [locations,...sets]=await Promise.all([loadLocations(),...dates.map(loadDate)]);
+    const rows=[],seen=new Set();for(const set of sets)for(const row of (Array.isArray(set)?set:[])){const key=rowIdentity(row);if(key&&seen.has(key))continue;if(key)seen.add(key);rows.push(row);}
+    return journeysFromRows(rows,locations,manifest,{from,to,date,departAfter,departBefore,maxResults});
   },
   servicesFromRows,connectionsFromRows,journeysFromRows,connectionMinimum,connectionMinimumInfo,connectionRiskFor,buildStationGraph,shortestNetworkStops,connectionRouteQuality
 };
@@ -1090,7 +1102,8 @@ const MANIFEST_CACHE_MS=5*60*1000,REQUEST_TIMEOUT_MS=12000;
 const original={
   getCoverage:provider.getCoverage.bind(provider),
   refreshCoverage:provider.refreshCoverage.bind(provider),
-  getServices:provider.getServices.bind(provider)
+  getServices:provider.getServices.bind(provider),
+  getJourneyOptions:typeof provider.getJourneyOptions==='function'?provider.getJourneyOptions.bind(provider):null
 };
 const nr={manifestPromise:null,manifest:null,checkedAt:0,locationsPromise:null,datePromises:new Map()};
 
@@ -1183,6 +1196,47 @@ provider.getServices=async options=>{
     return networkRailServices(coverage.networkRail,options);
   }
   selectSource('',null);return [];
+};
+function coverageRange(manifest,stamp){
+  if(!manifest||!Array.isArray(manifest.dates)||!manifest.dates.includes(stamp))return null;
+  const coverage=manifest.coverage&&manifest.coverage[stamp];if(!coverage)return null;
+  if(!coverage.partial)return {from:0,to:1439};
+  const from=parseMinutes(coverage.from),to=parseMinutes(coverage.to);return {from:from==null?0:from,to:to==null?1439:to};
+}
+function minuteClock(minute){const value=Math.max(0,Math.min(1439,Math.round(Number(minute)||0)));return `${String(Math.floor(value/60)).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`;}
+function tagJourneyOptions(items,source){const rows=Array.isArray(items)?items:[];try{Object.defineProperty(rows,'kerbsideSource',{value:source||'',enumerable:false,configurable:true});}catch(error){rows.kerbsideSource=source||'';}return rows;}
+function journeyOptionKey(item){return `${Number(item&&item.departureMinute)}|${Number(item&&item.arrivalMinute)}|${String(item&&item.uid||item&&item.trainId||'')}|${Number(item&&item.changes||0)}|${String(item&&item.interchange&&item.interchange.crs||'')}`;}
+async function sourceJourneyOptions(sourceName,manifest,options){
+  if(sourceName==='darwin'){selectSource('darwin',manifest);return tagJourneyOptions(await original.getJourneyOptions(options),'darwin');}
+  selectSource('network-rail',manifest);return tagJourneyOptions(await networkRailServices(manifest,options),'network-rail');
+}
+provider.getJourneyOptions=async options=>{
+  const coverage=await loadCoverage(),start=parseMinutes(options&&options.departAfter)||0,before=parseMinutes(options&&options.departBefore),limit=Math.max(1,Math.min(160,Number(options&&options.maxResults)||24));
+  if(before==null){
+    if(manifestCovers(coverage.darwin,options.date,options.departAfter||'00:00')){try{return await sourceJourneyOptions('darwin',coverage.darwin,{...options,maxResults:limit});}catch(error){if(!manifestCovers(coverage.networkRail,options.date,options.departAfter||'00:00'))throw error;}}
+    if(manifestCovers(coverage.networkRail,options.date,options.departAfter||'00:00'))return sourceJourneyOptions('network-rail',coverage.networkRail,{...options,maxResults:limit});
+    selectSource('',null);return tagJourneyOptions([],'');
+  }
+  const end=Math.max(start,before),darwinRange=coverageRange(coverage.darwin,options.date),networkRailRange=coverageRange(coverage.networkRail,options.date);
+  if(darwinRange&&start>=darwinRange.from&&end<=darwinRange.to)return sourceJourneyOptions('darwin',coverage.darwin,{...options,maxResults:limit});
+  if((!darwinRange||end<darwinRange.from||start>darwinRange.to)&&networkRailRange&&start>=networkRailRange.from&&end<=networkRailRange.to)return sourceJourneyOptions('network-rail',coverage.networkRail,{...options,maxResults:limit});
+  const segments=[];
+  if(darwinRange){
+    const overlapStart=Math.max(start,darwinRange.from),overlapEnd=Math.min(end,darwinRange.to);
+    if(start<overlapStart&&networkRailRange)segments.push(['network-rail',coverage.networkRail,start,overlapStart-1]);
+    if(overlapStart<=overlapEnd)segments.push(['darwin',coverage.darwin,overlapStart,overlapEnd]);
+    if(overlapEnd<end&&networkRailRange)segments.push(['network-rail',coverage.networkRail,overlapEnd+1,end]);
+  }else if(networkRailRange)segments.push(['network-rail',coverage.networkRail,start,end]);
+  const rows=[],seen=new Set(),used=new Set();
+  for(const [sourceName,manifest,segmentStart,segmentEnd] of segments){
+    if(segmentEnd<segmentStart)continue;
+    const part=await sourceJourneyOptions(sourceName,manifest,{...options,departAfter:minuteClock(segmentStart),departBefore:minuteClock(segmentEnd),maxResults:limit});used.add(sourceName);
+    for(const item of part){const key=journeyOptionKey(item);if(seen.has(key))continue;seen.add(key);rows.push(item);}
+  }
+  rows.sort((a,b)=>Number(a.departureMinute)-Number(b.departureMinute)||Number(a.arrivalMinute)-Number(b.arrivalMinute));
+  const result=rows.slice(0,limit),sourceName=used.size>1?'mixed':([...used][0]||'');
+  if(sourceName==='mixed')selectSource('mixed',coverage.combined);else if(sourceName==='darwin')selectSource('darwin',coverage.darwin);else if(sourceName==='network-rail')selectSource('network-rail',coverage.networkRail);else selectSource('',null);
+  return tagJourneyOptions(result,sourceName);
 };
 provider.__kerbsideDualSource=true;
 window.__KERBSIDE_LONG_RANGE_TIMETABLE__={state:nr,base:NETWORK_RAIL_DATA_BASE,loadCoverage,manifestCovers};

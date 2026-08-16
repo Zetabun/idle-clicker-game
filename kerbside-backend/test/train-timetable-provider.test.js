@@ -246,3 +246,35 @@ test('Network Rail fills the uncovered part of a partial Darwin edge date',async
   assert.equal(services[0].serviceID,'nr-overlap');
   assert.equal(api.state.scheduleSource,'network-rail');
 });
+
+
+test('journey option API can return a wider bounded window without changing the normal 24-row board cap',()=>{
+  const provider=loadProvider();
+  const clock=minute=>`${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;
+  const manyRows=Array.from({length:36},(_,index)=>{
+    const departure=360+index*5,arrival=departure+60;
+    return [`rid-many-${index}`,`uid-many-${index}`,`1M${String(index).padStart(2,'0')}`,'XC','2026-08-12',[["BHM","",clock(departure),"",0],["BRI",clock(arrival),"","",0]]];
+  });
+  const normal=provider.journeysFromRows(manyRows,locations,manifest,{from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'06:00'});
+  const expanded=provider.journeysFromRows(manyRows,locations,manifest,{from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'06:00',departBefore:'09:00',maxResults:40});
+  const bounded=provider.journeysFromRows(manyRows,locations,manifest,{from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'06:00',departBefore:'07:00',maxResults:40});
+  assert.equal(normal.length,24);
+  assert.equal(expanded.length,36);
+  assert.equal(bounded.length,13);
+  assert.ok(bounded.every(item=>item.departureMinute<=420));
+});
+
+test('long-range journey option API identifies Network Rail as its source',async()=>{
+  const {provider}=loadDualProvider();
+  const services=await provider.getJourneyOptions({from:'BHM',to:'BRI',date:'2026-09-10',departAfter:'09:30',departBefore:'10:30',maxResults:72});
+  assert.equal(services.length,1);
+  assert.equal(services[0].std,'10:00');
+  assert.equal(services.kerbsideSource,'network-rail');
+});
+
+test('journey option windows spanning partial Darwin coverage merge the source intervals',async()=>{
+  const {provider}=loadDualProvider({darwinPartial:true});
+  const services=await provider.getJourneyOptions({from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'07:00',departBefore:'10:00',maxResults:72});
+  assert.ok(services.some(item=>item.serviceID==='nr-overlap'));
+  assert.equal(services.kerbsideSource,'mixed');
+});
