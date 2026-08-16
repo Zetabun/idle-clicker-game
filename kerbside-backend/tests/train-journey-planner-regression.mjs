@@ -85,6 +85,12 @@ try{
     diagnostics.events.push(route.request().url());
     return route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify(eventResults)});
   });
+  await page.route('https://raw.githubusercontent.com/openfootball/england/**',route=>
+    route.fulfill({status:200,contentType:'text/plain',body:'= Synthetic empty OpenFootball season\n'})
+  );
+  await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})})
+  );
 
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#transportTrain');
