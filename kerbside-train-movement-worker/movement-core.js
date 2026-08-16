@@ -163,13 +163,17 @@ export function resolveLocation(stanox, corpus = {}) {
   };
 }
 
+export function trustHeadcode(value) {
+  const trainId = upper(value);
+  return trainId.length >= 6 ? trainId.slice(2, 6) : '';
+}
+
 function activationHeadcode(body) {
   const explicit = upper(body.signalling_id || body.schedule_train_id);
   if (explicit) return explicit.slice(0, 4);
   const wtt = upper(body.schedule_wtt_id);
   if (wtt) return wtt.slice(0, 4);
-  const trainId = upper(body.train_id);
-  return trainId.length >= 6 ? trainId.slice(2, 6) : '';
+  return trustHeadcode(body.train_id);
 }
 
 export function normaliseActivation(message, corpus = {}, now = Date.now()) {
@@ -324,9 +328,18 @@ function indexFromActivation(activation) {
   return refs;
 }
 
+function fallbackIndexFromMovement(snapshot, movement) {
+  const trainId = text(movement && movement.trainId || snapshot && snapshot.trainId);
+  const headcode = upper(snapshot && snapshot.headcode || trustHeadcode(trainId));
+  const date = text(snapshot && snapshot.date) || londonDateStamp(movement && (movement.actualTimestamp || movement.plannedTimestamp));
+  if (!trainId || !headcode || !date) return null;
+  return { kind: 'head', date, value: headcode, trainId };
+}
+
 export function applyFeedMessages(messages, existing = new Map(), corpus = {}, now = Date.now()) {
   const snapshots = new Map();
   const indexes = [];
+  const fallbackIndexes = [];
   const counts = {};
   const touched = new Set();
 
@@ -351,9 +364,13 @@ export function applyFeedMessages(messages, existing = new Map(), corpus = {}, n
       snapshot.status = 'cancelled';
     } else if (type === '0003') {
       const movement = normaliseMovement(message, corpus, now);
+      snapshot.headcode = snapshot.headcode || trustHeadcode(trainId);
+      snapshot.date = snapshot.date || londonDateStamp(movement.actualTimestamp || movement.plannedTimestamp);
       snapshot.lastEvent = movement;
       snapshot.status = movement.terminated ? 'terminated' : 'running';
       pushHistory(snapshot, movement);
+      const fallbackIndex = fallbackIndexFromMovement(snapshot, movement);
+      if (fallbackIndex) fallbackIndexes.push(fallbackIndex);
     } else if (type === '0005') {
       snapshot.reinstatement = normaliseReinstatement(message, corpus, now);
       snapshot.status = snapshot.lastEvent && snapshot.lastEvent.terminated ? 'terminated' : 'running';
@@ -374,7 +391,7 @@ export function applyFeedMessages(messages, existing = new Map(), corpus = {}, n
     touched.add(trainId);
   }
 
-  return { snapshots, indexes, counts, touched: [...touched] };
+  return { snapshots, indexes, fallbackIndexes, counts, touched: [...touched] };
 }
 
 export function publicSnapshot(snapshot, now = Date.now()) {

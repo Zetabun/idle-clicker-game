@@ -43,10 +43,12 @@ try{
     const today=(()=>{const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));return `${map.year}-${map.month}-${map.day}`;})();
     window.__KERBSIDE_TRAIN_DATE__.state.date=today;
     const planDate=document.getElementById('planJourneyDate');if(planDate)planDate.value=today;
-    const service={uid:'C21373',trainId:'5F25',std:'20:12',arrival:'21:33',operator:'CrossCountry',destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}]};
+    const service={serviceID:'20260816C21373',std:'20:12',arrival:'21:33',operator:'CrossCountry',destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}]};
+    const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,originalEvidenceFor=overlay&&overlay.evidenceFor;
+    if(overlay)overlay.evidenceFor=row=>row===service?{service:{uid:'C21373',trainid:'5F25',serviceIdGuid:'20260816C21373'}}:(typeof originalEvidenceFor==='function'?originalEvidenceFor(row):null);
     const trains=window.__KERBSIDE_TRAINS__,liveKey=trains.serviceKey(service,0);trains.state.services=[service];
     document.getElementById('trainBoard').innerHTML=`<article class="train-service open" data-service-id="${liveKey}"><button class="train-service-summary"><span class="train-route"><strong>Bristol Temple Meads</strong><small>CrossCountry · Platform 11</small></span></button><div class="train-service-detail"></div></article>`;
-    const scheduled={...service,serviceID:'20260816C21373',from:{crs:'BHM',name:'Birmingham New Street'},to:{crs:'BRI',name:'Bristol Temple Meads'}};
+    const scheduled={...service,uid:'C21373',trainId:'5F25',serviceID:'20260816C21373',from:{crs:'BHM',name:'Birmingham New Street'},to:{crs:'BRI',name:'Bristol Temple Meads'}};
     const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduledKey=timetable.serviceKey(scheduled,0);timetable.state.services=[scheduled];
     let scheduledBoard=document.getElementById('trainScheduledBoard');if(!scheduledBoard){scheduledBoard=document.createElement('div');scheduledBoard.id='trainScheduledBoard';document.querySelector('.train-content').appendChild(scheduledBoard);}scheduledBoard.hidden=false;
     scheduledBoard.innerHTML=`<article class="train-service train-scheduled-service open" data-service-id="${scheduledKey}"><button class="train-service-summary"><span class="train-route"><strong>Bristol Temple Meads</strong><small>CrossCountry · arr 21:33</small></span></button><div class="train-service-detail"></div></article>`;
@@ -64,7 +66,8 @@ try{
     planInline:document.querySelector('#planJourneyResults .plan-movement-inline')?.textContent||'',
     planCard:document.querySelector('#planJourneyResults [data-train-movement-card]')?.textContent||'',
     attached:window.__KERBSIDE_TRAINS__.state.services[0].networkRailMovement?.uid||'',
-    matches:window.__KERBSIDE_TRAIN_MOVEMENT__.state.matches
+    matches:window.__KERBSIDE_TRAIN_MOVEMENT__.state.matches,
+    resolvedRefs:window.__KERBSIDE_TRAIN_MOVEMENT__.refsFor(window.__KERBSIDE_TRAINS__.state.services[0])
   }));
   assert.match(result.liveInline,/between Birmingham New Street and University/i);
   assert.match(result.liveCard,/Estimated progress: Birmingham New Street → University/i);
@@ -74,6 +77,7 @@ try{
   assert.match(result.planInline,/between Birmingham New Street and University/i);
   assert.match(result.planCard,/Network Rail movement/i);
   assert.equal(result.attached,'C21373');
+  assert.deepEqual(result.resolvedRefs,['uid:C21373','head:5F25']);
   assert.ok(result.matches>=2,`expected movement matches, got ${result.matches}`);
   assert.deepEqual(pageErrors,[],`unexpected page errors: ${pageErrors.join('\n')}`);
   console.log(`Kerbside Network Rail movement browser regression passed in ${browserName}.`);

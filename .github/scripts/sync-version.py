@@ -26,6 +26,9 @@ VERSION_FILE = Path('VERSION')
 TARGETS = [
     ('bus.html', r"(const APP_VERSION = ')(\d+\.\d+\.\d+)(';)"),
     ('kerbside-status.js', r"(const VERSION=')(\d+\.\d+\.\d+)(';)"),
+    ('kerbside-saved-journeys-polish.js', r"(const VERSION=')(\d+\.\d+\.\d+)(';)"),
+    ('kerbside-train-movement.js', r"(const VERSION=')(\d+\.\d+\.\d+)(';)"),
+    ('kerbside-train-movement-worker/worker.js', r"(const VERSION = ')(\d+\.\d+\.\d+)(';)"),
     ('kerbside-backend/src/worker.js', r"(    version: ')(\d+\.\d+\.\d+)(',)"),
     ('kerbside-backend/package.json', r'(  "version": ")(\d+\.\d+\.\d+)(",)'),
     ('kerbside-backend/test/worker.test.js', r"(assert\.equal\(body\.version, ')(\d+\.\d+\.\d+)('\);)"),

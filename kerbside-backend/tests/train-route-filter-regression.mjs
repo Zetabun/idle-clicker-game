@@ -133,6 +133,19 @@ async function mockExternal(page,diagnostics){
   };
   await page.route('**://huxley2.azurewebsites.net/**', handle);
   await page.route('**://hux.azurewebsites.net/**', handle);
+  await page.route('https://kerbside-train-movement.adambullas.workers.dev/**', route=>{
+    const url = new URL(route.request().url());
+    const results = Object.fromEntries(url.searchParams.getAll('ref').map(ref=>[ref,null]));
+    diagnostics.requests.push(url.pathname);
+    return json(route,200,{
+      ok:true,
+      date:url.searchParams.get('date') || TODAY,
+      generatedAt:Date.now(),
+      connected:false,
+      lastMessageAt:null,
+      results
+    });
+  });
   await page.route('https://raw.githubusercontent.com/openfootball/football.json/**', route=>
     json(route,200,{matches:[]})
   );
