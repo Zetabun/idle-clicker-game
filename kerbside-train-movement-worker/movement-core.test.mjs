@@ -160,3 +160,5 @@ test('TRUST BST future-hour anomaly is corrected only for actual event time', ()
   assert.equal(event.actualTimestamp, now);
   assert.equal(event.plannedTimestamp, now + 60 * 60 * 1000);
 });
+
+import './movement-storage-policy.test.mjs';
