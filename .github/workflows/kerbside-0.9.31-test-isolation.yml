@@ -1,0 +1,29 @@
+name: Apply Kerbside 0.9.31 test isolation
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.31-movement-match-recovery
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.31-movement-match-recovery
+          fetch-depth: 0
+      - name: Patch route-filter regression
+        run: |
+          python3 .github/scripts/isolate-movement-route-filter-test.py
+          node --check kerbside-backend/tests/train-route-filter-regression.mjs
+      - name: Commit test isolation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add kerbside-backend/tests/train-route-filter-regression.mjs
+          git commit -m 'Isolate movement Worker in route filter regression'
+          git push origin HEAD:agent/kerbside-0.9.31-movement-match-recovery
