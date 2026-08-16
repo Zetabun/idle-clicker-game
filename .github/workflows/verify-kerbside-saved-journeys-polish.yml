@@ -24,7 +24,7 @@ on:
       - .github/workflows/verify-kerbside-saved-journeys-polish.yml
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: kerbside-saved-polish-${{ github.ref }}
@@ -37,59 +37,6 @@ jobs:
     steps:
       - name: Check out branch
         uses: actions/checkout@v5
-      - name: Apply approved CI follow-up fixes
-        if: github.event_name == 'push' && github.ref_name != 'main'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('kerbside-backend/tests/train-saved-journeys-polish-browser.mjs')
-          text = path.read_text(encoding='utf-8')
-
-          replacements = [
-              (
-                  "if(runs('badge')) assert.equal(await page.locator('.saved-polish-next .saved-polish-next-badge').innerText(),'Next journey');",
-                  "if(runs('badge')) assert.equal((await page.locator('.saved-polish-next .saved-polish-next-badge').textContent())?.trim(),'Next journey');",
-                  'Saved Journeys badge assertion',
-              ),
-              (
-                  "  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('.saved-polish-archived');\n  await page.click('.saved-polish-archived > summary');\n  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]',{state:'attached'});\n  await page.evaluate(()=>{const details=document.querySelector('.saved-polish-archived'),restore=document.querySelector('[data-saved-polish-restore=\"journey-upcoming\"]');if(details)details.open=true;if(!restore)throw new Error('Restore button missing');restore.click();});",
-                  "  await page.waitForSelector('[data-saved-polish-restore=\"journey-upcoming\"]',{state:'attached'});\n  await page.evaluate(()=>{const details=document.querySelector('.saved-polish-archived'),restore=document.querySelector('[data-saved-polish-restore=\"journey-upcoming\"]');if(details)details.open=true;if(!restore)throw new Error('Restore button missing');restore.click();});",
-                  'Archived restore interaction cleanup',
-              ),
-              (
-                  "  await page.locator('[data-saved-polish-edit=\"journey-next\"]').dispatchEvent('click');",
-                  "  await page.waitForSelector('[data-saved-polish-edit=\"journey-next\"]');\n  const editStarted=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.beginEdit('journey-next'));\n  assert.equal(editStarted,true,'beginEdit returned false');",
-                  'Saved journey edit integration',
-              ),
-              (
-                  "  await page.locator('#planJourneyResults [data-plan-save-key]').dispatchEvent('click');",
-                  "  const editSaved=await page.evaluate(()=>window.__KERBSIDE_SAVED_JOURNEYS_POLISH__.commitEdit(document.querySelector('#planJourneyResults [data-plan-save-key]')));\n  assert.equal(editSaved,true,'commitEdit returned false');",
-                  'Save changes integration',
-              ),
-          ]
-
-          for old, new, label in replacements:
-              if old in text:
-                  text = text.replace(old, new, 1)
-              elif new not in text:
-                  raise SystemExit(f'Expected {label} was not found')
-
-          path.write_text(text, encoding='utf-8')
-          PY
-          python3 .github/scripts/sync-version.py
-          git diff --check
-          if git diff --quiet; then
-            echo "Follow-up files were already synchronized."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bus.html kerbside-status.js kerbside-journey-planner-ui.js kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs kerbside-backend/tests/train-saved-journeys-polish-browser.mjs
-          git commit -m "Stabilize Saved Journeys edit integration test"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
