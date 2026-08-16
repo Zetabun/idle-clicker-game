@@ -190,7 +190,14 @@ test('football pressure tapers through the first hour after kick-off but not dee
   const lateFirstHalf=events.relevance(fixture,{std:'14:12',arrival:'15:36'},journey);
   const deepIntoMatch=events.relevance(fixture,{std:'14:42',arrival:'16:07'},journey);
   assert.ok(lateFirstHalf&&lateFirstHalf.amount>=.16,{lateFirstHalf});
+  assert.equal(lateFirstHalf.phase,'late');
   assert.equal(deepIntoMatch,null);
+
+  events.setEvents([{title:'Bristol City FC v Portsmouth FC',place:'Bristol',startTime:'15:00',capacity:27000,confidence:.9,type:'football'}],{date:'2026-08-29',sources:['football']});
+  const pressure=events.pressureForJourney({std:'14:12',arrival:'15:36'},journey);
+  assert.ok(pressure.amount>=.16,{pressure});
+  assert.match(pressure.reasons[0],/Bristol City FC v Portsmouth FC/);
+  assert.match(pressure.reasons[0],/arriving soon after kick-off/);
 });
 
 test('scheduled destination arrival drives event pressure before live calling points exist',()=>{

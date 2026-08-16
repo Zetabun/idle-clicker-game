@@ -420,7 +420,7 @@ function relevance(event,service,journey){
     const arrival=serviceArrival(service,journey.destinationCrs);
     if(arrival==null)return null;
     delta=signedGap(event.start,arrival);
-    phase='before';
+    phase=delta<0?'late':'before';
     ideal=75;
   }else{
     /* Leaving the event's city: the spike is the trains just after it ends. */
@@ -444,10 +444,10 @@ function pressureForJourney(service,journeyOverride={}){
   const matches=state.events.map(e=>relevance(e,service,journey)).filter(Boolean).sort((a,b)=>b.amount-a.amount);
   if(!matches.length)return {amount:0,reasons:[]};
   const best=matches[0];
-  const when=best.phase==='before'?'arriving before':'leaving after';
+  const when=best.phase==='before'?'arriving before it':best.phase==='late'?'arriving soon after kick-off':'leaving after it';
   return {
     amount:Math.min(MAX_EVENT_PRESSURE,best.amount),
-    reasons:[`${best.event.title} — trains ${when} it carry extra demand`],
+    reasons:[`${best.event.title} — trains ${when} can carry extra demand`],
     events:matches.slice(0,3)
   };
 }
