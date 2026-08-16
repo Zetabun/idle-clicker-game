@@ -94,6 +94,8 @@ try{
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').every(item=>item.id!=='journey-upcoming'));
   const archived=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved-polish.v3')||'{}').archived||{});
   assert.ok(archived['journey-upcoming'],'archive did not persist the complete journey');
+  await page.waitForSelector('.saved-polish-archived');
+  await page.click('.saved-polish-archived > summary');
   await page.waitForSelector('[data-saved-polish-restore="journey-upcoming"]');
   await page.click('[data-saved-polish-restore="journey-upcoming"]');
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').some(item=>item.id==='journey-upcoming'));
