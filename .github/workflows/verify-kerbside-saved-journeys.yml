@@ -1,0 +1,261 @@
+name: Verify Kerbside saved journeys
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-kerbside-saved-journeys.yml
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-kerbside-saved-journeys.yml
+  workflow_run:
+    workflows:
+      - Verify Kerbside production
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-saved-journey-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install WebKit smoke dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+
+      - name: Verify live saved journeys
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+          import { webkit } from 'playwright';
+
+          const expectedVersion=(await readFile('../VERSION','utf8')).trim();
+          const browser=await webkit.launch({headless:true});
+          const context=await browser.newContext({timezoneId:'Europe/London'});
+          const page=await context.newPage();
+          const pageErrors=[];
+          const railResponses=[];
+
+          page.on('pageerror',error=>pageErrors.push(error.message));
+          page.on('response',response=>{
+            const url=response.url();
+            if(url.includes('kerbside-rail-data-zetabun.pages.dev'))railResponses.push({url,status:response.status()});
+          });
+
+          // Saved journeys must be proven against the live Kerbside app, current
+          // timetable provider and Forecast v4. Only optional third-party event
+          // enrichment is stubbed so its availability cannot make the core smoke flaky.
+          await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>
+            route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})})
+          );
+          await page.route('https://query.wikidata.org/sparql**',route=>
+            route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify({head:{vars:[]},results:{bindings:[]}})})
+          );
+
+          try{
+            await page.goto(`${process.env.APP_URL}?saved-journey-smoke=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>Boolean(
+              window.__KERBSIDE_JOURNEY_PLANNER__?.searchPlanJourneys &&
+              window.__KERBSIDE_JOURNEY_PLANNER__?.planOpenSavedJourney &&
+              window.__KERBSIDE_TIMETABLE_PROVIDER__?.getCoverage &&
+              window.__KERBSIDE_FORECAST_V4__?.forecast &&
+              document.querySelector('#planJourneyForm')
+            ),null,{timeout:30000});
+
+            // bus.html opens in Bus mode. Enter Train mode before exercising
+            // user-visible saved-journey controls rather than clicking hidden DOM.
+            await page.waitForSelector('#transportTrain',{state:'visible',timeout:30000});
+            await page.click('#transportTrain');
+            await page.waitForFunction(()=>{
+              const planner=document.getElementById('trainPlanner');
+              return planner && getComputedStyle(planner).display!=='none';
+            },null,{timeout:30000});
+
+            const liveVersion=await page.evaluate(async()=>{
+              const response=await fetch(`VERSION?saved-journey-smoke=${Date.now()}`,{cache:'no-store'});
+              if(!response.ok)throw new Error(`VERSION returned ${response.status}`);
+              return (await response.text()).trim();
+            });
+            assert.equal(liveVersion,expectedVersion,'live Pages version does not match main');
+
+            const setup=await page.evaluate(async()=>{
+              localStorage.removeItem('kerbside.rail.plan.saved.v1');
+              const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              const coverage=await provider.getCoverage({force:true});
+              const darwinDates=coverage?.sources?.darwin?.dates||[];
+              const networkRailDates=coverage?.sources?.networkRail?.dates||[];
+              const londonToday=new Intl.DateTimeFormat('en-CA',{
+                timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'
+              }).format(new Date());
+              const daysBetween=(from,to)=>Math.round(
+                (new Date(`${to}T12:00:00Z`)-new Date(`${from}T12:00:00Z`))/86400000
+              );
+              const futureDate=networkRailDates.find(date=>
+                !darwinDates.includes(date)&&daysBetween(londonToday,date)>=49
+              )||networkRailDates.slice().reverse().find(date=>!darwinDates.includes(date));
+              if(!futureDate)throw new Error('No long-range Network Rail date is available outside Darwin coverage.');
+
+              planner.installPlanJourney();
+              planner.setPlanView(true);
+              const state=planner.planState;
+              state.from={crs:'BHM',name:'Birmingham New Street'};
+              state.to={crs:'LOB',name:'Longbridge'};
+              const setValue=(id,value)=>{
+                const node=document.getElementById(id);
+                if(!node)throw new Error(`Missing Plan My Journey field ${id}`);
+                node.value=value;
+              };
+              setValue('planJourneyFrom','Birmingham New Street');
+              setValue('planJourneyTo','Longbridge');
+              setValue('planJourneyDate',futureDate);
+              setValue('planJourneyStart','06:00');
+              setValue('planJourneyEnd','10:00');
+              setValue('planJourneyPreference','balanced');
+              setValue('planJourneyMaxChanges','1');
+              setValue('planJourneyConnectionBuffer','0');
+              await planner.searchPlanJourneys();
+              return {futureDate,daysAway:daysBetween(londonToday,futureDate)};
+            });
+
+            assert.ok(setup.daysAway>=49,`selected saved-journey date is only ${setup.daysAway} days away`);
+            await page.waitForFunction(()=>{
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              return planner?.planState?.source==='network-rail' &&
+                planner.planState.results.length>0 &&
+                document.querySelector('#planJourneyResults [data-plan-save-key]');
+            },null,{timeout:30000});
+
+            const saveButton=page.locator('#planJourneyResults [data-plan-save-key]').first();
+            await saveButton.waitFor({state:'visible',timeout:30000});
+            await saveButton.click();
+            await page.waitForFunction(()=>{
+              try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1;}catch{return false;}
+            });
+
+            const savedBefore=await page.evaluate(()=>{
+              const rows=JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]');
+              const saved=rows[0]||null;
+              return {
+                count:rows.length,
+                saved,
+                json:JSON.stringify(saved),
+                panel:document.getElementById('planSavedPanel')?.textContent?.replace(/\s+/g,' ').trim()||'',
+                panelOpen:document.getElementById('planSavedPanel')?.open===true
+              };
+            });
+            assert.equal(savedBefore.count,1);
+            assert.equal(savedBefore.saved.date,setup.futureDate);
+            assert.equal(savedBefore.saved.from.crs,'BHM');
+            assert.equal(savedBefore.saved.to.crs,'LOB');
+            assert.ok(savedBefore.saved.service?.serviceID||savedBefore.saved.service?.uid||savedBefore.saved.service?.trainId||savedBefore.saved.service?.std,'saved locator has no service identity');
+            assert.ok(savedBefore.saved.scheduledDeparture,'saved locator has no scheduled departure');
+            assert.doesNotMatch(savedBefore.json,/forecast|probabilities|reasons|preferenceScore/i,'saved journey froze forecast/ranking output');
+            assert.match(savedBefore.panel,/Saved journeys\s*1/i);
+            assert.match(savedBefore.panel,/Open & refresh/i);
+            assert.match(savedBefore.panel,/Remove/i);
+            assert.equal(savedBefore.panelOpen,true,'saving did not open the Saved journeys panel');
+
+            const savedId=savedBefore.saved.id;
+            const savedAt=savedBefore.saved.savedAt;
+            await page.locator('#planSavedJourneys [data-plan-open-saved]').first().click();
+            await page.waitForFunction(id=>{
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              const focus=planner?.planState?.savedFocus;
+              return focus?.id===id &&
+                (focus.resolution==='exact'||focus.resolution==='identity') &&
+                document.querySelector('#planJourneyResults .plan-journey-result.is-saved-focus');
+            },savedId,{timeout:30000});
+
+            const refreshed=await page.evaluate(id=>{
+              const planner=window.__KERBSIDE_JOURNEY_PLANNER__;
+              const rows=JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]');
+              const saved=rows.find(item=>item.id===id)||null;
+              const focus=document.querySelector('#planJourneyResults .plan-journey-result.is-saved-focus');
+              const result=planner.planState.results.find(item=>focus?.textContent.includes(item.std||item.departure||''))||planner.planState.results[0]||null;
+              return {
+                saved,
+                json:JSON.stringify(saved),
+                message:document.getElementById('planJourneyMessage')?.textContent||'',
+                focusText:focus?.textContent?.replace(/\s+/g,' ').trim()||'',
+                source:planner.planState.source,
+                forecastScore:result?.forecast?.primary?.score ?? result?.forecast?.score ?? null,
+                focusResolution:planner.planState.savedFocus?.resolution||''
+              };
+            },savedId);
+
+            assert.equal(refreshed.saved.id,savedId,'refresh changed the saved journey identity');
+            assert.equal(refreshed.saved.savedAt,savedAt,'refresh changed the original saved timestamp');
+            assert.ok(refreshed.saved.refreshedAt,'refresh did not record a refreshed timestamp');
+            assert.equal(refreshed.source,'network-rail');
+            assert.match(refreshed.message,/latest available information/i);
+            assert.match(refreshed.focusText,/Saved journey · refreshed from current data/i);
+            assert.ok(Number.isFinite(Number(refreshed.forecastScore)),'refreshed saved journey has no live Forecast v4 score');
+            assert.doesNotMatch(refreshed.json,/forecast|probabilities|reasons|preferenceScore/i,'refresh persisted forecast/ranking output');
+            assert.ok(['exact','identity'].includes(refreshed.focusResolution));
+
+            await page.click('[data-train-view="trains"]');
+            assert.equal(await page.locator('#trainPlanner').isVisible(),true,'normal train planner did not restore after refreshing a saved journey');
+            assert.equal(await page.locator('#planJourneyForm').isHidden(),true,'Plan form stayed visible after returning to Trains');
+            assert.equal(await page.locator('#planJourneySurface').isHidden(),true,'Plan result surface stayed visible after returning to Trains');
+
+            await page.click('[data-train-view="plan"]');
+            await page.evaluate(()=>{const panel=document.getElementById('planSavedPanel');if(panel)panel.open=true;});
+            assert.match(await page.locator('#planSavedPanel').textContent(),/Saved journeys\s*1/i,'saved journey did not persist across the Plan/Trains view toggle');
+            await page.locator('#planSavedJourneys [data-plan-remove-saved]').first().click();
+            const removed=await page.evaluate(()=>({
+              rows:JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]'),
+              panel:document.getElementById('planSavedPanel')?.textContent?.replace(/\s+/g,' ').trim()||''
+            }));
+            assert.deepEqual(removed.rows,[]);
+            assert.match(removed.panel,/No saved journeys yet/i);
+
+            assert.ok(
+              railResponses.some(item=>item.status>=200&&item.status<300&&item.url.endsWith('/manifest.json')),
+              'live browser did not successfully fetch the Network Rail manifest'
+            );
+            assert.ok(
+              railResponses.some(item=>item.status>=200&&item.status<300&&item.url.includes(`/${setup.futureDate}.json.gz`)),
+              'live browser did not successfully fetch the selected long-range timetable day'
+            );
+            assert.deepEqual(pageErrors,[]);
+
+            console.log(JSON.stringify({version:liveVersion,...setup,savedBefore,refreshed,railResponses},null,2));
+            console.log(`Live saved journey passed: ${setup.futureDate} (${setup.daysAway} days away), refreshed ${refreshed.focusResolution}, then removed cleanly.`);
+          }finally{
+            await browser.close();
+          }
+          NODE
