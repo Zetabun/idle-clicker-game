@@ -50,15 +50,19 @@ test('DfT peak-capacity boundaries are exact',()=>{
   assert.equal(cal.peakCapacitySignal(station,1140,date,false).measured,false);
 });
 
-test('GB public holidays are recognised without inventing extra substitute weekdays',()=>{
-  const c=load(),v4=c.window.__KERBSIDE_FORECAST_V4__;
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-12T12:00:00Z')),false);
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-03T12:00:00Z')),true);
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-31T12:00:00Z')),true);
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-11-30T12:00:00Z')),true);
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-01T12:00:00Z')),false);
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-28T12:00:00Z')),true);
-  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-29T12:00:00Z')),false);
+test('GB public holidays are region-aware without inventing extra substitute weekdays',()=>{
+  const c=load(),v4=c.window.__KERBSIDE_FORECAST_V4__,glasgow={name:'Glasgow Central',crs:'GLC'};
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-12T12:00:00Z'),station),false);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-03T12:00:00Z'),station),false);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-03T12:00:00Z'),glasgow),true);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-31T12:00:00Z'),station),true);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-08-31T12:00:00Z'),glasgow),false);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-11-30T12:00:00Z'),station),false);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-11-30T12:00:00Z'),glasgow),true);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-01T12:00:00Z'),glasgow),false);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-28T12:00:00Z'),station),true);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-28T12:00:00Z'),glasgow),true);
+  assert.equal(v4.isBankHoliday(new FixedDate('2026-12-29T12:00:00Z'),station),false);
 });
 
 test('live expected departure can move DfT evidence into the actual band while future planning stays scheduled',()=>{
