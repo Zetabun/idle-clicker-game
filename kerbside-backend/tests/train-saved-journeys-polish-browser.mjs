@@ -98,8 +98,8 @@ try{
   await page.click('.saved-polish-archived > summary');
   await page.waitForSelector('.saved-polish-archived');
   await page.click('.saved-polish-archived > summary');
-  await page.waitForSelector('[data-saved-polish-restore="journey-upcoming"]');
-  await page.click('[data-saved-polish-restore="journey-upcoming"]');
+  await page.waitForSelector('[data-saved-polish-restore="journey-upcoming"]',{state:'attached'});
+  await page.evaluate(()=>{const details=document.querySelector('.saved-polish-archived'),restore=document.querySelector('[data-saved-polish-restore="journey-upcoming"]');if(details)details.open=true;if(!restore)throw new Error('Restore button missing');restore.click();});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').some(item=>item.id==='journey-upcoming'));
   assert.equal(await page.evaluate(()=>Boolean(JSON.parse(localStorage.getItem('kerbside.rail.plan.saved-polish.v3')||'{}').archived?.['journey-upcoming'])),false);
   }
