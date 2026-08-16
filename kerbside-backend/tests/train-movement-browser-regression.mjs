@@ -48,7 +48,7 @@ try{
     if(overlay)overlay.evidenceFor=row=>row===service?{service:{uid:'C21373',trainid:'5F25',serviceIdGuid:'20260816C21373'}}:(typeof originalEvidenceFor==='function'?originalEvidenceFor(row):null);
     const trains=window.__KERBSIDE_TRAINS__,liveKey=trains.serviceKey(service,0);trains.state.services=[service];
     document.getElementById('trainBoard').innerHTML=`<article class="train-service open" data-service-id="${liveKey}"><button class="train-service-summary"><span class="train-route"><strong>Bristol Temple Meads</strong><small>CrossCountry · Platform 11</small></span></button><div class="train-service-detail"></div></article>`;
-    const scheduled={...service,serviceID:'20260816C21373',from:{crs:'BHM',name:'Birmingham New Street'},to:{crs:'BRI',name:'Bristol Temple Meads'}};
+    const scheduled={...service,uid:'C21373',trainId:'5F25',serviceID:'20260816C21373',from:{crs:'BHM',name:'Birmingham New Street'},to:{crs:'BRI',name:'Bristol Temple Meads'}};
     const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduledKey=timetable.serviceKey(scheduled,0);timetable.state.services=[scheduled];
     let scheduledBoard=document.getElementById('trainScheduledBoard');if(!scheduledBoard){scheduledBoard=document.createElement('div');scheduledBoard.id='trainScheduledBoard';document.querySelector('.train-content').appendChild(scheduledBoard);}scheduledBoard.hidden=false;
     scheduledBoard.innerHTML=`<article class="train-service train-scheduled-service open" data-service-id="${scheduledKey}"><button class="train-service-summary"><span class="train-route"><strong>Bristol Temple Meads</strong><small>CrossCountry · arr 21:33</small></span></button><div class="train-service-detail"></div></article>`;
