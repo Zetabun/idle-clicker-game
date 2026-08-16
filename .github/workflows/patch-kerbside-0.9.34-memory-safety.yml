@@ -6,6 +6,7 @@ on:
       - agent/kerbside-0.9.34-memory-first-movement
     paths:
       - .github/scripts/patch-kerbside-0.9.34-memory-safety.py
+      - .github/scripts/fix-kerbside-0.9.34-memory-safety.py
       - .github/workflows/patch-kerbside-0.9.34-memory-safety.yml
   workflow_dispatch:
 
@@ -24,7 +25,7 @@ jobs:
         with:
           node-version: '24'
       - name: Apply memory safety hardening
-        run: python3 .github/scripts/patch-kerbside-0.9.34-memory-safety.py
+        run: python3 .github/scripts/fix-kerbside-0.9.34-memory-safety.py
       - name: Commit product changes
         shell: bash
         run: |
