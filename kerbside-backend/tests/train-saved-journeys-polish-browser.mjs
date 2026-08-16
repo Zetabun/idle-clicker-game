@@ -72,7 +72,7 @@ try{
     assert.match(await page.locator('#savedJourneyList').innerText(),/Upcoming/);
     assert.match(await page.locator('#savedJourneyList').innerText(),/Past journeys/);
   }
-  if(runs('badge')) assert.equal(await page.locator('.saved-polish-next .saved-polish-next-badge').innerText(),'Next journey');
+  if(runs('badge')) assert.equal((await page.locator('.saved-polish-next .saved-polish-next-badge').textContent())?.trim(),'Next journey');
 
   if(runs('repeat')){
   const repeatDate=await page.evaluate(()=>window.__fixtureDates.add(window.__fixtureDates.tomorrow,7));
