@@ -1,0 +1,17 @@
+# Deployed by .github/workflows/deploy-kerbside-train-movement-worker.yml
+name = "kerbside-train-movement"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://zetabun.github.io"
+RATE_LIMIT_PER_MINUTE = "180"
+
+[[durable_objects.bindings]]
+name = "TRAIN_MOVEMENT"
+class_name = "TrainMovementHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TrainMovementHub"]

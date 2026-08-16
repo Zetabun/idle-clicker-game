@@ -1,0 +1,12 @@
+{
+  "name": "kerbside-train-movement-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check worker.js && node --check movement-core.js && node --check movement-core.test.mjs",
+    "test": "node --test movement-core.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.28.1"
+  }
+}

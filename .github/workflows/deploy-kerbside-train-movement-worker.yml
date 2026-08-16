@@ -1,0 +1,100 @@
+name: Deploy Kerbside Network Rail movement Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - kerbside-train-movement-worker/**
+      - .github/scripts/build-networkrail-corpus.mjs
+      - .github/scripts/networkrail-corpus.test.mjs
+      - .github/workflows/deploy-kerbside-train-movement-worker.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-kerbside-train-movement-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NETWORK_RAIL_USERNAME: ${{ secrets.NETWORK_RAIL_USERNAME }}
+      NETWORK_RAIL_PASSWORD: ${{ secrets.NETWORK_RAIL_PASSWORD }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in NETWORK_RAIL_USERNAME NETWORK_RAIL_PASSWORD CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN; do
+            if [[ -z "${!name:-}" ]]; then echo "::error::$name is not configured"; exit 1; fi
+          done
+
+      - name: Build current Network Rail CORPUS reference module
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 3 \
+            --user "$NETWORK_RAIL_USERNAME:$NETWORK_RAIL_PASSWORD" \
+            'https://publicdatafeeds.networkrail.co.uk/ntrod/SupportingFileAuthenticate?type=CORPUS' \
+            --output /tmp/networkrail-corpus.json
+          node .github/scripts/build-networkrail-corpus.mjs \
+            /tmp/networkrail-corpus.json \
+            kerbside-train-movement-worker/corpus.generated.js
+
+      - name: Test and bundle movement Worker
+        shell: bash
+        working-directory: kerbside-train-movement-worker
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --package-lock=false
+          npm test
+          npx wrangler deploy --dry-run --outdir=/tmp/kerbside-train-movement-worker
+
+      - name: Deploy movement Worker
+        shell: bash
+        working-directory: kerbside-train-movement-worker
+        run: |
+          set -euo pipefail
+          npx wrangler deploy
+          printf '%s' "$NETWORK_RAIL_USERNAME" | npx wrangler secret put NETWORK_RAIL_USERNAME
+          printf '%s' "$NETWORK_RAIL_PASSWORD" | npx wrangler secret put NETWORK_RAIL_PASSWORD
+
+      - name: Start and verify live movement subscriber
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint='https://kerbside-train-movement.adambullas.workers.dev'
+          curl --fail --silent --show-error "$endpoint/movement/start" >/tmp/movement-start.json || true
+          cat /tmp/movement-start.json || true
+          for attempt in $(seq 1 24); do
+            curl --fail --silent --show-error "$endpoint/movement/health" >/tmp/movement-health.json
+            if node - <<'NODE'
+          const fs=require('fs');
+          const value=JSON.parse(fs.readFileSync('/tmp/movement-health.json','utf8'));
+          console.log(JSON.stringify(value));
+          process.exit(value.connected && value.credentialsConfigured && Number(value.corpus&&value.corpus.count)>1000 ? 0 : 1);
+          NODE
+            then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo '::error::Movement Worker did not establish a live Network Rail STOMP connection.'
+          cat /tmp/movement-health.json
+          exit 1
