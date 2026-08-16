@@ -1,0 +1,182 @@
+name: Verify Kerbside saved-active handoff
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/verify-kerbside-saved-active-handoff.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-kerbside-saved-active-handoff.yml
+  workflow_run:
+    workflows:
+      - Verify Kerbside production
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-saved-active-handoff-smoke
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out expected production source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Install WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+      - name: Verify live Saved to Active Journey handoff
+        shell: bash
+        env:
+          APP_URL: https://zetabun.github.io/idle-clicker-game/bus.html
+        run: |
+          set -euo pipefail
+          cd kerbside-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+          import { webkit } from 'playwright';
+
+          function londonStamp(date=new Date()){
+            const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+            const map=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+            return `${map.year}-${map.month}-${map.day}`;
+          }
+
+          const expectedVersion=(await readFile('../VERSION','utf8')).trim();
+          const browser=await webkit.launch({headless:true});
+          const context=await browser.newContext({timezoneId:'Europe/London',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const page=await context.newPage();
+          const errors=[];
+          page.on('pageerror',error=>errors.push(String(error&&error.stack||error)));
+          await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})}));
+          await page.route('https://query.wikidata.org/**',route=>route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify({head:{vars:[]},results:{bindings:[]}})}));
+          await page.route('https://huxley2.azurewebsites.net/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({trainServices:[],nrccMessages:[]})}));
+          await page.route('https://hux.azurewebsites.net/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({trainServices:[],nrccMessages:[]})}));
+
+          try{
+            await page.goto(`${process.env.APP_URL}?saved-active-smoke=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForFunction(()=>Boolean(
+              window.__KERBSIDE_SAVED_JOURNEYS_V2__?.startActiveSavedJourney &&
+              window.__KERBSIDE_ACTIVE_JOURNEY__?.startByKey &&
+              window.__KERBSIDE_TRAINS__?.selectStation &&
+              window.__KERBSIDE_TRAIN_TIMETABLE__?.load
+            ),null,{timeout:30000});
+            await page.evaluate(()=>{
+              localStorage.removeItem('kerbside.rail.plan.saved.v1');
+              localStorage.removeItem('kerbside.rail.plan.saved-meta.v2');
+              localStorage.removeItem('kerbside.rail.active-journey.v1');
+              localStorage.removeItem('kerbside.rail.journey-watch.v1');
+            });
+            await page.reload({waitUntil:'domcontentloaded'});
+            await page.waitForFunction(()=>Boolean(window.__KERBSIDE_SAVED_JOURNEYS_V2__?.startActiveSavedJourney&&window.__KERBSIDE_ACTIVE_JOURNEY__?.startByKey),null,{timeout:30000});
+            await page.click('#transportTrain');
+
+            const liveVersion=await page.evaluate(async()=>{
+              const response=await fetch(`VERSION?saved-active-smoke=${Date.now()}`,{cache:'no-store'});
+              return (await response.text()).trim();
+            });
+            assert.equal(liveVersion,expectedVersion,'live Pages version does not match checked-out main/version');
+
+            const setup=await page.evaluate(async today=>{
+              const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
+              const tt=window.__KERBSIDE_TRAIN_TIMETABLE__;
+              const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
+              const active=window.__KERBSIDE_ACTIVE_JOURNEY__;
+              const trains=window.__KERBSIDE_TRAINS__;
+              const routes=window.__KERBSIDE_TRAIN_ROUTES__;
+              const dates=window.__KERBSIDE_TRAIN_DATE__;
+              const saved={
+                v:1,id:'LIVE-SAVED-ACTIVE',savedAt:new Date().toISOString(),refreshedAt:'',date:today,
+                from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'},journeyType:'direct',
+                service:{serviceID:'LIVE-ACTIVE-1',uid:'LIVE-ACTIVE-UID',trainId:'1A10',std:'09:50'},
+                first:{serviceID:'',uid:'',trainId:'',std:''},onward:{serviceID:'',uid:'',trainId:'',std:''},change:'',
+                scheduledDeparture:'09:50',scheduledArrival:'10:30',searchStart:'09:00',searchEnd:'11:00',preference:'balanced',
+                constraints:{maxChanges:1,connectionBuffer:0}
+              };
+              const manifest={schema:1,source:'Live handoff smoke fixture',timetableId:'LIVE-HANDOFF',dates:[today],coverage:{[today]:{from:'00:01',to:'23:59',partial:false}},tocNames:{XC:'CrossCountry'}};
+              const rows=()=>{
+                const value=[{serviceID:'LIVE-ACTIVE-1',uid:'LIVE-ACTIVE-UID',trainId:'1A10',std:'09:50',arrival:'10:30',departureMinute:590,arrivalMinute:630,totalMinutes:40,changes:0,journeyType:'direct',operator:'CrossCountry',operatorCode:'XC',platform:'5',arrivalPlatform:'3',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}];
+                Object.defineProperty(value,'kerbsideSource',{value:'darwin'});
+                return value;
+              };
+              provider.getCoverage=async()=>manifest;
+              provider.refreshCoverage=async()=>manifest;
+              provider.getServices=async()=>rows();
+              provider.getJourneyOptions=async()=>rows();
+              tt.railNowTime=()=> '10:00';
+              tt.state.manifest=manifest;
+              active.state.active=null;
+              localStorage.setItem('kerbside.rail.plan.saved.v1',JSON.stringify([saved]));
+              localStorage.removeItem('kerbside.rail.plan.saved-meta.v2');
+              savedApi.state.meta={entries:{},coverageKey:'',updatedAt:''};
+              savedApi.state.live.clear();
+              savedApi.state.actionMessages.clear();
+              savedApi.syncSaved();
+              await savedApi.refreshSavedJourney(saved.id,{force:true,reason:'live-smoke'});
+              trains.state.station={name:'Manchester Piccadilly',crs:'MAN'};
+              routes.state.fromCrs='MAN';
+              routes.state.destination={name:'Leeds',crs:'LDS'};
+              dates.setDate(today,{persist:false});
+              document.getElementById('trainStationQuery').value='Manchester Piccadilly';
+              document.getElementById('trainDestinationQuery').value='Leeds';
+              savedApi.enterSavedView();
+              const meta=savedApi.state.meta.entries[saved.id];
+              return {id:saved.id,resolution:meta.resolution,status:meta.status};
+            },londonStamp());
+
+            assert.ok(['exact','identity'].includes(setup.resolution),'saved service did not strongly re-resolve');
+            assert.ok(['today','delayed'].includes(setup.status),'same-day save did not resolve to a startable state');
+            await page.waitForFunction(()=>!window.__KERBSIDE_SAVED_JOURNEYS_V2__.state.refreshing.size,null,{timeout:10000});
+            const start=page.locator(`#savedJourneyList [data-saved-v2-active="${setup.id}"]`);
+            await start.waitFor({state:'visible',timeout:10000});
+            assert.equal(await start.textContent(),'Start active journey');
+            await start.click();
+
+            await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active&&document.querySelector('#trainActiveJourney:not([hidden])')),null,{timeout:10000});
+            const handoff=await page.evaluate(()=>({
+              active:window.__KERBSIDE_ACTIVE_JOURNEY__.state.active,
+              station:window.__KERBSIDE_TRAINS__.state.station,
+              destination:window.__KERBSIDE_TRAIN_ROUTES__.state.destination,
+              savedHidden:document.getElementById('savedJourneySurface').hidden,
+              startedAt:window.__KERBSIDE_ACTIVE_JOURNEY__.state.active?.startedAt||''
+            }));
+            assert.equal(handoff.station.crs,'BHM');
+            assert.equal(handoff.destination.crs,'BRI');
+            assert.equal(handoff.active.service.uid,'LIVE-ACTIVE-UID');
+            assert.equal(handoff.savedHidden,true);
+            assert.ok(handoff.startedAt);
+
+            await page.click('[data-train-view="saved"]');
+            const reopen=page.locator(`#savedJourneyList [data-saved-v2-active="${setup.id}"]`);
+            await reopen.waitFor({state:'visible',timeout:10000});
+            assert.equal(await reopen.textContent(),'Open active journey');
+            await reopen.click();
+            await page.waitForFunction(()=>document.querySelector('#trainActiveJourney:not([hidden])'),null,{timeout:10000});
+            assert.equal(await page.evaluate(()=>window.__KERBSIDE_ACTIVE_JOURNEY__.state.active.startedAt),handoff.startedAt,'opening an already-active saved trip restarted it');
+
+            await page.locator('#trainActiveJourney [data-active-stop]').click();
+            await page.waitForFunction(()=>!window.__KERBSIDE_ACTIVE_JOURNEY__.state.active,null,{timeout:10000});
+            assert.deepEqual(errors,[]);
+            console.log(`Live Saved -> Active Journey handoff passed on Kerbside ${liveVersion}.`);
+          }finally{
+            await browser.close();
+          }
+          NODE
