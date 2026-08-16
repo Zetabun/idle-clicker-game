@@ -56,8 +56,13 @@ async function mockExternal(page,requests){
     if(pathname.startsWith('/service/')){await route.fulfill({status:200,contentType:'application/json',body:'{}'});return;}
     await route.fulfill({status:404,contentType:'application/json',body:'{}'});
   };
+  await page.route('https://kerbside-rail.adambullas.workers.dev/**',handle);
   await page.route('**://huxley2.azurewebsites.net/**',handle);
   await page.route('**://hux.azurewebsites.net/**',handle);
+  const emptyManifest={schema:1,source:'Kerbside live-window test',timetableId:'TEST-EMPTY',dates:[],coverage:{},tocNames:{}};
+  const emptyManifestResponse=route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(emptyManifest)});
+  await page.route('**/kerbside-rail-timetable/manifest.json',emptyManifestResponse);
+  await page.route('https://kerbside-rail-data-zetabun.pages.dev/manifest.json',emptyManifestResponse);
 }
 
 async function run(browser){
