@@ -1,0 +1,36 @@
+name: Apply Kerbside 0.9.32 live journey progress
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.32-live-journey-progress
+    paths:
+      - .github/scripts/apply-kerbside-0.9.32-progress.py
+      - .github/workflows/apply-kerbside-0.9.32-progress.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.32-live-journey-progress
+          fetch-depth: 0
+      - name: Apply live journey progress build
+        run: |
+          python3 .github/scripts/apply-kerbside-0.9.32-progress.py
+          printf '0.9.32\n' > VERSION
+          python3 .github/scripts/sync-version.py
+          node --check kerbside-train-movement.js
+          node --check kerbside-backend/tests/train-movement-browser-regression.mjs
+      - name: Commit build
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Kerbside 0.9.32 live journey progress'
+          git push origin HEAD:agent/kerbside-0.9.32-live-journey-progress
