@@ -123,17 +123,17 @@ jobs:
               const state=planner.planState;
               state.from={crs:'BHM',name:'Birmingham New Street'};
               state.to={crs:'LOB',name:'Longbridge'};
-              const setValue=(id,value)=>{
+              const setValue=(id,value,{event=true}={})=>{
                 const node=document.getElementById(id);
                 if(!node)throw new Error(`Missing Plan My Journey field ${id}`);
                 node.value=value;
-                node.dispatchEvent(new Event(node.tagName==='SELECT'?'change':'input',{bubbles:true}));
+                if(event)node.dispatchEvent(new Event(node.tagName==='SELECT'?'change':'input',{bubbles:true}));
               };
-              setValue('planJourneyFrom','Birmingham New Street');
-              setValue('planJourneyTo','Longbridge');
-              setValue('planJourneyDate',futureDate);
-              setValue('planJourneyStart','06:00');
-              setValue('planJourneyEnd','10:00');
+              setValue('planJourneyFrom','Birmingham New Street',{event:false});
+              setValue('planJourneyTo','Longbridge',{event:false});
+              setValue('planJourneyDate',futureDate,{event:false});
+              setValue('planJourneyStart','06:00',{event:false});
+              setValue('planJourneyEnd','10:00',{event:false});
               setValue('planJourneyPreference','quieter');
               await planner.searchPlanJourneys();
               return {futureDate,daysAway:daysBetween(londonToday,futureDate)};
@@ -161,7 +161,7 @@ jobs:
                 meta:document.getElementById('planJourneyMeta')?.textContent||'',
                 preference:localStorage.getItem('kerbside.rail.plan.preference.v1'),
                 firstForecast:state.results[0]?.forecast||null,
-                firstScore:state.results[0]?.planScore,
+                firstScore:state.results[0]?.preferenceScore,
                 normalPlannerHidden:document.getElementById('trainPlanner')?.hidden===true,
                 planFormHidden:document.getElementById('planJourneyForm')?.hidden===true
               };
@@ -175,7 +175,8 @@ jobs:
             assert.equal(result.normalPlannerHidden,true,'normal train planner is not hidden in Plan mode');
             assert.equal(result.planFormHidden,false,'Plan My Journey form is hidden in Plan mode');
             assert.match(result.meta,/Network Rail SCHEDULE/i);
-            assert.match(result.firstCard,/Forecast v4/i);
+            assert.match(result.meta,/Forecast v4/i);
+            assert.match(result.firstCard,/Best match/i);
             assert.ok(result.firstForecast&&Number.isFinite(Number(result.firstForecast.score)),'first result has no Forecast v4 score');
             assert.ok(Number.isFinite(Number(result.firstScore)),'first result has no preference ranking score');
             assert.ok(
