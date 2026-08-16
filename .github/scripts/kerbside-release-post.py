@@ -17,7 +17,15 @@ if planner_text.count(old_message)!=1:
     raise SystemExit(f'Expected one progressive event message anchor, found {planner_text.count(old_message)}')
 planner.write_text(planner_text.replace(old_message,new_message,1),encoding='utf-8')
 
+events_path=Path('kerbside-train-events.js')
+events_text=events_path.read_text(encoding='utf-8')
+old_refresh="""  state.status='loading';\n  const date=journeyDate();\n"""
+new_refresh="""  const date=journeyDate();\n  /* Keep already-resolved context usable while a same-date background refresh\n     checks for fresher source data. Per-source health still exposes loading. */\n  if(!(state.status==='ready'&&state.date===date))state.status='loading';\n"""
+if events_text.count(old_refresh)!=1:
+    raise SystemExit(f'Expected one event refresh-state anchor, found {events_text.count(old_refresh)}')
+events_path.write_text(events_text.replace(old_refresh,new_refresh,1),encoding='utf-8')
+
 # These files are staging-only and must not survive the repository-safe release.
 Path('.github/scripts/kerbside-0.9.27-body.py').unlink(missing_ok=True)
 Path('.github/release-trigger-0.9.27.txt').unlink(missing_ok=True)
-print('Updated regional holiday regression, progressive event wording and removed 0.9.27 staging-only files.')
+print('Updated regional holiday regression, progressive event wording, refresh continuity and removed 0.9.27 staging-only files.')
