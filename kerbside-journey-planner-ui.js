@@ -188,6 +188,7 @@ function installUiGuardStyles(){
 body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
 body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
 @media(min-width:821px){
+  body[data-transport="train"] .train-sidebar{overflow-anchor:none}
   body[data-transport="train"] .train-sidebar>.train-view-tabs{
     position:sticky;top:0;z-index:1705;
     box-shadow:0 8px 18px rgb(var(--shadow-rgb) / .14);
@@ -224,7 +225,10 @@ function restoreBaseTrainView(){
   }
   const alerts=document.getElementById('trainAlerts');
   if(alerts)alerts.hidden=!String(alerts.innerHTML||'').trim();
-  setTimeout(()=>window.__KERBSIDE_TRAIN_TIMETABLE__?.sync?.(),0);
+  resetTrainSidebarScroll();
+  const settleScroll=()=>resetTrainSidebarScroll();
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>{settleScroll();requestAnimationFrame(settleScroll);});
+  setTimeout(()=>{window.__KERBSIDE_TRAIN_TIMETABLE__?.sync?.();settleScroll();},0);
   return true;
 }
 function installUiGuards(){
