@@ -144,7 +144,7 @@ try{
       const rows=[
         {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail',platform:'4',arrivalPlatform:'9',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
         {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,minimumConnectionSource:'kerbside-planning-buffer',recoveryOptions:[{serviceID:'PLAN-RECOVERY',std:'09:55',arrival:'10:25',operator:'Recovery Rail',platform:'4',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail',platform:'5',arrivalPlatform:'1',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Cheltenham Spa',crs:'CNM'}},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail',platform:'3',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}]},
-        {serviceID:'PLAN-QUIET',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
+        {serviceID:'PLAN-QUIET',uid:'UID-QUIET',trainId:'1Q10',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
       ];
       Object.defineProperty(rows,'kerbsideSource',{value:'network-rail'});return rows;
     };
@@ -218,6 +218,61 @@ try{
   await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===3&&/Compared 3 journey options/.test(document.querySelector('#planJourneyMessage')?.textContent||''),undefined,{timeout:10000});
   constrainedCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
   assert.match(constrainedCards.join(' '),/Change Rail/,'recommended minimum must allow the valid connection again');
+
+  // Saved journeys store only a locator. Reopening must re-query the current
+  // provider and rerun Forecast v4 rather than replaying a frozen result.
+  const quietCard=page.locator('#planJourneyResults .plan-journey-result').filter({hasText:'Quiet Rail'});
+  await quietCard.locator('[data-plan-save-key]').click();
+  await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1;}catch{return false;}});
+  let savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
+  assert.equal(savedJourney.date,'2026-08-12');
+  assert.equal(savedJourney.from.crs,'BHM');assert.equal(savedJourney.to.crs,'BRI');
+  assert.equal(savedJourney.service.uid,'UID-QUIET');
+  assert.equal(savedJourney.scheduledDeparture,'09:10');
+  assert.doesNotMatch(JSON.stringify(savedJourney),/forecast|probabilities|reasons|lower measured demand/i,'saved journeys must not freeze Forecast v4 output');
+  assert.match(await page.locator('#planSavedPanel').textContent(),/Saved journeys 1/);
+  assert.match(await page.locator('#planSavedPanel').textContent(),/09:10 → 10:15/);
+
+  await page.evaluate(()=>{
+    const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
+    provider.getJourneyOptions=async()=>{
+      const rows=[
+        {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail',platform:'4',arrivalPlatform:'9',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
+        {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,minimumConnectionSource:'kerbside-planning-buffer',recoveryOptions:[],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Cheltenham Spa',crs:'CNM'}},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}]},
+        {serviceID:'PLAN-QUIET-DARWIN',uid:'UID-QUIET',trainId:'1Q10',std:'09:14',arrival:'10:19',departureMinute:554,arrivalMinute:619,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'7',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
+      ];Object.defineProperty(rows,'kerbsideSource',{value:'darwin'});return rows;
+    };
+    window.__KERBSIDE_FORECAST_V4__.forecast=service=>{
+      if(String(service&&service.uid||'')==='UID-QUIET')return {score:1.8,label:'Moderate',level:'moderate',confidence:'High',probabilities:{quiet:.30,moderate:.55,busy:.12,veryBusy:.03},reasons:['updated demand closer to travel']};
+      if(String(service&&service.serviceID||'').startsWith('PLAN-CHANGE'))return {score:2.1,label:'Moderate',level:'moderate',confidence:'High',probabilities:{quiet:.24,moderate:.56,busy:.16,veryBusy:.04},reasons:['typical measured demand at this time']};
+      return {score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
+    };
+  });
+  await page.locator('#planSavedJourneys [data-plan-open-saved]').click();
+  await page.waitForFunction(()=>/09:14/.test(document.querySelector('#planJourneyResults .plan-journey-result.is-saved-focus')?.textContent||''),undefined,{timeout:10000});
+  const refreshedSavedCard=await page.locator('#planJourneyResults .plan-journey-result.is-saved-focus').textContent();
+  assert.match(refreshedSavedCard,/09:14 → 10:19/);
+  assert.match(refreshedSavedCard,/Moderate/,'saved journey must use the newly calculated Forecast v4 result');
+  assert.match(refreshedSavedCard,/Saved journey · refreshed from current data/);
+  assert.match(await page.locator('#planJourneyMessage').textContent(),/latest available information/);
+  savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
+  assert.equal(savedJourney.service.serviceID,'PLAN-QUIET-DARWIN','strong UID match should refresh the stored service locator');
+  assert.equal(savedJourney.scheduledDeparture,'09:14','strong identity refresh should carry the current timetable time forward');
+  assert.doesNotMatch(JSON.stringify(savedJourney),/forecast|probabilities|reasons|updated demand/i);
+
+  const fallbackMatch=await page.evaluate(()=>{
+    const planner=window.__KERBSIDE_JOURNEY_PLANNER__,saved=planner.readSavedJourneys()[0];
+    const nearby={serviceID:'OTHER-SERVICE',uid:'OTHER-UID',trainId:'9Z99',std:'09:20',arrival:'10:24',departureMinute:560,arrivalMinute:624,totalMinutes:64,changes:0,journeyType:'direct'};
+    const far={...nearby,serviceID:'FAR',std:'11:00',departureMinute:660,arrivalMinute:724};
+    return {near:planner.planMatchSavedJourney(saved,[nearby])?.confidence||'',far:planner.planMatchSavedJourney(saved,[far])};
+  });
+  assert.equal(fallbackMatch.near,'closest','a nearby service without stable identity must be labelled only as a closest match');
+  assert.equal(fallbackMatch.far,null,'distant alternatives must not be silently substituted for a saved train');
+
+  await page.locator('#planSavedJourneys [data-plan-remove-saved]').click();
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))),[]);
+  assert.match(await page.locator('#planSavedPanel').textContent(),/No saved journeys yet/);
+
   await page.click('[data-train-view="trains"]');
   assert.equal(await page.locator('#trainPlanner').isVisible(),true,'normal train planner should be restored after leaving Plan My Journey');
 
