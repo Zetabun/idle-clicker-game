@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+import{HOT_CHECKPOINT_MS,RECOVERY_PREFIX,compactRecoverySnapshot,recoveryKey,recoveryKeyExpired,shouldQueueRecovery,splitRecoveryEntries}from'./movement-storage-policy.js';
+test('ordinary movement is memory-only',()=>{for(let i=0;i<20000;i++)assert.equal(shouldQueueRecovery({types:['0003'],snapshot:{status:'running'},hot:false,now:1_000_000}).queue,false);});
+test('lifecycle and termination are recoverable',()=>{for(const type of['0001','0002','0005','0006','0007','0008'])assert.equal(shouldQueueRecovery({types:[type],snapshot:{status:'running'}}).queue,true);assert.equal(shouldQueueRecovery({types:['0003'],snapshot:{status:'terminated'}}).queue,true);});
+test('only hot trains checkpoint ordinary movement',()=>{const now=2_000_000;assert.equal(shouldQueueRecovery({types:['0003'],snapshot:{status:'running'},hot:true,lastCheckpointAt:now-HOT_CHECKPOINT_MS-1,now}).queue,true);assert.equal(shouldQueueRecovery({types:['0003'],snapshot:{status:'running'},hot:true,lastCheckpointAt:now-HOT_CHECKPOINT_MS+1,now}).queue,false);});
+test('compact recovery omits rolling history',()=>{const row=compactRecoverySnapshot({trainId:'123A45',status:'running',updatedAt:99,history:[{x:1}],lastEvent:{eventType:'DEPARTURE'}});assert.equal(row.lastEvent.eventType,'DEPARTURE');assert.equal(Object.hasOwn(row,'history'),false);});
+test('buckets are bounded and expire',()=>{assert.deepEqual(splitRecoveryEntries(Array.from({length:601},(_,i)=>({trainId:String(i)})),300).map(x=>x.length),[300,300,1]);const key=recoveryKey(1_000_000,2);assert.ok(key.startsWith(RECOVERY_PREFIX));assert.equal(recoveryKeyExpired(key,1_000_100,200),false);assert.equal(recoveryKeyExpired(key,1_000_201,200),true);});
+test('worker has no hot-path SQL mutation',()=>{const source=fs.readFileSync(new URL('./worker.js',import.meta.url),'utf8');assert.doesNotMatch(source,/INSERT OR REPLACE|DELETE FROM/i);assert.match(source,/storage\.put\(recoveryKey\(/);});

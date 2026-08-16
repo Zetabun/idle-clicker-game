@@ -120,6 +120,8 @@ try{
   assert.equal(atStation.current,'University');
   assert.match(atStation.now,/Train here/i);
   assert.match(atStation.now,/Arrived/i);
+  const reacquiring=await page.evaluate(()=>{const api=window.__KERBSIDE_TRAIN_MOVEMENT__,service=window.__KERBSIDE_TRAINS__.state.services[0],base=service.networkRailMovement,wrap=document.createElement('div'),snapshot={...base,reacquiring:true,stale:true,updatedAt:Date.now()-600_000,lastEvent:null,status:'activated'};wrap.className='train-calling';wrap.innerHTML='<div class="train-detail-title">Calling points</div><div class="train-call ahead"><i></i><span><b>Five Ways</b><small>Later</small></span></div>';document.body.appendChild(wrap);api.decorateCallingTimeline(wrap,service,snapshot,{startName:'Birmingham New Street',startTime:'20:12'});const info=api.progress(snapshot);return{badge:wrap.querySelector('[data-train-progress-badge]')?.textContent||'',note:wrap.querySelector('.train-progress-now')?.textContent||'',short:info?.short||'',title:info?.title||''};});
+  assert.match(reacquiring.badge,/Reacquiring live position/i);assert.match(reacquiring.note,/waiting for the next Network Rail movement report/i);assert.match(reacquiring.short,/NR reacquiring/i);assert.match(reacquiring.title,/Reacquiring live position/i);
   assert.deepEqual(pageErrors,[],`unexpected page errors: ${pageErrors.join('\n')}`);
   console.log(`Kerbside Network Rail movement browser regression passed in ${browserName}.`);
 }finally{
