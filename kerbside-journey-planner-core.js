@@ -843,6 +843,26 @@ function planTradeoff(row,all,index){
   return `${parts.join(' · ')}.`;
 }
 function planCrowdClass(level){return ['quiet','moderate','busy','very-busy'].includes(level)?level:'unknown';}
+function planPointName(point,fallback=''){return String(point&&(point.name||point.locationName||point.stationName||point.crs)||fallback||'').trim();}
+function planPlatformText(leg){const depart=String(leg&&leg.platform||'').trim(),arrive=String(leg&&leg.arrivalPlatform||'').trim();if(depart&&arrive)return `Scheduled platforms ${depart} → ${arrive}`;if(depart)return `Scheduled departure platform ${depart}`;if(arrive)return `Scheduled arrival platform ${arrive}`;return'';}
+function planLegDetailMarkup(leg,index,forecast,row){
+  const first=index===0,from=planPointName(leg&&leg.from,first?planState.from&&planState.from.name:''),to=planPointName(leg&&(leg.to||leg.routeDestination),!first&&row&&row.interchange?row.interchange.name:planState.to&&planState.to.name),depart=String(leg&&(leg.std||leg.departure)||''),arrive=String(leg&&leg.arrival||''),operator=String(leg&&leg.operator||row&&row.operator||'Scheduled service'),platforms=planPlatformText(leg),forecastLabel=String(forecast&&forecast.label||'');
+  const meta=[operator,platforms,forecastLabel?`Forecast v4: ${forecastLabel}`:''].filter(Boolean).join(' · ');
+  return `<div class="plan-detail-leg"><span>Leg ${index+1}</span><strong>${esc(depart)} ${esc(from||'Departure')} → ${esc(arrive)} ${esc(to||'Arrival')}</strong>${meta?`<small>${esc(meta)}</small>`:''}</div>`;
+}
+function planConnectionSourceLabel(row){if(String(row&&row.minimumConnectionSource||'')==='licensed'){const authority=String(row&&row.minimumConnectionAuthority||'').trim();return authority?`Licensed station minimum · ${authority}`:'Licensed station minimum';}return'Kerbside planning buffer';}
+function planRecoveryDetailMarkup(row){
+  const options=Array.isArray(row&&row.recoveryOptions)?row.recoveryOptions:[];if(!options.length)return'';
+  const next=options[0]||{},count=options.length,depart=String(next.std||next.departure||''),arrive=String(next.arrival||''),operator=String(next.operator||'Scheduled service');
+  return `<div class="plan-detail-recovery"><strong>Later timetable option${count===1?'':'s'} identified</strong><span>Next: ${esc(depart)} → ${esc(arrive)} · ${esc(operator)}${count>1?` · ${count} options found`:''}</span><small>Ticket validity for an alternative service depends on your ticket; Kerbside does not assess that here.</small></div>`;
+}
+function planJourneyDetailsMarkup(row){
+  const isConnection=Number(row&&row.changes||0)>0&&Array.isArray(row&&row.legs)&&row.legs.length>1,legs=isConnection?row.legs:[row],forecasts=Array.isArray(row&&row.forecast&&row.forecast.legs)?row.forecast.legs:[];
+  const legMarkup=legs.map((leg,index)=>planLegDetailMarkup(leg,index,forecasts[index]||row&&row.forecast&&row.forecast.primary,row)).join('');
+  let changeMarkup='';
+  if(isConnection){const interchange=row.interchange||{},name=String(interchange.name||interchange.locationName||interchange.crs||'Interchange'),minutes=Number(row.connectionMinutes),minimum=Number(row.minimumConnectionMinutes),margin=Number(interchange.margin),parts=[];if(Number.isFinite(minimum))parts.push(`Base minimum ${Math.round(minimum)} min`);if(Number.isFinite(margin))parts.push(`${Math.max(0,Math.round(margin))} min margin`);parts.push(planConnectionSourceLabel(row));changeMarkup=`<div class="plan-detail-change"><strong>Change at ${esc(name)}${Number.isFinite(minutes)?` · ${Math.round(minutes)} min`:''}</strong><span>${esc(parts.filter(Boolean).join(' · '))}</span></div>`;}
+  return `<details class="plan-result-details"><summary>Journey details</summary><div class="plan-details-body">${legMarkup}${changeMarkup}${planRecoveryDetailMarkup(row)}</div></details>`;
+}
 function planResultMarkup(row,index,all){
   const forecast=row.forecast&&row.forecast.primary||{},level=planCrowdClass(forecast.level),changeText=Number(row.changes||0)===0?'Direct':`1 change at ${esc(row.interchange&&row.interchange.name||row.interchange&&row.interchange.crs||'interchange')}`,confidence=forecast.confidence?`${forecast.confidence} confidence`:'Forecast v4';
   const reasons=(forecast.reasons||[]).slice(0,2).map(reason=>`<li>${esc(reason)}</li>`).join('');
@@ -852,6 +872,7 @@ function planResultMarkup(row,index,all){
     <div class="plan-result-crowd crowd-${level}"><i></i><strong>${esc(forecast.label||'Forecast unavailable')}</strong><span>${esc(confidence)}</span></div>
     <p class="plan-result-tradeoff">${esc(planTradeoff(row,all,index))}</p>
     ${reasons?`<ul class="plan-result-reasons">${reasons}</ul>`:''}
+    ${planJourneyDetailsMarkup(row)}
   </article>`;
 }
 function renderPlanResults(rows,{eventsReady=false}={}){
@@ -960,6 +981,7 @@ function installPlanStyles(){if($('kerbsidePlanJourneyStyles'))return;const styl
 .plan-result-rank,.plan-result-route,.plan-result-crowd{display:flex;flex-direction:column;min-width:0}.plan-result-rank span{color:var(--led);font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.plan-result-rank b{margin-top:4px;font-family:'Martian Mono',monospace;font-size:13px;color:var(--text)}
 .plan-result-route strong{font-size:12px}.plan-result-route span,.plan-result-crowd span{margin-top:3px;color:var(--text-dim);font-size:10px}.plan-result-crowd{position:relative;padding-left:13px}.plan-result-crowd>i{position:absolute;left:0;top:5px;width:7px;height:7px;border-radius:50%}.plan-result-crowd strong{font-size:11px}
 .plan-result-tradeoff{grid-column:1/-1;margin:0;color:var(--text-dim);font-size:11px;line-height:1.45}.plan-result-reasons{grid-column:1/-1;display:grid;gap:3px;margin:0;padding-left:17px;color:var(--text-mute);font-size:10px;line-height:1.4}.plan-result-reasons li::marker{color:var(--led)}
+.plan-result-details{grid-column:1/-1;border-top:1px solid var(--rule);padding-top:9px}.plan-result-details summary{width:max-content;max-width:100%;cursor:pointer;color:var(--led);font-size:10px;font-weight:800;letter-spacing:.03em}.plan-result-details summary:focus-visible{outline:2px solid var(--led);outline-offset:3px;border-radius:3px}.plan-details-body{display:grid;gap:8px;margin-top:10px}.plan-detail-leg,.plan-detail-change,.plan-detail-recovery{display:grid;gap:3px;padding:9px 10px;border:1px solid var(--rule);border-radius:9px;background:var(--ink)}.plan-detail-leg>span{color:var(--led);font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.plan-detail-leg strong,.plan-detail-change strong,.plan-detail-recovery strong{font-size:10.5px;line-height:1.4}.plan-detail-leg small,.plan-detail-change span,.plan-detail-recovery span,.plan-detail-recovery small{color:var(--text-dim);font-size:9.5px;line-height:1.45}.plan-detail-recovery small{color:var(--text-mute)}
 @media(max-width:820px){.train-view-tabs{margin:0 0 8px}.plan-journey-form{gap:9px}.plan-journey-form h2{display:block!important;font-size:18px}.plan-journey-form>p{font-size:11px}.plan-journey-surface{flex:0 0 auto}.plan-results-head{padding:11px 12px 9px}.plan-results-head h2{font-size:17px}.plan-results-list{overflow:visible;padding:8px 9px calc(18px + env(safe-area-inset-bottom))}.plan-journey-result{grid-template-columns:90px minmax(0,1fr);gap:7px 11px;padding:11px}.plan-result-crowd{grid-column:2}.plan-result-tradeoff,.plan-result-reasons{grid-column:1/-1}}
 @media(max-width:430px){.plan-time-grid{grid-template-columns:1fr 1fr}.plan-constraint-grid{grid-template-columns:1fr}.plan-journey-result{grid-template-columns:82px minmax(0,1fr)}}
 `;document.head.appendChild(style);}
