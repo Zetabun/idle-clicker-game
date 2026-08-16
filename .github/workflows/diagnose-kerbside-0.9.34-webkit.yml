@@ -1,0 +1,52 @@
+name: Diagnose Kerbside 0.9.34 WebKit
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.34-memory-first-movement
+    paths:
+      - .github/workflows/diagnose-kerbside-0.9.34-webkit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.34-memory-first-movement
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Install browser dependencies
+        run: |
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit
+      - name: browser
+        run: npm run test:browser --prefix kerbside-backend
+      - name: train
+        run: npm run test:train --prefix kerbside-backend
+      - name: train-route
+        run: npm run test:train-route --prefix kerbside-backend
+      - name: identity
+        run: npm run test:identity --prefix kerbside-backend
+      - name: multi-vehicle
+        run: npm run test:multi-vehicle --prefix kerbside-backend
+      - name: audit
+        run: npm run test:audit --prefix kerbside-backend
+      - name: accuracy-hardening
+        run: npm run test:accuracy-hardening --prefix kerbside-backend --if-present
+      - name: stop-side
+        run: npm run test:stop-side --prefix kerbside-backend --if-present
+      - name: journey-identity
+        run: npm run test:journey-identity --prefix kerbside-backend --if-present
+      - name: disruptions
+        run: npm run test:disruptions --prefix kerbside-backend --if-present
+      - name: listing-reliability
+        run: npm run test:listing-reliability --prefix kerbside-backend --if-present
