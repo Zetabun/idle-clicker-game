@@ -131,23 +131,21 @@ async function mockExternal(page,diagnostics){
     }
     await json(route,404,{});
   };
-  await page.route('**://huxley2.azurewebsites.net/**', handle);
-  await page.route('**://hux.azurewebsites.net/**', handle);
-  await page.route('https://kerbside-train-movement.adambullas.workers.dev/**', route=>{
-    const url = new URL(route.request().url());
-    const results = Object.fromEntries(url.searchParams.getAll('ref').map(ref=>[ref,null]));
-    diagnostics.requests.push(url.pathname);
-    return json(route,200,{
-      ok:true,
-      date:url.searchParams.get('date') || TODAY,
-      generatedAt:Date.now(),
-      connected:false,
-      lastMessageAt:null,
-      results
-    });
-  });
-  await page.route('https://raw.githubusercontent.com/openfootball/football.json/**', route=>
+  await page.context().route('**://huxley2.azurewebsites.net/**', handle);
+  await page.context().route('**://hux.azurewebsites.net/**', handle);
+  // This regression tests route filtering, not Network Rail movement. The
+  // dedicated movement browser regression covers the overlay in both engines.
+  // Around midnight the fixture can become same-day, so prevent this unrelated
+  // test from loading the movement overlay at all instead of emulating production
+  // CORS inside WebKit.
+  await page.context().route('**/kerbside-train-movement.js*', route=>
+    route.fulfill({status:200,contentType:'text/javascript',body:'/* movement disabled in route-filter regression */'})
+  );
+  await page.context().route('https://raw.githubusercontent.com/openfootball/football.json/**', route=>
     json(route,200,{matches:[]})
+  );
+  await page.context().route('https://query.wikidata.org/**', route=>
+    json(route,200,{head:{vars:[]},results:{bindings:[]}})
   );
 }
 
@@ -180,7 +178,10 @@ function departureRequestCount(diagnostics){
 }
 
 async function runDesktop(browser){
-  const page = await browser.newPage({viewport:{width:1280,height:800}});
+  // Playwright routing cannot reliably intercept requests handled by Service
+  // Workers, so block registrations in this fully network-mocked regression.
+  const context = await browser.newContext({viewport:{width:1280,height:800},serviceWorkers:'block'});
+  const page = await context.newPage();
   const diagnostics = attachDiagnostics(page);
   await mockExternal(page,diagnostics);
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
@@ -273,11 +274,12 @@ async function runDesktop(browser){
   assert.match(await page.locator('#trainJourneySummary').textContent(),/Showing all upcoming trains/);
 
   assert.deepEqual(diagnostics.pageErrors,[],`Unexpected page errors: ${diagnostics.pageErrors.join('\n')}`);
-  await page.close();
+  await context.close();
 }
 
 async function runMobile(browser){
-  const page = await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const context = await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+  const page = await context.newPage();
   const diagnostics = attachDiagnostics(page);
   await mockExternal(page,diagnostics);
   await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
@@ -341,7 +343,7 @@ async function runMobile(browser){
     `mobile future Find trains must not request today's live departures: ${JSON.stringify(diagnostics.requests)}`);
 
   assert.deepEqual(diagnostics.pageErrors,[],`Unexpected mobile page errors: ${diagnostics.pageErrors.join('\n')}`);
-  await page.close();
+  await context.close();
 }
 
 let browser;
