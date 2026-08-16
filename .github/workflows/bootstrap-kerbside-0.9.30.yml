@@ -35,6 +35,11 @@ jobs:
           cat .github/tmp/kerbside-0.9.30-bundle-part-* | base64 -d > /tmp/kerbside-0.9.30.tgz
           echo '9f7f1da6e12e9ff4add9f332df45332d3ee1977f99fa071d1f996c573cbd6c73  /tmp/kerbside-0.9.30.tgz' | sha256sum -c -
           tar -xzf /tmp/kerbside-0.9.30.tgz -C .
+          # GitHub Actions tokens cannot push commits that create workflow files.
+          # The connected GitHub app installs the permanent workflows after this
+          # code-only bootstrap commit succeeds.
+          rm -f .github/workflows/deploy-kerbside-train-movement-worker.yml
+          rm -f .github/workflows/verify-kerbside-train-movement.yml
 
       - name: Integrate movement overlay and bump release
         shell: bash
@@ -97,7 +102,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm -f .github/tmp/kerbside-0.9.30-bundle-part-* .github/workflows/bootstrap-kerbside-0.9.30.yml
+          git rm -f .github/tmp/kerbside-0.9.30-bundle-part-*
           git add -A
           git commit -m 'Add live Network Rail train movement'
           git push origin HEAD:agent/kerbside-0.9.30-live-train-movement
