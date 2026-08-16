@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.31';
+const VERSION='0.9.32';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -159,6 +159,68 @@ function primaryMovement(candidate,date){
   return movements.find(item=>item.status==='running'&&!item.stale)||movements.find(item=>item.status==='running')||movements[0];
 }
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value;}
+const TRAIN_PROGRESS_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 3.5h10a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z"/><path d="M8 7h8M8 11h8M8 18l-2 2M16 18l2 2"/><circle cx="8.5" cy="15" r="1"/><circle cx="15.5" cy="15" r="1"/></svg>';
+function normalisePlace(value){return text(value).toLowerCase().replace(/&/g,' and ').replace(/\b(?:railway|rail)\s+station\b/g,' ').replace(/\bstation\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim();}
+function locationTokens(location){const values=[location&&location.crs,location&&location.name,location&&location.tiploc].map(normalisePlace).filter(Boolean);return [...new Set(values)];}
+function rowPlace(row){return normalisePlace(row&&row.querySelector('b')&&row.querySelector('b').textContent);}
+function rowMatchesLocation(row,location){const key=rowPlace(row),tokens=locationTokens(location);if(!key||!tokens.length)return false;if(tokens.includes(key))return true;return tokens.some(token=>token.length>=4&&key.length>=4&&(token.includes(key)||key.includes(token)));}
+function firstLeg(service){return service&&service.journeyType==='connection'&&Array.isArray(service.legs)&&service.legs[0]?service.legs[0]:service;}
+function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'){const station=api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}return text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs));}
+function serviceStartTime(service){const leg=firstLeg(service);return text(leg&&(leg.std||leg.departure));}
+function serviceEndName(service){const leg=firstLeg(service),destination=Array.isArray(leg&&leg.destination)&&leg.destination[0];return text(leg&&leg.to&&(leg.to.name||leg.to.locationName||leg.to.crs)||leg&&leg.routeDestination&&(leg.routeDestination.name||leg.routeDestination.locationName||leg.routeDestination.crs)||destination&&(destination.name||destination.locationName||destination.crs));}
+function serviceEndTime(service){const leg=firstLeg(service);return text(leg&&leg.arrival);}
+function timelineEventMeta(snapshot,event){const bits=[],actual=timeLabel(event&&event.actualTimestamp),variation=variationLabel(event),age=ageLabel(snapshot);if(actual)bits.push(`${event&&event.eventType==='ARRIVAL'?'Arrived':event&&event.eventType==='DEPARTURE'?'Departed':'Reported'} ${actual}`);if(variation)bits.push(variation);if(age)bits.push(`${snapshot&&snapshot.stale?'Last report':'Feed'} ${age}`);return bits.join(' · ');}
+function timelineSourceRows(calling){return [...calling.querySelectorAll('.train-call')].filter(row=>!row.hasAttribute('data-train-progress-marker')&&!row.hasAttribute('data-train-progress-origin'));}
+function timelineSignature(calling,snapshot,startName,startTime){const rows=timelineSourceRows(calling).map(row=>`${rowPlace(row)}|${text(row.querySelector('small')&&row.querySelector('small').textContent)}`).join('||'),event=snapshot&&snapshot.lastEvent,ageBucket=snapshot?Math.floor((ageSeconds(snapshot)||0)/15):0;return [rows,normalisePlace(startName),startTime,snapshot&&snapshot.status,snapshot&&snapshot.stale?'stale':'live',snapshot&&snapshot.updatedAt,event&&event.eventType,locationLabel(event&&event.location),locationLabel(event&&event.nextLocation),event&&event.actualTimestamp,ageBucket].join('|');}
+function setProgressClass(row,value){row.classList.remove('progress-complete','progress-current','progress-future');if(value)row.classList.add(value);}
+function makeProgressOrigin(name,time){const row=document.createElement('div');row.className='train-call progress-origin';row.setAttribute('data-train-progress-origin','');row.innerHTML=`<i></i><span><b>${esc(name)}</b><small>${time?`Scheduled ${esc(time)}`:'Journey start'}</small></span>`;return row;}
+function makeProgressMarker(snapshot,event){const tone=snapshot&&snapshot.stale?'stale':'live',where=locationLabel(event&&event.location),next=event&&event.nextLocation&&locationLabel(event.nextLocation),arrival=event&&event.eventType==='ARRIVAL',between=event&&event.eventType==='DEPARTURE'&&next,title=arrival?`At ${where}`:between?`Between ${where} and ${next}`:`Last confirmed at ${where}`,meta=[timelineEventMeta(snapshot,event),between?'Estimated between Network Rail reports · not GPS':''].filter(Boolean).join(' · '),row=document.createElement('div');row.className=`train-call train-progress-marker progress-current movement-${tone}`;row.setAttribute('data-train-progress-marker','');row.innerHTML=`<i class="train-progress-vehicle">${TRAIN_PROGRESS_ICON}</i><span><b>${esc(title)}</b><small>${esc(meta)}</small></span>`;return row;}
+function decorateCallingTimeline(calling,service,snapshot,{startName='',startTime=''}={}){
+  if(!calling)return false;
+  const sourceRows=timelineSourceRows(calling);if(!sourceRows.length&&!startName)return false;
+  const signature=timelineSignature(calling,snapshot,startName,startTime);if(calling.dataset.trainProgressSignature===signature)return true;
+  calling.dataset.trainProgressSignature=signature;calling.classList.add('train-live-progress');
+  calling.querySelectorAll('[data-train-progress-marker],[data-train-progress-origin]').forEach(node=>node.remove());
+  sourceRows.forEach(row=>{setProgressClass(row,row.classList.contains('passed')?'progress-complete':'progress-future');row.querySelectorAll('.train-progress-now').forEach(node=>node.remove());});
+  let title=calling.querySelector('.train-detail-title');if(!title){title=document.createElement('div');title.className='train-detail-title';calling.prepend(title);}title.textContent=snapshot?'Live journey progress':'Journey progress';
+  const badge=document.createElement('span');badge.className=`train-progress-badge ${snapshot&&snapshot.stale?'is-stale':snapshot?'is-live':'is-idle'}`;badge.setAttribute('data-train-progress-badge','');badge.textContent=snapshot?(snapshot.stale?'NR last confirmed':'NR live'):'Live position unavailable';title.appendChild(badge);
+  let origin=null;if(startName&&(!sourceRows[0]||normalisePlace(startName)!==rowPlace(sourceRows[0]))){origin=makeProgressOrigin(startName,startTime);title.insertAdjacentElement('afterend',origin);}
+  const rows=[...(origin?[origin]:[]),...sourceRows],event=snapshot&&snapshot.lastEvent;
+  if(!snapshot||!event){if(origin)setProgressClass(origin,'progress-future');return true;}
+  const eventIndex=rows.findIndex(row=>rowMatchesLocation(row,event.location)),nextIndex=rows.findIndex(row=>rowMatchesLocation(row,event.nextLocation));
+  if(eventIndex>=0){
+    rows.forEach((row,index)=>setProgressClass(row,index<eventIndex?'progress-complete':index>eventIndex?'progress-future':''));
+    if(event.eventType==='ARRIVAL'&&!event.terminated&&snapshot.status!=='terminated'){
+      setProgressClass(rows[eventIndex],'progress-current');const now=document.createElement('em');now.className='train-progress-now';now.textContent=`${snapshot.stale?'Last confirmed here':'Train here'}${timelineEventMeta(snapshot,event)?` · ${timelineEventMeta(snapshot,event)}`:''}`;rows[eventIndex].querySelector('span')?.appendChild(now);return true;
+    }
+    setProgressClass(rows[eventIndex],'progress-complete');
+  }
+  const marker=makeProgressMarker(snapshot,event);
+  if(eventIndex>=0)rows[eventIndex].insertAdjacentElement('afterend',marker);
+  else{
+    const completed=rows.filter(row=>row.classList.contains('progress-complete'));
+    if(completed.length)completed[completed.length-1].insertAdjacentElement('afterend',marker);
+    else if(nextIndex>=0&&rows[nextIndex])calling.insertBefore(marker,rows[0]||null);
+    else calling.insertBefore(marker,rows[0]||null);
+  }
+  return true;
+}
+function flattenTimelinePoints(service){
+  const leg=firstLeg(service),points=[];
+  const add=value=>{for(const group of Array.isArray(value)?value:[]){const rows=Array.isArray(group&&group.callingPoint)?group.callingPoint:Array.isArray(group&&group.callingPoints)?group.callingPoints:[group];for(const point of rows){if(!point)continue;const name=text(point.locationName||point.name||point.stationName||point.crs),when=text(point.et||point.eta||point.etd||point.st||point.sta||point.std);if(name)points.push({name,when,cancelled:!!point.isCancelled});}}};
+  add(leg&&leg.subsequentCallingPoints);add(leg&&leg.callingPoints);
+  const end=serviceEndName(leg),endTime=serviceEndTime(leg);if(end&&!points.some(point=>normalisePlace(point.name)===normalisePlace(end)))points.push({name:end,when:endTime,cancelled:false});
+  const seen=new Set();return points.filter(point=>{const key=normalisePlace(point.name);if(!key||seen.has(key))return false;seen.add(key);return true;}).slice(0,18);
+}
+function ensurePlannerTimeline(container,candidate,snapshot){
+  if(!container)return false;let calling=container.querySelector(':scope > [data-train-progress-planner]');if(!snapshot){if(calling)calling.remove();return false;}
+  const leg=firstLeg(candidate),points=flattenTimelinePoints(leg);if(!leg||!points.length)return false;
+  if(!calling){calling=document.createElement('div');calling.className='train-calling train-progress-generated';calling.setAttribute('data-train-progress-planner','');container.prepend(calling);}
+  const sourceSignature=points.map(point=>`${normalisePlace(point.name)}|${point.when}|${point.cancelled}`).join('||');
+  if(calling.dataset.trainProgressSource!==sourceSignature){calling.dataset.trainProgressSource=sourceSignature;calling.dataset.trainProgressSignature='';calling.innerHTML=`<div class="train-detail-title">Journey progress</div>${points.map(point=>`<div class="train-call ahead${point.cancelled?' cancelled':''}"><i></i><span><b>${esc(point.name)}</b><small>${esc(point.when)}${point.cancelled?' · cancelled':''}</small></span></div>`).join('')}`;}
+  const start=text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||window.__KERBSIDE_JOURNEY_PLANNER__?.planState?.from?.name||snapshot&&snapshot.activation&&snapshot.activation.origin&&snapshot.activation.origin.name);
+  return decorateCallingTimeline(calling,leg,snapshot,{startName:start,startTime:serviceStartTime(leg)});
+}
 function ensureInline(article,info){
   const meta=article&&article.querySelector('.train-route small');if(!meta)return;
   let node=meta.querySelector('.train-movement-inline');if(!info){if(node)node.remove();return;}
@@ -176,8 +238,9 @@ function decorateBoard(api,boardId,services,date){
   const board=document.getElementById(boardId);if(!api||!board||!isToday(date))return;
   services.forEach((service,index)=>{
     const key=typeof api.serviceKey==='function'?api.serviceKey(service,index):'';if(!key)return;
-    const article=articleFor(board,key),snapshot=attachMovement(service,date),info=progress(snapshot);if(!article)return;
-    ensureInline(article,info);ensureCard(article.querySelector('.train-service-detail'),snapshot);
+    const article=articleFor(board,key),snapshot=service&&service.journeyType==='connection'?primaryMovement(service,date):attachMovement(service,date),info=progress(snapshot);if(!article)return;
+    const detail=article.querySelector('.train-service-detail'),leg=firstLeg(service),timeline=decorateCallingTimeline(detail&&detail.querySelector('.train-calling'),leg,snapshot,{startName:serviceStartName(service,api,boardId,snapshot),startTime:serviceStartTime(leg)});
+    ensureInline(article,info);ensureCard(detail,timeline?null:snapshot);
   });
 }
 function decoratePlanner(){
@@ -186,9 +249,9 @@ function decoratePlanner(){
   for(const article of list.querySelectorAll('.plan-journey-result')){
     const rank=Number(article.getAttribute('data-plan-rank'))||0,candidate=rank?rows[rank-1]:null;if(!candidate)continue;
     const snapshot=primaryMovement(candidate,date),info=progress(snapshot);let inline=article.querySelector(':scope > .plan-movement-inline');
-    if(!info){if(inline)inline.remove();continue;}
+    if(!info){if(inline)inline.remove();ensurePlannerTimeline(article.querySelector('.plan-details-body'),candidate,null);continue;}
     if(!inline){inline=document.createElement('div');inline.className='plan-movement-inline';const route=article.querySelector('.plan-result-route');(route||article.firstElementChild)?.insertAdjacentElement('afterend',inline);}
-    inline.className=`plan-movement-inline movement-${info.tone}`;setText(inline,info.short);ensureCard(article.querySelector('.plan-details-body'),snapshot,{compact:true});
+    inline.className=`plan-movement-inline movement-${info.tone}`;setText(inline,info.short);const body=article.querySelector('.plan-details-body'),timeline=ensurePlannerTimeline(body,candidate,snapshot);ensureCard(body,timeline?null:snapshot,{compact:true});
   }
 }
 function savedSelectorMovement(saved,date){const selectors=saved?.journeyType==='connection'?[saved.first,saved.onward]:[saved?.service];for(const selector of selectors){const value=movementFor(selector,date);if(value)return value;}return null;}
@@ -218,7 +281,10 @@ function installStyles(){if(document.getElementById(STYLE_ID))return;const style
 .train-movement-card{display:grid;gap:5px;margin:0 0 10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .28);border-radius:10px;background:rgb(var(--live-rgb) / .06)}
 .train-movement-card>div{display:grid;gap:2px}.train-movement-card span{color:var(--live);font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-movement-card strong{font-size:11px}.train-movement-card p,.train-movement-card small{margin:0;color:var(--text-dim);font-size:9.5px;line-height:1.45}.train-movement-card.movement-stale{border-color:var(--rule);background:var(--ink-3)}.train-movement-card.movement-stale span{color:var(--text-dim)}.train-movement-card.movement-warn{border-color:rgb(var(--warn-rgb) / .3);background:rgb(var(--warn-rgb) / .06)}.train-movement-card.movement-warn span{color:var(--warn)}
 .plan-movement-inline,.saved-movement-inline{padding:6px 8px;border:1px solid rgb(var(--live-rgb) / .2);border-radius:7px;background:rgb(var(--live-rgb) / .05);color:var(--live);font-size:9px;font-weight:800}.plan-movement-inline{grid-column:1/-1}.saved-movement-inline{margin-top:-3px}.plan-movement-inline.movement-stale,.saved-movement-inline.movement-stale{border-color:var(--rule);background:var(--ink-3)}.plan-movement-inline.movement-warn,.saved-movement-inline.movement-warn{border-color:rgb(var(--warn-rgb) / .25);background:rgb(var(--warn-rgb) / .05)}
-@media(max-width:820px){.train-movement-card{padding:9px;margin-bottom:8px}.train-movement-inline{font-size:8.5px}}
+.train-calling.train-live-progress{padding-bottom:6px}.train-live-progress .train-detail-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.train-progress-badge{flex:0 0 auto;padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-mute);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase}.train-progress-badge.is-live{border-color:rgb(var(--live-rgb) / .28);background:rgb(var(--live-rgb) / .07);color:var(--live)}.train-progress-badge.is-stale{background:var(--ink-3);color:var(--text-dim)}
+.train-live-progress .train-call{min-height:42px}.train-live-progress .train-call.progress-complete>i{background:var(--live);opacity:.78}.train-live-progress .train-call.progress-complete:before{background:rgb(var(--live-rgb) / .42)}.train-live-progress .train-call.progress-future>i{box-sizing:border-box;border:2px solid var(--text-mute);background:var(--ink-2)}.train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle){width:11px;height:11px;margin-top:2px;margin-left:-2px;background:var(--live);box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .12)}
+.train-progress-marker{min-height:54px!important;align-items:flex-start}.train-progress-marker:before{top:25px!important}.train-progress-marker>i.train-progress-vehicle{display:grid;place-items:center;flex:0 0 auto;width:24px;height:24px;margin:-2px 0 0 -6px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .13);opacity:1}.train-progress-marker>i.train-progress-vehicle svg{width:14px;height:14px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.train-progress-marker.movement-stale>i.train-progress-vehicle{background:var(--text-dim);box-shadow:0 0 0 3px var(--ink-2)}.train-progress-marker b{color:var(--live)!important;font-weight:800!important}.train-progress-marker.movement-stale b{color:var(--text-dim)!important}.train-progress-marker small{max-width:48rem;line-height:1.45}.train-progress-now{display:block;margin-top:3px;color:var(--live);font-size:9px;font-style:normal;font-weight:700;line-height:1.35}.train-progress-generated{margin:2px 0 10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .22);border-radius:10px;background:rgb(var(--live-rgb) / .035)}
+@media(max-width:820px){.train-movement-card{padding:9px;margin-bottom:8px}.train-movement-inline{font-size:8.5px}.train-progress-generated{padding:9px}.train-progress-marker small{font-size:9px}}
 `;document.head.appendChild(style);}
 function scheduleRefresh(force=false){setTimeout(()=>refresh({force}).catch(()=>{}),force?0:120);}
 function install(){
@@ -237,6 +303,6 @@ function install(){
 }
 function stop(){if(state.timer)clearInterval(state.timer);state.timer=null;if(state.observer)state.observer.disconnect();state.observer=null;state.installed=false;}
 
-window.__KERBSIDE_TRAIN_MOVEMENT__={version:VERSION,state,install,stop,refresh,decorate,refsFor,movementFor,attachMovement,attachJourney,progress,API_BASE};
+window.__KERBSIDE_TRAIN_MOVEMENT__={version:VERSION,state,install,stop,refresh,decorate,refsFor,movementFor,attachMovement,attachJourney,progress,decorateCallingTimeline,ensurePlannerTimeline,API_BASE};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
