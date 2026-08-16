@@ -1,0 +1,49 @@
+name: Sync Kerbside 0.9.29 version markers
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/kerbside-0.9.29-train-ui-recovery
+    paths:
+      - VERSION
+      - bus.html
+      - kerbside-status.js
+      - kerbside-journey-planner-ui.js
+      - kerbside-backend/package.json
+      - kerbside-backend/src/worker.js
+      - kerbside-backend/test/worker.test.js
+      - kerbside-backend/tests/browser-regression.mjs
+      - .github/workflows/kerbside-0.9.29-sync.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-0.9.29-version-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.29-train-ui-recovery
+          fetch-depth: 0
+      - name: Propagate VERSION
+        run: python3 .github/scripts/sync-version.py
+      - name: Commit synchronized markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'Version markers already synchronized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION bus.html kerbside-status.js kerbside-journey-planner-ui.js kerbside-backend/package.json kerbside-backend/src/worker.js kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs
+          git commit -m 'Sync Kerbside 0.9.29 version markers'
+          git push origin HEAD:agent/kerbside-0.9.29-train-ui-recovery
