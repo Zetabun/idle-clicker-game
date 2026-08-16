@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import subprocess
 
 VERSION='0.9.25'
 
-def replace_once(path, old, new):
+def replace_once(path, old, new, label):
     target=Path(path)
     text=target.read_text(encoding='utf-8')
     count=text.count(old)
     if count != 1:
-        raise SystemExit(f'{path}: expected exactly one anchor, found {count}')
+        raise SystemExit(f'{path}: {label}: expected exactly one anchor, found {count}')
     target.write_text(text.replace(old,new,1),encoding='utf-8')
 
-# Expose the existing station-selection path without changing normal callers.
+def sub_once(path, pattern, replacement, label, flags=0):
+    target=Path(path)
+    text=target.read_text(encoding='utf-8')
+    next_text,count=re.subn(pattern,replacement,text,count=1,flags=flags)
+    if count != 1:
+        raise SystemExit(f'{path}: {label}: expected exactly one match, found {count}')
+    target.write_text(next_text,encoding='utf-8')
+
+# Let Saved Journeys configure the existing train board without triggering an
+# unnecessary live-board request. Existing callers retain load=True.
 replace_once('kerbside-trains.js',
 """function selectStation(station){
   if(!station || !station.crs) return;
@@ -38,7 +48,7 @@ replace_once('kerbside-trains.js',
   if(load) loadBoard(state.station, {silent:false});
   return true;
 }
-""")
+""",'selectStation option')
 replace_once('kerbside-trains.js',
 """  destinationText,
   routeContext,
@@ -50,18 +60,17 @@ replace_once('kerbside-trains.js',
   selectStation,
   state
 };
-""")
+""",'export selectStation')
 
-# Saved Journeys v2: add a guarded same-day bridge into the existing Active Journey.
+# Saved Journeys v2: bridge only strong same-day resolutions into the existing
+# Active Journey path. Closest/alternative/cancelled saves remain review-only.
 replace_once('kerbside-journey-planner-core.js',
-"""const state={installed:false,active:false,saved:[],meta:{entries:{},coverageKey:'',updatedAt:''},live:new Map(),hidden:new Map(),refreshing:new Set(),refreshAllPromise:null,timer:null,coverageTimer:null,lastRefreshAt:0};
-""",
-"""const state={installed:false,active:false,saved:[],meta:{entries:{},coverageKey:'',updatedAt:''},live:new Map(),hidden:new Map(),refreshing:new Set(),starting:new Set(),actionMessages:new Map(),refreshAllPromise:null,timer:null,coverageTimer:null,lastRefreshAt:0};
-""")
+"const state={installed:false,active:false,saved:[],meta:{entries:{},coverageKey:'',updatedAt:''},live:new Map(),hidden:new Map(),refreshing:new Set(),refreshAllPromise:null,timer:null,coverageTimer:null,lastRefreshAt:0};",
+"const state={installed:false,active:false,saved:[],meta:{entries:{},coverageKey:'',updatedAt:''},live:new Map(),hidden:new Map(),refreshing:new Set(),starting:new Set(),actionMessages:new Map(),refreshAllPromise:null,timer:null,coverageTimer:null,lastRefreshAt:0};",
+'saved state')
 
 replace_once('kerbside-journey-planner-core.js',
-"""function shouldRefresh(saved,meta,force){if(force)return true;const stamp=Date.parse(meta&&meta.lastChecked||'');return !Number.isFinite(stamp)||Date.now()-stamp>=refreshAgeLimit(saved);}
-""",
+"function shouldRefresh(saved,meta,force){if(force)return true;const stamp=Date.parse(meta&&meta.lastChecked||'');return !Number.isFinite(stamp)||Date.now()-stamp>=refreshAgeLimit(saved);}",
 r"""function shouldRefresh(saved,meta,force){if(force)return true;const stamp=Date.parse(meta&&meta.lastChecked||'');return !Number.isFinite(stamp)||Date.now()-stamp>=refreshAgeLimit(saved);}
 function activeServiceKey(active){if(!active)return'';if(active.journeyType==='connection')return `connection:${selectorKey(active.first)}:${String(active.change&&active.change.crs||active.change||'').toUpperCase()}:${selectorKey(active.onward)}`;return `direct:${selectorKey(active.service)}`;}
 function activeMatchesSaved(saved){const active=window.__KERBSIDE_ACTIVE_JOURNEY__&&window.__KERBSIDE_ACTIVE_JOURNEY__.state&&window.__KERBSIDE_ACTIVE_JOURNEY__.state.active;if(!active||!saved)return false;return String(active.date||'')===String(saved.date||'')&&String(active.from&&active.from.crs||'').toUpperCase()===String(saved.from&&saved.from.crs||'').toUpperCase()&&String(active.to&&active.to.crs||'').toUpperCase()===String(saved.to&&saved.to.crs||'').toUpperCase()&&activeServiceKey(active)===savedServiceKey(saved);}
@@ -90,61 +99,43 @@ async function startActiveSavedJourney(id){
   }catch(error){state.actionMessages.set(saved.id,error&&error.message?error.message:'Active Journey could not be started.');renderSavedView();return false;}
   finally{state.starting.delete(saved&&saved.id||String(id||''));if(state.active)renderSavedView();}
 }
-""")
+""",'saved-active functions')
 
 replace_once('kerbside-journey-planner-core.js',
-"""  finally{state.refreshing.delete(saved.id);}
-}
-""",
-"""  finally{state.refreshing.delete(saved.id);renderSavedView();}
-}
-""")
+"  finally{state.refreshing.delete(saved.id);}\n}",
+"  finally{state.refreshing.delete(saved.id);renderSavedView();}\n}",
+'refresh finally')
+
+card_replacement=r'''function cardMarkup(saved){const meta=ensureMeta(saved),resolved=meta.lastResolved||baselineFromSaved(saved,meta.source),live=state.live.get(saved.id),changes=Array.isArray(meta.changes)?meta.changes:[],busy=state.refreshing.has(saved.id),starting=state.starting.has(saved.id),sameActive=activeMatchesSaved(saved),startable=sameActive||canStartActiveSavedJourney(saved,meta,live),status=meta.status||'planned',times=`${resolved.departure||saved.scheduledDeparture||'—'} → ${resolved.arrival||saved.scheduledArrival||'—'}`,source=sourceLabel(resolved.source||meta.source),changeMarkup=changes.length?`<ul class="saved-v2-changes">${changes.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'<p class="saved-v2-nochange">No timetable changes detected since this journey was saved.</p>',liveMarkup=liveText(live)?`<div class="saved-v2-live">${esc(liveText(live))}</div>`:'',actionMessage=state.actionMessages.get(saved.id)||'',error=meta.lastError||actionMessage?`<div class="saved-v2-error">${esc(actionMessage||meta.lastError)}</div>`:'',activeAction=startable?`<button type="button" class="saved-v2-active" data-saved-v2-active="${esc(saved.id)}"${busy||starting?' disabled':''}>${sameActive?'Open active journey':starting?'Starting…':'Start active journey'}</button>`:'';return `<article class="saved-v2-card" data-saved-v2-id="${esc(saved.id)}"><header><div><span class="saved-v2-date">${esc(dateLabel(saved.date))}</span><h3>${esc(saved.from.name)} → ${esc(saved.to.name)}</h3></div>${statusMarkup(status)}</header><div class="saved-v2-times"><strong>${esc(times)}</strong><span>${esc(source)}</span></div>${liveMarkup}<div class="saved-v2-intent"><span>Saved plan</span><strong>${esc(intentLabel(saved))}</strong></div><div class="saved-v2-changes-wrap"><span>Since you saved it</span>${changeMarkup}</div>${error}<footer><span>${esc(relativeCheck(meta.lastChecked))}${busy?' · Refreshing…':''}</span><div>${activeAction}<button type="button" data-saved-v2-open="${esc(saved.id)}">Open in planner</button><button type="button" data-saved-v2-refresh="${esc(saved.id)}"${busy?' disabled':''}>Refresh now</button><button type="button" class="saved-v2-remove" data-saved-v2-remove="${esc(saved.id)}">Remove</button></div></footer></article>`;}
+function renderSavedView'''
+sub_once('kerbside-journey-planner-core.js',r'function cardMarkup\(saved\)\{.*?\nfunction renderSavedView',lambda match:card_replacement,'saved card',re.S)
 
 replace_once('kerbside-journey-planner-core.js',
-"""function cardMarkup(saved){const meta=ensureMeta(saved),resolved=meta.lastResolved||baselineFromSaved(saved,meta.source),live=state.live.get(saved.id),changes=Array.isArray(meta.changes)?meta.changes:[],busy=state.refreshing.has(saved.id),status=meta.status||'planned',times=`${resolved.departure||saved.scheduledDeparture||'—'} → ${resolved.arrival||saved.scheduledArrival||'—'}`,source=sourceLabel(resolved.source||meta.source),changeMarkup=changes.length?`<ul class=\"saved-v2-changes\">${changes.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'<p class=\"saved-v2-nochange\">No timetable changes detected since this journey was saved.</p>',liveMarkup=liveText(live)?`<div class=\"saved-v2-live\">${esc(liveText(live))}</div>`:'',error=meta.lastError?`<div class=\"saved-v2-error\">${esc(meta.lastError)}</div>`:'';return `<article class=\"saved-v2-card\" data-saved-v2-id=\"${esc(saved.id)}\"><header><div><span class=\"saved-v2-date\">${esc(dateLabel(saved.date))}</span><h3>${esc(saved.from.name)} → ${esc(saved.to.name)}</h3></div>${statusMarkup(status)}</header><div class=\"saved-v2-times\"><strong>${esc(times)}</strong><span>${esc(source)}</span></div>${liveMarkup}<div class=\"saved-v2-intent\"><span>Saved plan</span><strong>${esc(intentLabel(saved))}</strong></div><div class=\"saved-v2-changes-wrap\"><span>Since you saved it</span>${changeMarkup}</div>${error}<footer><span>${esc(relativeCheck(meta.lastChecked))}${busy?' · Refreshing…':''}</span><div><button type=\"button\" data-saved-v2-open=\"${esc(saved.id)}\">Open in planner</button><button type=\"button\" data-saved-v2-refresh=\"${esc(saved.id)}\"${busy?' disabled':''}>Refresh now</button><button type=\"button\" class=\"saved-v2-remove\" data-saved-v2-remove=\"${esc(saved.id)}\">Remove</button></div></footer></article>`;}
-""",
-"""function cardMarkup(saved){const meta=ensureMeta(saved),resolved=meta.lastResolved||baselineFromSaved(saved,meta.source),live=state.live.get(saved.id),changes=Array.isArray(meta.changes)?meta.changes:[],busy=state.refreshing.has(saved.id),starting=state.starting.has(saved.id),sameActive=activeMatchesSaved(saved),startable=sameActive||canStartActiveSavedJourney(saved,meta,live),status=meta.status||'planned',times=`${resolved.departure||saved.scheduledDeparture||'—'} → ${resolved.arrival||saved.scheduledArrival||'—'}`,source=sourceLabel(resolved.source||meta.source),changeMarkup=changes.length?`<ul class=\"saved-v2-changes\">${changes.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'<p class=\"saved-v2-nochange\">No timetable changes detected since this journey was saved.</p>',liveMarkup=liveText(live)?`<div class=\"saved-v2-live\">${esc(liveText(live))}</div>`:'',actionMessage=state.actionMessages.get(saved.id)||'',error=meta.lastError||actionMessage?`<div class=\"saved-v2-error\">${esc(actionMessage||meta.lastError)}</div>`:'',activeAction=startable?`<button type=\"button\" class=\"saved-v2-active\" data-saved-v2-active=\"${esc(saved.id)}\"${busy||starting?' disabled':''}>${sameActive?'Open active journey':starting?'Starting…':'Start active journey'}</button>`:'';return `<article class=\"saved-v2-card\" data-saved-v2-id=\"${esc(saved.id)}\"><header><div><span class=\"saved-v2-date\">${esc(dateLabel(saved.date))}</span><h3>${esc(saved.from.name)} → ${esc(saved.to.name)}</h3></div>${statusMarkup(status)}</header><div class=\"saved-v2-times\"><strong>${esc(times)}</strong><span>${esc(source)}</span></div>${liveMarkup}<div class=\"saved-v2-intent\"><span>Saved plan</span><strong>${esc(intentLabel(saved))}</strong></div><div class=\"saved-v2-changes-wrap\"><span>Since you saved it</span>${changeMarkup}</div>${error}<footer><span>${esc(relativeCheck(meta.lastChecked))}${busy?' · Refreshing…':''}</span><div>${activeAction}<button type=\"button\" data-saved-v2-open=\"${esc(saved.id)}\">Open in planner</button><button type=\"button\" data-saved-v2-refresh=\"${esc(saved.id)}\"${busy?' disabled':''}>Refresh now</button><button type=\"button\" class=\"saved-v2-remove\" data-saved-v2-remove=\"${esc(saved.id)}\">Remove</button></div></footer></article>`;}
-""")
+".saved-v2-card button[data-saved-v2-open]{color:var(--led)}.saved-v2-card .saved-v2-remove{color:var(--text-dim)}",
+".saved-v2-card button[data-saved-v2-open]{color:var(--led)}.saved-v2-card .saved-v2-active{border-color:rgb(var(--live-rgb) / .38);background:rgb(var(--live-rgb) / .07);color:var(--live)}.saved-v2-card button:disabled{opacity:.58;cursor:wait}.saved-v2-card .saved-v2-remove{color:var(--text-dim)}",
+'saved active CSS')
+
+sub_once('kerbside-journey-planner-core.js',
+r"  \$\('savedJourneyList'\)\.addEventListener\('click',async event=>\{.*?\}\);\n  document\.addEventListener\('click'",
+"""  $('savedJourneyList').addEventListener('click',async event=>{const active=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-active]'),open=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-open]'),refresh=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-refresh]'),remove=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-remove]');if(active){await startActiveSavedJourney(active.getAttribute('data-saved-v2-active'));}else if(open){const id=open.getAttribute('data-saved-v2-open');exitSavedView();await api.planOpenSavedJourney(id);syncSaved();}else if(refresh){state.actionMessages.delete(refresh.getAttribute('data-saved-v2-refresh'));await refreshSavedJourney(refresh.getAttribute('data-saved-v2-refresh'),{force:true,reason:'manual'});}else if(remove){const id=remove.getAttribute('data-saved-v2-remove');api.planRemoveSavedJourney(id);delete state.meta.entries[id];state.live.delete(id);state.actionMessages.delete(id);writeMeta();syncSaved();}});\n  document.addEventListener('click'""",
+'saved click handler',re.S)
 
 replace_once('kerbside-journey-planner-core.js',
-""".saved-v2-card button{min-height:34px;padding:7px 9px;border:1px solid var(--rule);border-radius:8px;background:var(--ink);color:var(--text);font-size:9.5px;font-weight:800}.saved-v2-card button[data-saved-v2-open]{color:var(--led)}.saved-v2-card .saved-v2-remove{color:var(--text-dim)}.saved-v2-empty{display:grid;gap:4px;padding:28px 18px;text-align:center;color:var(--text-dim)}
-""",
-""".saved-v2-card button{min-height:34px;padding:7px 9px;border:1px solid var(--rule);border-radius:8px;background:var(--ink);color:var(--text);font-size:9.5px;font-weight:800}.saved-v2-card button[data-saved-v2-open]{color:var(--led)}.saved-v2-card .saved-v2-active{border-color:rgb(var(--live-rgb) / .38);background:rgb(var(--live-rgb) / .07);color:var(--live)}.saved-v2-card button:disabled{opacity:.58;cursor:wait}.saved-v2-card .saved-v2-remove{color:var(--text-dim)}.saved-v2-empty{display:grid;gap:4px;padding:28px 18px;text-align:center;color:var(--text-dim)}
-""")
+"window.__KERBSIDE_SAVED_JOURNEYS_V2__={state,install,enterSavedView,exitSavedView,syncSaved,refreshSavedJourney,refreshAll,checkCoverageSnapshot,changesSinceSaved,statusFor,summaryFromCandidate,chooseAlternative};",
+"window.__KERBSIDE_SAVED_JOURNEYS_V2__={state,install,enterSavedView,exitSavedView,syncSaved,refreshSavedJourney,refreshAll,checkCoverageSnapshot,changesSinceSaved,statusFor,summaryFromCandidate,chooseAlternative,canStartActiveSavedJourney,activeMatchesSaved,startActiveSavedJourney};",
+'export saved-active API')
 
-replace_once('kerbside-journey-planner-core.js',
-"""  $('savedJourneyList').addEventListener('click',async event=>{const open=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-open]'),refresh=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-refresh]'),remove=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-remove]');if(open){const id=open.getAttribute('data-saved-v2-open');exitSavedView();await api.planOpenSavedJourney(id);syncSaved();}else if(refresh){await refreshSavedJourney(refresh.getAttribute('data-saved-v2-refresh'),{force:true,reason:'manual'});}else if(remove){const id=remove.getAttribute('data-saved-v2-remove');api.planRemoveSavedJourney(id);delete state.meta.entries[id];state.live.delete(id);writeMeta();syncSaved();}});
-""",
-"""  $('savedJourneyList').addEventListener('click',async event=>{const active=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-active]'),open=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-open]'),refresh=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-refresh]'),remove=event.target&&event.target.closest&&event.target.closest('[data-saved-v2-remove]');if(active){await startActiveSavedJourney(active.getAttribute('data-saved-v2-active'));}else if(open){const id=open.getAttribute('data-saved-v2-open');exitSavedView();await api.planOpenSavedJourney(id);syncSaved();}else if(refresh){state.actionMessages.delete(refresh.getAttribute('data-saved-v2-refresh'));await refreshSavedJourney(refresh.getAttribute('data-saved-v2-refresh'),{force:true,reason:'manual'});}else if(remove){const id=remove.getAttribute('data-saved-v2-remove');api.planRemoveSavedJourney(id);delete state.meta.entries[id];state.live.delete(id);state.actionMessages.delete(id);writeMeta();syncSaved();}});
-""")
-
-replace_once('kerbside-journey-planner-core.js',
-"""window.__KERBSIDE_SAVED_JOURNEYS_V2__={state,install,enterSavedView,exitSavedView,syncSaved,refreshSavedJourney,refreshAll,checkCoverageSnapshot,changesSinceSaved,statusFor,summaryFromCandidate,chooseAlternative};
-""",
-"""window.__KERBSIDE_SAVED_JOURNEYS_V2__={state,install,enterSavedView,exitSavedView,syncSaved,refreshSavedJourney,refreshAll,checkCoverageSnapshot,changesSinceSaved,statusFor,summaryFromCandidate,chooseAlternative,canStartActiveSavedJourney,activeMatchesSaved,startActiveSavedJourney};
-""")
-
-# Extend the existing Active Journey browser regression to cover Saved -> Active.
+# Extend the browser regression with the user-visible Saved -> Active path.
 replace_once('kerbside-backend/tests/train-active-journey-regression.mjs',
-"""  await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.install&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load),null,{timeout:10000});
-""",
-"""  await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.install&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load&&window.__KERBSIDE_SAVED_JOURNEYS_V2__?.startActiveSavedJourney&&window.__KERBSIDE_TRAINS__?.selectStation),null,{timeout:10000});
-""")
+"await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.install&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load),null,{timeout:10000});",
+"await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.install&&window.__KERBSIDE_TRAIN_TIMETABLE__?.load&&window.__KERBSIDE_SAVED_JOURNEYS_V2__?.startActiveSavedJourney&&window.__KERBSIDE_TRAINS__?.selectStation),null,{timeout:10000});",
+'wait for bridge')
 replace_once('kerbside-backend/tests/train-active-journey-regression.mjs',
-"""    provider.getServices=async options=>{window.__ACTIVE_PROVIDER_CALLS__.push({...options});return rows();};
-""",
-"""    const fetchRows=async options=>{window.__ACTIVE_PROVIDER_CALLS__.push({...options});return rows();};
-    provider.getServices=fetchRows;
-    provider.getJourneyOptions=fetchRows;
-""")
+"provider.getServices=async options=>{window.__ACTIVE_PROVIDER_CALLS__.push({...options});return rows();};",
+"const fetchRows=async options=>{window.__ACTIVE_PROVIDER_CALLS__.push({...options});return rows();};\n    provider.getServices=fetchRows;\n    provider.getJourneyOptions=fetchRows;",
+'provider bridge fixture')
 
-replace_once('kerbside-backend/tests/train-active-journey-regression.mjs',
-"""  assert.equal(stopped.watchVisible,true);
-
-""",
-r"""  assert.equal(stopped.watchVisible,true);
-
-  const savedSetup=await page.evaluate(async today=>{
+saved_test=r'''  const savedSetup=await page.evaluate(async today=>{
     const id='saved-active-handoff';
     const saved={v:1,id,savedAt:new Date().toISOString(),refreshedAt:'',date:today,from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'},journeyType:'direct',service:{serviceID:'ACTIVE-1',uid:'ACTIVE-UID',trainId:'1A10',std:'09:50'},first:{serviceID:'',uid:'',trainId:'',std:''},onward:{serviceID:'',uid:'',trainId:'',std:''},change:'',scheduledDeparture:'09:50',scheduledArrival:'10:30',searchStart:'09:00',searchEnd:'11:00',preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0}};
     localStorage.setItem('kerbside.rail.plan.saved.v1',JSON.stringify([saved]));
@@ -186,7 +177,11 @@ r"""  assert.equal(stopped.watchVisible,true);
   await page.locator('#trainActiveJourney [data-active-stop]').click();
   await page.waitForFunction(()=>!window.__KERBSIDE_ACTIVE_JOURNEY__.state.active,null,{timeout:10000});
 
-""")
+'''
+replace_once('kerbside-backend/tests/train-active-journey-regression.mjs',
+"  assert.equal(stopped.watchVisible,true);\n\n",
+"  assert.equal(stopped.watchVisible,true);\n\n"+saved_test,
+'saved-active regression')
 
 Path('VERSION').write_text(VERSION+'\n',encoding='utf-8')
 subprocess.run(['python3','.github/scripts/sync-version.py'],check=True)
