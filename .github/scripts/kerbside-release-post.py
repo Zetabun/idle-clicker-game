@@ -36,4 +36,33 @@ replace_once(
     ' && node tests/train-active-journey-regression.mjs && node tests/train-forecast-v3-dual-timetable.mjs\"'
 )
 
-print('Activated train forecast/event dual-timetable regression.')
+# The journey-planner regression is deliberately offline/deterministic. It used
+# to rely on the generated football.json request finishing quickly enough. Mock
+# both OpenFootball representations now so switching to Football.TXT cannot turn
+# this test into an external-network timing test; the separate forecast test
+# below proves the real Football.TXT parsing and Bristol fixture behaviour.
+replace_once(
+    'kerbside-backend/tests/train-journey-planner-regression.mjs',
+    """  await page.route('https://query.wikidata.org/**',route=>{
+    diagnostics.events.push(route.request().url());
+    return route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify(eventResults)});
+  });
+
+  await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
+""",
+    """  await page.route('https://query.wikidata.org/**',route=>{
+    diagnostics.events.push(route.request().url());
+    return route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify(eventResults)});
+  });
+  await page.route('https://raw.githubusercontent.com/openfootball/england/**',route=>
+    route.fulfill({status:200,contentType:'text/plain',body:'= Synthetic empty OpenFootball season\\n'})
+  );
+  await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})})
+  );
+
+  await page.goto(`http://127.0.0.1:${port}/bus.html`,{waitUntil:'domcontentloaded'});
+"""
+)
+
+print('Activated train forecast/event dual-timetable regression and deterministic OpenFootball browser mocks.')
