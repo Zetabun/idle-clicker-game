@@ -219,19 +219,53 @@ try{
   constrainedCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
   assert.match(constrainedCards.join(' '),/Change Rail/,'recommended minimum must allow the valid connection again');
 
-  // Saved journeys store only a locator. Reopening must re-query the current
-  // provider and rerun Forecast v4 rather than replaying a frozen result.
+  // Saved Journeys v2 keeps the saved object as a locator/intent, moves saved
+  // trips into their own tab, refreshes them automatically, and records only a
+  // tiny resolved summary for change detection. Forecast/live evidence must
+  // never become persisted saved state.
   const quietCard=page.locator('#planJourneyResults .plan-journey-result').filter({hasText:'Quiet Rail'});
   await quietCard.locator('[data-plan-save-key]').click();
-  await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1;}catch{return false;}});
+  await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1&&Boolean(window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.installed);}catch{return false;}});
   let savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
   assert.equal(savedJourney.date,'2026-08-12');
   assert.equal(savedJourney.from.crs,'BHM');assert.equal(savedJourney.to.crs,'BRI');
   assert.equal(savedJourney.service.uid,'UID-QUIET');
   assert.equal(savedJourney.scheduledDeparture,'09:10');
+  assert.equal(savedJourney.searchStart,'09:00');assert.equal(savedJourney.searchEnd,'11:00');
+  assert.equal(savedJourney.preference,'quieter');
+  assert.deepEqual(savedJourney.constraints,{maxChanges:1,connectionBuffer:0});
   assert.doesNotMatch(JSON.stringify(savedJourney),/forecast|probabilities|reasons|lower measured demand/i,'saved journeys must not freeze Forecast v4 output');
-  assert.match(await page.locator('#planSavedPanel').textContent(),/Saved journeys 1/);
-  assert.match(await page.locator('#planSavedPanel').textContent(),/09:10 → 10:15/);
+
+  await page.click('[data-train-view="saved"]');
+  await page.waitForFunction(()=>document.querySelector('#savedJourneySurface:not([hidden])')&&document.querySelector('#savedJourneyList .saved-v2-card'),undefined,{timeout:10000});
+  assert.equal(await page.locator('#planJourneyForm').isHidden(),true,'Plan My Journey form should be hidden in Saved journeys');
+  assert.equal(await page.locator('#trainPlanner').isHidden(),true,'normal train planner should be hidden in Saved journeys');
+  let savedTabText=await page.locator('#savedJourneySurface').textContent();
+  assert.match(savedTabText,/Birmingham New Street → Bristol Temple Meads/);
+  assert.match(savedTabText,/09:10 → 10:15/);
+  assert.match(savedTabText,/09:00–11:00 · Quieter · Up to 1 change · base connection minimum/,'saved planning intent should be visible');
+  await page.waitForFunction(id=>window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.meta?.entries?.[id]?.lastResolved?.source==='network-rail',savedJourney.id,{timeout:10000});
+  const initialMeta=await page.evaluate(id=>window.__KERBSIDE_SAVED_JOURNEYS_V2__.state.meta.entries[id],savedJourney.id);
+  assert.equal(initialMeta.baseline.departure,'09:10');
+  assert.equal(initialMeta.baseline.arrival,'10:15');
+  assert.equal(initialMeta.baseline.source,'network-rail');
+  assert.doesNotMatch(JSON.stringify(initialMeta),/probabilities|reasons|liveEvidence/i,'Saved Journeys v2 metadata must not persist Forecast/live evidence');
+
+  const lifecycle=await page.evaluate(()=>{
+    const api=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const shift=days=>{const d=new Date(`${today}T12:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);};
+    return {
+      planned:api.statusFor({date:shift(7)},{source:'network-rail',departure:'09:00'},'exact',[],null),
+      liveSoon:api.statusFor({date:shift(1)},{source:'darwin',departure:'09:00'},'identity',[],null),
+      today:api.statusFor({date:today},{source:'darwin',departure:'09:00'},'exact',[],{etd:'On time'}),
+      delayed:api.statusFor({date:today},{source:'darwin',departure:'09:00'},'exact',[],{etd:'Delayed'}),
+      cancelled:api.statusFor({date:today},{source:'darwin',departure:'09:00'},'exact',[],{isCancelled:true}),
+      alternative:api.statusFor({date:shift(1)},{source:'darwin',departure:'09:20'},'alternative',[],null),
+      expired:api.statusFor({date:shift(-1)},{source:'darwin',departure:'09:00'},'exact',[],null)
+    };
+  });
+  assert.deepEqual(lifecycle,{planned:'planned',liveSoon:'live-soon',today:'today',delayed:'delayed',cancelled:'cancelled',alternative:'alternative',expired:'expired'});
 
   await page.evaluate(()=>{
     const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
@@ -248,17 +282,31 @@ try{
       return {score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
     };
   });
-  await page.locator('#planSavedJourneys [data-plan-open-saved]').click();
+  await page.locator('#savedJourneyList [data-saved-v2-refresh]').click();
+  await page.waitForFunction(id=>window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.meta?.entries?.[id]?.lastResolved?.source==='darwin',savedJourney.id,{timeout:10000});
+  savedTabText=await page.locator('#savedJourneySurface').textContent();
+  assert.match(savedTabText,/09:14 → 10:19/);
+  assert.match(savedTabText,/Darwin/);
+  assert.match(savedTabText,/Departure changed from 09:10 to 09:14/);
+  assert.match(savedTabText,/Arrival changed from 10:15 to 10:19/);
+  assert.match(savedTabText,/Now covered by Darwin/,'saved journey should explain the automatic long-range to Darwin upgrade');
+  savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
+  assert.equal(savedJourney.service.serviceID,'PLAN-QUIET-DARWIN','automatic strong UID refresh should carry the Darwin service locator forward');
+  assert.equal(savedJourney.scheduledDeparture,'09:14');
+  assert.doesNotMatch(JSON.stringify(savedJourney),/forecast|probabilities|reasons|updated demand/i);
+  const v2Meta=await page.evaluate(id=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved-meta.v2')).entries[id],savedJourney.id);
+  assert.equal(v2Meta.baseline.departure,'09:10','change baseline should remain the originally saved timetable time');
+  assert.equal(v2Meta.lastResolved.departure,'09:14');
+  assert.equal(v2Meta.lastResolved.source,'darwin');
+  assert.doesNotMatch(JSON.stringify(v2Meta),/probabilities|reasons|updated demand|platform|etd/i,'change metadata must remain a tiny scheduled summary');
+
+  await page.locator('#savedJourneyList [data-saved-v2-open]').click();
   await page.waitForFunction(()=>/09:14/.test(document.querySelector('#planJourneyResults .plan-journey-result.is-saved-focus')?.textContent||''),undefined,{timeout:10000});
   const refreshedSavedCard=await page.locator('#planJourneyResults .plan-journey-result.is-saved-focus').textContent();
   assert.match(refreshedSavedCard,/09:14 → 10:19/);
   assert.match(refreshedSavedCard,/Moderate/,'saved journey must use the newly calculated Forecast v4 result');
   assert.match(refreshedSavedCard,/Saved journey · refreshed from current data/);
   assert.match(await page.locator('#planJourneyMessage').textContent(),/latest available information/);
-  savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
-  assert.equal(savedJourney.service.serviceID,'PLAN-QUIET-DARWIN','strong UID match should refresh the stored service locator');
-  assert.equal(savedJourney.scheduledDeparture,'09:14','strong identity refresh should carry the current timetable time forward');
-  assert.doesNotMatch(JSON.stringify(savedJourney),/forecast|probabilities|reasons|updated demand/i);
 
   const fallbackMatch=await page.evaluate(()=>{
     const planner=window.__KERBSIDE_JOURNEY_PLANNER__,saved=planner.readSavedJourneys()[0];
@@ -269,9 +317,11 @@ try{
   assert.equal(fallbackMatch.near,'closest','a nearby service without stable identity must be labelled only as a closest match');
   assert.equal(fallbackMatch.far,null,'distant alternatives must not be silently substituted for a saved train');
 
-  await page.locator('#planSavedJourneys [data-plan-remove-saved]').click();
+  await page.click('[data-train-view="saved"]');
+  await page.waitForFunction(()=>document.querySelector('#savedJourneySurface:not([hidden])')&&document.querySelector('#savedJourneyList .saved-v2-card'),undefined,{timeout:10000});
+  await page.locator('#savedJourneyList [data-saved-v2-remove]').click();
   assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))),[]);
-  assert.match(await page.locator('#planSavedPanel').textContent(),/No saved journeys yet/);
+  assert.match(await page.locator('#savedJourneySurface').textContent(),/No saved journeys yet/);
 
   await page.click('[data-train-view="trains"]');
   assert.equal(await page.locator('#trainPlanner').isVisible(),true,'normal train planner should be restored after leaving Plan My Journey');
