@@ -6,6 +6,7 @@ on:
       - agent/kerbside-0.9.33-live-only-trust-bridge
     paths:
       - .github/workflows/patch-kerbside-0.9.33.yml
+      - .github/scripts/patch-kerbside-0.9.33.py
 
 permissions:
   contents: write
