@@ -143,14 +143,18 @@ try{
     provider.getJourneyOptions=async()=>{
       const rows=[
         {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail'},
+        {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,recoveryOptions:[],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail'},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail'}]},
         {serviceID:'PLAN-QUIET',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail'}
       ];
       Object.defineProperty(rows,'kerbsideSource',{value:'network-rail'});return rows;
     };
     const forecast=window.__KERBSIDE_FORECAST_V4__;
-    forecast.forecast=service=>service.serviceID==='PLAN-QUIET'
-      ?{score:.8,label:'Quiet',level:'quiet',confidence:'High',probabilities:{quiet:.75,moderate:.18,busy:.05,veryBusy:.02},reasons:['lower measured demand at this time']}
-      :{score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
+    forecast.forecast=service=>{
+      const id=String(service&&service.serviceID||'');
+      if(id==='PLAN-QUIET')return {score:.8,label:'Quiet',level:'quiet',confidence:'High',probabilities:{quiet:.75,moderate:.18,busy:.05,veryBusy:.02},reasons:['lower measured demand at this time']};
+      if(id.startsWith('PLAN-CHANGE'))return {score:2.1,label:'Moderate',level:'moderate',confidence:'High',probabilities:{quiet:.24,moderate:.56,busy:.16,veryBusy:.04},reasons:['typical measured demand at this time']};
+      return {score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
+    };
     const events=window.__KERBSIDE_EVENTS__;events.footballEventsFor=async()=>[];events.wikidataEventsForJourney=async()=>[];
     if(window.__KERBSIDE_TRAIN_TIMETABLE__)window.__KERBSIDE_TRAIN_TIMETABLE__.sync=()=>true;
   });
@@ -164,12 +168,40 @@ try{
   await page.fill('#planJourneyEnd','11:00');
   await page.selectOption('#planJourneyPreference','quieter');
   await page.click('#planJourneySearch');
-  await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===2,undefined,{timeout:10000});
+  await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===3,undefined,{timeout:10000});
   const planCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
   assert.match(planCards[0],/Quiet Rail/,'Plan My Journey ranks the quiet Forecast v4 option first');
   assert.match(planCards[0],/Best match for Quieter/);
   assert.match(await page.locator('#planJourneyMeta').textContent(),/Network Rail SCHEDULE/);
+  assert.match(await page.locator('#planJourneyMeta').textContent(),/Up to 1 change/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.plan.preference.v1')),'quieter');
+  assert.equal(await page.locator('#planJourneyMaxChanges').inputValue(),'1');
+  assert.equal(await page.locator('#planJourneyConnectionBuffer').inputValue(),'0');
+  const pureConstraints=await page.evaluate(()=>{const planner=window.__KERBSIDE_JOURNEY_PLANNER__;return {defaults:planner.normalisePlanConstraints(null),direct:planner.planCandidateMeetsConstraints({changes:0},{maxChanges:0,connectionBuffer:15}),bufferPass:planner.planCandidateMeetsConstraints({changes:1,connectionMinutes:12,minimumConnectionMinutes:7},{maxChanges:1,connectionBuffer:5}),bufferFail:planner.planCandidateMeetsConstraints({changes:1,connectionMinutes:11,minimumConnectionMinutes:7},{maxChanges:1,connectionBuffer:5})};});
+  assert.deepEqual(pureConstraints,{defaults:{maxChanges:1,connectionBuffer:0},direct:true,bufferPass:true,bufferFail:false});
+
+  await page.selectOption('#planJourneyMaxChanges','0');
+  assert.equal(await page.locator('#planJourneyConnectionBuffer').isDisabled(),true,'connection buffer should be disabled for direct-only journeys');
+  await page.click('#planJourneySearch');
+  await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===2&&/2 of 3 journey options meet your constraints/.test(document.querySelector('#planJourneyMessage')?.textContent||''),undefined,{timeout:10000});
+  let constrainedCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
+  assert.doesNotMatch(constrainedCards.join(' '),/Change Rail/,'Direct only must remove connection journeys');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.constraints.v1'))),{maxChanges:0,connectionBuffer:0});
+
+  await page.selectOption('#planJourneyMaxChanges','1');
+  assert.equal(await page.locator('#planJourneyConnectionBuffer').isDisabled(),false,'connection buffer should return when changes are allowed');
+  await page.selectOption('#planJourneyConnectionBuffer','5');
+  await page.click('#planJourneySearch');
+  await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===2&&/2 of 3 journey options meet your constraints/.test(document.querySelector('#planJourneyMessage')?.textContent||''),undefined,{timeout:10000});
+  constrainedCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
+  assert.doesNotMatch(constrainedCards.join(' '),/Change Rail/,'extra connection buffer must reject a change that only has three spare minutes');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.constraints.v1'))),{maxChanges:1,connectionBuffer:5});
+
+  await page.selectOption('#planJourneyConnectionBuffer','0');
+  await page.click('#planJourneySearch');
+  await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===3&&/Compared 3 journey options/.test(document.querySelector('#planJourneyMessage')?.textContent||''),undefined,{timeout:10000});
+  constrainedCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
+  assert.match(constrainedCards.join(' '),/Change Rail/,'recommended minimum must allow the valid connection again');
   await page.click('[data-train-view="trains"]');
   assert.equal(await page.locator('#trainPlanner').isVisible(),true,'normal train planner should be restored after leaving Plan My Journey');
 

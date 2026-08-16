@@ -715,6 +715,8 @@ function install(){
    applies the traveller's saved ranking preference.
 ------------------------------------------------------------------ */
 const PLAN_PREF_KEY='kerbside.rail.plan.preference.v1';
+const PLAN_CONSTRAINT_KEY='kerbside.rail.plan.constraints.v1';
+const PLAN_BUFFER_OPTIONS=new Set([0,5,10,15]);
 const PLAN_MAX_CANDIDATES=72;
 const PLAN_VISIBLE_RESULTS=10;
 const PLAN_EVENT_TIMEOUT_MS=6500;
@@ -725,11 +727,21 @@ const PLAN_PREFERENCES={
   'fewer-changes':{label:'Fewer changes'},
   'least-stressful':{label:'Least stressful'}
 };
-const planState={installed:false,active:false,from:null,to:null,results:[],preference:'balanced',source:'',searchSeq:0,eventSeq:0,hidden:new Map(),observer:null};
+const planState={installed:false,active:false,from:null,to:null,results:[],preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0},source:'',searchSeq:0,eventSeq:0,hidden:new Map(),observer:null};
 let planFromTimer=null,planToTimer=null,planFromAbort=null,planToAbort=null;
 
 function planPreference(){try{const value=localStorage.getItem(PLAN_PREF_KEY)||'balanced';return PLAN_PREFERENCES[value]?value:'balanced';}catch(error){return'balanced';}}
+function normalisePlanConstraints(settings){const maxChanges=settings&&Number(settings.maxChanges)===0?0:1,buffer=Number(settings&&settings.connectionBuffer);return {maxChanges,connectionBuffer:PLAN_BUFFER_OPTIONS.has(buffer)?buffer:0};}
+function planConstraints(){try{const raw=localStorage.getItem(PLAN_CONSTRAINT_KEY);return normalisePlanConstraints(raw?JSON.parse(raw):null);}catch(error){return normalisePlanConstraints(null);}}
 function savePlanPreference(value){if(!PLAN_PREFERENCES[value])return;planState.preference=value;try{localStorage.setItem(PLAN_PREF_KEY,value);}catch(error){}}
+function savePlanConstraints(settings){const value=normalisePlanConstraints(settings);planState.constraints=value;try{localStorage.setItem(PLAN_CONSTRAINT_KEY,JSON.stringify(value));}catch(error){}return value;}
+function planConstraintsFromForm(){return normalisePlanConstraints({maxChanges:$('planJourneyMaxChanges')?.value,connectionBuffer:$('planJourneyConnectionBuffer')?.value});}
+function planConstraintLabel(settings=planState.constraints){const value=normalisePlanConstraints(settings);if(value.maxChanges===0)return'Direct only';const buffer=value.connectionBuffer?`+${value.connectionBuffer} min connection buffer`:'base connection minimum';return `Up to 1 change · ${buffer}`;}
+function planCandidateMeetsConstraints(candidate,settings=planState.constraints){const value=normalisePlanConstraints(settings),changes=Math.max(0,Number(candidate&&candidate.changes)||0);if(changes>value.maxChanges)return false;if(changes===0||value.connectionBuffer<=0)return true;const minutes=Number(candidate&&candidate.connectionMinutes),minimum=Number(candidate&&candidate.minimumConnectionMinutes);return Number.isFinite(minutes)&&Number.isFinite(minimum)&&minutes>=minimum+value.connectionBuffer;}
+function planFilterCandidates(rows,settings=planState.constraints){return (Array.isArray(rows)?rows:[]).filter(row=>planCandidateMeetsConstraints(row,settings));}
+function planComparisonMessage(total,eligible,{checking=false,eventsReady=false}={}){const singular=eligible===1?'option':'options',base=eligible===total?`Compared ${eligible} journey ${singular}`:`${eligible} of ${total} journey options meet your constraints`;if(checking)return `${base}. Checking event context…`;if(eventsReady)return eligible===total?`${base} with current event context.`:`${base}. Ranking updated with current event context.`;return `${base}.`;}
+function planSyncConstraintAvailability(){const changes=$('planJourneyMaxChanges'),buffer=$('planJourneyConnectionBuffer');if(buffer)buffer.disabled=Number(changes?.value)===0;}
+function planConstraintChanged(){const settings=savePlanConstraints(planConstraintsFromForm());planSyncConstraintAvailability();if(planState.results.length)planSetMessage(`Journey constraints saved: ${planConstraintLabel(settings)}. Compare journeys to refresh.`);}
 function planStation(station){if(!station)return null;const crs=String(station.crs||station.crsCode||'').trim().toUpperCase(),name=String(station.name||station.stationName||crs).trim();return /^[A-Z0-9]{3}$/.test(crs)?{crs,name:name||crs}:null;}
 function planTimeMinutes(value){return timeMinutes(value);}
 function planClock(minute){const value=Math.max(0,Math.min(1439,Math.round(Number(minute)||0)));return `${String(Math.floor(value/60)).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`;}
@@ -845,10 +857,10 @@ function planResultMarkup(row,index,all){
 function renderPlanResults(rows,{eventsReady=false}={}){
   const list=$('planJourneyResults'),summary=$('planJourneySummary'),meta=$('planJourneyMeta');if(!list)return;
   const source=planSourceLabel();
-  if(!rows.length){list.innerHTML='<div class="train-empty"><strong>No matching journeys</strong><span>Try a wider time window or another date.</span></div>';if(summary)summary.textContent='No journeys found';if(meta)meta.textContent=`${source} · Forecast v4`;return;}
+  if(!rows.length){list.innerHTML='<div class="train-empty"><strong>No matching journeys</strong><span>Try a wider time window or relax your journey constraints.</span></div>';if(summary)summary.textContent='No journeys found';if(meta)meta.textContent=`${source} · ${planConstraintLabel()} · Forecast v4`;return;}
   const visible=rows.slice(0,PLAN_VISIBLE_RESULTS);list.innerHTML=visible.map((row,index)=>planResultMarkup(row,index,rows)).join('');
   const from=planState.from,to=planState.to,date=planDateValue();if(summary)summary.textContent=`${from?from.name:'From'} → ${to?to.name:'To'}`;
-  if(meta)meta.textContent=`${date} · ${source} · ${PLAN_PREFERENCES[planState.preference]?.label||'Balanced'} ranking · Forecast v4${eventsReady?' + event context':''}`;
+  if(meta)meta.textContent=`${date} · ${source} · ${PLAN_PREFERENCES[planState.preference]?.label||'Balanced'} ranking · ${planConstraintLabel()} · Forecast v4${eventsReady?' + event context':''}`;
 }
 function planEventSnapshot(events,date){
   const api=window.__KERBSIDE_EVENTS__;if(!api||!api.state)return()=>{};
@@ -893,12 +905,15 @@ async function searchPlanJourneys(){
     if(seq!==planState.searchSeq)return;
     planState.source=String(candidates&&candidates.kerbsideSource||window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.scheduleSource||'');
     const windowCandidates=(candidates||[]).filter(item=>Number(item.departureMinute)>=startMinute&&Number(item.departureMinute)<=endMinute);
-    const enriched=enrichPlanCandidates(windowCandidates,from,to,date,null),ranked=planRankEnriched(enriched,planState.preference);planState.results=ranked;renderPlanResults(ranked);
-    planSetMessage(ranked.length?`Compared ${windowCandidates.length} journey option${windowCandidates.length===1?'':'s'}. Checking event context…`:'');
-    const eventSeq=++planState.eventSeq,events=await loadPlanEvents(from,to,date,windowCandidates);
+    planState.constraints=planConstraintsFromForm();
+    const eligibleCandidates=planFilterCandidates(windowCandidates,planState.constraints);
+    if(!eligibleCandidates.length){planState.results=[];renderPlanResults([]);planSetMessage(`No journeys in this window meet ${planConstraintLabel()}. Relax the constraints or widen the time window.`);return;}
+    const enriched=enrichPlanCandidates(eligibleCandidates,from,to,date,null),ranked=planRankEnriched(enriched,planState.preference);planState.results=ranked;renderPlanResults(ranked);
+    planSetMessage(planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{checking:true}));
+    const eventSeq=++planState.eventSeq,events=await loadPlanEvents(from,to,date,eligibleCandidates);
     if(seq!==planState.searchSeq||eventSeq!==planState.eventSeq||!events)return;
-    const updated=planRankEnriched(enrichPlanCandidates(windowCandidates,from,to,date,events),planState.preference);planState.results=updated;renderPlanResults(updated,{eventsReady:true});
-    planSetMessage(`Compared ${windowCandidates.length} journey option${windowCandidates.length===1?'':'s'} with current event context.`);
+    const updated=planRankEnriched(enrichPlanCandidates(eligibleCandidates,from,to,date,events),planState.preference);planState.results=updated;renderPlanResults(updated,{eventsReady:true});
+    planSetMessage(planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));
   }catch(error){if(seq===planState.searchSeq)planSetMessage(error&&error.message?error.message:'Journey comparison is temporarily unavailable.',true);}
   finally{if(button){button.disabled=false;button.textContent='Compare journeys';}}
 }
@@ -933,8 +948,8 @@ function installPlanStyles(){if($('kerbsidePlanJourneyStyles'))return;const styl
 .plan-journey-form h2{margin:4px 0 0;font-size:24px}.plan-journey-form>p{margin:-5px 0 3px;color:var(--text-dim);font-size:12px;line-height:1.5}
 .plan-field{display:grid;gap:5px;position:relative}.plan-field>span{color:var(--text-dim);font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
 .plan-field input,.plan-field select{width:100%;min-width:0;padding:11px;border:1px solid var(--rule);border-radius:10px;background:var(--ink);color:var(--text);font-size:16px}
-.plan-time-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.plan-journey-form .train-suggest{top:calc(100% + 4px)}
-.plan-preference-note{margin:-5px 1px 0;color:var(--text-mute);font-size:10px;line-height:1.45}
+.plan-time-grid,.plan-constraint-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.plan-journey-form .train-suggest{top:calc(100% + 4px)}
+.plan-preference-note,.plan-constraint-note{margin:-5px 1px 0;color:var(--text-mute);font-size:10px;line-height:1.45}
 .plan-search{min-height:48px;border:1px solid var(--led);border-radius:12px;background:var(--led);color:var(--on-accent);font-weight:800}.plan-search:disabled{opacity:.6}
 .plan-message{min-height:15px;color:var(--text-dim);font-size:10.5px;line-height:1.45}.plan-message.error{color:var(--warn)}
 .plan-journey-surface{display:flex;flex-direction:column;min-height:0}.plan-results-head{padding:18px 20px 14px;border-bottom:1px solid var(--rule);background:var(--ink-2)}
@@ -946,29 +961,31 @@ function installPlanStyles(){if($('kerbsidePlanJourneyStyles'))return;const styl
 .plan-result-route strong{font-size:12px}.plan-result-route span,.plan-result-crowd span{margin-top:3px;color:var(--text-dim);font-size:10px}.plan-result-crowd{position:relative;padding-left:13px}.plan-result-crowd>i{position:absolute;left:0;top:5px;width:7px;height:7px;border-radius:50%}.plan-result-crowd strong{font-size:11px}
 .plan-result-tradeoff{grid-column:1/-1;margin:0;color:var(--text-dim);font-size:11px;line-height:1.45}.plan-result-reasons{grid-column:1/-1;display:grid;gap:3px;margin:0;padding-left:17px;color:var(--text-mute);font-size:10px;line-height:1.4}.plan-result-reasons li::marker{color:var(--led)}
 @media(max-width:820px){.train-view-tabs{margin:0 0 8px}.plan-journey-form{gap:9px}.plan-journey-form h2{display:block!important;font-size:18px}.plan-journey-form>p{font-size:11px}.plan-journey-surface{flex:0 0 auto}.plan-results-head{padding:11px 12px 9px}.plan-results-head h2{font-size:17px}.plan-results-list{overflow:visible;padding:8px 9px calc(18px + env(safe-area-inset-bottom))}.plan-journey-result{grid-template-columns:90px minmax(0,1fr);gap:7px 11px;padding:11px}.plan-result-crowd{grid-column:2}.plan-result-tradeoff,.plan-result-reasons{grid-column:1/-1}}
-@media(max-width:430px){.plan-time-grid{grid-template-columns:1fr 1fr}.plan-journey-result{grid-template-columns:82px minmax(0,1fr)}}
+@media(max-width:430px){.plan-time-grid{grid-template-columns:1fr 1fr}.plan-constraint-grid{grid-template-columns:1fr}.plan-journey-result{grid-template-columns:82px minmax(0,1fr)}}
 `;document.head.appendChild(style);}
 function installPlanJourney(){
   if(planState.installed)return true;const sidebar=document.querySelector('.train-sidebar'),content=document.querySelector('.train-content'),planner=$('trainPlanner');if(!sidebar||!content||!planner)return false;
   installPlanStyles();
   const tabs=document.createElement('div');tabs.id='trainViewTabs';tabs.className='train-view-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Train view');tabs.innerHTML='<button type="button" role="tab" data-train-view="trains" aria-selected="true" aria-pressed="true">Trains</button><button type="button" role="tab" data-train-view="plan" aria-selected="false" aria-pressed="false">Plan my journey</button>';sidebar.insertBefore(tabs,sidebar.firstChild);
-  const form=document.createElement('section');form.id='planJourneyForm';form.className='plan-journey-form';form.hidden=true;const windowValue=planDefaultWindow(),selectedDate=dateApi()?.state?.date||'';planState.preference=planPreference();form.innerHTML=`<div class="train-kicker">Journey planner</div><h2>Plan my journey</h2><p>Compare trains in a time window and rank them by what matters to you.</p>
+  const form=document.createElement('section');form.id='planJourneyForm';form.className='plan-journey-form';form.hidden=true;const windowValue=planDefaultWindow(),selectedDate=dateApi()?.state?.date||'';planState.preference=planPreference();planState.constraints=planConstraints();form.innerHTML=`<div class="train-kicker">Journey planner</div><h2>Plan my journey</h2><p>Compare trains in a time window and rank them by what matters to you.</p>
     <label class="plan-field"><span>From</span><input id="planJourneyFrom" type="text" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="planJourneyFromSuggest" placeholder="Birmingham New Street"><div id="planJourneyFromSuggest" class="train-suggest" role="listbox" hidden></div></label>
     <label class="plan-field"><span>To</span><input id="planJourneyTo" type="text" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="planJourneyToSuggest" placeholder="Bristol Temple Meads"><div id="planJourneyToSuggest" class="train-suggest" role="listbox" hidden></div></label>
     <label class="plan-field"><span>Date</span><input id="planJourneyDate" type="date" value="${esc(selectedDate)}"></label>
     <div class="plan-time-grid"><label class="plan-field"><span>From time</span><input id="planJourneyStart" type="time" step="60" value="${esc(windowValue.start)}"></label><label class="plan-field"><span>Until</span><input id="planJourneyEnd" type="time" step="60" value="${esc(windowValue.end)}"></label></div>
     <label class="plan-field"><span>Preference</span><select id="planJourneyPreference">${Object.entries(PLAN_PREFERENCES).map(([value,item])=>`<option value="${value}"${value===planState.preference?' selected':''}>${item.label}</option>`).join('')}</select></label>
-    <p class="plan-preference-note">Your preference is saved on this device. All options still use the same official timetable and Forecast v4 evidence.</p>
+    <div class="plan-constraint-grid"><label class="plan-field"><span>Changes</span><select id="planJourneyMaxChanges"><option value="1"${planState.constraints.maxChanges===1?' selected':''}>Up to 1 change</option><option value="0"${planState.constraints.maxChanges===0?' selected':''}>Direct only</option></select></label><label class="plan-field"><span>Connection buffer</span><select id="planJourneyConnectionBuffer"><option value="0"${planState.constraints.connectionBuffer===0?' selected':''}>Base minimum</option><option value="5"${planState.constraints.connectionBuffer===5?' selected':''}>+5 minutes</option><option value="10"${planState.constraints.connectionBuffer===10?' selected':''}>+10 minutes</option><option value="15"${planState.constraints.connectionBuffer===15?' selected':''}>+15 minutes</option></select></label></div>
+    <p class="plan-constraint-note">The connection buffer is added on top of the minimum already used by Kerbside. That is a licensed station rule where available, otherwise Kerbside's conservative planning buffer; the extra buffer never shortens it.</p>
+    <p class="plan-preference-note">Your preference and journey constraints are saved on this device. All options still use the same official timetable and Forecast v4 evidence.</p>
     <button id="planJourneySearch" class="plan-search" type="button">Compare journeys</button><div id="planJourneyMessage" class="plan-message" aria-live="polite"></div>`;
   sidebar.insertBefore(form,planner);
   const surface=document.createElement('section');surface.id='planJourneySurface';surface.className='plan-journey-surface';surface.hidden=true;surface.innerHTML='<header class="plan-results-head"><div class="train-kicker">Ranked options</div><h2 id="planJourneySummary">Plan a journey</h2><p id="planJourneyMeta">Choose a route and time window to compare official timetable options.</p></header><div id="planJourneyResults" class="plan-results-list"><div class="train-empty"><strong>No comparison yet</strong><span>Your ranked journey options will appear here.</span></div></div>';content.appendChild(surface);
   tabs.querySelector('[data-train-view="trains"]').addEventListener('click',()=>setPlanView(false));tabs.querySelector('[data-train-view="plan"]').addEventListener('click',()=>setPlanView(true));
-  bindPlanAutocomplete('from');bindPlanAutocomplete('to');$('planJourneySearch').addEventListener('click',searchPlanJourneys);$('planJourneyPreference').addEventListener('change',event=>{savePlanPreference(event.target.value);planRefreshRanking();});
+  bindPlanAutocomplete('from');bindPlanAutocomplete('to');$('planJourneySearch').addEventListener('click',searchPlanJourneys);$('planJourneyPreference').addEventListener('change',event=>{savePlanPreference(event.target.value);planRefreshRanking();});$('planJourneyMaxChanges').addEventListener('change',planConstraintChanged);$('planJourneyConnectionBuffer').addEventListener('change',planConstraintChanged);planSyncConstraintAvailability();
   const current=planStation(window.__KERBSIDE_TRAINS__?.state?.station),destination=planStation(window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination);if(current)selectPlanStation('from',current);if(destination)selectPlanStation('to',destination);
   planState.observer=new MutationObserver(()=>{if(planState.active)planSnapshotHidden(content,new Set([surface]));});planState.observer.observe(content,{childList:true});planState.installed=true;return true;
 }
 
 function init(){if(!install()){if(++initAttempts<INIT_RETRY_MAX)setTimeout(init,INIT_RETRY_MS);else console.warn('Kerbside journey planner could not attach.');return;}initAttempts=0;}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,syncRouteOrigin,refreshJourneyBoard,syncDepartAfterForDate,railNow,installPlanJourney,setPlanView,searchPlanJourneys,planRankEnriched,preferenceScore,planConnectionStress,get planState(){return planState;},get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
+window.__KERBSIDE_JOURNEY_PLANNER__={install,swap,findTrains,resilientRailFetch,isFutureJourney,syncRouteOrigin,refreshJourneyBoard,syncDepartAfterForDate,railNow,installPlanJourney,setPlanView,searchPlanJourneys,planRankEnriched,preferenceScore,planConnectionStress,normalisePlanConstraints,planCandidateMeetsConstraints,planFilterCandidates,get planState(){return planState;},get departAfter(){return $('trainDepartAfter')?.value||storedTime()}};
 })();
