@@ -95,6 +95,15 @@ jobs:
               document.querySelector('#planJourneyForm')
             ),null,{timeout:30000});
 
+            // bus.html opens in Bus mode. Enter Train mode before exercising
+            // user-visible saved-journey controls rather than clicking hidden DOM.
+            await page.waitForSelector('#transportTrain',{state:'visible',timeout:30000});
+            await page.click('#transportTrain');
+            await page.waitForFunction(()=>{
+              const planner=document.getElementById('trainPlanner');
+              return planner && getComputedStyle(planner).display!=='none';
+            },null,{timeout:30000});
+
             const liveVersion=await page.evaluate(async()=>{
               const response=await fetch(`VERSION?saved-journey-smoke=${Date.now()}`,{cache:'no-store'});
               if(!response.ok)throw new Error(`VERSION returned ${response.status}`);
@@ -150,7 +159,9 @@ jobs:
                 document.querySelector('#planJourneyResults [data-plan-save-key]');
             },null,{timeout:30000});
 
-            await page.locator('#planJourneyResults [data-plan-save-key]').first().click();
+            const saveButton=page.locator('#planJourneyResults [data-plan-save-key]').first();
+            await saveButton.waitFor({state:'visible',timeout:30000});
+            await saveButton.click();
             await page.waitForFunction(()=>{
               try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1;}catch{return false;}
             });
@@ -194,10 +205,7 @@ jobs:
               const rows=JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]');
               const saved=rows.find(item=>item.id===id)||null;
               const focus=document.querySelector('#planJourneyResults .plan-journey-result.is-saved-focus');
-              const result=planner.planState.results.find(item=>{
-                const key=focus?.getAttribute('data-plan-key')||'';
-                return key && focus && focus.getAttribute('data-plan-key')===key && focus.textContent.includes(item.std||item.departure||'');
-              })||planner.planState.results[0]||null;
+              const result=planner.planState.results.find(item=>focus?.textContent.includes(item.std||item.departure||''))||planner.planState.results[0]||null;
               return {
                 saved,
                 json:JSON.stringify(saved),
