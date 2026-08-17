@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.41';
+const VERSION='0.9.42';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -107,7 +107,14 @@ function serviceTargets(){
     if(candidate)addTarget(targets,candidate,pDate,'plan-open');
     return finishScope(candidate?'planner-open':'planner',targets);
   }
-  if(savedApi?.state?.active)return finishScope('saved',targets);
+  if(savedApi?.state?.active){
+    for(const saved of Array.isArray(savedApi.state.saved)?savedApi.state.saved:[]){
+      if(text(saved&&saved.date)!==today)continue;
+      const services=saved&&saved.journeyType==='connection'?[saved.first,saved.onward]:[saved&&saved.service];
+      services.filter(Boolean).forEach(service=>addTarget(targets,service,today,'saved'));
+    }
+    return finishScope('saved',targets);
+  }
   const baseDate=selectedDate();if(baseDate!==today)return finishScope('board-future',targets);
   const scheduledBoard=document.getElementById('trainScheduledBoard'),liveBoard=document.getElementById('trainBoard'),scheduledVisible=elementVisible(scheduledBoard),board=scheduledVisible?scheduledBoard:liveBoard;
   const api=scheduledVisible?window.__KERBSIDE_TRAIN_TIMETABLE__:window.__KERBSIDE_TRAINS__,services=api?.state?.services||[];
@@ -246,9 +253,9 @@ function decorateCallingTimeline(calling,service,snapshot,{startName='',startTim
 function flattenTimelinePoints(service){
   const leg=firstLeg(service),points=[];
   const add=value=>{for(const group of Array.isArray(value)?value:[]){const rows=Array.isArray(group&&group.callingPoint)?group.callingPoint:Array.isArray(group&&group.callingPoints)?group.callingPoints:[group];for(const point of rows){if(!point)continue;const name=text(point.locationName||point.name||point.stationName||point.crs),when=text(point.et||point.eta||point.etd||point.st||point.sta||point.std);if(name)points.push({name,when,cancelled:!!point.isCancelled});}}};
-  add(leg&&leg.subsequentCallingPoints);add(leg&&leg.callingPoints);
+  add(leg&&leg.previousCallingPoints);add(leg&&leg.callingPoints);add(leg&&leg.subsequentCallingPoints);
   const end=serviceEndName(leg),endTime=serviceEndTime(leg);if(end&&!points.some(point=>normalisePlace(point.name)===normalisePlace(end)))points.push({name:end,when:endTime,cancelled:false});
-  const seen=new Set();return points.filter(point=>{const key=normalisePlace(point.name);if(!key||seen.has(key))return false;seen.add(key);return true;}).slice(0,18);
+  const seen=new Set();return points.filter(point=>{const key=normalisePlace(point.name);if(!key||seen.has(key))return false;seen.add(key);return true;});
 }
 function ensurePlannerTimeline(container,candidate,snapshot){
   if(!container)return false;let calling=container.querySelector(':scope > [data-train-progress-planner]');if(!snapshot){if(calling)calling.remove();return false;}
@@ -299,7 +306,7 @@ function decorateSaved(){
   const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
   for(const card of document.querySelectorAll('[data-saved-v2-id]')){
     const saved=byId.get(String(card.getAttribute('data-saved-v2-id'))),snapshot=saved&&isToday(saved.date)?savedSelectorMovement(saved,saved.date):null,info=progress(snapshot),following=!!(saved&&savedApi&&typeof savedApi.activeMatchesSaved==='function'&&savedApi.activeMatchesSaved(saved));let node=card.querySelector(':scope > .saved-movement-inline');
-    ensureCard(card,following?snapshot:null,{compact:true});
+    ensureCard(card,snapshot,{compact:true});
     if(!info){if(node)node.remove();continue;}if(!node){node=document.createElement('div');node.className='saved-movement-inline';const times=card.querySelector('.saved-v2-times');(times||card.firstElementChild)?.insertAdjacentElement('afterend',node);}node.className=`saved-movement-inline movement-${info.tone}`;setText(node,info.short);
   }
 }

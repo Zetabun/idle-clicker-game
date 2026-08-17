@@ -167,6 +167,13 @@ try{
   assert.equal(stopped.panelHidden,true);
   assert.equal(stopped.watchVisible,true);
 
+  const retainedCount=await page.evaluate(today=>{
+    const rows=Array.from({length:20},(_,index)=>({v:1,id:`retained-${index}`,savedAt:new Date().toISOString(),refreshedAt:'',date:today,from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'},journeyType:'direct',service:{serviceID:`RET-${index}`,uid:`RETUID-${index}`,trainId:'',std:'09:50'},first:{serviceID:'',uid:'',trainId:'',std:''},onward:{serviceID:'',uid:'',trainId:'',std:''},change:'',scheduledDeparture:'09:50',scheduledArrival:'10:30',searchStart:'09:00',searchEnd:'11:00',preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0}}));
+    localStorage.setItem('kerbside.rail.plan.saved.v1',JSON.stringify(rows));
+    return window.__KERBSIDE_JOURNEY_PLANNER__.readSavedJourneys().length;
+  },setup.today);
+  assert.equal(retainedCount,20,'saved journeys must not silently disappear at the former 12-item limit');
+
   const savedSetup=await page.evaluate(async today=>{
     const id='saved-active-handoff';
     const saved={v:1,id,savedAt:new Date().toISOString(),refreshedAt:'',date:today,from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'},journeyType:'direct',service:{serviceID:'ACTIVE-1',uid:'ACTIVE-UID',trainId:'1A10',std:'09:50'},first:{serviceID:'',uid:'',trainId:'',std:''},onward:{serviceID:'',uid:'',trainId:'',std:''},change:'',scheduledDeparture:'09:50',scheduledArrival:'10:30',searchStart:'09:00',searchEnd:'11:00',preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0}};

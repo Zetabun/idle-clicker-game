@@ -720,3 +720,100 @@ body.theme-crystal .train-forecast-reasons li.reason-down .train-forecast-flag{b
   .train-forecast-reasons li{grid-template-columns:minmax(0,1fr);gap:4px}
   .train-forecast-flag{justify-self:start}
 }
+
+/* Kerbside 0.9.42 readability pass: preserve hierarchy, remove 8–10px body text. */
+body[data-transport="train"] .train-kicker{font-size:11px}
+body[data-transport="train"] .train-station-meta,
+body[data-transport="train"] .train-alert,
+body[data-transport="train"] .train-detail-loading,
+body[data-transport="train"] .train-detail-note{font-size:12.5px}
+body[data-transport="train"] .train-time small,
+body[data-transport="train"] .train-route small,
+body[data-transport="train"] .train-crowding small,
+body[data-transport="train"] .train-formation small{font-size:11.5px;line-height:1.4}
+body[data-transport="train"] .train-route strong{font-size:15px}
+body[data-transport="train"] .train-crowding b,
+body[data-transport="train"] .train-formation b{font-size:12.5px}
+body[data-transport="train"] .train-detail-grid span{font-size:10.5px}
+body[data-transport="train"] .train-detail-grid b{font-size:12.5px}
+body[data-transport="train"] .train-crowding-explain{font-size:11.5px;line-height:1.55}
+body[data-transport="train"] .train-forecast-meta{font-size:10.5px}
+body[data-transport="train"] .train-forecast-reasons>span{font-size:10.5px}
+body[data-transport="train"] .train-forecast-reasons li{font-size:12px;line-height:1.5}
+body[data-transport="train"] .train-forecast-method,
+body[data-transport="train"] .train-forecast-calibration,
+body[data-transport="train"] .train-forecast-history{font-size:11px;line-height:1.5}
+body[data-transport="train"] .train-call b{font-size:12.5px}
+body[data-transport="train"] .train-call small{font-size:11.5px;line-height:1.4}
+body[data-transport="train"] .train-connection-time small,
+body[data-transport="train"] .train-connection-route small,
+body[data-transport="train"] .train-connection-crowd small{font-size:11px}
+body[data-transport="train"] .train-connection-route b{font-size:12.5px}
+
+body[data-transport="train"] .plan-results-head p{font-size:12px!important}
+body[data-transport="train"] .plan-event-context>span,
+body[data-transport="train"] .plan-result-events>span{font-size:10.5px!important}
+body[data-transport="train"] .plan-event-chip b,
+body[data-transport="train"] .plan-result-events b{font-size:12px!important}
+body[data-transport="train"] .plan-event-chip small,
+body[data-transport="train"] .plan-result-events small{font-size:11px!important}
+body[data-transport="train"] .plan-result-rank span{font-size:10.5px!important}
+body[data-transport="train"] .plan-result-rank b{font-size:14px!important}
+body[data-transport="train"] .plan-result-date{font-size:10.5px!important}
+body[data-transport="train"] .plan-result-route strong{font-size:13.5px!important}
+body[data-transport="train"] .plan-result-route span,
+body[data-transport="train"] .plan-result-crowd span{font-size:11.5px!important}
+body[data-transport="train"] .plan-result-crowd strong{font-size:12.5px!important}
+body[data-transport="train"] .plan-result-tradeoff{font-size:12px!important;line-height:1.5!important}
+body[data-transport="train"] .plan-result-reasons{font-size:11.5px!important;line-height:1.5!important}
+body[data-transport="train"] .plan-result-details summary{font-size:11.5px!important}
+body[data-transport="train"] .plan-detail-leg>span{font-size:10.5px!important}
+body[data-transport="train"] .plan-detail-leg strong,
+body[data-transport="train"] .plan-detail-change strong,
+body[data-transport="train"] .plan-detail-recovery strong{font-size:12px!important}
+body[data-transport="train"] .plan-detail-leg small,
+body[data-transport="train"] .plan-detail-change span,
+body[data-transport="train"] .plan-detail-recovery span,
+body[data-transport="train"] .plan-detail-recovery small{font-size:11.5px!important;line-height:1.5!important}
+body[data-transport="train"] .plan-save-action,
+body[data-transport="train"] .plan-saved-actions button{font-size:11.5px!important}
+body[data-transport="train"] .plan-saved-focus-note{font-size:11px!important}
+
+body[data-transport="train"] .saved-v2-sidebar p{font-size:12px!important}
+body[data-transport="train"] .saved-v2-summary span{font-size:11.5px!important}
+body[data-transport="train"] .saved-v2-auto{font-size:11px!important;line-height:1.5!important}
+body[data-transport="train"] .saved-v2-head p{font-size:12px!important}
+body[data-transport="train"] .saved-v2-card h3{font-size:15px!important}
+body[data-transport="train"] .saved-v2-date,
+body[data-transport="train"] .saved-v2-status{font-size:10.5px!important}
+body[data-transport="train"] .saved-v2-times strong{font-size:14px!important}
+body[data-transport="train"] .saved-v2-times span{font-size:11.5px!important}
+body[data-transport="train"] .saved-v2-live{font-size:11.5px!important;line-height:1.45!important}
+body[data-transport="train"] .saved-v2-events>span,
+body[data-transport="train"] .saved-v2-intent>span,
+body[data-transport="train"] .saved-v2-changes-wrap>span{font-size:10.5px!important}
+body[data-transport="train"] .saved-v2-event b,
+body[data-transport="train"] .saved-v2-intent strong{font-size:12px!important}
+body[data-transport="train"] .saved-v2-event small,
+body[data-transport="train"] .saved-v2-changes,
+body[data-transport="train"] .saved-v2-nochange,
+body[data-transport="train"] .saved-v2-error{font-size:11.5px!important;line-height:1.5!important}
+body[data-transport="train"] .saved-v2-card>footer>span{font-size:10.5px!important}
+body[data-transport="train"] .saved-v2-card button{font-size:11.5px!important;min-height:36px!important}
+
+body[data-transport="train"] .train-movement-inline,
+body[data-transport="train"] .plan-movement-inline,
+body[data-transport="train"] .saved-movement-inline{font-size:10.5px!important;line-height:1.4!important}
+body[data-transport="train"] .train-movement-inline::before{font-size:9.5px!important}
+body[data-transport="train"] .train-movement-card span{font-size:10px!important}
+body[data-transport="train"] .train-movement-card strong{font-size:12.5px!important}
+body[data-transport="train"] .train-movement-card p,
+body[data-transport="train"] .train-movement-card small{font-size:11.5px!important;line-height:1.5!important}
+body[data-transport="train"] .train-progress-badge{font-size:9.5px!important}
+body[data-transport="train"] .train-progress-now{font-size:11px!important;line-height:1.45!important}
+body[data-transport="train"] .train-progress-marker small{font-size:11.5px!important}
+
+@media(max-width:430px){
+  body[data-transport="train"] .saved-v2-card h3{font-size:14px!important}
+  body[data-transport="train"] .saved-v2-times strong{font-size:13.5px!important}
+}

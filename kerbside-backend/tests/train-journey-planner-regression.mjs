@@ -85,9 +85,11 @@ try{
     diagnostics.events.push(route.request().url());
     return route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify(eventResults)});
   });
-  await page.route('https://raw.githubusercontent.com/openfootball/england/**',route=>
-    route.fulfill({status:200,contentType:'text/plain',body:'= Synthetic empty OpenFootball season\n'})
-  );
+  await page.route('https://raw.githubusercontent.com/openfootball/england/**',route=>{
+    const pathname=new URL(route.request().url()).pathname;
+    const body=pathname.includes('/2026-27/2-championship.txt')?'Sat Aug 29\n15:00 Bristol City FC v Portsmouth FC\n':'= Synthetic empty OpenFootball season\n';
+    return route.fulfill({status:200,contentType:'text/plain',body});
+  });
   await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})})
   );
@@ -155,6 +157,20 @@ try{
   assert.ok(eventForecast.eventPressure>0&&eventForecast.eventPressure<=0.8,`event pressure should be positive and bounded: ${JSON.stringify(eventForecast)}`);
   assert.ok(eventForecast.reasons.some(reason=>/Birmingham Arena Concert/.test(reason)),`forecast should name the contributing event: ${JSON.stringify(eventForecast)}`);
 
+  const bristolFixture=await page.evaluate(async()=>{
+    const events=window.__KERBSIDE_EVENTS__,forecast=window.__KERBSIDE_FORECAST_V4__;
+    const rows=await events.footballEventsFor('2026-08-29');
+    const previous={events:events.state.events,date:events.state.date,status:events.state.status,sources:events.state.sources};
+    events.state.events=rows.map(row=>events.normalise(row)).filter(Boolean);events.state.date='2026-08-29';events.state.status='ready';events.state.sources=['openfootball (public domain)'];
+    const service={std:'12:12',arrival:'13:32',destinationArrival:'13:32',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}};
+    const result=forecast.forecast(service,0,[service],{station:{name:'Birmingham New Street',crs:'BHM'},referenceDate:new Date('2026-08-29T12:00:00'),eventJourney:{origin:'Birmingham New Street',originCrs:'BHM',destination:'Bristol Temple Meads',destinationCrs:'BRI',interchanges:[],date:'2026-08-29'},messages:[]});
+    Object.assign(events.state,previous);
+    return {rows:rows.map(row=>row.title),pressure:result.eventPressure,reasons:result.reasons};
+  });
+  assert.ok(bristolFixture.rows.some(title=>/Bristol City FC v Portsmouth FC/.test(title)),`29 Aug Bristol fixture should survive fixture caching: ${JSON.stringify(bristolFixture)}`);
+  assert.ok(bristolFixture.pressure>0,`Bristol fixture should contribute Forecast v4 event pressure to a 13:32 arrival: ${JSON.stringify(bristolFixture)}`);
+  assert.ok(bristolFixture.reasons.some(reason=>/Bristol City FC v Portsmouth FC/.test(reason)),`Forecast reason should name the Bristol fixture: ${JSON.stringify(bristolFixture)}`);
+
 
   // Plan My Journey is a separate comparison view over the same timetable
   // provider and Forecast v4. Keep the regression deterministic by replacing
@@ -204,10 +220,13 @@ try{
   assert.match(await page.locator('#planJourneyMeta').textContent(),/Wed, 12 Aug 2026 · departures 09:00–11:00/);
   await page.waitForFunction(()=>/Birmingham City v Bristol City/.test(document.querySelector('#planJourneyEvents')?.textContent||''),undefined,{timeout:4000});
   assert.match(await page.locator('#planJourneyEvents').textContent(),/Football · Birmingham City v Bristol City/);
+  assert.match(await page.locator('#planJourneyResults .plan-result-events').first().textContent(),/Football · Birmingham City v Bristol City/,'relevant event context should be visible on the result card, not only in the header');
   assert.match(planCards[0],/Quiet Rail/,'Plan My Journey ranks the quiet Forecast v4 option first');
   assert.match(planCards[0],/Best match for Quieter/);
   assert.equal(await page.locator('#planJourneySearch').isDisabled(),false,'initial ranked results must be usable before slow Wikidata settles');
   await page.waitForFunction(()=>/Bristol Arena Concert/.test(document.querySelector('#planJourneyResults')?.textContent||''),undefined,{timeout:4000});
+  const readability=await page.evaluate(()=>({reason:parseFloat(getComputedStyle(document.querySelector('.plan-result-reasons')).fontSize),detail:parseFloat(getComputedStyle(document.querySelector('.plan-result-details summary')).fontSize),route:parseFloat(getComputedStyle(document.querySelector('.plan-result-route span')).fontSize)}));
+  assert.ok(readability.reason>=11.5&&readability.detail>=11.5&&readability.route>=11.5,`planner secondary text should meet the 0.9.42 readability floor: ${JSON.stringify(readability)}`);
   assert.match(await page.locator('#planJourneyMeta').textContent(),/Network Rail SCHEDULE/);
   assert.match(await page.locator('#planJourneyMeta').textContent(),/Up to 1 change/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.plan.preference.v1')),'quieter');
