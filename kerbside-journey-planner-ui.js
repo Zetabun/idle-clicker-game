@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.42';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.42';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.42';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.42';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.43';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.43';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.43';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.43';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -188,13 +188,14 @@ function installUiGuardStyles(){
   style.textContent=`
 body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator,body:not(.theme-crystal) input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
 body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.theme-crystal input[type="time"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
-/* Plan my journey owns the train content surface while its tab is active.
-   Timetable/live modules are allowed to keep refreshing in the background,
-   but they must not be able to unhide the current departure board into the
-   planner. This keeps both desktop and stacked mobile views scoped to the
-   selected planner route, date and time window. */
+/* Alternate train views own the train content surface while their tab is
+   active. Timetable/live modules may keep refreshing in the background, but
+   they must not be able to unhide the ordinary departure board over planner
+   or Saved journeys content. */
 .train-sidebar.plan-view-active > :not(#trainViewTabs):not(#planJourneyForm){display:none!important}
 .train-content.plan-view-active > :not(#planJourneySurface){display:none!important}
+.train-sidebar.saved-view-active > :not(#trainViewTabs):not(#savedJourneySidebar){display:none!important}
+.train-content.saved-view-active > :not(#savedJourneySurface){display:none!important}
 @media(min-width:821px){
   body[data-transport="train"] .train-sidebar{overflow-anchor:none}
   body[data-transport="train"] .train-sidebar>.train-view-tabs{
@@ -214,12 +215,14 @@ let planViewBootstrapObserver=null;
 function syncPlanViewGuards(){
   const tabs=document.getElementById('trainViewTabs');
   const planButton=tabs&&tabs.querySelector('[data-train-view="plan"]');
-  const active=!!(planButton&&planButton.getAttribute('aria-selected')==='true');
+  const savedButton=tabs&&tabs.querySelector('[data-train-view="saved"]');
+  const planActive=!!(planButton&&planButton.getAttribute('aria-selected')==='true');
+  const savedActive=!!(savedButton&&savedButton.getAttribute('aria-selected')==='true');
   const sidebar=document.querySelector('.train-sidebar');
   const content=document.querySelector('.train-content');
-  if(sidebar)sidebar.classList.toggle('plan-view-active',active);
-  if(content)content.classList.toggle('plan-view-active',active);
-  return active;
+  if(sidebar){sidebar.classList.toggle('plan-view-active',planActive);sidebar.classList.toggle('saved-view-active',savedActive);}
+  if(content){content.classList.toggle('plan-view-active',planActive);content.classList.toggle('saved-view-active',savedActive);}
+  return planActive||savedActive;
 }
 function installPlanViewGuardObserver(){
   const tabs=document.getElementById('trainViewTabs');

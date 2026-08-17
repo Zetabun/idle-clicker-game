@@ -57,7 +57,58 @@ try{
 
   const trainPlanner=page.locator('#trainPlanner');
   await trainPlanner.waitFor({state:'visible',timeout:10000});
+  await page.waitForSelector('#trainViewTabs [data-train-view="saved"]',{timeout:10000});
 
+  const roomyDesktop=await page.evaluate(()=>{
+    const sidebar=document.querySelector('.train-sidebar'),card=document.querySelector('.train-sidebar .train-card'),tab=document.querySelector('#trainViewTabs button');
+    return {sidebarWidth:sidebar.getBoundingClientRect().width,cardPadding:parseFloat(getComputedStyle(card).paddingLeft)||0,tabHeight:tab.getBoundingClientRect().height};
+  });
+  assert.ok(roomyDesktop.sidebarWidth>=420,`1440px desktop rail should have breathing room: ${JSON.stringify(roomyDesktop)}`);
+  assert.ok(roomyDesktop.cardPadding>=15,`desktop train cards should keep comfortable padding: ${JSON.stringify(roomyDesktop)}`);
+  assert.ok(roomyDesktop.tabHeight>=41,`desktop train tabs should not feel compressed: ${JSON.stringify(roomyDesktop)}`);
+
+  await page.setViewportSize({width:980,height:900});
+  await page.waitForTimeout(80);
+  const compactDesktop=await page.evaluate(()=>{
+    const shell=document.querySelector('.train-shell'),sidebar=document.querySelector('.train-sidebar'),content=document.querySelector('.train-content'),card=document.querySelector('.train-sidebar .train-card');
+    return {display:getComputedStyle(shell).display,sidebarWidth:sidebar.getBoundingClientRect().width,contentWidth:content.getBoundingClientRect().width,cardWidth:card.getBoundingClientRect().width};
+  });
+  assert.equal(compactDesktop.display,'grid','980px should remain the two-pane desktop train layout');
+  assert.ok(compactDesktop.sidebarWidth>=350,`sub-1000 desktop rail must not collapse back to 260px: ${JSON.stringify(compactDesktop)}`);
+  assert.ok(compactDesktop.contentWidth>=500,`wider desktop rail must still leave a usable train board: ${JSON.stringify(compactDesktop)}`);
+  assert.ok(compactDesktop.cardWidth>=310,`desktop train cards should retain usable content width: ${JSON.stringify(compactDesktop)}`);
+  await page.setViewportSize({width:1440,height:900});
+  await page.waitForTimeout(80);
+
+  await page.click('#trainViewTabs [data-train-view="saved"]');
+  await page.locator('#savedJourneySidebar').waitFor({state:'visible'});
+  await page.locator('#savedJourneySurface').waitFor({state:'visible'});
+  const savedIsolation=await page.evaluate(()=>{
+    const sidebar=document.querySelector('.train-sidebar'),content=document.querySelector('.train-content');
+    for(const child of sidebar.children){if(child.id!=='trainViewTabs'&&child.id!=='savedJourneySidebar')child.hidden=false;}
+    for(const child of content.children){if(child.id!=='savedJourneySurface')child.hidden=false;}
+    window.__KERBSIDE_STATION_DATA__?.restoreBaseTrainView?.();
+    const normalSidebar=document.getElementById('trainPlanner'),normalBoard=document.querySelector('.train-board');
+    return {
+      selected:document.querySelector('#trainViewTabs [data-train-view="saved"]').getAttribute('aria-selected'),
+      sidebarGuard:sidebar.classList.contains('saved-view-active'),
+      contentGuard:content.classList.contains('saved-view-active'),
+      savedSidebarDisplay:getComputedStyle(document.getElementById('savedJourneySidebar')).display,
+      savedSurfaceDisplay:getComputedStyle(document.getElementById('savedJourneySurface')).display,
+      normalSidebarDisplay:normalSidebar?getComputedStyle(normalSidebar).display:'missing',
+      normalBoardDisplay:normalBoard?getComputedStyle(normalBoard).display:'missing'
+    };
+  });
+  assert.equal(savedIsolation.selected,'true','Saved journeys tab should remain selected');
+  assert.equal(savedIsolation.sidebarGuard,true,'Saved journeys should own the sidebar surface');
+  assert.equal(savedIsolation.contentGuard,true,'Saved journeys should own the content surface');
+  assert.notEqual(savedIsolation.savedSidebarDisplay,'none','Saved journeys sidebar must remain visible');
+  assert.notEqual(savedIsolation.savedSurfaceDisplay,'none','Saved journeys cards surface must remain visible');
+  assert.equal(savedIsolation.normalSidebarDisplay,'none','ordinary train controls must not leak into Saved journeys');
+  assert.equal(savedIsolation.normalBoardDisplay,'none','ordinary train listings must not replace Saved journeys');
+
+  await page.click('#trainViewTabs [data-train-view="trains"]');
+  await trainPlanner.waitFor({state:'visible'});
   await page.click('#trainViewTabs [data-train-view="plan"]');
   await page.locator('#planJourneyForm').waitFor({state:'visible'});
   const sticky=await page.evaluate(()=>{
