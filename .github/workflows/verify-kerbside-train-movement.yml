@@ -12,12 +12,13 @@ on:
       - .github/scripts/build-networkrail-corpus.mjs
       - .github/scripts/networkrail-corpus.test.mjs
       - .github/scripts/probe-networkrail-movement.mjs
+      - .github/scripts/probe-networkrail-movement-replay.mjs
       - .github/workflows/verify-kerbside-train-movement.yml
       - .github/workflows/deploy-kerbside-train-movement-worker.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: kerbside-train-movement-${{ github.event.pull_request.number || github.ref }}
@@ -34,24 +35,6 @@ jobs:
     steps:
       - name: Check out branch
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-
-      - name: Synchronize release version
-        if: github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 .github/scripts/sync-version.py
-          if git diff --quiet; then
-            echo 'Version already synchronized.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add bus.html kerbside-status.js kerbside-saved-journeys-polish.js kerbside-train-movement.js kerbside-train-movement-worker/worker.js kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs kerbside-journey-planner-ui.js
-          git commit -m 'Kerbside 0.9.35: synchronize version'
-          git push origin HEAD:${{ github.head_ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -67,6 +50,7 @@ jobs:
           node --check kerbside-train-movement-worker/movement-core.js
           node --check .github/scripts/build-networkrail-corpus.mjs
           node --check .github/scripts/probe-networkrail-movement.mjs
+          node --check .github/scripts/probe-networkrail-movement-replay.mjs
           node --test kerbside-train-movement-worker/movement-core.test.mjs
           node --test .github/scripts/networkrail-corpus.test.mjs
 
@@ -98,6 +82,15 @@ jobs:
         run: |
           set -euo pipefail
           node .github/scripts/probe-networkrail-movement.mjs
+
+      - name: Verify durable TRUST replay across idle gap
+        shell: bash
+        env:
+          NETWORK_RAIL_REPLAY_GAP_MS: '120000'
+          NETWORK_RAIL_REPLAY_TIMEOUT_MS: '60000'
+        run: |
+          set -euo pipefail
+          node .github/scripts/probe-networkrail-movement-replay.mjs
 
       - name: Install browser regression dependencies
         shell: bash
