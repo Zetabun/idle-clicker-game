@@ -238,7 +238,7 @@
 .train-recovery-use,.train-watch-action{flex:0 0 auto;padding:7px 10px;border:1px solid var(--led-dim);border-radius:7px;background:rgb(var(--led-rgb) / .08);color:var(--led);font-size:10px;font-weight:800;line-height:1.2}
 .train-recovery-use:hover,.train-watch-action:hover{background:rgb(var(--led-rgb) / .14)}
 .train-watch-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin:0 0 12px;padding:10px 11px;border:1px solid var(--rule);border-radius:9px;background:var(--ink)}
-.train-watch-card>div{display:flex;flex-direction:column;min-width:0;gap:2px}
+.train-watch-card>div{display:flex;flex-direction:column;min-width:0;gap:2px}.train-watch-card>.train-watch-actions{flex-direction:row;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
 .train-watch-card>div>span{color:var(--text-mute);font-family:'Martian Mono',ui-monospace,monospace;font-size:8px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
 .train-watch-card>div>strong{color:var(--text);font-size:11.5px}
 .train-watch-card>div>small{color:var(--text-dim);font-size:9px;line-height:1.4}
@@ -363,6 +363,7 @@ body.theme-crystal .train-crowding-explain{background:var(--ink-3);box-shadow:0 
   .train-recovery-actions,.train-watch-card{align-items:flex-start}
   .train-recovery-actions{flex-direction:column}
   .train-watch-card{grid-template-columns:1fr}
+  .train-watch-card>.train-watch-actions{justify-content:flex-start}
   .train-watch-action{justify-self:start}
   .train-forecast-head{align-items:flex-start;flex-direction:column;gap:7px}
   .train-forecast-meta{text-align:left}

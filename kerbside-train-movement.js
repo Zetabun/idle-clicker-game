@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.39';
+const VERSION='0.9.40';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -94,11 +94,11 @@ function serviceForArticle(api,services,article){
 function serviceTargets(){
   const today=todayLondon(),targets=[];
   const scrim=document.querySelector('#scrim.show');if(scrim&&elementVisible(scrim))return finishScope('settings',targets);
-  const activeApi=window.__KERBSIDE_ACTIVE_JOURNEY__,active=activeApi?.state?.active,activeRoot=document.getElementById('trainActiveJourney');
-  if(active&&text(active.date)===today&&elementVisible(activeRoot)){
+  const activeApi=window.__KERBSIDE_ACTIVE_JOURNEY__,active=activeApi?.state?.active,activeRoot=document.getElementById('trainActiveJourney'),savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__,activeOnSaved=!!(active&&savedApi?.state?.active&&Array.isArray(savedApi.state.saved)&&typeof savedApi.activeMatchesSaved==='function'&&savedApi.state.saved.some(saved=>savedApi.activeMatchesSaved(saved)));
+  if(active&&text(active.date)===today&&(elementVisible(activeRoot)||activeOnSaved)){
     const services=active.journeyType==='connection'?[active.first,active.onward]:[active.service];
-    services.filter(Boolean).forEach(service=>addTarget(targets,service,today,'active'));
-    return finishScope('active',targets);
+    services.filter(Boolean).forEach(service=>addTarget(targets,service,today,activeOnSaved?'saved-active':'active'));
+    return finishScope(activeOnSaved?'saved-active':'active',targets);
   }
   const plan=window.__KERBSIDE_JOURNEY_PLANNER__,pDate=plannerDate();
   if(plan?.planState?.active){
@@ -107,7 +107,6 @@ function serviceTargets(){
     if(candidate)addTarget(targets,candidate,pDate,'plan-open');
     return finishScope(candidate?'planner-open':'planner',targets);
   }
-  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
   if(savedApi?.state?.active)return finishScope('saved',targets);
   const baseDate=selectedDate();if(baseDate!==today)return finishScope('board-future',targets);
   const scheduledBoard=document.getElementById('trainScheduledBoard'),liveBoard=document.getElementById('trainBoard'),scheduledVisible=elementVisible(scheduledBoard),board=scheduledVisible?scheduledBoard:liveBoard;
@@ -297,8 +296,10 @@ function savedSelectorMovement(saved,date){const selectors=saved?.journeyType===
 function decorateSaved(){
   const api=window.__KERBSIDE_JOURNEY_PLANNER__;if(!api||typeof api.readSavedJourneys!=='function')return;
   const byId=new Map((api.readSavedJourneys()||[]).map(item=>[String(item.id),item]));
+  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
   for(const card of document.querySelectorAll('[data-saved-v2-id]')){
-    const saved=byId.get(String(card.getAttribute('data-saved-v2-id'))),snapshot=saved&&isToday(saved.date)?savedSelectorMovement(saved,saved.date):null,info=progress(snapshot);let node=card.querySelector(':scope > .saved-movement-inline');
+    const saved=byId.get(String(card.getAttribute('data-saved-v2-id'))),snapshot=saved&&isToday(saved.date)?savedSelectorMovement(saved,saved.date):null,info=progress(snapshot),following=!!(saved&&savedApi&&typeof savedApi.activeMatchesSaved==='function'&&savedApi.activeMatchesSaved(saved));let node=card.querySelector(':scope > .saved-movement-inline');
+    ensureCard(card,following?snapshot:null,{compact:true});
     if(!info){if(node)node.remove();continue;}if(!node){node=document.createElement('div');node.className='saved-movement-inline';const times=card.querySelector('.saved-v2-times');(times||card.firstElementChild)?.insertAdjacentElement('afterend',node);}node.className=`saved-movement-inline movement-${info.tone}`;setText(node,info.short);
   }
 }

@@ -186,6 +186,9 @@ try{
   const savedStart=page.locator(`#savedJourneyList [data-saved-v2-active="${savedSetup.id}"]`);
   await savedStart.waitFor({state:'visible',timeout:10000});
   assert.equal(await savedStart.textContent(),'Start active journey');
+  const savedFollow=page.locator(`#savedJourneyList [data-saved-v2-follow="${savedSetup.id}"]`);
+  await savedFollow.waitFor({state:'visible',timeout:10000});
+  assert.equal(await savedFollow.textContent(),'Follow live here');
   await savedStart.click();
   await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active&&document.querySelector('#trainActiveJourney:not([hidden])')),null,{timeout:10000});
   const handoff=await page.evaluate(()=>({active:window.__KERBSIDE_ACTIVE_JOURNEY__.state.active,station:window.__KERBSIDE_TRAINS__.state.station,route:window.__KERBSIDE_TRAIN_ROUTES__.state.destination,date:window.__KERBSIDE_TRAIN_DATE__.state.date,savedHidden:document.getElementById('savedJourneySurface').hidden,panel:document.getElementById('trainActiveJourney').textContent.replace(/\s+/g,' ').trim()}));
@@ -202,6 +205,9 @@ try{
   const openActive=page.locator(`#savedJourneyList [data-saved-v2-active="${savedSetup.id}"]`);
   await openActive.waitFor({state:'visible',timeout:10000});
   assert.equal(await openActive.textContent(),'Open active journey');
+  const following=page.locator(`#savedJourneyList [data-saved-v2-follow="${savedSetup.id}"]`);
+  await following.waitFor({state:'visible',timeout:10000});
+  assert.equal(await following.textContent(),'Following live');
   await openActive.click();
   await page.waitForFunction(()=>document.querySelector('#trainActiveJourney:not([hidden])'),null,{timeout:10000});
   assert.equal(await page.evaluate(()=>window.__KERBSIDE_ACTIVE_JOURNEY__.state.active.startedAt),firstStartedAt,'opening the same active saved journey must not restart it');

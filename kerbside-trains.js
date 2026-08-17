@@ -1066,6 +1066,7 @@ function renderServiceDetail(service,index,forecast,detail){
   ).join('')}</div>` : '<div class="train-detail-note">Calling-point data is unavailable for this service.</div>';
   const length = Number(service.length) || 0;
   const key = serviceKey(service,index);
+  const planner=window.__KERBSIDE_JOURNEY_PLANNER__,savedJourney=!!(planner&&typeof planner.planBoardServiceSaved==='function'&&planner.planBoardServiceSaved(service)),saveMarkup=planner&&typeof planner.planSaveBoardService==='function'?`<div class="train-model-card"><span class="train-model-label">Saved journey</span><strong>${savedJourney?'This journey is saved':'Keep following this train'}</strong><p>${savedJourney?'Open Saved journeys to refresh or follow it live.':'Save this exact service so it remains available after it leaves the departure board.'}</p><div class="train-search-box" style="margin-top:8px"><button type="button" data-save-train-service="${esc(key)}"${savedJourney?' disabled':''}>${savedJourney?'Saved':'Save journey'}</button></div></div>`:'';
   const recorded = feedbackForService(service,index);
   const historySamples=Number(forecast.historySamples)||0;
   const learningText=`${historySamples} local service observation${historySamples===1?'':'s'} available`;
@@ -1099,6 +1100,7 @@ function renderServiceDetail(service,index,forecast,detail){
       <p>${esc(learningText)}</p>
     </div>
     ${liveLoading&&loadingApi&&typeof loadingApi.coachMarkup==='function'?loadingApi.coachMarkup(forecast):''}
+    ${saveMarkup}
     <div class="train-model-card">
       <span class="train-model-label">Record actual crowding</span>
       <strong>What was the train actually like?</strong>
@@ -1252,6 +1254,8 @@ function bindEvents(){
   $('trainStationGo').addEventListener('click',submitStationSearch);
   $('trainRefresh').addEventListener('click',()=>{ if(state.station) loadBoard(state.station,{silent:false}); });
   document.addEventListener('click',event=>{
+    const saveButton = event.target && event.target.closest ? event.target.closest('[data-save-train-service]') : null;
+    if(saveButton){const key=saveButton.getAttribute('data-save-train-service'),index=state.services.findIndex((service,serviceIndex)=>serviceKey(service,serviceIndex)===key),planner=window.__KERBSIDE_JOURNEY_PLANNER__;if(index>=0&&planner&&typeof planner.planSaveBoardService==='function'&&planner.planSaveBoardService(state.services[index]))renderBoard();return;}
     const feedbackButton = event.target && event.target.closest ? event.target.closest('[data-crowd-feedback]') : null;
     if(feedbackButton){ handleFeedbackClick(feedbackButton); return; }
     const wrap = event.target && event.target.closest ? event.target.closest('.train-search-wrap') : null;
