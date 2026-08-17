@@ -44,6 +44,13 @@ old_meta="assert.match(await page.locator('#planJourneyMeta').textContent(),/Wed
 new_meta="assert.match(await page.locator('#planJourneyMeta').textContent(),/Wed, 12 Aug 2026 · departures 09:00–11:00/);"
 if old_meta not in post_text: raise SystemExit('Could not locate planner date-window expectation')
 post_text=post_text.replace(old_meta,new_meta,1)
+# sync-version also touches saved-journeys polish. It is a version-marker-only
+# change here and, like the two movement version markers, sits outside the
+# browser publisher's allowlist. Commit it before the atomic browser publish.
+old_add="run('git','add','--','kerbside-train-movement.js','kerbside-train-movement-worker/worker.js')"
+new_add="run('git','add','--','kerbside-train-movement.js','kerbside-train-movement-worker/worker.js','kerbside-saved-journeys-polish.js')"
+if old_add not in post_text: raise SystemExit('Could not locate version-only staging list')
+post_text=post_text.replace(old_add,new_add,1)
 post.write_text(post_text,encoding='utf-8')
 
 run('git','diff','--check')
