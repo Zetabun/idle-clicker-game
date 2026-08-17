@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.40';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.40';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.40';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.40';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.41';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.41';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.41';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.41';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -188,6 +188,13 @@ function installUiGuardStyles(){
   style.textContent=`
 body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator,body:not(.theme-crystal) input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
 body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.theme-crystal input[type="time"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
+/* Plan my journey owns the train content surface while its tab is active.
+   Timetable/live modules are allowed to keep refreshing in the background,
+   but they must not be able to unhide the current departure board into the
+   planner. This keeps both desktop and stacked mobile views scoped to the
+   selected planner route, date and time window. */
+.train-sidebar.plan-view-active > :not(#trainViewTabs):not(#planJourneyForm){display:none!important}
+.train-content.plan-view-active > :not(#planJourneySurface){display:none!important}
 @media(min-width:821px){
   body[data-transport="train"] .train-sidebar{overflow-anchor:none}
   body[data-transport="train"] .train-sidebar>.train-view-tabs{
@@ -201,6 +208,37 @@ body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.th
 function resetTrainSidebarScroll(){
   const sidebar=document.querySelector('.train-sidebar');
   if(sidebar&&window.innerWidth>820)sidebar.scrollTop=0;
+}
+let planViewGuardObserver=null;
+let planViewBootstrapObserver=null;
+function syncPlanViewGuards(){
+  const tabs=document.getElementById('trainViewTabs');
+  const planButton=tabs&&tabs.querySelector('[data-train-view="plan"]');
+  const active=!!(planButton&&planButton.getAttribute('aria-selected')==='true');
+  const sidebar=document.querySelector('.train-sidebar');
+  const content=document.querySelector('.train-content');
+  if(sidebar)sidebar.classList.toggle('plan-view-active',active);
+  if(content)content.classList.toggle('plan-view-active',active);
+  return active;
+}
+function installPlanViewGuardObserver(){
+  const tabs=document.getElementById('trainViewTabs');
+  if(!tabs)return false;
+  if(planViewBootstrapObserver){planViewBootstrapObserver.disconnect();planViewBootstrapObserver=null;}
+  if(planViewGuardObserver)planViewGuardObserver.disconnect();
+  planViewGuardObserver=new MutationObserver(()=>syncPlanViewGuards());
+  planViewGuardObserver.observe(tabs,{subtree:true,attributes:true,attributeFilter:['aria-selected']});
+  syncPlanViewGuards();
+  return true;
+}
+function watchPlanViewGuards(){
+  if(installPlanViewGuardObserver())return;
+  if(planViewBootstrapObserver)return;
+  planViewBootstrapObserver=new MutationObserver(()=>{if(installPlanViewGuardObserver())planViewBootstrapObserver=null;});
+  planViewBootstrapObserver.observe(document.body,{childList:true,subtree:true});
+  setTimeout(()=>{
+    if(planViewBootstrapObserver){planViewBootstrapObserver.disconnect();planViewBootstrapObserver=null;}
+  },15000);
 }
 function restoreBaseTrainView(){
   const tabs=document.getElementById('trainViewTabs'),trainButton=tabs&&tabs.querySelector('[data-train-view="trains"]');
@@ -240,9 +278,10 @@ function installUiGuards(){
     setTimeout(()=>{
       resetTrainSidebarScroll();
       if(view.dataset.trainView==='trains')restoreBaseTrainView();
+      syncPlanViewGuards();
     },0);
   },true);
-  const settle=()=>setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0);
+  const settle=()=>setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();watchPlanViewGuards();syncPlanViewGuards();},0);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',settle,{once:true});else settle();
 }
 
@@ -268,7 +307,7 @@ core.addEventListener('load',()=>{
   polish.async=false;
   polish.onerror=()=>{stationState.error='Saved Journeys polish failed to load';notifyStationState();};
   polish.addEventListener('load',()=>{
-    setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();},0);
+    setTimeout(()=>{resetTrainSidebarScroll();restoreBaseTrainView();watchPlanViewGuards();syncPlanViewGuards();},0);
     const movement=document.createElement('script');
     movement.src=TRAIN_MOVEMENT_URL;
     movement.async=false;
