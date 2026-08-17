@@ -1,6 +1,8 @@
 export const DEMAND_TTL_MS = 90 * 1000;
 export const IDLE_SYNC_INTERVAL_MS = 3 * 60 * 1000;
 export const IDLE_CATCHUP_MS = 30 * 1000;
+export const NETWORK_RAIL_SESSION_COOLDOWN_MS = 25 * 60 * 1000;
+export const NETWORK_RAIL_SESSION_COOLDOWN_KEY = 'network-rail-session-cooldown:v1';
 export const IDLE_CHECKPOINT_MANIFEST_KEY = 'movement-idle-checkpoint:manifest';
 export const IDLE_CHECKPOINT_PREFIX = 'movement-idle-checkpoint:';
 export const IDLE_CHECKPOINT_MAX_VALUE_BYTES = 1_250_000;
@@ -11,6 +13,22 @@ const encoder = new TextEncoder();
 export function hasRecentDemand(lastDemandAt, now = Date.now(), ttlMs = DEMAND_TTL_MS) {
   const stamp = Number(lastDemandAt) || 0;
   return stamp > 0 && Number(now) - stamp < Number(ttlMs);
+}
+
+export function isNetworkRailSessionAllocationError(value) {
+  return /(?:AMQ339009|Exception getting session)/i.test(String(value == null ? '' : value));
+}
+
+export function sessionCooldownRetryAt({
+  now = Date.now(),
+  currentUntil = 0,
+  retryAt = 0,
+  cooldownMs = NETWORK_RAIL_SESSION_COOLDOWN_MS
+} = {}) {
+  const stamp = Number(now) || Date.now();
+  const existing = Math.max(Number(currentUntil) || 0, Number(retryAt) || 0);
+  if (existing > stamp) return existing;
+  return stamp + Math.max(60_000, Number(cooldownMs) || NETWORK_RAIL_SESSION_COOLDOWN_MS);
 }
 
 export function nextActiveAlarmAt({

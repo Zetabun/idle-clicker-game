@@ -15,6 +15,11 @@ import {
   promoteColdSnapshot,
   shouldUseColdPath
 } from './movement-cold-path.js';
+import {
+  NETWORK_RAIL_SESSION_COOLDOWN_KEY,
+  isNetworkRailSessionAllocationError,
+  sessionCooldownRetryAt
+} from './movement-idle-policy.js';
 
 const VERSION = '0.9.36';
 
@@ -37,6 +42,106 @@ export class TrainMovementHub extends BaseTrainMovementHub {
     };
   }
 
+  async restoreRecoveryState() {
+    await super.restoreRecoveryState();
+    try {
+      const saved = await this.ctx.storage.get(NETWORK_RAIL_SESSION_COOLDOWN_KEY, { noCache: true });
+      const until = Number(saved && saved.until) || 0;
+      if (until > Date.now()) {
+        this.sessionCooldownUntil = until;
+        this.nextAlarmAt = until;
+        this.status.state = 'disconnected';
+        this.status.lastError = `Network Rail STOMP session cooldown active until ${new Date(until).toISOString()}`;
+      } else {
+        this.sessionCooldownUntil = 0;
+      }
+    } catch (error) {
+      this.sessionCooldownUntil = 0;
+      this.storageStats.lastWriteError = `Session cooldown read: ${safeMessage(error)}`;
+    }
+  }
+
+  async ensureConnected() {
+    const now = Date.now();
+    const until = Number(this.sessionCooldownUntil) || 0;
+    if (until > now) {
+      const error = new Error(`Network Rail STOMP session cooldown active until ${new Date(until).toISOString()}`);
+      error.sessionCooldown = true;
+      error.retryAt = until;
+      throw error;
+    }
+    if (until) this.sessionCooldownUntil = 0;
+    return super.ensureConnected();
+  }
+
+  async handleFrame(frame) {
+    if (frame && frame.command === 'ERROR') {
+      const detail = String(frame.headers && frame.headers.message || frame.body || 'Network Rail STOMP error').trim();
+      const error = new Error(detail);
+      error.authenticationFailure = /auth|login|password|security|not authorized|unauthorized/i.test(detail);
+      error.sessionCooldown = isNetworkRailSessionAllocationError(detail);
+      if (this.connectedReject) this.connectedReject(error);
+      this.connectedResolve = this.connectedReject = null;
+      throw error;
+    }
+    const result = await super.handleFrame(frame);
+    if (frame && frame.command === 'CONNECTED') this.sessionCooldownUntil = 0;
+    return result;
+  }
+
+  async connectionFailed(error) {
+    if (this.intentionalClose) return;
+    const detail = safeMessage(error);
+    const sessionBlocked = Boolean(error && error.sessionCooldown) || isNetworkRailSessionAllocationError(detail);
+    if (!sessionBlocked) return super.connectionFailed(error);
+
+    const now = Date.now();
+    const priorUntil = Number(this.sessionCooldownUntil) || 0;
+    const requestedRetryAt = Number(error && error.retryAt) || 0;
+    const retryAt = sessionCooldownRetryAt({
+      now,
+      currentUntil: priorUntil,
+      retryAt: requestedRetryAt
+    });
+    const newNetworkRejection = requestedRetryAt <= now && priorUntil <= now;
+
+    this.sessionCooldownUntil = retryAt;
+    this.status.state = 'disconnected';
+    this.status.lastError = newNetworkRejection
+      ? `${detail} - pausing new Network Rail STOMP sessions until ${new Date(retryAt).toISOString()}`
+      : `Network Rail STOMP session cooldown active until ${new Date(retryAt).toISOString()}`;
+    this.saveStatus();
+    this.stopHeartbeat();
+    if (this.connectedReject) this.connectedReject(error);
+    this.connectedResolve = this.connectedReject = null;
+    try { if (this.reader) await this.reader.cancel(); } catch {}
+    try { if (this.socket) this.socket.close(); } catch {}
+    this.socket = null;
+    this.writer = null;
+    this.reader = null;
+
+    if (newNetworkRejection) {
+      this.status.reconnects += 1;
+      try {
+        await this.ctx.storage.put(NETWORK_RAIL_SESSION_COOLDOWN_KEY, {
+          until: retryAt,
+          reason: detail,
+          updatedAt: now
+        });
+        this.storageStats.writes += 1;
+      } catch (storageError) {
+        this.storageStats.writeFailures += 1;
+        this.storageStats.lastWriteError = `Session cooldown write: ${safeMessage(storageError)}`;
+      }
+    }
+
+    if (!this.nextAlarmAt || Math.abs(Number(this.nextAlarmAt) - retryAt) > 1000) {
+      await this.setNextAlarm(retryAt);
+    } else {
+      this.nextAlarmAt = retryAt;
+    }
+  }
+
   markHot(trainId, now = Date.now()) {
     const wasHot = this.isHot(trainId, now);
     super.markHot(trainId, now);
@@ -50,9 +155,16 @@ export class TrainMovementHub extends BaseTrainMovementHub {
 
   healthPayload() {
     const payload = super.healthPayload();
+    const now = Date.now();
+    const until = Number(this.sessionCooldownUntil) || 0;
     return {
       ...payload,
       version: VERSION,
+      networkRailSessionCooldown: {
+        active: until > now,
+        until: until > now ? until : null,
+        secondsRemaining: until > now ? Math.ceil((until - now) / 1000) : 0
+      },
       processing: { ...this.processingStats }
     };
   }
