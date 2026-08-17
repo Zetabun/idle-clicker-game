@@ -18,7 +18,9 @@ assert.match(source, /finishScope\(activeOnSaved\?'saved-active':'active',target
 assert.match(source, /if\(savedApi\?\.state\?\.active\)\{/, 'Saved journeys must have an explicit movement-tracking scope');
 assert.match(source, /if\(text\(saved&&saved\.date\)!==today\)continue;/, 'Saved journeys movement polling must stay restricted to today');
 assert.match(source, /services\.filter\(Boolean\)\.forEach\(service=>addTarget\(targets,service,today,'saved'\)\);/, 'today’s saved services must remain live movement targets after their origin departure');
-assert.match(source, /ensureCard\(card,snapshot,\{compact:true\}\)/, 'same-day saved cards must receive Network Rail movement progress when evidence exists');
+assert.match(source, /const calling=card\.querySelector\(':scope > \[data-saved-v2-timeline\]'\),timeline=!!calling;/, 'saved cards with a resolved route must use their journey timeline for live movement progress');
+assert.match(source, /decorateCallingTimeline\(calling,null,snapshot,\{startName:'',startTime:saved\.scheduledDeparture\|\|''\}\)/, 'same-day saved timelines must receive Network Rail movement progress when evidence exists');
+assert.match(source, /ensureCard\(card,timeline\?null:snapshot,\{compact:true\}\)/, 'saved cards without a timeline must retain the compact Network Rail movement fallback');
 assert.doesNotMatch(source, /readSavedJourneys\(\)\|\|\[\]\)\{\s*if\(saved\.date!==today\)/, 'the legacy unscoped all-saved polling loop must remain removed');
 assert.match(source, /trainActiveJourney/, 'active journey visibility must be an explicit polling scope');
 assert.match(source, /train-service\.open\[data-service-id\]/, 'an opened board service must narrow the polling scope');
