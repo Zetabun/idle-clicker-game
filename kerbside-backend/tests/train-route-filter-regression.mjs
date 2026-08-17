@@ -132,11 +132,83 @@ async function mockExternal(page,diagnostics){
     await json(route,404,{});
   };
 
-  // Keep this route-filter regression hermetic. WebKit has intermittently let
-  // endpoint-specific route globs escape to the real network, turning harmless
-  // auxiliary event/live-overlay fetches into CORS page errors. A single page
-  // route catches every request before it leaves the browser. Local Kerbside
-  // assets continue to the fixture server; external providers are deterministic.
+  // WebKit can perform Fetch API CORS checks before Playwright's page.route
+  // handler sees an external request. Install the deterministic provider mocks
+  // inside every document before Kerbside scripts run, so this regression never
+  // depends on live provider CORS/network behaviour.
+  await page.exposeFunction('__KERBSIDE_TEST_RECORD_REQUEST',pathname=>{
+    diagnostics.requests.push(String(pathname || ''));
+  });
+  await page.exposeFunction('__KERBSIDE_TEST_RECORD_BLOCKED',url=>{
+    diagnostics.blockedExternal.push(String(url || ''));
+  });
+  await page.addInitScript(({stationResults,allBoard,directBoard})=>{
+    const nativeFetch = globalThis.fetch.bind(globalThis);
+    const jsonResponse = (body,status=200)=>new Response(JSON.stringify(body),{
+      status,
+      headers:{'content-type':'application/json'}
+    });
+    const emptyBankHolidays = {
+      'england-and-wales':{division:'england-and-wales',events:[]},
+      scotland:{division:'scotland',events:[]},
+      'northern-ireland':{division:'northern-ireland',events:[]}
+    };
+
+    globalThis.fetch = async (input,init)=>{
+      const raw = typeof input === 'string'
+        ? input
+        : input && typeof input.url === 'string'
+          ? input.url
+          : String(input);
+      const url = new URL(raw,location.href);
+      const host = url.hostname.toLowerCase();
+      const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
+      const local = host === '127.0.0.1' || host === 'localhost';
+      if(local) return nativeFetch(input,init);
+
+      if(host === 'hux.azurewebsites.net' || host === 'huxley2.azurewebsites.net'){
+        await globalThis.__KERBSIDE_TEST_RECORD_REQUEST(pathname);
+        if(pathname.startsWith('/crs/')){
+          const query = pathname.slice('/crs/'.length).toLowerCase();
+          const results = stationResults.filter(item=>
+            item.stationName.toLowerCase().includes(query) || item.crsCode.toLowerCase() === query
+          );
+          return jsonResponse(results.length ? results : stationResults);
+        }
+        if(pathname === '/departures/BHM/9' || pathname === '/departures/BHM/20'){
+          return jsonResponse(allBoard);
+        }
+        if(pathname === '/departures/BHM/to/BRI/9' || pathname === '/departures/BHM/to/BRI/20'){
+          return jsonResponse(directBoard);
+        }
+        const departure = pathname.match(/^\/departures\/([A-Z0-9]{3})(?:\/to\/([A-Z0-9]{3}))?\/(?:9|20)$/i);
+        if(departure){
+          const crs=departure[1].toUpperCase(),filter=String(departure[2]||'').toUpperCase();
+          return jsonResponse({
+            generatedAt:'2026-08-10T13:20:00Z',locationName:crs,crs,nrccMessages:[],
+            ...(filter?{filterLocationName:filter,filtercrs:filter}:{}),trainServices:[]
+          });
+        }
+        if(pathname.startsWith('/service/')) return jsonResponse({});
+        return jsonResponse({},404);
+      }
+      if(host === 'raw.githubusercontent.com' && pathname.startsWith('/openfootball/football.json/')){
+        return jsonResponse({matches:[]});
+      }
+      if(host === 'query.wikidata.org'){
+        return jsonResponse({head:{vars:[]},results:{bindings:[]}});
+      }
+      if(host === 'www.gov.uk' && pathname === '/bank-holidays.json'){
+        return jsonResponse(emptyBankHolidays);
+      }
+
+      await globalThis.__KERBSIDE_TEST_RECORD_BLOCKED(url.href);
+      return jsonResponse({});
+    };
+  },{stationResults,allBoard,directBoard});
+
+  // Keep the existing network-level guard as a second layer for resource loads
+  // and for any request mechanism that is not window.fetch.
   await page.route('**/*', async route=>{
     const url = new URL(route.request().url());
     const host = url.hostname.toLowerCase();
