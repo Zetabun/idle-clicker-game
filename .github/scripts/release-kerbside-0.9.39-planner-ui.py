@@ -31,4 +31,12 @@ replace('kerbside-journey-planner-ui.js',
 'body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}\nbody.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}',
 'body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator,body:not(.theme-crystal) input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}\nbody.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.theme-crystal input[type="time"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}')
 
+# The planner regression contains two synthetic timetable providers. Apply the
+# same harmless argument capture to both so the post-patch remains deterministic.
+post=Path('.github/scripts/kerbside-release-post.py')
+post_text=post.read_text(encoding='utf-8')
+needle="x(q,'    provider.getJourneyOptions=async()=>{\\n      const rows=[','    provider.getJourneyOptions=async options=>{\\n      window.__KERBSIDE_PLAN_TEST_ARGS__={...options};\\n      const rows=[')"
+if needle not in post_text: raise SystemExit('Could not locate planner provider patch in release post script')
+post.write_text(post_text.replace(needle,needle[:-1]+',2)',1),encoding='utf-8')
+
 run('git','diff','--check')
