@@ -91,7 +91,7 @@ try{
   assert.equal(result.movementCards,0,'timeline should replace duplicate movement cards when progress can be shown');
   assert.equal(result.attached,'C21373');
   assert.deepEqual(result.resolvedRefs,['uid:C21373','head:5F25']);
-  assert.ok(result.matches>=2,`expected movement matches, got ${result.matches}`);
+  assert.equal(result.matches,1,'opened scheduled service should narrow movement matching to one scoped target');
 
   const liveOnly=await page.evaluate(async()=>{
     const api=window.__KERBSIDE_TRAIN_MOVEMENT__,timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,board=document.getElementById('trainScheduledBoard');
