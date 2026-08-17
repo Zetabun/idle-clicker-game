@@ -86,7 +86,7 @@ jobs:
       - name: Verify durable TRUST replay across idle gap
         shell: bash
         env:
-          NETWORK_RAIL_REPLAY_GAP_MS: '120000'
+          NETWORK_RAIL_REPLAY_GAP_MS: '180000'
           NETWORK_RAIL_REPLAY_TIMEOUT_MS: '60000'
         run: |
           set -euo pipefail
