@@ -1,0 +1,161 @@
+name: Apply Kerbside 0.9.37 screen scope
+
+on:
+  push:
+    branches:
+      - agent/kerbside-0.9.37-screen-scoped-movement
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[0.9.37 applied]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/kerbside-0.9.37-screen-scoped-movement
+          fetch-depth: 0
+
+      - name: Apply scoped movement polling and timeline fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('kerbside-train-movement.js')
+          source = path.read_text()
+          source = source.replace("const VERSION='0.9.35';", "const VERSION='0.9.37';", 1)
+
+          target_block = r'''function elementVisible(node){
+  if(!node||node.hidden||node.closest&&node.closest('[hidden]'))return false;
+  if(typeof window.getComputedStyle!=='function')return true;
+  const style=window.getComputedStyle(node);return style.display!=='none'&&style.visibility!=='hidden';
+}
+function addTarget(targets,service,date,kind){
+  if(!service)return;
+  const services=service?.journeyType==='connection'&&Array.isArray(service.legs)?service.legs:[service];
+  services.filter(Boolean).forEach(item=>targets.push({service:item,date,kind}));
+}
+function finishScope(mode,targets){state.scopeMode=mode;state.scopeTargets=targets.length;return targets;}
+function serviceForArticle(api,services,article){
+  if(!article)return null;const key=text(article.getAttribute('data-service-id'));
+  if(!key)return null;
+  return (services||[]).find((service,index)=>text(typeof api?.serviceKey==='function'?api.serviceKey(service,index):'')===key)||null;
+}
+function serviceTargets(){
+  const today=todayLondon(),targets=[];
+  const scrim=document.querySelector('#scrim.show');if(scrim&&elementVisible(scrim))return finishScope('settings',targets);
+  const activeApi=window.__KERBSIDE_ACTIVE_JOURNEY__,active=activeApi?.state?.active,activeRoot=document.getElementById('trainActiveJourney');
+  if(active&&text(active.date)===today&&elementVisible(activeRoot)){
+    const services=active.journeyType==='connection'?[active.first,active.onward]:[active.service];
+    services.filter(Boolean).forEach(service=>addTarget(targets,service,today,'active'));
+    return finishScope('active',targets);
+  }
+  const plan=window.__KERBSIDE_JOURNEY_PLANNER__,pDate=plannerDate();
+  if(plan?.planState?.active){
+    if(pDate!==today)return finishScope('planner-future',targets);
+    const details=document.querySelector('#planJourneyResults .plan-result-details[open]'),article=details&&details.closest('.plan-journey-result'),rank=Number(article&&article.getAttribute('data-plan-rank'))||0,candidate=rank?(plan.planState.results||[])[rank-1]:null;
+    if(candidate)addTarget(targets,candidate,pDate,'plan-open');
+    return finishScope(candidate?'planner-open':'planner',targets);
+  }
+  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
+  if(savedApi?.state?.active)return finishScope('saved',targets);
+  const baseDate=selectedDate();if(baseDate!==today)return finishScope('board-future',targets);
+  const scheduledBoard=document.getElementById('trainScheduledBoard'),liveBoard=document.getElementById('trainBoard'),scheduledVisible=elementVisible(scheduledBoard),board=scheduledVisible?scheduledBoard:liveBoard;
+  const api=scheduledVisible?window.__KERBSIDE_TRAIN_TIMETABLE__:window.__KERBSIDE_TRAINS__,services=api?.state?.services||[];
+  if(!board||!elementVisible(board))return finishScope('board-hidden',targets);
+  const open=board.querySelector('.train-service.open[data-service-id]'),selected=serviceForArticle(api,services,open);
+  if(selected)addTarget(targets,selected,baseDate,scheduledVisible?'scheduled-open':'live-open');
+  else services.forEach(service=>addTarget(targets,service,baseDate,scheduledVisible?'scheduled-board':'live-board'));
+  return finishScope(selected?(scheduledVisible?'scheduled-open':'live-open'):(scheduledVisible?'scheduled-board':'live-board'),targets);
+}
+function scopeSignature(targets){
+  const refs=[];for(const target of targets)for(const ref of refsFor(target.service))refs.push(`${target.date}|${upper(ref)}`);
+  return `${state.scopeMode||'idle'}|${[...new Set(refs)].sort().join(',')}`;
+}
+function refsByDate(targets=serviceTargets()){
+  const grouped=new Map();
+  for(const target of targets)for(const ref of refsFor(target.service)){
+    if(!grouped.has(target.date))grouped.set(target.date,new Set());grouped.get(target.date).add(ref);
+  }
+  return grouped;
+}'''
+          source, count = re.subn(
+              r"function serviceTargets\(\)\{.*?\n\}\nfunction refsByDate\(\)\{.*?\n\}",
+              target_block,
+              source,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('serviceTargets/refsByDate replacement did not match exactly once')
+
+          refresh_block = r'''async function refresh({force=false}={}){
+  if(document.hidden){state.scopeMode='hidden';return false;}
+  const targets=serviceTargets(),signature=scopeSignature(targets),scopeChanged=signature!==state.scopeSignature;
+  if(scopeChanged){state.scopeSignature=signature;state.scopeChanges=(Number(state.scopeChanges)||0)+1;}
+  const grouped=refsByDate(targets);state.scopeRefs=[...grouped.values()].reduce((total,set)=>total+set.size,0);
+  if(!grouped.size){state.status='idle';decorate();return false;}
+  if(!force&&!scopeChanged&&state.lastFetchAt&&Date.now()-state.lastFetchAt<REFRESH_MS-1000){decorate();return true;}
+  state.status='loading';state.error='';state.lastFetchAt=Date.now();
+  try{
+    for(const [date,set] of grouped){
+      for(const refs of chunk([...set],MAX_REFS_PER_REQUEST)){
+        const url=new URL('/movement/lookup',API_BASE);url.searchParams.set('date',date);refs.forEach(ref=>url.searchParams.append('ref',ref));
+        state.requests++;const payload=await fetchJson(url.toString());state.lastMessageAt=Number(payload&&payload.lastMessageAt)||state.lastMessageAt;
+        const results=payload&&payload.results||{};for(const ref of refs)cacheMovement(date,ref,results[ref]||null);
+      }
+    }
+    let matches=0;for(const target of targets)if(attachMovement(target.service,target.date))matches++;
+    state.matches=matches;state.status='ready';state.lastSuccessAt=Date.now();state.error='';decorate();
+    document.dispatchEvent(new CustomEvent('kerbside:train-movement',{detail:{matches,lastMessageAt:state.lastMessageAt,status:state.status,scope:state.scopeMode,targets:state.scopeTargets,refs:state.scopeRefs}}));
+    return true;
+  }catch(error){state.status='error';state.error=error&&error.name==='AbortError'?'Movement request timed out':text(error&&error.message||error);decorate();return false;}
+}'''
+          source, count = re.subn(
+              r"async function refresh\(\{force=false\}=\{\}\)\{.*?\n\}\n\nfunction locationLabel",
+              refresh_block + "\n\nfunction locationLabel",
+              source,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('refresh replacement did not match exactly once')
+
+          old_start = "function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'){const station=api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}"
+          new_start = "function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'||boardId==='trainScheduledBoard'){const station=window.__KERBSIDE_TRAINS__?.state?.station||api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}"
+          if old_start not in source:
+              raise SystemExit('serviceStartName replacement target missing')
+          source = source.replace(old_start, new_start, 1)
+
+          timer_line = "  state.timer=setInterval(()=>refresh().catch(()=>{}),REFRESH_MS);\n"
+          event_lines = "  document.addEventListener('click',()=>setTimeout(()=>scheduleRefresh(false),0),true);\n  document.addEventListener('toggle',event=>{if(event.target&&event.target.matches&&event.target.matches('.plan-result-details'))scheduleRefresh(false);},true);\n"
+          if timer_line not in source:
+              raise SystemExit('install timer insertion target missing')
+          source = source.replace(timer_line, event_lines + timer_line, 1)
+
+          path.write_text(source)
+          PY
+
+          node --check kerbside-train-movement.js
+          node kerbside-backend/tests/train-movement-scope-regression.mjs
+          npm --prefix kerbside-backend run check
+
+      - name: Commit validated 0.9.37 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add kerbside-train-movement.js
+          if git diff --cached --quiet; then
+            echo 'No movement source change needed.'
+            exit 0
+          fi
+          git commit -m 'Kerbside movement 0.9.37: screen-scope polling [0.9.37 applied]'
+          git push origin HEAD:agent/kerbside-0.9.37-screen-scoped-movement
