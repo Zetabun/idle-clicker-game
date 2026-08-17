@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: kerbside-train-movement-${{ github.event.pull_request.number || github.ref }}
@@ -34,6 +34,24 @@ jobs:
     steps:
       - name: Check out branch
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
+      - name: Synchronize release version
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync-version.py
+          if git diff --quiet; then
+            echo 'Version already synchronized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bus.html kerbside-status.js kerbside-saved-journeys-polish.js kerbside-train-movement.js kerbside-train-movement-worker/worker.js kerbside-backend/src/worker.js kerbside-backend/package.json kerbside-backend/test/worker.test.js kerbside-backend/tests/browser-regression.mjs kerbside-journey-planner-ui.js
+          git commit -m 'Kerbside 0.9.35: synchronize version'
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
