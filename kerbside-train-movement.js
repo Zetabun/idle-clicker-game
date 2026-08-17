@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.43';
+const VERSION='0.9.44';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -207,7 +207,12 @@ function locationTokens(location){const values=[location&&location.crs,location&
 function rowPlace(row){return normalisePlace(row&&row.querySelector('b')&&row.querySelector('b').textContent);}
 function rowMatchesLocation(row,location){const key=rowPlace(row),tokens=locationTokens(location);if(!key||!tokens.length)return false;if(tokens.includes(key))return true;return tokens.some(token=>token.length>=4&&key.length>=4&&(token.includes(key)||key.includes(token)));}
 function firstLeg(service){return service&&service.journeyType==='connection'&&Array.isArray(service.legs)&&service.legs[0]?service.legs[0]:service;}
-function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'||boardId==='trainScheduledBoard'){const station=window.__KERBSIDE_TRAINS__?.state?.station||api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}const origin=Array.isArray(leg&&leg.origin)?leg.origin.find(Boolean):leg&&leg.origin;return text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||origin&&(origin.locationName||origin.name||origin.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs));}
+function serviceStartName(service,api,boardId,snapshot){
+  const leg=firstLeg(service),origin=Array.isArray(leg&&leg.origin)?leg.origin.find(Boolean):leg&&leg.origin;
+  const routeStart=text(origin&&(origin.locationName||origin.name||origin.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs)||leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs));if(routeStart)return routeStart;
+  if(boardId==='trainBoard'||boardId==='trainScheduledBoard'){const station=window.__KERBSIDE_TRAINS__?.state?.station||api&&api.state&&api.state.station;return text(station&&(station.name||station.crs));}
+  return '';
+}
 function serviceStartTime(service){const leg=firstLeg(service);return text(leg&&(leg.std||leg.departure));}
 function serviceEndName(service){const leg=firstLeg(service),destination=Array.isArray(leg&&leg.destination)&&leg.destination[0];return text(leg&&leg.to&&(leg.to.name||leg.to.locationName||leg.to.crs)||leg&&leg.routeDestination&&(leg.routeDestination.name||leg.routeDestination.locationName||leg.routeDestination.crs)||destination&&(destination.name||destination.locationName||destination.crs));}
 function serviceEndTime(service){const leg=firstLeg(service);return text(leg&&leg.arrival);}
@@ -250,21 +255,41 @@ function decorateCallingTimeline(calling,service,snapshot,{startName='',startTim
   }
   return true;
 }
-function flattenTimelinePoints(service){
+function flattenTimelinePoints(service,detailData=null){
   const leg=firstLeg(service),points=[];
-  const add=value=>{for(const group of Array.isArray(value)?value:[]){const rows=Array.isArray(group&&group.callingPoint)?group.callingPoint:Array.isArray(group&&group.callingPoints)?group.callingPoints:[group];for(const point of rows){if(!point)continue;const name=text(point.locationName||point.name||point.stationName||point.crs),when=text(point.et||point.eta||point.etd||point.st||point.sta||point.std);if(name)points.push({name,when,cancelled:!!point.isCancelled});}}};
-  add(leg&&leg.previousCallingPoints);add(leg&&leg.callingPoints);add(leg&&leg.subsequentCallingPoints);
-  const end=serviceEndName(leg),endTime=serviceEndTime(leg);if(end&&!points.some(point=>normalisePlace(point.name)===normalisePlace(end)))points.push({name:end,when:endTime,cancelled:false});
-  const seen=new Set();return points.filter(point=>{const key=normalisePlace(point.name);if(!key||seen.has(key))return false;seen.add(key);return true;});
+  const add=(value,phase='ahead')=>{for(const group of Array.isArray(value)?value:[]){const rows=Array.isArray(group&&group.callingPoint)?group.callingPoint:Array.isArray(group&&group.callingPoints)?group.callingPoints:[group];for(const point of rows){if(!point)continue;const name=text(point.locationName||point.name||point.stationName||point.crs),when=text(point.et||point.eta||point.etd||point.st||point.sta||point.std);if(name)points.push({name,when,cancelled:!!point.isCancelled,phase});}}};
+  add(detailData&&detailData.previousCallingPoints,'passed');add(leg&&leg.previousCallingPoints,'passed');add(leg&&leg.callingPoints);add(detailData&&detailData.subsequentCallingPoints);add(leg&&leg.subsequentCallingPoints);
+  const end=serviceEndName(leg),endTime=serviceEndTime(leg);if(end&&!points.some(point=>normalisePlace(point.name)===normalisePlace(end)))points.push({name:end,when:endTime,cancelled:false,phase:'ahead'});
+  const merged=[],seen=new Map();for(const point of points){const key=normalisePlace(point.name);if(!key)continue;const existing=seen.get(key);if(existing){if(point.phase==='passed')existing.phase='passed';if(!existing.when&&point.when)existing.when=point.when;existing.cancelled=existing.cancelled||point.cancelled;continue;}const copy={...point};seen.set(key,copy);merged.push(copy);}return merged;
+}
+function timelineDomPoints(calling){return timelineSourceRows(calling).map(row=>{const small=text(row.querySelector('small')&&row.querySelector('small').textContent),match=small.match(/\b(\d{1,2}:\d{2})\b/);return {name:text(row.querySelector('b')&&row.querySelector('b').textContent),when:match?match[1]:'',cancelled:row.classList.contains('cancelled'),phase:row.classList.contains('passed')||row.classList.contains('progress-complete')?'passed':'ahead'};}).filter(point=>point.name);}
+function focusTimelineCurrent(calling){
+  if(!calling)return;const current=calling.querySelector('[data-train-progress-marker],.progress-current');if(!current)return;const signature=`${calling.dataset.trainProgressSignature||''}|${text(current.textContent)}`;if(calling.dataset.trainProgressFocus===signature)return;calling.dataset.trainProgressFocus=signature;
+  const apply=()=>{if(!calling.isConnected||calling.scrollHeight<=calling.clientHeight+4)return;const target=Math.max(0,current.offsetTop-Math.round(calling.clientHeight*.42));calling.scrollTop=target;};
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(apply);else setTimeout(apply,0);
+}
+function timelineMinute(value,startMinute){const match=text(value).match(/^(\d{1,2}):(\d{2})$/);if(!match)return Number.POSITIVE_INFINITY;let minute=Number(match[1])*60+Number(match[2]);if(Number.isFinite(startMinute)&&minute<startMinute-720)minute+=1440;return minute;}
+function mergeTimelinePoints(primary,existing,startTime){
+  const rows=[],byKey=new Map();for(const point of [...(Array.isArray(primary)?primary:[]),...(Array.isArray(existing)?existing:[])]){const key=normalisePlace(point&&point.name);if(!key)continue;const found=byKey.get(key);if(found){if(point.phase==='passed')found.phase='passed';if(!found.when&&point.when)found.when=point.when;found.cancelled=found.cancelled||!!point.cancelled;continue;}const copy={name:point.name,when:point.when||'',cancelled:!!point.cancelled,phase:point.phase==='passed'?'passed':'ahead',order:rows.length};byKey.set(key,copy);rows.push(copy);}
+  const startMatch=text(startTime).match(/^(\d{1,2}):(\d{2})$/),startMinute=startMatch?Number(startMatch[1])*60+Number(startMatch[2]):null;
+  return rows.sort((a,b)=>{const av=timelineMinute(a.when,startMinute),bv=timelineMinute(b.when,startMinute);if(av!==bv)return av-bv;return a.order-b.order;});
+}
+function ensureBoardTimeline(container,service,detailData=null){
+  if(!container)return null;let calling=container.querySelector('.train-calling');const points=mergeTimelinePoints(flattenTimelinePoints(service,detailData),calling?timelineDomPoints(calling):[],serviceStartTime(service));if(!points.length)return calling;
+  if(!calling){calling=document.createElement('div');calling.className='train-calling';const unavailable=[...container.querySelectorAll('.train-detail-note')].find(node=>/Calling-point data is unavailable/i.test(text(node.textContent)));if(unavailable)unavailable.remove();container.appendChild(calling);}
+  const sourceSignature=points.map(point=>`${normalisePlace(point.name)}|${point.when}|${point.cancelled}|${point.phase}`).join('||');
+  const routeSignature=points.map(point=>normalisePlace(point.name)).join('||'),domRouteSignature=timelineDomPoints(calling).map(point=>normalisePlace(point.name)).join('||');
+  if(calling.dataset.trainFullRouteSource!==sourceSignature||domRouteSignature!==routeSignature){calling.dataset.trainFullRouteSource=sourceSignature;calling.dataset.trainProgressSignature='';calling.innerHTML=`<div class="train-detail-title">Calling points</div>${points.map(point=>`<div class="train-call ${point.phase==='passed'?'passed':'ahead'}${point.cancelled?' cancelled':''}"><i></i><span><b>${esc(point.name)}</b><small>${esc(point.when)}${point.cancelled?' · cancelled':''}</small></span></div>`).join('')}`;}
+  return calling;
 }
 function ensurePlannerTimeline(container,candidate,snapshot){
   if(!container)return false;let calling=container.querySelector(':scope > [data-train-progress-planner]');if(!snapshot){if(calling)calling.remove();return false;}
   const leg=firstLeg(candidate),points=flattenTimelinePoints(leg);if(!leg||!points.length)return false;
   if(!calling){calling=document.createElement('div');calling.className='train-calling train-progress-generated';calling.setAttribute('data-train-progress-planner','');container.prepend(calling);}
   const sourceSignature=points.map(point=>`${normalisePlace(point.name)}|${point.when}|${point.cancelled}`).join('||');
-  if(calling.dataset.trainProgressSource!==sourceSignature){calling.dataset.trainProgressSource=sourceSignature;calling.dataset.trainProgressSignature='';calling.innerHTML=`<div class="train-detail-title">Journey progress</div>${points.map(point=>`<div class="train-call ahead${point.cancelled?' cancelled':''}"><i></i><span><b>${esc(point.name)}</b><small>${esc(point.when)}${point.cancelled?' · cancelled':''}</small></span></div>`).join('')}`;}
+  if(calling.dataset.trainProgressSource!==sourceSignature){calling.dataset.trainProgressSource=sourceSignature;calling.dataset.trainProgressSignature='';calling.innerHTML=`<div class="train-detail-title">Journey progress</div>${points.map(point=>`<div class="train-call ${point.phase==='passed'?'passed':'ahead'}${point.cancelled?' cancelled':''}"><i></i><span><b>${esc(point.name)}</b><small>${esc(point.when)}${point.cancelled?' · cancelled':''}</small></span></div>`).join('')}`;}
   const start=text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||window.__KERBSIDE_JOURNEY_PLANNER__?.planState?.from?.name||snapshot&&snapshot.activation&&snapshot.activation.origin&&snapshot.activation.origin.name);
-  return decorateCallingTimeline(calling,leg,snapshot,{startName:start,startTime:serviceStartTime(leg)});
+  const decorated=decorateCallingTimeline(calling,leg,snapshot,{startName:start,startTime:serviceStartTime(leg)});if(decorated)focusTimelineCurrent(calling);return decorated;
 }
 function ensureInline(article,info){
   const meta=article&&article.querySelector('.train-route small');if(!meta)return;
@@ -284,7 +309,7 @@ function decorateBoard(api,boardId,services,date){
   services.forEach((service,index)=>{
     const key=typeof api.serviceKey==='function'?api.serviceKey(service,index):'';if(!key)return;
     const article=articleFor(board,key),snapshot=service&&service.journeyType==='connection'?primaryMovement(service,date):attachMovement(service,date),info=progress(snapshot);if(!article)return;
-    const detail=article.querySelector('.train-service-detail'),leg=firstLeg(service),timeline=decorateCallingTimeline(detail&&detail.querySelector('.train-calling'),leg,snapshot,{startName:serviceStartName(service,api,boardId,snapshot),startTime:serviceStartTime(leg)});
+    const detail=article.querySelector('.train-service-detail'),leg=firstLeg(service),detailCache=api&&api.state&&api.state.detailCache instanceof Map?api.state.detailCache.get(key):null,calling=ensureBoardTimeline(detail,leg,detailCache),timeline=decorateCallingTimeline(calling,leg,snapshot,{startName:serviceStartName(service,api,boardId,snapshot),startTime:serviceStartTime(leg)});if(timeline)focusTimelineCurrent(calling);
     ensureInline(article,info);ensureCard(detail,timeline?null:snapshot);
   });
 }
@@ -306,13 +331,14 @@ function decorateSaved(){
   const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
   for(const card of document.querySelectorAll('[data-saved-v2-id]')){
     const saved=byId.get(String(card.getAttribute('data-saved-v2-id'))),snapshot=saved&&isToday(saved.date)?savedSelectorMovement(saved,saved.date):null,info=progress(snapshot),following=!!(saved&&savedApi&&typeof savedApi.activeMatchesSaved==='function'&&savedApi.activeMatchesSaved(saved));let node=card.querySelector(':scope > .saved-movement-inline');
-    ensureCard(card,snapshot,{compact:true});
+    const calling=card.querySelector(':scope > [data-saved-v2-timeline]'),timeline=!!calling;if(calling&&saved&&isToday(saved.date)){decorateCallingTimeline(calling,null,snapshot,{startName:'',startTime:saved.scheduledDeparture||''});focusTimelineCurrent(calling);}
+    ensureCard(card,timeline?null:snapshot,{compact:true});
     if(!info){if(node)node.remove();continue;}if(!node){node=document.createElement('div');node.className='saved-movement-inline';const times=card.querySelector('.saved-v2-times');(times||card.firstElementChild)?.insertAdjacentElement('afterend',node);}node.className=`saved-movement-inline movement-${info.tone}`;setText(node,info.short);
   }
 }
 function decorateActive(){
   const active=window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active,root=document.getElementById('trainActiveJourney');if(!root||!active||!isToday(active.date))return;
-  const services=active.journeyType==='connection'?[active.first,active.onward]:[active.service];const snapshot=services.map(service=>movementFor(service,active.date)).find(Boolean);ensureCard(root,snapshot);
+  const services=active.journeyType==='connection'?[active.first,active.onward]:[active.service],service=services.find(Boolean),snapshot=services.map(item=>movementFor(item,active.date)).find(Boolean),calling=root.querySelector('.train-calling');const timeline=calling?decorateCallingTimeline(calling,service,snapshot,{startName:serviceStartName(service,null,'',snapshot),startTime:serviceStartTime(service)}):false;if(timeline)focusTimelineCurrent(calling);ensureCard(root,timeline?null:snapshot);
 }
 function decorate(){
   const date=selectedDate();
@@ -328,10 +354,10 @@ function installStyles(){if(document.getElementById(STYLE_ID))return;const style
 .train-movement-card{display:grid;gap:5px;margin:0 0 10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .28);border-radius:10px;background:rgb(var(--live-rgb) / .06)}
 .train-movement-card>div{display:grid;gap:2px}.train-movement-card span{color:var(--live);font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-movement-card strong{font-size:11px}.train-movement-card p,.train-movement-card small{margin:0;color:var(--text-dim);font-size:9.5px;line-height:1.45}.train-movement-card.movement-stale{border-color:var(--rule);background:var(--ink-3)}.train-movement-card.movement-stale span{color:var(--text-dim)}.train-movement-card.movement-warn{border-color:rgb(var(--warn-rgb) / .3);background:rgb(var(--warn-rgb) / .06)}.train-movement-card.movement-warn span{color:var(--warn)}
 .plan-movement-inline,.saved-movement-inline{padding:6px 8px;border:1px solid rgb(var(--live-rgb) / .2);border-radius:7px;background:rgb(var(--live-rgb) / .05);color:var(--live);font-size:9px;font-weight:800}.plan-movement-inline{grid-column:1/-1}.saved-movement-inline{margin-top:-3px}.plan-movement-inline.movement-stale,.saved-movement-inline.movement-stale{border-color:var(--rule);background:var(--ink-3)}.plan-movement-inline.movement-warn,.saved-movement-inline.movement-warn{border-color:rgb(var(--warn-rgb) / .25);background:rgb(var(--warn-rgb) / .05)}
-.train-calling.train-live-progress{padding-bottom:6px}.train-live-progress .train-detail-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.train-progress-badge{flex:0 0 auto;padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-mute);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase}.train-progress-badge.is-live{border-color:rgb(var(--live-rgb) / .28);background:rgb(var(--live-rgb) / .07);color:var(--live)}.train-progress-badge.is-stale{background:var(--ink-3);color:var(--text-dim)}
+.train-calling.train-live-progress{padding-bottom:6px}.train-calling.train-live-progress,.saved-v2-timeline{max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:6px}.saved-v2-timeline{margin:2px 0 1px;padding-top:8px;border-top:1px solid var(--rule)}.train-live-progress .train-detail-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.train-progress-badge{flex:0 0 auto;padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-mute);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase}.train-progress-badge.is-live{border-color:rgb(var(--live-rgb) / .28);background:rgb(var(--live-rgb) / .07);color:var(--live)}.train-progress-badge.is-stale{background:var(--ink-3);color:var(--text-dim)}
 .train-live-progress .train-call{min-height:42px}.train-live-progress .train-call.progress-complete>i{background:var(--live);opacity:.78}.train-live-progress .train-call.progress-complete:before{background:rgb(var(--live-rgb) / .42)}.train-live-progress .train-call.progress-future>i{box-sizing:border-box;border:2px solid var(--text-mute);background:var(--ink-2)}.train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle){width:11px;height:11px;margin-top:2px;margin-left:-2px;background:var(--live);box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .12)}
 .train-progress-marker{min-height:54px!important;align-items:flex-start}.train-progress-marker:before{top:25px!important}.train-progress-marker>i.train-progress-vehicle{display:grid;place-items:center;flex:0 0 auto;width:24px;height:24px;margin:-2px 0 0 -6px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .13);opacity:1}.train-progress-marker>i.train-progress-vehicle svg{width:14px;height:14px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.train-progress-marker.movement-stale>i.train-progress-vehicle{background:var(--text-dim);box-shadow:0 0 0 3px var(--ink-2)}.train-progress-marker b{color:var(--live)!important;font-weight:800!important}.train-progress-marker.movement-stale b{color:var(--text-dim)!important}.train-progress-marker small{max-width:48rem;line-height:1.45}.train-progress-now{display:block;margin-top:3px;color:var(--live);font-size:9px;font-style:normal;font-weight:700;line-height:1.35}.train-progress-generated{margin:2px 0 10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .22);border-radius:10px;background:rgb(var(--live-rgb) / .035)}
-@media(max-width:820px){.train-movement-card{padding:9px;margin-bottom:8px}.train-movement-inline{font-size:8.5px}.train-progress-generated{padding:9px}.train-progress-marker small{font-size:9px}}
+@media(max-width:820px){.train-movement-card{padding:9px;margin-bottom:8px}.train-movement-inline{font-size:8.5px}.train-progress-generated{padding:9px}.train-progress-marker small{font-size:9px}.train-calling.train-live-progress,.saved-v2-timeline{max-height:min(46vh,360px)}}
 `;document.head.appendChild(style);}
 function scheduleRefresh(force=false){setTimeout(()=>refresh({force}).catch(()=>{}),force?0:120);}
 function install(){

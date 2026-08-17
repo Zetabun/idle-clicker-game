@@ -43,10 +43,10 @@ try{
     const today=(()=>{const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));return `${map.year}-${map.month}-${map.day}`;})();
     window.__KERBSIDE_TRAIN_DATE__.state.date=today;
     const planDate=document.getElementById('planJourneyDate');if(planDate)planDate.value=today;
-    const service={serviceID:'20260816C21373',std:'20:12',arrival:'21:33',operator:'CrossCountry',destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}]};
+    const service={serviceID:'20260816C21373',uid:'C21373',trainId:'5F25',std:'20:12',arrival:'21:33',operator:'CrossCountry',origin:[{locationName:'Wolverhampton',crs:'WVH'}],destination:[{locationName:'Bristol Temple Meads',crs:'BRI'}]};
     const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,originalEvidenceFor=overlay&&overlay.evidenceFor;
     if(overlay)overlay.evidenceFor=row=>row===service?{service:{uid:'C21373',trainid:'5F25',serviceIdGuid:'20260816C21373'}}:(typeof originalEvidenceFor==='function'?originalEvidenceFor(row):null);
-    const trains=window.__KERBSIDE_TRAINS__,liveKey=trains.serviceKey(service,0);trains.state.station={crs:'BHM',name:'Birmingham New Street'};trains.state.services=[service];
+    const trains=window.__KERBSIDE_TRAINS__,liveKey=trains.serviceKey(service,0);trains.state.station={crs:'BHM',name:'Birmingham New Street'};trains.state.services=[service];trains.state.detailCache.set(liveKey,{previousCallingPoints:[{callingPoint:[{locationName:'Wolverhampton',crs:'WVH',st:'19:40',at:'19:42',isCancelled:false},{locationName:'Sandwell & Dudley',crs:'SAD',st:'19:55',at:'19:56',isCancelled:false},{locationName:'Smethwick Galton Bridge',crs:'SGB',st:'20:03',at:'20:04',isCancelled:false}]}],subsequentCallingPoints:[{callingPoint:[{locationName:'University',crs:'UNI',st:'20:20',et:'20:22',isCancelled:false},{locationName:'Selly Oak',crs:'SLY',st:'20:24',et:'20:25',isCancelled:false},{locationName:'Cheltenham Spa',crs:'CNM',st:'21:00',et:'21:02',isCancelled:false},{locationName:'Bristol Temple Meads',crs:'BRI',st:'21:33',et:'21:35',isCancelled:false}]}]});
     document.getElementById('trainBoard').innerHTML=`<article class="train-service open" data-service-id="${liveKey}"><button class="train-service-summary"><span class="train-route"><strong>Bristol Temple Meads</strong><small>CrossCountry · Platform 11</small></span></button><div class="train-service-detail"><div class="train-calling"><div class="train-detail-title">Calling points</div><div class="train-call ahead"><i></i><span><b>University</b><small>20:20</small></span></div><div class="train-call ahead"><i></i><span><b>Selly Oak</b><small>20:24</small></span></div></div></div></article>`;
     const scheduled={...service,uid:'C21373',trainId:'5F25',serviceID:'20260816C21373',from:{crs:'BHM',name:'Birmingham New Street'},to:{crs:'BRI',name:'Bristol Temple Meads'},previousCallingPoints:[{callingPoint:[{locationName:'Wolverhampton',crs:'WVH',st:'19:55',at:'19:56',isCancelled:false}]}],subsequentCallingPoints:[{callingPoint:[{locationName:'University',crs:'UNI',st:'20:20',et:'20:22',isCancelled:false},{locationName:'Cheltenham Spa',crs:'CNM',st:'21:00',et:'21:02',isCancelled:false},{locationName:'Bristol Temple Meads',crs:'BRI',st:'21:33',et:'21:35',isCancelled:false}]}]};
     const timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,scheduledKey=timetable.serviceKey(scheduled,0);timetable.state.services=[scheduled];
@@ -75,7 +75,10 @@ try{
   }));
   assert.match(result.liveInline,/between Birmingham New Street and University/i);
   assert.match(result.liveTitle,/Live journey progress/i);
-  assert.match(result.liveTimeline,/Birmingham New Street/i);
+  assert.match(result.liveTimeline,/Wolverhampton/i,'live timeline should include calling points before the selected/current station');
+  assert.match(result.liveTimeline,/Sandwell & Dudley/i,'live timeline should retain the earlier route');
+  assert.match(result.liveTimeline,/Smethwick Galton Bridge/i,'live timeline should retain the last passed stop');
+  assert.match(result.liveTimeline,/Bristol Temple Meads/i,'live timeline should retain the destination as part of the full route');
   assert.match(result.liveTimeline,/Between Birmingham New Street and University/i);
   assert.match(result.liveTimeline,/2 min late/i);
   assert.match(result.liveTimeline,/not GPS/i);
@@ -94,6 +97,19 @@ try{
   assert.equal(result.attached,'C21373');
   assert.deepEqual(result.resolvedRefs,['uid:C21373','head:5F25']);
   assert.equal(result.matches,1,'opened scheduled service should narrow movement matching to one scoped target');
+
+  const restoredRoute=await page.evaluate(async()=>{
+    const calling=document.querySelector('#trainBoard .train-calling');calling.innerHTML='<div class="train-detail-title">Calling points</div><div class="train-call ahead"><i></i><span><b>University</b><small>20:20</small></span></div><div class="train-call ahead"><i></i><span><b>Selly Oak</b><small>20:24</small></span></div>';
+    await window.__KERBSIDE_TRAIN_MOVEMENT__.refresh({force:true});
+    return calling.textContent||'';
+  });
+  assert.match(restoredRoute,/Wolverhampton/i,'a later board/detail rerender must not erase previous calling points from the full route');
+  assert.match(restoredRoute,/Smethwick Galton Bridge/i,'cached previous calling points should be restored after rerender');
+  assert.match(restoredRoute,/Bristol Temple Meads/i,'cached future calling points should be restored after rerender');
+  const timelineScroll=await page.locator('#trainBoard .train-calling').evaluate(node=>({overflowY:getComputedStyle(node).overflowY,maxHeight:getComputedStyle(node).maxHeight,names:[...node.querySelectorAll('.train-call b')].map(item=>(item.textContent||'').trim())}));
+  assert.equal(timelineScroll.overflowY,'auto','live route timeline should be vertically scrollable');
+  assert.notEqual(timelineScroll.maxHeight,'none','live route timeline should be height-bounded');
+  assert.ok(timelineScroll.names.indexOf('Wolverhampton')>=0&&timelineScroll.names.indexOf('Wolverhampton')<timelineScroll.names.findIndex(name=>/Between Birmingham New Street and University/i.test(name)),`previous calling points should remain above the current train marker: ${JSON.stringify(timelineScroll.names)}`);
 
   const liveOnly=await page.evaluate(async()=>{
     const api=window.__KERBSIDE_TRAIN_MOVEMENT__,timetable=window.__KERBSIDE_TRAIN_TIMETABLE__,board=document.getElementById('trainScheduledBoard');
