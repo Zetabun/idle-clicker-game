@@ -8,7 +8,7 @@ assert.match(source, /const MAX_REFS_PER_REQUEST=40;/, 'point 3 must remain out 
 
 assert.match(source, /plan-result-details\[open\]/, 'planner polling must be scoped to an opened journey result');
 assert.match(source, /__KERBSIDE_SAVED_JOURNEYS_V2__/, 'saved-journey screen state must participate in movement scope selection');
-assert.match(source, /if\(savedApi\?\.state\?\.active\)return targets;/, 'saved-journey overview must not continuously poll every saved train');
+assert.match(source, /if\(savedApi\?\.state\?\.active\)return finishScope\('saved',targets\);/, 'saved-journey overview must not continuously poll every saved train');
 assert.doesNotMatch(source, /readSavedJourneys\(\)\|\|\[\]\)\{\s*if\(saved\.date!==today\)/, 'the legacy all-saved polling loop must be removed');
 assert.match(source, /trainActiveJourney/, 'active journey visibility must be an explicit polling scope');
 assert.match(source, /train-service\.open\[data-service-id\]/, 'an opened board service must narrow the polling scope');
