@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.35';
+const VERSION='0.9.37';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -75,30 +75,56 @@ function attachJourney(candidate,date){
   try{candidate.networkRailMovements=movements;}catch(error){}
   return movements;
 }
+function elementVisible(node){
+  if(!node||node.hidden||node.closest&&node.closest('[hidden]'))return false;
+  if(typeof window.getComputedStyle!=='function')return true;
+  const style=window.getComputedStyle(node);return style.display!=='none'&&style.visibility!=='hidden';
+}
+function addTarget(targets,service,date,kind){
+  if(!service)return;
+  const services=service?.journeyType==='connection'&&Array.isArray(service.legs)?service.legs:[service];
+  services.filter(Boolean).forEach(item=>targets.push({service:item,date,kind}));
+}
+function finishScope(mode,targets){state.scopeMode=mode;state.scopeTargets=targets.length;return targets;}
+function serviceForArticle(api,services,article){
+  if(!article)return null;const key=text(article.getAttribute('data-service-id'));
+  if(!key)return null;
+  return (services||[]).find((service,index)=>text(typeof api?.serviceKey==='function'?api.serviceKey(service,index):'')===key)||null;
+}
 function serviceTargets(){
   const today=todayLondon(),targets=[];
-  const baseDate=selectedDate();
-  const live=window.__KERBSIDE_TRAINS__?.state?.services||[];
-  if(baseDate===today)live.forEach(service=>targets.push({service,date:baseDate,kind:'live'}));
-  const scheduled=window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.services||[];
-  if(baseDate===today)scheduled.forEach(service=>{if(service?.journeyType==='connection'&&Array.isArray(service.legs))service.legs.forEach(leg=>targets.push({service:leg,date:baseDate,kind:'scheduled'}));else targets.push({service,date:baseDate,kind:'scheduled'});});
-  const plan=window.__KERBSIDE_JOURNEY_PLANNER__,pDate=plannerDate();
-  if(pDate===today)(plan?.planState?.results||[]).forEach(candidate=>{const legs=candidate?.journeyType==='connection'&&Array.isArray(candidate.legs)?candidate.legs:[candidate];legs.filter(Boolean).forEach(leg=>targets.push({service:leg,date:pDate,kind:'plan'}));});
-  if(pDate===today&&typeof plan?.readSavedJourneys==='function')for(const saved of plan.readSavedJourneys()||[]){
-    if(saved.date!==today)continue;
-    const selectors=saved.journeyType==='connection'?[saved.first,saved.onward]:[saved.service];
-    selectors.filter(Boolean).forEach(service=>targets.push({service,date:saved.date,kind:'saved'}));
-  }
-  const activeApi=window.__KERBSIDE_ACTIVE_JOURNEY__,active=activeApi?.state?.active;
-  if(active&&text(active.date)===today){
+  const scrim=document.querySelector('#scrim.show');if(scrim&&elementVisible(scrim))return finishScope('settings',targets);
+  const activeApi=window.__KERBSIDE_ACTIVE_JOURNEY__,active=activeApi?.state?.active,activeRoot=document.getElementById('trainActiveJourney');
+  if(active&&text(active.date)===today&&elementVisible(activeRoot)){
     const services=active.journeyType==='connection'?[active.first,active.onward]:[active.service];
-    services.filter(Boolean).forEach(service=>targets.push({service,date:today,kind:'active'}));
+    services.filter(Boolean).forEach(service=>addTarget(targets,service,today,'active'));
+    return finishScope('active',targets);
   }
-  return targets;
+  const plan=window.__KERBSIDE_JOURNEY_PLANNER__,pDate=plannerDate();
+  if(plan?.planState?.active){
+    if(pDate!==today)return finishScope('planner-future',targets);
+    const details=document.querySelector('#planJourneyResults .plan-result-details[open]'),article=details&&details.closest('.plan-journey-result'),rank=Number(article&&article.getAttribute('data-plan-rank'))||0,candidate=rank?(plan.planState.results||[])[rank-1]:null;
+    if(candidate)addTarget(targets,candidate,pDate,'plan-open');
+    return finishScope(candidate?'planner-open':'planner',targets);
+  }
+  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
+  if(savedApi?.state?.active)return finishScope('saved',targets);
+  const baseDate=selectedDate();if(baseDate!==today)return finishScope('board-future',targets);
+  const scheduledBoard=document.getElementById('trainScheduledBoard'),liveBoard=document.getElementById('trainBoard'),scheduledVisible=elementVisible(scheduledBoard),board=scheduledVisible?scheduledBoard:liveBoard;
+  const api=scheduledVisible?window.__KERBSIDE_TRAIN_TIMETABLE__:window.__KERBSIDE_TRAINS__,services=api?.state?.services||[];
+  if(!board||!elementVisible(board))return finishScope('board-hidden',targets);
+  const open=board.querySelector('.train-service.open[data-service-id]'),selected=serviceForArticle(api,services,open);
+  if(selected)addTarget(targets,selected,baseDate,scheduledVisible?'scheduled-open':'live-open');
+  else services.forEach(service=>addTarget(targets,service,baseDate,scheduledVisible?'scheduled-board':'live-board'));
+  return finishScope(selected?(scheduledVisible?'scheduled-open':'live-open'):(scheduledVisible?'scheduled-board':'live-board'),targets);
 }
-function refsByDate(){
+function scopeSignature(targets){
+  const refs=[];for(const target of targets)for(const ref of refsFor(target.service))refs.push(`${target.date}|${upper(ref)}`);
+  return `${state.scopeMode||'idle'}|${[...new Set(refs)].sort().join(',')}`;
+}
+function refsByDate(targets=serviceTargets()){
   const grouped=new Map();
-  for(const target of serviceTargets())for(const ref of refsFor(target.service)){
+  for(const target of targets)for(const ref of refsFor(target.service)){
     if(!grouped.has(target.date))grouped.set(target.date,new Set());grouped.get(target.date).add(ref);
   }
   return grouped;
@@ -110,9 +136,12 @@ async function fetchJson(url){
   finally{clearTimeout(timer);}
 }
 async function refresh({force=false}={}){
-  if(document.hidden&&!force)return false;
-  const grouped=refsByDate();if(!grouped.size){state.status='idle';decorate();return false;}
-  if(!force&&state.lastFetchAt&&Date.now()-state.lastFetchAt<REFRESH_MS-1000){decorate();return true;}
+  if(document.hidden){state.scopeMode='hidden';return false;}
+  const targets=serviceTargets(),signature=scopeSignature(targets),scopeChanged=signature!==state.scopeSignature;
+  if(scopeChanged){state.scopeSignature=signature;state.scopeChanges=(Number(state.scopeChanges)||0)+1;}
+  const grouped=refsByDate(targets);state.scopeRefs=[...grouped.values()].reduce((total,set)=>total+set.size,0);
+  if(!grouped.size){state.status='idle';decorate();return false;}
+  if(!force&&!scopeChanged&&state.lastFetchAt&&Date.now()-state.lastFetchAt<REFRESH_MS-1000){decorate();return true;}
   state.status='loading';state.error='';state.lastFetchAt=Date.now();
   try{
     for(const [date,set] of grouped){
@@ -122,9 +151,9 @@ async function refresh({force=false}={}){
         const results=payload&&payload.results||{};for(const ref of refs)cacheMovement(date,ref,results[ref]||null);
       }
     }
-    let matches=0;for(const target of serviceTargets())if(attachMovement(target.service,target.date))matches++;
+    let matches=0;for(const target of targets)if(attachMovement(target.service,target.date))matches++;
     state.matches=matches;state.status='ready';state.lastSuccessAt=Date.now();state.error='';decorate();
-    document.dispatchEvent(new CustomEvent('kerbside:train-movement',{detail:{matches,lastMessageAt:state.lastMessageAt,status:state.status}}));
+    document.dispatchEvent(new CustomEvent('kerbside:train-movement',{detail:{matches,lastMessageAt:state.lastMessageAt,status:state.status,scope:state.scopeMode,targets:state.scopeTargets,refs:state.scopeRefs}}));
     return true;
   }catch(error){state.status='error';state.error=error&&error.name==='AbortError'?'Movement request timed out':text(error&&error.message||error);decorate();return false;}
 }
@@ -172,7 +201,7 @@ function locationTokens(location){const values=[location&&location.crs,location&
 function rowPlace(row){return normalisePlace(row&&row.querySelector('b')&&row.querySelector('b').textContent);}
 function rowMatchesLocation(row,location){const key=rowPlace(row),tokens=locationTokens(location);if(!key||!tokens.length)return false;if(tokens.includes(key))return true;return tokens.some(token=>token.length>=4&&key.length>=4&&(token.includes(key)||key.includes(token)));}
 function firstLeg(service){return service&&service.journeyType==='connection'&&Array.isArray(service.legs)&&service.legs[0]?service.legs[0]:service;}
-function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'){const station=api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}const origin=Array.isArray(leg&&leg.origin)?leg.origin.find(Boolean):leg&&leg.origin;return text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||origin&&(origin.locationName||origin.name||origin.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs));}
+function serviceStartName(service,api,boardId,snapshot){const leg=firstLeg(service);if(boardId==='trainBoard'||boardId==='trainScheduledBoard'){const station=window.__KERBSIDE_TRAINS__?.state?.station||api&&api.state&&api.state.station;const label=text(station&&(station.name||station.crs));if(label)return label;}const origin=Array.isArray(leg&&leg.origin)?leg.origin.find(Boolean):leg&&leg.origin;return text(leg&&leg.from&&(leg.from.name||leg.from.locationName||leg.from.crs)||origin&&(origin.locationName||origin.name||origin.crs)||snapshot&&snapshot.activation&&snapshot.activation.origin&&(snapshot.activation.origin.name||snapshot.activation.origin.crs));}
 function serviceStartTime(service){const leg=firstLeg(service);return text(leg&&(leg.std||leg.departure));}
 function serviceEndName(service){const leg=firstLeg(service),destination=Array.isArray(leg&&leg.destination)&&leg.destination[0];return text(leg&&leg.to&&(leg.to.name||leg.to.locationName||leg.to.crs)||leg&&leg.routeDestination&&(leg.routeDestination.name||leg.routeDestination.locationName||leg.routeDestination.crs)||destination&&(destination.name||destination.locationName||destination.crs));}
 function serviceEndTime(service){const leg=firstLeg(service);return text(leg&&leg.arrival);}
@@ -308,6 +337,8 @@ function install(){
   ['kerbside:live-overlay','kerbside:train-date-change','kerbside:train-route-change','kerbside:train-movement'].forEach(name=>document.addEventListener(name,()=>scheduleRefresh(name!=='kerbside:train-movement')));
   window.addEventListener('kerbside:journey-planner-change',()=>scheduleRefresh(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleRefresh(true);});
+  document.addEventListener('click',()=>setTimeout(()=>scheduleRefresh(false),0),true);
+  document.addEventListener('toggle',event=>{if(event.target&&event.target.matches&&event.target.matches('.plan-result-details'))scheduleRefresh(false);},true);
   state.timer=setInterval(()=>refresh().catch(()=>{}),REFRESH_MS);
   scheduleRefresh(true);return true;
 }
