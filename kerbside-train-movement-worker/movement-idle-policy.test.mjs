@@ -6,10 +6,13 @@ import {
   IDLE_CATCHUP_MS,
   IDLE_CHECKPOINT_MAX_VALUE_BYTES,
   IDLE_SYNC_INTERVAL_MS,
+  NETWORK_RAIL_SESSION_COOLDOWN_MS,
   alternateCheckpointSlot,
   checkpointChunkKey,
   hasRecentDemand,
+  isNetworkRailSessionAllocationError,
   nextActiveAlarmAt,
+  sessionCooldownRetryAt,
   splitCheckpointSnapshots
 } from './movement-idle-policy.js';
 
@@ -23,6 +26,18 @@ test('demand window keeps active viewers connected without indefinite pinning', 
   assert.equal(hasRecentDemand(now - DEMAND_TTL_MS + 1, now), true);
   assert.equal(hasRecentDemand(now - DEMAND_TTL_MS, now), false);
   assert.equal(hasRecentDemand(0, now), false);
+});
+
+test('Network Rail session allocation errors receive a quiet cooldown that is not extended by local retries', () => {
+  const now = 1_000_000;
+  assert.equal(NETWORK_RAIL_SESSION_COOLDOWN_MS, 25 * 60 * 1000);
+  assert.equal(isNetworkRailSessionAllocationError('AMQ339009 Exception getting session'), true);
+  assert.equal(isNetworkRailSessionAllocationError('Exception getting session'), true);
+  assert.equal(isNetworkRailSessionAllocationError('Network Rail STOMP socket closed'), false);
+  assert.equal(sessionCooldownRetryAt({ now }), now + NETWORK_RAIL_SESSION_COOLDOWN_MS);
+  const existing = now + 12 * 60 * 1000;
+  assert.equal(sessionCooldownRetryAt({ now: now + 30_000, currentUntil: existing }), existing);
+  assert.equal(sessionCooldownRetryAt({ now, retryAt: existing }), existing);
 });
 
 test('active alarm chooses demand expiry before socket renewal when sooner', () => {
@@ -79,4 +94,14 @@ test('worker keeps health passive and closes TRUST before checkpointing idle sta
   const version = fs.readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim();
   const escapedVersion = version.replace(/\./g, '\\.');
   assert.match(source, new RegExp(`const VERSION = '${escapedVersion}';`));
+});
+
+test('deployed movement subclass suppresses repeated STOMP attempts during session allocation cooldown', () => {
+  const source = fs.readFileSync(new URL('./worker-v0.9.36.js', import.meta.url), 'utf8');
+  assert.match(source, /isNetworkRailSessionAllocationError/);
+  assert.match(source, /sessionCooldownUntil/);
+  assert.match(source, /NETWORK_RAIL_SESSION_COOLDOWN_KEY/);
+  assert.match(source, /error\.retryAt = until/);
+  assert.match(source, /await this\.ctx\.storage\.put\(NETWORK_RAIL_SESSION_COOLDOWN_KEY/);
+  assert.match(source, /requestedRetryAt <= now && priorUntil <= now/);
 });
