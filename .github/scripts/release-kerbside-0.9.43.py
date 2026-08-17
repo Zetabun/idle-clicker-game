@@ -22,11 +22,67 @@ def append_once(path, marker, block):
     path.write_text(text.rstrip() + "\n\n" + block.strip() + "\n", encoding="utf-8")
 
 
+# ---------------------------------------------------------------------------
+# Saved journeys surface ownership.
+# Plan my journey already had a display-level guard so background timetable
+# refreshes could not unhide the ordinary departure board over it. Saved
+# journeys needs the same protection: its JS hidden-state snapshot is not
+# authoritative once other train modules refresh their own DOM nodes.
+# ---------------------------------------------------------------------------
+ui_path = "kerbside-journey-planner-ui.js"
+old_guard_css = '''/* Plan my journey owns the train content surface while its tab is active.
+   Timetable/live modules are allowed to keep refreshing in the background,
+   but they must not be able to unhide the current departure board into the
+   planner. This keeps both desktop and stacked mobile views scoped to the
+   selected planner route, date and time window. */
+.train-sidebar.plan-view-active > :not(#trainViewTabs):not(#planJourneyForm){display:none!important}
+.train-content.plan-view-active > :not(#planJourneySurface){display:none!important}
+'''
+new_guard_css = '''/* Alternate train views own the train content surface while their tab is
+   active. Timetable/live modules may keep refreshing in the background, but
+   they must not be able to unhide the ordinary departure board over planner
+   or Saved journeys content. */
+.train-sidebar.plan-view-active > :not(#trainViewTabs):not(#planJourneyForm){display:none!important}
+.train-content.plan-view-active > :not(#planJourneySurface){display:none!important}
+.train-sidebar.saved-view-active > :not(#trainViewTabs):not(#savedJourneySidebar){display:none!important}
+.train-content.saved-view-active > :not(#savedJourneySurface){display:none!important}
+'''
+replace_once(ui_path, old_guard_css, new_guard_css, "alternate train-view guard styles")
+
+old_guard_sync = '''function syncPlanViewGuards(){
+  const tabs=document.getElementById('trainViewTabs');
+  const planButton=tabs&&tabs.querySelector('[data-train-view="plan"]');
+  const active=!!(planButton&&planButton.getAttribute('aria-selected')==='true');
+  const sidebar=document.querySelector('.train-sidebar');
+  const content=document.querySelector('.train-content');
+  if(sidebar)sidebar.classList.toggle('plan-view-active',active);
+  if(content)content.classList.toggle('plan-view-active',active);
+  return active;
+}
+'''
+new_guard_sync = '''function syncPlanViewGuards(){
+  const tabs=document.getElementById('trainViewTabs');
+  const planButton=tabs&&tabs.querySelector('[data-train-view="plan"]');
+  const savedButton=tabs&&tabs.querySelector('[data-train-view="saved"]');
+  const planActive=!!(planButton&&planButton.getAttribute('aria-selected')==='true');
+  const savedActive=!!(savedButton&&savedButton.getAttribute('aria-selected')==='true');
+  const sidebar=document.querySelector('.train-sidebar');
+  const content=document.querySelector('.train-content');
+  if(sidebar){sidebar.classList.toggle('plan-view-active',planActive);sidebar.classList.toggle('saved-view-active',savedActive);}
+  if(content){content.classList.toggle('plan-view-active',planActive);content.classList.toggle('saved-view-active',savedActive);}
+  return planActive||savedActive;
+}
+'''
+replace_once(ui_path, old_guard_sync, new_guard_sync, "saved train-view guard state")
+
+
+# ---------------------------------------------------------------------------
 # Desktop rail layout: the old <=1000px breakpoint compressed the left rail
 # from 360px to 260px while still keeping the two-pane desktop layout. That
 # left the controls with roughly phone-width content in a desktop shell. Keep
 # the desktop rail fluid instead, with 360px as a hard floor and more breathing
 # room on ordinary laptop/desktop widths. Mobile remains unchanged <=820px.
+# ---------------------------------------------------------------------------
 css_marker = "Kerbside 0.9.43 desktop rail width pass"
 css_block = r'''
 /* Kerbside 0.9.43 desktop rail width pass: avoid the cramped 260px desktop
@@ -93,8 +149,11 @@ css_block = r'''
 '''
 append_once("kerbside-trains.css", css_marker, css_block)
 
-# Regression: validate the large desktop width and, critically, the former
-# 260px middle breakpoint at a 980px viewport in both browser engines.
+
+# ---------------------------------------------------------------------------
+# Regression coverage: validate both the former 260px desktop breakpoint and
+# the Saved-journeys surface leak shown in the browser screenshot.
+# ---------------------------------------------------------------------------
 test_path = "kerbside-backend/tests/train-desktop-ui-regression.mjs"
 anchor = """  const trainPlanner=page.locator('#trainPlanner');
   await trainPlanner.waitFor({state:'visible',timeout:10000});
@@ -103,6 +162,7 @@ anchor = """  const trainPlanner=page.locator('#trainPlanner');
 """
 replacement = """  const trainPlanner=page.locator('#trainPlanner');
   await trainPlanner.waitFor({state:'visible',timeout:10000});
+  await page.waitForSelector('#trainViewTabs [data-train-view=\"saved\"]',{timeout:10000});
 
   const roomyDesktop=await page.evaluate(()=>{
     const sidebar=document.querySelector('.train-sidebar'),card=document.querySelector('.train-sidebar .train-card'),tab=document.querySelector('#trainViewTabs button');
@@ -125,9 +185,38 @@ replacement = """  const trainPlanner=page.locator('#trainPlanner');
   await page.setViewportSize({width:1440,height:900});
   await page.waitForTimeout(80);
 
+  await page.click('#trainViewTabs [data-train-view=\"saved\"]');
+  await page.locator('#savedJourneySidebar').waitFor({state:'visible'});
+  await page.locator('#savedJourneySurface').waitFor({state:'visible'});
+  const savedIsolation=await page.evaluate(()=>{
+    const sidebar=document.querySelector('.train-sidebar'),content=document.querySelector('.train-content');
+    for(const child of sidebar.children){if(child.id!=='trainViewTabs'&&child.id!=='savedJourneySidebar')child.hidden=false;}
+    for(const child of content.children){if(child.id!=='savedJourneySurface')child.hidden=false;}
+    window.__KERBSIDE_STATION_DATA__?.restoreBaseTrainView?.();
+    const normalSidebar=document.getElementById('trainPlanner'),normalBoard=document.querySelector('.train-board');
+    return {
+      selected:document.querySelector('#trainViewTabs [data-train-view=\"saved\"]').getAttribute('aria-selected'),
+      sidebarGuard:sidebar.classList.contains('saved-view-active'),
+      contentGuard:content.classList.contains('saved-view-active'),
+      savedSidebarDisplay:getComputedStyle(document.getElementById('savedJourneySidebar')).display,
+      savedSurfaceDisplay:getComputedStyle(document.getElementById('savedJourneySurface')).display,
+      normalSidebarDisplay:normalSidebar?getComputedStyle(normalSidebar).display:'missing',
+      normalBoardDisplay:normalBoard?getComputedStyle(normalBoard).display:'missing'
+    };
+  });
+  assert.equal(savedIsolation.selected,'true','Saved journeys tab should remain selected');
+  assert.equal(savedIsolation.sidebarGuard,true,'Saved journeys should own the sidebar surface');
+  assert.equal(savedIsolation.contentGuard,true,'Saved journeys should own the content surface');
+  assert.notEqual(savedIsolation.savedSidebarDisplay,'none','Saved journeys sidebar must remain visible');
+  assert.notEqual(savedIsolation.savedSurfaceDisplay,'none','Saved journeys cards surface must remain visible');
+  assert.equal(savedIsolation.normalSidebarDisplay,'none','ordinary train controls must not leak into Saved journeys');
+  assert.equal(savedIsolation.normalBoardDisplay,'none','ordinary train listings must not replace Saved journeys');
+
+  await page.click('#trainViewTabs [data-train-view=\"trains\"]');
+  await trainPlanner.waitFor({state:'visible'});
   await page.click('#trainViewTabs [data-train-view=\"plan\"]');
 """
-replace_once(test_path, anchor, replacement, "desktop rail geometry regression anchor")
+replace_once(test_path, anchor, replacement, "desktop rail and saved-view regression anchor")
 
 # Version bump last so patch failures cannot leave a partial browser release.
 version_path = Path("VERSION")
@@ -138,4 +227,4 @@ version_path.write_text(TARGET_VERSION + "\n", encoding="utf-8")
 subprocess.run(["python3", ".github/scripts/sync-version.py"], check=True)
 subprocess.run(["python3", ".github/scripts/sync-version.py", "--check"], check=True)
 
-print("Prepared Kerbside 0.9.43: fluid desktop rail width and roomier desktop controls.")
+print("Prepared Kerbside 0.9.43: Saved journeys isolation plus fluid, roomier desktop rail layout.")
