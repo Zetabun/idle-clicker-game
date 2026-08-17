@@ -35,15 +35,18 @@ const WIKIDATA_CACHE_MS=6*60*60*1000;
 const WIKIDATA_STALE_MS=72*60*60*1000;
 const WIKIDATA_STORE='kerbside.rail.wikidata.v1';
 const WIKIDATA_MAX_ENTRIES=32;
-const FIXTURE_CACHE_MS=7*24*60*60*1000;
-/* v2 deliberately invalidates the old cache: v1 could contain the previous
-   season after the generated JSON mirror returned 404 for a new season. */
-const FIXTURE_STORE='kerbside.rail.fixtures.v2';
+const FIXTURE_CACHE_MS=24*60*60*1000;
+/* v3 is season-aware. v2 could keep an empty/new-season miss for a week, so
+   a fixture published after that first lookup never reached Forecast v4. */
+const FIXTURE_STORE='kerbside.rail.fixtures.v3';
 
 const state={events:[],updatedAt:0,status:'idle',date:'',sources:[],sourceStatus:{football:{status:'idle',updatedAt:0},wikidata:{status:'idle',updatedAt:0}}};
 const cache=new Map();
 let fixtureIndex=null;
+let fixtureSeasonKey='';
 let fixturePromise=null;
+let fixturePromiseSeason='';
+const fixtureMissChecked=new Set();
 function markSource(name,status,detail={}){state.sourceStatus[name]={status,updatedAt:Date.now(),...detail};return state.sourceStatus[name];}
 function readWikidataStore(){try{const raw=JSON.parse(localStorage.getItem(WIKIDATA_STORE)||'null');return raw&&raw.entries&&typeof raw.entries==='object'?raw:{entries:{}};}catch(error){return {entries:{}};}}
 function writeWikidataStore(store){try{const entries=Object.entries(store&&store.entries||{}).sort((a,b)=>Number(b[1]&&b[1].ts||0)-Number(a[1]&&a[1].ts||0)).slice(0,WIKIDATA_MAX_ENTRIES);localStorage.setItem(WIKIDATA_STORE,JSON.stringify({entries:Object.fromEntries(entries)}));}catch(error){}}
@@ -226,15 +229,16 @@ function seasonsFor(dateStamp){
   const label=y=>`${y}-${String((y+1)%100).padStart(2,'0')}`;
   return [label(startYear),label(startYear-1)];
 }
-function readFixtureStore(){
+function fixtureSeason(dateStamp){return seasonsFor(dateStamp)[0]||'';}
+function readFixtureStore(dateStamp){
   try{
-    const raw=JSON.parse(localStorage.getItem(FIXTURE_STORE)||'null');
-    if(raw&&Date.now()-raw.ts<FIXTURE_CACHE_MS&&raw.byDate)return raw.byDate;
+    const raw=JSON.parse(localStorage.getItem(FIXTURE_STORE)||'null'),season=fixtureSeason(dateStamp);
+    if(raw&&raw.season===season&&Date.now()-Number(raw.ts||0)<FIXTURE_CACHE_MS&&raw.byDate)return raw;
   }catch(e){}
   return null;
 }
-function writeFixtureStore(byDate){
-  try{localStorage.setItem(FIXTURE_STORE,JSON.stringify({ts:Date.now(),byDate}));}catch(e){}
+function writeFixtureStore(byDate,season){
+  try{localStorage.setItem(FIXTURE_STORE,JSON.stringify({ts:Date.now(),season,byDate}));}catch(e){}
 }
 async function fetchJson(url,signal,timeoutMs=FETCH_TIMEOUT_MS){
   const controller=new AbortController();
@@ -306,10 +310,15 @@ async function loadFootballLeague(season,league){
 /* One fetch per season covers every fixture date for months, so this is
    cached in localStorage for a week rather than hit per journey. */
 async function loadFixtures(dateStamp){
-  if(fixtureIndex)return fixtureIndex;
-  if(fixturePromise)return fixturePromise;
-  const stored=readFixtureStore();
-  if(stored){fixtureIndex=stored;return fixtureIndex;}
+  const seasonKey=fixtureSeason(dateStamp);
+  if(fixtureIndex&&fixtureSeasonKey===seasonKey){
+    if(fixtureIndex[dateStamp]||fixtureMissChecked.has(dateStamp))return fixtureIndex;
+    fixtureMissChecked.add(dateStamp);
+  }
+  if(fixturePromise){if(fixturePromiseSeason===seasonKey)return fixturePromise;await fixturePromise;}
+  const stored=readFixtureStore(dateStamp);
+  if(stored){fixtureIndex=stored.byDate;fixtureSeasonKey=stored.season;if(fixtureIndex[dateStamp]||fixtureMissChecked.has(dateStamp))return fixtureIndex;fixtureMissChecked.add(dateStamp);}
+  fixturePromiseSeason=seasonKey;
   fixturePromise=(async()=>{
     const byDate={};
     for(const season of seasonsFor(dateStamp)){
@@ -331,10 +340,10 @@ async function loadFixtures(dateStamp){
       }
       if(any)break;
     }
-    fixtureIndex=byDate;
-    writeFixtureStore(byDate);
+    fixtureIndex=byDate;fixtureSeasonKey=seasonKey;
+    writeFixtureStore(byDate,seasonKey);
     return byDate;
-  })().finally(()=>{fixturePromise=null;});
+  })().finally(()=>{fixturePromise=null;fixturePromiseSeason='';});
   return fixturePromise;
 }
 async function footballEventsFor(dateStamp){

@@ -825,7 +825,7 @@ function callingMarkup(service){
   const passed=overlay.flattenCallingPoints(target.previousCallingPoints),ahead=overlay.flattenCallingPoints(target.subsequentCallingPoints);
   if(!passed.length&&!ahead.length)return '';
   const renderPoint=(point,phase)=>{const when=String(phase==='passed'?(point.at||point.et||point.st||''):(point.et||point.st||'')).trim(),cancelled=!!point.isCancelled;return `<div class="train-call ${phase}${cancelled?' cancelled':''}"><i></i><span><b>${esc(point.locationName||point.crs||'Station')}</b><small>${esc(when)}${cancelled?' · cancelled':''}</small></span></div>`;};
-  const rows=[...passed.slice(-12).map(point=>renderPoint(point,'passed')),...ahead.slice(0,12).map(point=>renderPoint(point,'ahead'))].join('');
+  const rows=[...passed.map(point=>renderPoint(point,'passed')),...ahead.map(point=>renderPoint(point,'ahead'))].join('');
   return `<div class="train-calling"><div class="train-detail-title">First-leg calling points</div>${rows}</div>`;
 }
 function timetableSourceName(){return state.scheduleSource==='network-rail'?'Network Rail Open Data SCHEDULE':'the National Rail Darwin Timetable Files';}

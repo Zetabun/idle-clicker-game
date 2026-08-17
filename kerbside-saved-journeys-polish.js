@@ -9,13 +9,12 @@
    owns the lifecycle around that locator: editing, repeating, archiving,
    grouping and defensive localStorage migration/recovery.
 */
-const VERSION='0.9.41';
+const VERSION='0.9.42';
 const SCHEMA=3;
 const SAVED_KEY='kerbside.rail.plan.saved.v1';
 const META_KEY='kerbside.rail.plan.saved-meta.v2';
 const POLISH_KEY='kerbside.rail.plan.saved-polish.v3';
 const RECOVERY_PREFIX='kerbside.rail.plan.recovery';
-const MAX_ACTIVE=12;
 const INIT_RETRY_MS=60;
 const INIT_RETRY_MAX=180;
 const PREF_LABELS={balanced:'Balanced',fastest:'Fastest',quieter:'Quieter','fewer-changes':'Fewer changes','least-stressful':'Least stressful'};
@@ -212,7 +211,7 @@ function repairSavedStore(storage=global.localStorage,plannerApi=planner(),stamp
   catch(error){const backupKey=backupStorage(storage,SAVED_KEY,raw,'saved-v1-corrupt',stamp);storage.setItem(SAVED_KEY,'[]');return {rows:[],repaired:true,backupKey,removed:[],error:String(error&&error.message||error)};}
   let normalised=parsed;
   try{if(plannerApi&&typeof plannerApi.readSavedJourneys==='function')normalised=plannerApi.readSavedJourneys();}catch(error){normalised=parsed.filter(item=>usableJourney(item));}
-  const result=dedupeJourneys(normalised),rows=result.rows.slice(0,MAX_ACTIVE),changed=result.removed.length>0||rows.length!==parsed.length||memorySafeJson(rows)!==memorySafeJson(parsed);
+  const result=dedupeJourneys(normalised),rows=result.rows,changed=result.removed.length>0||rows.length!==parsed.length||memorySafeJson(rows)!==memorySafeJson(parsed);
   if(!changed)return {rows,repaired:false,backupKey:'',removed:result.removed};
   const backupKey=backupStorage(storage,SAVED_KEY,raw,'saved-v1-migrated',stamp);storage.setItem(SAVED_KEY,JSON.stringify(rows));return {rows,repaired:true,backupKey,removed:result.removed};
 }
@@ -220,7 +219,7 @@ function readMetaStore(storage=global.localStorage){try{return parseMeta(storage
 function writeMetaStore(meta,storage=global.localStorage){try{meta.updatedAt=nowIso();storage.setItem(META_KEY,JSON.stringify(meta));return true;}catch(error){return false;}}
 function activeRows(){const api=planner();try{return api&&typeof api.readSavedJourneys==='function'?api.readSavedJourneys():JSON.parse(global.localStorage.getItem(SAVED_KEY)||'[]');}catch(error){return[];}}
 function writeActiveRows(rows){
-  const api=planner();try{global.localStorage.setItem(SAVED_KEY,JSON.stringify((Array.isArray(rows)?rows:[]).slice(0,MAX_ACTIVE)));if(api&&api.planState&&typeof api.readSavedJourneys==='function')api.planState.saved=api.readSavedJourneys();return true;}catch(error){return false;}
+  const api=planner();try{global.localStorage.setItem(SAVED_KEY,JSON.stringify(Array.isArray(rows)?rows:[]));if(api&&api.planState&&typeof api.readSavedJourneys==='function')api.planState.saved=api.readSavedJourneys();return true;}catch(error){return false;}
 }
 function removeMeta(id){const meta=readMetaStore();if(meta.entries&&Object.prototype.hasOwnProperty.call(meta.entries,id)){delete meta.entries[id];writeMetaStore(meta);}const v2=savedV2();if(v2&&v2.state&&v2.state.meta)v2.state.meta=meta;}
 function restoreMeta(id,value){if(!value||typeof value!=='object')return;const meta=readMetaStore();meta.entries[id]=value;writeMetaStore(meta);const v2=savedV2();if(v2&&v2.state)v2.state.meta=meta;}
@@ -281,7 +280,7 @@ function rerender(){const v2=savedV2();if(v2&&typeof v2.syncSaved==='function')v
 function addRepeatForm(card,id,journey,archived=false){
   card.querySelectorAll('.saved-polish-inline').forEach(node=>node.remove());const form=document.createElement('form');form.className='saved-polish-inline';form.dataset.savedPolishRepeatForm=id;form.dataset.archived=archived?'true':'false';const date=nextRepeatDate(journey&&journey.date);form.innerHTML=`<label>Repeat on<input name="date" type="date" min="${esc(todayLondon())}" value="${esc(date)}" required></label><button type="submit">Save repeat</button><button type="button" data-saved-polish-repeat-cancel>Cancel</button>`;card.appendChild(form);form.querySelector('input')?.focus();}
 async function saveRepeat(id,date,{archived=false}={}){
-  const source=archived?runtime.store?.archived?.[id]?.journey:activeRows().find(item=>item.id===id);if(!source)return false;if(activeRows().length>=MAX_ACTIVE){setNotice('You already have 12 active saved journeys. Archive or delete one before repeating another.','warn');return false;}
+  const source=archived?runtime.store?.archived?.[id]?.journey:activeRows().find(item=>item.id===id);if(!source)return false;
   const repeated=buildRepeatedJourney(source,date);if(!repeated){setNotice('Choose a valid date for the repeated journey.','warn');return false;}const duplicate=duplicateLocation(repeated);if(duplicate){setNotice(`That journey is already ${duplicate.where==='archived'?'in Archived':'saved'}.`,'warn');return false;}
   if(!writeActiveRows([repeated,...activeRows()]))return false;runtime.flashId=repeated.id;const v2=savedV2();if(v2&&typeof v2.syncSaved==='function')v2.syncSaved();setNotice(`Repeated journey saved for ${dateLabel(date)}.`,'success');if(v2&&typeof v2.refreshSavedJourney==='function')v2.refreshSavedJourney(repeated.id,{force:true,reason:'repeat'}).catch?.(()=>{});return true;
 }
@@ -289,7 +288,7 @@ function archiveJourney(id){
   const rows=activeRows(),saved=rows.find(item=>item.id===id);if(!saved)return false;const meta=readMetaStore(),snapshot=meta.entries&&meta.entries[id]||null;runtime.store.archived[id]={journey:saved,meta:snapshot,archivedAt:nowIso()};if(!writePolishStore())return false;if(meta.entries)delete meta.entries[id];writeMetaStore(meta);writeActiveRows(rows.filter(item=>item.id!==id));const v2=savedV2();if(v2&&v2.state)v2.state.meta=meta;if(v2&&typeof v2.syncSaved==='function')v2.syncSaved();setNotice('Journey archived. It will no longer auto-refresh until you restore it.','success');return true;
 }
 function restoreJourney(id){
-  const entry=runtime.store?.archived?.[id];if(!entry||!entry.journey)return false;const rows=activeRows();if(rows.length>=MAX_ACTIVE){setNotice('You already have 12 active saved journeys. Archive or delete one before restoring this trip.','warn');return false;}const duplicate=duplicateLocation(entry.journey,{excludeId:id});if(duplicate&&duplicate.where==='saved'){setNotice('This journey is already saved, so the archived copy was not restored.','warn');return false;}
+  const entry=runtime.store?.archived?.[id];if(!entry||!entry.journey)return false;const rows=activeRows();const duplicate=duplicateLocation(entry.journey,{excludeId:id});if(duplicate&&duplicate.where==='saved'){setNotice('This journey is already saved, so the archived copy was not restored.','warn');return false;}
   if(!writeActiveRows([entry.journey,...rows]))return false;if(entry.meta)restoreMeta(id,entry.meta);delete runtime.store.archived[id];writePolishStore();runtime.flashId=id;rerender();setNotice('Journey restored and automatic refresh is back on.','success');const v2=savedV2();if(v2&&typeof v2.refreshSavedJourney==='function')v2.refreshSavedJourney(id,{force:true,reason:'restore'}).catch?.(()=>{});return true;
 }
 function confirmDelete(label){return typeof global.confirm!=='function'||global.confirm(`Delete ${label||'this saved journey'} permanently? This cannot be undone.`);}

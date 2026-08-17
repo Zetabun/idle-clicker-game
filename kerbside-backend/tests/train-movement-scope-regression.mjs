@@ -15,9 +15,11 @@ assert.match(source, /plan-result-details\[open\]/, 'planner polling must be sco
 assert.match(source, /__KERBSIDE_SAVED_JOURNEYS_V2__/, 'saved-journey screen state must participate in movement scope selection');
 assert.match(source, /activeOnSaved/, 'an Active Journey being viewed on Saved journeys must be recognised as a special scope');
 assert.match(source, /finishScope\(activeOnSaved\?'saved-active':'active',targets\)/, 'Saved journeys may poll only the one service that owns Active Journey');
-assert.match(source, /if\(savedApi\?\.state\?\.active\)return finishScope\('saved',targets\);/, 'ordinary saved-journey overview must still avoid polling every saved train');
-assert.match(source, /ensureCard\(card,following\?snapshot:null,\{compact:true\}\)/, 'the followed saved card must receive the detailed Network Rail movement card');
-assert.doesNotMatch(source, /readSavedJourneys\(\)\|\|\[\]\)\{\s*if\(saved\.date!==today\)/, 'the legacy all-saved polling loop must be removed');
+assert.match(source, /if\(savedApi\?\.state\?\.active\)\{/, 'Saved journeys must have an explicit movement-tracking scope');
+assert.match(source, /if\(text\(saved&&saved\.date\)!==today\)continue;/, 'Saved journeys movement polling must stay restricted to today');
+assert.match(source, /services\.filter\(Boolean\)\.forEach\(service=>addTarget\(targets,service,today,'saved'\)\);/, 'today’s saved services must remain live movement targets after their origin departure');
+assert.match(source, /ensureCard\(card,snapshot,\{compact:true\}\)/, 'same-day saved cards must receive Network Rail movement progress when evidence exists');
+assert.doesNotMatch(source, /readSavedJourneys\(\)\|\|\[\]\)\{\s*if\(saved\.date!==today\)/, 'the legacy unscoped all-saved polling loop must remain removed');
 assert.match(source, /trainActiveJourney/, 'active journey visibility must be an explicit polling scope');
 assert.match(source, /train-service\.open\[data-service-id\]/, 'an opened board service must narrow the polling scope');
 assert.match(source, /scopeSignature/, 'scope changes must be detected independently of the 15-second timer');
