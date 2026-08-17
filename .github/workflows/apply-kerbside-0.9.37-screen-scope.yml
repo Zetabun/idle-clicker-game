@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - agent/kerbside-0.9.37-screen-scoped-movement
+    paths:
+      - .github/workflows/apply-kerbside-0.9.37-screen-scope.yml
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: ${{ contains(github.event.head_commit.message, '[0.9.37 applied]') == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -157,5 +158,5 @@ function refsByDate(targets=serviceTargets()){
             echo 'No movement source change needed.'
             exit 0
           fi
-          git commit -m 'Kerbside movement 0.9.37: screen-scope polling [0.9.37 applied]'
+          git commit -m 'Kerbside movement 0.9.37: screen-scope polling'
           git push origin HEAD:agent/kerbside-0.9.37-screen-scoped-movement
