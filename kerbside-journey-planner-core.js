@@ -729,7 +729,7 @@ const PLAN_PREFERENCES={
   'fewer-changes':{label:'Fewer changes'},
   'least-stressful':{label:'Least stressful'}
 };
-const planState={installed:false,active:false,from:null,to:null,results:[],preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0},saved:[],savedFocus:null,eventsReady:false,source:'',searchSeq:0,eventSeq:0,hidden:new Map(),observer:null};
+const planState={installed:false,active:false,from:null,to:null,results:[],preference:'balanced',constraints:{maxChanges:1,connectionBuffer:0},saved:[],savedFocus:null,eventsReady:false,events:[],filter:null,draftTouched:false,source:'',searchSeq:0,eventSeq:0,hidden:new Map(),observer:null};
 let planFromTimer=null,planToTimer=null,planFromAbort=null,planToAbort=null;
 
 function planPreference(){try{const value=localStorage.getItem(PLAN_PREF_KEY)||'balanced';return PLAN_PREFERENCES[value]?value:'balanced';}catch(error){return'balanced';}}
@@ -802,6 +802,9 @@ function planTimeMinutes(value){return timeMinutes(value);}
 function planClock(minute){const value=Math.max(0,Math.min(1439,Math.round(Number(minute)||0)));return `${String(Math.floor(value/60)).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`;}
 function planDuration(minutes){const value=Math.max(0,Math.round(Number(minutes)||0)),hours=Math.floor(value/60),mins=value%60;return hours?`${hours}h ${mins?`${mins}m`:''}`.trim():`${mins}m`;}
 function planDateValue(){return $('planJourneyDate')?.value||'';}
+function planDateLabel(value){const date=new Date(`${value}T12:00:00`);return Number.isNaN(date.getTime())?String(value||''):date.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
+function planCandidateDepartureMinute(item){const value=Number(item&&item.departureMinute);return Number.isFinite(value)?value:planTimeMinutes(item&&(item.std||item.departure));}
+function planFilterLabel(filter=planState.filter){return filter&&filter.date?`${planDateLabel(filter.date)} · departures ${filter.start}–${filter.end}`:'';}
 function planReferenceDate(value=planDateValue()){const date=new Date(`${value}T12:00:00`);return Number.isNaN(date.getTime())?new Date():date;}
 function planSourceLabel(){const source=planState.source||window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.scheduleSource||'';return source==='network-rail'?'Network Rail SCHEDULE':source==='darwin'?'Darwin timetable':'Official timetable';}
 function planSetMessage(text,error=false){const el=$('planJourneyMessage');if(!el)return;el.textContent=text||'';el.classList.toggle('error',!!error);}
@@ -934,11 +937,26 @@ function planResultMarkup(row,index,all){
 }
 function renderPlanResults(rows,{eventsReady=false}={}){
   const list=$('planJourneyResults'),summary=$('planJourneySummary'),meta=$('planJourneyMeta');if(!list)return;
-  const source=planSourceLabel();
-  if(!rows.length){list.innerHTML='<div class="train-empty"><strong>No matching journeys</strong><span>Try a wider time window or relax your journey constraints.</span></div>';if(summary)summary.textContent='No journeys found';if(meta)meta.textContent=`${source} · ${planConstraintLabel()} · Forecast v4`;return;}
+  const source=planSourceLabel(),filterText=planFilterLabel();renderPlanEventContext();
+  if(!rows.length){list.innerHTML='<div class="train-empty"><strong>No matching journeys</strong><span>Try a wider time window or relax your journey constraints.</span></div>';if(summary)summary.textContent='No journeys found';if(meta)meta.textContent=`${filterText?`${filterText} · `:''}${source} · ${planConstraintLabel()} · Forecast v4`;return;}
   const visible=planVisibleResults(rows);list.innerHTML=visible.map(row=>planResultMarkup(row,rows.indexOf(row),rows)).join('');
-  const from=planState.from,to=planState.to,date=planDateValue();if(summary)summary.textContent=`${from?from.name:'From'} → ${to?to.name:'To'}`;
-  if(meta)meta.textContent=`${date} · ${source} · ${PLAN_PREFERENCES[planState.preference]?.label||'Balanced'} ranking · ${planConstraintLabel()} · Forecast v4${eventsReady?' + event context':''}`;
+  const from=planState.from,to=planState.to;if(summary)summary.textContent=`${from?from.name:'From'} → ${to?to.name:'To'}`;
+  if(meta)meta.textContent=`${filterText||planDateLabel(planDateValue())} · ${source} · ${PLAN_PREFERENCES[planState.preference]?.label||'Balanced'} ranking · ${planConstraintLabel()} · Forecast v4${eventsReady?' + event context':''}`;
+}
+function planEventDisplayRows(events,candidates,from,to,date){
+  const api=window.__KERBSIDE_EVENTS__;if(!api)return[];
+  const interchanges=[...new Set((candidates||[]).map(item=>planInterchangeStation(item)?.name).filter(Boolean))],places=[from&&from.name,to&&to.name,...interchanges].filter(Boolean),journey={origin:from&&from.name||'',originCrs:from&&from.crs||'',destination:to&&to.name||'',destinationCrs:to&&to.crs||'',interchanges,date},rows=[];
+  for(const raw of Array.isArray(events)?events:[]){
+    const event=typeof api.normalise==='function'?api.normalise(raw):raw;if(!event)continue;
+    const placeRelevant=places.some(place=>typeof api.placeMatches==='function'?api.placeMatches(event.place,place):String(event.place||'').toLowerCase().includes(String(place||'').toLowerCase()));if(!placeRelevant)continue;
+    let relevant=false;if(typeof api.relevance==='function')relevant=(candidates||[]).some(candidate=>{try{return !!api.relevance(event,candidate,journey);}catch(error){return false;}});
+    if(!relevant){const start=Number(event.start);relevant=Number.isFinite(start)&&(candidates||[]).some(candidate=>{const dep=planCandidateDepartureMinute(candidate),arr=Number(candidate&&candidate.arrivalMinute);return dep!=null&&start>=dep-180&&start<=(Number.isFinite(arr)?arr:dep)+180;});}
+    if(relevant)rows.push(event);
+  }
+  const seen=new Set();return rows.filter(event=>{const key=`${String(event.title||'').toLowerCase()}|${Number(event.start)}`;if(seen.has(key))return false;seen.add(key);return true;}).sort((a,b)=>Number(a.start)-Number(b.start)).slice(0,4);
+}
+function renderPlanEventContext(rows=planState.events){
+  const root=$('planJourneyEvents');if(!root)return;const list=Array.isArray(rows)?rows:[];if(!list.length){root.hidden=true;root.innerHTML='';return;}root.hidden=false;root.innerHTML=`<span>Match & event context</span><div class="plan-event-list">${list.map(event=>{const at=Number.isFinite(Number(event.start))?planClock(Number(event.start)):'Time TBC',football=String(event.type||'').toLowerCase()==='football'?'Football · ':'';return `<div class="plan-event-chip"><b>${esc(`${football}${event.title||'Event'}`)}</b><small>${esc(`${at}${event.place?` · ${event.place}`:''}`)}</small></div>`;}).join('')}</div>`;
 }
 function planEventSnapshot(events,date){
   const api=window.__KERBSIDE_EVENTS__;if(!api||!api.state)return()=>{};
@@ -968,7 +986,7 @@ function loadPlanEvents(from,to,date,candidates,{onUpdate}={}){
 }
 async function searchPlanJourneys(options={}){
   const button=$('planJourneySearch');if(button){button.disabled=true;button.textContent='Comparing…';}
-  if(!options||options.keepSavedFocus!==true)planState.savedFocus=null;planState.eventsReady=false;
+  if(!options||options.keepSavedFocus!==true)planState.savedFocus=null;planState.eventsReady=false;planState.events=[];
   const seq=++planState.searchSeq;planSetMessage('');
   try{
     const from=await resolvePlanStation('from');if(!from){planSetMessage('Choose a departure station from the suggestions.',true);$('planJourneyFrom')?.focus();return;}
@@ -977,19 +995,20 @@ async function searchPlanJourneys(options={}){
     const date=planDateValue(),start=$('planJourneyStart')?.value||'',end=$('planJourneyEnd')?.value||'',startMinute=planTimeMinutes(start),endMinute=planTimeMinutes(end);
     if(!date){planSetMessage('Choose a travel date.',true);return;}
     if(startMinute==null||endMinute==null||endMinute<=startMinute){planSetMessage('Choose an end time later than the start time.',true);return;}
+    planState.filter={date,start,end};renderPlanEventContext([]);
     const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;if(!provider){throw new Error('The timetable provider is still loading.');}
     const getter=typeof provider.getJourneyOptions==='function'?provider.getJourneyOptions.bind(provider):provider.getServices.bind(provider);
     const candidates=await getter({from:from.crs,to:to.crs,date,departAfter:start,departBefore:end,maxResults:PLAN_MAX_CANDIDATES});
     if(seq!==planState.searchSeq)return;
     planState.source=String(candidates&&candidates.kerbsideSource||window.__KERBSIDE_TRAIN_TIMETABLE__?.state?.scheduleSource||'');
-    const windowCandidates=(candidates||[]).filter(item=>Number(item.departureMinute)>=startMinute&&Number(item.departureMinute)<=endMinute);
+    const windowCandidates=(candidates||[]).filter(item=>{const minute=planCandidateDepartureMinute(item);return minute!=null&&minute>=startMinute&&minute<=endMinute;});
     planState.constraints=planConstraintsFromForm();
     const eligibleCandidates=planFilterCandidates(windowCandidates,planState.constraints);
     if(!eligibleCandidates.length){planState.results=[];renderPlanResults([]);planSetMessage(`No journeys in this window meet ${planConstraintLabel()}. Relax the constraints or widen the time window.`);return;}
     const enriched=enrichPlanCandidates(eligibleCandidates,from,to,date,null),ranked=planRankEnriched(enriched,planState.preference);planState.results=ranked;renderPlanResults(ranked);
     planSetMessage(planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{checking:true}));
     const eventSeq=++planState.eventSeq;
-    const applyEventRows=(events,status={})=>{if(seq!==planState.searchSeq||eventSeq!==planState.eventSeq)return;const updated=planRankEnriched(enrichPlanCandidates(eligibleCandidates,from,to,date,events),planState.preference);planState.results=updated;planState.eventsReady=true;renderPlanResults(updated,{eventsReady:true});const pending=Number(status.pending)||0;planSetMessage(pending?`${planComparisonMessage(windowCandidates.length,eligibleCandidates.length)} Using the latest available information while event sources still update…`:planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));};
+    const applyEventRows=(events,status={})=>{if(seq!==planState.searchSeq||eventSeq!==planState.eventSeq)return;const updated=planRankEnriched(enrichPlanCandidates(eligibleCandidates,from,to,date,events),planState.preference);planState.results=updated;planState.events=planEventDisplayRows(events,eligibleCandidates,from,to,date);planState.eventsReady=true;renderPlanResults(updated,{eventsReady:true});const pending=Number(status.pending)||0;planSetMessage(pending?`${planComparisonMessage(windowCandidates.length,eligibleCandidates.length)} Using the latest available information while event sources still update…`:planComparisonMessage(windowCandidates.length,eligibleCandidates.length,{eventsReady:true}));};
     loadPlanEvents(from,to,date,eligibleCandidates,{onUpdate:applyEventRows}).catch(()=>{});
   }catch(error){if(seq===planState.searchSeq)planSetMessage(error&&error.message?error.message:'Journey comparison is temporarily unavailable.',true);}
   finally{if(button){button.disabled=false;button.textContent='Compare journeys';}}
@@ -997,7 +1016,7 @@ async function searchPlanJourneys(options={}){
 function planRefreshRanking(){if(!planState.results.length)return;planState.preference=$('planJourneyPreference')?.value||planState.preference;const ranked=planRankEnriched(planState.results,planState.preference);planState.results=ranked;renderPlanResults(ranked);}
 function planDefaultWindow(){const start=$('trainDepartAfter')?.value||storedTime()||'09:00',minute=planTimeMinutes(start);return {start,end:planClock(Math.min(1439,(minute==null?540:minute)+120))};}
 function syncPlanDefaultsFromActive(){
-  if(planState.results.length)return;
+  if(planState.results.length||planState.draftTouched)return;
   const current=planStation(window.__KERBSIDE_TRAINS__?.state?.station),destination=planStation(window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination);
   if(current)selectPlanStation('from',current);if(destination)selectPlanStation('to',destination);
   const date=$('planJourneyDate'),selected=dateApi()?.state?.date||'';if(date&&selected)date.value=selected;
@@ -1029,9 +1048,10 @@ function installPlanStyles(){if($('kerbsidePlanJourneyStyles'))return;const styl
 .plan-preference-note,.plan-constraint-note{margin:-5px 1px 0;color:var(--text-mute);font-size:10px;line-height:1.45}
 .plan-search{min-height:48px;border:1px solid var(--led);border-radius:12px;background:var(--led);color:var(--on-accent);font-weight:800}.plan-search:disabled{opacity:.6}
 .plan-message{min-height:15px;color:var(--text-dim);font-size:10.5px;line-height:1.45}.plan-message.error{color:var(--warn)}
-.plan-journey-surface{display:flex;flex-direction:column;min-height:0}.plan-results-head{padding:18px 20px 14px;border-bottom:1px solid var(--rule);background:var(--ink-2)}
+.plan-journey-surface{display:flex;flex-direction:column;min-height:0;overflow:hidden}.plan-results-head{flex:0 0 auto;overflow:visible;padding:18px 20px 14px;border-bottom:1px solid var(--rule);background:var(--ink-2)}
 .plan-results-head h2{margin:5px 0 0;font-size:21px}.plan-results-head p{margin:4px 0 0;color:var(--text-dim);font-size:11px}
-.plan-results-list{flex:1;min-height:0;overflow-y:auto;padding:12px 16px 24px;overscroll-behavior:contain}
+.plan-event-context{display:grid;gap:7px;margin-top:11px;padding:10px 11px;border:1px solid rgb(var(--led-rgb) / .24);border-radius:10px;background:rgb(var(--led-rgb) / .045)}.plan-event-context[hidden]{display:none!important}.plan-event-context>span{color:var(--led);font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.plan-event-list{display:flex;gap:6px;flex-wrap:wrap}.plan-event-chip{display:grid;gap:1px;min-width:180px;max-width:360px;padding:7px 9px;border:1px solid var(--rule);border-radius:8px;background:var(--ink)}.plan-event-chip b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-size:10px}.plan-event-chip small{color:var(--text-dim);font-size:9px;line-height:1.35}
+.plan-results-list{flex:1 1 auto;min-height:0;overflow-y:auto;padding:12px 16px 24px;overscroll-behavior:contain}
 .plan-journey-result{display:grid;grid-template-columns:105px minmax(160px,1fr) 125px;gap:9px 14px;margin:0 0 9px;padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--ink-2)}
 .plan-journey-result.best{border-color:rgb(var(--led-rgb) / .58);box-shadow:inset 3px 0 0 var(--led)}
 .plan-result-rank,.plan-result-route,.plan-result-crowd{display:flex;flex-direction:column;min-width:0}.plan-result-rank span{color:var(--led);font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.plan-result-rank b{margin-top:4px;font-family:'Martian Mono',monospace;font-size:13px;color:var(--text)}
@@ -1058,9 +1078,9 @@ function installPlanJourney(){
     <p class="plan-preference-note">Your preference and journey constraints are saved on this device. All options still use the same official timetable and Forecast v4 evidence.</p>
     <button id="planJourneySearch" class="plan-search" type="button">Compare journeys</button><div id="planJourneyMessage" class="plan-message" aria-live="polite"></div><details id="planSavedPanel" class="plan-saved-panel"><summary>Saved journeys <span id="planSavedCount">0</span></summary><div id="planSavedJourneys" class="plan-saved-list"></div></details>`;
   sidebar.insertBefore(form,planner);
-  const surface=document.createElement('section');surface.id='planJourneySurface';surface.className='plan-journey-surface';surface.hidden=true;surface.innerHTML='<header class="plan-results-head"><div class="train-kicker">Ranked options</div><h2 id="planJourneySummary">Plan a journey</h2><p id="planJourneyMeta">Choose a route and time window to compare official timetable options.</p></header><div id="planJourneyResults" class="plan-results-list"><div class="train-empty"><strong>No comparison yet</strong><span>Your ranked journey options will appear here.</span></div></div>';content.appendChild(surface);
+  const surface=document.createElement('section');surface.id='planJourneySurface';surface.className='plan-journey-surface';surface.hidden=true;surface.innerHTML='<header class="plan-results-head"><div class="train-kicker">Ranked options</div><h2 id="planJourneySummary">Plan a journey</h2><p id="planJourneyMeta">Choose a route and time window to compare official timetable options.</p><div id="planJourneyEvents" class="plan-event-context" hidden></div></header><div id="planJourneyResults" class="plan-results-list"><div class="train-empty"><strong>No comparison yet</strong><span>Your ranked journey options will appear here.</span></div></div>';content.appendChild(surface);
   tabs.querySelector('[data-train-view="trains"]').addEventListener('click',()=>setPlanView(false));tabs.querySelector('[data-train-view="plan"]').addEventListener('click',()=>setPlanView(true));
-  bindPlanAutocomplete('from');bindPlanAutocomplete('to');$('planJourneySearch').addEventListener('click',searchPlanJourneys);$('planJourneyPreference').addEventListener('change',event=>{savePlanPreference(event.target.value);planRefreshRanking();});$('planJourneyMaxChanges').addEventListener('change',planConstraintChanged);$('planJourneyConnectionBuffer').addEventListener('change',planConstraintChanged);planSyncConstraintAvailability();planState.saved=readSavedJourneys();renderSavedJourneys();
+  bindPlanAutocomplete('from');bindPlanAutocomplete('to');['planJourneyFrom','planJourneyTo','planJourneyDate','planJourneyStart','planJourneyEnd','planJourneyPreference','planJourneyMaxChanges','planJourneyConnectionBuffer'].forEach(id=>$(id)?.addEventListener('input',()=>{planState.draftTouched=true;}));$('planJourneySearch').addEventListener('click',searchPlanJourneys);$('planJourneyPreference').addEventListener('change',event=>{savePlanPreference(event.target.value);planRefreshRanking();});$('planJourneyMaxChanges').addEventListener('change',planConstraintChanged);$('planJourneyConnectionBuffer').addEventListener('change',planConstraintChanged);planSyncConstraintAvailability();planState.saved=readSavedJourneys();renderSavedJourneys();
   $('planJourneyResults').addEventListener('click',event=>{const button=event.target&&event.target.closest&&event.target.closest('[data-plan-save-key]');if(button)planToggleSavedByKey(button.getAttribute('data-plan-save-key'));});$('planSavedJourneys').addEventListener('click',event=>{const open=event.target&&event.target.closest&&event.target.closest('[data-plan-open-saved]'),remove=event.target&&event.target.closest&&event.target.closest('[data-plan-remove-saved]');if(open)planOpenSavedJourney(open.getAttribute('data-plan-open-saved'));else if(remove)planRemoveSavedJourney(remove.getAttribute('data-plan-remove-saved'));});
   const current=planStation(window.__KERBSIDE_TRAINS__?.state?.station),destination=planStation(window.__KERBSIDE_TRAIN_ROUTES__?.state?.destination);if(current)selectPlanStation('from',current);if(destination)selectPlanStation('to',destination);
   planState.observer=new MutationObserver(()=>{if(planState.active)planSnapshotHidden(content,new Set([surface]));});planState.observer.observe(content,{childList:true});planState.installed=true;return true;

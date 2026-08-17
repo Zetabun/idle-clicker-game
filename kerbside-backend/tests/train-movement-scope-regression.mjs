@@ -3,8 +3,10 @@ import fs from 'node:fs';
 
 const source = fs.readFileSync(new URL('../../kerbside-train-movement.js', import.meta.url), 'utf8');
 const workerSource = fs.readFileSync(new URL('../../kerbside-train-movement-worker/worker.js', import.meta.url), 'utf8');
+const timetableSource = fs.readFileSync(new URL('../../kerbside-train-timetable.js', import.meta.url), 'utf8');
+const version = fs.readFileSync(new URL('../../VERSION', import.meta.url), 'utf8').trim().replace(/\./g,'\\.');
 
-assert.match(source, /const VERSION='0\.9\.38'/, 'movement frontend must identify the 60-ref batching build');
+assert.match(source, new RegExp(`const VERSION='${version}'`), 'movement frontend must identify the current app release');
 assert.match(source, /const MAX_REFS_PER_REQUEST=60;/, 'movement frontend must use the Worker-supported 60-ref batch size');
 assert.match(source, /chunk\(\[\.\.\.set\],MAX_REFS_PER_REQUEST\)/, 'movement requests must be chunked by the configured batch limit');
 assert.match(workerSource, /const MAX_LOOKUP_REFS = 60;/, 'frontend batch size must remain aligned with the movement Worker lookup cap');
@@ -25,5 +27,7 @@ assert.match(
   /\(boardId==='trainBoard'\|\|boardId==='trainScheduledBoard'\)/,
   'both live and scheduled boards must use the selected board station as the journey start'
 );
+assert.match(timetableSource,/flattenCallingPoints\(target\.previousCallingPoints\)/,'scheduled/live-adjusted timelines must retain previous calling points');
+assert.match(timetableSource,/renderPoint\(point,'passed'\)/,'previous calling points must render as completed timeline rows');
 
 console.log('Screen-scoped movement polling and timetable-origin regression guards passed.');

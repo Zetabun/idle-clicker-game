@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.38';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.38';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.38';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.38';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.39';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.39';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.39';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.39';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -186,8 +186,8 @@ function installUiGuardStyles(){
   const style=document.createElement('style');
   style.id=UI_GUARD_STYLE_ID;
   style.textContent=`
-body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
-body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
+body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator,body:not(.theme-crystal) input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
+body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.theme-crystal input[type="time"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
 @media(min-width:821px){
   body[data-transport="train"] .train-sidebar{overflow-anchor:none}
   body[data-transport="train"] .train-sidebar>.train-view-tabs{

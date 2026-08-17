@@ -70,13 +70,15 @@ try{
       tabsTop:tabsRect.top,
       tabsBottom:tabsRect.bottom,
       sidebarBottom:sidebarRect.bottom,
-      guardCss:style&&style.textContent||''
+      guardCss:style&&style.textContent||'',darkInk:getComputedStyle(document.documentElement).getPropertyValue('--ink').trim(),contentRect:document.querySelector('.train-content').getBoundingClientRect().toJSON(),headRect:document.querySelector('#planJourneySurface .plan-results-head').getBoundingClientRect().toJSON(),headFlexShrink:getComputedStyle(document.querySelector('#planJourneySurface .plan-results-head')).flexShrink
     };
   });
   assert.equal(sticky.position,'sticky','desktop train view tabs should remain sticky');
   assert.ok(sticky.tabsTop>=sticky.sidebarTop-1&&sticky.tabsTop<sticky.sidebarTop+24,`tabs should stay at the top of the desktop sidebar: ${JSON.stringify(sticky)}`);
   assert.ok(sticky.tabsBottom<=sticky.sidebarBottom+1,`tabs should remain visible inside the sidebar: ${JSON.stringify(sticky)}`);
-  assert.match(sticky.guardCss,/calendar-picker-indicator\{filter:invert\(1\)/,'dark-theme date inputs should force a visible calendar glyph');
+  assert.match(sticky.guardCss,/input\[type="time"\]::\-webkit-calendar-picker-indicator/,'dark-theme time inputs should force a visible clock glyph');
+  assert.match(sticky.guardCss,/calendar-picker-indicator\{filter:invert\(1\)/,'dark-theme date/time inputs should force visible native glyphs');
+  assert.equal(sticky.darkInk,'#0E0F11');assert.equal(sticky.headFlexShrink,'0');assert.ok(sticky.headRect.top>=sticky.contentRect.top-1&&sticky.headRect.bottom<=sticky.contentRect.bottom+1,`planner results header should remain fully visible: ${JSON.stringify(sticky)}`);
   assert.match(sticky.guardCss,/overflow-anchor:none/,'desktop train sidebar should opt out of browser scroll anchoring while views are restored');
 
   await page.click('#trainViewTabs [data-train-view="trains"]');

@@ -9,7 +9,7 @@
      layout viewport for the on-screen keyboard instead of scrolling over it. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<meta name="theme-color" content="#0B1119">
+<meta name="theme-color" content="#0E0F11">
 <title>Kerbside — live buses near you</title>
 <meta name="application-name" content="Kerbside">
 <meta name="description" content="A route-aware live bus board using BODS vehicle positions and optional timetable validation.">
@@ -26,14 +26,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Martian+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#0B1119;          /* night ground */
-  --ink-2:#111A26;        /* panel */
-  --ink-3:#18232F;        /* raised */
-  --rule:#22303F;
+  --ink:#0E0F11;          /* slate-black night ground */
+  --ink-2:#15171A;        /* panel */
+  --ink-3:#1D2024;        /* raised */
+  --rule:#30343A;
   --led:#FFB000;          /* dot-matrix amber */
   --led-dim:#8A5F08;
-  --text:#DCE6F0;
-  --text-dim:#7D8FA3;
+  --text:#E4E7EB;
+  --text-dim:#9AA3AE;
   --live:#3FD9A4;         /* signal, used sparingly */
   --warn:#FF6B5A;
   --panel-w:392px;
@@ -42,10 +42,10 @@
   /* Every tint in the sheet is an alpha of one of these, expressed as
      rgb(var(--x-rgb) / a). Restating the components is what lets a theme
      recolour a translucent chip or border without touching its rule. */
-  --ink-rgb:11 17 25;
-  --ink-2-rgb:17 26 38;
-  --ink-3-rgb:24 35 47;
-  --rule-rgb:34 48 63;
+  --ink-rgb:14 15 17;
+  --ink-2-rgb:21 23 26;
+  --ink-3-rgb:29 32 36;
+  --rule-rgb:48 52 58;
   --led-rgb:255 176 0;
   --live-rgb:63 217 164;
   --warn-rgb:255 107 90;
@@ -53,11 +53,11 @@
   --shadow-rgb:0 0 0;
 
   --on-accent:#20160A;      /* text on an amber fill */
-  --text-mute:#5C6B7D;
-  --text-faint:#5E6E81;
-  --dot-passed:#3F4D5D;
-  --dot-idle:#4E607A;
-  --map-canvas:#0A0F16;
+  --text-mute:#717984;
+  --text-faint:#7B848F;
+  --dot-passed:#454B53;
+  --dot-idle:#59616B;
+  --map-canvas:#0A0B0D;
   --live-soft:#A9EED7;
   --info-soft:#A9C9E6;
   --warn-soft:#FFD0CA;
@@ -822,7 +822,7 @@ body.theme-crystal .leaflet-bar a{
 }
 body.theme-crystal .leaflet-bar a:hover{background:var(--ink-3)}
 </style>
-<link rel="stylesheet" href="kerbside-trains.css?v=0.9.38">
+<link rel="stylesheet" href="kerbside-trains.css?v=0.9.39">
 </head>
 <body>
 <div id="app">
@@ -1094,7 +1094,7 @@ if(!window.L){
    address bar as  kerbside.html#key=YOURKEY  (stripped after load).
    Don't commit or share a copy with the key filled in.
    ------------------------------------------------------------ */
-const APP_VERSION = '0.9.38';
+const APP_VERSION = '0.9.39';
 const MY_KEY   = '';
 const MY_PROXY = 'https://kerbside-bus.adambullas.workers.dev';
 const DATA_BASE = 'https://kerbside-data-zetabun.pages.dev';
@@ -8006,20 +8006,20 @@ if(saved && saved.origin && isFinite(saved.origin.lat) && savedOriginKind==='man
 window.addEventListener('resize',()=>map.invalidateSize());
 })();
 </script>
-<script src="kerbside-trains.js?v=0.9.38"></script>
-<script src="kerbside-train-routes.js?v=0.9.38"></script>
-<script src="kerbside-train-date.js?v=0.9.38"></script>
-<script src="kerbside-journey-planner-ui.js?v=0.9.38"></script>
-<script src="kerbside-train-live-window.js?v=0.9.38"></script>
-<script src="kerbside-train-live-overlay.js?v=0.9.38"></script>
-<script src="kerbside-rail-timebands.js?v=0.9.38"></script>
-<script src="kerbside-rail-demand-v4.js?v=0.9.38"></script>
-<script src="kerbside-rail-calibration.js?v=0.9.38"></script>
-<script src="kerbside-train-events.js?v=0.9.38"></script>
-<script src="kerbside-train-loading.js?v=0.9.38"></script>
-<script src="kerbside-train-loading-guidance.js?v=0.9.38"></script>
-<script src="kerbside-train-forecast-v4.js?v=0.9.38"></script>
-<script src="kerbside-journey-sheet.js?v=0.9.38"></script>
-<script src="kerbside-status.js?v=0.9.38"></script>
+<script src="kerbside-trains.js?v=0.9.39"></script>
+<script src="kerbside-train-routes.js?v=0.9.39"></script>
+<script src="kerbside-train-date.js?v=0.9.39"></script>
+<script src="kerbside-journey-planner-ui.js?v=0.9.39"></script>
+<script src="kerbside-train-live-window.js?v=0.9.39"></script>
+<script src="kerbside-train-live-overlay.js?v=0.9.39"></script>
+<script src="kerbside-rail-timebands.js?v=0.9.39"></script>
+<script src="kerbside-rail-demand-v4.js?v=0.9.39"></script>
+<script src="kerbside-rail-calibration.js?v=0.9.39"></script>
+<script src="kerbside-train-events.js?v=0.9.39"></script>
+<script src="kerbside-train-loading.js?v=0.9.39"></script>
+<script src="kerbside-train-loading-guidance.js?v=0.9.39"></script>
+<script src="kerbside-train-forecast-v4.js?v=0.9.39"></script>
+<script src="kerbside-journey-sheet.js?v=0.9.39"></script>
+<script src="kerbside-status.js?v=0.9.39"></script>
 </body>
 </html>
