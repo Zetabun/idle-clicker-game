@@ -80,7 +80,7 @@ const directBoard = {
 };
 
 function attachDiagnostics(page){
-  const diagnostics = {requests:[],pageErrors:[],consoleErrors:[]};
+  const diagnostics = {requests:[],blockedExternal:[],pageErrors:[],consoleErrors:[]};
   page.on('pageerror',error=>diagnostics.pageErrors.push(String(error && error.stack || error)));
   page.on('console',message=>{
     if(message.type() === 'error') diagnostics.consoleErrors.push(message.text());
@@ -96,7 +96,7 @@ async function mockExternal(page,diagnostics){
     headers:corsHeaders,
     body:JSON.stringify(body)
   });
-  const handle = async route=>{
+  const handleHuxley = async route=>{
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
     diagnostics.requests.push(pathname);
@@ -131,24 +131,56 @@ async function mockExternal(page,diagnostics){
     }
     await json(route,404,{});
   };
-  // URL globs using **:// were intermittently bypassed by WebKit, allowing the
-  // real Huxley host to produce CORS page errors. A URL RegExp is evaluated by
-  // Playwright before the request is issued and consistently catches both hosts.
-  await page.context().route(/^https:\/\/(?:hux|huxley2)\.azurewebsites\.net\//i, handle);
-  // This regression tests route filtering, not Network Rail movement. The
-  // dedicated movement browser regression covers the overlay in both engines.
-  // Around midnight the fixture can become same-day, so prevent this unrelated
-  // test from loading the movement overlay at all instead of emulating production
-  // CORS inside WebKit.
-  await page.context().route('**/kerbside-train-movement.js*', route=>
-    route.fulfill({status:200,contentType:'text/javascript',body:'/* movement disabled in route-filter regression */'})
-  );
-  await page.context().route('https://raw.githubusercontent.com/openfootball/football.json/**', route=>
-    json(route,200,{matches:[]})
-  );
-  await page.context().route('https://query.wikidata.org/**', route=>
-    json(route,200,{head:{vars:[]},results:{bindings:[]}})
-  );
+
+  // Keep this route-filter regression hermetic. WebKit has intermittently let
+  // endpoint-specific route globs escape to the real network, turning harmless
+  // auxiliary event/live-overlay fetches into CORS page errors. A single page
+  // route catches every request before it leaves the browser. Local Kerbside
+  // assets continue to the fixture server; external providers are deterministic.
+  await page.route('**/*', async route=>{
+    const url = new URL(route.request().url());
+    const host = url.hostname.toLowerCase();
+    const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
+    const local = host === '127.0.0.1' || host === 'localhost';
+
+    // This suite tests route filtering, not Network Rail movement. The dedicated
+    // movement regression covers that overlay in both browser engines.
+    if(local && pathname === '/kerbside-train-movement.js'){
+      await route.fulfill({
+        status:200,
+        contentType:'text/javascript',
+        body:'/* movement disabled in route-filter regression */'
+      });
+      return;
+    }
+    if(local){
+      await route.continue();
+      return;
+    }
+    if(host === 'hux.azurewebsites.net' || host === 'huxley2.azurewebsites.net'){
+      await handleHuxley(route);
+      return;
+    }
+    if(host === 'raw.githubusercontent.com' && pathname.startsWith('/openfootball/football.json/')){
+      await json(route,200,{matches:[]});
+      return;
+    }
+    if(host === 'query.wikidata.org'){
+      await json(route,200,{head:{vars:[]},results:{bindings:[]}});
+      return;
+    }
+    if(host === 'www.gov.uk' && pathname === '/bank-holidays.json'){
+      await json(route,200,{
+        'england-and-wales':{division:'england-and-wales',events:[]},
+        scotland:{division:'scotland',events:[]},
+        'northern-ireland':{division:'northern-ireland',events:[]}
+      });
+      return;
+    }
+
+    diagnostics.blockedExternal.push(route.request().url());
+    await json(route,200,{});
+  });
 }
 
 async function waitForServiceCount(page,count){
