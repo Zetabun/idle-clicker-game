@@ -93,7 +93,7 @@ assert.match(busSource, /function journeyProgress\(v\)/);
 assert.match(busSource, /routeLayer=L\.layerGroup/);
 assert.match(busSource, /data-route-map/);
 assert.match(busSource, /progress\.pattern\.shape/);
-assert.match(busSource, /const APP_VERSION = '0\.9\.39'/);
+assert.match(busSource, /const APP_VERSION = '0\.9\.40'/);
 // Stop attributes are sharded by ATCO administrative area, which is the first
 // three characters of the code; the browser must never fetch the 101 MB register.
 assert.match(busSource, /const NAPTAN_PREFIX_LENGTH = 3;/);
@@ -154,8 +154,10 @@ assert.ok(busSource.includes("return 'no matching live bus yet';"));
 assert.doesNotMatch(busSource, /no bus is working this departure yet/);
 assert.match(busSource, /const LIVE_DUE_SECONDS = 45/);
 assert.match(busSource, /const SCHEDULE_DUE_SECONDS = 45/);
-assert.match(busSource, /const SCHEDULE_UNVERIFIED_PAST_MS = 15\*60\*1000/);
-assert.match(busSource, /if\(r\.at<now-SCHEDULE_UNVERIFIED_PAST_MS \|\| r\.at>end\) return false;/);
+assert.doesNotMatch(busSource, /SCHEDULE_UNVERIFIED_PAST_MS/);
+assert.match(busSource, /if\(r\.at<now \|\| r\.at>end\) return false;/);
+assert.doesNotMatch(busSource, /overdue\?'past'/);
+assert.match(busSource, /const liveRows=relevant\(\), scheduledRows=scheduledBoardRows\(liveRows\)/, 'late buses with current realtime evidence must keep using the independent live path');
 assert.match(busSource, /sourceTs,ts,timestampKnown:true/);
 assert.match(busSource, /const ts=Math\.min\(sourceTs,observedAt\)/);
 assert.match(busSource, /feedRefreshing:false/);
@@ -354,7 +356,7 @@ assert.match(busSource, /no matching live bus yet/);
    matching failure on every later row. */
 assert.match(busSource, /function scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
 assert.match(busSource, /reason=scheduleLiveReason\(schedule,liveRows,evidenceCache\)/);
-assert.match(busSource, /liveReason:overdue\?'scheduled time passed/);
+assert.doesNotMatch(busSource, /liveReason:overdue\?'scheduled time passed/);
 assert.match(busSource, /function journeyRefComparable\(ref\)/);
 assert.match(busSource, /already listed/);
 assert.match(busSource, /match retained/);
@@ -1342,8 +1344,8 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
       };
     }finally{Object.assign(state,saved);}
   });
-  assert.deepEqual({...duplicateDeparture,overdueReason:undefined},{future:1,overdue:true,overdueFlag:true,expired:false,matchedOnly:0,identityOnly:0,blended:0,lost:1,overdueReason:undefined});
-  assert.match(duplicateDeparture.overdueReason,/^scheduled time passed · /,'a recently overdue unmatched departure must remain explicitly schedule-only');
+  assert.deepEqual({...duplicateDeparture,overdueReason:undefined},{future:1,overdue:false,overdueFlag:false,expired:false,matchedOnly:0,identityOnly:0,blended:0,lost:1,overdueReason:undefined});
+  assert.equal(duplicateDeparture.overdueReason,'','a past schedule-only departure must disappear instead of rendering Past');
 
   const malformedCoverage = await page.evaluate(async () => {
     const api=window.__KERBSIDE_TEST__,state=api.liveState;
@@ -1920,7 +1922,7 @@ const viewportContent=await page.locator('meta[name="viewport"]').getAttribute('
   await page.locator('#scrim.show').waitFor();
   assert.equal(await page.locator('#proxy').inputValue(), 'https://kerbside-bus.adambullas.workers.dev');
   assert.equal(await page.locator('#demoSw').getAttribute('aria-pressed'), 'false');
-  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.39'));
+  await page.waitForFunction(() => document.getElementById('sourceStatus')?.textContent.includes('app 0.9.40'));
 
   await page.locator('#statsTab').click();
   assert.equal(await page.locator('#statsPanel').isVisible(), true);

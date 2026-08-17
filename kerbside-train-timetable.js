@@ -109,6 +109,8 @@ function bindBoard(board){
     const closest=event.target&&event.target.closest?event.target.closest.bind(event.target):null;
     const recovery=closest?closest('[data-use-recovery]'):null;
     if(recovery&&board.contains(recovery)){event.preventDefault();event.stopPropagation();adoptRecoveryByKey(recovery.getAttribute('data-use-recovery'));return;}
+    const save=closest?closest('[data-save-scheduled-journey]'):null;
+    if(save&&board.contains(save)){event.preventDefault();event.stopPropagation();saveJourneyByKey(save.getAttribute('data-save-scheduled-journey'));return;}
     const watch=closest?closest('[data-watch-journey]'):null;
     if(watch&&board.contains(watch)){event.preventDefault();event.stopPropagation();toggleJourneyWatchByKey(watch.getAttribute('data-watch-journey'));return;}
     const button=closest?closest('[data-scheduled-toggle]'):null;
@@ -598,15 +600,16 @@ function journeyWatchStatus(service){
   const status=statusFor(service);return {label:status.label,note:service.liveEvidence?'Live Darwin evidence is attached to this train.':'Timetable watch; live Darwin evidence will be added when available.',warn:status.cls==='cancelled'||status.cls==='late'};
 }
 function journeyWatchMarkup(service,key){
-  const active=watchMatches(service),status=journeyWatchStatus(service),cls=`train-watch-card${active?' is-active':''}${active&&status.warn?' is-warn':''}`;
+  const active=watchMatches(service),status=journeyWatchStatus(service),cls=`train-watch-card${active?' is-active':''}${active&&status.warn?' is-warn':''}`,r=route(),plan=window.__KERBSIDE_JOURNEY_PLANNER__,saved=!!(plan&&typeof plan.planBoardServiceSaved==='function'&&plan.planBoardServiceSaved(service,{date:r.date,from:r.from,to:r.to}));
   const label=active?status.label:'Keep this journey together',note=active?`${status.note} Kerbside refreshes this watch while the app is open.`:'Pin this journey so its live status, connection margin and recovery option stay together while Kerbside is open.';
-  return `<div class="${cls}"><div><span>Journey Watch</span><strong>${esc(label)}</strong><small>${esc(note)}</small></div><button type="button" class="train-watch-action" data-watch-journey="${esc(key)}" aria-pressed="${active?'true':'false'}">${active?'Stop watching':'Watch journey'}</button></div>`;
+  return `<div class="${cls}"><div><span>Journey Watch</span><strong>${esc(label)}</strong><small>${esc(note)}</small></div><div class="train-watch-actions"><button type="button" class="train-watch-action" data-watch-journey="${esc(key)}" aria-pressed="${active?'true':'false'}">${active?'Stop watching':'Watch journey'}</button><button type="button" class="train-watch-action" data-save-scheduled-journey="${esc(key)}"${saved?' disabled':''}>${saved?'Saved':'Save journey'}</button></div></div>`;
 }
 function toggleJourneyWatchByKey(key){
   const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const service=state.services[index];
   if(watchMatches(service))persistJourneyWatch(null);else persistJourneyWatch(journeyWatchPayload(service));
   renderRows(state.services,{mode:state.mode,manifest:state.manifest});return true;
 }
+function saveJourneyByKey(key){const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const plan=window.__KERBSIDE_JOURNEY_PLANNER__,r=route();if(!plan||typeof plan.planSaveBoardService!=='function')return false;const saved=plan.planSaveBoardService(state.services[index],{date:r.date,from:r.from,to:r.to});if(!saved)return false;renderRows(state.services,{mode:state.mode,manifest:state.manifest});return true;}
 
 function durationLabel(from,to){const start=parseMinutes(from),end=parseMinutes(to);if(start==null||end==null)return'';let span=end-start;if(span<0)span+=1440;if(span<=0)return'';const h=Math.floor(span/60),m=span%60;return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m}m`;}
 function terminusText(service,fallback){const d=service&&service.displayDestination;return (d&&(d.name||d.locationName||d.crs))||fallback;}
@@ -1077,7 +1080,7 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,forecast,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,watchMatches,journeyWatchStatus,journeyWatchPayload,persistJourneyWatch,stableServiceId,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,forecast,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,saveJourneyByKey,watchMatches,journeyWatchStatus,journeyWatchPayload,persistJourneyWatch,stableServiceId,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
 })();
 
 

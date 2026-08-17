@@ -194,6 +194,9 @@ try{
   await page.selectOption('#planJourneyPreference','quieter');
   await page.click('#planJourneySearch');
   await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===3,undefined,{timeout:10000});
+  const resultDates=await page.locator('#planJourneyResults .plan-result-date').allTextContents();
+  assert.equal(resultDates.length,3,'every planned result should repeat the selected travel date');
+  assert.ok(resultDates.every(text=>/12 Aug 2026/.test(text)),`future result dates should make the selected day explicit: ${JSON.stringify(resultDates)}`);
   const planCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
   const appliedFilter=await page.evaluate(()=>window.__KERBSIDE_PLAN_TEST_ARGS__);
   assert.deepEqual({from:appliedFilter.from,to:appliedFilter.to,date:appliedFilter.date,departAfter:appliedFilter.departAfter,departBefore:appliedFilter.departBefore},{from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'09:00',departBefore:'11:00'});
