@@ -184,6 +184,59 @@ try {
   assert.equal(result.sampledModel.dwell, 0);
   assert.equal(result.averageModel.mode, 'average');
   assert.equal(result.averageModel.dwell, 0);
+
+  // A live/timetable refresh can remove the hidden attribute from the normal
+  // departure board after Plan my journey has taken over the content surface.
+  // The planner guard must keep that current board out of both desktop and
+  // stacked mobile layouts so only date/time/station-scoped planner results
+  // are visible.
+  await page.waitForFunction(() => Boolean(window.__KERBSIDE_JOURNEY_PLANNER__?.planState && document.getElementById('trainViewTabs')), null, { timeout: 20000 });
+  await page.evaluate(() => {
+    const main = document.getElementById('trainMain');
+    if (main) main.setAttribute('aria-hidden', 'false');
+    window.__KERBSIDE_JOURNEY_PLANNER__.setPlanView(true);
+  });
+  await page.waitForFunction(() => document.querySelector('.train-content')?.classList.contains('plan-view-active'));
+
+  const desktopPlanGuard = await page.evaluate(() => {
+    const content = document.querySelector('.train-content');
+    const sidebar = document.querySelector('.train-sidebar');
+    const surface = document.getElementById('planJourneySurface');
+    const board = content?.querySelector(':scope > .train-board');
+    const basePlanner = document.getElementById('trainPlanner');
+    if (board) board.hidden = false;
+    if (basePlanner) basePlanner.hidden = false;
+    return {
+      contentActive: !!content?.classList.contains('plan-view-active'),
+      sidebarActive: !!sidebar?.classList.contains('plan-view-active'),
+      boardDisplay: board ? getComputedStyle(board).display : '',
+      basePlannerDisplay: basePlanner ? getComputedStyle(basePlanner).display : '',
+      surfaceDisplay: surface ? getComputedStyle(surface).display : '',
+      topGap: content && surface ? Math.abs(surface.getBoundingClientRect().top - content.getBoundingClientRect().top) : 999
+    };
+  });
+  assert.equal(desktopPlanGuard.contentActive, true);
+  assert.equal(desktopPlanGuard.sidebarActive, true);
+  assert.equal(desktopPlanGuard.boardDisplay, 'none');
+  assert.equal(desktopPlanGuard.basePlannerDisplay, 'none');
+  assert.notEqual(desktopPlanGuard.surfaceDisplay, 'none');
+  assert.ok(desktopPlanGuard.topGap <= 1, `Planner surface should start at the top of desktop content; gap was ${desktopPlanGuard.topGap}px`);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobilePlanGuard = await page.evaluate(() => {
+    const content = document.querySelector('.train-content');
+    const surface = document.getElementById('planJourneySurface');
+    const board = content?.querySelector(':scope > .train-board');
+    if (board) board.hidden = false;
+    return {
+      boardDisplay: board ? getComputedStyle(board).display : '',
+      surfaceDisplay: surface ? getComputedStyle(surface).display : ''
+    };
+  });
+  assert.equal(mobilePlanGuard.boardDisplay, 'none');
+  assert.notEqual(mobilePlanGuard.surfaceDisplay, 'none');
+  await page.evaluate(() => window.__KERBSIDE_JOURNEY_PLANNER__.setPlanView(false));
+
   assert.deepEqual(pageErrors, []);
   console.log('Kerbside listing reliability regression checks passed.');
 } finally {

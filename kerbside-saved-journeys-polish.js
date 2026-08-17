@@ -9,7 +9,7 @@
    owns the lifecycle around that locator: editing, repeating, archiving,
    grouping and defensive localStorage migration/recovery.
 */
-const VERSION='0.9.40';
+const VERSION='0.9.41';
 const SCHEMA=3;
 const SAVED_KEY='kerbside.rail.plan.saved.v1';
 const META_KEY='kerbside.rail.plan.saved-meta.v2';
