@@ -3,7 +3,7 @@ from pathlib import Path
 import runpy
 import subprocess
 
-impl = Path('.github/scripts/kerbside-release-0.9.40-impl.py')
+impl = Path('.github/scripts/kerbside-release-post.py')
 text = impl.read_text(encoding='utf-8')
 text = text.replace("\\n}\\nasync function refreshSavedJourney", "\\n}\\n\\nasync function refreshSavedJourney")
 impl.write_text(text, encoding='utf-8')
