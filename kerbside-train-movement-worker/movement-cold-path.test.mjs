@@ -143,5 +143,14 @@ test('0.9.36 wrapper keeps the hot movement path free of direct storage mutation
   const source = fs.readFileSync(new URL('./worker-v0.9.36.js', import.meta.url), 'utf8');
   assert.match(source, /shouldUseColdPath\(message, this\.isHot\(trainId, now\)\)/);
   assert.match(source, /promoteColdSnapshot\(snapshot, CORPUS\)/);
-  assert.doesNotMatch(source, /sql\.exec|ctx\.storage\.(?:put|delete)/i);
+  assert.match(source, /ctx\.storage\.put\(NETWORK_RAIL_SESSION_COOLDOWN_KEY/,
+    'session-allocation cooldown may persist control-plane state outside movement ingestion');
+
+  const hotPathStart = source.indexOf('async persistMovementBatch(body)');
+  const hotPathEnd = source.lastIndexOf('\n}');
+  assert.ok(hotPathStart >= 0 && hotPathEnd > hotPathStart, 'persistMovementBatch hot path must be identifiable');
+  const hotPath = source.slice(hotPathStart, hotPathEnd);
+  assert.doesNotMatch(hotPath, /sql\.exec|ctx\.storage\.(?:put|delete)/i);
+  assert.doesNotMatch(hotPath, /NETWORK_RAIL_SESSION_COOLDOWN_KEY/,
+    'session cooldown persistence must stay outside the hot movement path');
 });
