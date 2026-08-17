@@ -32,6 +32,17 @@ replace_once(
     "const source = fs.readFileSync(new URL('../../kerbside-train-movement.js', import.meta.url), 'utf8');\nconst workerSource = fs.readFileSync(new URL('../../kerbside-train-movement-worker/worker.js', import.meta.url), 'utf8');\n\nassert.match(source, /const VERSION='0\\.9\\.38'/, 'movement frontend must identify the 60-ref batching build');\nassert.match(source, /const MAX_REFS_PER_REQUEST=60;/, 'movement frontend must use the Worker-supported 60-ref batch size');\nassert.match(source, /chunk\\(\\[\\.\\.\\.set\\],MAX_REFS_PER_REQUEST\\)/, 'movement requests must be chunked by the configured batch limit');\nassert.match(workerSource, /const MAX_LOOKUP_REFS = 60;/, 'frontend batch size must remain aligned with the movement Worker lookup cap');",
 )
 
+# The reacquisition browser fixture must represent a service that has already
+# departed. A fixed 20:12 start makes the assertion depend on the wall clock:
+# before 20:12 the UI correctly says "Awaiting departure" instead. Anchor the
+# synthetic start ten minutes in the past so this regression always exercises
+# the recovered-identity/reacquiring state it is intended to test.
+replace_once(
+    'kerbside-backend/tests/train-movement-browser-regression.mjs',
+    "api.decorateCallingTimeline(wrap,service,snapshot,{startName:'Birmingham New Street',startTime:'20:12'});const info=api.progress(snapshot);",
+    "const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()),map=Object.fromEntries(parts.map(part=>[part.type,part.value]));let minute=(Number(map.hour==='24'?'0':map.hour)||0)*60+(Number(map.minute)||0)-10;minute=(minute+1440)%1440;const start=`${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;api.decorateCallingTimeline(wrap,service,snapshot,{startName:'Birmingham New Street',startTime:start});const info=api.progress(snapshot);",
+)
+
 Path('VERSION').write_text(VERSION + '\n', encoding='utf-8')
 subprocess.run(['python3', '.github/scripts/sync-version.py'], check=True)
 
@@ -49,6 +60,7 @@ subprocess.run([
     'kerbside-backend/package.json',
     'kerbside-backend/test/worker.test.js',
     'kerbside-backend/tests/browser-regression.mjs',
+    'kerbside-backend/tests/train-movement-browser-regression.mjs',
     'kerbside-backend/tests/train-movement-scope-regression.mjs',
     'kerbside-journey-planner-ui.js',
 ], check=True)
