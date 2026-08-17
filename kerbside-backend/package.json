@@ -18,6 +18,7 @@
     "test:journey-identity": "node tests/journey-identity-regression.mjs",
     "test:disruptions": "node tests/disruption-regression.mjs",
     "test:listing-reliability": "node tests/listing-reliability-regression.mjs && node tests/duplicate-trip-identity-regression.mjs",
+    "test:movement-scope": "node tests/train-movement-scope-regression.mjs",
     "test:train-route": "node tests/reliability-regression.mjs && node tests/train-route-filter-regression.mjs && node tests/train-live-window-regression.mjs && node tests/train-browser-core-regression.mjs && node tests/train-provider-timeout-regression.mjs && node tests/train-mobile-layout-regression.mjs && node tests/train-journey-planner-regression.mjs && node tests/train-active-journey-regression.mjs && node tests/train-forecast-v3-dual-timetable.mjs && node tests/train-desktop-ui-regression.mjs && node tests/train-movement-browser-regression.mjs && node tests/train-movement-scope-regression.mjs"
   },
   "devDependencies": {
