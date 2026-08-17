@@ -226,6 +226,7 @@ export class TrainMovementHub extends DurableObject {
     this.lastRecoveryFlushAt = 0;
     this.lastMemoryPruneAt = 0;
     this.lastIndexRebuildAt = 0;
+    this.memoryIndexesDirty = false;
     this.lastStorageCleanupAt = 0;
     this.recoveryFlushPromise = null;
     this.idleCheckpoint = {
@@ -389,7 +390,7 @@ export class TrainMovementHub extends DurableObject {
           if (recoveryKeyExpired(key, now, RECOVERY_RETENTION_MS)) continue;
           for (const snapshot of Array.isArray(value && value.snapshots) ? value.snapshots : []) this.rememberRecovered(snapshot, 'recovery');
         }
-        this.pruneMemory(now, true);
+        this.pruneMemory(now, true, { rebuildIndexes: false });
         if (reachedCheckpoint || rows.size < RECOVERY_LOAD_PAGE_SIZE || !oldest) break;
         end = oldest;
       }
@@ -506,9 +507,14 @@ export class TrainMovementHub extends DurableObject {
     for (const [trainId, snapshot] of this.recoveredSnapshots) if (!this.liveSnapshots.has(trainId)) this.registerSnapshot(snapshot);
     for (const snapshot of this.liveSnapshots.values()) this.registerSnapshot(snapshot);
     this.lastIndexRebuildAt = now;
+    this.memoryIndexesDirty = false;
   }
 
-  pruneMemory(now = Date.now(), force = false) {
+  ensureMemoryIndexes(now = Date.now()) {
+    if (this.memoryIndexesDirty) this.rebuildMemoryIndexes(now);
+  }
+
+  pruneMemory(now = Date.now(), force = false, { rebuildIndexes = true } = {}) {
     if (!force && now - this.lastMemoryPruneAt < 60000) return;
     this.lastMemoryPruneAt = now;
     for (const [trainId, until] of this.hotTrainUntil) if (until <= now) this.hotTrainUntil.delete(trainId);
@@ -517,7 +523,11 @@ export class TrainMovementHub extends DurableObject {
     for (const trainId of [...this.lastCheckpointAt.keys()]) {
       if (!this.liveSnapshots.has(trainId) && !this.recoveredSnapshots.has(trainId)) this.lastCheckpointAt.delete(trainId);
     }
-    if (force || now - this.lastIndexRebuildAt >= INDEX_REBUILD_MS) this.rebuildMemoryIndexes(now);
+    if (!rebuildIndexes) {
+      if (force || now - this.lastIndexRebuildAt >= INDEX_REBUILD_MS) this.memoryIndexesDirty = true;
+      return;
+    }
+    if (this.memoryIndexesDirty || force || now - this.lastIndexRebuildAt >= INDEX_REBUILD_MS) this.rebuildMemoryIndexes(now);
   }
 
   async cleanupRecoveryStorage(now = Date.now()) {
@@ -552,7 +562,7 @@ export class TrainMovementHub extends DurableObject {
   }
 
   async writeIdleCheckpoint(now = Date.now()) {
-    this.pruneMemory(now, true);
+    this.pruneMemory(now, true, { rebuildIndexes: false });
     const snapshots = this.checkpointSnapshots();
     const maxUpdatedAt = snapshots.reduce((max, snapshot) => Math.max(max, Number(snapshot.updatedAt) || 0), 0);
     const lastMessageAt = Number(this.status.lastMessageAt) || 0;
@@ -798,6 +808,7 @@ export class TrainMovementHub extends DurableObject {
   lookup(url) {
     const date = text(url.searchParams.get('date')) || londonDate();
     const refs = url.searchParams.getAll('ref').map(normaliseLookupRef).filter(Boolean).slice(0, MAX_LOOKUP_REFS);
+    if (refs.length) this.ensureMemoryIndexes();
     const results = {};
     for (const ref of refs) {
       let trainId = '';
