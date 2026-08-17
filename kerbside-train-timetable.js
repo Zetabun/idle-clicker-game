@@ -819,13 +819,10 @@ function explainMarkup(result,mode){
 function callingMarkup(service){
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__,target=service&&service.journeyType==='connection'&&service.legs&&service.legs[0]?service.legs[0]:service;
   if(!overlay||!target||!target.liveEvidence)return '';
-  const ahead=overlay.flattenCallingPoints(target.subsequentCallingPoints);
-  if(!ahead.length)return '';
-  const rows=ahead.slice(0,12).map(point=>{
-    const when=String(point.et||point.st||'').trim();
-    const cancelled=!!point.isCancelled;
-    return `<div class="train-call ahead${cancelled?' cancelled':''}"><i></i><span><b>${esc(point.locationName||point.crs||'Station')}</b><small>${esc(when)}${cancelled?' · cancelled':''}</small></span></div>`;
-  }).join('');
+  const passed=overlay.flattenCallingPoints(target.previousCallingPoints),ahead=overlay.flattenCallingPoints(target.subsequentCallingPoints);
+  if(!passed.length&&!ahead.length)return '';
+  const renderPoint=(point,phase)=>{const when=String(phase==='passed'?(point.at||point.et||point.st||''):(point.et||point.st||'')).trim(),cancelled=!!point.isCancelled;return `<div class="train-call ${phase}${cancelled?' cancelled':''}"><i></i><span><b>${esc(point.locationName||point.crs||'Station')}</b><small>${esc(when)}${cancelled?' · cancelled':''}</small></span></div>`;};
+  const rows=[...passed.slice(-12).map(point=>renderPoint(point,'passed')),...ahead.slice(0,12).map(point=>renderPoint(point,'ahead'))].join('');
   return `<div class="train-calling"><div class="train-detail-title">First-leg calling points</div>${rows}</div>`;
 }
 function timetableSourceName(){return state.scheduleSource==='network-rail'?'Network Rail Open Data SCHEDULE':'the National Rail Darwin Timetable Files';}

@@ -163,11 +163,13 @@ try{
   await page.evaluate(()=>{
     const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
     provider.getCoverage=async()=>({dates:['2026-08-12'],coverage:{'2026-08-12':{from:'00:01',to:'23:59',partial:false}}});
-    provider.getJourneyOptions=async()=>{
+    provider.getJourneyOptions=async options=>{
+      window.__KERBSIDE_PLAN_TEST_ARGS__={...options};
       const rows=[
         {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail',platform:'4',arrivalPlatform:'9',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
         {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,minimumConnectionSource:'kerbside-planning-buffer',recoveryOptions:[{serviceID:'PLAN-RECOVERY',std:'09:55',arrival:'10:25',operator:'Recovery Rail',platform:'4',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail',platform:'5',arrivalPlatform:'1',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Cheltenham Spa',crs:'CNM'}},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail',platform:'3',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}]},
-        {serviceID:'PLAN-QUIET',uid:'UID-QUIET',trainId:'1Q10',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
+        {serviceID:'PLAN-QUIET',uid:'UID-QUIET',trainId:'1Q10',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
+        {serviceID:'PLAN-OUTSIDE',std:'12:15',arrival:'13:15',departureMinute:735,arrivalMinute:795,totalMinutes:60,changes:0,journeyType:'direct',operator:'Outside Window Rail',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
       ];
       Object.defineProperty(rows,'kerbsideSource',{value:'network-rail'});return rows;
     };
@@ -178,7 +180,7 @@ try{
       if(id.startsWith('PLAN-CHANGE'))return {score:2.1,label:'Moderate',level:'moderate',confidence:'High',probabilities:{quiet:.24,moderate:.56,busy:.16,veryBusy:.04},reasons:['typical measured demand at this time']};
       return {score:3.9,label:'Busy',level:'busy',confidence:'High',probabilities:{quiet:.06,moderate:.19,busy:.58,veryBusy:.17},reasons:['higher measured demand at this time']};
     };
-    const events=window.__KERBSIDE_EVENTS__;events.footballEventsFor=async()=>[];events.wikidataEventsForJourney=async()=>{await new Promise(resolve=>setTimeout(resolve,650));return [{title:'Bristol Arena Concert',place:'Bristol',startTime:'10:00',capacity:15000,confidence:.8,type:'event',source:'Wikidata (CC0)'}];};
+    const events=window.__KERBSIDE_EVENTS__;events.footballEventsFor=async()=>[{title:'Birmingham City v Bristol City',place:'Birmingham',startTime:'10:00',capacity:29000,confidence:.9,type:'football',source:'openfootball (public domain)'}];events.wikidataEventsForJourney=async()=>{await new Promise(resolve=>setTimeout(resolve,650));return [{title:'Bristol Arena Concert',place:'Bristol',startTime:'10:00',capacity:15000,confidence:.8,type:'event',source:'Wikidata (CC0)'}];};
     if(window.__KERBSIDE_TRAIN_TIMETABLE__)window.__KERBSIDE_TRAIN_TIMETABLE__.sync=()=>true;
   });
   await page.click('[data-train-view="plan"]');
@@ -193,6 +195,12 @@ try{
   await page.click('#planJourneySearch');
   await page.waitForFunction(()=>document.querySelectorAll('#planJourneyResults .plan-journey-result').length===3,undefined,{timeout:10000});
   const planCards=await page.locator('#planJourneyResults .plan-journey-result').allTextContents();
+  const appliedFilter=await page.evaluate(()=>window.__KERBSIDE_PLAN_TEST_ARGS__);
+  assert.deepEqual({from:appliedFilter.from,to:appliedFilter.to,date:appliedFilter.date,departAfter:appliedFilter.departAfter,departBefore:appliedFilter.departBefore},{from:'BHM',to:'BRI',date:'2026-08-12',departAfter:'09:00',departBefore:'11:00'});
+  assert.equal(planCards.length,3);assert.doesNotMatch(planCards.join(' '),/Outside Window Rail/);
+  assert.match(await page.locator('#planJourneyMeta').textContent(),/Wed, 12 Aug 2026 · departures 09:00–11:00/);
+  await page.waitForFunction(()=>/Birmingham City v Bristol City/.test(document.querySelector('#planJourneyEvents')?.textContent||''),undefined,{timeout:4000});
+  assert.match(await page.locator('#planJourneyEvents').textContent(),/Football · Birmingham City v Bristol City/);
   assert.match(planCards[0],/Quiet Rail/,'Plan My Journey ranks the quiet Forecast v4 option first');
   assert.match(planCards[0],/Best match for Quieter/);
   assert.equal(await page.locator('#planJourneySearch').isDisabled(),false,'initial ranked results must be usable before slow Wikidata settles');
@@ -294,7 +302,8 @@ try{
 
   await page.evaluate(()=>{
     const provider=window.__KERBSIDE_TIMETABLE_PROVIDER__;
-    provider.getJourneyOptions=async()=>{
+    provider.getJourneyOptions=async options=>{
+      window.__KERBSIDE_PLAN_TEST_ARGS__={...options};
       const rows=[
         {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail',platform:'4',arrivalPlatform:'9',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
         {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,minimumConnectionSource:'kerbside-planning-buffer',recoveryOptions:[],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Cheltenham Spa',crs:'CNM'}},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}]},
