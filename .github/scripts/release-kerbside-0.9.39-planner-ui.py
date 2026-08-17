@@ -37,6 +37,13 @@ post=Path('.github/scripts/kerbside-release-post.py')
 post_text=post.read_text(encoding='utf-8')
 needle="x(q,'    provider.getJourneyOptions=async()=>{\\n      const rows=[','    provider.getJourneyOptions=async options=>{\\n      window.__KERBSIDE_PLAN_TEST_ARGS__={...options};\\n      const rows=[')"
 if needle not in post_text: raise SystemExit('Could not locate planner provider patch in release post script')
-post.write_text(post_text.replace(needle,needle[:-1]+',2)',1),encoding='utf-8')
+post_text=post_text.replace(needle,needle[:-1]+',2)',1)
+# en-GB includes the punctuation after the weekday; assert the rendered value,
+# rather than failing a healthy build over a test-only punctuation mismatch.
+old_meta="assert.match(await page.locator('#planJourneyMeta').textContent(),/Wed 12 Aug 2026 · departures 09:00–11:00/);"
+new_meta="assert.match(await page.locator('#planJourneyMeta').textContent(),/Wed, 12 Aug 2026 · departures 09:00–11:00/);"
+if old_meta not in post_text: raise SystemExit('Could not locate planner date-window expectation')
+post_text=post_text.replace(old_meta,new_meta,1)
+post.write_text(post_text,encoding='utf-8')
 
 run('git','diff','--check')
