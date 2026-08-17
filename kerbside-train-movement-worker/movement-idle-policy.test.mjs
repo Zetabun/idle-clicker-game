@@ -75,5 +75,7 @@ test('worker keeps health passive and closes TRUST before checkpointing idle sta
   const idleEnd = source.indexOf('async runIdleCatchup(', idleStart);
   assert.ok(idleStart >= 0 && idleEnd > idleStart);
   assert.match(source.slice(idleStart, idleEnd), /await this\.closeSocket\(true\);[\s\S]*await this\.writeIdleCheckpoint/);
-  assert.match(source, /const VERSION = '0\.9\.35';/);
+  const version = fs.readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim();
+  const escapedVersion = version.replace(/\./g, '\\.');
+  assert.match(source, new RegExp(`const VERSION = '${escapedVersion}';`));
 });
