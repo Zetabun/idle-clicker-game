@@ -1,6 +1,6 @@
 export const DEMAND_TTL_MS = 90 * 1000;
-export const IDLE_SYNC_INTERVAL_MS = 3 * 60 * 1000;
-export const IDLE_CATCHUP_MS = 30 * 1000;
+export const IDLE_SYNC_INTERVAL_MS = 4 * 60 * 1000;
+export const IDLE_CATCHUP_MS = 15 * 1000;
 export const NETWORK_RAIL_SESSION_COOLDOWN_MS = 25 * 60 * 1000;
 export const NETWORK_RAIL_SESSION_COOLDOWN_KEY = 'network-rail-session-cooldown:v1';
 export const IDLE_CHECKPOINT_MANIFEST_KEY = 'movement-idle-checkpoint:manifest';

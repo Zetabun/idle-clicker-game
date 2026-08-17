@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check worker.js && node --check worker-v0.9.36.js && node --check movement-core.js && node --check movement-cold-path.js && node --check movement-idle-policy.js && node --check movement-storage-policy.js && node --check movement-core.test.mjs && node --check movement-cold-path.test.mjs && node --check movement-idle-policy.test.mjs && node --check movement-storage-policy.test.mjs",
+    "check": "node --check worker.js && node --check worker-v0.9.37.js && node --check movement-core.js && node --check movement-cold-path.js && node --check movement-idle-policy.js && node --check movement-storage-policy.js && node --check movement-core.test.mjs && node --check movement-cold-path.test.mjs && node --check movement-idle-policy.test.mjs && node --check movement-storage-policy.test.mjs",
     "test": "node --test movement-core.test.mjs movement-cold-path.test.mjs movement-idle-policy.test.mjs movement-storage-policy.test.mjs"
   },
   "devDependencies": {

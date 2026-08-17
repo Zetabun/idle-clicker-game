@@ -16,8 +16,9 @@ import {
   splitCheckpointSnapshots
 } from './movement-idle-policy.js';
 
-test('idle sync stays safely inside Network Rail five-minute durable TTL', () => {
-  assert.ok(IDLE_SYNC_INTERVAL_MS <= 3 * 60 * 1000);
+test('idle catch-up reduces socket-held duration while staying inside Network Rail five-minute durable TTL', () => {
+  assert.equal(IDLE_SYNC_INTERVAL_MS, 4 * 60 * 1000);
+  assert.equal(IDLE_CATCHUP_MS, 15 * 1000);
   assert.ok(IDLE_SYNC_INTERVAL_MS + IDLE_CATCHUP_MS < 5 * 60 * 1000);
 });
 
@@ -90,6 +91,23 @@ test('worker keeps health passive and closes TRUST before checkpointing idle sta
   const idleEnd = source.indexOf('async runIdleCatchup(', idleStart);
   assert.ok(idleStart >= 0 && idleEnd > idleStart);
   assert.match(source.slice(idleStart, idleEnd), /await this\.closeSocket\(true\);[\s\S]*await this\.writeIdleCheckpoint/);
+
+  const recoveryStart = source.indexOf('async restoreRecoveryEntries(');
+  const recoveryEnd = source.indexOf('async restoreRecoveryState(', recoveryStart);
+  assert.ok(recoveryStart >= 0 && recoveryEnd > recoveryStart);
+  assert.match(source.slice(recoveryStart, recoveryEnd), /pruneMemory\(now, true, \{ rebuildIndexes: false \}\)/);
+
+  const checkpointStart = source.indexOf('async writeIdleCheckpoint(');
+  const checkpointEnd = source.indexOf('async setNextAlarm(', checkpointStart);
+  assert.ok(checkpointStart >= 0 && checkpointEnd > checkpointStart);
+  assert.match(source.slice(checkpointStart, checkpointEnd), /pruneMemory\(now, true, \{ rebuildIndexes: false \}\)/);
+
+  const lookupStart = source.indexOf('lookup(url)');
+  const lookupEnd = source.indexOf('async ensureConnected(', lookupStart);
+  assert.ok(lookupStart >= 0 && lookupEnd > lookupStart);
+  assert.match(source.slice(lookupStart, lookupEnd), /if \(refs\.length\) this\.ensureMemoryIndexes\(\);/);
+  assert.match(source, /this\.memoryIndexesDirty = false;/);
+
   // Keep the behaviour regression tied to the repository release instead of a stale hard-coded version.
   const version = fs.readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim();
   const escapedVersion = version.replace(/\./g, '\\.');
@@ -97,11 +115,12 @@ test('worker keeps health passive and closes TRUST before checkpointing idle sta
 });
 
 test('deployed movement subclass suppresses repeated STOMP attempts during session allocation cooldown', () => {
-  const source = fs.readFileSync(new URL('./worker-v0.9.36.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(new URL('./worker-v0.9.37.js', import.meta.url), 'utf8');
   assert.match(source, /isNetworkRailSessionAllocationError/);
   assert.match(source, /sessionCooldownUntil/);
   assert.match(source, /NETWORK_RAIL_SESSION_COOLDOWN_KEY/);
   assert.match(source, /error\.retryAt = until/);
   assert.match(source, /await this\.ctx\.storage\.put\(NETWORK_RAIL_SESSION_COOLDOWN_KEY/);
   assert.match(source, /requestedRetryAt <= now && priorUntil <= now/);
+  assert.match(source, /const VERSION = '0\.9\.37';/);
 });
