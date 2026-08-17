@@ -5,7 +5,7 @@ import subprocess
 
 impl = Path('.github/scripts/kerbside-release-0.9.40-impl.py')
 text = impl.read_text(encoding='utf-8')
-text = text.replace("\n}\nasync function refreshSavedJourney", "\n}\n\nasync function refreshSavedJourney")
+text = text.replace("\\n}\\nasync function refreshSavedJourney", "\\n}\\n\\nasync function refreshSavedJourney")
 impl.write_text(text, encoding='utf-8')
 try:
     runpy.run_path(str(impl), run_name='__main__')
