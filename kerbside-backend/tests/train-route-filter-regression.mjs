@@ -80,7 +80,7 @@ const directBoard = {
 };
 
 function attachDiagnostics(page){
-  const diagnostics = {requests:[],pageErrors:[],consoleErrors:[]};
+  const diagnostics = {requests:[],blockedExternal:[],pageErrors:[],consoleErrors:[]};
   page.on('pageerror',error=>diagnostics.pageErrors.push(String(error && error.stack || error)));
   page.on('console',message=>{
     if(message.type() === 'error') diagnostics.consoleErrors.push(message.text());
@@ -96,7 +96,7 @@ async function mockExternal(page,diagnostics){
     headers:corsHeaders,
     body:JSON.stringify(body)
   });
-  const handle = async route=>{
+  const handleHuxley = async route=>{
     const url = new URL(route.request().url());
     const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
     diagnostics.requests.push(pathname);
@@ -131,24 +131,128 @@ async function mockExternal(page,diagnostics){
     }
     await json(route,404,{});
   };
-  // URL globs using **:// were intermittently bypassed by WebKit, allowing the
-  // real Huxley host to produce CORS page errors. A URL RegExp is evaluated by
-  // Playwright before the request is issued and consistently catches both hosts.
-  await page.context().route(/^https:\/\/(?:hux|huxley2)\.azurewebsites\.net\//i, handle);
-  // This regression tests route filtering, not Network Rail movement. The
-  // dedicated movement browser regression covers the overlay in both engines.
-  // Around midnight the fixture can become same-day, so prevent this unrelated
-  // test from loading the movement overlay at all instead of emulating production
-  // CORS inside WebKit.
-  await page.context().route('**/kerbside-train-movement.js*', route=>
-    route.fulfill({status:200,contentType:'text/javascript',body:'/* movement disabled in route-filter regression */'})
-  );
-  await page.context().route('https://raw.githubusercontent.com/openfootball/football.json/**', route=>
-    json(route,200,{matches:[]})
-  );
-  await page.context().route('https://query.wikidata.org/**', route=>
-    json(route,200,{head:{vars:[]},results:{bindings:[]}})
-  );
+
+  // WebKit can perform Fetch API CORS checks before Playwright's page.route
+  // handler sees an external request. Install the deterministic provider mocks
+  // inside every document before Kerbside scripts run, so this regression never
+  // depends on live provider CORS/network behaviour.
+  await page.exposeFunction('__KERBSIDE_TEST_RECORD_REQUEST',pathname=>{
+    diagnostics.requests.push(String(pathname || ''));
+  });
+  await page.exposeFunction('__KERBSIDE_TEST_RECORD_BLOCKED',url=>{
+    diagnostics.blockedExternal.push(String(url || ''));
+  });
+  await page.addInitScript(({stationResults,allBoard,directBoard})=>{
+    const nativeFetch = globalThis.fetch.bind(globalThis);
+    const jsonResponse = (body,status=200)=>new Response(JSON.stringify(body),{
+      status,
+      headers:{'content-type':'application/json'}
+    });
+    const emptyBankHolidays = {
+      'england-and-wales':{division:'england-and-wales',events:[]},
+      scotland:{division:'scotland',events:[]},
+      'northern-ireland':{division:'northern-ireland',events:[]}
+    };
+
+    globalThis.fetch = async (input,init)=>{
+      const raw = typeof input === 'string'
+        ? input
+        : input && typeof input.url === 'string'
+          ? input.url
+          : String(input);
+      const url = new URL(raw,location.href);
+      const host = url.hostname.toLowerCase();
+      const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
+      const local = host === '127.0.0.1' || host === 'localhost';
+      if(local) return nativeFetch(input,init);
+
+      if(host === 'hux.azurewebsites.net' || host === 'huxley2.azurewebsites.net'){
+        await globalThis.__KERBSIDE_TEST_RECORD_REQUEST(pathname);
+        if(pathname.startsWith('/crs/')){
+          const query = pathname.slice('/crs/'.length).toLowerCase();
+          const results = stationResults.filter(item=>
+            item.stationName.toLowerCase().includes(query) || item.crsCode.toLowerCase() === query
+          );
+          return jsonResponse(results.length ? results : stationResults);
+        }
+        if(pathname === '/departures/BHM/9' || pathname === '/departures/BHM/20'){
+          return jsonResponse(allBoard);
+        }
+        if(pathname === '/departures/BHM/to/BRI/9' || pathname === '/departures/BHM/to/BRI/20'){
+          return jsonResponse(directBoard);
+        }
+        const departure = pathname.match(/^\/departures\/([A-Z0-9]{3})(?:\/to\/([A-Z0-9]{3}))?\/(?:9|20)$/i);
+        if(departure){
+          const crs=departure[1].toUpperCase(),filter=String(departure[2]||'').toUpperCase();
+          return jsonResponse({
+            generatedAt:'2026-08-10T13:20:00Z',locationName:crs,crs,nrccMessages:[],
+            ...(filter?{filterLocationName:filter,filtercrs:filter}:{}),trainServices:[]
+          });
+        }
+        if(pathname.startsWith('/service/')) return jsonResponse({});
+        return jsonResponse({},404);
+      }
+      if(host === 'raw.githubusercontent.com' && pathname.startsWith('/openfootball/football.json/')){
+        return jsonResponse({matches:[]});
+      }
+      if(host === 'query.wikidata.org'){
+        return jsonResponse({head:{vars:[]},results:{bindings:[]}});
+      }
+      if(host === 'www.gov.uk' && pathname === '/bank-holidays.json'){
+        return jsonResponse(emptyBankHolidays);
+      }
+
+      await globalThis.__KERBSIDE_TEST_RECORD_BLOCKED(url.href);
+      return jsonResponse({});
+    };
+  },{stationResults,allBoard,directBoard});
+
+  // Keep the existing network-level guard as a second layer for resource loads
+  // and for any request mechanism that is not window.fetch.
+  await page.route('**/*', async route=>{
+    const url = new URL(route.request().url());
+    const host = url.hostname.toLowerCase();
+    const pathname = decodeURIComponent(url.pathname).replace(/\/+$/,'') || '/';
+    const local = host === '127.0.0.1' || host === 'localhost';
+
+    // This suite tests route filtering, not Network Rail movement. The dedicated
+    // movement regression covers that overlay in both browser engines.
+    if(local && pathname === '/kerbside-train-movement.js'){
+      await route.fulfill({
+        status:200,
+        contentType:'text/javascript',
+        body:'/* movement disabled in route-filter regression */'
+      });
+      return;
+    }
+    if(local){
+      await route.continue();
+      return;
+    }
+    if(host === 'hux.azurewebsites.net' || host === 'huxley2.azurewebsites.net'){
+      await handleHuxley(route);
+      return;
+    }
+    if(host === 'raw.githubusercontent.com' && pathname.startsWith('/openfootball/football.json/')){
+      await json(route,200,{matches:[]});
+      return;
+    }
+    if(host === 'query.wikidata.org'){
+      await json(route,200,{head:{vars:[]},results:{bindings:[]}});
+      return;
+    }
+    if(host === 'www.gov.uk' && pathname === '/bank-holidays.json'){
+      await json(route,200,{
+        'england-and-wales':{division:'england-and-wales',events:[]},
+        scotland:{division:'scotland',events:[]},
+        'northern-ireland':{division:'northern-ireland',events:[]}
+      });
+      return;
+    }
+
+    diagnostics.blockedExternal.push(route.request().url());
+    await json(route,200,{});
+  });
 }
 
 async function waitForServiceCount(page,count){
