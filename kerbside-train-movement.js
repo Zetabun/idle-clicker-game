@@ -13,11 +13,11 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.37';
+const VERSION='0.9.38';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
-const MAX_REFS_PER_REQUEST=40;
+const MAX_REFS_PER_REQUEST=60;
 const STYLE_ID='kerbsideTrainMovementStyles';
 const state={status:'idle',lastFetchAt:0,lastSuccessAt:0,lastMessageAt:0,error:'',requests:0,matches:0,cache:new Map(),timer:null,observer:null,installed:false};
 

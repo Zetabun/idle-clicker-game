@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const source = fs.readFileSync(new URL('../../kerbside-train-movement.js', import.meta.url), 'utf8');
+const workerSource = fs.readFileSync(new URL('../../kerbside-train-movement-worker/worker.js', import.meta.url), 'utf8');
 
-assert.match(source, /const VERSION='0\.9\.37'/, 'movement frontend must identify the screen-scoped build');
-assert.match(source, /const MAX_REFS_PER_REQUEST=40;/, 'point 3 must remain out of this build');
+assert.match(source, /const VERSION='0\.9\.38'/, 'movement frontend must identify the 60-ref batching build');
+assert.match(source, /const MAX_REFS_PER_REQUEST=60;/, 'movement frontend must use the Worker-supported 60-ref batch size');
+assert.match(source, /chunk\(\[\.\.\.set\],MAX_REFS_PER_REQUEST\)/, 'movement requests must be chunked by the configured batch limit');
+assert.match(workerSource, /const MAX_LOOKUP_REFS = 60;/, 'frontend batch size must remain aligned with the movement Worker lookup cap');
 
 assert.match(source, /plan-result-details\[open\]/, 'planner polling must be scoped to an opened journey result');
 assert.match(source, /__KERBSIDE_SAVED_JOURNEYS_V2__/, 'saved-journey screen state must participate in movement scope selection');
