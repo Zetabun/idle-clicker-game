@@ -131,8 +131,10 @@ async function mockExternal(page,diagnostics){
     }
     await json(route,404,{});
   };
-  await page.context().route('**://huxley2.azurewebsites.net/**', handle);
-  await page.context().route('**://hux.azurewebsites.net/**', handle);
+  // URL globs using **:// were intermittently bypassed by WebKit, allowing the
+  // real Huxley host to produce CORS page errors. A URL RegExp is evaluated by
+  // Playwright before the request is issued and consistently catches both hosts.
+  await page.context().route(/^https:\/\/(?:hux|huxley2)\.azurewebsites\.net\//i, handle);
   // This regression tests route filtering, not Network Rail movement. The
   // dedicated movement browser regression covers the overlay in both engines.
   // Around midnight the fixture can become same-day, so prevent this unrelated

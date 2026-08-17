@@ -12,6 +12,7 @@ on:
       - .github/scripts/build-networkrail-corpus.mjs
       - .github/scripts/networkrail-corpus.test.mjs
       - .github/scripts/probe-networkrail-movement.mjs
+      - .github/scripts/probe-networkrail-movement-replay.mjs
       - .github/workflows/verify-kerbside-train-movement.yml
       - .github/workflows/deploy-kerbside-train-movement-worker.yml
   workflow_dispatch:
@@ -49,6 +50,7 @@ jobs:
           node --check kerbside-train-movement-worker/movement-core.js
           node --check .github/scripts/build-networkrail-corpus.mjs
           node --check .github/scripts/probe-networkrail-movement.mjs
+          node --check .github/scripts/probe-networkrail-movement-replay.mjs
           node --test kerbside-train-movement-worker/movement-core.test.mjs
           node --test .github/scripts/networkrail-corpus.test.mjs
 
@@ -80,6 +82,15 @@ jobs:
         run: |
           set -euo pipefail
           node .github/scripts/probe-networkrail-movement.mjs
+
+      - name: Verify durable TRUST replay across idle gap
+        shell: bash
+        env:
+          NETWORK_RAIL_REPLAY_GAP_MS: '180000'
+          NETWORK_RAIL_REPLAY_TIMEOUT_MS: '60000'
+        run: |
+          set -euo pipefail
+          node .github/scripts/probe-networkrail-movement-replay.mjs
 
       - name: Install browser regression dependencies
         shell: bash
