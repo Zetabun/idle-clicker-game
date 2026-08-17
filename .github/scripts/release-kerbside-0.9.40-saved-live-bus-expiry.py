@@ -3,6 +3,9 @@ from pathlib import Path
 import runpy
 
 impl = Path('.github/scripts/kerbside-release-0.9.40-impl.py')
+text = impl.read_text(encoding='utf-8')
+text = text.replace("\\n}\\nasync function refreshSavedJourney", "\\n}\\n\\nasync function refreshSavedJourney")
+impl.write_text(text, encoding='utf-8')
 try:
     runpy.run_path(str(impl), run_name='__main__')
 except SystemExit as exc:
