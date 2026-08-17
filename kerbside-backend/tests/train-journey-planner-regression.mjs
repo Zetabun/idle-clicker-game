@@ -56,7 +56,7 @@ const eventResults={
   }]}
 };
 
-const diagnostics={primary:[],fallback:[],events:[],pageErrors:[],consoleErrors:[]};
+const diagnostics={primary:[],fallback:[],events:[],footballPrimary:[],footballMirror:[],footballJson:[],pageErrors:[],consoleErrors:[]};
 let browser;
 try{
   browser=await browserType.launch({headless:true});
@@ -86,13 +86,18 @@ try{
     return route.fulfill({status:200,contentType:'application/sparql-results+json',body:JSON.stringify(eventResults)});
   });
   await page.route('https://raw.githubusercontent.com/openfootball/england/**',route=>{
-    const pathname=new URL(route.request().url()).pathname;
-    const body=pathname.includes('/2026-27/2-championship.txt')?'Sat Aug 29\n15:00 Bristol City FC v Portsmouth FC\n':'= Synthetic empty OpenFootball season\n';
+    diagnostics.footballPrimary.push(new URL(route.request().url()).pathname);
+    return route.fulfill({status:200,contentType:'text/plain',body:'= Synthetic empty primary OpenFootball response\n'});
+  });
+  await page.route('https://cdn.jsdelivr.net/gh/openfootball/england@master/**',route=>{
+    const pathname=new URL(route.request().url()).pathname;diagnostics.footballMirror.push(pathname);
+    const body=pathname.includes('/2026-27/2-championship.txt')?'Sat Aug 29\n15:00 Bristol City FC v Portsmouth FC\n':'= Synthetic empty OpenFootball mirror response\n';
     return route.fulfill({status:200,contentType:'text/plain',body});
   });
-  await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>
-    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({matches:[]})})
-  );
+  await page.route('https://raw.githubusercontent.com/openfootball/football.json/**',route=>{
+    diagnostics.footballJson.push(new URL(route.request().url()).pathname);
+    return route.fulfill({status:404,contentType:'application/json',body:'{}'});
+  });
   await page.route('https://kerbside-train-movement.adambullas.workers.dev/**',route=>{
     const url=new URL(route.request().url());
     const results=Object.fromEntries(url.searchParams.getAll('ref').map(ref=>[ref,null]));
@@ -157,6 +162,18 @@ try{
   assert.ok(eventForecast.eventPressure>0&&eventForecast.eventPressure<=0.8,`event pressure should be positive and bounded: ${JSON.stringify(eventForecast)}`);
   assert.ok(eventForecast.reasons.some(reason=>/Birmingham Arena Concert/.test(reason)),`forecast should name the contributing event: ${JSON.stringify(eventForecast)}`);
 
+  const nonFootballSignals=await page.evaluate(()=>{
+    const forecast=window.__KERBSIDE_FORECAST_V4__,events=window.__KERBSIDE_EVENTS__,station={name:'Birmingham New Street',crs:'BHM'};
+    const bank=forecast.calendarSignal(new Date('2026-08-31T12:00:00'),600,station);
+    const cricket=events.normalise({title:'Edgbaston cricket match',place:'Edgbaston, Birmingham',startTime:'15:00',endTime:'20:30',attendance:25000,confidence:.8,type:'cricket',source:'Wikidata (CC0)'});
+    const university=events.normalise({title:'University of Birmingham graduation',place:'University of Birmingham, Birmingham',startTime:'11:00',endTime:'16:30',attendance:6000,confidence:.75,type:'university',source:'Wikidata (CC0)'});
+    const journey={origin:'Birmingham New Street',originCrs:'BHM',destination:'Bristol Temple Meads',destinationCrs:'BRI',interchanges:[]};
+    return {bank,cricket:events.relevance(cricket,{std:'21:15'},journey),university:events.relevance(university,{std:'17:10'},journey)};
+  });
+  assert.ok(nonFootballSignals.bank.amount>0&&nonFootballSignals.bank.reasons.some(reason=>/bank-holiday/i.test(reason)),`England/Wales summer bank holiday should contribute calendar pressure: ${JSON.stringify(nonFootballSignals.bank)}`);
+  assert.ok(nonFootballSignals.cricket&&nonFootballSignals.cricket.amount>0,`a venue/date cricket event should use the generic Wikidata event-pressure path: ${JSON.stringify(nonFootballSignals.cricket)}`);
+  assert.ok(nonFootballSignals.university&&nonFootballSignals.university.amount>0,`a venue/date university event should use the generic Wikidata event-pressure path: ${JSON.stringify(nonFootballSignals.university)}`);
+
   const bristolFixture=await page.evaluate(async()=>{
     const events=window.__KERBSIDE_EVENTS__,forecast=window.__KERBSIDE_FORECAST_V4__;
     const rows=await events.footballEventsFor('2026-08-29');
@@ -170,6 +187,8 @@ try{
   assert.ok(bristolFixture.rows.some(title=>/Bristol City FC v Portsmouth FC/.test(title)),`29 Aug Bristol fixture should survive fixture caching: ${JSON.stringify(bristolFixture)}`);
   assert.ok(bristolFixture.pressure>0,`Bristol fixture should contribute Forecast v4 event pressure to a 13:32 arrival: ${JSON.stringify(bristolFixture)}`);
   assert.ok(bristolFixture.reasons.some(reason=>/Bristol City FC v Portsmouth FC/.test(reason)),`Forecast reason should name the Bristol fixture: ${JSON.stringify(bristolFixture)}`);
+  assert.ok(diagnostics.footballMirror.some(pathname=>pathname.includes('/2026-27/2-championship.txt')),`maintained football CDN mirror should be used when the primary text response has no fixtures: ${JSON.stringify(diagnostics)}`);
+  assert.equal(diagnostics.footballJson.length,0,`generated football.json mirror must not be queried for a season it may not have published: ${JSON.stringify(diagnostics.footballJson)}`);
 
 
   // Plan My Journey is a separate comparison view over the same timetable
@@ -184,7 +203,7 @@ try{
       const rows=[
         {serviceID:'PLAN-FAST',std:'09:00',arrival:'10:00',departureMinute:540,arrivalMinute:600,totalMinutes:60,changes:0,journeyType:'direct',operator:'Fast Rail',platform:'4',arrivalPlatform:'9',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
         {serviceID:'PLAN-CHANGE',std:'09:05',arrival:'10:12',departureMinute:545,arrivalMinute:612,totalMinutes:67,changes:1,journeyType:'connection',operator:'Change Rail',connectionMinutes:10,minimumConnectionMinutes:7,minimumConnectionSource:'kerbside-planning-buffer',recoveryOptions:[{serviceID:'PLAN-RECOVERY',std:'09:55',arrival:'10:25',operator:'Recovery Rail',platform:'4',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}],interchange:{crs:'CNM',name:'Cheltenham Spa',margin:3},legs:[{serviceID:'PLAN-CHANGE-A',std:'09:05',arrival:'09:35',operator:'Change Rail',platform:'5',arrivalPlatform:'1',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Cheltenham Spa',crs:'CNM'}},{serviceID:'PLAN-CHANGE-B',std:'09:45',arrival:'10:12',operator:'Change Rail',platform:'3',arrivalPlatform:'8',from:{name:'Cheltenham Spa',crs:'CNM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}]},
-        {serviceID:'PLAN-QUIET',uid:'UID-QUIET',trainId:'1Q10',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
+        {serviceID:'PLAN-QUIET',uid:'UID-QUIET',trainId:'1Q10',std:'09:10',arrival:'10:15',departureMinute:550,arrivalMinute:615,totalMinutes:65,changes:0,journeyType:'direct',operator:'Quiet Rail',platform:'6',arrivalPlatform:'10',origin:[{locationName:'Wolverhampton',crs:'WVH'}],previousCallingPoints:[{callingPoint:[{locationName:'Wolverhampton',crs:'WVH',st:'08:38'},{locationName:'Sandwell & Dudley',crs:'SAD',st:'08:55'}]}],subsequentCallingPoints:[{callingPoint:[{locationName:'University',crs:'UNI',st:'09:18'},{locationName:'Cheltenham Spa',crs:'CNM',st:'09:48'},{locationName:'Bristol Temple Meads',crs:'BRI',st:'10:15'}]}],from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}},
         {serviceID:'PLAN-OUTSIDE',std:'12:15',arrival:'13:15',departureMinute:735,arrivalMinute:795,totalMinutes:60,changes:0,journeyType:'direct',operator:'Outside Window Rail',from:{name:'Birmingham New Street',crs:'BHM'},to:{name:'Bristol Temple Meads',crs:'BRI'}}
       ];
       Object.defineProperty(rows,'kerbsideSource',{value:'network-rail'});return rows;
@@ -278,9 +297,11 @@ try{
   // trips into their own tab, refreshes them automatically, and records only a
   // tiny resolved summary for change detection. Forecast/live evidence must
   // never become persisted saved state.
+  await page.setViewportSize({width:1280,height:900});
   const quietCard=page.locator('#planJourneyResults .plan-journey-result').filter({hasText:'Quiet Rail'});
-  await quietCard.locator('[data-plan-save-key]').click();
-  await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1&&Boolean(window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.installed);}catch{return false;}});
+  const immediateSave=await quietCard.locator('[data-plan-save-key]').evaluate(button=>{button.click();let stored=[];try{stored=JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]');}catch{}return {stored:stored.length,workspace:window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.saved?.length||0,label:(button.textContent||'').trim()};});
+  assert.deepEqual(immediateSave,{stored:1,workspace:1,label:'Saved'},'Save journey must persist and synchronise the Saved journeys workspace in the same click, not via a delayed listener');
+  await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1&&window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.saved?.length===1;}catch{return false;}});
   let savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
   assert.equal(savedJourney.date,'2026-08-12');
   assert.equal(savedJourney.from.crs,'BHM');assert.equal(savedJourney.to.crs,'BRI');
@@ -305,6 +326,13 @@ try{
   assert.equal(initialMeta.baseline.arrival,'10:15');
   assert.equal(initialMeta.baseline.source,'network-rail');
   assert.doesNotMatch(JSON.stringify(initialMeta),/probabilities|reasons|liveEvidence/i,'Saved Journeys v2 metadata must not persist Forecast/live evidence');
+  const savedTimeline=await page.locator('#savedJourneyList [data-saved-v2-timeline]').evaluate(node=>({text:node.textContent||'',overflowY:getComputedStyle(node).overflowY,maxHeight:getComputedStyle(node).maxHeight}));
+  assert.match(savedTimeline.text,/Wolverhampton/,'Saved journeys should retain the service route before the selected boarding station');
+  assert.match(savedTimeline.text,/Sandwell & Dudley/,'Saved journeys should show earlier calling points');
+  assert.match(savedTimeline.text,/Bristol Temple Meads/,'Saved journeys should show the saved destination in the route timeline');
+  assert.equal(savedTimeline.overflowY,'auto','Saved journey timelines should scroll vertically when their route exceeds the available height');
+  assert.notEqual(savedTimeline.maxHeight,'none','Saved journey timelines should have a bounded vertical height');
+  await page.setViewportSize({width:390,height:844});
 
   const lifecycle=await page.evaluate(()=>{
     const api=window.__KERBSIDE_SAVED_JOURNEYS_V2__;

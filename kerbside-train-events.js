@@ -22,8 +22,10 @@
 
 const MAX_EVENT_PRESSURE=0.8;
 const WIKIDATA_ENDPOINT='https://query.wikidata.org/sparql';
-const FOOTBALL_BASE='https://raw.githubusercontent.com/openfootball/football.json/master';
-const FOOTBALL_TEXT_BASE='https://raw.githubusercontent.com/openfootball/england/master';
+const FOOTBALL_TEXT_BASES=[
+  'https://raw.githubusercontent.com/openfootball/england/master',
+  'https://cdn.jsdelivr.net/gh/openfootball/england@master'
+];
 const FOOTBALL_LEAGUES=[
   {json:'en.1',text:'1-premierleague.txt'},
   {json:'en.2',text:'2-championship.txt'}
@@ -38,7 +40,7 @@ const WIKIDATA_MAX_ENTRIES=32;
 const FIXTURE_CACHE_MS=24*60*60*1000;
 /* v3 is season-aware. v2 could keep an empty/new-season miss for a week, so
    a fixture published after that first lookup never reached Forecast v4. */
-const FIXTURE_STORE='kerbside.rail.fixtures.v3';
+const FIXTURE_STORE='kerbside.rail.fixtures.v4';
 
 const state={events:[],updatedAt:0,status:'idle',date:'',sources:[],sourceStatus:{football:{status:'idle',updatedAt:0},wikidata:{status:'idle',updatedAt:0}}};
 const cache=new Map();
@@ -295,17 +297,17 @@ function parseFootballText(text,season){
   return matches;
 }
 async function loadFootballLeague(season,league){
-  /* Football.TXT is the maintained source. football.json is an auto-generated
-     convenience mirror and has historically appeared later at season rollover. */
-  try{
-    const text=await fetchText(`${FOOTBALL_TEXT_BASE}/${season}/${league.text}`);
-    const matches=parseFootballText(text,season);
-    if(matches.length)return matches;
-  }catch(e){}
-  try{
-    const json=await fetchJson(`${FOOTBALL_BASE}/${season}/${league.json}.json`);
-    return Array.isArray(json&&json.matches)?json.matches:[];
-  }catch(e){return [];}
+  /* Football.TXT is the maintained source. Try a second CDN mirror of the
+     same repository before giving up; do not fall through to the generated
+     football.json mirror, which can legitimately lag a new season. */
+  for(const base of FOOTBALL_TEXT_BASES){
+    try{
+      const text=await fetchText(`${base}/${season}/${league.text}`);
+      const matches=parseFootballText(text,season);
+      if(matches.length)return matches;
+    }catch(e){}
+  }
+  return [];
 }
 /* One fetch per season covers every fixture date for months, so this is
    cached in localStorage for a week rather than hit per journey. */

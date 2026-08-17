@@ -209,12 +209,16 @@ function legFromRow(row,fromIndex,toIndex,locations,manifest,date){
   const from=location(locations,originCall[0]),to=location(locations,targetCall[0]);
   const terminus=location(locations,terminusCall&&terminusCall[0]);
   const serviceOrigin=location(locations,calls[0]&&calls[0][0]);
+  const routePoint=call=>{if(!call)return null;const place=location(locations,call[0]),scheduled=call[2]||call[1]||'';return {locationName:place.name,crs:place.crs,st:scheduled,isCancelled:false};};
+  const previousCallingPoints=calls.slice(0,fromIndex).map(routePoint).filter(Boolean),subsequentCallingPoints=calls.slice(fromIndex+1).map(routePoint).filter(Boolean);
   return {
     std:dep,departure:dep,arrival:arr,platform:originCall[3]||'',arrivalPlatform:targetCall[3]||'',
     operator:operatorName(manifest,row[3]),operatorCode:row[3]||'',serviceID:row[0]||'',serviceId:row[0]||'',uid:row[1]||'',trainId:row[2]||'',
     origin:[{locationName:serviceOrigin.name,crs:serviceOrigin.crs}],
     destination:[{locationName:terminus.name,crs:terminus.crs}],
     routeDestination:to,serviceTerminus:terminus,from,to,
+    previousCallingPoints:previousCallingPoints.length?[{callingPoint:previousCallingPoints}]:[],
+    subsequentCallingPoints:subsequentCallingPoints.length?[{callingPoint:subsequentCallingPoints}]:[],
     departureMinute,arrivalMinute,scheduledOnly:true,isCancelled:false,length:0
   };
 }
