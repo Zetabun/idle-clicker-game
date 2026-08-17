@@ -162,3 +162,4 @@ test('TRUST BST future-hour anomaly is corrected only for actual event time', ()
 });
 
 import './movement-storage-policy.test.mjs';
+import './movement-idle-policy.test.mjs';
