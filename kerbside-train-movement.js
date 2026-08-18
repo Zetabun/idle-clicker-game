@@ -13,13 +13,13 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.56';
+const VERSION='0.9.57';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
 const MAX_REFS_PER_REQUEST=60;
 const STYLE_ID='kerbsideTrainMovementStyles';
-const state={status:'idle',lastFetchAt:0,lastSuccessAt:0,lastMessageAt:0,error:'',requests:0,matches:0,cache:new Map(),timer:null,observer:null,installed:false};
+const state={status:'idle',lastFetchAt:0,lastSuccessAt:0,lastMessageAt:0,error:'',requests:0,matches:0,cache:new Map(),timer:null,observer:null,installed:false,previousCalls:new Map(),previousLookups:0};
 
 function text(value){return String(value==null?'':value).trim();}
 function upper(value){return text(value).toUpperCase();}
@@ -279,8 +279,69 @@ function mergeTimelinePoints(primary,existing,startTime){
   const startMatch=text(startTime).match(/^(\d{1,2}):(\d{2})$/),startMinute=startMatch?Number(startMatch[1])*60+Number(startMatch[2]):null;
   return rows.sort((a,b)=>{const av=timelineMinute(a.when,startMinute),bv=timelineMinute(b.when,startMinute);if(av!==bv)return av-bv;return a.order-b.order;});
 }
-function ensureBoardTimeline(container,service,detailData=null){
-  if(!container)return null;let calling=container.querySelector('.train-calling');const points=mergeTimelinePoints(flattenTimelinePoints(service,detailData),calling?timelineDomPoints(calling):[],serviceStartTime(service));if(!points.length)return calling;
+
+/* ---- previous calling points -------------------------------------------
+
+   Darwin's departure board returns subsequent calls only; the stops a train
+   has already made live in GetServiceDetails, which is a separate Rail Data
+   Marketplace product this deployment does not subscribe to. The browser used
+   to ask the community Huxley provider instead, and on GitHub Pages that
+   request never completed - no CORS header - so every timeline except Saved
+   journeys began at the current station.
+
+   The timetable snapshot already holds the whole schedule and is same-origin.
+   Asking it for the same journey with this station as the origin yields
+   exactly the calls before here. Results are cached per service and the board
+   is redecorated once, so a lookup costs nothing on later passes.
+------------------------------------------------------------------------- */
+function previousCallsKey(service,date,stationCrs){
+  const leg=firstLeg(service);
+  return [text(date),upper(stationCrs),text(leg&&(leg.std||leg.departure)),upper(destinationCrsOf(leg))].join('|');
+}
+function destinationCrsOf(leg){
+  const list=Array.isArray(leg&&leg.destination)?leg.destination:[];
+  const item=list.find(Boolean)||leg&&leg.routeDestination||leg&&leg.to;
+  return text(item&&(item.crs||item.locationName));
+}
+function boardStationCrs(api){
+  const station=api&&api.state&&api.state.station||window.__KERBSIDE_TRAINS__?.state?.station;
+  return text(station&&(station.crs||station.name));
+}
+function timetableProvider(){
+  return window.__KERBSIDE_TIMETABLE_PROVIDER__||window.__KERBSIDE_TRAIN_TIMETABLE__?.provider||null;
+}
+function hasPreviousCalls(service,detailData){
+  const leg=firstLeg(service);
+  const any=value=>Array.isArray(value)&&value.some(group=>Array.isArray(group&&group.callingPoint)?group.callingPoint.length:!!group);
+  return any(detailData&&detailData.previousCallingPoints)||any(leg&&leg.previousCallingPoints)||any(leg&&leg.scheduledPreviousCallingPoints);
+}
+async function loadPreviousCalls(service,date,stationCrs,key){
+  const provider=timetableProvider(),leg=firstLeg(service);
+  const to=destinationCrsOf(leg),std=text(leg&&(leg.std||leg.departure));
+  if(!provider||typeof provider.getServices!=='function'||!stationCrs||!to||!std){state.previousCalls.set(key,null);return null;}
+  try{
+    state.previousLookups++;
+    // getServices resolves from/to as bare CRS strings; passing station objects
+    // stringifies to [object Object] and silently returns no rows.
+    const rows=await provider.getServices({from:upper(stationCrs),to:upper(to),date,departAfter:std});
+    const match=(Array.isArray(rows)?rows:[]).find(row=>text(row&&(row.std||row.departure))===std);
+    const previous=match&&Array.isArray(match.previousCallingPoints)&&match.previousCallingPoints.length?match.previousCallingPoints:null;
+    state.previousCalls.set(key,previous);
+    return previous;
+  }catch(error){state.previousCalls.set(key,null);return null;}
+}
+function previousCallsFor(service,date,stationCrs,onReady){
+  if(!text(date))return null;
+  const key=previousCallsKey(service,date,stationCrs);
+  if(state.previousCalls.has(key))return state.previousCalls.get(key);
+  state.previousCalls.set(key,null);          // in-flight; a null result is also the cached answer
+  loadPreviousCalls(service,date,stationCrs,key).then(result=>{if(result&&typeof onReady==='function')onReady();});
+  return null;
+}
+function ensureBoardTimeline(container,service,detailData=null,extraPrevious=null){
+  if(!container)return null;let calling=container.querySelector('.train-calling');
+  const detail=extraPrevious?{...(detailData||{}),previousCallingPoints:extraPrevious}:detailData;
+  const points=mergeTimelinePoints(flattenTimelinePoints(service,detail),calling?timelineDomPoints(calling):[],serviceStartTime(service));if(!points.length)return calling;
   if(!calling){calling=document.createElement('div');calling.className='train-calling';const unavailable=[...container.querySelectorAll('.train-detail-note')].find(node=>/Calling-point data is unavailable/i.test(text(node.textContent)));if(unavailable)unavailable.remove();container.appendChild(calling);}
   const sourceSignature=points.map(point=>`${normalisePlace(point.name)}|${point.when}|${point.cancelled}|${point.phase}`).join('||');
   const routeSignature=points.map(point=>normalisePlace(point.name)).join('||'),domRouteSignature=timelineDomPoints(calling).map(point=>normalisePlace(point.name)).join('||');
@@ -314,7 +375,9 @@ function decorateBoard(api,boardId,services,date){
   services.forEach((service,index)=>{
     const key=typeof api.serviceKey==='function'?api.serviceKey(service,index):'';if(!key)return;
     const article=articleFor(board,key),snapshot=service&&service.journeyType==='connection'?primaryMovement(service,date):attachMovement(service,date),info=progress(snapshot);if(!article)return;
-    const detail=article.querySelector('.train-service-detail'),leg=firstLeg(service),detailCache=api&&api.state&&api.state.detailCache instanceof Map?api.state.detailCache.get(key):null,calling=ensureBoardTimeline(detail,leg,detailCache),timeline=decorateCallingTimeline(calling,leg,snapshot,{startName:serviceStartName(service,api,boardId,snapshot),startTime:serviceStartTime(leg)});if(timeline)focusTimelineCurrent(calling);
+    const detail=article.querySelector('.train-service-detail'),leg=firstLeg(service),detailCache=api&&api.state&&api.state.detailCache instanceof Map?api.state.detailCache.get(key):null;
+    const filledPrevious=hasPreviousCalls(leg,detailCache)?null:previousCallsFor(leg,date,boardStationCrs(api),()=>scheduleRefresh(true));
+    const calling=ensureBoardTimeline(detail,leg,detailCache,filledPrevious),timeline=decorateCallingTimeline(calling,leg,snapshot,{startName:serviceStartName(service,api,boardId,snapshot),startTime:serviceStartTime(leg)});if(timeline)focusTimelineCurrent(calling);
     ensureInline(article,info);ensureCard(detail,timeline?null:snapshot);
   });
 }
@@ -688,6 +751,6 @@ function install(){
 }
 function stop(){if(state.timer)clearInterval(state.timer);state.timer=null;if(state.observer)state.observer.disconnect();state.observer=null;state.installed=false;}
 
-window.__KERBSIDE_TRAIN_MOVEMENT__={version:VERSION,state,install,stop,refresh,decorate,refsFor,movementFor,attachMovement,attachJourney,progress,decorateCallingTimeline,ensurePlannerTimeline,API_BASE};
+window.__KERBSIDE_TRAIN_MOVEMENT__={version:VERSION,state,install,stop,refresh,decorate,refsFor,movementFor,attachMovement,attachJourney,progress,decorateCallingTimeline,ensurePlannerTimeline,ensureBoardTimeline,hasPreviousCalls,previousCallsFor,previousCallsKey,API_BASE};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
