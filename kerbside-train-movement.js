@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.57';
+const VERSION='0.9.59';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -732,19 +732,50 @@ function installStyles(){if(document.getElementById(STYLE_ID))return;const style
   .train-progress-generated{padding:9px}
 }
 `;document.head.appendChild(style);}
-function scheduleRefresh(force=false){setTimeout(()=>refresh({force}).catch(()=>{}),force?0:120);}
+/* A debounce, not a delay. The previous version queued a fresh timeout on
+   every call and cancelled nothing, so a single board render - twelve rows,
+   each mutating - queued 484 refreshes, every one of which walked the DOM for
+   its scope signature and ran decorate() before reaching the network throttle.
+   A burst now collapses to one tick, and a forced call still pre-empts a
+   pending idle one. */
+let refreshTimer=0,refreshForce=false,refreshDelay=0,decorateQueued=false;
+function trainViewActive(){
+  return typeof document!=='undefined'&&document.body&&document.body.dataset.transport==='train';
+}
+function scheduleDecorate(){
+  if(decorateQueued)return;
+  decorateQueued=true;
+  const run=()=>{decorateQueued=false;if(trainViewActive())decorate();};
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else setTimeout(run,16);
+}
+function scheduleRefresh(force=false){
+  if(!force&&!trainViewActive())return;
+  const delay=force?0:120;
+  if(refreshTimer){
+    refreshForce=refreshForce||!!force;
+    if(delay>=refreshDelay)return;
+    clearTimeout(refreshTimer);
+  }
+  refreshForce=refreshForce||!!force;
+  refreshDelay=delay;
+  refreshTimer=setTimeout(()=>{
+    refreshTimer=0;
+    const wanted=refreshForce;refreshForce=false;
+    refresh({force:wanted}).catch(()=>{});
+  },delay);
+}
 function install(){
   if(state.installed)return true;state.installed=true;installStyles();
   const roots=['trainBoard','trainScheduledBoard','planJourneyResults','savedJourneyList','trainActiveJourney'].map(id=>document.getElementById(id)).filter(Boolean);
   if(typeof MutationObserver==='function'){
-    state.observer=new MutationObserver(()=>{decorate();scheduleRefresh(false);});
+    state.observer=new MutationObserver(()=>{scheduleDecorate();scheduleRefresh(false);});
     roots.forEach(root=>state.observer.observe(root,{childList:true,subtree:true}));
     state.observer.observe(document.body,{childList:true,subtree:true});
   }
   ['kerbside:live-overlay','kerbside:train-date-change','kerbside:train-route-change','kerbside:train-movement'].forEach(name=>document.addEventListener(name,()=>scheduleRefresh(name!=='kerbside:train-movement')));
   window.addEventListener('kerbside:journey-planner-change',()=>scheduleRefresh(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleRefresh(true);});
-  document.addEventListener('click',()=>setTimeout(()=>scheduleRefresh(false),0),true);
+  document.addEventListener('click',()=>scheduleRefresh(false),true);
   document.addEventListener('toggle',event=>{if(event.target&&event.target.matches&&event.target.matches('.plan-result-details'))scheduleRefresh(false);},true);
   state.timer=setInterval(()=>refresh().catch(()=>{}),REFRESH_MS);
   scheduleRefresh(true);return true;

@@ -9,7 +9,7 @@
    owns the lifecycle around that locator: editing, repeating, archiving,
    grouping and defensive localStorage migration/recovery.
 */
-const VERSION='0.9.57';
+const VERSION='0.9.59';
 const SCHEMA=3;
 const SAVED_KEY='kerbside.rail.plan.saved.v1';
 const META_KEY='kerbside.rail.plan.saved-meta.v2';
@@ -260,6 +260,24 @@ function archivedCard(entry){
   const saved=entry&&entry.journey;if(!saved)return null;const meta=entry.meta&&typeof entry.meta==='object'?entry.meta:{},resolved=meta.lastResolved||{},times=`${resolved.departure||saved.scheduledDeparture||'—'} → ${resolved.arrival||saved.scheduledArrival||'—'}`;const card=document.createElement('article');card.className='saved-v2-card saved-polish-archived-card';card.dataset.savedPolishArchivedId=saved.id;card.innerHTML=`<header><div><span class="saved-v2-date">${esc(dateLabel(saved.date))}</span><h3>${esc(saved.from&&saved.from.name||saved.from&&saved.from.crs||'')} → ${esc(saved.to&&saved.to.name||saved.to&&saved.to.crs||'')}</h3></div><span class="saved-v2-status">Archived</span></header><div class="saved-v2-times"><strong>${esc(times)}</strong></div><div class="saved-v2-intent"><span>Saved plan</span><strong>${esc(intentLabel(saved))}</strong></div><footer><span>${entry.archivedAt?`Archived ${esc(dateLabel(String(entry.archivedAt).slice(0,10)))}`:'Archived journey'}</span><div><button type="button" data-saved-polish-restore="${esc(saved.id)}">Restore</button><button type="button" class="saved-polish-repeat" data-saved-polish-repeat-archived="${esc(saved.id)}">Repeat</button><button type="button" class="saved-polish-delete" data-saved-polish-delete-archived="${esc(saved.id)}">Delete</button></div></footer></article>`;return card;
 }
 function sectionHeading(title,count){const head=document.createElement('div');head.className='saved-polish-group-heading';head.innerHTML=`<strong>${esc(title)}</strong><span>${Number(count)||0}</span>`;return head;}
+/* renderFromBase writes to the very list this module observes, and
+   MutationObserver records are delivered as a microtask - after any boolean
+   guard would already have been cleared. With no saved journeys the
+   .saved-v2-empty placeholder is still a match, so the observer re-queued a
+   render on every pass and the list was rebuilt about 190 times a second, on
+   every page load, forever. Detaching around our own writes and dropping the
+   records they produce is what actually breaks the cycle; the observer still
+   sees rebuilds that come from anywhere else. */
+function withoutSelfObservation(list,write){
+  const observer=runtime.observer;
+  if(!observer)return write();
+  observer.disconnect();
+  try{return write();}
+  finally{
+    if(list&&list.isConnected){observer.takeRecords();observer.observe(list,{childList:true});}
+  }
+}
+
 function renderFromBase(){
   runtime.renderQueued=false;const list=$('savedJourneyList'),v2=savedV2();if(!list||!v2||!v2.state)return false;
   const baseCards=[...list.children].filter(node=>node.classList&&node.classList.contains('saved-v2-card')),baseEmpty=[...list.children].find(node=>node.classList&&node.classList.contains('saved-v2-empty'));
@@ -270,10 +288,12 @@ function renderFromBase(){
   if(split.past.length){const details=document.createElement('details');details.className='saved-polish-details saved-polish-past';details.open=!split.allUpcoming.length;details.innerHTML=`<summary>Past journeys <span>${split.past.length}</span></summary>`;const body=document.createElement('div');body.className='saved-polish-details-body';for(const saved of split.past){const card=byId.get(String(saved.id));if(card)body.appendChild(decorateCard(card,saved,false));}details.appendChild(body);fragment.appendChild(details);}
   const archived=Object.values(runtime.store&&runtime.store.archived||{}).sort((a,b)=>sortJourneys(b.journey||{},a.journey||{}));if(archived.length){const details=document.createElement('details');details.className='saved-polish-details saved-polish-archived';details.innerHTML=`<summary>Archived <span>${archived.length}</span></summary>`;const body=document.createElement('div');body.className='saved-polish-details-body';for(const entry of archived){const card=archivedCard(entry);if(card)body.appendChild(card);}details.appendChild(body);fragment.appendChild(details);}
   if(!rows.length&&!archived.length){fragment.appendChild(baseEmpty||(()=>{const empty=document.createElement('div');empty.className='saved-v2-empty';empty.innerHTML='<strong>No saved journeys yet</strong><span>Save an option from Plan my journey. It will appear here.</span>';return empty;})());}
+  return withoutSelfObservation(list,()=>{
   list.replaceChildren(fragment);ensureNotice();ensureNextSummary(split);
   const activeCount=rows.length,tabCount=$('savedJourneyTabCount'),headCount=$('savedJourneyCount'),sideCount=$('savedJourneySidebarCount');if(tabCount)tabCount.textContent=activeCount?String(activeCount):'';if(headCount)headCount.textContent=String(activeCount);if(sideCount)sideCount.textContent=String(activeCount);const auto=$('savedJourneyAutoMeta');if(auto)auto.textContent=`${split.allUpcoming.length} upcoming · ${split.past.length} past · ${archived.length} archived. Upcoming journeys keep refreshing automatically.`;
   if(runtime.flashId){const flash=[...list.querySelectorAll('[data-saved-v2-id]')].find(node=>String(node.dataset&&node.dataset.savedV2Id||'')===runtime.flashId);if(flash){flash.classList.add('saved-polish-is-next');setTimeout(()=>flash.classList.remove('saved-polish-is-next'),1800);}runtime.flashId='';}
   return true;
+  });
 }
 function queueRender(){if(runtime.renderQueued)return;runtime.renderQueued=true;setTimeout(renderFromBase,0);}
 function rerender(){const v2=savedV2();if(v2&&typeof v2.syncSaved==='function')v2.syncSaved();else queueRender();}
