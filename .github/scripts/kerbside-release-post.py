@@ -16,6 +16,13 @@ def replace_once(path, old, new, label):
     write(path, text.replace(old, new, 1))
 
 replace_once(
+    "kerbside-backend/tests/browser-regression.mjs",
+    "assert.match(busSource, /const APP_VERSION = '0\\.9\\.46'/);",
+    "assert.match(busSource, /const APP_VERSION = '0\\.9\\.47'/);",
+    "browser regression app version",
+)
+
+replace_once(
     "kerbside-backend/test/train-forecast-layout.test.mjs",
     "  assert.match(forecast,/train-forecast-calibration[^\\n]+<i>/,'calibration source should still render inside its semantic source element');\n",
     "  assert.match(forecast,/train-forecast-calibration[^\\n]+<i>/,'calibration source should still render inside its semantic source element');\n  assert.match(forecast,/<p>\\$\\{esc\\(method\\)\\}<\\/p>\\$\\{calibrationMarkup\\}<\\/details>\\$\\{probabilityMarkup\\}/,'measured baseline should be grouped inside How this is worked out');\n  assert.doesNotMatch(forecast,/<\\/details>\\$\\{calibrationMarkup\\}/,'measured baseline must not remain a standalone top-level forecast block');\n",
