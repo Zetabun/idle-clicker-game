@@ -699,6 +699,8 @@ function clearConnectionLive(service){
   return had;
 }
 function applyEvidence(target,evidence){
+  if(!target.scheduledPreviousCallingPoints&&target.previousCallingPoints)target.scheduledPreviousCallingPoints=target.previousCallingPoints;
+  if(!target.scheduledSubsequentCallingPoints&&target.subsequentCallingPoints)target.scheduledSubsequentCallingPoints=target.subsequentCallingPoints;
   target.etd=evidence.etd;if(evidence.platform)target.platform=evidence.platform;target.isCancelled=evidence.isCancelled;target.length=evidence.length;target.formation=evidence&&evidence.service&&evidence.service.formation||null;
   target.cancelReason=evidence.cancelReason;target.delayReason=evidence.delayReason;target.serviceIdUrlSafe=evidence.serviceIdUrlSafe;target.serviceIdGuid=evidence.serviceIdGuid;
   if(evidence.serviceID)target.liveServiceID=evidence.serviceID;if(evidence.previousCallingPoints)target.previousCallingPoints=evidence.previousCallingPoints;if(evidence.subsequentCallingPoints)target.subsequentCallingPoints=evidence.subsequentCallingPoints;

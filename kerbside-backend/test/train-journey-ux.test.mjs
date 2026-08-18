@@ -39,6 +39,11 @@ test('planner time controls are compact and overflow-safe',()=>{
   assert.match(planner,/input\[type=\"date\"\],\.plan-when-card input\[type=\"time\"\]\{max-width:100%\}/);
 });
 
+test('live calling evidence preserves the scheduled full route and manual scroll',()=>{
+  assert.match(timetable,/scheduledPreviousCallingPoints/);
+  assert.match(timetable,/scheduledSubsequentCallingPoints/);
+});
+
 test('forecast baseline is nested under methodology and timetabled label is small',()=>{
   assert.match(forecast,/<p>\$\{esc\(method\)\}<\/p>\$\{calibrationMarkup\}<\/details>/);
   assert.doesNotMatch(forecast,/<\/details>\$\{calibrationMarkup\}/);
