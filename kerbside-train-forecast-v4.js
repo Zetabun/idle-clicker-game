@@ -117,7 +117,14 @@ function isSamePeer(service,row){
   if(!row||!service)return false;
   const a=normalise(service.serviceID||service.serviceId||''),b=normalise(row.serviceID||row.serviceId||'');
   if(a&&b)return a===b;
-  return normalise(service.std)===normalise(row.std)
+  /* Without an id a departure time is the only thing that can identify the
+     same working. A missing std on either side is not evidence of sameness:
+     treating two blank times as equal made every same-operator, same-
+     destination row on a board that carries no times look like the train
+     itself, and discarded the whole peer set. */
+  const aStd=normalise(service.std),bStd=normalise(row.std);
+  if(!aStd||!bStd)return false;
+  return aStd===bStd
     &&operatorIdentity(service)===operatorIdentity(row)
     &&profileDestinationIdentity(service)===profileDestinationIdentity(row);
 }

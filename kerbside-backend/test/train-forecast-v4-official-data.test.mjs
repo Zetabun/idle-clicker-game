@@ -136,4 +136,13 @@ test('a short formation among longer comparable peers still raises the strongest
   // A genuinely mixed board still declines to compare incomparable stock.
   const mixed=[row('08:00',4),{...row('08:20',9),operatorCode:'VT'},{...row('08:40',11),operatorCode:'VT'},{...row('09:00',5),operatorCode:'XC'}];
   assert.equal(v4.formationSignal(null,mixed[0],mixed,date,station).amount,0);
+
+  // Excluding the scored train must key off a real departure time. Treating two
+  // absent std values as equal made every same-operator, same-destination row on
+  // a timeless board look like the train itself and emptied the peer set.
+  const timeless=[{length:4,operatorCode:'AW',destination:[{crs:'MAN'}]},
+                  {length:4,operatorCode:'AW',destination:[{crs:'MAN'}]},
+                  {length:5,operatorCode:'AW',destination:[{crs:'MAN'}]}];
+  c.window.__KERBSIDE_TRAIN_OVERLAY__.state.services=timeless;
+  assert.deepEqual(Array.from(v4.formationBaseline({length:4,operatorCode:'AW',destination:[{crs:'MAN'}]},[])),[4,4,5]);
 });
