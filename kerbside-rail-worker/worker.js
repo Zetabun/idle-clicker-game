@@ -97,9 +97,11 @@ export function parseServicePath(path) {
   const match = decoded.match(/^\/service\/(.+)$/);
   if (!match) return null;
   const serviceId = match[1].trim();
-  // Darwin service ids are opaque base64-ish tokens. Keeping the accepted set
-  // tight stops this path being used to reach any other upstream resource.
-  if (!serviceId || serviceId.length > 160 || !/^[A-Za-z0-9+/=_.-]+$/.test(serviceId)) return null;
+  // Darwin service ids are base64; Huxley's variant swaps + and / for - and _.
+  // Neither alphabet contains a dot, and allowing one let "../health" through
+  // the guard. It would still have been percent-encoded before reaching
+  // upstream, but a path that cannot name another resource is the point.
+  if (!serviceId || serviceId.length > 160 || !/^[A-Za-z0-9+/=_-]+$/.test(serviceId)) return null;
   return { serviceId };
 }
 

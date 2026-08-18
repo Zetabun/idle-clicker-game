@@ -245,6 +245,7 @@ test('parses Darwin service-detail routes and refuses anything else', () => {
   assert.equal(parseServicePath('/service'), null);
   assert.equal(parseServicePath('/service/../health'), null);
   assert.equal(parseServicePath('/service/has space'), null);
+  assert.equal(parseServicePath('/service/a.b'), null);
   assert.equal(parseServicePath('/service/%'), null);
   assert.equal(parseServicePath(`/service/${'a'.repeat(200)}`), null);
 });
@@ -286,7 +287,10 @@ test('service details reach GetServiceDetails and carry previous calling points 
     assert.match(called, /\/GetServiceDetails\//);
     // The URL-safe id must have been translated before it left the Worker.
     assert.match(decodeURIComponent(called), /T1yq\+8xUS0mMnFcNK5UHTQ/);
-    assert.doesNotMatch(await Promise.resolve(JSON.stringify(runtime.state.calls[0].init || {})), new RegExp(API_KEY));
+    // The key travels upstream in a header by design; what must never carry it
+    // is the response handed back to the browser.
+    assert.doesNotMatch(JSON.stringify(body), new RegExp(API_KEY));
+    assert.doesNotMatch(JSON.stringify([...response.headers]), new RegExp(API_KEY));
   } finally {
     runtime.restore();
   }
