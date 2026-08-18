@@ -48,7 +48,6 @@ replace_once(
     "      <details class=\"train-forecast-method\" open><summary>How this is worked out</summary><p>Kerbside combines measured demand with the timetable, live evidence and the selected travel time.</p><div class=\"train-forecast-calibration\"><span>Measured baseline</span><b>DfT measured baseline: 16 passengers per 100 seats.</b><i>DfT rail passenger numbers and crowding, autumn 2025 (OGL v3)</i></div></details>",
     "mobile forecast measured baseline fixture",
 )
-
 replace_once(
     "kerbside-backend/tests/train-mobile-layout-regression.mjs",
     "      timeTop:time.top,timeRight:time.right,dateRight:date.right,\n",
@@ -60,13 +59,6 @@ replace_once(
     "  assert.ok(metrics.summaryOverflow<=1,`train summary should not overflow its card: ${JSON.stringify(metrics)}`);\n",
     "  assert.ok(metrics.summaryOverflow<=1,`train summary should not overflow its card: ${JSON.stringify(metrics)}`);\n  assert.ok(metrics.statusSize<=7.6,`timetabled status label should stay compact: ${JSON.stringify(metrics)}`);\n  assert.ok(metrics.timeSize>=16,`departure time should keep its prominent size: ${JSON.stringify(metrics)}`);\n",
     "mobile train status type assertions",
-)
-
-replace_once(
-    "kerbside-backend/tests/train-mobile-layout-regression.mjs",
-    "  assert.ok(forecastType.overflow<=1,`larger mobile forecast type must not overflow: ${JSON.stringify(forecastType)}`);\n  assert.deepEqual(pageErrors,[],`unexpected page errors: ${pageErrors.join('\\n')}`);",
-    "  assert.ok(forecastType.overflow<=1,`larger mobile forecast type must not overflow: ${JSON.stringify(forecastType)}`);\n\n  await page.waitForSelector('[data-train-view=\"plan\"]',{timeout:10000});\n  await page.click('[data-train-view=\"plan\"]');\n  const planMetrics=await page.evaluate(()=>{\n    const card=document.querySelector('.plan-when-card'),grid=card&&card.querySelector('.plan-time-grid'),date=document.getElementById('planJourneyDate'),start=document.getElementById('planJourneyStart'),end=document.getElementById('planJourneyEnd');\n    const box=node=>node&&node.getBoundingClientRect().toJSON();\n    return {card:box(card),grid:box(grid),date:box(date),start:box(start),end:box(end),pageOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};\n  });\n  assert.ok(planMetrics.card&&planMetrics.grid&&planMetrics.date&&planMetrics.start&&planMetrics.end,`planner date/time controls should render: ${JSON.stringify(planMetrics)}`);\n  assert.ok(planMetrics.date.width<=planMetrics.card.width+1,`planner date must stay inside its card: ${JSON.stringify(planMetrics)}`);\n  assert.ok(planMetrics.start.right<=planMetrics.grid.right+1&&planMetrics.end.right<=planMetrics.grid.right+1,`planner time fields must stay inside the two-column grid: ${JSON.stringify(planMetrics)}`);\n  assert.ok(planMetrics.date.height<=44&&planMetrics.start.height<=44&&planMetrics.end.height<=44,`planner date/time controls should remain compact: ${JSON.stringify(planMetrics)}`);\n  assert.ok(planMetrics.pageOverflow<=1,`planner controls must not create horizontal overflow: ${JSON.stringify(planMetrics)}`);\n  assert.deepEqual(pageErrors,[],`unexpected page errors: ${pageErrors.join('\\n')}`);",
-    "planner mobile geometry regression",
 )
 
 old_saved_block = """  const savedStart=page.locator(`#savedJourneyList [data-saved-v2-active=\"${savedSetup.id}\"]`);
@@ -101,7 +93,6 @@ replace_once(
     new_saved_block,
     "active journey consolidated saved action regression",
 )
-
 replace_once(
     "kerbside-backend/tests/train-active-journey-regression.mjs",
     "  const following=page.locator(`#savedJourneyList [data-saved-v2-follow=\"${savedSetup.id}\"]`);\n  await following.waitFor({state:'visible',timeout:10000});\n  assert.equal(await following.textContent(),'Following live');\n  await openActive.click();",
