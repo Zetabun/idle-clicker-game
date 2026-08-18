@@ -60,7 +60,7 @@ try{
   await page.waitForSelector('#trainViewTabs [data-train-view="saved"]',{timeout:10000});
 
   const roomyDesktop=await page.evaluate(()=>{
-    const sidebar=document.querySelector('.train-sidebar'),card=document.querySelector('.train-sidebar .train-card'),tab=document.querySelector('#trainViewTabs button');
+    const sidebar=document.querySelector('.train-sidebar'),card=document.querySelector('#trainPlanner .train-card'),tab=document.querySelector('#trainViewTabs button');
     return {sidebarWidth:sidebar.getBoundingClientRect().width,cardPadding:parseFloat(getComputedStyle(card).paddingLeft)||0,tabHeight:tab.getBoundingClientRect().height};
   });
   assert.ok(roomyDesktop.sidebarWidth>=420,`1440px desktop rail should have breathing room: ${JSON.stringify(roomyDesktop)}`);
@@ -70,7 +70,7 @@ try{
   await page.setViewportSize({width:980,height:900});
   await page.waitForTimeout(80);
   const compactDesktop=await page.evaluate(()=>{
-    const shell=document.querySelector('.train-shell'),sidebar=document.querySelector('.train-sidebar'),content=document.querySelector('.train-content'),card=document.querySelector('.train-sidebar .train-card');
+    const shell=document.querySelector('.train-shell'),sidebar=document.querySelector('.train-sidebar'),content=document.querySelector('.train-content'),card=document.querySelector('#trainPlanner .train-card');
     return {display:getComputedStyle(shell).display,sidebarWidth:sidebar.getBoundingClientRect().width,contentWidth:content.getBoundingClientRect().width,cardWidth:card.getBoundingClientRect().width};
   });
   assert.equal(compactDesktop.display,'grid','980px should remain the two-pane desktop train layout');
