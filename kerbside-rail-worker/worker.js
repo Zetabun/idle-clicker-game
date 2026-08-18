@@ -1,6 +1,9 @@
 const RDM_LDB_BASE = 'https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120';
 const UPSTREAM_TIMEOUT_MS = 3500;
 const CACHE_SECONDS = 20;
+// A service's calling-point list is far more stable than a departure board,
+// so it can be held longer without going stale in a way a passenger notices.
+const SERVICE_CACHE_SECONDS = 45;
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_DEFAULT = 60;
 const MAX_RATE_BUCKETS = 2048;
@@ -32,7 +35,8 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
   if (path === '/health') return health(request, env);
 
   const board = parseBoardPath(path);
-  if (!board) return json({ error: 'Not found' }, 404, request, env);
+  const service = board ? null : parseServicePath(path);
+  if (!board && !service) return json({ error: 'Not found' }, 404, request, env);
   if (!requestOriginAllowed(request, env)) {
     return json({ error: 'Origin is not allowed' }, 403, request, env, { 'Cache-Control': 'no-store' });
   }
@@ -46,7 +50,10 @@ export async function routeRequest(request, env, ctx = { waitUntil() {} }) {
     });
   }
 
-  return withRateLimitHeaders(await railBoard(request, env, ctx, board), rate);
+  const response = board
+    ? await railBoard(request, env, ctx, board)
+    : await serviceDetails(request, env, service);
+  return withRateLimitHeaders(response, rate);
 }
 
 function health(request, env) {
@@ -57,6 +64,8 @@ function health(request, env) {
     ldbConfigured: Boolean(env.RDM_LDB_API_KEY),
     upstreamTimeoutMs: UPSTREAM_TIMEOUT_MS,
     cacheSeconds: CACHE_SECONDS,
+    serviceDetails: true,
+    serviceCacheSeconds: SERVICE_CACHE_SECONDS,
     rateLimitPerMinute: configuredRateLimit(env)
   }, 200, request, env, { 'Cache-Control': 'no-store' });
 }
@@ -74,6 +83,116 @@ export function parseBoardPath(path) {
   const rows = Number(match[3]);
   if (!Number.isInteger(rows) || rows < 1 || rows > 150 || (to && to === from)) return null;
   return { from, to, rows };
+}
+
+/* Previous calling points exist only in Darwin's GetServiceDetails. A departure
+   board - even GetDepBoardWithDetails - carries subsequent calls only, so
+   without this route the browser had to ask Huxley directly for them, which
+   GitHub Pages cannot do because Huxley sends no CORS header. That is why the
+   Saved journeys tab, which builds its route from timetable data, showed the
+   stops a train had already passed and every other timeline did not. */
+export function parseServicePath(path) {
+  let decoded;
+  try { decoded = decodeURIComponent(String(path || '')); } catch { return null; }
+  const match = decoded.match(/^\/service\/(.+)$/);
+  if (!match) return null;
+  const serviceId = match[1].trim();
+  // Darwin service ids are opaque base64-ish tokens. Keeping the accepted set
+  // tight stops this path being used to reach any other upstream resource.
+  if (!serviceId || serviceId.length > 160 || !/^[A-Za-z0-9+/=_.-]+$/.test(serviceId)) return null;
+  return { serviceId };
+}
+
+/* Huxley publishes a URL-safe base64 variant of Darwin's service id, and the
+   browser may still be holding one of those. Rail Data Marketplace wants the
+   standard alphabet. Darwin's own ids never contain - or _, so translating
+   both is a no-op for them and a repair for Huxley's. */
+export function rdmServiceId(value) {
+  return String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+}
+
+export function validServiceDetailPayload(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  // Darwin omits a calling-point key entirely when a service starts or
+  // terminates here, so require the envelope rather than both lists.
+  return ['generatedAt', 'locationName', 'crs', 'previousCallingPoints', 'subsequentCallingPoints']
+    .some(key => Object.prototype.hasOwnProperty.call(value, key));
+}
+
+async function serviceDetails(request, env, service) {
+  if (!env.RDM_LDB_API_KEY) {
+    return json({ error: 'Rail Data Marketplace key is not configured', retryable: false }, 503, request, env, {
+      'Cache-Control': 'no-store'
+    });
+  }
+
+  const upstream = new URL(`${RDM_LDB_BASE}/GetServiceDetails/${encodeURIComponent(rdmServiceId(service.serviceId))}`);
+  const cache = caches.default;
+  const cacheUrl = new URL(request.url);
+  cacheUrl.pathname = '/__rail-service-cache';
+  cacheUrl.search = `?id=${encodeURIComponent(service.serviceId)}`;
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+
+  const cached = await cache.match(cacheKey);
+  const age = cachedAgeMs(cached);
+  if (cached && age <= SERVICE_CACHE_SECONDS * 1000) return cachedRailResponse(cached, request, env, age);
+
+  const key = cacheKey.url;
+  let pending = INFLIGHT.get(key);
+  if (!pending) {
+    pending = refreshServiceDetails(request, env, upstream, cache, cacheKey)
+      .finally(() => INFLIGHT.delete(key));
+    INFLIGHT.set(key, pending);
+  }
+
+  const result = await pending;
+  if (result.response) return result.response.clone();
+  if (cached && age <= 5 * 60 * 1000) {
+    const response = cachedRailResponse(cached, request, env, age);
+    const headers = new Headers(response.headers);
+    headers.set('X-Kerbside-Cache', 'stale');
+    headers.set('X-Kerbside-Stale', '1');
+    return new Response(response.body, { status: 200, headers });
+  }
+
+  return json({
+    error: 'Official service details are temporarily unavailable',
+    upstreamStatus: result.status,
+    retryable: true
+  }, 502, request, env, { 'Retry-After': '15', 'Cache-Control': 'no-store' });
+}
+
+async function refreshServiceDetails(request, env, upstream, cache, cacheKey) {
+  try {
+    const { response, body } = await fetchTextWithTimeout(upstream.toString(), {
+      headers: {
+        Accept: 'application/json',
+        'x-apikey': String(env.RDM_LDB_API_KEY),
+        'User-Agent': 'Kerbside-Rail/1.0'
+      },
+      cf: { cacheTtl: 0, cacheEverything: false }
+    }, UPSTREAM_TIMEOUT_MS);
+
+    if (!response.ok) return { response: null, status: response.status };
+    let parsed;
+    try { parsed = JSON.parse(body); } catch { return { response: null, status: 502 }; }
+    if (!validServiceDetailPayload(parsed)) return { response: null, status: 502 };
+    const normalised = normaliseBoardMessages(parsed);
+    const responseBody = normalised === parsed ? body : JSON.stringify(normalised);
+
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json; charset=utf-8');
+    headers.set('Cache-Control', `public, max-age=5, s-maxage=${SERVICE_CACHE_SECONDS}`);
+    headers.set('X-Kerbside-Rail-Source', 'rdm-ldb-service');
+    headers.set('X-Kerbside-Upstream', String(response.status));
+    headers.set('X-Kerbside-Cached-At', String(Date.now()));
+    applyCors(headers, request, env);
+    const successful = new Response(responseBody, { status: 200, headers });
+    try { await cache.put(cacheKey, successful.clone()); } catch {}
+    return { response: successful, status: 200 };
+  } catch (error) {
+    return { response: null, status: error && error.name === 'AbortError' ? 504 : 0 };
+  }
 }
 
 function integerParam(search, name, min, max) {
@@ -395,4 +514,4 @@ export function resetWorkerStateForTests() {
   INFLIGHT.clear();
 }
 
-export { RDM_LDB_BASE, UPSTREAM_TIMEOUT_MS, CACHE_SECONDS };
+export { RDM_LDB_BASE, UPSTREAM_TIMEOUT_MS, CACHE_SECONDS, SERVICE_CACHE_SECONDS };

@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildUpstreamUrl,
+  parseServicePath,
+  rdmServiceId,
+  validServiceDetailPayload,
   normaliseBoardMessages,
   parseBoardPath,
   resetWorkerStateForTests,
@@ -230,6 +233,75 @@ test('the header-less origin path can be closed without changing the default', a
     assert.equal((await routeRequest(bare(), { RDM_LDB_API_KEY: API_KEY })).status, 200);
     const strict = await routeRequest(bare(), { RDM_LDB_API_KEY: API_KEY, REQUIRE_ORIGIN: '1' });
     assert.equal(strict.status, 403);
+  } finally {
+    runtime.restore();
+  }
+});
+
+test('parses Darwin service-detail routes and refuses anything else', () => {
+  assert.deepEqual(parseServicePath('/service/abc123+/='), { serviceId: 'abc123+/=' });
+  assert.deepEqual(parseServicePath('/service/T1yq-8xUS0mMnFcNK5UHTQ'), { serviceId: 'T1yq-8xUS0mMnFcNK5UHTQ' });
+  assert.equal(parseServicePath('/service/'), null);
+  assert.equal(parseServicePath('/service'), null);
+  assert.equal(parseServicePath('/service/../health'), null);
+  assert.equal(parseServicePath('/service/has space'), null);
+  assert.equal(parseServicePath('/service/%'), null);
+  assert.equal(parseServicePath(`/service/${'a'.repeat(200)}`), null);
+});
+
+test('translates a Huxley URL-safe service id back to the alphabet RDM expects', () => {
+  assert.equal(rdmServiceId('T1yq-8xUS0mMnFcNK5UHTQ_='), 'T1yq+8xUS0mMnFcNK5UHTQ/=');
+  // A Darwin id never contains - or _, so this must leave it untouched.
+  assert.equal(rdmServiceId('abc123+/='), 'abc123+/=');
+});
+
+test('accepts a service-detail envelope even when one calling-point list is absent', () => {
+  assert.equal(validServiceDetailPayload({ generatedAt: 'x', subsequentCallingPoints: [] }), true);
+  assert.equal(validServiceDetailPayload({ crs: 'BHM' }), true);
+  assert.equal(validServiceDetailPayload({ previousCallingPoints: [] }), true);
+  assert.equal(validServiceDetailPayload([]), false);
+  assert.equal(validServiceDetailPayload(null), false);
+  assert.equal(validServiceDetailPayload({ nope: 1 }), false);
+});
+
+test('service details reach GetServiceDetails and carry previous calling points back', async () => {
+  const detail = {
+    generatedAt: '2026-08-18T18:00:00+01:00',
+    locationName: 'Milton Keynes Central',
+    crs: 'MKC',
+    previousCallingPoints: [{ callingPoint: [{ locationName: 'London Euston', crs: 'EUS', st: '17:26', at: '17:27' }] }],
+    subsequentCallingPoints: [{ callingPoint: [{ locationName: 'Birmingham New Street', crs: 'BHM', st: '19:44' }] }]
+  };
+  const runtime = installRuntime(async () => new Response(JSON.stringify(detail), { status: 200 }));
+  try {
+    const response = await routeRequest(
+      new Request('https://example.test/service/T1yq-8xUS0mMnFcNK5UHTQ', { headers: { 'CF-Connecting-IP': '203.0.113.21' } }),
+      { RDM_LDB_API_KEY: API_KEY }
+    );
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Kerbside-Rail-Source'), 'rdm-ldb-service');
+    const body = JSON.parse(await response.text());
+    assert.equal(body.previousCallingPoints[0].callingPoint[0].crs, 'EUS');
+    const called = runtime.state.calls[0].url;
+    assert.match(called, /\/GetServiceDetails\//);
+    // The URL-safe id must have been translated before it left the Worker.
+    assert.match(decodeURIComponent(called), /T1yq\+8xUS0mMnFcNK5UHTQ/);
+    assert.doesNotMatch(await Promise.resolve(JSON.stringify(runtime.state.calls[0].init || {})), new RegExp(API_KEY));
+  } finally {
+    runtime.restore();
+  }
+});
+
+test('a failing service-detail upstream fails closed without leaking the key', async () => {
+  const runtime = installRuntime(async () => new Response('nope', { status: 500 }));
+  try {
+    const response = await routeRequest(
+      new Request('https://example.test/service/abc123', { headers: { 'CF-Connecting-IP': '203.0.113.22' } }),
+      { RDM_LDB_API_KEY: API_KEY }
+    );
+    assert.equal(response.status, 502);
+    const text = await response.text();
+    assert.doesNotMatch(text, new RegExp(API_KEY));
   } finally {
     runtime.restore();
   }

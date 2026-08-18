@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.53';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.53';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.53';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.53';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.54';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.54';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.54';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.54';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -54,6 +54,17 @@ function departureRequest(url){
   if(!url||!PROVIDERS.has(url.origin))return null;
   const match=decodeURIComponent(url.pathname).match(/^\/departures\/([A-Za-z0-9]{3})(?:\/to\/([A-Za-z0-9]{3}))?\/(\d+)\/?$/i);
   return match?{from:match[1].toUpperCase(),to:match[2]?match[2].toUpperCase():'',rows:match[3]}:null;
+}
+/* A departure board carries onward calls only. The stops a train has already
+   passed live in Darwin's GetServiceDetails, which the board asks for through
+   the provider's /service/<id> path - and on GitHub Pages that call died at the
+   CORS check, so every timeline except Saved journeys (which builds its route
+   from timetable data) began at the current station. Bridge it like the board. */
+function serviceDetailRequest(url){
+  if(!url||!PROVIDERS.has(url.origin))return null;
+  const match=decodeURIComponent(url.pathname).match(/^\/service\/(.+?)\/?$/);
+  const serviceId=match?String(match[1]||'').trim():'';
+  return serviceId?{serviceId}:null;
 }
 function hostedRailBridgeEnabled(hostname=typeof location==='undefined'?'':location.hostname){
   return HOSTED_RAIL_HOSTS.has(String(hostname||'').toLowerCase());
@@ -155,22 +166,29 @@ function loadStations(){
     });
   return stationRowsPromise;
 }
+function bridgedFetch(input,init,official){
+  /* Rebuilding the call from the URL alone drops the abort signal and headers
+     when the caller passed a Request rather than (url,init). */
+  if(typeof Request!=='undefined'&&input instanceof Request&&!init){
+    return upstreamFetch(new Request(official.toString(),input));
+  }
+  return upstreamFetch(official.toString(),init);
+}
 async function stationDataFetch(input,init){
   const url=requestUrl(input),query=stationQuery(url),departure=departureRequest(url);
+  const detail=serviceDetailRequest(url);
+  if(detail&&hostedRailBridgeEnabled()){
+    throwIfAborted(init);
+    const official=new URL(`/service/${encodeURIComponent(detail.serviceId)}`,OFFICIAL_RAIL_URL);
+    stationState.hostedRailBridges++;notifyStationState();
+    return bridgedFetch(input,init,official);
+  }
   if(departure&&hostedRailBridgeEnabled()){
     throwIfAborted(init);
     if(!trainDateIsToday())return futureTimetableResponse(departure);
     const official=hostedRailUrl(url);
     stationState.hostedRailBridges++;notifyStationState();
-    /* Bridging to the official Worker rebuilt the call from the URL alone. When
-       the caller passed a Request rather than (url,init) - which is what an
-       abortable board refresh does - init is undefined, so the abort signal and
-       headers were dropped and cancelling a board left its bridged request
-       running. Carry the original Request across instead. */
-    if(typeof Request!=='undefined'&&input instanceof Request&&!init){
-      return upstreamFetch(new Request(official.toString(),input));
-    }
-    return upstreamFetch(official.toString(),init);
+    return bridgedFetch(input,init,official);
   }
   if(!query)return upstreamFetch(input,init);
   try{
@@ -299,7 +317,7 @@ function installUiGuards(){
 window.fetch=stationDataFetch;
 window.__KERBSIDE_STATION_DATA__={
   state:stationState,load:loadStations,search,parseLocations,
-  hostedRailBridgeEnabled,departureRequest,hostedRailUrl,trainDateIsToday,
+  hostedRailBridgeEnabled,departureRequest,serviceDetailRequest,hostedRailUrl,trainDateIsToday,
   restoreBaseTrainView,resetTrainSidebarScroll
 };
 installUiGuards();

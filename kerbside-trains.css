@@ -687,39 +687,72 @@ body.theme-crystal .train-forecast-bar{background:var(--ink-3)}
 body.theme-crystal .train-service.is-sheet .train-crowding-explain{box-shadow:0 1px 3px rgb(var(--shadow-rgb) / .1)}
 
 /* ------------------------------------------------------------------
-   Kerbside 0.9.2 — reason direction flags.
+   Reason direction flags.
 
-   Six equal bullets asked the reader to work out from the wording which
-   ones pushed the forecast up and which pulled it down: "summer holidays
-   reduce commuter demand" sat identically beside "Friday afternoon and
-   evening demand". Each reason now shows the direction its own signal
-   contributed, so the conclusion can be checked against its inputs at a
-   glance rather than parsed sentence by sentence.
+   Each reason shows which way its own signal pushed the forecast, so the
+   conclusion can be checked against its inputs rather than parsed sentence by
+   sentence. The direction word stays - colour alone must not carry it - but
+   the pill around it is gone: six bordered monospace chips repeating three
+   words made the label column louder than the sentences beside it. A tinted
+   rail and an arrow do the same job at a fraction of the weight, and the
+   balance is now stated once above the list instead of being counted up.
+
+   Font sizes are deliberately absent from .train-forecast-reason-text: the
+   li owns them, so the mobile sheet's 14px lift still reaches the copy.
 ------------------------------------------------------------------ */
+.train-forecast-reasons{
+  display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:0 10px;
+}
+.train-forecast-reasons>span{grid-column:1}
+/* The tally is also a direct span child of .train-forecast-reasons, so the
+   heading rule above it wins on specificity - it was arriving uppercase,
+   letter-spaced and block-level. Match that selector to opt out deliberately. */
+.train-forecast-reasons>span.train-forecast-tally{
+  grid-column:2;justify-self:end;display:inline-block;
+  /* --text-mute lands at 4.36:1 on the dark panel; --text-dim clears 4.5 and
+     is still quiet enough to sit under the heading. */
+  color:var(--text-dim);font-size:9.5px;font-weight:600;
+  letter-spacing:.01em;text-transform:none;white-space:nowrap;
+}
+.train-forecast-reasons ul{
+  grid-column:1/-1;display:grid;gap:2px;margin:8px 0 0;padding:0;list-style:none;
+}
 .train-forecast-reasons li{
-  display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 9px;align-items:baseline;padding-left:0;
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:baseline;
+  padding:6px 9px;border-left:2px solid transparent;border-radius:0 7px 7px 0;
 }
 .train-forecast-reasons li:before{display:none}
-.train-forecast-reason-text{min-width:0}
+.train-forecast-reasons li::marker{content:''}
+.train-forecast-reasons li.reason-up{border-left-color:var(--warn);background:rgb(var(--warn-rgb) / .06)}
+.train-forecast-reasons li.reason-down{border-left-color:var(--live);background:rgb(var(--live-rgb) / .06)}
+.train-forecast-reasons li.reason-flat{border-left-color:var(--rule)}
+
+.train-forecast-reason-text{min-width:0;color:var(--text-dim)}
+.train-forecast-reasons li.reason-up .train-forecast-reason-text,
+.train-forecast-reasons li.reason-down .train-forecast-reason-text{color:var(--text)}
+
+/* No border, no fill, no monospace. The arrow carries the direction for
+   anyone who cannot separate the two tints. */
 .train-forecast-flag{
-  display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:2px 7px;
-  border:1px solid var(--rule);border-radius:999px;background:var(--ink-3);color:var(--text-mute);
-  font-family:'Martian Mono',ui-monospace,monospace;font-size:8px;font-weight:700;
-  letter-spacing:.06em;text-transform:uppercase;line-height:1.5;white-space:nowrap;
+  display:inline-flex;align-items:baseline;gap:4px;min-width:64px;
+  padding:0;border:0;background:none;border-radius:0;
+  font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.01em;
+  text-transform:none;line-height:1.45;white-space:nowrap;color:var(--text-dim);
 }
-.train-forecast-reasons li.reason-up .train-forecast-flag{
-  border-color:rgb(var(--warn-rgb) / .4);background:rgb(var(--warn-rgb) / .1);color:var(--warn);
-}
-.train-forecast-reasons li.reason-down .train-forecast-flag{
-  border-color:rgb(var(--live-rgb) / .42);background:rgb(var(--live-rgb) / .12);color:var(--live);
-}
-.train-forecast-reasons li.reason-up .train-forecast-reason-text{color:var(--text)}
-body.theme-crystal .train-forecast-flag{border-color:transparent}
-body.theme-crystal .train-forecast-reasons li.reason-up .train-forecast-flag{background:rgb(var(--warn-rgb) / .12)}
-body.theme-crystal .train-forecast-reasons li.reason-down .train-forecast-flag{background:rgb(var(--live-rgb) / .14)}
+.train-forecast-flag:before{content:'\2014';font-weight:800}
+.train-forecast-reasons li.reason-up .train-forecast-flag{color:var(--warn)}
+.train-forecast-reasons li.reason-up .train-forecast-flag:before{content:'\25B2';font-size:.72em}
+.train-forecast-reasons li.reason-down .train-forecast-flag{color:var(--live)}
+.train-forecast-reasons li.reason-down .train-forecast-flag:before{content:'\25BC';font-size:.72em}
+
+/* Crystal: a saturated label on a tinted row loses contrast fastest on white,
+   so the tint is lighter here to keep the flag clear of 4.5:1. */
+body.theme-crystal .train-forecast-reasons li.reason-up{background:rgb(var(--warn-rgb) / .035)}
+body.theme-crystal .train-forecast-reasons li.reason-down{background:rgb(var(--live-rgb) / .04)}
+
 @media (max-width:380px){
-  .train-forecast-reasons li{grid-template-columns:minmax(0,1fr);gap:4px}
-  .train-forecast-flag{justify-self:start}
+  .train-forecast-reasons li{grid-template-columns:minmax(0,1fr);gap:3px}
+  .train-forecast-flag{justify-self:start;min-width:0}
 }
 
 /* Kerbside 0.9.42 readability pass: preserve hierarchy, remove 8–10px body text. */
@@ -833,8 +866,9 @@ body[data-transport="train"] .train-progress-marker small{font-size:11.5px!impor
   .train-service.is-sheet .train-forecast-history>span,
   .train-service.is-sheet .train-forecast-method>summary{font-size:11.5px;line-height:1.45}
   .train-service.is-sheet .train-forecast-reasons ul{gap:10px;margin-top:11px}
+  .train-service.is-sheet .train-forecast-reasons>span.train-forecast-tally{font-size:11.5px}
   .train-service.is-sheet .train-forecast-reasons li{gap:4px 10px;font-size:14px;line-height:1.55}
-  .train-service.is-sheet .train-forecast-flag{min-width:60px;padding:3px 8px;font-size:10px}
+  .train-service.is-sheet .train-forecast-flag{min-width:74px;padding:0;font-size:12px}
   .train-service.is-sheet .train-forecast-method,
   .train-service.is-sheet .train-forecast-calibration,
   .train-service.is-sheet .train-forecast-probabilities,
