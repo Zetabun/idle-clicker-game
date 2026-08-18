@@ -109,6 +109,8 @@ function bindBoard(board){
     const closest=event.target&&event.target.closest?event.target.closest.bind(event.target):null;
     const recovery=closest?closest('[data-use-recovery]'):null;
     if(recovery&&board.contains(recovery)){event.preventDefault();event.stopPropagation();adoptRecoveryByKey(recovery.getAttribute('data-use-recovery'));return;}
+    const saveFollow=closest?closest('[data-save-follow-journey]'):null;
+    if(saveFollow&&board.contains(saveFollow)){event.preventDefault();event.stopPropagation();saveAndFollowJourneyByKey(saveFollow.getAttribute('data-save-follow-journey'));return;}
     const save=closest?closest('[data-save-scheduled-journey]'):null;
     if(save&&board.contains(save)){event.preventDefault();event.stopPropagation();saveJourneyByKey(save.getAttribute('data-save-scheduled-journey'));return;}
     const watch=closest?closest('[data-watch-journey]'):null;
@@ -604,9 +606,11 @@ function journeyWatchStatus(service){
   const status=statusFor(service);return {label:status.label,note:service.liveEvidence?'Live Darwin evidence is attached to this train.':'Timetable watch; live Darwin evidence will be added when available.',warn:status.cls==='cancelled'||status.cls==='late'};
 }
 function journeyWatchMarkup(service,key){
-  const active=watchMatches(service),status=journeyWatchStatus(service),cls=`train-watch-card${active?' is-active':''}${active&&status.warn?' is-warn':''}`,r=route(),plan=window.__KERBSIDE_JOURNEY_PLANNER__,saved=!!(plan&&typeof plan.planBoardServiceSaved==='function'&&plan.planBoardServiceSaved(service,{date:r.date,from:r.from,to:r.to}));
-  const label=active?status.label:'Keep this journey together',note=active?`${status.note} Kerbside refreshes this watch while the app is open.`:'Pin this journey so its live status, connection margin and recovery option stay together while Kerbside is open.';
-  return `<div class="${cls}"><div><span>Journey Watch</span><strong>${esc(label)}</strong><small>${esc(note)}</small></div><div class="train-watch-actions"><button type="button" class="train-watch-action" data-watch-journey="${esc(key)}" aria-pressed="${active?'true':'false'}">${active?'Stop watching':'Watch journey'}</button><button type="button" class="train-watch-action" data-save-scheduled-journey="${esc(key)}"${saved?' disabled':''}>${saved?'Saved':'Save journey'}</button></div></div>`;
+  const active=watchMatches(service),status=journeyWatchStatus(service),cls=`train-watch-card${active?' is-active':''}${active&&status.warn?' is-warn':''}`,r=route(),plan=window.__KERBSIDE_JOURNEY_PLANNER__,savedRecord=plan&&typeof plan.planBoardServiceSaved==='function'?plan.planBoardServiceSaved(service,{date:r.date,from:r.from,to:r.to}):null,saved=!!savedRecord,today=!!(dateApi()&&typeof dateApi().isToday==='function'&&dateApi().isToday());
+  const label=active?status.label:saved?'Journey saved':'Keep this journey together';
+  const note=active?(saved?`${status.note} Saved Journeys and Active Journey keep refreshing this service while Kerbside is open.`:`${status.note} This existing live watch is not saved yet; save it now to keep it in Saved journeys.`):saved?(today?'Saved. Live refresh is available for this journey today.':'Saved. Kerbside keeps its timetable refreshed here; live refresh turns on automatically on the travel day.'):(today?'Save once to keep live status, connection margin and recovery together; same-day saves begin live following.':'Save this journey so Kerbside can keep its timetable and Forecast v4 up to date.');
+  const buttonLabel=active?(saved?'Saved · Following live':'Save & keep following'):saved?(today?'Follow saved journey':'Saved'):(today?'Save & follow':'Save journey'),disabled=(active&&saved)||(!today&&saved);
+  return `<div class="${cls}"><div><span>Saved journey</span><strong>${esc(label)}</strong><small>${esc(note)}</small></div><div class="train-watch-actions"><button type="button" class="train-watch-action" data-save-follow-journey="${esc(key)}" aria-pressed="${active?'true':'false'}"${disabled?' disabled':''}>${esc(buttonLabel)}</button></div></div>`;
 }
 function toggleJourneyWatchByKey(key){
   const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const service=state.services[index];
@@ -614,6 +618,13 @@ function toggleJourneyWatchByKey(key){
   renderRows(state.services,{mode:state.mode,manifest:state.manifest});return true;
 }
 function saveJourneyByKey(key){const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const plan=window.__KERBSIDE_JOURNEY_PLANNER__,r=route();if(!plan||typeof plan.planSaveBoardService!=='function')return false;const saved=plan.planSaveBoardService(state.services[index],{date:r.date,from:r.from,to:r.to});if(!saved)return false;renderRows(state.services,{mode:state.mode,manifest:state.manifest});return true;}
+function saveAndFollowJourneyByKey(key){
+  const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const service=state.services[index],plan=window.__KERBSIDE_JOURNEY_PLANNER__,r=route();if(!plan||typeof plan.planSaveBoardService!=='function')return false;
+  const saved=plan.planSaveBoardService(service,{date:r.date,from:r.from,to:r.to});if(!saved)return false;const today=!!(dateApi()&&typeof dateApi().isToday==='function'&&dateApi().isToday());
+  if(today&&!watchMatches(service))persistJourneyWatch(journeyWatchPayload(service));renderRows(state.services,{mode:state.mode,manifest:state.manifest});
+  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;if(today&&savedApi&&typeof savedApi.followSavedJourney==='function')Promise.resolve(savedApi.followSavedJourney(saved.id)).catch(()=>false).finally(()=>renderRows(state.services,{mode:state.mode,manifest:state.manifest}));
+  return true;
+}
 
 function durationLabel(from,to){const start=parseMinutes(from),end=parseMinutes(to);if(start==null||end==null)return'';let span=end-start;if(span<0)span+=1440;if(span<=0)return'';const h=Math.floor(span/60),m=span%60;return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m}m`;}
 function terminusText(service,fallback){const d=service&&service.displayDestination;return (d&&(d.name||d.locationName||d.crs))||fallback;}
@@ -1084,7 +1095,7 @@ function init(){
   state.signature='';setTimeout(sync,0);setInterval(sync,1000);setInterval(()=>refreshEdgeManifest(),30*1000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,forecast,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,saveJourneyByKey,watchMatches,journeyWatchStatus,journeyWatchPayload,persistJourneyWatch,stableServiceId,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
+window.__KERBSIDE_TRAIN_TIMETABLE__={state,load,loadSameDay,sync,renderServices,renderUnavailable,setHeader,refreshForecasts,refreshEdgeManifest,toggleService,serviceKey,journeyMode,mergeOverlay,statusFor,serviceDateLabel,requestOverlay,coverageIncludesTime,connectionBufferMinutes,connectionRiskFor,recoverySummary,forecastConnection,forecastRecovery,forecast,effectiveDepartAfter,railNowTime,adoptRecoveryByKey,toggleJourneyWatchByKey,saveJourneyByKey,saveAndFollowJourneyByKey,watchMatches,journeyWatchStatus,journeyWatchPayload,persistJourneyWatch,stableServiceId,connectionMinimumProvenance,connectionEvidenceProvenance,provider:timetableProvider};
 })();
 
 

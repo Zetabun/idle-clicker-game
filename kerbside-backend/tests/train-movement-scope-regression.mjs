@@ -36,10 +36,11 @@ assert.match(
 );
 assert.match(timetableSource,/flattenCallingPoints\(target\.previousCallingPoints\)/,'scheduled/live-adjusted timelines must retain previous calling points');
 assert.match(timetableSource,/renderPoint\(point,'passed'\)/,'previous calling points must render as completed timeline rows');
-assert.match(timetableSource,/data-save-scheduled-journey/,'scheduled train rows must expose a persistent Save journey action');
+assert.match(timetableSource,/data-save-follow-journey/,'scheduled train rows must expose one persistent Save and follow action');
 const plannerSource=fs.readFileSync(new URL('../../kerbside-journey-planner-core.js', import.meta.url), 'utf8');
 assert.match(plannerSource,/planSaveBoardService/,'board services must be saved through the normal Saved Journeys locator store');
 assert.match(plannerSource,/data-saved-v2-follow/,'Saved Journeys must expose an in-place live follow action');
+assert.match(plannerSource,/Live refresh: On/,'Saved Journeys must show an explicit live-refresh state');
 assert.match(plannerSource,/Match & event context/,'the followed saved card must retain event context');
 
 console.log('Screen-scoped movement polling and timetable-origin regression guards passed.');

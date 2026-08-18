@@ -11,6 +11,8 @@ const forecast=await fs.readFile(path.join(root,'kerbside-train-forecast-v4.js')
 
 test('measured baseline source is not constrained to forecast-dot geometry',()=>{
   assert.match(forecast,/train-forecast-calibration[^\n]+<i>/,'calibration source should still render inside its semantic source element');
+  assert.match(forecast,/<p>\$\{esc\(method\)\}<\/p>\$\{calibrationMarkup\}<\/details>\$\{probabilityMarkup\}/,'measured baseline should be grouped inside How this is worked out');
+  assert.doesNotMatch(forecast,/<\/details>\$\{calibrationMarkup\}/,'measured baseline must not remain a standalone top-level forecast block');
   const rule=css.match(/\.train-forecast-calibration i\{([^}]*)\}/);
   assert.ok(rule,'calibration source CSS rule should exist');
   const body=rule[1].replace(/\s+/g,'');

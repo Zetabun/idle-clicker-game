@@ -191,6 +191,7 @@
   font-family:'Martian Mono',ui-monospace,monospace;
   font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
 }
+.train-scheduled-service .train-time .train-status{font-size:7.5px;line-height:1.2}
 .train-scheduled-service .train-service-date{
   margin-top:3px;color:var(--text-mute);font-size:8px;letter-spacing:.035em;text-transform:none;white-space:nowrap;
 }
@@ -818,7 +819,7 @@ body[data-transport="train"] .train-progress-marker small{font-size:11.5px!impor
   body[data-transport="train"] .saved-v2-times strong{font-size:13.5px!important}
 }
 
-/* Kerbside 0.9.46 — mobile forecast readability.
+/* Kerbside 0.9.47 — mobile forecast readability.
    The forecast sheet is a reading surface, not a dense data table. On phones
    the previous 8.5-12px labels/body copy were visibly harder to scan, so keep
    the desktop hierarchy unchanged and raise only the stacked mobile sheet. */
