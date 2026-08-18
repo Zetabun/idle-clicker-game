@@ -23,6 +23,19 @@ replace_once(
 )
 
 replace_once(
+    "kerbside-backend/tests/train-browser-core-regression.mjs",
+    "  const watchButton=connectionDetail.getByRole('button',{name:'Watch journey'});\n  await watchButton.click();\n  await connectionDetail.getByRole('button',{name:'Stop watching'}).waitFor();\n  assert.match(await connectionDetail.textContent(),/Journey Watch/i);\n  assert.match(await connectionDetail.textContent(),/Connection at risk/i);\n  const watchedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));",
+    "  const watchButton=connectionDetail.getByRole('button',{name:'Save & follow'});\n  await watchButton.click();\n  await page.waitForFunction(()=>Boolean(JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null')));\n  assert.match(await connectionDetail.textContent(),/Connection at risk/i);\n  const watchedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));",
+    "browser core unified journey action",
+)
+replace_once(
+    "kerbside-backend/tests/train-browser-core-regression.mjs",
+    "  assert.equal(await connectionDetail.getByRole('button',{name:'Stop watching'}).count(),1);\n  const watchedAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));\n  assert.equal(watchedAfter?.onwardID,`rid-change-recovery-${TODAY}`,'Journey Watch must follow the adopted backup leg');\n  await connectionDetail.getByRole('button',{name:'Stop watching'}).click();\n  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.journey-watch.v1')),null);",
+    "  const watchedAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));\n  assert.equal(watchedAfter?.onwardID,`rid-change-recovery-${TODAY}`,'Journey Watch must follow the adopted backup leg');\n  await page.evaluate(()=>localStorage.removeItem('kerbside.rail.journey-watch.v1'));\n  assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.journey-watch.v1')),null);",
+    "browser core unified journey cleanup",
+)
+
+replace_once(
     "kerbside-backend/test/train-forecast-layout.test.mjs",
     "  assert.match(forecast,/train-forecast-calibration[^\\n]+<i>/,'calibration source should still render inside its semantic source element');\n",
     "  assert.match(forecast,/train-forecast-calibration[^\\n]+<i>/,'calibration source should still render inside its semantic source element');\n  assert.match(forecast,/<p>\\$\\{esc\\(method\\)\\}<\\/p>\\$\\{calibrationMarkup\\}<\\/details>\\$\\{probabilityMarkup\\}/,'measured baseline should be grouped inside How this is worked out');\n  assert.doesNotMatch(forecast,/<\\/details>\\$\\{calibrationMarkup\\}/,'measured baseline must not remain a standalone top-level forecast block');\n",
@@ -164,6 +177,7 @@ for required_path in [
     "kerbside-journey-planner-core.js",
     "kerbside-backend/tests/train-mobile-layout-regression.mjs",
     "kerbside-backend/tests/train-active-journey-regression.mjs",
+    "kerbside-backend/tests/train-browser-core-regression.mjs",
     "kerbside-backend/tests/train-movement-scope-regression.mjs",
     "kerbside-backend/test/train-journey-ux.test.mjs",
 ]:
