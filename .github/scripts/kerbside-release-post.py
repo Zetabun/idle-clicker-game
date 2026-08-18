@@ -46,4 +46,14 @@ for required in [
     if text.count(required) != 1:
         raise SystemExit(f"planner helper restoration failed for {required}: {text.count(required)}")
 path.write_text(text, encoding="utf-8")
-print("Restored planner helpers preserved by the 0.9.50 quota-safe storage patch.")
+
+forecast_test = Path("kerbside-backend/tests/train-forecast-v3-dual-timetable.mjs")
+forecast_text = forecast_test.read_text(encoding="utf-8")
+old = "  const overlayServices=[{length:8},{length:8},{length:8}];"
+new = "  const overlayServices=[service({length:8}),service({length:8}),service({length:8})];"
+if forecast_text.count(old) != 1:
+    raise SystemExit(f"expected one legacy formation fixture, found {forecast_text.count(old)}")
+forecast_text = forecast_text.replace(old, new, 1)
+forecast_test.write_text(forecast_text, encoding="utf-8")
+
+print("Restored planner helpers and aligned the formation enrichment regression with comparable peers.")
