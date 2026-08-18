@@ -313,8 +313,14 @@ try{
   // never become persisted saved state.
   await page.setViewportSize({width:1280,height:900});
   const quietCard=page.locator('#planJourneyResults .plan-journey-result').filter({hasText:'Quiet Rail'});
-  const immediateSave=await quietCard.locator('[data-plan-save-key]').evaluate(button=>{button.click();let stored=[];try{stored=JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]');}catch{}return {stored:stored.length,workspace:window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.saved?.length||0,label:(button.textContent||'').trim()};});
-  assert.deepEqual(immediateSave,{stored:1,workspace:1,label:'Saved'},'Save journey must persist and synchronise the Saved journeys workspace in the same click, not via a delayed listener');
+  await page.evaluate(()=>{
+    localStorage.setItem('kerbside.rail.fixtures.v3','synthetic stale fixture cache');
+    const original=Storage.prototype.setItem;window.__KERBSIDE_TEST_STORAGE_SET_ITEM__=original;let injected=false;
+    Storage.prototype.setItem=function(key,value){if(this===localStorage&&key==='kerbside.rail.plan.saved.v1'&&!injected){injected=true;throw new DOMException('Synthetic saved-journey quota','QuotaExceededError');}return original.call(this,key,value);};
+  });
+  const immediateSave=await quietCard.locator('[data-plan-save-key]').evaluate(button=>{button.click();let stored=[];try{stored=JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]');}catch{}return {stored:stored.length,workspace:window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.saved?.length||0,label:(button.textContent||'').trim(),staleCache:localStorage.getItem('kerbside.rail.fixtures.v3')};});
+  await page.evaluate(()=>{const original=window.__KERBSIDE_TEST_STORAGE_SET_ITEM__;if(original)Storage.prototype.setItem=original;delete window.__KERBSIDE_TEST_STORAGE_SET_ITEM__;});
+  assert.deepEqual(immediateSave,{stored:1,workspace:1,label:'Saved',staleCache:null},'Save journey must reclaim regenerable Kerbside cache storage, persist and synchronise the Saved journeys workspace in the same click');
   await page.waitForFunction(()=>{try{return JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===1&&window.__KERBSIDE_SAVED_JOURNEYS_V2__?.state?.saved?.length===1;}catch{return false;}});
   let savedJourney=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1'))[0]);
   assert.equal(savedJourney.date,'2026-08-12');

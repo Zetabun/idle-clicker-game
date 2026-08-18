@@ -87,6 +87,29 @@ test('measured route-load evidence suppresses the old previous-stop accumulation
   assert.ok(legacy.amount>measured.amount,{legacy,measured});assert.equal(measured.measuredLoad,true);
 });
 
+test('formation fallback ignores heterogeneous station traffic',()=>{
+  const c=load(),v4=c.window.__KERBSIDE_FORECAST_V4__;
+  const local={length:4,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}};
+  c.window.__KERBSIDE_TRAIN_OVERLAY__.state.services=[
+    {length:9,operator:'Avanti West Coast',operatorCode:'VT',destination:[{crs:'EUS'}],displayDestination:{crs:'EUS'}},
+    {length:9,operator:'Avanti West Coast',operatorCode:'VT',destination:[{crs:'EUS'}],displayDestination:{crs:'EUS'}},
+    {length:11,operator:'Avanti West Coast',operatorCode:'VT',destination:[{crs:'EUS'}],displayDestination:{crs:'EUS'}}
+  ];
+  assert.deepEqual(Array.from(v4.formationBaseline(local,[local])),[],'mixed intercity rows must not form a local-service baseline');
+  c.window.__KERBSIDE_TRAIN_OVERLAY__.state.services=[
+    {length:4,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}},
+    {length:4,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}},
+    {length:5,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}}
+  ];
+  assert.deepEqual(Array.from(v4.formationBaseline(local,[local])),[4,4,5]);
+  c.window.__KERBSIDE_TRAIN_OVERLAY__.state.services=[
+    {length:4,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}},
+    {length:9,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}},
+    {length:9,operator:'West Midlands Railway',operatorCode:'LM',destination:[{crs:'LTV'}],displayDestination:{crs:'LTV'}}
+  ];
+  assert.deepEqual(Array.from(v4.formationBaseline(local,[local])),[],'a wide length spread must suppress the fallback even within one operator/route');
+});
+
 test('DfT aggregate benchmark can backtest forecast bands without user feedback',()=>{
   const c=load(),cal=c.window.__KERBSIDE_CALIBRATION__,v4=c.window.__KERBSIDE_FORECAST_V4__,station={name:'Birmingham New Street',crs:'BHM'},date=new FixedDate('2026-08-12T12:00:00Z');
   const benchmark=cal.benchmarkForecast(station,8*60+15,date,'busy');assert.ok(benchmark,benchmark);assert.equal(benchmark.aggregateOnly,true);assert.match(benchmark.source,/DfT/);assert.ok(['quiet','moderate','busy','very-busy'].includes(benchmark.measuredLevel));

@@ -717,6 +717,9 @@ function install(){
 const PLAN_PREF_KEY='kerbside.rail.plan.preference.v1';
 const PLAN_CONSTRAINT_KEY='kerbside.rail.plan.constraints.v1';
 const PLAN_SAVED_KEY='kerbside.rail.plan.saved.v1';
+const PLAN_SAVED_META_KEY='kerbside.rail.plan.saved-meta.v2';
+const PLAN_RECLAIMABLE_CACHE_PATTERNS=[/^kerbside\.rail\.wikidata\./,/^kerbside\.rail\.fixtures\./,/^kerbside\.rail\.forecast\.v\d+\.calendar(?:\.|$)/];
+const PLAN_RECLAIMABLE_DERIVED_KEYS=['kerbside.rail.crowding.v2','kerbside.rail.forecast.accuracy.v1'];
 const PLAN_BUFFER_OPTIONS=new Set([0,5,10,15]);
 const PLAN_MAX_CANDIDATES=72;
 const PLAN_VISIBLE_RESULTS=10;
@@ -755,14 +758,39 @@ function normaliseSavedJourney(value){
 function readSavedJourneys(){
   try{const raw=JSON.parse(localStorage.getItem(PLAN_SAVED_KEY)||'[]'),seen=new Set(),rows=[];for(const value of Array.isArray(raw)?raw:[]){const item=normaliseSavedJourney(value);if(!item||seen.has(item.id))continue;seen.add(item.id);rows.push(item);}return rows;}catch(error){return[];}
 }
+function planQuotaError(error){return !!error&&(error.name==='QuotaExceededError'||error.name==='NS_ERROR_DOM_QUOTA_REACHED'||Number(error.code)===22||Number(error.code)===1014);}
+function planStorageKeys(){const keys=[];try{for(let index=0;index<localStorage.length;index++){const key=localStorage.key(index);if(key)keys.push(key);}}catch(error){}return keys;}
+function planReclaimableCacheStorage(){
+  let removed=0;for(const key of planStorageKeys()){if(!PLAN_RECLAIMABLE_CACHE_PATTERNS.some(pattern=>pattern.test(key)))continue;try{const value=localStorage.getItem(key);removed+=String(value||'').length;localStorage.removeItem(key);}catch(error){}}
+  return removed;
+}
+function planReclaimDerivedStorage(){let removed=0;for(const key of PLAN_RECLAIMABLE_DERIVED_KEYS){try{const value=localStorage.getItem(key);if(value!=null){removed+=String(value).length;localStorage.removeItem(key);}}catch(error){}}return removed;}
+function planCompactSavedMeta(rows){
+  try{
+    const raw=JSON.parse(localStorage.getItem(PLAN_SAVED_META_KEY)||'null');if(!raw||!raw.entries||typeof raw.entries!=='object')return 0;
+    const ids=new Set((Array.isArray(rows)?rows:[]).map(item=>item&&item.id).filter(Boolean)),nextEntries={};let removed=0;
+    for(const [id,value] of Object.entries(raw.entries)){if(ids.has(id))nextEntries[id]=value;else removed++;}
+    if(!removed)return 0;localStorage.setItem(PLAN_SAVED_META_KEY,JSON.stringify({...raw,entries:nextEntries}));return removed;
+  }catch(error){return 0;}
+}
+function planPersistSavedJourneys(next,payload){
+  localStorage.setItem(PLAN_SAVED_KEY,payload);
+  const persisted=readSavedJourneys();
+  if(persisted.length!==next.length||persisted.some((item,index)=>item.id!==next[index].id))throw new Error('Saved journey storage verification failed');
+  planState.saved=persisted;return persisted;
+}
 function writeSavedJourneys(rows){
   const next=[],seen=new Set();for(const value of Array.isArray(rows)?rows:[]){const item=normaliseSavedJourney(value);if(!item||seen.has(item.id))continue;seen.add(item.id);next.push(item);}
-  try{
-    localStorage.setItem(PLAN_SAVED_KEY,JSON.stringify(next));
-    const persisted=readSavedJourneys();
-    if(persisted.length!==next.length||persisted.some((item,index)=>item.id!==next[index].id))throw new Error('Saved journey storage verification failed');
-    planState.saved=persisted;return persisted;
-  }catch(error){console.warn('Kerbside could not persist saved journeys:',error);return null;}
+  const payload=JSON.stringify(next);
+  try{return planPersistSavedJourneys(next,payload);}catch(error){
+    if(!planQuotaError(error)){console.warn('Kerbside could not persist saved journeys:',error);return null;}
+    planReclaimableCacheStorage();
+    try{return planPersistSavedJourneys(next,payload);}catch(secondError){
+      if(!planQuotaError(secondError)){console.warn('Kerbside could not persist saved journeys after cache reclaim:',secondError);return null;}
+      planReclaimDerivedStorage();planCompactSavedMeta(next);
+      try{return planPersistSavedJourneys(next,payload);}catch(finalError){console.warn('Kerbside could not persist saved journeys after storage reclaim:',finalError);return null;}
+    }
+  }
 }
 function planSyncSavedWorkspace({savedId='',refresh=false}={}){
   const workspace=window.__KERBSIDE_SAVED_JOURNEYS_V2__;if(!workspace||typeof workspace.syncSaved!=='function')return null;

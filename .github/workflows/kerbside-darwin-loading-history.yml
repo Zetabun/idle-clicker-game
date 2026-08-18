@@ -1,0 +1,155 @@
+name: Update Darwin loading history
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/kerbside-darwin-loading-history.yml
+      - .github/scripts/update-darwin-loading-history.py
+      - .github/scripts/test-update-darwin-loading-history.py
+      - .github/scripts/summarize-darwin-loading.py
+      - .github/scripts/test-summarize-darwin-loading.py
+      - docs/darwin-loading-history.json
+      - docs/darwin-loading-history.md
+  schedule:
+    # Roll the privacy-safe hourly probe artifacts into one repository snapshot
+    # each day. This is GitHub-only bookkeeping and never calls a Cloudflare Worker.
+    - cron: '41 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-darwin-loading-history
+  cancel-in-progress: false
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Test aggregate history tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/test-summarize-darwin-loading.py
+          python .github/scripts/test-update-darwin-loading-history.py
+          python -m py_compile \
+            .github/scripts/summarize-darwin-loading.py \
+            .github/scripts/update-darwin-loading-history.py \
+            .github/scripts/test-summarize-darwin-loading.py \
+            .github/scripts/test-update-darwin-loading-history.py
+
+  rollup:
+    if: github.event_name != 'pull_request'
+    needs: self-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Download recent aggregate probe artifacts
+        id: artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/darwin-artifacts .tmp/darwin-reports
+          cutoff="$(date -u -d '26 hours ago' +%s)"
+          : > .tmp/darwin-artifacts/list.tsv
+          page=1
+          while true; do
+            payload="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100&page=$page")"
+            count="$(jq '.artifacts | length' <<<"$payload")"
+            jq -r --argjson cutoff "$cutoff" '
+              .artifacts[]
+              | select((.expired // false) == false)
+              | select(.name | startswith("darwin-loading-"))
+              | select((.created_at | fromdateiso8601) >= $cutoff)
+              | [.id, .created_at] | @tsv
+            ' <<<"$payload" >> .tmp/darwin-artifacts/list.tsv
+            if (( count < 100 )); then break; fi
+            page=$((page + 1))
+          done
+
+          sort -u -o .tmp/darwin-artifacts/list.tsv .tmp/darwin-artifacts/list.tsv
+          if [[ ! -s .tmp/darwin-artifacts/list.tsv ]]; then
+            echo 'have_reports=false' >> "$GITHUB_OUTPUT"
+            echo 'No unexpired Darwin loading artifacts were created in the last 26 hours.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          while IFS=$'\t' read -r artifact_id created_at; do
+            zip_path=".tmp/darwin-artifacts/${artifact_id}.zip"
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/${artifact_id}/zip" > "$zip_path"
+            if unzip -p "$zip_path" 'darwin-loading-report.json' > ".tmp/darwin-reports/${artifact_id}.json" 2>/dev/null; then
+              printf '%s\t%s\n' "$artifact_id" "$created_at" >> .tmp/darwin-artifacts/downloaded.tsv
+            else
+              rm -f ".tmp/darwin-reports/${artifact_id}.json"
+            fi
+          done < .tmp/darwin-artifacts/list.tsv
+
+          if ! compgen -G '.tmp/darwin-reports/*.json' >/dev/null; then
+            echo 'have_reports=false' >> "$GITHUB_OUTPUT"
+            echo 'Recent artifacts were found, but none contained a Darwin aggregate report.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo 'have_reports=true' >> "$GITHUB_OUTPUT"
+
+      - name: Build daily privacy-safe snapshot
+        if: steps.artifacts.outputs.have_reports == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t reports < <(find .tmp/darwin-reports -maxdepth 1 -type f -name '*.json' | sort)
+          python .github/scripts/summarize-darwin-loading.py "${reports[@]}" --output .tmp/darwin-daily-summary.json
+          python .github/scripts/update-darwin-loading-history.py \
+            .tmp/darwin-daily-summary.json \
+            --history docs/darwin-loading-history.json \
+            --markdown docs/darwin-loading-history.md \
+            --keep 180
+          python .github/scripts/summarize-darwin-loading.py "${reports[@]}" --markdown >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo
+            echo '> The committed history stores aggregate operator coverage only. It contains no RIDs, train IDs, station IDs or per-service loading values.'
+            echo '> This job reads GitHub Actions artifacts directly and does not use a Cloudflare Worker.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit changed history
+        if: steps.artifacts.outputs.have_reports == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/darwin-loading-history.json docs/darwin-loading-history.md; then
+            echo 'Darwin loading history is already current.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/darwin-loading-history.json docs/darwin-loading-history.md
+          git commit -m 'Refresh Darwin loading coverage history'
+          git pull --rebase origin main
+          git push origin HEAD:main
