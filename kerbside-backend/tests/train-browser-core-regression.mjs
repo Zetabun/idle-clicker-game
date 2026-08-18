@@ -330,7 +330,14 @@ try{
   const watchedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));
   assert.equal(watchedBefore?.onwardID,`rid-change-b-${TODAY}`);
 
+  // Save & follow re-renders the service row. Re-open the detail sheet if that
+  // render collapsed it before exercising the recovery action.
+  if(!(await connectionDetail.isVisible())){
+    await connection.locator('[data-scheduled-toggle]').click();
+    await connectionDetail.waitFor({state:'visible'});
+  }
   const useBackup=connectionDetail.getByRole('button',{name:'Use this backup'});
+  await useBackup.waitFor({state:'visible',timeout:10000});
   await useBackup.click();
   await page.waitForFunction(today=>{
     const service=window.__KERBSIDE_TRAIN_TIMETABLE__.state.services.find(item=>item.journeyType==='connection');

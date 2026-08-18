@@ -110,7 +110,17 @@ function bindBoard(board){
     const recovery=closest?closest('[data-use-recovery]'):null;
     if(recovery&&board.contains(recovery)){event.preventDefault();event.stopPropagation();adoptRecoveryByKey(recovery.getAttribute('data-use-recovery'));return;}
     const saveFollow=closest?closest('[data-save-follow-journey]'):null;
-    if(saveFollow&&board.contains(saveFollow)){event.preventDefault();event.stopPropagation();saveAndFollowJourneyByKey(saveFollow.getAttribute('data-save-follow-journey'));return;}
+    if(saveFollow&&board.contains(saveFollow)){
+      event.preventDefault();event.stopPropagation();
+      if(saveFollow.disabled)return;
+      const previousLabel=saveFollow.textContent||'Save & follow';
+      saveFollow.disabled=true;saveFollow.textContent='Saving…';saveFollow.setAttribute('aria-busy','true');
+      Promise.resolve(saveAndFollowJourneyByKey(saveFollow.getAttribute('data-save-follow-journey'))).then(ok=>{
+        if(ok)return;
+        if(saveFollow.isConnected){saveFollow.disabled=false;saveFollow.textContent=previousLabel;saveFollow.removeAttribute('aria-busy');saveFollow.setAttribute('data-save-error','true');}
+      }).catch(()=>{if(saveFollow.isConnected){saveFollow.disabled=false;saveFollow.textContent=previousLabel;saveFollow.removeAttribute('aria-busy');saveFollow.setAttribute('data-save-error','true');}});
+      return;
+    }
     const save=closest?closest('[data-save-scheduled-journey]'):null;
     if(save&&board.contains(save)){event.preventDefault();event.stopPropagation();saveJourneyByKey(save.getAttribute('data-save-scheduled-journey'));return;}
     const watch=closest?closest('[data-watch-journey]'):null;
@@ -618,12 +628,24 @@ function toggleJourneyWatchByKey(key){
   renderRows(state.services,{mode:state.mode,manifest:state.manifest});return true;
 }
 function saveJourneyByKey(key){const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const plan=window.__KERBSIDE_JOURNEY_PLANNER__,r=route();if(!plan||typeof plan.planSaveBoardService!=='function')return false;const saved=plan.planSaveBoardService(state.services[index],{date:r.date,from:r.from,to:r.to});if(!saved)return false;renderRows(state.services,{mode:state.mode,manifest:state.manifest});return true;}
-function saveAndFollowJourneyByKey(key){
-  const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;const service=state.services[index],plan=window.__KERBSIDE_JOURNEY_PLANNER__,r=route();if(!plan||typeof plan.planSaveBoardService!=='function')return false;
-  const saved=plan.planSaveBoardService(service,{date:r.date,from:r.from,to:r.to});if(!saved)return false;const today=!!(dateApi()&&typeof dateApi().isToday==='function'&&dateApi().isToday());
-  if(today&&!watchMatches(service))persistJourneyWatch(journeyWatchPayload(service));renderRows(state.services,{mode:state.mode,manifest:state.manifest});
-  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;if(today&&savedApi&&typeof savedApi.followSavedJourney==='function')Promise.resolve(savedApi.followSavedJourney(saved.id)).catch(()=>false).finally(()=>renderRows(state.services,{mode:state.mode,manifest:state.manifest}));
-  return true;
+async function saveAndFollowJourneyByKey(key){
+  const index=state.services.findIndex((service,i)=>serviceKey(service,i)===String(key||''));if(index<0)return false;
+  const service=state.services[index],plan=window.__KERBSIDE_JOURNEY_PLANNER__,r=route();if(!plan||typeof plan.planSaveBoardService!=='function')return false;
+  const saved=plan.planSaveBoardService(service,{date:r.date,from:r.from,to:r.to});if(!saved)return false;
+  const today=!!(dateApi()&&typeof dateApi().isToday==='function'&&dateApi().isToday());
+  if(today&&!watchMatches(service))persistJourneyWatch(journeyWatchPayload(service));
+  let followed=!today;
+  const savedApi=window.__KERBSIDE_SAVED_JOURNEYS_V2__;
+  if(today&&savedApi&&typeof savedApi.followSavedJourney==='function'){
+    try{followed=(await savedApi.followSavedJourney(saved.id))!==false;}catch(error){followed=false;}
+  }
+  if(today&&!followed){
+    const activeApi=window.__KERBSIDE_ACTIVE_JOURNEY__;
+    if(activeApi&&typeof activeApi.startByKey==='function')followed=!!activeApi.startByKey(key);
+  }
+  renderRows(state.services,{mode:state.mode,manifest:state.manifest});
+  const verified=typeof plan.planBoardServiceSaved==='function'?plan.planBoardServiceSaved(service,{date:r.date,from:r.from,to:r.to}):saved;
+  return !!verified&&(!today||followed||watchMatches(service));
 }
 
 function durationLabel(from,to){const start=parseMinutes(from),end=parseMinutes(to);if(start==null||end==null)return'';let span=end-start;if(span<0)span+=1440;if(span<=0)return'';const h=Math.floor(span/60),m=span%60;return h?`${h}h ${String(m).padStart(2,'0')}m`:`${m}m`;}
@@ -1356,8 +1378,8 @@ function forecastFor(service){const api=window.__KERBSIDE_TRAIN_TIMETABLE__;if(!
 function installStyles(){if($('kerbsideActiveJourneyStyles'))return;const style=document.createElement('style');style.id='kerbsideActiveJourneyStyles';style.textContent=`
 .train-active-journey{margin:12px 16px 8px;padding:15px;border:1px solid rgb(var(--live-rgb) / .45);border-radius:14px;background:linear-gradient(135deg,rgb(var(--live-rgb) / .09),var(--ink-2));box-shadow:0 8px 22px rgb(var(--shadow-rgb) / .12)}
 .train-active-journey[hidden],.train-active-action-card[hidden],.train-watch-card[hidden]{display:none!important}
-.train-active-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.train-active-kicker{color:var(--live);font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.train-active-head h3{margin:3px 0 0;font-size:17px}.train-active-status{margin-top:4px;color:var(--text-dim);font-size:10.5px;line-height:1.4}.train-active-next{margin-top:12px;padding:12px;border:1px solid var(--rule);border-radius:11px;background:var(--ink-3)}.train-active-next span{display:block;color:var(--text-dim);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-active-next strong{display:block;margin-top:4px;font-size:15px}.train-active-next small{display:block;margin-top:3px;color:var(--text-dim);line-height:1.4}.train-active-warning{margin-top:9px;padding:9px 10px;border:1px solid rgb(var(--warn-rgb) / .38);border-radius:9px;background:rgb(var(--warn-rgb) / .07);color:var(--warn);font-size:10.5px;line-height:1.45}.train-active-steps{display:grid;gap:5px;margin-top:10px}.train-active-step{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--rule)}.train-active-step span{color:var(--text-dim);font-size:9px;font-weight:800;text-transform:uppercase}.train-active-step b{font-size:11px}.train-active-step small{color:var(--text-dim);font-size:9.5px;text-align:right}.train-active-crowd{display:flex;align-items:center;gap:7px;margin-top:9px;color:var(--text-dim);font-size:10px}.train-active-crowd i{width:7px;height:7px;border-radius:50%;background:var(--led)}.train-active-crowd strong{color:var(--text)}.train-active-actions{display:flex;gap:8px;margin-top:11px}.train-active-actions button,.train-active-action-card button{min-height:38px;padding:8px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--ink-3);font-size:10.5px;font-weight:800}.train-active-actions button:hover,.train-active-action-card button:hover{border-color:var(--led);color:var(--led)}.train-active-actions .primary,.train-active-action-card .primary{border-color:var(--live);background:rgb(var(--live-rgb) / .10);color:var(--live)}.train-active-truth{display:block;margin-top:9px;color:var(--text-mute);font-size:9.5px;line-height:1.45}.train-active-action-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .25);border-radius:10px;background:rgb(var(--live-rgb) / .045)}.train-active-action-card>div{display:flex;flex-direction:column;min-width:0}.train-active-action-card span{color:var(--live);font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-active-action-card strong{margin-top:2px;font-size:11px}.train-active-action-card small{margin-top:2px;color:var(--text-dim);font-size:9.5px;line-height:1.35}
-@media(max-width:820px){.train-active-journey{margin:8px 9px 6px;padding:12px}.train-active-head h3{font-size:15px}.train-active-step{grid-template-columns:54px minmax(0,1fr)}.train-active-step small{grid-column:2;text-align:left}.train-active-action-card{align-items:flex-start;flex-direction:column}.train-active-action-card button{width:100%}}
+.train-active-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.train-active-kicker{color:var(--live);font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.train-active-head h3{margin:3px 0 0;font-size:17px}.train-active-status{margin-top:4px;color:var(--text-dim);font-size:10.5px;line-height:1.4}.train-active-next{margin-top:12px;padding:12px;border:1px solid var(--rule);border-radius:11px;background:var(--ink-3)}.train-active-next span{display:block;color:var(--text-dim);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-active-next strong{display:block;margin-top:4px;font-size:15px}.train-active-next small{display:block;margin-top:3px;color:var(--text-dim);line-height:1.4}.train-active-warning{margin-top:9px;padding:9px 10px;border:1px solid rgb(var(--warn-rgb) / .38);border-radius:9px;background:rgb(var(--warn-rgb) / .07);color:var(--warn);font-size:10.5px;line-height:1.45}.train-active-steps{display:grid;gap:5px;margin-top:10px}.train-active-step{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--rule)}.train-active-step span{color:var(--text-dim);font-size:9px;font-weight:800;text-transform:uppercase}.train-active-step b{font-size:11px}.train-active-step small{color:var(--text-dim);font-size:9.5px;text-align:right}.train-active-crowd{display:flex;align-items:center;gap:7px;margin-top:9px;color:var(--text-dim);font-size:10px}.train-active-crowd i{width:7px;height:7px;border-radius:50%;background:var(--led)}.train-active-crowd strong{color:var(--text)}.train-active-actions{display:flex;gap:8px;margin-top:11px}.train-active-actions button,.train-active-inline-action button{min-height:38px;padding:8px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--ink-3);font-size:10.5px;font-weight:800}.train-active-actions button:hover,.train-active-inline-action button:hover{border-color:var(--led);color:var(--led)}.train-active-actions .primary,.train-active-inline-action .primary{border-color:var(--live);background:rgb(var(--live-rgb) / .10);color:var(--live)}.train-active-inline-action{display:contents}.train-active-truth{display:block;margin-top:9px;color:var(--text-mute);font-size:9.5px;line-height:1.45}.train-active-action-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .25);border-radius:10px;background:rgb(var(--live-rgb) / .045)}.train-active-action-card>div{display:flex;flex-direction:column;min-width:0}.train-active-action-card span{color:var(--live);font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-active-action-card strong{margin-top:2px;font-size:11px}.train-active-action-card small{margin-top:2px;color:var(--text-dim);font-size:9.5px;line-height:1.35}
+@media(max-width:820px){.train-active-journey{margin:8px 9px 6px;padding:12px}.train-active-head h3{font-size:15px}.train-active-step{grid-template-columns:54px minmax(0,1fr)}.train-active-step small{grid-column:2;text-align:left}.train-watch-actions{flex-wrap:wrap}.train-active-inline-action button{width:100%}}
 `;document.head.appendChild(style);}
 function ensurePanel(){const board=$('trainScheduledBoard');if(!board||!board.parentNode)return null;let panel=$('trainActiveJourney');if(!panel){panel=document.createElement('section');panel.id='trainActiveJourney';panel.className='train-active-journey';panel.hidden=true;board.parentNode.insertBefore(panel,board);}return panel;}
 function stepMarkup(step){const meta=[step.time,step.platform?`Plat ${step.platform}`:''].filter(Boolean).join(' · ');return `<div class="train-active-step"><span>${esc(step.label)}</span><b>${esc(step.place||'')}</b><small>${esc(meta||'Time TBC')}</small></div>`;}
@@ -1369,16 +1391,16 @@ function renderPanel(service=activeService()){
   const markup=`<div class="train-active-head"><div><span class="train-active-kicker">Active journey</span><h3>${esc(route)}</h3><div class="train-active-status">${esc(status&&status.label||'Tracking journey')} · ${esc(source)}</div></div></div><div class="train-active-next"><span>Next</span><strong>${esc(guidance.next)}</strong><small>${esc(guidance.detail)}</small></div>${guidance.warning?`<div class="train-active-warning">${esc(guidance.warning)}</div>`:''}<div class="train-active-steps">${(guidance.steps||[]).map(stepMarkup).join('')}</div>${forecast?`<div class="train-active-crowd crowd-${esc(forecast.level||'unknown')}"><i></i><strong>${esc(forecast.label||'Forecast pending')}</strong><span>${esc(`${forecast.confidence||'Low'} confidence · Forecast v4`)}</span></div>`:''}<div class="train-active-actions"><button type="button" class="primary" data-active-refresh>Refresh live</button><button type="button" data-active-stop>End active journey</button></div><small class="train-active-truth">Time-based guidance only. Kerbside cannot detect whether you boarded or which carriage you are in; live Darwin evidence is shown when the rail feed still exposes it.</small>`;
   if(panel.__kerbsideMarkup!==markup){panel.__kerbsideMarkup=markup;panel.innerHTML=markup;}return true;
 }
-function actionMarkup(key,isActive){return `<div><span>Active journey</span><strong>${isActive?'This is your active journey':"I'm taking this"}</strong><small>${isActive?'Live status and connection guidance are pinned above.':'Pin this same-day journey for get-off and connection guidance.'}</small></div><button type="button" class="primary" ${isActive?'data-active-stop':'data-active-start'}${isActive?'':`="${esc(key)}"`}>${isActive?'End active journey':"I'm taking this"}</button>`;}
+function actionMarkup(key,isActive){return `<button type="button" class="primary" ${isActive?'data-active-stop':'data-active-start'}${isActive?'':`="${esc(key)}"`}>${isActive?'End active journey':"I'm taking this"}</button>`;}
 function injectActions(){
-  const api=window.__KERBSIDE_TRAIN_TIMETABLE__,board=$('trainScheduledBoard');if(!api||!board)return false;const sameActive=!!state.active&&routeMatches(),canStart=api.state.mode==='today'&&isTodayRoute();
+  const api=window.__KERBSIDE_TRAIN_TIMETABLE__,board=$('trainScheduledBoard');if(!api||!board)return false;const canStart=api.state.mode==='today'&&isTodayRoute();
   board.querySelectorAll('.train-scheduled-service').forEach((article,index)=>{
-    const key=article.getAttribute('data-service-id')||'',service=(api.state.services||[]).find((row,i)=>String(api.serviceKey(row,i))===key)||(api.state.services||[])[index],detail=article.querySelector('.train-service-detail'),watch=article.querySelector('.train-watch-card');if(watch)watch.hidden=sameActive;
-    let card=article.querySelector('.train-active-action-card');
-    if(!canStart){if(card)card.remove();return;}
+    const key=article.getAttribute('data-service-id')||'',service=(api.state.services||[]).find((row,i)=>String(api.serviceKey(row,i))===key)||(api.state.services||[])[index],watch=article.querySelector('.train-watch-card'),actions=watch&&watch.querySelector('.train-watch-actions');
+    let slot=article.querySelector('.train-active-inline-action');
+    if(!canStart||!watch||!actions){if(slot)slot.remove();return;}
     const active=!!(state.active&&service&&serviceIdentityMatches(state.active,service));
-    if(!card){card=document.createElement('div');card.className='train-active-action-card';const explain=detail&&detail.querySelector('.train-crowding-explain');if(detail)detail.insertBefore(card,explain||detail.firstChild);}
-    const signature=`${key}|${active?'1':'0'}`;if(card.dataset.signature!==signature){card.dataset.signature=signature;card.innerHTML=actionMarkup(key,active);}
+    if(!slot){slot=document.createElement('span');slot.className='train-active-inline-action';actions.appendChild(slot);}
+    const signature=`${key}|${active?'1':'0'}`;if(slot.dataset.signature!==signature){slot.dataset.signature=signature;slot.innerHTML=actionMarkup(key,active);}
   });
   return true;
 }

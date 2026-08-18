@@ -45,7 +45,7 @@ function addDay(stamp){const d=new Date(`${stamp}T12:00:00Z`);d.setUTCDate(d.get
 let browser;
 try{
   browser=await browserType.launch({headless:true});
-  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const page=await browser.newPage({viewport:{width:1440,height:900},isMobile:false,hasTouch:false});
   const errors=[];
   page.on('pageerror',error=>errors.push(String(error&&error.stack||error)));
   await page.route('https://huxley2.azurewebsites.net/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(liveBoard)}));
@@ -100,7 +100,8 @@ try{
   },londonStamp());
 
   await page.waitForFunction(()=>document.querySelectorAll('#trainScheduledBoard .train-scheduled-service').length===3,null,{timeout:10000});
-  await page.waitForFunction(()=>document.querySelector('#trainScheduledBoard [data-service-id="ACTIVE-1"] .train-active-action-card'),null,{timeout:10000});
+  await page.waitForFunction(()=>document.querySelector('#trainScheduledBoard [data-service-id="ACTIVE-1"] .train-watch-card [data-active-start]'),null,{timeout:10000});
+  assert.equal(await page.locator('#trainScheduledBoard [data-service-id="ACTIVE-1"] .train-active-action-card').count(),0,'Active Journey should not render as a separate card');
   await page.click('#trainScheduledBoard [data-service-id="ACTIVE-1"] [data-scheduled-toggle="ACTIVE-1"]');
   const start=page.locator('#trainScheduledBoard [data-service-id="ACTIVE-1"] [data-active-start]');
   await start.waitFor({state:'visible',timeout:10000});
@@ -118,7 +119,7 @@ try{
   const activeState=await page.evaluate(()=>({
     stored:JSON.parse(localStorage.getItem('kerbside.rail.active-journey.v1')||'null'),
     watch:window.__KERBSIDE_TRAIN_TIMETABLE__.state.watch,
-    watchHidden:[...document.querySelectorAll('#trainScheduledBoard .train-watch-card')].every(node=>node.hidden),
+    watchVisible:[...document.querySelectorAll('#trainScheduledBoard .train-watch-card')].every(node=>!node.hidden),
     panelBox:document.getElementById('trainActiveJourney').getBoundingClientRect().toJSON()
   }));
   assert.equal(activeState.stored.date,setup.today);
@@ -129,8 +130,8 @@ try{
   assert.equal(activeState.stored.watchOwned,true);
   assert.doesNotMatch(JSON.stringify(activeState.stored),/forecast|probabilities|reasons|liveEvidence|\"etd\"|platform/i,'Active Journey must not persist live/forecast snapshots');
   assert.equal(activeState.watch.serviceID,'ACTIVE-1','Active Journey should reuse Journey Watch');
-  assert.equal(activeState.watchHidden,true,'separate Journey Watch controls should hide while an active journey owns the watch slot');
-  assert.ok(activeState.panelBox.width<=390,'Active Journey panel overflows the mobile viewport');
+  assert.equal(activeState.watchVisible,true,'Saved Journey controls should remain visible while the journey is active');
+  assert.ok(activeState.panelBox.width<=1440,'Active Journey panel overflows the desktop viewport');
 
   const pin=await page.evaluate(today=>window.__KERBSIDE_ACTIVE_JOURNEY__.pinnedDepartAfter({date:today,from:{crs:'BHM'},to:{crs:'BRI'}},'10:00'),setup.today);
   assert.equal(pin,'09:20','active timetable query should look back before the original scheduled departure');

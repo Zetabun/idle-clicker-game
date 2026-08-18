@@ -19,7 +19,10 @@ test('scheduled journey card exposes one combined save/follow action',()=>{
   assert.doesNotMatch(markup,/data-watch-journey/);
   assert.doesNotMatch(markup,/data-save-scheduled-journey/);
   assert.match(timetable,/function saveAndFollowJourneyByKey/);
-  assert.match(timetable,/followSavedJourney\(saved\.id\)/);
+  assert.match(timetable,/await savedApi\.followSavedJourney\(saved\.id\)/);
+  assert.match(timetable,/Saving…/);
+  assert.match(timetable,/train-active-inline-action/);
+  assert.match(timetable,/actions\.appendChild\(slot\)/);
 });
 
 test('saved cards make live refresh explicit and use one live action slot',()=>{
