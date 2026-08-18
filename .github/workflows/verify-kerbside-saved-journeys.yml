@@ -122,7 +122,17 @@ jobs:
             assert.match(focused,/Quiet|Moderate|Busy|Very busy/i,'opening a saved journey did not render a recalculated Forecast v4 result');
 
             await page.click('[data-train-view="saved"]');
-            await page.locator('#savedJourneyList [data-saved-v2-remove]').click();
+            // Deleting a saved journey is guarded by a confirm() and the control is
+            // labelled data-saved-polish-delete. Prove the guard holds, then delete.
+            const deleteButton=page.locator('#savedJourneyList [data-saved-polish-delete]');
+            await deleteButton.waitFor({state:'visible',timeout:10000});
+            page.once('dialog',dialog=>dialog.dismiss());
+            await deleteButton.click();
+            await page.waitForFunction(()=>!document.querySelector('#savedJourneyList .saved-v2-card')===false,null,{timeout:5000});
+            assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length),1,'dismissing the delete confirmation must keep the saved journey');
+            page.once('dialog',dialog=>dialog.accept());
+            await deleteButton.click();
+            await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]').length===0,null,{timeout:10000});
             assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.plan.saved.v1')||'[]')),[]);
             assert.match(await page.locator('#savedJourneySurface').textContent(),/No saved journeys yet/);
             assert.ok(rail.some(item=>item.status>=200&&item.status<300&&item.url.endsWith('/manifest.json')),'Network Rail manifest was not fetched successfully');

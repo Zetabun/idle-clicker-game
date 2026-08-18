@@ -145,9 +145,12 @@ jobs:
             assert.ok(['exact','identity'].includes(setup.resolution),'saved service did not strongly re-resolve');
             assert.ok(['today','delayed'].includes(setup.status),'same-day save did not resolve to a startable state');
             await page.waitForFunction(()=>!window.__KERBSIDE_SAVED_JOURNEYS_V2__.state.refreshing.size,null,{timeout:10000});
-            const start=page.locator(`#savedJourneyList [data-saved-v2-active="${setup.id}"]`);
+            // Before a journey is running the card offers Follow live, which starts it
+            // and deliberately keeps you on the Saved tab; Open active journey is what
+            // then switches views. They were one button before 0.9.47.
+            const start=page.locator(`#savedJourneyList [data-saved-v2-follow="${setup.id}"]`);
             await start.waitFor({state:'visible',timeout:10000});
-            assert.equal(await start.textContent(),'Start active journey');
+            assert.equal((await start.textContent()).trim(),'Follow live');
             await start.click();
 
             await page.waitForFunction(()=>Boolean(window.__KERBSIDE_ACTIVE_JOURNEY__?.state?.active&&document.querySelector('#trainActiveJourney:not([hidden])')),null,{timeout:10000});
@@ -161,15 +164,16 @@ jobs:
             assert.equal(handoff.station.crs,'BHM');
             assert.equal(handoff.destination.crs,'BRI');
             assert.equal(handoff.active.service.uid,'LIVE-ACTIVE-UID');
-            assert.equal(handoff.savedHidden,true);
+            assert.equal(handoff.savedHidden,false,'following a saved journey should stay on the Saved tab');
             assert.ok(handoff.startedAt);
 
             await page.click('[data-train-view="saved"]');
             const reopen=page.locator(`#savedJourneyList [data-saved-v2-active="${setup.id}"]`);
             await reopen.waitFor({state:'visible',timeout:10000});
-            assert.equal(await reopen.textContent(),'Open active journey');
+            assert.equal((await reopen.textContent()).trim(),'Open active journey');
             await reopen.click();
             await page.waitForFunction(()=>document.querySelector('#trainActiveJourney:not([hidden])'),null,{timeout:10000});
+            assert.equal(await page.evaluate(()=>document.getElementById('savedJourneySurface').hidden),true,'opening the active journey should give way to the active view');
             assert.equal(await page.evaluate(()=>window.__KERBSIDE_ACTIVE_JOURNEY__.state.active.startedAt),handoff.startedAt,'opening an already-active saved trip restarted it');
 
             await page.locator('#trainActiveJourney [data-active-stop]').click();

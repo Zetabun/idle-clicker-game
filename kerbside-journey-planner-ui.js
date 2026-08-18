@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.59';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.59';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.59';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.59';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.60';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.60';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.60';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.60';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -218,9 +218,15 @@ function installUiGuardStyles(){
    as misaligned against Where and Journey options while looking correct in
    Blink, which left-aligns natively and ignores this pseudo-element. */
 input[type="date"]::-webkit-date-and-time-value,
-input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type="time"]::-webkit-date-and-time-value{
+  /* The pseudo is shrink-to-fit and centred by the control, so text-align on
+     it alone does not always bite - it has to fill the field first. */
+  display:block;width:100%;min-width:0;text-align:left;margin:0;
+}
 input[type="date"]::-webkit-datetime-edit,
-input[type="time"]::-webkit-datetime-edit{text-align:left;padding:0}
+input[type="time"]::-webkit-datetime-edit{display:block;width:100%;text-align:left;padding:0}
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="time"]::-webkit-datetime-edit-fields-wrapper{text-align:left;padding:0}
 body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator,body:not(.theme-crystal) input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
 body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.theme-crystal input[type="time"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
 /* Alternate train views own the train content surface while their tab is
