@@ -112,21 +112,18 @@ function stableFormationLengths(rows){
    "much shorter" signal could never fire from live peers. A four-car among
    eight-cars is exactly the case the signal exists to catch, and including it
    in its own peer set was what suppressed it. */
+/* Identity, or an explicit service id when both sides carry one. Nothing else.
+   The board array always holds the very object being scored, so identity
+   covers the case this exists for, and a genuine duplicate of the same working
+   in the overlay carries the same serviceID. Inferring sameness from
+   time+operator+destination was tried and is too blunt: it collapses distinct
+   peers that merely share a scheduled minute, which empties the baseline the
+   exclusion was meant to protect. */
 function isSamePeer(service,row){
   if(row===service)return true;
   if(!row||!service)return false;
   const a=normalise(service.serviceID||service.serviceId||''),b=normalise(row.serviceID||row.serviceId||'');
-  if(a&&b)return a===b;
-  /* Without an id a departure time is the only thing that can identify the
-     same working. A missing std on either side is not evidence of sameness:
-     treating two blank times as equal made every same-operator, same-
-     destination row on a board that carries no times look like the train
-     itself, and discarded the whole peer set. */
-  const aStd=normalise(service.std),bStd=normalise(row.std);
-  if(!aStd||!bStd)return false;
-  return aStd===bStd
-    &&operatorIdentity(service)===operatorIdentity(row)
-    &&profileDestinationIdentity(service)===profileDestinationIdentity(row);
+  return !!a&&!!b&&a===b;
 }
 function comparableFormationLengths(service,rows){
   const list=(Array.isArray(rows)?rows:[]).filter(row=>Number(row&&row.length)>0&&!isSamePeer(service,row)),op=operatorIdentity(service),destination=profileDestinationIdentity(service);
