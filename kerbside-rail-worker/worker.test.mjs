@@ -182,3 +182,55 @@ test('upstream errors fail closed without leaking the key', async () => {
     runtime.restore();
   }
 });
+
+test('coalesced concurrent boards each receive a readable body', async () => {
+  const runtime = installRuntime(async () => {
+    await new Promise(resolve => setTimeout(resolve, 20));
+    return new Response(JSON.stringify(BOARD), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  });
+  try {
+    const request = () => new Request('https://example.test/departures/BHM/9', {
+      headers: { 'CF-Connecting-IP': '203.0.113.7' }
+    });
+    const [first, second] = await Promise.all([
+      routeRequest(request(), { RDM_LDB_API_KEY: API_KEY }),
+      routeRequest(request(), { RDM_LDB_API_KEY: API_KEY })
+    ]);
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    // Both awaiters used to share one Response, so the second consumed an
+    // already-disturbed body stream and fell through to the 500 handler.
+    assert.deepEqual(JSON.parse(await first.text()), BOARD);
+    assert.deepEqual(JSON.parse(await second.text()), BOARD);
+    assert.equal(runtime.state.calls.length, 1);
+  } finally {
+    runtime.restore();
+  }
+});
+
+test('a malformed percent escape is a missing route, not a Worker fault', async () => {
+  assert.equal(parseBoardPath('/departures/%'), null);
+  assert.equal(parseBoardPath('/departures/BHM/%E0%A4%A/9'), null);
+  const runtime = installRuntime(async () => new Response('{}', { status: 200 }));
+  try {
+    const response = await routeRequest(new Request('https://example.test/departures/%'), { RDM_LDB_API_KEY: API_KEY });
+    assert.equal(response.status, 404);
+    assert.equal(runtime.state.calls.length, 0);
+  } finally {
+    runtime.restore();
+  }
+});
+
+test('the header-less origin path can be closed without changing the default', async () => {
+  const runtime = installRuntime(async () => new Response(JSON.stringify(BOARD), { status: 200 }));
+  try {
+    const bare = () => new Request('https://example.test/departures/BHM/9', {
+      headers: { 'CF-Connecting-IP': '203.0.113.9' }
+    });
+    assert.equal((await routeRequest(bare(), { RDM_LDB_API_KEY: API_KEY })).status, 200);
+    const strict = await routeRequest(bare(), { RDM_LDB_API_KEY: API_KEY, REQUIRE_ORIGIN: '1' });
+    assert.equal(strict.status, 403);
+  } finally {
+    runtime.restore();
+  }
+});

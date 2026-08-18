@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='0.9.50';
+const VERSION='0.9.51';
 const REFRESH_CACHE_MS=5*60*1000;
 const REQUEST_TIMEOUT_MS=7000;
 const HISTORY_KEY='kerbside.status.history.v1';
@@ -10,6 +10,7 @@ const HISTORY_MAX_PER_SOURCE=288;
 const BUS_DATA_BASE='https://kerbside-data-zetabun.pages.dev';
 const DEFAULT_BUS_WORKER='https://kerbside-bus.adambullas.workers.dev';
 const RAIL_WORKER='https://kerbside-rail.adambullas.workers.dev';
+const MOVEMENT_WORKER='https://kerbside-train-movement.adambullas.workers.dev';
 const HUXLEY_PRIMARY='https://huxley2.azurewebsites.net';
 const HUXLEY_SECONDARY='https://hux.azurewebsites.net';
 const BANK_HOLIDAYS='https://www.gov.uk/bank-holidays.json';
@@ -123,6 +124,11 @@ async function busHealth(context){
   return memo(context,'busHealth',async()=>{const base=busWorkerBase();if(!base)return null;const value=await request(`${base}/health`,{type:'json'});return{...value,base};});
 }
 async function railHealth(context){return memo(context,'railHealth',()=>request(`${RAIL_WORKER}/health`,{type:'json'}));}
+async function movementHealth(context){return memo(context,'movementHealth',()=>request(`${MOVEMENT_WORKER}/movement/health`,{type:'json'}));}
+/* A Worker pinned to a stale entry file keeps answering happily on its own
+   terms, so the only way to notice the drift is to compare what it reports
+   against the release this page was built from. */
+function versionNote(reported){const value=String(reported||'').trim();if(!value)return{drift:true,text:'reports no version'};return value===VERSION?{drift:false,text:`version ${value}`}:{drift:true,text:`reports ${value}, expected ${VERSION}`};}
 async function busManifest(context){return memo(context,'busManifest',()=>request(`${BUS_DATA_BASE}/manifest.json?status=${Date.now()}`,{type:'json'}));}
 async function railManifest(context){return memo(context,'railManifest',()=>request(`kerbside-rail-timetable/manifest.json?status=${Date.now()}`,{type:'json'}));}
 async function workflowInfo(context){
@@ -164,6 +170,7 @@ const SOURCE_META=[
   {id:'app-pages',category:'Platform & pipelines',name:'Kerbside app / GitHub Pages',description:'The deployed app shell and release version.',critical:true},
   {id:'bus-worker',category:'Platform & pipelines',name:'Cloudflare bus Worker',description:'Protects the BODS key and proxies live bus feeds.',critical:true},
   {id:'rail-worker',category:'Platform & pipelines',name:'Cloudflare rail Worker',description:'Protects the Rail Data Marketplace key and caches Darwin boards.',critical:true},
+  {id:'movement-worker',category:'Platform & pipelines',name:'Cloudflare movement Worker',description:'Holds the Network Rail TRUST subscription and serves live train movement lookups.',critical:false},
   {id:'bus-pages',category:'Platform & pipelines',name:'Cloudflare Pages timetable store',description:'Static national bus timetable, stop and route-pattern assets.',critical:true},
   {id:'github-refresh',category:'Platform & pipelines',name:'GitHub Actions timetable refresh',description:'Scheduled job that checks and publishes Darwin timetable snapshots.',critical:true},
   {id:'google-cloud',category:'Platform & pipelines',name:'Google Cloud Darwin ingest',description:'Workload Identity + GCS timetable bucket used by the refresh job.',critical:true},
@@ -199,8 +206,9 @@ function sourceDefinitions(){
   const byId=Object.fromEntries(SOURCE_META.map(source=>[source.id,source]));
   return [
     {...byId['app-pages'],probe:async source=>{const r=await request(`VERSION?status=${Date.now()}`);if(!r.response.ok)return result(source,'down',`VERSION returned HTTP ${r.response.status}`,r.latency);const version=String(r.body||'').trim();return result(source,version===VERSION?'healthy':'degraded',version===VERSION?`Release ${version} is being served.`:`Page is serving ${version||'an unknown version'}; expected ${VERSION}.`,r.latency);}},
-    {...byId['bus-worker'],probe:async(source,context)=>{const r=await busHealth(context);if(!r)return result(source,'standby','No bus Worker is configured.',null,'Not configured');if(!r.response.ok)return result(source,'down',`Health endpoint returned HTTP ${r.response.status}`,r.latency);const body=r.body||{};if(!body.ok)return result(source,'down','Worker health response did not report ok.',r.latency);if(!body.bods)return result(source,'degraded',`Worker ${body.version||''} is reachable but its BODS secret is missing.`,r.latency);return result(source,'healthy',`Worker ${body.version||'version unknown'} reachable · BODS secret configured.`,r.latency);}},
-    {...byId['rail-worker'],probe:async(source,context)=>{const r=await railHealth(context);if(!r.response.ok)return result(source,'down',`Health endpoint returned HTTP ${r.response.status}`,r.latency);const body=r.body||{};if(!body.ok)return result(source,'down','Worker health response did not report ok.',r.latency);if(!body.ldbConfigured)return result(source,'degraded','Rail Worker is reachable but the RDM key is not configured.',r.latency);return result(source,'healthy','Rail Worker reachable · Rail Data Marketplace key configured.',r.latency);}},
+    {...byId['bus-worker'],probe:async(source,context)=>{const r=await busHealth(context);if(!r)return result(source,'standby','No bus Worker is configured.',null,'Not configured');if(!r.response.ok)return result(source,'down',`Health endpoint returned HTTP ${r.response.status}`,r.latency);const body=r.body||{};if(!body.ok)return result(source,'down','Worker health response did not report ok.',r.latency);if(!body.bods)return result(source,'degraded',`Worker ${body.version||''} is reachable but its BODS secret is missing.`,r.latency);const note=versionNote(body.version);return result(source,note.drift?'degraded':'healthy',`Worker reachable · BODS secret configured · ${note.text}.`,r.latency);}},
+    {...byId['rail-worker'],probe:async(source,context)=>{const r=await railHealth(context);if(!r.response.ok)return result(source,'down',`Health endpoint returned HTTP ${r.response.status}`,r.latency);const body=r.body||{};if(!body.ok)return result(source,'down','Worker health response did not report ok.',r.latency);if(!body.ldbConfigured)return result(source,'degraded','Rail Worker is reachable but the RDM key is not configured.',r.latency);const note=versionNote(body.version);return result(source,note.drift?'degraded':'healthy',`Rail Worker reachable · Rail Data Marketplace key configured · ${note.text}.`,r.latency);}},
+    {...byId['movement-worker'],probe:async(source,context)=>{const r=await movementHealth(context);if(!r.response.ok)return result(source,'down',`Health endpoint returned HTTP ${r.response.status}`,r.latency);const body=r.body||{};if(!body.ok)return result(source,'down','Movement Worker health response did not report ok.',r.latency);if(!body.credentialsConfigured)return result(source,'degraded','Movement Worker is reachable but Network Rail credentials are missing.',r.latency);const note=versionNote(body.version),mode=body.hibernation&&body.hibernation.mode||'unknown',cooldown=body.networkRailSessionCooldown&&body.networkRailSessionCooldown.active;if(cooldown)return result(source,'degraded',`Network Rail session cooldown active · ${note.text}.`,r.latency);return result(source,note.drift?'degraded':'healthy',`Movement Worker reachable · ${mode} · ${note.text}.`,r.latency);}},
     {...byId['bus-pages'],probe:async(source,context)=>{const r=await busManifest(context);if(!r.response.ok)return result(source,'down',`Manifest returned HTTP ${r.response.status}`,r.latency);if(!r.body||!r.body.regions)return result(source,'down','Cloudflare Pages returned an invalid timetable manifest.',r.latency);return result(source,'healthy',`Timetable store reachable${r.body.built?` · build ${formatStamp(r.body.built)}`:''}.`,r.latency);}},
     {...byId['github-refresh'],probe:async(source,context)=>{try{const info=await workflowInfo(context),health=workflowStatus(info.run);return result(source,health.status,health.detail,info.latency);}catch(error){return result(source,'degraded',`Could not read public workflow status: ${error.message||error}.`);}}},
     {...byId['google-cloud'],probe:async(source,context)=>{try{const info=await workflowInfo(context),runHealth=workflowStatus(info.run);const auth=stepByName(info.jobs,/Authenticate to Google Cloud/i),scan=stepByName(info.jobs,/Find newest complete Darwin timetable snapshot/i);if(auth&&auth.conclusion==='failure')return result(source,'down','Latest refresh could not authenticate to Google Cloud.');if(scan&&scan.conclusion==='failure')return result(source,'down','Latest refresh authenticated, but the GCS timetable snapshot check failed.');if(auth&&scan&&auth.conclusion==='success'&&scan.conclusion==='success')return result(source,runHealth.status,`GCP authentication and GCS snapshot check succeeded ${ageText(runAge(info.run))}.`);return result(source,runHealth.status==='down'?'down':'degraded',`${runHealth.detail} Google Cloud step detail is not available.`);}catch(error){return result(source,'degraded',`Google Cloud health could not be inferred: ${error.message||error}.`);}}},

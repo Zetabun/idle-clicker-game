@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.50';
+const VERSION='0.9.51';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -359,10 +359,315 @@ function installStyles(){if(document.getElementById(STYLE_ID))return;const style
 .train-movement-card{display:grid;gap:5px;margin:0 0 10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .28);border-radius:10px;background:rgb(var(--live-rgb) / .06)}
 .train-movement-card>div{display:grid;gap:2px}.train-movement-card span{color:var(--live);font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.train-movement-card strong{font-size:11px}.train-movement-card p,.train-movement-card small{margin:0;color:var(--text-dim);font-size:9.5px;line-height:1.45}.train-movement-card.movement-stale{border-color:var(--rule);background:var(--ink-3)}.train-movement-card.movement-stale span{color:var(--text-dim)}.train-movement-card.movement-warn{border-color:rgb(var(--warn-rgb) / .3);background:rgb(var(--warn-rgb) / .06)}.train-movement-card.movement-warn span{color:var(--warn)}
 .plan-movement-inline,.saved-movement-inline{padding:6px 8px;border:1px solid rgb(var(--live-rgb) / .2);border-radius:7px;background:rgb(var(--live-rgb) / .05);color:var(--live);font-size:9px;font-weight:800}.plan-movement-inline{grid-column:1/-1}.saved-movement-inline{margin-top:-3px}.plan-movement-inline.movement-stale,.saved-movement-inline.movement-stale{border-color:var(--rule);background:var(--ink-3)}.plan-movement-inline.movement-warn,.saved-movement-inline.movement-warn{border-color:rgb(var(--warn-rgb) / .25);background:rgb(var(--warn-rgb) / .05)}
-.train-calling.train-live-progress{padding-bottom:6px}.train-calling.train-live-progress,.saved-v2-timeline{max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:6px}.saved-v2-timeline{margin:2px 0 1px;padding-top:8px;border-top:1px solid var(--rule)}.train-live-progress .train-detail-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.train-progress-badge{flex:0 0 auto;padding:3px 6px;border:1px solid var(--rule);border-radius:999px;color:var(--text-mute);font-size:7.5px;letter-spacing:.06em;text-transform:uppercase}.train-progress-badge.is-live{border-color:rgb(var(--live-rgb) / .28);background:rgb(var(--live-rgb) / .07);color:var(--live)}.train-progress-badge.is-stale{background:var(--ink-3);color:var(--text-dim)}
-.train-live-progress .train-call{min-height:42px}.train-live-progress .train-call.progress-complete>i{background:var(--live);opacity:.78}.train-live-progress .train-call.progress-complete:before{background:rgb(var(--live-rgb) / .42)}.train-live-progress .train-call.progress-future>i{box-sizing:border-box;border:2px solid var(--text-mute);background:var(--ink-2)}.train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle){width:11px;height:11px;margin-top:2px;margin-left:-2px;background:var(--live);box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .12)}
-.train-progress-marker{min-height:54px!important;align-items:flex-start}.train-progress-marker:before{top:25px!important}.train-progress-marker>i.train-progress-vehicle{display:grid;place-items:center;flex:0 0 auto;width:24px;height:24px;margin:-2px 0 0 -6px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .13);opacity:1}.train-progress-marker>i.train-progress-vehicle svg{width:14px;height:14px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.train-progress-marker.movement-stale>i.train-progress-vehicle{background:var(--text-dim);box-shadow:0 0 0 3px var(--ink-2)}.train-progress-marker b{color:var(--live)!important;font-weight:800!important}.train-progress-marker.movement-stale b{color:var(--text-dim)!important}.train-progress-marker small{max-width:48rem;line-height:1.45}.train-progress-now{display:block;margin-top:3px;color:var(--live);font-size:9px;font-style:normal;font-weight:700;line-height:1.35}.train-progress-generated{margin:2px 0 10px;padding:10px 11px;border:1px solid rgb(var(--live-rgb) / .22);border-radius:10px;background:rgb(var(--live-rgb) / .035)}
-@media(max-width:820px){.train-movement-card{padding:9px;margin-bottom:8px}.train-movement-inline{font-size:8.5px}.train-progress-generated{padding:9px}.train-progress-marker small{font-size:9px}.train-calling.train-live-progress,.saved-v2-timeline{max-height:min(46vh,360px)}}
+/* ============================================================
+   Live journey progress timeline
+   ------------------------------------------------------------
+   One rail, drawn per row so it survives insertion of the vehicle
+   marker anywhere in the list. Everything reads off the theme
+   tokens, so the two variants differ only where a dark-theme
+   treatment does not translate: glow becomes ink on Crystal, and
+   translucent fills become solid ones that keep their contrast on
+   white.
+   ============================================================ */
+
+.train-calling.train-live-progress{
+  --rail-x:7px;              /* rail centre, from the row's left edge */
+  --rail-w:2px;
+  --dot:9px;
+  --dot-live:13px;
+  --veh:26px;
+  position:relative;
+  padding:2px 8px 6px 2px;
+}
+
+/* Scroll surface. The fade tells you there is more journey above and
+   below without spending a scrollbar on it. */
+.train-calling.train-live-progress,
+.saved-v2-timeline{
+  max-height:min(52vh,430px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:var(--rule) transparent;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14px,#000 calc(100% - 16px),transparent 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 14px,#000 calc(100% - 16px),transparent 100%);
+}
+.saved-v2-timeline{margin:2px 0 1px;padding-top:8px;border-top:1px solid var(--rule)}
+
+/* ---------- header ---------- */
+
+.train-live-progress .train-detail-title{
+  position:sticky;top:0;z-index:4;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 0 10px;padding:2px 0 8px;
+  background:linear-gradient(180deg,var(--ink-2) 62%,rgb(var(--ink-2-rgb) / 0));
+  color:var(--text-mute);font-size:9px;letter-spacing:.12em;
+}
+
+.train-progress-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  flex:0 0 auto;padding:4px 9px 4px 7px;
+  border:1px solid var(--rule);border-radius:999px;
+  background:var(--ink-3);color:var(--text-mute);
+  font-size:7.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  white-space:nowrap;
+}
+.train-progress-badge::before{
+  content:'';width:5px;height:5px;border-radius:50%;
+  background:currentColor;opacity:.85;
+}
+.train-progress-badge.is-live{
+  border-color:rgb(var(--live-rgb) / .42);
+  background:rgb(var(--live-rgb) / .1);
+  color:var(--live);
+}
+.train-progress-badge.is-live::before{
+  background:var(--live);opacity:1;
+  box-shadow:0 0 0 0 rgb(var(--live-rgb) / .65);
+  animation:kerbside-progress-beacon 2.1s ease-out infinite;
+}
+.train-progress-badge.is-stale{
+  border-color:var(--rule);background:var(--ink-3);color:var(--text-dim);
+}
+
+@keyframes kerbside-progress-beacon{
+  0%{box-shadow:0 0 0 0 rgb(var(--live-rgb) / .6)}
+  70%{box-shadow:0 0 0 6px rgb(var(--live-rgb) / 0)}
+  100%{box-shadow:0 0 0 0 rgb(var(--live-rgb) / 0)}
+}
+
+/* ---------- the rail ---------- */
+
+.train-live-progress .train-call{
+  position:relative;
+  display:flex;gap:13px;align-items:flex-start;
+  min-height:46px;padding:0 0 2px 3px;
+}
+/* Segment of rail below this stop. Length runs to the next dot, so the
+   line stays continuous however the list is reordered. */
+.train-live-progress .train-call::before{
+  content:'';position:absolute;
+  left:var(--rail-x);top:15px;bottom:-2px;
+  width:var(--rail-w);margin-left:calc(var(--rail-w) / -2);
+  border-radius:var(--rail-w);
+  background:var(--rule);
+}
+.train-live-progress .train-call:last-child::before{display:none}
+
+.train-live-progress .train-call.progress-complete::before{
+  background:linear-gradient(180deg,var(--live),rgb(var(--live-rgb) / .55));
+}
+.train-live-progress .train-call.progress-current::before{
+  background:linear-gradient(180deg,rgb(var(--live-rgb) / .5),var(--rule));
+}
+.train-live-progress .train-call.progress-future::before{
+  background:repeating-linear-gradient(180deg,var(--rule) 0 3px,transparent 3px 7px);
+}
+
+/* ---------- station dots ---------- */
+
+.train-live-progress .train-call>i{
+  position:relative;z-index:2;flex:0 0 auto;
+  box-sizing:border-box;
+  width:var(--dot);height:var(--dot);margin-top:11px;
+  margin-left:calc(var(--rail-x) - (var(--dot) / 2) - 3px);
+  border-radius:50%;
+  background:var(--ink-2);
+  transition:width .18s ease,height .18s ease;
+}
+.train-live-progress .train-call.progress-complete>i{
+  background:var(--live);
+  box-shadow:0 0 0 3px var(--ink-2),0 0 10px rgb(var(--live-rgb) / .5);
+}
+.train-live-progress .train-call.progress-future>i{
+  /* A stop still to come is de-emphasised, not decorative: --dot-idle put the
+     ring at 2.9:1 on the dark panel, under the 3:1 a UI mark needs to stay
+     perceivable. --text-mute reads as quiet in both themes and clears it. */
+  border:2px solid var(--text-mute);
+  background:var(--ink-2);
+  box-shadow:0 0 0 3px var(--ink-2);
+}
+.train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle){
+  width:var(--dot-live);height:var(--dot-live);
+  margin-top:9px;
+  margin-left:calc(var(--rail-x) - (var(--dot-live) / 2) - 3px);
+  background:var(--live);
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .2),0 0 16px rgb(var(--live-rgb) / .55);
+  animation:kerbside-progress-halo 2.4s ease-out infinite;
+}
+.train-live-progress .train-call.cancelled>i{
+  background:var(--warn)!important;
+  border-color:var(--warn)!important;
+  box-shadow:0 0 0 3px var(--ink-2),0 0 10px rgb(var(--warn-rgb) / .45)!important;
+  animation:none!important;
+}
+
+@keyframes kerbside-progress-halo{
+  0%{box-shadow:0 0 0 3px var(--ink-2),0 0 0 4px rgb(var(--live-rgb) / .34),0 0 14px rgb(var(--live-rgb) / .5)}
+  70%{box-shadow:0 0 0 3px var(--ink-2),0 0 0 11px rgb(var(--live-rgb) / 0),0 0 14px rgb(var(--live-rgb) / .5)}
+  100%{box-shadow:0 0 0 3px var(--ink-2),0 0 0 4px rgb(var(--live-rgb) / 0),0 0 14px rgb(var(--live-rgb) / .5)}
+}
+
+/* ---------- row text ---------- */
+
+.train-live-progress .train-call span{display:flex;flex-direction:column;gap:1px;padding-top:5px;min-width:0}
+.train-live-progress .train-call b{
+  font-size:12.5px;font-weight:650;color:var(--text);letter-spacing:-.01em;line-height:1.25;
+}
+.train-live-progress .train-call.progress-future b{color:var(--text-dim);font-weight:600}
+.train-live-progress .train-call.progress-complete b{color:var(--text-dim)}
+.train-live-progress .train-call.progress-current b{color:var(--text)}
+.train-live-progress .train-call.cancelled b{color:var(--warn);text-decoration:line-through;text-decoration-thickness:1px}
+.train-live-progress .train-call small{
+  margin-top:0;color:var(--text-dim);font-size:10.5px;font-variant-numeric:tabular-nums;line-height:1.4;
+}
+
+/* The live note is the one line that should catch the eye. */
+.train-progress-now{
+  display:block;width:fit-content;max-width:100%;
+  margin-top:5px;padding:4px 9px;
+  border:1px solid rgb(var(--live-rgb) / .3);border-radius:7px;
+  background:rgb(var(--live-rgb) / .09);
+  color:var(--live);font-size:10px;font-style:normal;font-weight:700;line-height:1.4;
+}
+
+/* ---------- the vehicle ---------- */
+
+.train-progress-marker{min-height:58px!important;align-items:flex-start}
+.train-progress-marker::before{top:28px!important}
+/* Size and offset both derive from --veh so the marker can only ever be
+   centred on the rail. Hard-coding the pair in two places let a breakpoint
+   change one and not the other, which put the train 1.5px off its own line. */
+.train-progress-marker>i.train-progress-vehicle{
+  display:grid;place-items:center;
+  position:relative;z-index:3;flex:0 0 auto;
+  box-sizing:border-box;
+  width:var(--veh)!important;height:var(--veh)!important;
+  margin:2px 0 0 calc(var(--rail-x) - (var(--veh) / 2) - 3px)!important;
+  border:none;border-radius:50%;
+  background:var(--live);
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--live-rgb) / .18),0 0 20px rgb(var(--live-rgb) / .5);
+  animation:none;
+}
+.train-progress-marker>i.train-progress-vehicle svg{
+  width:14px;height:14px;fill:none;stroke:var(--on-live,var(--ink));
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}
+.train-progress-marker span{padding-top:6px}
+.train-progress-marker b{color:var(--live)!important;font-weight:800!important;font-size:12.5px!important}
+.train-progress-marker small{max-width:48rem;color:var(--text-dim)!important;line-height:1.45}
+
+/* Between two reports the position is interpolated, so the rail below the
+   marker is drawn as a travelling dash rather than a solid claim. */
+.train-progress-marker.movement-live::before{
+  background:repeating-linear-gradient(180deg,var(--live) 0 5px,rgb(var(--live-rgb) / .12) 5px 11px)!important;
+  background-size:100% 11px!important;
+  animation:kerbside-progress-flow 1.05s linear infinite;
+}
+@keyframes kerbside-progress-flow{from{background-position:0 0}to{background-position:0 11px}}
+
+.train-progress-marker.movement-stale>i.train-progress-vehicle{
+  background:var(--text-dim);
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 6px rgb(var(--rule-rgb) / .5);
+}
+.train-progress-marker.movement-stale b{color:var(--text-dim)!important}
+.train-progress-marker.movement-stale::before{
+  background:repeating-linear-gradient(180deg,var(--rule) 0 4px,transparent 4px 9px)!important;
+  animation:none;
+}
+
+/* ---------- planner / saved surfaces ---------- */
+
+.train-progress-generated{
+  margin:2px 0 10px;padding:11px 12px;
+  border:1px solid rgb(var(--live-rgb) / .24);border-radius:12px;
+  background:rgb(var(--live-rgb) / .045);
+}
+.train-progress-generated .train-detail-title{
+  background:linear-gradient(180deg,var(--ink-2) 62%,rgb(var(--ink-2-rgb) / 0));
+}
+
+/* ============================================================
+   Crystal variant
+   ------------------------------------------------------------
+   Glow reads as smudge on white, so every shadow becomes either a
+   crisp ring or nothing, translucent tints become opaque, and the
+   accent carries the emphasis on its own.
+   ============================================================ */
+
+.theme-crystal .train-live-progress .train-call.progress-complete>i{
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 4px rgb(var(--live-rgb) / .18);
+}
+.theme-crystal .train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle){
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 5px rgb(var(--live-rgb) / .26);
+}
+.theme-crystal .train-live-progress .train-call.cancelled>i{
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 4px rgb(var(--warn-rgb) / .2)!important;
+}
+@media (prefers-reduced-motion:no-preference){
+  .theme-crystal .train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle){
+    animation:kerbside-progress-halo-light 2.4s ease-out infinite;
+  }
+}
+@keyframes kerbside-progress-halo-light{
+  0%{box-shadow:0 0 0 3px var(--ink-2),0 0 0 4px rgb(var(--live-rgb) / .3)}
+  70%{box-shadow:0 0 0 3px var(--ink-2),0 0 0 11px rgb(var(--live-rgb) / 0)}
+  100%{box-shadow:0 0 0 3px var(--ink-2),0 0 0 4px rgb(var(--live-rgb) / 0)}
+}
+
+.theme-crystal .train-progress-marker>i.train-progress-vehicle{
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 5px rgb(var(--live-rgb) / .22),0 2px 6px rgb(var(--shadow-rgb) / .18);
+}
+.theme-crystal .train-progress-marker>i.train-progress-vehicle svg{stroke:#FFFFFF}
+.theme-crystal .train-progress-marker.movement-stale>i.train-progress-vehicle{
+  background:var(--text-dim);
+  box-shadow:0 0 0 3px var(--ink-2),0 0 0 5px rgb(var(--rule-rgb) / .55);
+}
+
+.theme-crystal .train-progress-badge{
+  background:var(--ink-2);box-shadow:0 1px 2px rgb(var(--shadow-rgb) / .07);
+}
+.theme-crystal .train-progress-badge.is-live{
+  border-color:rgb(var(--live-rgb) / .38);background:rgb(var(--live-rgb) / .08);
+}
+.theme-crystal .train-progress-now{
+  border-color:rgb(var(--live-rgb) / .32);
+  background:rgb(var(--live-rgb) / .07);
+  box-shadow:0 1px 2px rgb(var(--shadow-rgb) / .06);
+}
+.theme-crystal .train-live-progress .train-call.progress-complete::before{
+  background:linear-gradient(180deg,var(--live),rgb(var(--live-rgb) / .45));
+}
+.theme-crystal .train-progress-generated{
+  background:var(--ink-2);
+  box-shadow:0 1px 3px rgb(var(--shadow-rgb) / .08);
+}
+
+/* ---------- motion and density ---------- */
+
+@media (prefers-reduced-motion:reduce){
+  .train-progress-badge.is-live::before,
+  .train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle),
+  .theme-crystal .train-live-progress .train-call.progress-current>i:not(.train-progress-vehicle),
+  .train-progress-marker.movement-live::before{animation:none!important}
+}
+
+@media (max-width:820px){
+  .train-movement-card{padding:9px;margin-bottom:8px}
+  .train-movement-inline{font-size:8.5px}
+  .train-calling.train-live-progress,.saved-v2-timeline{max-height:min(46vh,360px)}
+  /* --veh deliberately does not shrink here. The marker is sized and centred
+     from the same token, so keeping it constant guarantees it stays on the
+     rail at every width, and 26px is a better touch target on a phone. */
+  .train-calling.train-live-progress{--rail-x:6px;padding-right:4px}
+  .train-live-progress .train-call{min-height:42px;gap:11px}
+  .train-live-progress .train-call b{font-size:12px}
+  .train-live-progress .train-call small{font-size:10px}
+  .train-progress-now{font-size:9.5px;padding:3px 8px}
+  .train-progress-marker small{font-size:9.5px}
+  .train-progress-generated{padding:9px}
+}
 `;document.head.appendChild(style);}
 function scheduleRefresh(force=false){setTimeout(()=>refresh({force}).catch(()=>{}),force?0:120);}
 function install(){

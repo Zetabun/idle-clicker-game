@@ -116,3 +116,24 @@ test('DfT aggregate benchmark can backtest forecast bands without user feedback'
   const service={std:'08:15',operator:'CrossCountry',operatorCode:'XC',isCancelled:false,scheduledOnly:true,origin:[{crs:'BHM'}],destination:[{crs:'BRI'}],displayDestination:{crs:'BRI'},subsequentCallingPoints:[{callingPoint:[{crs:'BRI'}]}],previousCallingPoints:[]};
   const summary=v4.benchmarkServices([service],station,date);assert.equal(summary.count,1,summary);assert.equal(summary.aggregateOnly,true);assert.ok(summary.withinOne>=0&&summary.withinOne<=1,summary);
 });
+
+test('a short formation among longer comparable peers still raises the strongest signal',()=>{
+  const c=load(),v4=c.window.__KERBSIDE_FORECAST_V4__,date=new FixedDate('2026-08-12T08:00:00Z');
+  const station={name:'Birmingham New Street',crs:'BHM'};
+  const row=(std,length)=>({std,length,operatorCode:'AW',destination:[{crs:'MAN',locationName:'Manchester Piccadilly'}]});
+  // Four cars where every comparable peer runs eight. The peer set is stable
+  // once the scored train is excluded from it, so the median is 8 and the
+  // ratio is 0.5 - inside the <= .65 band.
+  const services=[row('08:00',4),row('08:20',8),row('08:40',8),row('09:00',8)];
+  const short=v4.formationSignal(null,services[0],services,date,station);
+  assert.equal(short.amount,.8,short);
+  assert.match(short.reasons[0],/much shorter/);
+
+  // The train's own length must not drag the baseline it is measured against.
+  const eight=v4.formationSignal(null,services[1],services,date,station);
+  assert.equal(eight.amount,0,eight);
+
+  // A genuinely mixed board still declines to compare incomparable stock.
+  const mixed=[row('08:00',4),{...row('08:20',9),operatorCode:'VT'},{...row('08:40',11),operatorCode:'VT'},{...row('09:00',5),operatorCode:'XC'}];
+  assert.equal(v4.formationSignal(null,mixed[0],mixed,date,station).amount,0);
+});

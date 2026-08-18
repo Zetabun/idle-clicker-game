@@ -106,8 +106,23 @@ function stableFormationLengths(rows){
   const min=lengths[0],max=lengths[lengths.length-1];
   return min>0&&max/min<=1.5?lengths:[];
 }
+/* The train being scored must not sit in its own baseline. It did, and with
+   the stability gate below requiring max/min <= 1.5, that put a hard floor of
+   1/1.5 on length/median - so ratio <= .65 became unreachable and the strongest
+   "much shorter" signal could never fire from live peers. A four-car among
+   eight-cars is exactly the case the signal exists to catch, and including it
+   in its own peer set was what suppressed it. */
+function isSamePeer(service,row){
+  if(row===service)return true;
+  if(!row||!service)return false;
+  const a=normalise(service.serviceID||service.serviceId||''),b=normalise(row.serviceID||row.serviceId||'');
+  if(a&&b)return a===b;
+  return normalise(service.std)===normalise(row.std)
+    &&operatorIdentity(service)===operatorIdentity(row)
+    &&profileDestinationIdentity(service)===profileDestinationIdentity(row);
+}
 function comparableFormationLengths(service,rows){
-  const list=(Array.isArray(rows)?rows:[]).filter(row=>Number(row&&row.length)>0),op=operatorIdentity(service),destination=profileDestinationIdentity(service);
+  const list=(Array.isArray(rows)?rows:[]).filter(row=>Number(row&&row.length)>0&&!isSamePeer(service,row)),op=operatorIdentity(service),destination=profileDestinationIdentity(service);
   if(op!=='unknown'&&destination!=='unknown'){
     const exact=stableFormationLengths(list.filter(row=>operatorIdentity(row)===op&&profileDestinationIdentity(row)===destination));
     if(exact.length>=3)return exact;

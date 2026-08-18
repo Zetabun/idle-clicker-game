@@ -1,6 +1,6 @@
 # Deployed by .github/workflows/deploy-kerbside-train-movement-worker.yml
 name = "kerbside-train-movement"
-main = "worker-v0.9.37.js"
+main = "worker-entry.js"
 compatibility_date = "2026-08-01"
 workers_dev = true
 

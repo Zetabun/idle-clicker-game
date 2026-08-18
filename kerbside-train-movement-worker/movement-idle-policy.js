@@ -58,14 +58,21 @@ export function checkpointChunkKey(slot, index) {
   return `${IDLE_CHECKPOINT_PREFIX}${safeSlot}:${String(safeIndex).padStart(3, '0')}`;
 }
 
+/* Returns {chunks, dropped}. A single snapshot too large to fit one storage
+   value used to throw, which failed writeIdleCheckpoint, which made enterIdle
+   reconnect and retry a minute later - forever. One malformed train could
+   therefore pin the TRUST socket open and defeat hibernation entirely. Losing
+   that one snapshot is strictly better than never checkpointing again, so it
+   is dropped and counted instead. */
 export function splitCheckpointSnapshots(snapshots, maxBytes = IDLE_CHECKPOINT_MAX_VALUE_BYTES) {
   const source = Array.isArray(snapshots) ? snapshots.filter(Boolean) : [];
   const limit = Math.max(1024, Math.floor(Number(maxBytes) || IDLE_CHECKPOINT_MAX_VALUE_BYTES));
-  if (!source.length) return [];
+  if (!source.length) return { chunks: [], dropped: 0 };
 
   const chunks = [];
   let rows = [];
   let bytes = 2;
+  let dropped = 0;
 
   const flush = () => {
     if (!rows.length) return;
@@ -75,14 +82,16 @@ export function splitCheckpointSnapshots(snapshots, maxBytes = IDLE_CHECKPOINT_M
   };
 
   for (const snapshot of source) {
-    const row = JSON.stringify(snapshot);
+    let row;
+    try { row = JSON.stringify(snapshot); } catch { dropped += 1; continue; }
+    if (typeof row !== 'string') { dropped += 1; continue; }
     const rowBytes = encoder.encode(row).byteLength;
-    if (rowBytes + 2 > limit) throw new RangeError('Idle checkpoint snapshot exceeds maximum value size');
+    if (rowBytes + 2 > limit) { dropped += 1; continue; }
     const nextBytes = bytes + rowBytes + (rows.length ? 1 : 0);
     if (rows.length && nextBytes > limit) flush();
     rows.push(row);
     bytes += rowBytes + (rows.length > 1 ? 1 : 0);
   }
   flush();
-  return chunks;
+  return { chunks, dropped };
 }

@@ -1,2 +1,10 @@
 # Node.js dependencies
 node_modules/
+
+# Python bytecode. Eighteen .pyc files were tracked before this rule existed.
+__pycache__/
+*.py[cod]
+
+# Local tooling noise
+.DS_Store
+Thumbs.db

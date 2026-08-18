@@ -139,8 +139,8 @@ test('20,000 ordinary cold movements make zero persistence decisions', () => {
   assert.equal(writes, 0);
 });
 
-test('0.9.36 wrapper keeps the hot movement path free of direct storage mutation', () => {
-  const source = fs.readFileSync(new URL('./worker-v0.9.36.js', import.meta.url), 'utf8');
+test('deployed entry keeps the hot movement path free of direct storage mutation', () => {
+  const source = fs.readFileSync(new URL('./worker-entry.js', import.meta.url), 'utf8');
   assert.match(source, /shouldUseColdPath\(message, this\.isHot\(trainId, now\)\)/);
   assert.match(source, /promoteColdSnapshot\(snapshot, CORPUS\)/);
   assert.match(source, /ctx\.storage\.put\(NETWORK_RAIL_SESSION_COOLDOWN_KEY/,

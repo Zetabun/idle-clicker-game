@@ -48,7 +48,7 @@ import {
   splitCheckpointSnapshots
 } from './movement-idle-policy.js';
 
-const VERSION = '0.9.50';
+const VERSION = '0.9.51';
 const STOMP_HOST = 'publicdatafeeds.networkrail.co.uk';
 const STOMP_PORT = 61618;
 const STOMP_TOPIC = '/topic/TRAIN_MVT_ALL_TOC';
@@ -59,6 +59,7 @@ const HEARTBEAT_MS = 15 * 1000;
 const CONNECT_TIMEOUT_MS = 12 * 1000;
 const SNAPSHOT_RETENTION_MS = 36 * 60 * 60 * 1000;
 const MAX_LOOKUP_REFS = 60;
+const MAX_CHECKPOINT_RETRIES = 5;
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_DEFAULT = 180;
 const RATE_BUCKETS = new Map();
@@ -109,9 +110,18 @@ function allowedOrigin(request, env) {
   if (!origin) return configured[0] || '*';
   return configured.includes('*') || configured.includes(origin) ? origin : '';
 }
+export function requireOriginHeader(env) {
+  return /^(?:1|true|yes)$/i.test(text(env && env.REQUIRE_ORIGIN));
+}
 function requestOriginAllowed(request, env) {
   const origin = request.headers.get('Origin') || '';
-  if (!origin) return true;
+  // A browser always sends Origin cross-origin, so a request without one is
+  // either same-origin or not a browser. Allowing it keeps the deploy
+  // workflow's curl health checks working, but it also means the allowlist is
+  // not by itself a control on Network Rail session usage - the per-IP rate
+  // limit is. Set REQUIRE_ORIGIN=1 to close the header-less path once nothing
+  // depends on it.
+  if (!origin) return !requireOriginHeader(env);
   const configured = configuredOrigins(env);
   return configured.includes('*') || configured.includes(origin);
 }
@@ -246,13 +256,15 @@ export class TrainMovementHub extends DurableObject {
       lastCheckpointAt: 0,
       checkpointSnapshots: 0,
       checkpointChunks: 0,
-      restoredSnapshots: 0
+      restoredSnapshots: 0,
+      uncheckpointed: false
     };
     this.storageStats = {
       mode: 'memory-first', writes: 0, writeFailures: 0, recoveryDropped: 0,
-      checkpointWrites: 0, checkpointWriteFailures: 0,
+      checkpointWrites: 0, checkpointWriteFailures: 0, checkpointDropped: 0,
       lastFlushAt: 0, lastWriteError: '', legacyRestored: 0, recoveryRestored: 0, idleRestored: 0
     };
+    this.checkpointRetries = 0;
 
     this.sql.exec(`CREATE TABLE IF NOT EXISTS snapshots (
       train_id TEXT PRIMARY KEY,
@@ -284,8 +296,23 @@ export class TrainMovementHub extends DurableObject {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     )`);
+    this.legacySqlPresent = this.detectLegacySqlRows();
     this.restoreStatus();
     this.ctx.blockConcurrencyWhile(() => this.restoreRecoveryState());
+  }
+
+  /* These tables are read-only survivors of the pre-0.9.34 storage model. No
+     code path writes them any more, so a Durable Object created since then has
+     them empty forever and every read is a guaranteed miss billed as
+     rows_read. Decide once, at construction, whether any legacy row exists;
+     every later read is gated on the answer. */
+  detectLegacySqlRows() {
+    for (const table of ['snapshots', 'service_index', 'head_fallback_index', 'origin_fallback_index']) {
+      try {
+        if ([...this.sql.exec(`SELECT 1 FROM ${table} LIMIT 1`)].length) return true;
+      } catch { return false; }
+    }
+    return false;
   }
 
   restoreStatus() {
@@ -402,7 +429,7 @@ export class TrainMovementHub extends DurableObject {
   async restoreRecoveryState() {
     const now = Date.now(), cutoff = now - RECOVERY_RETENTION_MS;
     const idle = await this.restoreIdleCheckpoint();
-    if (!idle) {
+    if (!idle && this.legacySqlPresent) {
       try {
         for (const row of this.sql.exec(
           'SELECT train_id,payload,updated_at FROM snapshots WHERE updated_at >= ? ORDER BY updated_at DESC LIMIT ?',
@@ -574,17 +601,24 @@ export class TrainMovementHub extends DurableObject {
       return true;
     }
 
-    let chunks;
-    try { chunks = splitCheckpointSnapshots(snapshots); }
-    catch (error) {
+    let chunks, dropped = 0;
+    try {
+      const split = splitCheckpointSnapshots(snapshots);
+      chunks = split.chunks;
+      dropped = split.dropped;
+    } catch (error) {
       this.storageStats.checkpointWriteFailures += 1;
       this.storageStats.lastWriteError = `Idle checkpoint encode: ${safeMessage(error)}`;
       return false;
     }
+    this.storageStats.checkpointDropped = dropped;
     if (chunks.length > 128) {
-      this.storageStats.checkpointWriteFailures += 1;
-      this.storageStats.lastWriteError = `Idle checkpoint requires too many chunks: ${chunks.length}`;
-      return false;
+      // Keep the newest chunks that do fit rather than refusing to checkpoint
+      // at all. checkpointSnapshots() is already sorted newest first, so this
+      // sheds the oldest recoveries and still lets the object hibernate.
+      this.storageStats.checkpointDropped += chunks.length - 128;
+      this.storageStats.lastWriteError = `Idle checkpoint truncated to 128 chunks from ${chunks.length}`;
+      chunks = chunks.slice(0, 128);
     }
 
     const slot = alternateCheckpointSlot(this.idleCheckpoint.slot);
@@ -661,12 +695,22 @@ export class TrainMovementHub extends DurableObject {
       }
       await this.maybeFlushRecovery(true);
       const checkpointed = await this.writeIdleCheckpoint(Date.now());
-      if (!checkpointed) {
+      if (!checkpointed && this.checkpointRetries < MAX_CHECKPOINT_RETRIES) {
+        // Reconnecting keeps the in-memory snapshots current while storage
+        // recovers, but only for a bounded number of attempts. Retrying
+        // indefinitely held the TRUST socket open through a persistent storage
+        // fault, which is the exact cost hibernation exists to avoid.
+        this.checkpointRetries += 1;
         try { await this.ensureConnected(); } catch (error) { await this.connectionFailed(error); return false; }
         await this.setNextAlarm(Date.now() + Math.min(DEMAND_TTL_MS, 60_000));
         this.idleStats.mode = 'checkpoint-retry';
         return false;
       }
+      this.idleStats.uncheckpointed = !checkpointed;
+      if (!checkpointed) {
+        this.storageStats.lastWriteError = `Hibernating without a checkpoint after ${this.checkpointRetries} failed attempts`;
+      }
+      this.checkpointRetries = 0;
       if (this.hasDemand()) {
         await this.ensureConnected();
         await this.scheduleActiveAlarm();
@@ -776,7 +820,8 @@ export class TrainMovementHub extends DurableObject {
         checkpointAt: this.idleStats.lastCheckpointAt || null,
         checkpointSnapshots: this.idleStats.checkpointSnapshots || 0,
         checkpointChunks: this.idleStats.checkpointChunks || 0,
-        restoredSnapshots: this.idleStats.restoredSnapshots || 0
+        restoredSnapshots: this.idleStats.restoredSnapshots || 0,
+        uncheckpointed: !!this.idleStats.uncheckpointed
       },
       storage: {
         ...this.storageStats,
@@ -796,6 +841,12 @@ export class TrainMovementHub extends DurableObject {
     if (!id) return null;
     const memory = this.liveSnapshots.get(id) || this.recoveredSnapshots.get(id);
     if (memory) return memory;
+    // Storage went memory-first in 0.9.34 and nothing has written these tables
+    // since, so on any Durable Object created after that they are permanently
+    // empty. This is the hot path - persistMovementBatch calls it for every
+    // train in every TRUST batch - and a SELECT per miss was billing rows_read
+    // for a guaranteed empty result. Probe once, then stop asking.
+    if (!this.legacySqlPresent) return null;
     const rows = [...this.sql.exec('SELECT payload FROM snapshots WHERE train_id = ?', id)];
     if (!rows[0] || !rows[0].payload) return null;
     try {
@@ -816,17 +867,17 @@ export class TrainMovementHub extends DurableObject {
       if (ref.kind === 'train') trainId = ref.value;
       else if (ref.kind === 'uid') {
         trainId = this.uniqueMemory(this.memoryServiceIndex, key);
-        if (!trainId) {
-          const rows = key ? [...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?', key)] : [];
+        if (!trainId && key && this.legacySqlPresent) {
+          const rows = [...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?', key)];
           trainId = rows[0] && rows[0].train_id || '';
         }
       } else if (ref.kind === 'head') {
         trainId = this.uniqueMemory(this.memoryHeadIndex, key);
-        if (!trainId) {
-          const rows = key ? [...this.sql.exec('SELECT train_id FROM service_index WHERE key = ?', key)] : [];
-          trainId = rows[0] && rows[0].train_id || '';
-        }
-        if (!trainId && key) {
+        // The head fallback used to also query service_index. lookupIndexKey
+        // namespaces uid keys as "service:" and head keys as "head:", so that
+        // query could never match - it only cost a read. head_fallback_index
+        // is the table that actually holds these keys.
+        if (!trainId && key && this.legacySqlPresent) {
           const rows = [...this.sql.exec('SELECT train_id FROM head_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', key)];
           if (rows.length === 1) trainId = rows[0].train_id || '';
         }
@@ -835,7 +886,7 @@ export class TrainMovementHub extends DurableObject {
         for (const candidateKey of originLookupKeys(ref, date)) {
           for (const id of this.memoryOriginIndex.get(candidateKey) || []) candidates.add(id);
           if (candidates.size > 1) break;
-          if (!candidates.size) {
+          if (!candidates.size && this.legacySqlPresent) {
             for (const row of this.sql.exec('SELECT train_id FROM origin_fallback_index WHERE key = ? ORDER BY updated_at DESC LIMIT 2', candidateKey)) {
               if (row && row.train_id) candidates.add(row.train_id);
               if (candidates.size > 1) break;

@@ -68,7 +68,7 @@ function health(request, env) {
     ok: true,
     service: 'kerbside-live',
     role: 'live-only',
-    version: '0.9.50',
+    version: '0.9.51',
     bods: Boolean(env.BODS_KEY),
     matchedGtfsRt: Boolean(env.BODS_KEY),
     maxBoundingBoxSpan: MAX_BBOX_SPAN,
@@ -444,9 +444,19 @@ function configuredOrigins(env) {
     .filter(Boolean);
 }
 
+export function requireOriginHeader(env) {
+  return /^(?:1|true|yes)$/i.test(String(env && env.REQUIRE_ORIGIN || ''));
+}
+
 function requestOriginAllowed(request, env) {
   const origin = request.headers.get('Origin') || '';
-  if (!origin) return true;
+  // A browser always sends Origin cross-origin, so a request without one is
+  // either same-origin or not a browser. Allowing it keeps same-origin fetches
+  // and the deploy workflow's curl checks working, but it also means the
+  // allowlist is not by itself a control on BODS key usage - the per-IP rate
+  // limit is. Set REQUIRE_ORIGIN=1 to close the header-less path once nothing
+  // depends on it.
+  if (!origin) return !requireOriginHeader(env);
   const configured = configuredOrigins(env);
   return configured.includes('*') || configured.includes(origin);
 }

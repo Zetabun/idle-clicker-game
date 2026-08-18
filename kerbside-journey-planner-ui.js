@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.50';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.50';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.50';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.50';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.51';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.51';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.51';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.51';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -162,6 +162,14 @@ async function stationDataFetch(input,init){
     if(!trainDateIsToday())return futureTimetableResponse(departure);
     const official=hostedRailUrl(url);
     stationState.hostedRailBridges++;notifyStationState();
+    /* Bridging to the official Worker rebuilt the call from the URL alone. When
+       the caller passed a Request rather than (url,init) - which is what an
+       abortable board refresh does - init is undefined, so the abort signal and
+       headers were dropped and cancelling a board left its bridged request
+       running. Carry the original Request across instead. */
+    if(typeof Request!=='undefined'&&input instanceof Request&&!init){
+      return upstreamFetch(new Request(official.toString(),input));
+    }
     return upstreamFetch(official.toString(),init);
   }
   if(!query)return upstreamFetch(input,init);

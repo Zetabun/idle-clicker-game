@@ -718,7 +718,12 @@ const PLAN_PREF_KEY='kerbside.rail.plan.preference.v1';
 const PLAN_CONSTRAINT_KEY='kerbside.rail.plan.constraints.v1';
 const PLAN_SAVED_KEY='kerbside.rail.plan.saved.v1';
 const PLAN_SAVED_META_KEY='kerbside.rail.plan.saved-meta.v2';
+/* Ordered cheapest-to-lose first. The original list held only the small rail
+   caches, which between them rarely account for the quota - the stop and road
+   geometry caches are the megabyte-scale entries, so a genuine exhaustion shed
+   the user's event and forecast data and then failed anyway. */
 const PLAN_RECLAIMABLE_CACHE_PATTERNS=[/^kerbside\.rail\.wikidata\./,/^kerbside\.rail\.fixtures\./,/^kerbside\.rail\.forecast\.v\d+\.calendar(?:\.|$)/];
+const PLAN_RECLAIMABLE_BULK_PATTERNS=[/^kerbside\.road\.v\d+\./,/^kerbside\.stops\.v\d+\./];
 const PLAN_RECLAIMABLE_DERIVED_KEYS=['kerbside.rail.crowding.v2','kerbside.rail.forecast.accuracy.v1'];
 const PLAN_BUFFER_OPTIONS=new Set([0,5,10,15]);
 const PLAN_MAX_CANDIDATES=72;
@@ -764,6 +769,10 @@ function planReclaimableCacheStorage(){
   let removed=0;for(const key of planStorageKeys()){if(!PLAN_RECLAIMABLE_CACHE_PATTERNS.some(pattern=>pattern.test(key)))continue;try{const value=localStorage.getItem(key);removed+=String(value||'').length;localStorage.removeItem(key);}catch(error){}}
   return removed;
 }
+function planReclaimBulkCacheStorage(){
+  let removed=0;for(const key of planStorageKeys()){if(!PLAN_RECLAIMABLE_BULK_PATTERNS.some(pattern=>pattern.test(key)))continue;try{const value=localStorage.getItem(key);removed+=String(value||'').length;localStorage.removeItem(key);}catch(error){}}
+  return removed;
+}
 function planReclaimDerivedStorage(){let removed=0;for(const key of PLAN_RECLAIMABLE_DERIVED_KEYS){try{const value=localStorage.getItem(key);if(value!=null){removed+=String(value).length;localStorage.removeItem(key);}}catch(error){}}return removed;}
 function planCompactSavedMeta(rows){
   try{
@@ -787,7 +796,7 @@ function writeSavedJourneys(rows){
     planReclaimableCacheStorage();
     try{return planPersistSavedJourneys(next,payload);}catch(secondError){
       if(!planQuotaError(secondError)){console.warn('Kerbside could not persist saved journeys after cache reclaim:',secondError);return null;}
-      planReclaimDerivedStorage();planCompactSavedMeta(next);
+      planReclaimDerivedStorage();planCompactSavedMeta(next);planReclaimBulkCacheStorage();
       try{return planPersistSavedJourneys(next,payload);}catch(finalError){console.warn('Kerbside could not persist saved journeys after storage reclaim:',finalError);return null;}
     }
   }

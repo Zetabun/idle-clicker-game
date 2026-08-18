@@ -74,11 +74,27 @@ test('checkpoint splitter respects byte limit and round-trips unicode snapshots'
     updatedAt: 1_000_000 + i,
     lastEvent: { eventType: 'DEPARTURE', location: { name: `Birmingham New Street ${i} - cafe` } }
   }));
-  const chunks = splitCheckpointSnapshots(snapshots, 16_000);
+  const { chunks, dropped } = splitCheckpointSnapshots(snapshots, 16_000);
   assert.ok(chunks.length > 1);
+  assert.equal(dropped, 0);
   for (const chunk of chunks) assert.ok(new TextEncoder().encode(chunk).byteLength <= 16_000);
   assert.deepEqual(chunks.flatMap(chunk => JSON.parse(chunk)), snapshots);
   assert.ok(IDLE_CHECKPOINT_MAX_VALUE_BYTES < 2_000_000);
+});
+
+test('an oversized snapshot is dropped rather than blocking every future checkpoint', () => {
+  const oversized = { trainId: 'BIG', status: 'running', updatedAt: 5, note: 'x'.repeat(40_000) };
+  const ordinary = { trainId: 'OK', status: 'running', updatedAt: 6 };
+  const { chunks, dropped } = splitCheckpointSnapshots([oversized, ordinary], 16_000);
+  assert.equal(dropped, 1);
+  assert.equal(chunks.length, 1);
+  assert.deepEqual(JSON.parse(chunks[0]), [ordinary]);
+
+  // A checkpoint made entirely of unwritable rows must still resolve, so
+  // enterIdle can hibernate instead of retrying the same failure forever.
+  const allBad = splitCheckpointSnapshots([oversized], 16_000);
+  assert.equal(allBad.dropped, 1);
+  assert.deepEqual(allBad.chunks, []);
 });
 
 test('worker keeps health passive and closes TRUST before checkpointing idle state', () => {
@@ -115,12 +131,15 @@ test('worker keeps health passive and closes TRUST before checkpointing idle sta
 });
 
 test('deployed movement subclass suppresses repeated STOMP attempts during session allocation cooldown', () => {
-  const source = fs.readFileSync(new URL('./worker-v0.9.37.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(new URL('./worker-entry.js', import.meta.url), 'utf8');
   assert.match(source, /isNetworkRailSessionAllocationError/);
   assert.match(source, /sessionCooldownUntil/);
   assert.match(source, /NETWORK_RAIL_SESSION_COOLDOWN_KEY/);
   assert.match(source, /error\.retryAt = until/);
   assert.match(source, /await this\.ctx\.storage\.put\(NETWORK_RAIL_SESSION_COOLDOWN_KEY/);
   assert.match(source, /requestedRetryAt <= now && priorUntil <= now/);
-  assert.match(source, /const VERSION = '0\.9\.37';/);
+  // The deployed entry no longer pins its own version; /movement/health
+  // reports the base worker's release version, which worker.js ties to VERSION.
+  assert.doesNotMatch(source, /const VERSION\s*=/);
+  assert.doesNotMatch(source, /version:\s*VERSION/);
 });

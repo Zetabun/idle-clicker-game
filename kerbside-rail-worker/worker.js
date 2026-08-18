@@ -62,7 +62,11 @@ function health(request, env) {
 }
 
 export function parseBoardPath(path) {
-  const decoded = decodeURIComponent(String(path || ''));
+  // A stray percent sign is a malformed route, not a Worker fault. Letting
+  // decodeURIComponent throw here reached the top-level handler and answered a
+  // bad URL with 500 instead of 404.
+  let decoded;
+  try { decoded = decodeURIComponent(String(path || '')); } catch { return null; }
   const match = decoded.match(/^\/departures\/([A-Za-z0-9]{3})(?:\/to\/([A-Za-z0-9]{3}))?\/(\d{1,3})$/i);
   if (!match) return null;
   const from = match[1].toUpperCase();
@@ -129,7 +133,12 @@ async function railBoard(request, env, ctx, board) {
   }
 
   const result = await pending;
-  if (result.response) return result.response;
+  // Every awaiter of a coalesced refresh gets its own clone. Returning the
+  // shared Response handed the same single-use body stream to each caller, so
+  // the second concurrent request for a board consumed an already-disturbed
+  // stream and fell through to the 500 handler. The live-bus Worker has always
+  // cloned here; this one had not.
+  if (result.response) return result.response.clone();
   if (cached && age <= 2 * 60 * 1000) {
     const response = cachedRailResponse(cached, request, env, age);
     const headers = new Headers(response.headers);
@@ -268,9 +277,19 @@ function configuredOrigins(env) {
     .filter(Boolean);
 }
 
+export function requireOriginHeader(env) {
+  return /^(?:1|true|yes)$/i.test(String(env && env.REQUIRE_ORIGIN || ''));
+}
+
 function requestOriginAllowed(request, env) {
   const origin = request.headers.get('Origin') || '';
-  if (!origin) return true;
+  // A browser always sends Origin cross-origin, so a request without one is
+  // either same-origin or not a browser. Allowing it keeps same-origin fetches
+  // and the deploy workflow's curl checks working, but it also means the
+  // allowlist is not by itself a control on upstream key usage - the per-IP
+  // rate limit is. Set REQUIRE_ORIGIN=1 to close the header-less path once
+  // nothing depends on it.
+  if (!origin) return !requireOriginHeader(env);
   const configured = configuredOrigins(env);
   return configured.includes('*') || configured.includes(origin);
 }

@@ -1,12 +1,21 @@
 # Keep Kerbside's executable and test sources stable across Windows and Linux
 # without changing line-ending policy for the repository's unrelated projects.
 /bus.html text eol=lf
+/kerbside-*.js text eol=lf
+/kerbside-trains.css text eol=lf
 /kerbside-backend/**/*.js text eol=lf
 /kerbside-backend/**/*.mjs text eol=lf
 /kerbside-backend/**/*.json text eol=lf
 /kerbside-backend/**/*.md text eol=lf
 /kerbside-backend/**/*.py text eol=lf
-/.github/scripts/build-disruptions.py text eol=lf
+/kerbside-rail-worker/** text eol=lf
+/kerbside-train-movement-worker/**/*.js text eol=lf
+/kerbside-train-movement-worker/**/*.mjs text eol=lf
+/kerbside-train-movement-worker/**/*.json text eol=lf
+/kerbside-train-movement-worker/**/*.toml text eol=lf
+/.github/scripts/*.py text eol=lf
+/.github/scripts/*.mjs text eol=lf
+/.github/workflows/*.yml text eol=lf
 # Leaflet 1.9.4 ships this stylesheet with CRLF and its pinned integrity hash
 # covers those exact bytes. Treat it as a vendored binary asset.
 /kerbside-backend/vendor/leaflet/leaflet.css -text

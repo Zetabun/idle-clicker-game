@@ -21,8 +21,6 @@ import {
   sessionCooldownRetryAt
 } from './movement-idle-policy.js';
 
-const VERSION = '0.9.37';
-
 function safeMessage(error) {
   return String(error && error.message || error || 'Unknown error').trim().slice(0, 500);
 }
@@ -159,7 +157,6 @@ export class TrainMovementHub extends BaseTrainMovementHub {
     const until = Number(this.sessionCooldownUntil) || 0;
     return {
       ...payload,
-      version: VERSION,
       networkRailSessionCooldown: {
         active: until > now,
         until: until > now ? until : null,
