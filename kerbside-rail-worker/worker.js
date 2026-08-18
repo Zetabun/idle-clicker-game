@@ -105,14 +105,14 @@ export function parseServicePath(path) {
   return { serviceId };
 }
 
-/* Huxley publishes a URL-safe base64 variant of Darwin's service id, and the
-   browser may still be holding one of those. Rail Data Marketplace wants the
-   standard alphabet. Darwin's own ids never contain - or _, so translating
-   both is a no-op for them and a repair for Huxley's. */
-export function rdmServiceId(value) {
-  return String(value || '').replace(/-/g, '+').replace(/_/g, '/');
-}
+/* Service ids are passed through untouched.
 
+   An earlier version translated - and _ to + and / on the theory that the id
+   might be Huxley's URL-safe base64. Rail Data Marketplace does not issue
+   base64 at all: a live board returns ids like 7831834BHAMNWS_, where the
+   underscore is part of the id. Rewriting it to a slash made GetServiceDetails
+   answer 500 for every real service. The hosted board is served by RDM, so the
+   id the browser holds is always already in RDM's own format. */
 export function validServiceDetailPayload(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   // Darwin omits a calling-point key entirely when a service starts or
@@ -128,7 +128,7 @@ async function serviceDetails(request, env, service) {
     });
   }
 
-  const upstream = new URL(`${RDM_LDB_BASE}/GetServiceDetails/${encodeURIComponent(rdmServiceId(service.serviceId))}`);
+  const upstream = new URL(`${RDM_LDB_BASE}/GetServiceDetails/${encodeURIComponent(service.serviceId)}`);
   const cache = caches.default;
   const cacheUrl = new URL(request.url);
   cacheUrl.pathname = '/__rail-service-cache';

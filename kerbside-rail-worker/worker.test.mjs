@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   buildUpstreamUrl,
   parseServicePath,
-  rdmServiceId,
   validServiceDetailPayload,
   normaliseBoardMessages,
   parseBoardPath,
@@ -250,10 +249,20 @@ test('parses Darwin service-detail routes and refuses anything else', () => {
   assert.equal(parseServicePath(`/service/${'a'.repeat(200)}`), null);
 });
 
-test('translates a Huxley URL-safe service id back to the alphabet RDM expects', () => {
-  assert.equal(rdmServiceId('T1yq-8xUS0mMnFcNK5UHTQ_='), 'T1yq+8xUS0mMnFcNK5UHTQ/=');
-  // A Darwin id never contains - or _, so this must leave it untouched.
-  assert.equal(rdmServiceId('abc123+/='), 'abc123+/=');
+test('a Rail Data Marketplace service id reaches upstream byte for byte', async () => {
+  // RDM issues ids like 7831834BHAMNWS_ where the underscore is part of the id.
+  // An earlier URL-safe base64 translation rewrote it to a slash and made every
+  // real GetServiceDetails call answer 500.
+  const runtime = installRuntime(async () => new Response(JSON.stringify({ generatedAt: 'x' }), { status: 200 }));
+  try {
+    await routeRequest(
+      new Request('https://example.test/service/7831834BHAMNWS_', { headers: { 'CF-Connecting-IP': '203.0.113.31' } }),
+      { RDM_LDB_API_KEY: API_KEY }
+    );
+    assert.match(decodeURIComponent(runtime.state.calls[0].url), /\/GetServiceDetails\/7831834BHAMNWS_$/);
+  } finally {
+    runtime.restore();
+  }
 });
 
 test('accepts a service-detail envelope even when one calling-point list is absent', () => {
@@ -285,8 +294,7 @@ test('service details reach GetServiceDetails and carry previous calling points 
     assert.equal(body.previousCallingPoints[0].callingPoint[0].crs, 'EUS');
     const called = runtime.state.calls[0].url;
     assert.match(called, /\/GetServiceDetails\//);
-    // The URL-safe id must have been translated before it left the Worker.
-    assert.match(decodeURIComponent(called), /T1yq\+8xUS0mMnFcNK5UHTQ/);
+    assert.match(decodeURIComponent(called), /T1yq-8xUS0mMnFcNK5UHTQ$/);
     // The key travels upstream in a header by design; what must never carry it
     // is the response handed back to the browser.
     assert.doesNotMatch(JSON.stringify(body), new RegExp(API_KEY));
