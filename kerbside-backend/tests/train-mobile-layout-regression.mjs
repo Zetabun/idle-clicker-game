@@ -83,6 +83,53 @@ try{
   assert.ok(metrics.chevronRight<=metrics.summaryRight+1,`chevron must stay inside summary: ${JSON.stringify(metrics)}`);
   assert.ok(metrics.summaryOverflow<=1,`train summary should not overflow its card: ${JSON.stringify(metrics)}`);
   assert.ok(metrics.overflow<=1,`mobile page should not gain horizontal overflow: ${JSON.stringify(metrics)}`);
+
+  // Forecast detail is a long-form reading surface on phones. Keep the
+  // explanatory copy comfortably above the tiny metadata sizes used on the
+  // desktop board, and prove the larger labels do not create horizontal scroll.
+  await page.evaluate(()=>{
+    const fixture=document.createElement('article');
+    fixture.id='mobileForecastFixture';
+    fixture.className='train-service is-sheet';
+    fixture.innerHTML=`<div class="train-service-detail"><section class="train-crowding-explain crowd-quiet">
+      <div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>Quiet</strong></span><span class="train-forecast-meta">High confidence · Forecast v4 · Live-adjusted</span></div>
+      <div class="train-forecast-reasons"><span>Why this forecast</span><ul>
+        <li class="reason-down"><span class="train-forecast-flag">Quieter</span><span class="train-forecast-reason-text">Train starts at this station, so there is no carried load from earlier calls</span></li>
+        <li class="reason-up"><span class="train-forecast-flag">Busier</span><span class="train-forecast-reason-text">London Euston is in the busiest 5% of GB stations in ORR usage</span></li>
+      </ul></div>
+      <details class="train-forecast-method" open><summary>How this is worked out</summary><p>Kerbside combines measured demand with the timetable, live evidence and the selected travel time.</p></details>
+      <div class="train-forecast-calibration"><span>Measured baseline</span><b>DfT measured baseline: 16 passengers per 100 seats.</b><i>DfT rail passenger numbers and crowding, autumn 2025 (OGL v3)</i></div>
+      <div class="train-forecast-probabilities"><span>Probability</span><b>Quiet 72% · Moderate 20% · Busy 8%</b></div>
+    </section></div>`;
+    document.body.appendChild(fixture);
+  });
+
+  const forecastType=await page.evaluate(()=>{
+    const root=document.querySelector('#mobileForecastFixture .train-crowding-explain');
+    const size=selector=>parseFloat(getComputedStyle(root.querySelector(selector)).fontSize)||0;
+    return {
+      meta:size('.train-forecast-meta'),
+      heading:size('.train-forecast-reasons>span'),
+      reason:size('.train-forecast-reason-text'),
+      flag:size('.train-forecast-flag'),
+      methodSummary:size('.train-forecast-method>summary'),
+      methodBody:size('.train-forecast-method>p'),
+      baseline:size('.train-forecast-calibration b'),
+      source:size('.train-forecast-calibration i'),
+      probability:size('.train-forecast-probabilities>b'),
+      overflow:root.scrollWidth-root.clientWidth
+    };
+  });
+  assert.ok(forecastType.meta>=12,`mobile forecast metadata should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.heading>=11.5,`mobile forecast section labels should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.reason>=14,`mobile forecast reasons should use body-sized text: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.flag>=10,`mobile forecast direction pills should remain legible: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.methodSummary>=11.5,`mobile forecast method heading should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.methodBody>=13,`mobile forecast method copy should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.baseline>=13,`mobile measured baseline should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.source>=11.5,`mobile forecast source note should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.probability>=13,`mobile probability copy should be readable: ${JSON.stringify(forecastType)}`);
+  assert.ok(forecastType.overflow<=1,`larger mobile forecast type must not overflow: ${JSON.stringify(forecastType)}`);
   assert.deepEqual(pageErrors,[],`unexpected page errors: ${pageErrors.join('\n')}`);
 
   console.log(`Kerbside future train row mobile alignment regression passed in ${browserName}.`);
