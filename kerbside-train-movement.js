@@ -13,7 +13,7 @@
    presented as GPS. If this service is unavailable, every existing Kerbside
    rail feature continues without it. */
 
-const VERSION='0.9.47';
+const VERSION='0.9.48';
 const API_BASE='https://kerbside-train-movement.adambullas.workers.dev';
 const REFRESH_MS=15000;
 const REQUEST_TIMEOUT_MS=6500;
@@ -258,14 +258,19 @@ function decorateCallingTimeline(calling,service,snapshot,{startName='',startTim
 function flattenTimelinePoints(service,detailData=null){
   const leg=firstLeg(service),points=[];
   const add=(value,phase='ahead')=>{for(const group of Array.isArray(value)?value:[]){const rows=Array.isArray(group&&group.callingPoint)?group.callingPoint:Array.isArray(group&&group.callingPoints)?group.callingPoints:[group];for(const point of rows){if(!point)continue;const name=text(point.locationName||point.name||point.stationName||point.crs),when=text(point.et||point.eta||point.etd||point.st||point.sta||point.std);if(name)points.push({name,when,cancelled:!!point.isCancelled,phase});}}};
-  add(detailData&&detailData.previousCallingPoints,'passed');add(leg&&leg.previousCallingPoints,'passed');add(leg&&leg.callingPoints);add(detailData&&detailData.subsequentCallingPoints);add(leg&&leg.subsequentCallingPoints);
+  add(leg&&leg.scheduledPreviousCallingPoints,'passed');add(detailData&&detailData.previousCallingPoints,'passed');add(leg&&leg.previousCallingPoints,'passed');add(leg&&leg.callingPoints);add(leg&&leg.scheduledSubsequentCallingPoints);add(detailData&&detailData.subsequentCallingPoints);add(leg&&leg.subsequentCallingPoints);
   const end=serviceEndName(leg),endTime=serviceEndTime(leg);if(end&&!points.some(point=>normalisePlace(point.name)===normalisePlace(end)))points.push({name:end,when:endTime,cancelled:false,phase:'ahead'});
   const merged=[],seen=new Map();for(const point of points){const key=normalisePlace(point.name);if(!key)continue;const existing=seen.get(key);if(existing){if(point.phase==='passed')existing.phase='passed';if(!existing.when&&point.when)existing.when=point.when;existing.cancelled=existing.cancelled||point.cancelled;continue;}const copy={...point};seen.set(key,copy);merged.push(copy);}return merged;
 }
 function timelineDomPoints(calling){return timelineSourceRows(calling).map(row=>{const small=text(row.querySelector('small')&&row.querySelector('small').textContent),match=small.match(/\b(\d{1,2}:\d{2})\b/);return {name:text(row.querySelector('b')&&row.querySelector('b').textContent),when:match?match[1]:'',cancelled:row.classList.contains('cancelled'),phase:row.classList.contains('passed')||row.classList.contains('progress-complete')?'passed':'ahead'};}).filter(point=>point.name);}
+function bindTimelineManualScroll(calling){
+  if(!calling||calling.dataset.trainProgressScrollBound)return;calling.dataset.trainProgressScrollBound='1';
+  const manual=()=>{calling.dataset.trainProgressManualScroll='1';};
+  calling.addEventListener('touchstart',manual,{passive:true});calling.addEventListener('pointerdown',manual,{passive:true});calling.addEventListener('wheel',manual,{passive:true});
+}
 function focusTimelineCurrent(calling){
-  if(!calling)return;const current=calling.querySelector('[data-train-progress-marker],.progress-current');if(!current)return;const signature=`${calling.dataset.trainProgressSignature||''}|${text(current.textContent)}`;if(calling.dataset.trainProgressFocus===signature)return;calling.dataset.trainProgressFocus=signature;
-  const apply=()=>{if(!calling.isConnected||calling.scrollHeight<=calling.clientHeight+4)return;const target=Math.max(0,current.offsetTop-Math.round(calling.clientHeight*.42));calling.scrollTop=target;};
+  if(!calling)return;bindTimelineManualScroll(calling);if(calling.dataset.trainProgressManualScroll==='1')return;const current=calling.querySelector('[data-train-progress-marker],.progress-current');if(!current)return;const signature=`${calling.dataset.trainProgressSignature||''}|${text(current.textContent)}`;if(calling.dataset.trainProgressFocus===signature)return;calling.dataset.trainProgressFocus=signature;
+  const apply=()=>{if(!calling.isConnected||calling.dataset.trainProgressManualScroll==='1'||calling.scrollHeight<=calling.clientHeight+4)return;const target=Math.max(0,current.offsetTop-Math.round(calling.clientHeight*.42));calling.scrollTop=target;};
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(apply);else setTimeout(apply,0);
 }
 function timelineMinute(value,startMinute){const match=text(value).match(/^(\d{1,2}):(\d{2})$/);if(!match)return Number.POSITIVE_INFINITY;let minute=Number(match[1])*60+Number(match[2]);if(Number.isFinite(startMinute)&&minute<startMinute-720)minute+=1440;return minute;}
