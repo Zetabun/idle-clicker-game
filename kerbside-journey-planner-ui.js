@@ -18,10 +18,10 @@ const LOCAL_STATIONS_URL='kerbside-rail-timetable/locations.json';
 const LOCAL_STATION_TIMEOUT_MS=10000;
 const OFFICIAL_RAIL_URL='https://kerbside-rail.adambullas.workers.dev';
 const HOSTED_RAIL_HOSTS=new Set(['zetabun.github.io']);
-const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.60';
-const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.60';
-const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.60';
-const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.60';
+const PLANNER_CORE_URL='kerbside-journey-planner-core.js?v=0.9.61';
+const SAVED_POLISH_URL='kerbside-saved-journeys-polish.js?v=0.9.61';
+const RAIL_HEALTH_URL='kerbside-rail-health.js?v=0.9.61';
+const TRAIN_MOVEMENT_URL='kerbside-train-movement.js?v=0.9.61';
 const UI_GUARD_STYLE_ID='kerbsideTrainUiGuards';
 const PROVIDERS=new Set([
   'https://huxley2.azurewebsites.net',
@@ -227,6 +227,19 @@ input[type="date"]::-webkit-datetime-edit,
 input[type="time"]::-webkit-datetime-edit{display:block;width:100%;text-align:left;padding:0}
 input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 input[type="time"]::-webkit-datetime-edit-fields-wrapper{text-align:left;padding:0}
+/* iOS gives a date or time input an intrinsic width from the native control
+   that width:100% cannot shrink, so in the planner they ran wider than their
+   card while the selects beside them sat correctly - the misalignment left
+   over once the value was left-aligned. Dropping the native appearance makes
+   them size like any other field; the value still renders and tapping still
+   opens the picker. Scoped to iOS because on desktop -webkit-appearance:none
+   also removes the calendar picker indicator, which is styled above. */
+@supports (-webkit-touch-callout:none){
+  input[type="date"],input[type="time"]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;max-width:100%;min-width:0;
+  }
+}
 body:not(.theme-crystal) input[type="date"]::-webkit-calendar-picker-indicator,body:not(.theme-crystal) input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.45);opacity:.95}
 body.theme-crystal input[type="date"]::-webkit-calendar-picker-indicator,body.theme-crystal input[type="time"]::-webkit-calendar-picker-indicator{filter:none;opacity:.78}
 /* Alternate train views own the train content surface while their tab is
