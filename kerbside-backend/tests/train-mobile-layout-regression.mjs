@@ -68,7 +68,7 @@ try{
       viewport:document.documentElement.clientWidth,
       overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
       summaryOverflow:summary.scrollWidth-summary.clientWidth,
-      timeTop:time.top,timeRight:time.right,dateRight:date.right,
+      timeTop:time.top,timeRight:time.right,dateRight:date.right,statusSize:parseFloat(getComputedStyle(summary.querySelector('.train-status')).fontSize)||0,timeSize:parseFloat(getComputedStyle(summary.querySelector('.train-time b')).fontSize)||0,
       routeTop:route.top,routeLeft:route.left,routeRight:route.right,
       crowdLeft:crowd.left,crowdTop:crowd.top,
       chevronRight:chevron.right,summaryRight:box.right
@@ -82,6 +82,8 @@ try{
   assert.ok(metrics.crowdTop>metrics.routeTop,`crowding should sit below route description: ${JSON.stringify(metrics)}`);
   assert.ok(metrics.chevronRight<=metrics.summaryRight+1,`chevron must stay inside summary: ${JSON.stringify(metrics)}`);
   assert.ok(metrics.summaryOverflow<=1,`train summary should not overflow its card: ${JSON.stringify(metrics)}`);
+  assert.ok(metrics.statusSize<=7.6,`timetabled status label should stay compact: ${JSON.stringify(metrics)}`);
+  assert.ok(metrics.timeSize>=16,`departure time should keep its prominent size: ${JSON.stringify(metrics)}`);
   assert.ok(metrics.overflow<=1,`mobile page should not gain horizontal overflow: ${JSON.stringify(metrics)}`);
 
   // Forecast detail is a long-form reading surface on phones. Keep the
@@ -97,8 +99,7 @@ try{
         <li class="reason-down"><span class="train-forecast-flag">Quieter</span><span class="train-forecast-reason-text">Train starts at this station, so there is no carried load from earlier calls</span></li>
         <li class="reason-up"><span class="train-forecast-flag">Busier</span><span class="train-forecast-reason-text">London Euston is in the busiest 5% of GB stations in ORR usage</span></li>
       </ul></div>
-      <details class="train-forecast-method" open><summary>How this is worked out</summary><p>Kerbside combines measured demand with the timetable, live evidence and the selected travel time.</p></details>
-      <div class="train-forecast-calibration"><span>Measured baseline</span><b>DfT measured baseline: 16 passengers per 100 seats.</b><i>DfT rail passenger numbers and crowding, autumn 2025 (OGL v3)</i></div>
+      <details class="train-forecast-method" open><summary>How this is worked out</summary><p>Kerbside combines measured demand with the timetable, live evidence and the selected travel time.</p><div class="train-forecast-calibration"><span>Measured baseline</span><b>DfT measured baseline: 16 passengers per 100 seats.</b><i>DfT rail passenger numbers and crowding, autumn 2025 (OGL v3)</i></div></details>
       <div class="train-forecast-probabilities"><span>Probability</span><b>Quiet 72% · Moderate 20% · Busy 8%</b></div>
     </section></div>`;
     document.body.appendChild(fixture);

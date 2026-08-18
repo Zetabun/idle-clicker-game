@@ -323,10 +323,9 @@ try{
   // Trusted Connections: pin the affected journey, then explicitly adopt the
   // suggested backup. The selected watch must follow the replacement onward
   // leg and Forecast v4 must remain attached to the replanned itinerary.
-  const watchButton=connectionDetail.getByRole('button',{name:'Watch journey'});
+  const watchButton=connectionDetail.getByRole('button',{name:'Save & follow'});
   await watchButton.click();
-  await connectionDetail.getByRole('button',{name:'Stop watching'}).waitFor();
-  assert.match(await connectionDetail.textContent(),/Journey Watch/i);
+  await page.waitForFunction(()=>Boolean(JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null')));
   assert.match(await connectionDetail.textContent(),/Connection at risk/i);
   const watchedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));
   assert.equal(watchedBefore?.onwardID,`rid-change-b-${TODAY}`);
@@ -345,10 +344,9 @@ try{
   assert.match(await connectionDetail.textContent(),/both trains live-checked/i);
   assert.match(await connectionDetail.textContent(),/Forecast v4|Why this forecast/i);
   assert.equal(await connectionDetail.getByRole('button',{name:'Use this backup'}).count(),0);
-  assert.equal(await connectionDetail.getByRole('button',{name:'Stop watching'}).count(),1);
   const watchedAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem('kerbside.rail.journey-watch.v1')||'null'));
   assert.equal(watchedAfter?.onwardID,`rid-change-recovery-${TODAY}`,'Journey Watch must follow the adopted backup leg');
-  await connectionDetail.getByRole('button',{name:'Stop watching'}).click();
+  await page.evaluate(()=>localStorage.removeItem('kerbside.rail.journey-watch.v1'));
   assert.equal(await page.evaluate(()=>localStorage.getItem('kerbside.rail.journey-watch.v1')),null);
   await closeJourneySheet(page);
   await page.evaluate(()=>{

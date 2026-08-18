@@ -444,7 +444,7 @@ const probabilityMarkup=bands.length
     +`</div><div class="train-forecast-legend">`
     +bands.map(band=>`<span class="crowd-${band.key}"><i></i>${esc(band.label)} <b>${band.percent}%</b></span>`).join('')
     +`</div></div>`
-  :'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><details class="train-forecast-method"><summary>How this is worked out</summary><p>${esc(method)}</p></details>${calibrationMarkup}${probabilityMarkup}${historyMarkup}`;}
+  :'';return `<div class="train-forecast-head"><span class="train-forecast-status"><i></i><strong>${esc(result.label)}</strong></span><span class="train-forecast-meta">${esc(meta)}</span></div><div class="train-forecast-reasons"><span>Why this forecast</span><ul>${items}</ul></div><details class="train-forecast-method"><summary>How this is worked out</summary><p>${esc(method)}</p>${calibrationMarkup}</details>${probabilityMarkup}${historyMarkup}`;}
 /* Every write below is compared first. The board is watched by a
    MutationObserver that calls back into apply(), and re-assigning identical
    text or innerHTML still counts as a mutation - so unguarded writes kept a
