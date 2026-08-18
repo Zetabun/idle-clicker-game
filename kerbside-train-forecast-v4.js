@@ -95,17 +95,39 @@ function cancellationKnockOn(service,index,services){
   if(nearest<=KNOCK_ON_FULL)return {amount,reasons:['the previous service was cancelled, so its passengers roll onto this train']};
   return {amount,reasons:['a recent service was cancelled']};
 }
-/* Formation comparison needs a few known train lengths to have a median worth
-   trusting. On the journey board only rows inside the live window carry a
-   length, so a short list would silently disable the signal - fall back to the
-   wider live departure board the overlay already holds. */
-function formationBaseline(services){
-  const own=(services||[]).map(s=>Number(s&&s.length)||0).filter(Boolean);
+/* Formation comparison is only useful when the peer trains are actually
+   comparable. A mixed station can have four-car locals beside nine/eleven-car
+   intercity services, so an unfiltered median creates a false crowding signal.
+   Prefer operator+destination peers; broader fallbacks are accepted only when
+   their observed lengths are already tightly clustered. */
+function stableFormationLengths(rows){
+  const lengths=(Array.isArray(rows)?rows:[]).map(row=>Number(row&&row.length)||0).filter(Boolean).sort((a,b)=>a-b);
+  if(lengths.length<3)return [];
+  const min=lengths[0],max=lengths[lengths.length-1];
+  return min>0&&max/min<=1.5?lengths:[];
+}
+function comparableFormationLengths(service,rows){
+  const list=(Array.isArray(rows)?rows:[]).filter(row=>Number(row&&row.length)>0),op=operatorIdentity(service),destination=profileDestinationIdentity(service);
+  if(op!=='unknown'&&destination!=='unknown'){
+    const exact=stableFormationLengths(list.filter(row=>operatorIdentity(row)===op&&profileDestinationIdentity(row)===destination));
+    if(exact.length>=3)return exact;
+  }
+  if(op!=='unknown'){
+    const sameOperator=stableFormationLengths(list.filter(row=>operatorIdentity(row)===op));
+    if(sameOperator.length>=3)return sameOperator;
+  }
+  if(destination!=='unknown'){
+    const sameDestination=stableFormationLengths(list.filter(row=>profileDestinationIdentity(row)===destination));
+    if(sameDestination.length>=3)return sameDestination;
+  }
+  return [];
+}
+function formationBaseline(service,services){
+  const own=comparableFormationLengths(service,services);
   if(own.length>=3)return own;
   const overlay=window.__KERBSIDE_TRAIN_OVERLAY__;
   const board=overlay&&overlay.state&&Array.isArray(overlay.state.services)?overlay.state.services:[];
-  const wider=board.map(s=>Number(s&&s.length)||0).filter(Boolean);
-  return wider.length>=3?wider:own;
+  return comparableFormationLengths(service,board);
 }
 function liveSignal(service,index,services){
   let amount=0;const reasons=[];
@@ -138,8 +160,8 @@ function formationSignal(api,service,services,date,station){
   let baseline=0,source='';
   if(lengthSamples>=3&&typical>0){baseline=typical;source='its historical formation';}
   else{
-    const lengths=formationBaseline(services).sort((a,b)=>a-b);
-    if(lengths.length>=3){baseline=lengths[Math.floor(lengths.length/2)];source='nearby live formations';}
+    const lengths=formationBaseline(service,services).sort((a,b)=>a-b);
+    if(lengths.length>=3){baseline=lengths[Math.floor(lengths.length/2)];source='comparable nearby live formations';}
   }
   if(!baseline)return {amount:0,reasons:[]};
   const ratio=length/baseline;

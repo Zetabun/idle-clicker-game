@@ -95,7 +95,7 @@ test('future timetable and same-day timetable retain the same static prediction'
 
 test('live delay, formation and route shape enrich the same row exactly once',()=>{
   const station={name:'Test Station',crs:'ZZZ'};
-  const overlayServices=[{length:8},{length:8},{length:8}];
+  const overlayServices=[service({length:8}),service({length:8}),service({length:8})];
   const {trains,v3}=loadPrediction({station,overlayServices});
   const scheduled=service();
   const date=new FixedDate('2026-08-12T12:00:00Z');
