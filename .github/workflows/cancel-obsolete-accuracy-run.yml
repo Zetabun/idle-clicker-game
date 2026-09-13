@@ -1,0 +1,22 @@
+name: Cancel obsolete Kerbside accuracy run
+
+on:
+  push:
+    branches:
+      - agent/improve-live-bus-accuracy
+    paths:
+      - .github/workflows/cancel-obsolete-accuracy-run.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kerbside-accuracy-build
+  cancel-in-progress: true
+
+jobs:
+  cancel-obsolete:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release obsolete concurrency slot
+        run: echo 'Obsolete Kerbside accuracy run cancelled.'
