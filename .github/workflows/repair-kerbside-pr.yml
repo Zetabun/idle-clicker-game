@@ -1,0 +1,195 @@
+name: Validate Kerbside repair branch
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/repair-kerbside-pr.yml
+      - .github/workflows/fix-kerbside-loop-timeout-v3.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: validate-kerbside-repair-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Run source-aware repair and full validation
+        id: validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -ryaml -e '
+            workflow = YAML.load_file(".github/workflows/fix-kerbside-loop-timeout-v3.yml")
+            steps = workflow.fetch("jobs").fetch("validate-and-publish").fetch("steps")
+            step = steps.find { |item| item["name"] == "Apply fixes and run validation" }
+            abort "Repair validation step not found" unless step && step["run"]
+            print step["run"]
+          ' > /tmp/run-kerbside-validation.sh
+          bash /tmp/run-kerbside-validation.sh
+
+      - name: Prepare validated repair package
+        if: steps.validation.outputs.exit_code == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/failures/kerbside-loop-timeout.log .github/failures/kerbside-v3-status.json
+          git add -A
+          git diff --cached --check
+          git diff --cached --binary --full-index > /tmp/kerbside-0.6.86.patch
+          test -s /tmp/kerbside-0.6.86.patch
+          {
+            echo '=== status ==='
+            git status --short
+            echo
+            echo '=== changed paths ==='
+            git diff --cached --name-status
+            echo
+            echo '=== file sizes ==='
+            while IFS= read -r -d '' path; do
+              if [[ -f "$path" ]]; then
+                printf '%s\t%s bytes\n' "$path" "$(wc -c < "$path")"
+              else
+                printf '%s\tdeleted\n' "$path"
+              fi
+            done < <(git diff --cached --name-only -z)
+          } > /tmp/kerbside-changed-paths.txt
+          cat /tmp/kerbside-changed-paths.txt
+
+      - name: Upload validated repair diagnostics
+        if: steps.validation.outputs.exit_code == '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerbside-0.6.86-validated-package
+          path: |
+            /tmp/kerbside-0.6.86.patch
+            /tmp/kerbside-changed-paths.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Audit validated repair paths
+        if: steps.validation.outputs.exit_code == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed='^(VERSION|bus\.html|kerbside-backend/package\.json|kerbside-backend/src/worker\.js|kerbside-backend/test/worker\.test\.js|kerbside-backend/test/app-regression\.test\.js|kerbside-backend/tests/browser-regression\.mjs|\.github/failures/kerbside-loop-timeout\.log|\.github/failures/kerbside-v3-status\.json)$'
+          unexpected=0
+          while IFS= read -r -d '' path; do
+            if [[ ! "$path" =~ $allowed ]]; then
+              echo "::error file=$path::Unexpected file in validated repair"
+              unexpected=1
+            fi
+          done < <(git diff --cached --name-only -z)
+          [[ "$unexpected" -eq 0 ]]
+
+      - name: Publish validated repair through GitHub API
+        if: steps.validation.outputs.exit_code == '0'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          base_sha="$(git rev-parse HEAD)"
+          remote_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$HEAD_REF" --jq .object.sha)"
+          if [[ "$remote_sha" != "$base_sha" ]]; then
+            echo "::error::Repair branch moved from $base_sha to $remote_sha during validation"
+            exit 1
+          fi
+
+          entries_file=/tmp/kerbside-tree-entries.jsonl
+          : > "$entries_file"
+          while IFS= read -r -d '' path; do
+            if [[ "$path" == .github/workflows/* ]]; then
+              echo "::error file=$path::Workflow files are not part of the validated source commit"
+              exit 1
+            fi
+            if [[ -f "$path" ]]; then
+              blob_sha="$(python3 - "$path" <<'PY' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha
+          import base64
+          import json
+          import sys
+          path = sys.argv[1]
+          with open(path, 'rb') as handle:
+              content = base64.b64encode(handle.read()).decode('ascii')
+          print(json.dumps({'content': content, 'encoding': 'base64'}))
+          PY
+              )"
+              mode="$(git ls-files -s -- "$path" | awk 'NR==1 { print $1 }')"
+              [[ -n "$mode" ]] || mode=100644
+              jq -cn --arg path "$path" --arg mode "$mode" --arg sha "$blob_sha" \
+                '{path:$path,mode:$mode,type:"blob",sha:$sha}' >> "$entries_file"
+            else
+              mode="$(git ls-tree "$base_sha" -- "$path" | awk 'NR==1 { print $1 }')"
+              [[ -n "$mode" ]] || mode=100644
+              jq -cn --arg path "$path" --arg mode "$mode" \
+                '{path:$path,mode:$mode,type:"blob",sha:null}' >> "$entries_file"
+            fi
+          done < <(git diff --cached --name-only -z)
+
+          test -s "$entries_file"
+          base_tree="$(git rev-parse "$base_sha^{tree}")"
+          new_tree="$(jq -n --arg base_tree "$base_tree" --slurpfile tree "$entries_file" \
+            '{base_tree:$base_tree,tree:$tree}' | \
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq .sha)"
+
+          message_file=/tmp/kerbside-commit-message.txt
+          cat > "$message_file" <<'MESSAGE'
+          Kerbside 0.6.86: repair tracking correctness
+
+          Keep circular-route vehicles attached to the repeated stop occurrence still ahead.
+          Keep browser timeouts active through complete response bodies and run identity regressions in CI.
+          Preserve ProducerRef as the vehicle owner fallback and add focused regression tests.
+          MESSAGE
+
+          new_commit="$(jq -n \
+            --rawfile message "$message_file" \
+            --arg tree "$new_tree" \
+            --arg parent "$base_sha" \
+            '{message:$message,tree:$tree,parents:[$parent]}' | \
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq .sha)"
+
+          jq -n --arg sha "$new_commit" '{sha:$sha,force:false}' | \
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$HEAD_REF" --input - >/dev/null
+          echo "Published validated repair commit $new_commit"
+
+      - name: Record validation failure
+        if: steps.validation.outputs.exit_code != '0'
+        env:
+          EXIT_CODE: ${{ steps.validation.outputs.exit_code }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard "origin/${HEAD_REF}"
+          mkdir -p .github/failures
+          {
+            echo "Workflow run: $GITHUB_RUN_ID"
+            echo "Validation exit code: $EXIT_CODE"
+            echo
+            cat /tmp/kerbside-validation.log
+          } > .github/failures/kerbside-pr-validation.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Record Kerbside repair branch validation failure'
+          git push origin "HEAD:${HEAD_REF}"
