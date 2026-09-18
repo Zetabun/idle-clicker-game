@@ -1,0 +1,115 @@
+name: Build Strikewatch 12.187
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.head_ref == 'agent/sw-003-report-xp-safety'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply release patch
+        run: python3 .github/scripts/release-12-187.py
+
+      - name: Compile build script
+        working-directory: strikewatch-source
+        run: python3 -m py_compile build.py
+
+      - name: Build first deterministic candidate
+        working-directory: strikewatch-source
+        run: |
+          python3 build.py
+          cp js/strikewatch.dev.js /tmp/strikewatch.dev.first.js
+          cp dist/strikewatch-build-12.187.html /tmp/strikewatch-build.first.html
+          cp dist/strikewatch-build-12.187-size.json /tmp/strikewatch-size.first.json
+          cp dist/strikewatch-build-12.187-css-debt.json /tmp/strikewatch-css.first.json
+
+      - name: Parse source and generated JavaScript
+        run: |
+          for file in strikewatch-source/js/*.js; do node --check "$file"; done
+          node --check strikewatch-source/js/strikewatch.dev.js
+
+      - name: Verify report XP safety contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('strikewatch-source/js/35-career.js').read_text(encoding='utf-8')
+          required = [
+              'function careerSafeXpAward(',
+              'function careerReportXpSafetyForTest()',
+              '${careerSafeXpAward(summary)} XP',
+              '${careerSafeXpAward(careerState.lastRound)} Team XP earned'
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit(f'Missing report XP safety hooks: {missing}')
+          forbidden = ['${summary.xpAward} XP', '${careerState.lastRound.xpAward} Team XP earned']
+          present = [item for item in forbidden if item in text]
+          if present:
+              raise SystemExit(f'Unsafe XP interpolation remains: {present}')
+          cases = [(None, 0), ({}, 0), ({'xpAward': None}, 0), ({'xpAward': '48'}, 48), ({'xpAward': -12}, 0), ({'xpAward': 19.6}, 20)]
+          def safe(summary):
+              value = 0 if not summary else summary.get('xpAward', 0)
+              try:
+                  number = float(value)
+              except (TypeError, ValueError):
+                  number = 0
+              return max(0, int(number + 0.5))
+          actual = [(safe(value), expected) for value, expected in cases]
+          if any(got != expected for got, expected in actual):
+              raise SystemExit(f'Diagnostic case failure: {actual}')
+          PY
+
+      - name: Build second deterministic candidate
+        working-directory: strikewatch-source
+        run: python3 build.py
+
+      - name: Compare deterministic outputs
+        run: |
+          cmp /tmp/strikewatch.dev.first.js strikewatch-source/js/strikewatch.dev.js
+          cmp /tmp/strikewatch-build.first.html strikewatch-source/dist/strikewatch-build-12.187.html
+          cmp /tmp/strikewatch-size.first.json strikewatch-source/dist/strikewatch-build-12.187-size.json
+          cmp /tmp/strikewatch-css.first.json strikewatch-source/dist/strikewatch-build-12.187-css-debt.json
+
+      - name: Publish verified standalone
+        run: |
+          cp strikewatch-source/dist/strikewatch-build-12.187.html cod.html
+          cmp cod.html strikewatch-source/dist/strikewatch-build-12.187.html
+
+      - name: Remove temporary release automation
+        run: |
+          rm -f .github/scripts/release-12-187.py
+          rm -f .github/workflows/release-12-187-pr-runner.yml
+
+      - name: Commit completed release to branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No release changes produced.'
+            exit 1
+          fi
+          git commit -m 'Build 12.187: report XP safety'
+          git push origin HEAD:${{ github.head_ref }}
