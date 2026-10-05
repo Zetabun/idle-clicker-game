@@ -15060,7 +15060,325 @@
         "runs": 6,
         "sample_seconds": 2880
       }
+    },
+    {
+      "date": "2026-10-05",
+      "generated_at": "2026-10-05T09:37:09Z",
+      "operators": {
+        "AW": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 586
+        },
+        "CC": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 131
+        },
+        "CH": {
+          "provider_service_loaded_observations": 7,
+          "provider_service_loading_coverage": 0.0543,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 129
+        },
+        "CS": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 8
+        },
+        "EM": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 255
+        },
+        "ES": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 14
+        },
+        "GC": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 9
+        },
+        "GN": {
+          "provider_service_loaded_observations": 1,
+          "provider_service_loading_coverage": 0.0075,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 133
+        },
+        "GR": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 155
+        },
+        "GW": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 682
+        },
+        "GX": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 35
+        },
+        "HT": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 11
+        },
+        "HX": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 41
+        },
+        "IL": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 11
+        },
+        "LD": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 12
+        },
+        "LE": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 361
+        },
+        "LF": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 15
+        },
+        "LM": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 326
+        },
+        "LO": {
+          "provider_service_loaded_observations": 11,
+          "provider_service_loading_coverage": 0.0107,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 1031
+        },
+        "LT": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 261
+        },
+        "ME": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 229
+        },
+        "NT": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 705
+        },
+        "SE": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 132,
+          "realtime_formation_loaded_observations": 132,
+          "realtime_formation_loading_coverage": 0.2047,
+          "service_observations": 645
+        },
+        "SJ": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 5
+        },
+        "SN": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 684
+        },
+        "SO": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 1
+        },
+        "SR": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 828
+        },
+        "SW": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 754
+        },
+        "TL": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 455
+        },
+        "TP": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 212
+        },
+        "TW": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 34
+        },
+        "VT": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 243
+        },
+        "WR": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 1
+        },
+        "XC": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 188
+        },
+        "XR": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 137,
+          "realtime_formation_loaded_observations": 137,
+          "realtime_formation_loading_coverage": 0.4255,
+          "service_observations": 322
+        },
+        "ZZ": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 2
+        },
+        "__unknown__": {
+          "provider_service_loaded_observations": 0,
+          "provider_service_loading_coverage": 0.0,
+          "realtime_coach_loaded_observations": 0,
+          "realtime_formation_loaded_observations": 0,
+          "realtime_formation_loading_coverage": 0.0,
+          "service_observations": 1256
+        }
+      },
+      "totals": {
+        "decode_failures": 0,
+        "provider_service_loaded_observations": 19,
+        "provider_service_loading_coverage": 0.0018,
+        "realtime_coach_loaded_observations": 269,
+        "realtime_formation_loaded_observations": 269,
+        "realtime_formation_loading_coverage": 0.025,
+        "service_observations": 10770,
+        "xml_parse_failures": 0
+      },
+      "window": {
+        "first_started_at": "2026-10-04T12:28:32Z",
+        "last_finished_at": "2026-10-05T07:16:42Z",
+        "runs": 5,
+        "sample_seconds": 2400
+      }
     }
   ],
-  "updated_at": "2026-10-04T08:48:01Z"
+  "updated_at": "2026-10-05T09:37:09Z"
 }
