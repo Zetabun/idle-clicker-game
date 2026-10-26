@@ -1,0 +1,604 @@
+name: Apply Kerbside timetable and tracking accuracy fixes
+
+on:
+  push:
+    branches:
+      - agent/improve-live-bus-accuracy
+    paths:
+      - .github/workflows/apply-kerbside-accuracy.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-accuracy-build
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+
+    steps:
+      - name: Check out triggering revision
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply targeted accuracy fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def read(filename):
+              return Path(filename).read_text(encoding='utf-8')
+
+          def write(filename, text):
+              Path(filename).write_text(text, encoding='utf-8')
+
+          def replace_once(filename, old, new):
+              text = read(filename)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{filename}: expected one replacement target, found {count}')
+              write(filename, text.replace(old, new, 1))
+
+          def replace_section(filename, start, end, new):
+              text = read(filename)
+              if text.count(start) != 1:
+                  raise SystemExit(f'{filename}: expected one section start {start!r}, found {text.count(start)}')
+              start_index = text.index(start)
+              end_index = text.find(end, start_index + len(start))
+              if end_index < 0:
+                  raise SystemExit(f'{filename}: section end {end!r} not found after {start!r}')
+              if text.find(end, end_index + len(end)) >= 0:
+                  raise SystemExit(f'{filename}: section end {end!r} is not unique')
+              write(filename, text[:start_index] + new + text[end_index:])
+
+          replace_once('bus.html', '''const GPS_FRESH_MS = 2*60*1000;
+          const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but never revive old ghost buses
+          // How long a drawn journey line may outlive its row while the vehicle is still
+          ''', '''const GPS_FRESH_MS = 2*60*1000;
+          const MAX_AGE_MS = 4*60*1000;  // retain delayed operator reports briefly, but never revive old ghost buses
+          const LOCATION_TARGET_ACCURACY_METRES = 60;
+          const LOCATION_WARNING_ACCURACY_METRES = 150;
+          const LOCATION_FIX_TIMEOUT_MS = 10000;
+          const MAX_SCHEDULED_ROWS = 72;
+          // How long a drawn journey line may outlive its row while the vehicle is still
+          ''')
+
+          replace_once('bus.html', '''  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null,
+          ''', '''  feedStale:0, feedUnknownAge:0, feedEmptyReason:'', feedPartial:false, workerOk:null, workerVersion:'', workerBods:false, liveDiag:null, scheduledHidden:0,
+          ''')
+
+          replace_once('bus.html', '''async function setOrigin(lat,lon,label){
+            const run=++S.locationRun;
+            if(S.pollAbort) S.pollAbort.abort();
+            S.origin={lat,lon,label:label||'Chosen point'};
+          ''', '''async function setOrigin(lat,lon,label,accuracy){
+            const run=++S.locationRun;
+            if(S.pollAbort) S.pollAbort.abort();
+            const metres=Number(accuracy);
+            S.origin={lat,lon,label:label||'Chosen point',accuracy:Number.isFinite(metres)&&metres>=0?Math.round(metres):null};
+          ''')
+
+          replace_section('bus.html', "$('locBtn').addEventListener('click', ()=>{", "$('goBtn').addEventListener('click', ()=>", '''function locationFixFromPosition(position){
+            const coords=position&&position.coords||{};
+            const lat=Number(coords.latitude), lon=Number(coords.longitude), rawAccuracy=Number(coords.accuracy);
+            if(!Number.isFinite(lat)||!Number.isFinite(lon)) return null;
+            return {
+              lat,lon,
+              accuracy:Number.isFinite(rawAccuracy)&&rawAccuracy>=0?rawAccuracy:Infinity,
+              timestamp:Number(position&&position.timestamp)||Date.now()
+            };
+          }
+          function betterLocationFix(current,candidate){
+            if(!candidate) return current||null;
+            if(!current) return candidate;
+            if(candidate.accuracy+5<current.accuracy) return candidate;
+            if(Math.abs(candidate.accuracy-current.accuracy)<=5&&candidate.timestamp>current.timestamp) return candidate;
+            return current;
+          }
+          let cancelLocationLookup=null;
+          function requestBestLocation(onSuccess,onError,maximumAge){
+            if(cancelLocationLookup){ cancelLocationLookup(); cancelLocationLookup=null; }
+            let best=null,done=false,watchId=null,timer=null;
+            const cleanup=()=>{
+              if(timer) clearTimeout(timer);
+              if(watchId!=null&&navigator.geolocation&&navigator.geolocation.clearWatch) navigator.geolocation.clearWatch(watchId);
+            };
+            const finish=error=>{
+              if(done) return;
+              done=true; cleanup(); cancelLocationLookup=null;
+              if(best) onSuccess(best); else onError(error||{code:3});
+            };
+            const accept=position=>{
+              best=betterLocationFix(best,locationFixFromPosition(position));
+              if(best&&best.accuracy<=LOCATION_TARGET_ACCURACY_METRES) finish();
+            };
+            const fail=error=>{
+              if(error&&error.code===1) finish(error);
+              else if(error&&error.code===3&&!best) finish(error);
+            };
+            const options={enableHighAccuracy:true,timeout:LOCATION_FIX_TIMEOUT_MS,maximumAge:Math.max(0,Number(maximumAge)||0)};
+            if(typeof navigator.geolocation.watchPosition==='function'){
+              watchId=navigator.geolocation.watchPosition(accept,fail,options);
+              timer=setTimeout(()=>finish(),LOCATION_FIX_TIMEOUT_MS+250);
+            }else{
+              navigator.geolocation.getCurrentPosition(position=>{accept(position);finish();},finish,options);
+            }
+            cancelLocationLookup=()=>{ if(done) return; done=true; cleanup(); };
+          }
+          function locationErrorMessage(err){
+            return err&&err.code===1 ? 'Location permission was declined. Type an address instead.'
+              : err&&err.code===3 ? 'Location timed out. Try again or type an address.'
+              : 'Could not get your location.';
+          }
+          function useDeviceLocation(fix){
+            $('q').value='';
+            setOrigin(fix.lat,fix.lon,'My location',fix.accuracy);
+            if(Number.isFinite(fix.accuracy)&&fix.accuracy>LOCATION_WARNING_ACCURACY_METRES){
+              toast('Your location is only accurate to about '+Math.round(fix.accuracy)+' m. Check that the selected stop is the correct stand.',true);
+            }
+          }
+          if(typeof window!=='undefined'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost')){
+            window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),locationFixFromPosition,betterLocationFix};
+          }
+          $('locBtn').addEventListener('click', ()=>{
+            if(!navigator.geolocation){ toast('This browser has no location support. Type an address instead.',true); return; }
+            setStatus('Getting your location','');
+            S.pendingStopId = null;
+            requestBestLocation(useDeviceLocation,err=>{ toast(locationErrorMessage(err),true); setStatus('Idle',''); },0);
+          });
+          ''')
+
+          replace_once('bus.html', '''} else if(navigator.geolocation){
+            // Nothing saved — the whole point is to walk up and open it.
+            setStatus('Finding you','');
+            navigator.geolocation.getCurrentPosition(
+              p=>{ $('q').value=''; setOrigin(p.coords.latitude,p.coords.longitude,'My location'); },
+              ()=>{ setStatus('Search a place or use the locate button',''); },
+              {enableHighAccuracy:true, timeout:9000, maximumAge:60000}
+            );
+          }
+          ''', '''} else if(navigator.geolocation){
+            // Nothing saved — refine the first phone fix briefly so a cached or
+            // wide-accuracy position does not silently select the opposite stand.
+            setStatus('Finding you','');
+            requestBestLocation(useDeviceLocation,()=>{ setStatus('Search a place or use the locate button',''); },15000);
+          }
+          ''')
+
+          replace_section('bus.html', 'function newLiveDiagnostics(gate){', 'function retainedSnapshotRow', '''function newLiveDiagnostics(gate){
+            return {
+              gate:!!gate,received:S.vehicles.size,recent:0,nearby:0,route:0,direction:0,
+              approaching:0,confidence:0,recovered:0,shown:0,
+              rejected:{stale:0,range:0,passed:0,route:0,destination:0,direction:0,away:0,confidence:0,limit:0},
+              vehicleRejections:new Map()
+            };
+          }
+          function noteLiveRejection(diagnostics,v,reason){
+            if(diagnostics&&diagnostics.vehicleRejections&&v&&v.id!=null){
+              diagnostics.vehicleRejections.set(String(v.id),String(reason||''));
+            }
+          }
+          function rejectLive(diagnostics,reason,v){
+            if(diagnostics&&diagnostics.rejected&&reason in diagnostics.rejected) diagnostics.rejected[reason]++;
+            noteLiveRejection(diagnostics,v,reason);
+          }
+          ''')
+
+          replace_once('bus.html', '''function dropLive(out,v,diagnostics,reason,now){
+            if(holdLive(out,v,diagnostics,reason,now)) return;
+            rejectLive(diagnostics,reason);
+          }
+          ''', '''function dropLive(out,v,diagnostics,reason,now){
+            if(holdLive(out,v,diagnostics,reason,now)) return;
+            rejectLive(diagnostics,reason,v);
+          }
+          ''')
+
+          replace_once('bus.html', '''    if(producerExpired){ rejectLive(diagnostics,'stale'); continue; }
+              if(age>MAX_AGE_MS){
+                const held=retainedSnapshotRow(v,now);
+                if(held) out.push(held);
+                else rejectLive(diagnostics,'stale');
+                continue;
+              }
+          ''', '''    if(producerExpired){ rejectLive(diagnostics,'stale',v); continue; }
+              if(age>MAX_AGE_MS){
+                const held=retainedSnapshotRow(v,now);
+                if(held){ noteLiveRejection(diagnostics,v,'stale'); out.push(held); }
+                else rejectLive(diagnostics,'stale',v);
+                continue;
+              }
+          ''')
+          replace_once('bus.html', "    if(geometry && geometry.passed){ rejectLive(diagnostics,'passed'); continue; }", "    if(geometry && geometry.passed){ rejectLive(diagnostics,'passed',v); continue; }")
+          replace_once('bus.html', "      rejectLive(diagnostics,'destination'); continue;", "      rejectLive(diagnostics,'destination',v); continue;")
+
+          replace_once('bus.html', '''    const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
+              v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';
+          ''', '''    const matchedRow=matchedRows.length?matchedRows.sort((a,b)=>Math.abs(Number(a.at)-now)-Math.abs(Number(b.at)-now))[0]:null;
+              const matchedCallPlausible=!!(matchedRow&&Number(matchedRow.at)>=now-60*60000&&Number(matchedRow.at)<=now+3*3600000);
+              // An exact timetable journey that is due to call here outranks a
+              // single compass bearing or town-centre movement inference. Measured
+              // retreat from the stop still wins, so a bus that has genuinely
+              // turned away is not kept.
+              const journeyBearingOverride=!!(evidence.journeyMatch&&matchedCallPlausible&&d<=MAX_VEH_DIST&&movementTrend(v,S.stop)>=0);
+              v.progressTrip=evidence.matchedTrip||v.corridorTrip||v.journey||'';
+          ''')
+
+          replace_once('bus.html', '''      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead)){ dropLive(out,v,diagnostics,'direction',now); continue; }
+          ''', '''      if(timetableContradicts || (gpsContradicts&&scheduledDir==='unknown'&&!routeAhead&&!journeyBearingOverride)){ dropLive(out,v,diagnostics,'direction',now); continue; }
+          ''')
+          replace_once('bus.html', '''    if(S.hideAway && strength<0 && d>100 && !routeAhead){
+          ''', '''    if(S.hideAway && strength<0 && d>100 && !routeAhead && !journeyBearingOverride){
+          ''')
+
+          replace_once('bus.html', '''  out.sort((a,b)=>a.secs-b.secs);
+            const limited=out.slice(0,25);
+            if(diagnostics) diagnostics.shown=limited.length;
+            return limited;
+          }
+          ''', '''  out.sort((a,b)=>a.secs-b.secs);
+            const limited=out.slice(0,25);
+            for(const row of out.slice(25)) rejectLive(diagnostics,'limit',row.v);
+            if(diagnostics) diagnostics.shown=limited.length;
+            return limited;
+          }
+          ''')
+
+          replace_once('bus.html', '''  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence'};
+          ''', '''  const rejectionLabels={stale:'stale',range:'outside range',passed:'already passed',route:'route/journey',destination:'destination',direction:'direction',away:'heading away',confidence:'confidence',limit:'board limit'};
+          ''')
+          replace_once('bus.html', '''  const routeScanNote=!S.ttStop?'':S.routeScanBusy
+              ? '<br><b>Upstream route scan:</b> checking '+S.routeScanBoxes+' timetable-guided area'+(S.routeScanBoxes===1?'':'s')+'.'
+              : S.routeScanBoxes
+                ? '<br><b>Upstream route scan:</b> '+S.routeScanBoxes+' area'+(S.routeScanBoxes===1?'':'s')+' across '+S.routeScanPatterns+' route pattern'+(S.routeScanPatterns===1?'':'s')+' · '+S.routeScanVehicles+' matching bus'+(S.routeScanVehicles===1?'':'es')+'.'
+                : '<br><b>Upstream route scan:</b> waiting for eligible ordered journey patterns.';
+          ''', '''  const routeScanNote=!S.ttStop?'':S.routeScanBusy
+              ? '<br><b>Upstream route scan:</b> checking '+S.routeScanBoxes+' timetable-guided area'+(S.routeScanBoxes===1?'':'s')+'.'
+              : S.routeScanBoxes
+                ? '<br><b>Upstream route scan:</b> '+S.routeScanBoxes+' area'+(S.routeScanBoxes===1?'':'s')+' across '+S.routeScanPatterns+' route pattern'+(S.routeScanPatterns===1?'':'s')+' · '+S.routeScanVehicles+' matching bus'+(S.routeScanVehicles===1?'':'es')+'.'
+                : '<br><b>Upstream route scan:</b> waiting for eligible ordered journey patterns.';
+            const scheduledNote=S.scheduledHidden
+              ? '<br><b>Scheduled board:</b> '+S.scheduledHidden+' later departure'+(S.scheduledHidden===1?' is':'s are')+' beyond the first '+MAX_SCHEDULED_ROWS+'.'
+              : '';
+          ''')
+          replace_once('bus.html', '''    +routeScanNote+(S.routeScanError?'<br><b>Route scan note:</b> '+esc(S.routeScanError)+'.':'')
+          ''', '''    +routeScanNote+scheduledNote+(S.routeScanError?'<br><b>Route scan note:</b> '+esc(S.routeScanError)+'.':'')
+          ''')
+
+          replace_once('bus.html', '''  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,setServingForTest:value=>{SERVING=value||{};}};
+          ''', '''  window.__KERBSIDE_TEST__={...(window.__KERBSIDE_TEST__||{}),mappedRecordTtl,mappedRecordFresh,canQueryExactOsmStop,routeLookupQueries,knownRoutes,timetableRouteSet,routeEvidence,routeIdentityAgreement,timetableIdentityRows,destinationSimilarity,destinationTerminatesHere,timetableTrusted,originTimeMatches,uniqueOriginTrips,ORIGIN_MATCH_TOLERANCE_MS,physicalVehicleKey,estimate,journeyGeometry,selectedPatternStopIndex,liveTimingLabel,newLiveDiagnostics,noteLiveRejection,setServingForTest:value=>{SERVING=value||{};}};
+          ''')
+
+          replace_section('bus.html', 'function scheduleLiveReason(schedule,liveRows){', '// Identity claims the timetable row', '''function scheduleIdentityEvidence(schedule,v,evidenceCache){
+            if(!schedule||!v||String(v.line)!==String(schedule.line)) return null;
+            if(routeIdentityAgreement(schedule,v)<0) return null;
+            if(schedule.head&&v.dest&&destinationSimilarity(v.dest,schedule.head)<.34) return null;
+            const key=String(v.id||'');
+            let evidence=key&&evidenceCache&&evidenceCache.get(key);
+            if(!evidence){
+              evidence=routeEvidence(v.line,v.dest,vehicleJourneyRef(v),v);
+              if(key&&evidenceCache) evidenceCache.set(key,evidence);
+            }
+            return schedule.trip&&evidence&&String(evidence.matchedTrip||'')===String(schedule.trip)?evidence:null;
+          }
+          function scheduleCandidateReason(v,now){
+            const rejection=S.liveDiag&&S.liveDiag.vehicleRejections&&S.liveDiag.vehicleRejections.get(String(v.id));
+            const decisive=new Set(['passed','direction','destination']);
+            if(now-Number(v.ts)>GPS_FRESH_MS&&!decisive.has(rejection)) return 'matching GPS is delayed';
+            const labels={
+              stale:'matching GPS signal is lost',
+              range:'matching GPS is outside tracking range',
+              passed:'matching bus has already passed this stop',
+              route:'matching GPS route could not be verified',
+              destination:'matching GPS destination was filtered',
+              direction:'matching GPS is for the other direction',
+              away:'matching GPS is moving away',
+              confidence:'matching GPS confidence is too low',
+              limit:'matching live bus is lower on the board'
+            };
+            return labels[rejection]||'matching GPS is awaiting route verification';
+          }
+          function scheduleLiveReason(schedule,liveRows,evidenceCache){
+            if(S.demo) return 'simulator only';
+            if(S.feedFallback) return 'live feed delayed';
+            const now=Date.now();
+            const recent=[...S.vehicles.values()].filter(v=>now-v.ts<=MAX_AGE_MS);
+            if(!recent.length) return 'no recent GPS found nearby';
+            const sameLineAll=recent.filter(v=>String(v.line)===String(schedule.line));
+            if(!sameLineAll.length) return 'no recent GPS for this route';
+            const listed=new Set((Array.isArray(liveRows)?liveRows:[])
+              .map(row=>String(row&&row.v&&row.v.id||'')).filter(Boolean));
+            const sameLine=sameLineAll.filter(v=>!listed.has(String(v.id)));
+            if(!sameLine.length) return sameLineAll.length>1
+              ? 'the live buses on this route are already listed'
+              : 'the live bus on this route is already listed';
+            const sameBranch=sameLine.filter(v=>routeIdentityAgreement(schedule,v)>=0
+              &&(!schedule.head||!v.dest||destinationSimilarity(v.dest,schedule.head)>=.34));
+            if(!sameBranch.length) return 'destination or operator match uncertain';
+            const identityMatches=sameBranch.filter(v=>scheduleIdentityEvidence(schedule,v,evidenceCache));
+            if(identityMatches.length===1) return scheduleCandidateReason(identityMatches[0],now);
+            if(identityMatches.length>1) return 'journey identity is shared by more than one bus';
+            const liveTrip=schedule.trip?uniqueCompatibleTrips(sameBranch,schedule.trip,v=>v.journey):{items:[],ambiguous:false};
+            if(liveTrip.ambiguous) return 'possible GPS journey match is ambiguous';
+            if(liveTrip.items.length) return 'journey code match could not be verified';
+            if(Number.isFinite(Number(schedule.originAt))){
+              const originLive=sameBranch.filter(v=>originTimeMatches(schedule,v));
+              if(originLive.length>1) return 'origin departure is shared by more than one bus';
+              if(originLive.length===1) return 'origin departure is not unique in the timetable';
+              if(!sameBranch.some(v=>Number.isFinite(Number(v.aimedOriginAt))))
+                return 'operator publishes no origin departure time';
+              return 'no bus is working this departure yet';
+            }
+            if(!journeyRefComparable(schedule.trip)||!sameBranch.some(v=>journeyRefComparable(v.journey)))
+              return 'operator publishes no matchable journey code';
+            return 'no unique journey match';
+          }
+          ''')
+
+          replace_section('bus.html', 'function scheduledBoardRows(liveRows){', 'function liveTimingLabel', '''function scheduledBoardRows(liveRows){
+            if(!S.ttStop){ S.scheduledHidden=0; return []; }
+            const now=Date.now(), end=now+3*3600000, claimed=new Set(), seen=new Set(), evidenceCache=new Map();
+            liveRows.forEach(r=>{ const s=claimedScheduleFor(r); if(s) claimed.add(scheduleKey(s)); });
+            const eligible=timetableRows(new Date(now)).filter(r=>{
+              if(r.at<now-60000 || r.at>end) return false;
+              if(S.destFilter && r.head && destinationSimilarity(r.head,S.destFilter)<.75) return false;
+              const rowDir=scheduledJourneyDirection(r);
+              if(S.dir!=='all' && rowDir!=='unknown' && rowDir!==S.dir) return false;
+              const key=scheduleKey(r);
+              if(claimed.has(key) || seen.has(key)) return false;
+              seen.add(key); return true;
+            }).sort((a,b)=>a.at-b.at);
+            S.scheduledHidden=Math.max(0,eligible.length-MAX_SCHEDULED_ROWS);
+            return eligible.slice(0,MAX_SCHEDULED_ROWS)
+              .map(schedule=>({kind:'scheduled',schedule,secs:Math.max(0,(schedule.at-now)/1000),liveReason:scheduleLiveReason(schedule,liveRows,evidenceCache)}));
+          }
+          ''')
+
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''      selected: state.selected,
+                vehicles: state.vehicles
+          ''', '''      selected: state.selected,
+                vehicles: state.vehicles,
+                hideAway: state.hideAway,
+                dir: state.dir,
+                liveDiag: state.liveDiag,
+                scheduledHidden: state.scheduledHidden,
+                timetableRegion: state.timetableRegion
+          ''')
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''      state.timetable = { services: {}, tripPatterns: {}, patterns: {} };
+          ''', '''      state.timetable = { services: {}, tripPatterns: { 'TRIP-A': 'aa-pattern', 'TRIP-B': 'bb-pattern' }, patterns: {} };
+                state.timetableRegion = '';
+          ''')
+
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''      const sharedOrigin = api.uniqueOriginTrips(
+                [{ trip: 'TRIP-A', originAt: 1000 }, { trip: 'TRIP-B', originAt: 1000 }], { aimedOriginAt: 1000 });
+          ''', '''      const sharedOrigin = api.uniqueOriginTrips(
+                [{ trip: 'TRIP-A', originAt: 1000 }, { trip: 'TRIP-B', originAt: 1000 }], { aimedOriginAt: 1000 });
+
+                /* A uniquely identified journey due to call here must not be lost
+                   solely because one bearing points away while its ordered pattern
+                   shard is still loading. Measured movement away remains a hard
+                   rejection; this fixture has only a bearing and no retreat trend. */
+                const bearingOnlyBus = {
+                  id: 'bearing-only', line: '1', lineRef: 'ROUTE-A', owner: 'OP-A', operator: 'OP-A',
+                  dest: 'Town Centre', journey: '', aimedOriginAt: tripARow.originAt,
+                  lat: 52.501, lon: -1.9, bearing: 0, ts: Date.now(), hist: [], corridorTracked: false
+                };
+                state.vehicles = new Map([[bearingOnlyBus.id, bearingOnlyBus]]);
+                state.hideAway = true;
+                state.dir = 'all';
+                state.onlyServing = true;
+                const bearingOverrideRows = api.relevant();
+                const bearingOverrideKept = bearingOverrideRows.some(row => row.v.id === bearingOnlyBus.id);
+                const bearingOverrideRecovered = bearingOverrideRows.some(row => row.v.id === bearingOnlyBus.id && row.recovered);
+          ''')
+
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''      const savedFeed = { demo: state.demo, feedFallback: state.feedFallback, vehicles: state.vehicles };
+          ''', '''      const savedFeed = { demo: state.demo, feedFallback: state.feedFallback, vehicles: state.vehicles, liveDiag: state.liveDiag };
+          ''')
+
+          replace_section('kerbside-backend/tests/audit-regression.mjs', '      const reasonOriginNoBus =', '      Object.assign(state, savedFeed);', '''      const reasonOriginNoBus = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow + 30 * 60000 }, []);
+                const matchedSchedule = { ...tripARow };
+                const matchedBus = {
+                  id: 'matched-origin', line: '1', lineRef: 'ROUTE-A', owner: 'OP-A', operator: 'OP-A',
+                  dest: 'Town Centre', journey: '', aimedOriginAt: tripARow.originAt,
+                  lat: 52.501, lon: -1.9, bearing: 180, ts: reasonNow - 20000, hist: []
+                };
+                state.vehicles = new Map([[matchedBus.id, matchedBus]]);
+                state.liveDiag = api.newLiveDiagnostics(true);
+                api.noteLiveRejection(state.liveDiag, matchedBus, 'direction');
+                const reasonOriginFiltered = api.scheduleLiveReason(matchedSchedule, []);
+                state.liveDiag = api.newLiveDiagnostics(true);
+                api.noteLiveRejection(state.liveDiag, matchedBus, 'limit');
+                const reasonOriginBoardLimit = api.scheduleLiveReason(matchedSchedule, []);
+                const delayedMatchedBus = { ...matchedBus, id: 'matched-delayed', ts: reasonNow - 3 * 60000 };
+                state.vehicles = new Map([[delayedMatchedBus.id, delayedMatchedBus]]);
+                state.liveDiag = api.newLiveDiagnostics(true);
+                api.noteLiveRejection(state.liveDiag, delayedMatchedBus, 'route');
+                const reasonOriginDelayed = api.scheduleLiveReason(matchedSchedule, []);
+                state.vehicles = new Map([['noOrigin', { ...bus61, id: 'noOrigin', aimedOriginAt: NaN }]]);
+                state.liveDiag = null;
+                const reasonNoOriginPublished = api.scheduleLiveReason({ ...laterRow, originAt: reasonNow + 30 * 60000 }, []);
+                state.vehicles = new Map([[bus61.id, bus61]]);
+                const reasonOtherRoute = api.scheduleLiveReason({ line: '99', head: 'Elsewhere', at: reasonNow + 600000, trip: gtfsTrip('c') }, []);
+                const comparableBus = { ...bus61, id: 'comparable', journey: 'operator:trip-AB99999999' };
+                state.vehicles = new Map([['comparable', comparableBus]]);
+                const reasonComparable = api.scheduleLiveReason({ line: '61', head: 'City Centre', at: reasonNow + 35 * 60000, trip: 'trip-AB12345678' }, []);
+          ''')
+
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''      const timingLabel = api.liveTimingLabel({
+                gpsLost: false,
+                schedule: { at: timingNow + 10 * 60000 },
+                secs: 15.8 * 60,
+                liveSecs: 20 * 60
+              });
+          ''', '''      const timingLabel = api.liveTimingLabel({
+                gpsLost: false,
+                schedule: { at: timingNow + 10 * 60000 },
+                secs: 15.8 * 60,
+                liveSecs: 20 * 60
+              });
+
+                const capBase = new Date();
+                const capMinute = capBase.getHours() * 60 + capBase.getMinutes() + 5;
+                state.ttStop = {
+                  id: 'STOP',
+                  d: Array.from({ length: 90 }, (_, index) => [capMinute + index, 'C', 'Cap Test', '', '', `CAP-${index}`, '', `ROUTE-${index}`, 'OP-A', index, capMinute])
+                };
+                state.timetable = { services: {}, tripPatterns: {}, patterns: {} };
+                state.timetableRun = Number(state.timetableRun || 0) + 1;
+                state.vehicles = new Map();
+                state.demo = false;
+                state.feedFallback = false;
+                state.dir = 'all';
+                state.destFilter = null;
+                const cappedScheduledRows = api.scheduledBoardRows([]);
+
+                const accurateFix = { id: 'accurate', accuracy: 35, timestamp: 1000 };
+                const wideFix = { id: 'wide', accuracy: 140, timestamp: 2000 };
+                const newerFix = { id: 'newer', accuracy: 38, timestamp: 3000 };
+                const betterAccuracyChosen = api.betterLocationFix(wideFix, accurateFix).id;
+                const newerEquivalentChosen = api.betterLocationFix(accurateFix, newerFix).id;
+          ''')
+
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''        reasonOriginNoBus,
+                reasonOriginMatched,
+                reasonNoOriginPublished,
+          ''', '''        reasonOriginNoBus,
+                reasonOriginFiltered,
+                reasonOriginBoardLimit,
+                reasonOriginDelayed,
+                reasonNoOriginPublished,
+          ''')
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''        sharedOriginAmbiguous: sharedOrigin.ambiguous,
+                sharedOriginItems: sharedOrigin.items.length,
+          ''', '''        sharedOriginAmbiguous: sharedOrigin.ambiguous,
+                sharedOriginItems: sharedOrigin.items.length,
+                bearingOverrideKept,
+                bearingOverrideRecovered,
+          ''')
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''        repeatedStopIndex,
+                timingLabel
+          ''', '''        repeatedStopIndex,
+                timingLabel,
+                cappedScheduledRows: cappedScheduledRows.length,
+                scheduledHidden: state.scheduledHidden,
+                betterAccuracyChosen,
+                newerEquivalentChosen
+          ''')
+
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''  assert.equal(result.reasonOriginNoBus, 'no bus is working this departure yet');
+            assert.equal(result.reasonOriginMatched, 'possible GPS match was filtered');
+            assert.equal(result.reasonNoOriginPublished, 'operator publishes no origin departure time');
+          ''', '''  assert.equal(result.reasonOriginNoBus, 'no bus is working this departure yet');
+            assert.equal(result.reasonOriginFiltered, 'matching GPS is for the other direction');
+            assert.equal(result.reasonOriginBoardLimit, 'matching live bus is lower on the board');
+            assert.equal(result.reasonOriginDelayed, 'matching GPS is delayed');
+            assert.equal(result.reasonNoOriginPublished, 'operator publishes no origin departure time');
+          ''')
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''  assert.equal(result.sharedOriginAmbiguous, true, 'two journeys sharing an origin minute must abstain');
+            assert.equal(result.sharedOriginItems, 0);
+          ''', '''  assert.equal(result.sharedOriginAmbiguous, true, 'two journeys sharing an origin minute must abstain');
+            assert.equal(result.sharedOriginItems, 0);
+            assert.equal(result.bearingOverrideKept, true, 'an exact journey must survive a bearing-only away reading while route geometry loads');
+            assert.equal(result.bearingOverrideRecovered, true, 'the kept row should disclose that stronger journey evidence recovered it');
+          ''')
+          replace_once('kerbside-backend/tests/audit-regression.mjs', '''  assert.equal(result.repeatedStopIndex, 2);
+            assert.equal(result.timingLabel, '10 min late');
+          ''', '''  assert.equal(result.repeatedStopIndex, 2);
+            assert.equal(result.timingLabel, '10 min late');
+            assert.equal(result.cappedScheduledRows, 72, 'the board should retain twice the former scheduled-row capacity');
+            assert.equal(result.scheduledHidden, 18, 'later rows beyond the explicit cap must be counted, not silently forgotten');
+            assert.equal(result.betterAccuracyChosen, 'accurate', 'a materially more accurate phone fix must beat a newer wide fix');
+            assert.equal(result.newerEquivalentChosen, 'newer', 'equally accurate fixes should prefer the newer observation');
+          ''')
+
+          Path('VERSION').write_text('0.7.3\n', encoding='utf-8')
+          PY
+
+          python3 .github/scripts/sync-version.py
+          git diff --check
+
+      - name: Install test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+
+      - name: Validate the complete build twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2; do
+            echo "Validation pass $pass"
+            python3 .github/scripts/sync-version.py --check
+            python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import tempfile
+          source = Path('bus.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit('No inline browser scripts found')
+          with tempfile.TemporaryDirectory() as directory:
+              for index, script in enumerate(scripts, start=1):
+                  filename = Path(directory) / f'inline-{index}.js'
+                  filename.write_text(script, encoding='utf-8')
+                  subprocess.run(['node', '--check', str(filename)], check=True)
+          PY
+            node --check build-timetable.js
+            npm run check --prefix kerbside-backend
+            npm test --prefix kerbside-backend
+            npm run test:browser --prefix kerbside-backend
+            npm run test:identity --prefix kerbside-backend
+            npm run test:multi-vehicle --prefix kerbside-backend
+            npm run test:audit --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:identity --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:multi-vehicle --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:audit --prefix kerbside-backend
+          done
+
+      - name: Commit validated build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "OpenAI Agent"
+          git config user.email "noreply@openai.com"
+          git rm .github/workflows/apply-kerbside-accuracy.yml
+          git add VERSION bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/tests/audit-regression.mjs
+          git diff --cached --check
+          git commit -m "Improve live bus matching accuracy"
+          git push origin HEAD:agent/improve-live-bus-accuracy
+
+      - name: Summarize
+        shell: bash
+        run: |
+          {
+            echo '## Kerbside 0.7.3'
+            echo '- GPS-to-timetable explanations now use the actual vehicle rejection reason.'
+            echo '- Delayed positions are no longer described as fresh.'
+            echo '- Exact due journeys survive bearing-only contradictions unless measured movement retreats.'
+            echo '- Scheduled capacity is raised to 72 with hidden rows counted in diagnostics.'
+            echo '- Phone location waits briefly for the most accurate available fix.'
+            echo '- Full WebKit and Chromium validation completed twice.'
+          } >> "$GITHUB_STEP_SUMMARY"
