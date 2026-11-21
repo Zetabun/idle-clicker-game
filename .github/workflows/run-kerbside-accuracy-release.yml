@@ -1,0 +1,128 @@
+name: Publish validated Kerbside accuracy release
+
+on:
+  push:
+    branches:
+      - agent/improve-live-bus-accuracy
+    paths:
+      - .github/workflows/run-kerbside-accuracy-release.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kerbside-accuracy-release-final
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out exact branch head
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Apply reviewed fail-closed patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/scripts/release-kerbside-accuracy.py
+          python3 .github/scripts/release-kerbside-accuracy.py
+          git diff --check
+
+      - name: Install browser validation dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix kerbside-backend --no-audit --no-fund --package-lock=false
+          npm run vendor:leaflet --prefix kerbside-backend
+          cd kerbside-backend
+          npx playwright install --with-deps webkit chromium
+
+      - name: Run complete validation twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2; do
+            echo "Complete validation pass $pass"
+            python3 .github/scripts/sync-version.py --check
+            node --check build-timetable.js
+            npm run check --prefix kerbside-backend
+            npm test --prefix kerbside-backend
+            npm run test:browser --prefix kerbside-backend
+            npm run test:identity --prefix kerbside-backend
+            npm run test:multi-vehicle --prefix kerbside-backend
+            npm run test:audit --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:browser --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:identity --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:multi-vehicle --prefix kerbside-backend
+            KERBSIDE_BROWSER=chromium npm run test:audit --prefix kerbside-backend
+          done
+
+      - name: Publish only the validated application build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "OpenAI Agent"
+          git config user.email "noreply@openai.com"
+
+          git rm \
+            .github/workflows/apply-kerbside-accuracy.yml \
+            .github/workflows/run-kerbside-accuracy-release.yml \
+            .github/scripts/release-kerbside-accuracy.py \
+            .github/triggers/release-kerbside-accuracy.txt
+
+          git add \
+            VERSION \
+            bus.html \
+            kerbside-backend/package.json \
+            kerbside-backend/src/worker.js \
+            kerbside-backend/test/worker.test.js \
+            kerbside-backend/tests/browser-regression.mjs \
+            kerbside-backend/tests/audit-regression.mjs
+
+          git diff --cached --check
+          mapfile -t changed < <(git diff --cached --name-only | sort)
+          expected=(
+            .github/scripts/release-kerbside-accuracy.py
+            .github/triggers/release-kerbside-accuracy.txt
+            .github/workflows/apply-kerbside-accuracy.yml
+            .github/workflows/run-kerbside-accuracy-release.yml
+            VERSION
+            bus.html
+            kerbside-backend/package.json
+            kerbside-backend/src/worker.js
+            kerbside-backend/test/worker.test.js
+            kerbside-backend/tests/audit-regression.mjs
+            kerbside-backend/tests/browser-regression.mjs
+          )
+          mapfile -t expected < <(printf '%s\n' "${expected[@]}" | sort)
+          if [[ "$(printf '%s\n' "${changed[@]}")" != "$(printf '%s\n' "${expected[@]}")" ]]; then
+            echo '::error::Staged path set differs from the reviewed release scope.'
+            printf 'Changed:\n%s\nExpected:\n%s\n' "$(printf '%s\n' "${changed[@]}")" "$(printf '%s\n' "${expected[@]}")"
+            exit 1
+          fi
+
+          git commit -m "Kerbside 0.7.3: improve timetable and live tracking accuracy"
+          git push origin HEAD:agent/improve-live-bus-accuracy
+
+      - name: Summarize validated release
+        shell: bash
+        run: |
+          {
+            echo '## Kerbside 0.7.3 validated'
+            echo '- Exact GPS rejection reasons replace the generic filtered message.'
+            echo '- Delayed positions are distinguished from fresh GPS.'
+            echo '- Exact due journeys can survive bearing-only contradictions while geometry loads.'
+            echo '- Phone geolocation selects the best available accuracy fix.'
+            echo '- Scheduled capacity is 72 and overflow is disclosed.'
+            echo '- All relevant WebKit and Chromium suites passed twice.'
+          } >> "$GITHUB_STEP_SUMMARY"
